@@ -41,15 +41,17 @@ type Task struct {
 
 type Sql struct {
 	gorm.Model
-	TaskId         string
+	TaskId         int
 	CommitSql      string
 	RollbackSql    string
 	InspectResult  string
+	CommitStatus   string
 	CommitResult   string
+	RollbackStatus string
 	RollbackResult string
 }
 
-func NewMysql(user, password, host, port, schema string) (*gorm.DB, error) {
+func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user, password, host, port, schema))
 	if err != nil {
@@ -73,7 +75,9 @@ func NewMysql(user, password, host, port, schema string) (*gorm.DB, error) {
 	if err := createTable(db, &Task{}); err != nil {
 		return nil, err
 	}
-	return db, nil
+	return &Storage{
+		db: db,
+	}, nil
 }
 
 func createTable(db *gorm.DB, model interface{}) error {
@@ -85,4 +89,81 @@ func createTable(db *gorm.DB, model interface{}) error {
 		return db.CreateTable(model).Error
 	}
 	return nil
+}
+
+type Storage struct {
+	db *gorm.DB
+}
+
+func (s *Storage) Exist(model interface{}) (bool, error) {
+	var count int
+	err := s.db.Model(model).Where(model).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (s *Storage) Create(model interface{}) error {
+	return s.db.Create(model).Error
+}
+
+func (s *Storage) Save(model interface{}) error {
+	return s.db.Save(model).Error
+}
+
+func (s *Storage) GetUserById(id string) (*User, error) {
+	user := &User{}
+	err := s.db.First(user, id).Error
+	return user, err
+}
+
+func (s *Storage) UpdateUser(user *User) error {
+	return s.db.Save(user).Error
+}
+
+func (s *Storage) DelUser(user *User) error {
+	return s.db.Delete(user).Error
+}
+
+func (s *Storage) GetUsers() ([]*User, error) {
+	users := []*User{}
+	err := s.db.Find(users).Error
+	return users, err
+}
+
+func (s *Storage) GetDatabaseById(id string) (*Db, error) {
+	database := &Db{}
+	err := s.db.First(database).Error
+	return database, err
+}
+
+func (s *Storage) UpdateDatabase(database *Db) error {
+	return s.db.Save(database).Error
+}
+
+func (s *Storage) DelDatabase(database *Db) error {
+	return s.db.Delete(database).Error
+}
+
+func (s *Storage) GetDatabases() ([]*Db, error) {
+	databases := []*Db{}
+	err := s.db.Find(databases).Error
+	return databases, err
+}
+
+func (s *Storage) GetTaskById(id string) (*Task, error) {
+	task := &Task{}
+	err := s.db.Preload("User").Preload("Approver").Preload("Db").Preload("Sqls").First(&task, id).Error
+	return task, err
+}
+
+func (s *Storage) GetTasks() ([]*Task, error) {
+	tasks := []*Task{}
+	err := s.db.Preload("User").Preload("Approver").Preload("Db").Preload("Sqls").Find(&tasks).Error
+	return tasks, err
+}
+
+func (s *Storage) UpdateTaskSqls(task *Task, sqls []*Sql) error {
+	return s.db.Model(task).Association("Sqls").Replace(sqls).Error
 }

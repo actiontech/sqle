@@ -1,0 +1,10 @@
+# ide
+.idea
+
+# go
+/pkg/
+/bin/
+/logs/
+src/sqle/**/logs/
+src/sqle/**/main
+src/sqle/**/sqle

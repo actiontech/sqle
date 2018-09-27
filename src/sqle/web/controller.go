@@ -1,13 +1,16 @@
 package web
 
 import (
+	"fmt"
 	"github.com/astaxie/beego"
 	"sqle"
+	"sqle/executor"
 	"sqle/storage"
 )
 
 type BaseController struct {
 	beego.Controller
+	user  *storage.User
 	sqled *sqle.Sqled
 }
 
@@ -20,14 +23,10 @@ func (c *BaseController) serveJson(data interface{}) {
 	c.ServeJSON()
 }
 
-func (c *BaseController) Test() {
-	c.CustomAbort(200, "ok")
-}
-
 func (c *BaseController) AddUser() {
 	user := &storage.User{}
 	user.Name = c.GetString("name")
-	exist, err := c.sqled.Exist(user)
+	exist, err := c.sqled.Storage.Exist(user)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -36,7 +35,7 @@ func (c *BaseController) AddUser() {
 	}
 
 	user.Password = c.GetString("password")
-	err = c.sqled.Db.Create(user).Error
+	err = c.sqled.Storage.Create(user)
 	if nil != err {
 		c.CustomAbort(500, err.Error())
 	}
@@ -45,7 +44,7 @@ func (c *BaseController) AddUser() {
 
 func (c *BaseController) UserList() {
 	users := []*storage.User{}
-	err := c.sqled.Db.Find(&users).Error
+	users, err := c.sqled.Storage.GetUsers()
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -60,7 +59,21 @@ func (c *BaseController) AddDatabase() {
 	database.Port = c.GetString("port")
 	database.Password = c.GetString("password")
 	database.Alias = c.GetString("alias")
-	err := c.sqled.Db.Save(database).Error
+	err := c.sqled.Storage.Save(database)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	c.CustomAbort(200, "ok")
+}
+
+func (c *BaseController) PingDatabase() {
+	database := &storage.Db{}
+	database.User = c.GetString("user")
+	database.DbType, _ = c.GetInt("db_type", 0)
+	database.Host = c.GetString("host")
+	database.Port = c.GetString("port")
+	database.Password = c.GetString("password")
+	err := executor.Ping(database)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -68,8 +81,7 @@ func (c *BaseController) AddDatabase() {
 }
 
 func (c *BaseController) DatabaseList() {
-	databases := []*storage.Db{}
-	err := c.sqled.Db.Find(&databases).Error
+	databases, err := c.sqled.Storage.GetDatabases()
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -78,42 +90,65 @@ func (c *BaseController) DatabaseList() {
 
 func (c *BaseController) AddTask() {
 	task := storage.Task{}
-	user := storage.User{}
-	p := storage.User{}
-	d := storage.Db{}
-	userId, _ := c.GetInt("user_id")
-	dbId, _ := c.GetInt("db_id")
-	approverId,_:=c.GetInt("approver_id")
+	userId := c.GetString("user_id")
+	dbId := c.GetString("db_id")
+	approverId := c.GetString("approver_id")
 
-	err := c.sqled.Db.First(&user, userId).Error
+	user, err := c.sqled.Storage.GetUserById(userId)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	approver, err := c.sqled.Storage.GetUserById(approverId)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	database, err := c.sqled.Storage.GetDatabaseById(dbId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
 
-	err = c.sqled.Db.First(&d, dbId).Error
+	task.User = *user
+	task.Approver = *approver
+	task.Db = *database
+	task.ReqSql = c.GetString("sql")
+	err = c.sqled.Storage.Save(&task)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
-	err = c.sqled.Db.First(&p, approverId).Error
-	if err != nil {
-		c.CustomAbort(500, err.Error())
-	}
-	task.User = user
-	task.Approver = p
-	task.Db = d
-	task.ReqSql = "select * from sqle.dbs"
-	err = c.sqled.Db.Save(&task).Error
-	if err!=nil{
-		c.CustomAbort(500, err.Error())
-	}
-	c.CustomAbort(200,"ok")
+	c.CustomAbort(200, "ok")
 }
 
 func (c *BaseController) TaskList() {
-	tasks := []*storage.Task{}
-	err := c.sqled.Db.Preload("User").Preload("Approver").Preload("Db").Find(&tasks).Error
+	tasks, err := c.sqled.Storage.GetTasks()
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
 	c.serveJson(tasks)
+}
+
+func (c *BaseController) Inspect() {
+	taskId := c.Ctx.Input.Param(":taskId")
+	task, err := c.sqled.Storage.GetTaskById(taskId)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	err = c.sqled.Inspect(task)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	c.CustomAbort(200, "ok")
+}
+
+func (c *BaseController) Commit() {
+	taskId := c.Ctx.Input.Param(":taskId")
+	fmt.Printf("task id: %s", taskId)
+	task, err := c.sqled.Storage.GetTaskById(taskId)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	err = c.sqled.Commit(task)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	c.CustomAbort(200, "ok")
 }

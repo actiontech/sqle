@@ -8,32 +8,6 @@ import (
 	"sqle/storage"
 )
 
-const CONNECT_TIMEOUT = 5
-
-//func query(meta *storage.TaskMeta, sql string, execTimeout int) ([]map[string]string, error) {
-//	stage := log.NewStage().Enter("mysql_query")
-//	db, err := mysql.OpenDbWithoutCacheWithSchema(stage,
-//		meta.Database.User, meta.Database.Password, meta.Database.Host, meta.Database.Password,
-//		"", CONNECT_TIMEOUT, execTimeout)
-//	if nil != err {
-//		return nil, err
-//	}
-//	defer db.Close()
-//
-//	return mysql.SqlQuery(stage, db, sql)
-//}
-//
-//func commitTask(meta *storage.TaskMeta) error {
-//	for _, sqlMeta := range meta.SqlMetas {
-//		_, err := query(meta, sqlMeta.ExecSql, 5)
-//		if nil != err {
-//			sqlMeta.CommitResult = err.Error()
-//			return err
-//		}
-//	}
-//	return nil
-//}
-
 func openDbWithMeta(db *storage.Db) (*gorm.DB, error) {
 	switch db.DbType {
 	case storage.DB_TYPE_MYSQL:
@@ -54,11 +28,20 @@ func Query(task *storage.Task, sql string) error {
 	return err
 }
 
-func Ping(task *storage.Task) error {
-	db, err := openDbWithMeta(&task.Db)
+func Ping(database *storage.Db) error {
+	db, err := openDbWithMeta(database)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 	return db.DB().Ping()
 }
+
+//func ShowDatabases(database *storage.Db) ([]string,error){
+//	db, err := openDbWithMeta(database)
+//	if err != nil {
+//		return nil, err
+//	}
+//	defer db.Close()
+//	return db.DB().QueryRow("show databases")
+//}
