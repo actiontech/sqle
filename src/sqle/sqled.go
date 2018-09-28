@@ -16,18 +16,20 @@ func GetSqled() *Sqled {
 type Sqled struct {
 	stage *log.Stage
 	// storage
-	Storage *storage.Storage
+	Storage   *storage.Storage
+	Inspector *inspector.Inspector
 }
 
 func InitSqled(stage *log.Stage, s *storage.Storage) {
 	sqled = &Sqled{
-		stage:   stage,
-		Storage: s,
+		stage:     stage,
+		Storage:   s,
+		Inspector: inspector.NewInspector(),
 	}
 }
 
 func (s *Sqled) Inspect(task *storage.Task) error {
-	sqls, err := inspector.Inspect(task)
+	sqls, err := s.Inspector.Inspect(nil, task)
 	if err != nil {
 		return err
 	}
@@ -45,4 +47,3 @@ func (s *Sqled) Commit(task *storage.Task) error {
 	}
 	return nil
 }
-

@@ -51,6 +51,14 @@ type Sql struct {
 	RollbackResult string
 }
 
+type InspectConfig struct {
+	gorm.Model
+	Code    int
+	Desc    string
+	Level   int
+	Disable bool
+}
+
 func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user, password, host, port, schema))
@@ -58,11 +66,7 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 		return nil, err
 	}
 	db.LogMode(true)
-	_, err = db.DB().Exec(fmt.Sprintf("create database if not exists %s", schema))
-	if err != nil {
-		fmt.Println("create database error")
-		return nil, err
-	}
+
 	if err := createTable(db, &User{}); err != nil {
 		return nil, err
 	}
