@@ -44,7 +44,8 @@ type Sql struct {
 	TaskId         int
 	CommitSql      string
 	RollbackSql    string
-	InspectResult  string
+	InspectError   string
+	InspectWarn    string
 	CommitStatus   string
 	CommitResult   string
 	RollbackStatus string
@@ -53,10 +54,13 @@ type Sql struct {
 
 type InspectConfig struct {
 	gorm.Model
-	Code    int
-	Desc    string
-	Level   int
-	Disable bool
+	Code       int
+	ConfigType int
+	StmtType   int
+	Variable   string
+	Desc       string
+	Level      int
+	Disable    bool
 }
 
 func NewMysql(user, password, host, port, schema string) (*Storage, error) {

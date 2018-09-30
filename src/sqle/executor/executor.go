@@ -8,7 +8,8 @@ import (
 	"sqle/storage"
 )
 
-func openDbWithMeta(db *storage.Db) (*gorm.DB, error) {
+
+func OpenDbWithMeta(db *storage.Db) (*gorm.DB, error) {
 	switch db.DbType {
 	case storage.DB_TYPE_MYSQL:
 		return gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
@@ -19,7 +20,7 @@ func openDbWithMeta(db *storage.Db) (*gorm.DB, error) {
 }
 
 func Query(task *storage.Task, sql string) error {
-	db, err := openDbWithMeta(&task.Db)
+	db, err := OpenDbWithMeta(&task.Db)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func Query(task *storage.Task, sql string) error {
 }
 
 func Ping(database *storage.Db) error {
-	db, err := openDbWithMeta(database)
+	db, err := OpenDbWithMeta(database)
 	if err != nil {
 		return err
 	}

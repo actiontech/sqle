@@ -17,19 +17,17 @@ type Sqled struct {
 	stage *log.Stage
 	// storage
 	Storage   *storage.Storage
-	Inspector *inspector.Inspector
 }
 
 func InitSqled(stage *log.Stage, s *storage.Storage) {
 	sqled = &Sqled{
 		stage:     stage,
 		Storage:   s,
-		Inspector: inspector.NewInspector(),
 	}
 }
 
 func (s *Sqled) Inspect(task *storage.Task) error {
-	sqls, err := s.Inspector.Inspect(nil, task)
+	sqls, err := inspector.Inspect(nil, task)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"github.com/astaxie/beego"
 	"sqle"
 	"sqle/executor"
@@ -141,7 +140,6 @@ func (c *BaseController) Inspect() {
 
 func (c *BaseController) Commit() {
 	taskId := c.Ctx.Input.Param(":taskId")
-	fmt.Printf("task id: %s", taskId)
 	task, err := c.sqled.Storage.GetTaskById(taskId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
