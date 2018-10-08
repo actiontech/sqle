@@ -31,14 +31,15 @@ func Inspect(config map[int]*storage.InspectConfig, task *storage.Task) ([]*stor
 	if err != nil {
 		return nil, err
 	}
-	db, err := executor.OpenDbWithMeta(&task.Db)
+	db, err := executor.OpenDbWithTask(task)
 	if err != err {
 		return nil, err
 	}
+	defer db.Close()
+
 	for _, stmt := range stmts {
 		errMsgs := []string{}
 		warnMsgs := []string{}
-		fmt.Println("do rules")
 		for _, rule := range Rules {
 			fmt.Println("do rule")
 			errMsg, warnMsg, err := rule.Check(config[rule.DfConfig.Code], db, stmt)

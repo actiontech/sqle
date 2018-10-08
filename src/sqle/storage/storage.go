@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 )
@@ -27,16 +28,86 @@ type Db struct {
 	Password string
 }
 
+// task progress
+const (
+	TASK_PROGRESS_INIT = iota
+
+	TASK_PROGRESS_INSPECT_START
+	TASK_PROGRESS_INSPECT_END
+
+	TASK_PROGRESS_COMMIT_START
+	TASK_PROGRESS_COMMIT_END
+
+	TASK_PROGRESS_ROLLACK_START
+	TASK_PROGRESS_ROLLACK_END
+
+	TASK_PROGRESS_ERROR
+)
+
+// task action
+const (
+	TASK_ACTION_INIT = iota
+	TASK_ACTION_INSPECT
+	TASK_ACTION_COMMIT
+	TASK_ACTION_ROLLBACK
+)
+
+var ActionMap = map[int]string{
+	TASK_ACTION_INSPECT:  "",
+	TASK_ACTION_COMMIT:   "",
+	TASK_ACTION_ROLLBACK: "",
+}
+
 type Task struct {
 	gorm.Model
+	// meta
 	User       User `gorm:"foreignkey:UserId"`
 	UserId     int
-	Approver   User `gorm:"foreignkey:ApproverId"`
-	ApproverId int
 	Db         Db `gorm:"foreignkey:DbId"`
 	DbId       int
+	Approver   User `gorm:"foreignkey:ApproverId"`
+	ApproverId int
+	Schema     string
 	ReqSql     string
-	Sqls       []Sql `gorm:"foreignkey:TaskId"`
+
+	// status
+	Approved bool
+	Action   int
+	Progress int
+	Sqls     []Sql `gorm:"foreignkey:TaskId"`
+}
+
+func (t *Task) canInspect() bool {
+	if t.Action != TASK_ACTION_INIT {
+		return false
+	}
+	return true
+}
+
+func (t *Task) canCommit() bool {
+	if t.Action != TASK_ACTION_INIT {
+		return false
+	}
+	if !t.Approved {
+		return false
+	}
+	if t.Progress >= TASK_PROGRESS_COMMIT_START {
+		return false
+	}
+	return true
+}
+
+func (t *Task) canRollback() bool {
+	if t.Action != TASK_ACTION_INIT {
+		return false
+	}
+	if !t.Approved {
+		return false
+	}
+	if t.Progress != TASK_PROGRESS_COMMIT_END {
+		return false
+	}
+	return true
 }
 
 type Sql struct {
@@ -174,4 +245,38 @@ func (s *Storage) GetTasks() ([]*Task, error) {
 
 func (s *Storage) UpdateTaskSqls(task *Task, sqls []*Sql) error {
 	return s.db.Model(task).Association("Sqls").Replace(sqls).Error
+}
+
+func (s *Storage) InspectTask(taskId string) error {
+	task, err := s.GetTaskById(taskId)
+	if err != nil {
+		return err
+	}
+	if task.Action == TASK_ACTION_INSPECT {
+		return nil
+	}
+	if task.Action != TASK_ACTION_INIT {
+		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
+	}
+	return s.db.Model(task).UpdateColumns(Task{Action: TASK_ACTION_INSPECT}).Error
+}
+
+func (s *Storage) CommitTask(taskId string) error {
+	task, err := s.GetTaskById(taskId)
+	if err != nil {
+		return err
+	}
+	if task.Action == TASK_ACTION_COMMIT {
+		return nil
+	}
+	if task.Action != TASK_ACTION_INIT {
+		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
+	}
+	if !task.Approved {
+		return errors.New("not approve")
+	}
+	if task.Progress >= TASK_PROGRESS_COMMIT_START {
+		return errors.New("has commit")
+	}
+	return s.db.Model(task).UpdateColumns(Task{Action: TASK_ACTION_COMMIT}).Error
 }

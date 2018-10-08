@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/tidb/ast"
 	"sqle/storage"
+	"strings"
 )
 
 // inspector rule code
@@ -18,24 +19,34 @@ const (
 	RULE_LEVEL_WARN
 )
 
+var DfConfigMap = []*storage.InspectConfig{
+	&storage.InspectConfig{
+		Code:       SELECT_STMT_TABLE_MUST_EXIST,
+		ConfigType: 0,
+		Variable:   "",
+		StmtType:   0,
+		Level:      RULE_LEVEL_ERROR,
+		Disable:    false,
+	},
+}
+
+var Rules []*Rule
+
+func init() {
+	Rules = []*Rule{
+		NewRule(SELECT_STMT_TABLE_MUST_EXIST, selectStmtTableMustExist),
+	}
+}
+
 type Rule struct {
 	DfConfig *storage.InspectConfig
 	CheckFn  func(db *gorm.DB, node ast.StmtNode, config string) (string, error)
 }
 
-func NewRule(code, configType int, valiable string, stmtType, level int, disable bool,
-	fn func(db *gorm.DB, node ast.StmtNode, config string) (string, error), desc string) *Rule {
+func NewRule(code int, fn func(db *gorm.DB, node ast.StmtNode, config string) (string, error)) *Rule {
 	return &Rule{
-		DfConfig: &storage.InspectConfig{
-			Code:       code,
-			ConfigType: configType,
-			StmtType:   stmtType,
-			Variable:   valiable,
-			Desc:       desc,
-			Level:      level,
-			Disable:    disable,
-		},
-		CheckFn: fn,
+		DfConfig: DfConfigMap[code],
+		CheckFn:  fn,
 	}
 }
 
@@ -65,20 +76,34 @@ func (s *Rule) Check(config *storage.InspectConfig, db *gorm.DB, node ast.StmtNo
 	return errMsgs, warnMsgs, nil
 }
 
-var Rules []*Rule
-
-func init() {
-	Rules = []*Rule{
-		NewRule(SELECT_STMT_TABLE_MUST_EXIST, 0, "", 0, 0, false, SelectStmtTableMustExist, ""),
-	}
-}
-
-func SelectStmtTableMustExist(db *gorm.DB, node ast.StmtNode, variable string) (string, error) {
+func selectStmtTableMustExist(db *gorm.DB, node ast.StmtNode, variable string) (string, error) {
 	selectStmt, ok := node.(*ast.SelectStmt)
 	if !ok {
 		return "", nil
 	}
-	fmt.Println("table: ", selectStmt.From)
-	_ = selectStmt
+	tablerefs := selectStmt.From.TableRefs
+	tables := getTables(tablerefs)
+
+	tablesName := map[string]struct{}{}
+	for _, t := range tables {
+		if t.Schema.String() == "" {
+			tablesName[t.Name.String()] = struct{}{}
+		} else {
+			tablesName[fmt.Sprintf("%s.%s", t.Schema, t.Name)] = struct{}{}
+		}
+	}
+	msgs := []string{}
+	for name, _ := range tablesName {
+		exist := db.HasTable(name)
+		if db.Error != nil {
+			return "", nil
+		}
+		if !exist {
+			msgs = append(msgs, name)
+		}
+	}
+	if len(msgs) > 0 {
+		return fmt.Sprintf("%v is not exist", strings.Join(msgs, ", ")), nil
+	}
 	return "", nil
 }

@@ -26,6 +26,10 @@ func InitSqled(stage *log.Stage, s *storage.Storage) {
 	}
 }
 
+func (s  *Sqled) TaskLoop(){
+
+}
+
 func (s *Sqled) Inspect(task *storage.Task) error {
 	sqls, err := inspector.Inspect(nil, task)
 	if err != nil {
@@ -36,7 +40,7 @@ func (s *Sqled) Inspect(task *storage.Task) error {
 
 func (s *Sqled) Commit(task *storage.Task) error {
 	for _, sql := range task.Sqls {
-		err := executor.Query(task, sql.CommitSql)
+		err := executor.Exec(task, sql.CommitSql)
 		if err != nil {
 			sql.CommitResult = err.Error()
 			s.Storage.Save(sql)
