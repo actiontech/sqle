@@ -140,7 +140,7 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.LogMode(true)
+	//db.LogMode(true)
 
 	if err := createTable(db, &User{}); err != nil {
 		return nil, err
@@ -189,6 +189,10 @@ func (s *Storage) Create(model interface{}) error {
 
 func (s *Storage) Save(model interface{}) error {
 	return s.db.Save(model).Error
+}
+
+func (s *Storage) Update(model interface{}, values map[string]interface{}) error {
+	return s.db.Model(model).Update(values).Error
 }
 
 func (s *Storage) GetUserById(id string) (*User, error) {
@@ -258,7 +262,7 @@ func (s *Storage) InspectTask(taskId string) error {
 	if task.Action != TASK_ACTION_INIT {
 		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
 	}
-	return s.db.Model(task).UpdateColumns(Task{Action: TASK_ACTION_INSPECT}).Error
+	return s.db.Model(task).Update("action", TASK_ACTION_INSPECT).Error
 }
 
 func (s *Storage) CommitTask(taskId string) error {
@@ -278,5 +282,25 @@ func (s *Storage) CommitTask(taskId string) error {
 	if task.Progress >= TASK_PROGRESS_COMMIT_START {
 		return errors.New("has commit")
 	}
-	return s.db.Model(task).UpdateColumns(Task{Action: TASK_ACTION_COMMIT}).Error
+	return s.db.Model(task).Update("action", TASK_ACTION_COMMIT).Error
+}
+
+func (s *Storage) RollbackTask(taskId string) error {
+	task, err := s.GetTaskById(taskId)
+	if err != nil {
+		return err
+	}
+	if task.Action == TASK_ACTION_ROLLBACK {
+		return nil
+	}
+	if task.Action != TASK_ACTION_INIT {
+		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
+	}
+	if !task.Approved {
+		return errors.New("not approve")
+	}
+	if task.Progress != TASK_PROGRESS_COMMIT_END {
+		return errors.New("not commit")
+	}
+	return s.db.Model(task).Update("action", TASK_ACTION_ROLLBACK).Error
 }

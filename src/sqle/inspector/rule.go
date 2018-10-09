@@ -2,8 +2,8 @@ package inspector
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"github.com/pingcap/tidb/ast"
+	"sqle/executor"
 	"sqle/storage"
 	"strings"
 )
@@ -25,7 +25,7 @@ var DfConfigMap = []*storage.InspectConfig{
 		ConfigType: 0,
 		Variable:   "",
 		StmtType:   0,
-		Level:      RULE_LEVEL_ERROR,
+		Level:      RULE_LEVEL_WARN,
 		Disable:    false,
 	},
 }
@@ -40,17 +40,17 @@ func init() {
 
 type Rule struct {
 	DfConfig *storage.InspectConfig
-	CheckFn  func(db *gorm.DB, node ast.StmtNode, config string) (string, error)
+	CheckFn  func(conn *executor.Conn, node ast.StmtNode, config string) (string, error)
 }
 
-func NewRule(code int, fn func(db *gorm.DB, node ast.StmtNode, config string) (string, error)) *Rule {
+func NewRule(code int, fn func(conn *executor.Conn, node ast.StmtNode, config string) (string, error)) *Rule {
 	return &Rule{
 		DfConfig: DfConfigMap[code],
 		CheckFn:  fn,
 	}
 }
 
-func (s *Rule) Check(config *storage.InspectConfig, db *gorm.DB, node ast.StmtNode) (errMsgs, warnMsgs string, err error) {
+func (s *Rule) Check(config *storage.InspectConfig, db *executor.Conn, node ast.StmtNode) (errMsgs, warnMsgs string, err error) {
 	var currentConfig *storage.InspectConfig
 	if config != nil {
 		currentConfig = config
@@ -76,7 +76,7 @@ func (s *Rule) Check(config *storage.InspectConfig, db *gorm.DB, node ast.StmtNo
 	return errMsgs, warnMsgs, nil
 }
 
-func selectStmtTableMustExist(db *gorm.DB, node ast.StmtNode, variable string) (string, error) {
+func selectStmtTableMustExist(conn *executor.Conn, node ast.StmtNode, variable string) (string, error) {
 	selectStmt, ok := node.(*ast.SelectStmt)
 	if !ok {
 		return "", nil
@@ -86,16 +86,12 @@ func selectStmtTableMustExist(db *gorm.DB, node ast.StmtNode, variable string) (
 
 	tablesName := map[string]struct{}{}
 	for _, t := range tables {
-		if t.Schema.String() == "" {
-			tablesName[t.Name.String()] = struct{}{}
-		} else {
-			tablesName[fmt.Sprintf("%s.%s", t.Schema, t.Name)] = struct{}{}
-		}
+		tablesName[getTableName(t)] = struct{}{}
 	}
 	msgs := []string{}
 	for name, _ := range tablesName {
-		exist := db.HasTable(name)
-		if db.Error != nil {
+		exist := conn.HasTable(name)
+		if conn.Error != nil {
 			return "", nil
 		}
 		if !exist {

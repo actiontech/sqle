@@ -15,6 +15,7 @@ func addRouter() {
 	beego.Router("/user", &BaseController{}, "POST:AddUser")
 	beego.Router("/users", &BaseController{}, "GET:UserList")
 	beego.Router("/database", &BaseController{}, "POST:AddDatabase")
+	beego.Router("/database/:dbId/schemas", &BaseController{}, "GET:GetDatabaseSchemas")
 	beego.Router("/database/ping", &BaseController{}, "GET:PingDatabase")
 	beego.Router("/databases", &BaseController{}, "GET:DatabaseList")
 	beego.Router("/task", &BaseController{}, "POST:AddTask")

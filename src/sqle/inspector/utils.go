@@ -1,6 +1,9 @@
 package inspector
 
-import "github.com/pingcap/tidb/ast"
+import (
+	"fmt"
+	"github.com/pingcap/tidb/ast"
+)
 
 func getTables(stmt *ast.Join) []*ast.TableName {
 	tables := []*ast.TableName{}
@@ -27,4 +30,13 @@ func getTables(stmt *ast.Join) []*ast.TableName {
 		}
 	}
 	return tables
+}
+
+func getTableName(stmt *ast.TableName) string {
+	fmt.Println("table name text:", stmt.Text())
+	if stmt.Schema.String() == "" {
+		return stmt.Name.String()
+	} else {
+		return fmt.Sprintf("%s.%s", stmt.Schema, stmt.Name)
+	}
 }

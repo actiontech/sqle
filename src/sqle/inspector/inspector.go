@@ -31,18 +31,18 @@ func Inspect(config map[int]*storage.InspectConfig, task *storage.Task) ([]*stor
 	if err != nil {
 		return nil, err
 	}
-	db, err := executor.OpenDbWithTask(task)
+	conn, err := executor.OpenDbWithTask(task)
 	if err != err {
 		return nil, err
 	}
-	defer db.Close()
+	defer conn.Close()
 
 	for _, stmt := range stmts {
 		errMsgs := []string{}
 		warnMsgs := []string{}
 		for _, rule := range Rules {
 			fmt.Println("do rule")
-			errMsg, warnMsg, err := rule.Check(config[rule.DfConfig.Code], db, stmt)
+			errMsg, warnMsg, err := rule.Check(config[rule.DfConfig.Code], conn, stmt)
 			if err != err {
 				return nil, err
 			}
@@ -57,3 +57,14 @@ func Inspect(config map[int]*storage.InspectConfig, task *storage.Task) ([]*stor
 	}
 	return sqls, nil
 }
+
+//func CreateRollbackSql(task *storage.Task, sql string)(string, error){
+//	conn,err:= executor.OpenDbWithTask(task)
+//	if err!=err{
+//		return "", err
+//	}
+//	switch task.Db.DbType {
+//	case storage.DB_TYPE_MYSQL:
+//		return createRollbackSql(task, sql)
+//	}
+//}

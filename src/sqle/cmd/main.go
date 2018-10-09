@@ -71,6 +71,7 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	beegoExitChan := make(chan struct{}, 0)
 	go web.StartBeego(port, beegoExitChan)
+	go sqle.GetSqled().TaskLoop(beegoExitChan)
 
 	select {
 	case <-beegoExitChan:

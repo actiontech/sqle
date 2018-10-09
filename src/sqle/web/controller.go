@@ -79,6 +79,19 @@ func (c *BaseController) PingDatabase() {
 	c.CustomAbort(200, "ok")
 }
 
+func (c *BaseController) GetDatabaseSchemas() {
+	dbId := c.Ctx.Input.Param(":dbId")
+	db, err := c.sqled.Storage.GetDatabaseById(dbId)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	schemas, err := executor.ShowDatabase(db)
+	if err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	c.serveJson(schemas)
+}
+
 func (c *BaseController) DatabaseList() {
 	databases, err := c.sqled.Storage.GetDatabases()
 	if err != nil {
@@ -127,11 +140,8 @@ func (c *BaseController) TaskList() {
 
 func (c *BaseController) Inspect() {
 	taskId := c.Ctx.Input.Param(":taskId")
-	task, err := c.sqled.Storage.GetTaskById(taskId)
-	if err != nil {
-		c.CustomAbort(500, err.Error())
-	}
-	err = c.sqled.Inspect(task)
+
+	err := c.sqled.Storage.InspectTask(taskId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -140,11 +150,7 @@ func (c *BaseController) Inspect() {
 
 func (c *BaseController) Commit() {
 	taskId := c.Ctx.Input.Param(":taskId")
-	task, err := c.sqled.Storage.GetTaskById(taskId)
-	if err != nil {
-		c.CustomAbort(500, err.Error())
-	}
-	err = c.sqled.Commit(task)
+	err := c.sqled.Storage.CommitTask(taskId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
