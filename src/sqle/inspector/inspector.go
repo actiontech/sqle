@@ -41,7 +41,6 @@ func Inspect(config map[int]*storage.InspectConfig, task *storage.Task) ([]*stor
 		errMsgs := []string{}
 		warnMsgs := []string{}
 		for _, rule := range Rules {
-			fmt.Println("do rule")
 			errMsg, warnMsg, err := rule.Check(config[rule.DfConfig.Code], conn, stmt)
 			if err != err {
 				return nil, err

@@ -34,5 +34,38 @@ func createRollbackSql(conn *executor.Conn, query string) (string, error) {
 }
 
 func alterTableRollbackSql(t1 *ast.CreateTableStmt, t2 *ast.AlterTableStmt) (string, error) {
-	return "", nil
+	t := &ast.AlterTableStmt{
+		Table: t1.Table,
+		Specs: []*ast.AlterTableSpec{},
+	}
+	// table name
+	specs := t2.Specs
+	for _, spec := range specs {
+		switch spec.Tp {
+		case ast.AlterTableRenameTable:
+			t.Table = spec.NewTable
+			t.Specs = append(t.Specs, &ast.AlterTableSpec{
+				Tp:       ast.AlterTableRenameTable,
+				NewTable: t1.Table,
+			})
+		case ast.AlterTableAddColumns:
+			for _, col := range spec.NewColumns {
+				t.Specs = append(t.Specs, &ast.AlterTableSpec{
+					Tp:            ast.AlterTableDropColumn,
+					OldColumnName: col.Name,
+				})
+			}
+		case ast.AlterTableDropColumn:
+			colName := spec.OldColumnName.String()
+			for _, col := range t1.Cols {
+				if col.Name.String() == colName {
+					t.Specs = append(t.Specs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddColumns,
+						NewColumns: []*ast.ColumnDef{col},
+					})
+				}
+			}
+		}
+	}
+	return alterTableStmtFormat(t), nil
 }
