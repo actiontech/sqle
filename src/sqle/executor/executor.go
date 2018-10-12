@@ -68,14 +68,14 @@ func Exec(task *storage.Task, sql string) error {
 		return err
 	}
 	defer conn.Close()
-	return conn.exec(sql)
+	return conn.Exec(sql)
 }
 
 func (c *Conn) ping() error {
 	return c.DB.DB().Ping()
 }
 
-func (c *Conn) exec(query string) error {
+func (c *Conn) Exec(query string) error {
 	_, err := c.DB.DB().Exec(query)
 	return err
 }

@@ -56,14 +56,3 @@ func Inspect(config map[int]*storage.InspectConfig, task *storage.Task) ([]*stor
 	}
 	return sqls, nil
 }
-
-//func CreateRollbackSql(task *storage.Task, sql string)(string, error){
-//	conn,err:= executor.OpenDbWithTask(task)
-//	if err!=err{
-//		return "", err
-//	}
-//	switch task.Db.DbType {
-//	case storage.DB_TYPE_MYSQL:
-//		return createRollbackSql(task, sql)
-//	}
-//}

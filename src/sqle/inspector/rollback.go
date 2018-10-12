@@ -7,6 +7,19 @@ import (
 	"sqle/storage"
 )
 
+func CreateRollbackSql(task *storage.Task, sql string) (string, error) {
+	conn, err := executor.OpenDbWithTask(task)
+	if err != err {
+		return "", err
+	}
+	switch task.Db.DbType {
+	case storage.DB_TYPE_MYSQL:
+		return createRollbackSql(conn, sql)
+	default:
+		return "", errors.New("db type is invalid")
+	}
+}
+
 // createRollbackSql create rollback sql for input sql; this sql is single sql.
 func createRollbackSql(conn *executor.Conn, query string) (string, error) {
 	stmts, err := parseSql(storage.DB_TYPE_MYSQL, query)

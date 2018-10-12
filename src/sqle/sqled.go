@@ -65,8 +65,13 @@ func (s *Sqled) Inspect(task *storage.Task) error {
 
 func (s *Sqled) Commit(task *storage.Task) error {
 	for _, sql := range task.Sqls {
-
-		err := executor.Exec(task, sql.CommitSql)
+		// create rollback query
+		rollbackQuery, err := inspector.CreateRollbackSql(task, sql.CommitSql)
+		if err != nil {
+			return err
+		}
+		sql.RollbackSql = rollbackQuery
+		err = executor.Exec(task, sql.CommitSql)
 		if err != nil {
 			sql.CommitResult = err.Error()
 			s.Storage.Save(sql)
