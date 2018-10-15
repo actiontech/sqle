@@ -67,6 +67,7 @@ func run(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
 	sqle.InitSqled(stage, db)
 
 	beegoExitChan := make(chan struct{}, 0)

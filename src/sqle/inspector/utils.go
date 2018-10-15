@@ -5,7 +5,25 @@ import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	"strings"
+	"sqle/storage"
+	"errors"
+	"github.com/pingcap/tidb/parser"
 )
+
+func parseSql(dbType int, sql string) ([]ast.StmtNode, error) {
+	switch dbType {
+	case storage.DB_TYPE_MYSQL:
+		p := parser.New()
+		stmts, err := p.Parse(sql, "", "")
+		if err != nil {
+			fmt.Printf("parse error: %v\nsql: %v", err, sql)
+			return nil, err
+		}
+		return stmts, nil
+	default:
+		return nil, errors.New("db type is invalid")
+	}
+}
 
 func getTables(stmt *ast.Join) []*ast.TableName {
 	tables := []*ast.TableName{}

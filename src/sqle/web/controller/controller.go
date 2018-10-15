@@ -1,31 +1,15 @@
-package web
+package controller
 
 import (
-	"github.com/astaxie/beego"
-	"sqle"
 	"sqle/executor"
 	"sqle/storage"
+	"fmt"
 )
-
-type BaseController struct {
-	beego.Controller
-	user  *storage.User
-	sqled *sqle.Sqled
-}
-
-func (c *BaseController) Prepare() {
-	c.sqled = sqle.GetSqled()
-}
-
-func (c *BaseController) serveJson(data interface{}) {
-	c.Data["json"] = data
-	c.ServeJSON()
-}
 
 func (c *BaseController) AddUser() {
 	user := &storage.User{}
 	user.Name = c.GetString("name")
-	exist, err := c.sqled.Storage.Exist(user)
+	exist, err := c.storage.Exist(user)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -34,7 +18,7 @@ func (c *BaseController) AddUser() {
 	}
 
 	user.Password = c.GetString("password")
-	err = c.sqled.Storage.Create(user)
+	err = c.storage.Create(user)
 	if nil != err {
 		c.CustomAbort(500, err.Error())
 	}
@@ -43,7 +27,7 @@ func (c *BaseController) AddUser() {
 
 func (c *BaseController) UserList() {
 	users := []*storage.User{}
-	users, err := c.sqled.Storage.GetUsers()
+	users, err := c.storage.GetUsers()
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -58,7 +42,7 @@ func (c *BaseController) AddDatabase() {
 	database.Port = c.GetString("port")
 	database.Password = c.GetString("password")
 	database.Alias = c.GetString("alias")
-	err := c.sqled.Storage.Save(database)
+	err := c.storage.Save(database)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -81,7 +65,7 @@ func (c *BaseController) PingDatabase() {
 
 func (c *BaseController) GetDatabaseSchemas() {
 	dbId := c.Ctx.Input.Param(":dbId")
-	db, err := c.sqled.Storage.GetDatabaseById(dbId)
+	db, err := c.storage.GetDatabaseById(dbId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -93,7 +77,7 @@ func (c *BaseController) GetDatabaseSchemas() {
 }
 
 func (c *BaseController) DatabaseList() {
-	databases, err := c.sqled.Storage.GetDatabases()
+	databases, err := c.storage.GetDatabases()
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -106,15 +90,15 @@ func (c *BaseController) AddTask() {
 	dbId := c.GetString("db_id")
 	approverId := c.GetString("approver_id")
 
-	user, err := c.sqled.Storage.GetUserById(userId)
+	user, err := c.storage.GetUserById(userId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
-	approver, err := c.sqled.Storage.GetUserById(approverId)
+	approver, err := c.storage.GetUserById(approverId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
-	database, err := c.sqled.Storage.GetDatabaseById(dbId)
+	database, err := c.storage.GetDatabaseById(dbId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -123,7 +107,7 @@ func (c *BaseController) AddTask() {
 	task.Approver = *approver
 	task.Db = *database
 	task.ReqSql = c.GetString("sql")
-	err = c.sqled.Storage.Save(&task)
+	err = c.storage.Save(&task)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -131,7 +115,8 @@ func (c *BaseController) AddTask() {
 }
 
 func (c *BaseController) TaskList() {
-	tasks, err := c.sqled.Storage.GetTasks()
+	fmt.Println("tasks")
+	tasks, err := c.storage.GetTasks()
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -141,7 +126,7 @@ func (c *BaseController) TaskList() {
 func (c *BaseController) Inspect() {
 	taskId := c.Ctx.Input.Param(":taskId")
 
-	err := c.sqled.Storage.InspectTask(taskId)
+	err := c.storage.InspectTask(taskId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}
@@ -150,7 +135,7 @@ func (c *BaseController) Inspect() {
 
 func (c *BaseController) Commit() {
 	taskId := c.Ctx.Input.Param(":taskId")
-	err := c.sqled.Storage.CommitTask(taskId)
+	err := c.storage.CommitTask(taskId)
 	if err != nil {
 		c.CustomAbort(500, err.Error())
 	}

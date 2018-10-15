@@ -42,16 +42,16 @@ func (s *Sqled) TaskLoop(exitChan chan struct{}) {
 		for _, task := range tasks {
 			switch task.Action {
 			case storage.TASK_ACTION_INSPECT:
-				s.Inspect(task)
+				s.inspect(task)
 
 			case storage.TASK_ACTION_COMMIT:
-				s.Commit(task)
+				s.commit(task)
 			}
 		}
 	}
 }
 
-func (s *Sqled) Inspect(task *storage.Task) error {
+func (s *Sqled) inspect(task *storage.Task) error {
 	sqls, err := inspector.Inspect(nil, task)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (s *Sqled) Inspect(task *storage.Task) error {
 	return s.Storage.Update(task, map[string]interface{}{"action": storage.TASK_ACTION_INIT, "progress": storage.TASK_PROGRESS_INSPECT_END})
 }
 
-func (s *Sqled) Commit(task *storage.Task) error {
+func (s *Sqled) commit(task *storage.Task) error {
 	for _, sql := range task.Sqls {
 		// create rollback query
 		rollbackQuery, err := inspector.CreateRollbackSql(task, sql.CommitSql)
