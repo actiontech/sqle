@@ -84,6 +84,10 @@ func (s *Storage) UpdateTaskSqls(task *Task, sqls []*Sql) error {
 	return s.db.Model(task).Association("Sqls").Replace(sqls).Error
 }
 
+func (s *Storage) UpdateTaskById(taskId string, attrs ...interface{}) error {
+	return s.db.Table("tasks").Where("id = ?", taskId).Update(attrs...).Error
+}
+
 func (s *Storage) InspectTask(task *Task) error {
 	if task.Action == TASK_ACTION_INSPECT {
 		return nil
@@ -91,11 +95,11 @@ func (s *Storage) InspectTask(task *Task) error {
 	if task.Action != TASK_ACTION_INIT {
 		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
 	}
-	return s.db.Model(task).Update("action", TASK_ACTION_INSPECT).Error
+	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "action", TASK_ACTION_INSPECT)
 }
 
 func (s *Storage) ApproveTask(task *Task) error {
-	return s.db.Model(task).Update("approved", true).Error
+	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "approved", true)
 }
 
 func (s *Storage) CommitTask(task *Task) error {
@@ -111,7 +115,7 @@ func (s *Storage) CommitTask(task *Task) error {
 	if task.Progress >= TASK_PROGRESS_COMMIT_START {
 		return errors.New("has commit")
 	}
-	return s.db.Model(task).Update("action", TASK_ACTION_COMMIT).Error
+	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "action", TASK_ACTION_COMMIT)
 }
 
 func (s *Storage) RollbackTask(task *Task) error {
@@ -127,5 +131,5 @@ func (s *Storage) RollbackTask(task *Task) error {
 	if task.Progress != TASK_PROGRESS_COMMIT_END {
 		return errors.New("not commit")
 	}
-	return s.db.Model(task).Update("action", TASK_ACTION_ROLLBACK).Error
+	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "action", TASK_ACTION_ROLLBACK)
 }

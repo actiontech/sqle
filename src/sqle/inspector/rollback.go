@@ -3,6 +3,7 @@ package inspector
 import (
 	"errors"
 	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/tidb/model"
 	"sqle/executor"
 	"sqle/storage"
 )
@@ -47,8 +48,11 @@ func createRollbackSql(conn *executor.Conn, query string) (string, error) {
 }
 
 func alterTableRollbackSql(t1 *ast.CreateTableStmt, t2 *ast.AlterTableStmt) (string, error) {
+	table := t1.Table
+	table.Schema = t2.Table.Schema
+
 	t := &ast.AlterTableStmt{
-		Table: t1.Table,
+		Table: table,
 		Specs: []*ast.AlterTableSpec{},
 	}
 	// table name
@@ -57,6 +61,9 @@ func alterTableRollbackSql(t1 *ast.CreateTableStmt, t2 *ast.AlterTableStmt) (str
 		switch spec.Tp {
 		case ast.AlterTableRenameTable:
 			t.Table = spec.NewTable
+			t.Table.Schema = t2.Table.Schema
+			newTable := t1.Table
+			newTable.Schema = model.CIStr{}
 			t.Specs = append(t.Specs, &ast.AlterTableSpec{
 				Tp:       ast.AlterTableRenameTable,
 				NewTable: t1.Table,

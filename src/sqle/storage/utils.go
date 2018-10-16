@@ -11,7 +11,7 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
-	//db.LogMode(true)
+	db.LogMode(true)
 
 	if err := createTable(db, &User{}); err != nil {
 		return nil, err
@@ -62,6 +62,6 @@ func (s *Storage) Save(model interface{}) error {
 	return s.db.Save(model).Error
 }
 
-func (s *Storage) Update(model interface{}, values map[string]interface{}) error {
-	return s.db.Model(model).Update(values).Error
+func (s *Storage) Update(model interface{}, attrs... interface{}) error {
+	return s.db.Model(model).UpdateColumns(attrs).Error
 }

@@ -61,27 +61,27 @@ v2 varchar(255) DEFAULT NULL,
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 `,
-		alter: `ALTER TABLE a1
+		alter: `ALTER TABLE t1.a1
 DROP COLUMN v1;`,
-		output: `ALTER TABLE a1
+		output: `ALTER TABLE t1.a1
 ADD COLUMN v1 varchar(255) DEFAULT NULL;`,
 	})
 
 	runTest(&testCase{
 		desc:   "add column need drop",
 		create: baseCreateQuery,
-		alter: `ALTER TABLE a1
+		alter: `ALTER TABLE t1.a1
 ADD COLUMN v3 varchar(255) DEFAULT NULL;`,
-		output: `ALTER TABLE a1
+		output: `ALTER TABLE t1.a1
 DROP COLUMN v3;`,
 	})
 
 	runTest(&testCase{
 		desc:   "rename table",
 		create: baseCreateQuery,
-		alter: `ALTER TABLE a1
+		alter: `ALTER TABLE t1.a1
 RENAME AS a2;`,
-		output: `ALTER TABLE a2
+		output: `ALTER TABLE t1.a2
 RENAME AS a1;`,
 	})
 }
