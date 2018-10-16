@@ -9,7 +9,7 @@ import (
 
 func CreateRollbackSql(task *storage.Task, sql string) (string, error) {
 	conn, err := executor.OpenDbWithTask(task)
-	if err != err {
+	if err != nil {
 		return "", err
 	}
 	switch task.Db.DbType {

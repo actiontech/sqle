@@ -18,7 +18,9 @@ func init() {
 	beego.Router("/task", &controller.BaseController{}, "POST:AddTask")
 	beego.Router("/tasks", &controller.BaseController{}, "GET:TaskList")
 	beego.Router("/task/:taskId/inspect", &controller.BaseController{}, "POST:Inspect")
+	beego.Router("/task/:taskId/approve", &controller.BaseController{}, "POST:Approve")
 	beego.Router("/task/:taskId/commit", &controller.BaseController{}, "POST:Commit")
+	beego.Router("/task/:taskId/rollback", &controller.BaseController{}, "POST:Rollback")
 }
 
 func StartBeego(port int, beegoExitChan chan struct{}) {

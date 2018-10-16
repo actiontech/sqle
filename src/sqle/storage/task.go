@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"github.com/jinzhu/gorm"
-	"fmt"
 	"errors"
+	"fmt"
+	"github.com/jinzhu/gorm"
 )
 
 type Task struct {
@@ -84,11 +84,7 @@ func (s *Storage) UpdateTaskSqls(task *Task, sqls []*Sql) error {
 	return s.db.Model(task).Association("Sqls").Replace(sqls).Error
 }
 
-func (s *Storage) InspectTask(taskId string) error {
-	task, err := s.GetTaskById(taskId)
-	if err != nil {
-		return err
-	}
+func (s *Storage) InspectTask(task *Task) error {
 	if task.Action == TASK_ACTION_INSPECT {
 		return nil
 	}
@@ -98,11 +94,11 @@ func (s *Storage) InspectTask(taskId string) error {
 	return s.db.Model(task).Update("action", TASK_ACTION_INSPECT).Error
 }
 
-func (s *Storage) CommitTask(taskId string) error {
-	task, err := s.GetTaskById(taskId)
-	if err != nil {
-		return err
-	}
+func (s *Storage) ApproveTask(task *Task) error {
+	return s.db.Model(task).Update("approved", true).Error
+}
+
+func (s *Storage) CommitTask(task *Task) error {
 	if task.Action == TASK_ACTION_COMMIT {
 		return nil
 	}
@@ -118,11 +114,7 @@ func (s *Storage) CommitTask(taskId string) error {
 	return s.db.Model(task).Update("action", TASK_ACTION_COMMIT).Error
 }
 
-func (s *Storage) RollbackTask(taskId string) error {
-	task, err := s.GetTaskById(taskId)
-	if err != nil {
-		return err
-	}
+func (s *Storage) RollbackTask(task *Task) error {
 	if task.Action == TASK_ACTION_ROLLBACK {
 		return nil
 	}

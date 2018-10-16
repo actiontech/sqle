@@ -40,12 +40,14 @@ func (s *Sqled) TaskLoop(exitChan chan struct{}) {
 			continue
 		}
 		for _, task := range tasks {
-			switch task.Action {
+			currentTask := task
+			switch currentTask.Action {
 			case storage.TASK_ACTION_INSPECT:
-				s.inspect(task)
-
+				go s.inspect(currentTask)
 			case storage.TASK_ACTION_COMMIT:
-				s.commit(task)
+				go s.commit(currentTask)
+			case storage.TASK_ACTION_ROLLBACK:
+				go s.rollback(currentTask)
 			}
 		}
 	}
@@ -65,6 +67,9 @@ func (s *Sqled) inspect(task *storage.Task) error {
 
 func (s *Sqled) commit(task *storage.Task) error {
 	for _, sql := range task.Sqls {
+		if sql.CommitSql == "" {
+			continue
+		}
 		// create rollback query
 		rollbackQuery, err := inspector.CreateRollbackSql(task, sql.CommitSql)
 		if err != nil {
@@ -74,9 +79,30 @@ func (s *Sqled) commit(task *storage.Task) error {
 		err = executor.Exec(task, sql.CommitSql)
 		if err != nil {
 			sql.CommitResult = err.Error()
-			s.Storage.Save(sql)
-			return nil
+		}
+		sql.CommitStatus = "1"
+		s.Storage.Save(sql)
+		if err != nil {
+			return err
 		}
 	}
 	return s.Storage.Update(task, map[string]interface{}{"action": storage.TASK_ACTION_INIT, "progress": storage.TASK_PROGRESS_COMMIT_END})
+}
+
+func (s *Sqled) rollback(task *storage.Task) error {
+	for _, sql := range task.Sqls {
+		if sql.RollbackSql == "" {
+			continue
+		}
+		err := executor.Exec(task, sql.RollbackSql)
+		if err != nil {
+			sql.CommitResult = err.Error()
+		}
+		sql.RollbackStatus = "1"
+		s.Storage.Save(sql)
+		if err != nil {
+			return err
+		}
+	}
+	return s.Storage.Update(task, map[string]interface{}{"action": storage.TASK_ACTION_INIT, "progress": storage.TASK_PROGRESS_ROLLACK_END})
 }

@@ -3,9 +3,16 @@ package controller
 import (
 	"fmt"
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/validation"
 	"sqle"
 	"sqle/storage"
+	"strings"
 )
+
+// ValidFormer valid interface
+type ValidFormer interface {
+	Valid(valid *validation.Validation)
+}
 
 type InitController struct {
 	beego.Controller
@@ -26,6 +33,25 @@ func (c *InitController) redirectAndAbort(status int, localUrl string) {
 	panic(beego.ErrAbort)
 }
 
+func (c *InitController) validForm(obj interface{}) {
+	if err := c.ParseForm(obj); err != nil {
+		c.CustomAbort(500, err.Error())
+	}
+	form, ok := obj.(ValidFormer)
+	if !ok {
+		return
+	}
+	valid := &validation.Validation{}
+	form.Valid(valid)
+	if valid.HasErrors() {
+		msgs := []string{}
+		for _, err := range valid.Errors {
+			msgs = append(msgs, fmt.Sprintf("%s:%s", err.Key, err.Message))
+		}
+		c.CustomAbort(500, strings.Join(msgs, ", "))
+	}
+}
+
 // BaseController is a Controller for user whom has logged in.
 type BaseController struct {
 	InitController
@@ -35,15 +61,13 @@ type BaseController struct {
 func (c *BaseController) Prepare() {
 	c.InitController.Prepare()
 
-	// load user
+	// auth and load user
 	user := c.Ctx.Input.Session("user")
 	if user == nil {
-		fmt.Println(1)
 		c.redirectAndAbort(302, "/login")
 	}
 	u, ok := user.(*storage.User)
 	if !ok {
-		fmt.Println(2)
 		c.redirectAndAbort(302, "/login")
 	}
 
@@ -52,7 +76,6 @@ func (c *BaseController) Prepare() {
 		c.CustomAbort(500, err.Error())
 	}
 	if !exist {
-		fmt.Println(3)
 		c.redirectAndAbort(302, "/login")
 	}
 
