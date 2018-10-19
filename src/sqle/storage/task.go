@@ -9,17 +9,12 @@ import (
 type Task struct {
 	gorm.Model
 	// meta
-	User       User `gorm:"foreignkey:UserId"`
-	UserId     int
-	Db         Db `gorm:"foreignkey:DbId"`
-	DbId       int
-	Approver   User `gorm:"foreignkey:ApproverId"`
-	ApproverId int
-	Schema     string
-	ReqSql     string
-
+	Db          Db `gorm:"foreignkey:DbId"`
+	DbId        int
+	Schema      string
+	ReqSql      string
+	RollbackSql string
 	// status
-	Approved bool
 	Action   int
 	Progress int
 	Sqls     []Sql `gorm:"foreignkey:TaskId"`

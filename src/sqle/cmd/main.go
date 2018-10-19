@@ -7,8 +7,8 @@ import (
 	"actiontech/ucommon/ubootstrap"
 	"github.com/spf13/cobra"
 	"sqle"
+	"sqle/api"
 	"sqle/storage"
-	"sqle/web"
 )
 
 const (
@@ -63,19 +63,18 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	log.InitFileLoggerWithHouseKeep(100, 1024, user, true)
 
-	db, err := storage.NewMysql(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema)
+	s, err := storage.NewMysql(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema)
 	if err != nil {
 		return err
 	}
+	storage.InitStorage(s)
 
-	sqle.InitSqled(stage, db)
-
-	beegoExitChan := make(chan struct{}, 0)
-	go web.StartBeego(port, beegoExitChan)
-	go sqle.GetSqled().TaskLoop(beegoExitChan)
+	exitChan := make(chan struct{}, 0)
+	sqle.NewSqled(stage).Start(exitChan)
+	go api.StartApi(port, exitChan)
 
 	select {
-	case <-beegoExitChan:
+	case <-exitChan:
 		log.UserInfo(stage, "Beego exit unexpectly")
 	case sig := <-killChan:
 		//case syscall.SIGUSR2:

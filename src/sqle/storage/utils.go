@@ -5,13 +5,23 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+var storage *Storage
+
+func InitStorage(s *Storage) {
+	storage = s
+}
+
+func GetStorage()*Storage {
+	return storage
+}
+
 func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user, password, host, port, schema))
 	if err != nil {
 		return nil, err
 	}
-	db.LogMode(true)
+	db.LogMode(false)
 
 	if err := createTable(db, &User{}); err != nil {
 		return nil, err
@@ -62,6 +72,6 @@ func (s *Storage) Save(model interface{}) error {
 	return s.db.Save(model).Error
 }
 
-func (s *Storage) Update(model interface{}, attrs... interface{}) error {
+func (s *Storage) Update(model interface{}, attrs ...interface{}) error {
 	return s.db.Model(model).UpdateColumns(attrs).Error
 }

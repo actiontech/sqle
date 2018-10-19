@@ -9,27 +9,20 @@ import (
 	"time"
 )
 
-var sqled *Sqled
-
-func GetSqled() *Sqled {
-	return sqled
-}
-
-func GetStorage() *storage.Storage {
-	return sqled.Storage
-}
-
 type Sqled struct {
 	stage *log.Stage
 	// storage
 	Storage *storage.Storage
 }
 
-func InitSqled(stage *log.Stage, s *storage.Storage) {
-	sqled = &Sqled{
-		stage:   stage,
-		Storage: s,
+func NewSqled(stage *log.Stage) *Sqled {
+	return &Sqled{
+		stage: stage,
 	}
+}
+
+func (s *Sqled) Start(exitChan chan struct{}) {
+	//go s.TaskLoop(exitChan)
 }
 
 func (s *Sqled) TaskLoop(exitChan chan struct{}) {

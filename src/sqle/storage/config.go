@@ -13,6 +13,23 @@ type InspectConfig struct {
 	Disable    bool
 }
 
+type ConfigTemplate struct {
+	gorm.Model
+
+}
+
+type ConfigRule struct {
+	gorm.Model
+	
+}
+
+type ConfigMeta struct {
+	gorm.Model
+	Code string
+	Name string
+
+}
+
 // inspector rule code
 const (
 	SELECT_STMT_TABLE_MUST_EXIST = iota
