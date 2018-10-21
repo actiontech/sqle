@@ -1,11 +1,8 @@
 package main
 
 import (
-	ucobra "actiontech/ucommon/cobra"
-	"actiontech/ucommon/log"
-	"actiontech/ucommon/os"
-	"actiontech/ucommon/ubootstrap"
 	"github.com/spf13/cobra"
+	"os"
 	"sqle"
 	"sqle/api"
 	"sqle/storage"
@@ -31,7 +28,8 @@ func main() {
 		Long:  "Universe Database Platform\n\nVersion:\n  " + version,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := run(cmd, args); nil != err {
-				os.ErrExit(err)
+				//os.ErrExit(err)
+				os.Exit(1)
 			}
 		},
 	}
@@ -42,26 +40,26 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql_port", "", "actiontech-universe", "run uagent by which user")
 	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql_schema", "", "actiontech-universe", "run uagent by which user")
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 5799, "http server port")
-	rootCmd.SetHelpTemplate(ucobra.HELP_TEMPLATE)
+	//rootCmd.SetHelpTemplate(ucobra.HELP_TEMPLATE)
 	rootCmd.Execute()
 }
 
 func run(cmd *cobra.Command, _ []string) error {
-	stage := log.NewStage().Enter("run")
-	go ubootstrap.DumpLoop()
+	//stage := log.NewStage().Enter("run")
+	//go ubootstrap.DumpLoop()
 
-	if err := ubootstrap.ChangeRunUser(user, true); nil != err {
-		return err
-	}
+	//if err := ubootstrap.ChangeRunUser(user, true); nil != err {
+	//	return err
+	//}
 
-	if err := ubootstrap.StartPid(PID_FILE); nil != err {
-		return err
-	}
-	defer ubootstrap.StopPid(PID_FILE)
+	//if err := ubootstrap.StartPid(PID_FILE); nil != err {
+	//	return err
+	//}
+	//defer ubootstrap.StopPid(PID_FILE)
 
-	killChan := ubootstrap.ListenKillSignal()
-
-	log.InitFileLoggerWithHouseKeep(100, 1024, user, true)
+	//killChan := ubootstrap.ListenKillSignal()
+	//
+	//log.InitFileLoggerWithHouseKeep(100, 1024, user, true)
 
 	s, err := storage.NewMysql(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema)
 	if err != nil {
@@ -70,19 +68,19 @@ func run(cmd *cobra.Command, _ []string) error {
 	storage.InitStorage(s)
 
 	exitChan := make(chan struct{}, 0)
-	sqle.NewSqled(stage).Start(exitChan)
+	sqle.InitSqled(exitChan)
 	go api.StartApi(port, exitChan)
 
 	select {
 	case <-exitChan:
-		log.UserInfo(stage, "Beego exit unexpectly")
-	case sig := <-killChan:
+		//log.UserInfo(stage, "Beego exit unexpectly")
+		//case sig := <-killChan:
+
 		//case syscall.SIGUSR2:
 		//doesn't support graceful shutdown because beego uses its own graceful-way
 
-		os.HaltIfShutdown(stage)
-		log.UserInfo(stage, "Exit by signal %v", sig)
+		//os.HaltIfShutdown(stage)
+		//log.UserInfo(stage, "Exit by signal %v", sig)
 	}
-
 	return nil
 }

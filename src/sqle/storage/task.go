@@ -1,36 +1,42 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
 )
 
 type Task struct {
-	gorm.Model
-	// meta
-	Db          Db `gorm:"foreignkey:DbId"`
-	DbId        int
-	Schema      string
-	ReqSql      string
-	RollbackSql string
-	// status
+	Model
+	Name     string
+	Desc     string
+	Schema   string
+	ReqSql   string `json:"sql"`
 	Action   int
 	Progress int
-	Sqls     []Sql `gorm:"foreignkey:TaskId"`
+	Inst     Instance `gorm:"foreignkey:InstId"`
+	InstId   uint     `json:"-"`
+	Sqls     []Sql    `json:"result" gorm:"foreignkey:TaskId"`
 }
 
 type Sql struct {
-	gorm.Model
-	TaskId         int
-	CommitSql      string
-	RollbackSql    string
-	InspectError   string
-	InspectWarn    string
-	CommitStatus   string
-	CommitResult   string
-	RollbackStatus string
-	RollbackResult string
+	Model
+	TaskId      uint `json:"-"`
+	Number      uint
+	CommitSql   string `json:"commit_sql"`
+	RollbackSql string `json:"rollback_sql"`
+	Inspect     Action `gorm:"foreignkey:InspectId"`
+	InspectId   uint   `json:"-"`
+	Commit      Action `gorm:"foreignkey:CommitId"`
+	CommitId    uint   `json:"-"`
+	Rollback    Action `gorm:"foreignkey:RollbackId"`
+	RollbackId  uint   `json:"-"`
+}
+
+type Action struct {
+	Model
+	Status bool
+	Action string
+	Result string
+	Error  string
 }
 
 // task progress
@@ -63,19 +69,19 @@ var ActionMap = map[int]string{
 	TASK_ACTION_ROLLBACK: "",
 }
 
-func (s *Storage) GetTaskById(id string) (*Task, error) {
+func (s *Storage) GetTaskByName(id string) (*Task, error) {
 	task := &Task{}
-	err := s.db.Preload("User").Preload("Approver").Preload("Db").Preload("Sqls").First(&task, id).Error
+	err := s.db.Preload("Inst").Preload("Sqls").First(&task, id).Error
 	return task, err
 }
 
-func (s *Storage) GetTasks() ([]*Task, error) {
-	tasks := []*Task{}
-	err := s.db.Preload("User").Preload("Approver").Preload("Db").Preload("Sqls").Find(&tasks).Error
+func (s *Storage) GetTasks() ([]Task, error) {
+	tasks := []Task{}
+	err := s.db.Preload("Inst").Preload("Sqls").Find(&tasks).Error
 	return tasks, err
 }
 
-func (s *Storage) UpdateTaskSqls(task *Task, sqls []*Sql) error {
+func (s *Storage) UpdateTaskSql(task *Task, sqls []*Sql) error {
 	return s.db.Model(task).Association("Sqls").Replace(sqls).Error
 }
 
@@ -84,47 +90,37 @@ func (s *Storage) UpdateTaskById(taskId string, attrs ...interface{}) error {
 }
 
 func (s *Storage) InspectTask(task *Task) error {
-	if task.Action == TASK_ACTION_INSPECT {
-		return nil
-	}
-	if task.Action != TASK_ACTION_INIT {
-		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
-	}
+	//if task.Action == TASK_ACTION_INSPECT {
+	//	return nil
+	//}
+	//if task.Action != TASK_ACTION_INIT {
+	//	return fmt.Errorf("action exist: %s", ActionMap[task.Action])
+	//}
 	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "action", TASK_ACTION_INSPECT)
 }
 
-func (s *Storage) ApproveTask(task *Task) error {
-	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "approved", true)
-}
-
 func (s *Storage) CommitTask(task *Task) error {
-	if task.Action == TASK_ACTION_COMMIT {
-		return nil
-	}
-	if task.Action != TASK_ACTION_INIT {
-		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
-	}
-	if !task.Approved {
-		return errors.New("not approve")
-	}
-	if task.Progress >= TASK_PROGRESS_COMMIT_START {
-		return errors.New("has commit")
-	}
+	//if task.Action == TASK_ACTION_COMMIT {
+	//	return nil
+	//}
+	//if task.Action != TASK_ACTION_INIT {
+	//	return fmt.Errorf("action exist: %s", ActionMap[task.Action])
+	//}
+	//if task.Progress >= TASK_PROGRESS_COMMIT_START {
+	//	return errors.New("has commit")
+	//}
 	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "action", TASK_ACTION_COMMIT)
 }
 
 func (s *Storage) RollbackTask(task *Task) error {
-	if task.Action == TASK_ACTION_ROLLBACK {
-		return nil
-	}
-	if task.Action != TASK_ACTION_INIT {
-		return fmt.Errorf("action exist: %s", ActionMap[task.Action])
-	}
-	if !task.Approved {
-		return errors.New("not approve")
-	}
-	if task.Progress != TASK_PROGRESS_COMMIT_END {
-		return errors.New("not commit")
-	}
+	//if task.Action == TASK_ACTION_ROLLBACK {
+	//	return nil
+	//}
+	//if task.Action != TASK_ACTION_INIT {
+	//	return fmt.Errorf("action exist: %s", ActionMap[task.Action])
+	//}
+	//if task.Progress != TASK_PROGRESS_COMMIT_END {
+	//	return errors.New("not commit")
+	//}
 	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "action", TASK_ACTION_ROLLBACK)
 }

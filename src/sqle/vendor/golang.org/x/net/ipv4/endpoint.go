@@ -6,7 +6,6 @@ package ipv4
 
 import (
 	"net"
-	"syscall"
 	"time"
 
 	"golang.org/x/net/internal/socket"
@@ -58,7 +57,7 @@ func (c *dgramOpt) ok() bool { return c != nil && c.Conn != nil }
 // SetControlMessage sets the per packet IP-level socket options.
 func (c *PacketConn) SetControlMessage(cf ControlFlags, on bool) error {
 	if !c.payloadHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
 	return setControlMessage(c.dgramOpt.Conn, &c.payloadHandler.rawOpt, cf, on)
 }
@@ -67,7 +66,7 @@ func (c *PacketConn) SetControlMessage(cf ControlFlags, on bool) error {
 // endpoint.
 func (c *PacketConn) SetDeadline(t time.Time) error {
 	if !c.payloadHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
 	return c.payloadHandler.PacketConn.SetDeadline(t)
 }
@@ -76,7 +75,7 @@ func (c *PacketConn) SetDeadline(t time.Time) error {
 // endpoint.
 func (c *PacketConn) SetReadDeadline(t time.Time) error {
 	if !c.payloadHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
 	return c.payloadHandler.PacketConn.SetReadDeadline(t)
 }
@@ -85,7 +84,7 @@ func (c *PacketConn) SetReadDeadline(t time.Time) error {
 // endpoint.
 func (c *PacketConn) SetWriteDeadline(t time.Time) error {
 	if !c.payloadHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
 	return c.payloadHandler.PacketConn.SetWriteDeadline(t)
 }
@@ -93,7 +92,7 @@ func (c *PacketConn) SetWriteDeadline(t time.Time) error {
 // Close closes the endpoint.
 func (c *PacketConn) Close() error {
 	if !c.payloadHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
 	return c.payloadHandler.PacketConn.Close()
 }
@@ -105,12 +104,7 @@ func NewPacketConn(c net.PacketConn) *PacketConn {
 	p := &PacketConn{
 		genericOpt:     genericOpt{Conn: cc},
 		dgramOpt:       dgramOpt{Conn: cc},
-		payloadHandler: payloadHandler{PacketConn: c},
-	}
-	if _, ok := c.(*net.IPConn); ok {
-		if so, ok := sockOpts[ssoStripHeader]; ok {
-			so.SetInt(p.dgramOpt.Conn, boolint(true))
-		}
+		payloadHandler: payloadHandler{PacketConn: c, Conn: cc},
 	}
 	return p
 }
@@ -129,7 +123,7 @@ type RawConn struct {
 // SetControlMessage sets the per packet IP-level socket options.
 func (c *RawConn) SetControlMessage(cf ControlFlags, on bool) error {
 	if !c.packetHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
 	return setControlMessage(c.dgramOpt.Conn, &c.packetHandler.rawOpt, cf, on)
 }
@@ -138,35 +132,35 @@ func (c *RawConn) SetControlMessage(cf ControlFlags, on bool) error {
 // endpoint.
 func (c *RawConn) SetDeadline(t time.Time) error {
 	if !c.packetHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
-	return c.packetHandler.c.SetDeadline(t)
+	return c.packetHandler.IPConn.SetDeadline(t)
 }
 
 // SetReadDeadline sets the read deadline associated with the
 // endpoint.
 func (c *RawConn) SetReadDeadline(t time.Time) error {
 	if !c.packetHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
-	return c.packetHandler.c.SetReadDeadline(t)
+	return c.packetHandler.IPConn.SetReadDeadline(t)
 }
 
 // SetWriteDeadline sets the write deadline associated with the
 // endpoint.
 func (c *RawConn) SetWriteDeadline(t time.Time) error {
 	if !c.packetHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
-	return c.packetHandler.c.SetWriteDeadline(t)
+	return c.packetHandler.IPConn.SetWriteDeadline(t)
 }
 
 // Close closes the endpoint.
 func (c *RawConn) Close() error {
 	if !c.packetHandler.ok() {
-		return syscall.EINVAL
+		return errInvalidConn
 	}
-	return c.packetHandler.c.Close()
+	return c.packetHandler.IPConn.Close()
 }
 
 // NewRawConn returns a new RawConn using c as its underlying
@@ -179,7 +173,7 @@ func NewRawConn(c net.PacketConn) (*RawConn, error) {
 	r := &RawConn{
 		genericOpt:    genericOpt{Conn: cc},
 		dgramOpt:      dgramOpt{Conn: cc},
-		packetHandler: packetHandler{c: c.(*net.IPConn)},
+		packetHandler: packetHandler{IPConn: c.(*net.IPConn), Conn: cc},
 	}
 	so, ok := sockOpts[ssoHeaderPrepend]
 	if !ok {

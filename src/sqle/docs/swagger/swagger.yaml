@@ -1,0 +1,457 @@
+basePath: /
+definitions:
+  controller.BaseRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.CreateInstReq:
+    properties:
+      dbType:
+        example: 1
+        type: integer
+      desc:
+        example: this is a test instance
+        type: string
+      host:
+        example: 10.10.10.10
+        type: string
+      name:
+        example: test
+        type: string
+      password:
+        example: "123456"
+        type: string
+      port:
+        example: "3306"
+        type: string
+      ruleTemplates:
+        items:
+          type: string
+        type: array
+      user:
+        example: root
+        type: string
+    type: object
+  controller.CreateTaskReq:
+    properties:
+      desc:
+        example: this is a test task
+        type: string
+      inst_name:
+        example: inst_1
+        type: string
+      name:
+        example: test
+        type: string
+      schema:
+        example: db1
+        type: string
+      sql:
+        example: alter table tb1 drop columns c1
+        type: string
+    type: object
+  controller.CreateTplReq:
+    properties:
+      desc:
+        type: string
+      name:
+        type: string
+      rules:
+        items:
+          $ref: '#/definitions/controller.RuleReq'
+        type: array
+    type: object
+  controller.GetAllInstReq:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/storage.Instance'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllTaskRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/storage.Task'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllTplRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/storage.RuleTemplate'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetSchemaRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        example:
+        - db1
+        items:
+          type: string
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetTaskReq:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/storage.Task'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.PingInstRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+      status:
+        description: 'true: success; false: failed'
+        type: boolean
+    type: object
+  controller.RuleReq:
+    properties:
+      code:
+        example: check_name_length
+        type: string
+      level:
+        description: 0:SUGGEST, 1:WARN, 2:ERROR
+        example: "0"
+        type: string
+      value:
+        example: "64"
+        type: string
+    type: object
+  storage.Action:
+    properties:
+      action:
+        type: string
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      error:
+        type: string
+      id:
+        example: 1
+        type: integer
+      result:
+        type: string
+      status:
+        type: boolean
+    type: object
+  storage.Instance:
+    properties:
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        example: this is a instance
+        type: string
+      host:
+        example: 10.10.10.10
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        type: string
+      port:
+        example: "3306"
+        type: string
+      type:
+        example: 0
+        type: integer
+      user:
+        example: root
+        type: string
+    type: object
+  storage.Rule:
+    properties:
+      code:
+        type: string
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      id:
+        example: 1
+        type: integer
+      level:
+        type: string
+      value:
+        type: string
+    type: object
+  storage.RuleTemplate:
+    properties:
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        type: string
+      rules:
+        items:
+          $ref: '#/definitions/storage.Rule'
+        type: array
+    type: object
+  storage.Sql:
+    properties:
+      commit:
+        $ref: '#/definitions/storage.Action'
+        type: object
+      commit_sql:
+        type: string
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      id:
+        example: 1
+        type: integer
+      inspect:
+        $ref: '#/definitions/storage.Action'
+        type: object
+      number:
+        type: integer
+      rollback:
+        $ref: '#/definitions/storage.Action'
+        type: object
+      rollback_sql:
+        type: string
+    type: object
+  storage.Task:
+    properties:
+      action:
+        type: integer
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        type: string
+      id:
+        example: 1
+        type: integer
+      inst:
+        $ref: '#/definitions/storage.Instance'
+        type: object
+      name:
+        type: string
+      progress:
+        type: integer
+      result:
+        items:
+          $ref: '#/definitions/storage.Sql'
+        type: array
+      schema:
+        type: string
+      sql:
+        type: string
+    type: object
+host: '{{.Host}}'
+info:
+  contact: {}
+  description: This is a sample server for dev.
+  license: {}
+  title: Sqle API Docs
+  version: "1.0"
+paths:
+  /instances:
+    get:
+      description: get all instances
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllInstReq'
+            type: object
+      summary: 实例列表
+    post:
+      consumes:
+      - application/json
+      - application/json
+      description: create a instance<br>create a instance
+      parameters:
+      - description: add instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateInstReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 添加实例
+  /instances/{inst_id}/connection:
+    get:
+      description: test instance db connection
+      parameters:
+      - description: Instance ID
+        in: path
+        name: inst_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.PingInstRes'
+            type: object
+      summary: 实例连通性测试
+  /instances/{inst_id}/schemas:
+    get:
+      description: instance schema list
+      parameters:
+      - description: Instance ID
+        in: path
+        name: inst_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetSchemaRes'
+            type: object
+      summary: 实例 Schema 列表
+  /rule_templates:
+    get:
+      description: get all instances
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllTplRes'
+            type: object
+      summary: 规则模板列表
+    post:
+      consumes:
+      - application/json
+      - application/json
+      description: create a instance
+      parameters:
+      - description: add instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateTplReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 添加规则模板
+  /task/{task_id}:
+    get:
+      description: get task
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskReq'
+            type: object
+      summary: 获取Sql审核单信息
+  /task/{task_id}/commit:
+    post:
+      description: commit sql
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交上线
+  /task/{task_id}/inspection:
+    post:
+      description: inspect sql
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交审核
+  /task/{task_id}/rollback:
+    post:
+      description: rollback sql
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交回滚
+  /tasks:
+    get:
+      description: get all tasks
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllTaskRes'
+            type: object
+      summary: Sql审核列表
+    post:
+      consumes:
+      - application/json
+      - application/json
+      description: create a task
+      parameters:
+      - description: add task
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateTaskReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 创建Sql审核单
+swagger: "2.0"

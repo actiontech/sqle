@@ -18,9 +18,19 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	e.POST("/instances", controller.CreateInst)
-	e.POST("/instances/:inst_id/connection", controller.PingInst)
+	e.GET("/instances/:inst_id/connection", controller.PingInst)
 	e.GET("/instances", controller.GetInsts)
+
+	e.GET("/rule_templates", controller.GetAllTpl)
+	e.POST("/rule_templates", controller.CreateTemplate)
+
+	e.GET("/tasks", controller.GetTasks)
+	e.POST("/tasks", controller.CreateTask)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)
+}
+
+func InitSwagger() {
+
 }

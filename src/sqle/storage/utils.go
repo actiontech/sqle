@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"time"
 )
 
 var storage *Storage
@@ -11,8 +12,15 @@ func InitStorage(s *Storage) {
 	storage = s
 }
 
-func GetStorage()*Storage {
+func GetStorage() *Storage {
 	return storage
+}
+
+type Model struct {
+	ID        uint       `json:"id" gorm:"primary_key" example:"1"`
+	CreatedAt time.Time  `json:"create_at" example:"2018-10-21T16:40:23+08:00"`
+	UpdatedAt time.Time  `json:"-"`
+	DeletedAt *time.Time `json:"-" sql:"index"`
 }
 
 func NewMysql(user, password, host, port, schema string) (*Storage, error) {
@@ -21,20 +29,24 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.LogMode(false)
+	db.LogMode(true)
+	db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &Sql{}, &Action{})
 
-	if err := createTable(db, &User{}); err != nil {
-		return nil, err
-	}
-	if err := createTable(db, &Db{}); err != nil {
-		return nil, err
-	}
-	if err := createTable(db, &Sql{}); err != nil {
-		return nil, err
-	}
-	if err := createTable(db, &Task{}); err != nil {
-		return nil, err
-	}
+	//if err := createTable(db, &Instance{}); err != nil {
+	//	return nil, err
+	//}
+	////if err := createTable(db, &Sql{}); err != nil {
+	////	return nil, err
+	////}
+	////if err := createTable(db, &Task{}); err != nil {
+	////	return nil, err
+	////}
+	//if err := createTable(db, &RuleTemplate{}); err != nil {
+	//	return nil, err
+	//}
+	//if err := createTable(db, &Rule{}); err != nil {
+	//	return nil, err
+	//}
 	return &Storage{
 		db: db,
 	}, nil

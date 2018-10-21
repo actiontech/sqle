@@ -29,7 +29,7 @@ func NewConn(dbType int, user, password, host, port, schema string) (*Conn, erro
 	return &Conn{db}, nil
 }
 
-func Ping(db *storage.Db) error {
+func Ping(db *storage.Instance) error {
 	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func Ping(db *storage.Db) error {
 	return conn.ping()
 }
 
-func ShowDatabase(db *storage.Db) ([]string, error) {
+func ShowDatabase(db *storage.Instance) ([]string, error) {
 	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func ShowDatabase(db *storage.Db) ([]string, error) {
 }
 
 func OpenDbWithTask(task *storage.Task) (*Conn, error) {
-	db := task.Db
+	db := task.Inst
 	schema := task.Schema
 	return NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, schema)
 }
