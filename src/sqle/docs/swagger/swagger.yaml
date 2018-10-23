@@ -11,9 +11,10 @@ definitions:
     type: object
   controller.CreateInstReq:
     properties:
-      dbType:
-        example: 1
-        type: integer
+      db_type:
+        description: mysql, mycat, sqlserver
+        example: mysql
+        type: string
       desc:
         example: this is a test instance
         type: string
@@ -29,12 +30,27 @@ definitions:
       port:
         example: "3306"
         type: string
-      ruleTemplates:
+      rule_templates:
+        description: this a list for rule template name
+        example:
+        - template_1
         items:
           type: string
         type: array
       user:
         example: root
+        type: string
+    type: object
+  controller.CreateInstRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/storage.Instance'
+        type: object
+      message:
+        example: ok
         type: string
     type: object
   controller.CreateTaskReq:
@@ -55,6 +71,18 @@ definitions:
         example: alter table tb1 drop columns c1
         type: string
     type: object
+  controller.CreateTaskRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/storage.Task'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   controller.CreateTplReq:
     properties:
       desc:
@@ -62,8 +90,10 @@ definitions:
       name:
         type: string
       rules:
+        example:
+        - check_name_length
         items:
-          $ref: '#/definitions/controller.RuleReq'
+          type: string
         type: array
     type: object
   controller.GetAllInstReq:
@@ -74,6 +104,19 @@ definitions:
       data:
         items:
           $ref: '#/definitions/storage.Instance'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllRuleRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/storage.Rule'
         type: array
       message:
         example: ok
@@ -137,47 +180,35 @@ definitions:
       code:
         example: 0
         type: integer
+      data:
+        description: 'true: ping success; false: ping failed'
+        type: boolean
       message:
         example: ok
         type: string
-      status:
-        description: 'true: success; false: failed'
-        type: boolean
     type: object
-  controller.RuleReq:
+  storage.CommitSql:
     properties:
-      code:
-        example: check_name_length
+      exec_result:
         type: string
-      level:
-        description: 0:SUGGEST, 1:WARN, 2:ERROR
-        example: "0"
+      exec_status:
         type: string
-      value:
-        example: "64"
+      inspect_level:
         type: string
-    type: object
-  storage.Action:
-    properties:
-      action:
+      inspect_result:
         type: string
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      error:
-        type: string
-      id:
-        example: 1
+      number:
         type: integer
-      result:
+      sql:
         type: string
-      status:
-        type: boolean
     type: object
   storage.Instance:
     properties:
       create_at:
         example: "2018-10-21T16:40:23+08:00"
+        type: string
+      db_type:
+        example: mysql
         type: string
       desc:
         example: this is a instance
@@ -193,24 +224,30 @@ definitions:
       port:
         example: "3306"
         type: string
-      type:
-        example: 0
-        type: integer
       user:
         example: root
         type: string
     type: object
+  storage.RollbackSql:
+    properties:
+      exec_result:
+        type: string
+      exec_status:
+        type: string
+      number:
+        type: integer
+      sql:
+        type: string
+    type: object
   storage.Rule:
     properties:
-      code:
+      desc:
         type: string
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      id:
-        example: 1
-        type: integer
       level:
+        description: notice, warn, error
+        example: error
+        type: string
+      name:
         type: string
       value:
         type: string
@@ -234,55 +271,46 @@ definitions:
     type: object
   storage.Sql:
     properties:
-      commit:
-        $ref: '#/definitions/storage.Action'
-        type: object
-      commit_sql:
-        type: string
+      commit_sqls:
+        items:
+          $ref: '#/definitions/storage.CommitSql'
+        type: array
       create_at:
         example: "2018-10-21T16:40:23+08:00"
         type: string
       id:
         example: 1
         type: integer
-      inspect:
-        $ref: '#/definitions/storage.Action'
-        type: object
-      number:
-        type: integer
-      rollback:
-        $ref: '#/definitions/storage.Action'
-        type: object
-      rollback_sql:
+      rollback_sqls:
+        items:
+          $ref: '#/definitions/storage.RollbackSql'
+        type: array
+      sql:
         type: string
     type: object
   storage.Task:
     properties:
-      action:
-        type: integer
       create_at:
         example: "2018-10-21T16:40:23+08:00"
         type: string
       desc:
+        example: this is a task
         type: string
       id:
         example: 1
         type: integer
-      inst:
+      instance:
         $ref: '#/definitions/storage.Instance'
         type: object
       name:
+        example: REQ201812578
         type: string
-      progress:
-        type: integer
-      result:
-        items:
-          $ref: '#/definitions/storage.Sql'
-        type: array
       schema:
+        example: db1
         type: string
       sql:
-        type: string
+        $ref: '#/definitions/storage.Sql'
+        type: object
     type: object
 host: '{{.Host}}'
 info:
@@ -319,9 +347,47 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/controller.CreateInstRes'
             type: object
       summary: 添加实例
+  /instances/{inst_id}/:
+    delete:
+      description: delete instance db
+      parameters:
+      - description: Instance ID
+        in: path
+        name: inst_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 删除实例
+    put:
+      description: update instance db
+      parameters:
+      - description: Instance ID
+        in: path
+        name: inst_id
+        required: true
+        type: string
+      - description: update instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateInstReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 更新实例
   /instances/{inst_id}/connection:
     get:
       description: test instance db connection
@@ -354,9 +420,45 @@ paths:
             $ref: '#/definitions/controller.GetSchemaRes'
             type: object
       summary: 实例 Schema 列表
+  /rule_template/template_id/:
+    delete:
+      description: delete rule template
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 删除规则模板
+    get:
+      description: get rule template
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllRuleRes'
+            type: object
+      summary: 获取规则模板
+    put:
+      description: update rule template
+      parameters:
+      - description: update rule template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateTplReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 更新规则模板
   /rule_templates:
     get:
-      description: get all instances
+      description: get all rule template
       responses:
         "200":
           description: OK
@@ -368,7 +470,7 @@ paths:
       consumes:
       - application/json
       - application/json
-      description: create a instance
+      description: create a rule template
       parameters:
       - description: add instance
         in: body
@@ -384,46 +486,16 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
             type: object
       summary: 添加规则模板
-  /task/{task_id}:
+  /rules:
     get:
-      description: get task
+      description: get all rule template
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.GetTaskReq'
+            $ref: '#/definitions/controller.GetAllRuleRes'
             type: object
-      summary: 获取Sql审核单信息
-  /task/{task_id}/commit:
-    post:
-      description: commit sql
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-            type: object
-      summary: Sql提交上线
-  /task/{task_id}/inspection:
-    post:
-      description: inspect sql
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-            type: object
-      summary: Sql提交审核
-  /task/{task_id}/rollback:
-    post:
-      description: rollback sql
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-            type: object
-      summary: Sql提交回滚
+      summary: 规则列表
   /tasks:
     get:
       description: get all tasks
@@ -451,7 +523,58 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/controller.CreateTaskRes'
             type: object
       summary: 创建Sql审核单
+  /tasks/{task_id}:
+    get:
+      description: get task
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskReq'
+            type: object
+      summary: 获取Sql审核单信息
+  /tasks/{task_id}/commit:
+    post:
+      description: commit sql
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交上线
+  /tasks/{task_id}/inspection:
+    post:
+      description: inspect sql
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交审核
+  /tasks/{task_id}/rollback:
+    post:
+      description: rollback sql
+      parameters:
+      - description: manual execute rollback sql
+        in: query
+        name: manual_execute
+        type: boolean
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交回滚
 swagger: "2.0"

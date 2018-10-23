@@ -17,15 +17,15 @@ type RuleTemplate struct {
 	Model
 	Name  string
 	Desc  string
-	Rules []Rule `gorm:"foreignkey:TemplateId"`
+	Rules []Rule `gorm:"many2many:rule_template_rule"`
 }
 
 type Rule struct {
-	Model      `json:"-"`
-	TemplateId uint   `json:"-"`
-	Code       string `json:"code"`
-	Value      string `json:"value"`
-	Level      string `json:"level"`
+	Name  string `json:"name" gorm:"primary_key"`
+	Desc  string `json:"desc"`
+	Value string `json:"value"`
+	// notice, warn, error
+	Level string `json:"level" example:"error"`
 }
 
 // inspector rule code

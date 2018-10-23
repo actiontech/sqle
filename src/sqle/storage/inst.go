@@ -3,22 +3,22 @@ package storage
 import "github.com/jinzhu/gorm"
 
 const (
-	DB_TYPE_MYSQL = iota
-	DB_TYPE_MYCAT
-	DB_TYPE_SQLSERVER
+	DB_TYPE_MYSQL     = "mysql"
+	DB_TYPE_MYCAT     = "mycat"
+	DB_TYPE_SQLSERVER = "sqlserver"
 )
 
 // Instance is a table for database info
 type Instance struct {
 	Model
 	Name          string         `json:"name" gorm:"not null;index" example:""`
-	DbType        int            `json:"type" gorm:"not null" example:"0"`
+	DbType        string         `json:"db_type" gorm:"not null" example:"mysql"`
 	Host          string         `json:"host" gorm:"not null" example:"10.10.10.10"`
 	Port          string         `json:"port" gorm:"not null" example:"3306"`
 	User          string         `json:"user" gorm:"not null" example:"root"`
 	Password      string         `json:"-" gorm:"not null"`
 	Desc          string         `json:"desc" example:"this is a instance"`
-	RuleTemplates []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
+	RuleTemplates []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template" example:"template_1"`
 }
 
 func (s *Storage) GetInstById(id string) (*Instance, bool, error) {

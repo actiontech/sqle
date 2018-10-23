@@ -10,14 +10,21 @@ import (
 )
 
 type CreateInstReq struct {
-	Name          string   `form:"name" example:"test"`
-	DbType        int      `form:"type" example:"1"`
-	User          string   `form:"user" example:"root"`
-	Host          string   `form:"host" example:"10.10.10.10"`
-	Port          string   `form:"port" example:"3306"`
-	Password      string   `form:"password" example:"123456"`
-	Desc          string   `form:"desc" example:"this is a test instance"`
-	RuleTemplates []string `form:"rule_templates"`
+	Name string `form:"name" example:"test"`
+	// mysql, mycat, sqlserver
+	DbType   string `json:"db_type" form:"type" example:"mysql"`
+	User     string `form:"user" example:"root"`
+	Host     string `form:"host" example:"10.10.10.10"`
+	Port     string `form:"port" example:"3306"`
+	Password string `form:"password" example:"123456"`
+	Desc     string `form:"desc" example:"this is a test instance"`
+	// this a list for rule template name
+	RuleTemplates []string `json:"rule_templates" form:"rule_templates" example:"template_1"`
+}
+
+type CreateInstRes struct {
+	BaseRes
+	Data storage.Instance `json:"data"`
 }
 
 // @Summary 添加实例
@@ -26,7 +33,7 @@ type CreateInstReq struct {
 // @Accept json
 // @Accept json
 // @Param instance body controller.CreateInstReq true "add instance"
-// @Success 200 {object} controller.BaseRes
+// @Success 200 {object} controller.CreateInstRes
 //// @router /instances [post]
 func CreateInst(c echo.Context) error {
 	s := storage.GetStorage()
@@ -103,6 +110,25 @@ func CreateInst(c echo.Context) error {
 //	c.serveJson(databases)
 //}
 
+// @Summary 删除实例
+// @Description delete instance db
+// @Param inst_id path string true "Instance ID"
+// @Success 200 {object} controller.BaseRes
+// @router /instances/{inst_id}/ [delete]
+func DeleteInstance(c echo.Context) error {
+	return nil
+}
+
+// @Summary 更新实例
+// @Description update instance db
+// @Param inst_id path string true "Instance ID"
+// @param instance body controller.CreateInstReq true "update instance"
+// @Success 200 {object} controller.BaseRes
+// @router /instances/{inst_id}/ [put]
+func UpdateInstance(c echo.Context) error {
+	return nil
+}
+
 type GetAllInstReq struct {
 	BaseRes
 	Data []storage.Instance `json:"data"`
@@ -129,8 +155,8 @@ func GetInsts(c echo.Context) error {
 
 type PingInstRes struct {
 	BaseRes
-	// true: success; false: failed
-	Status bool `json:"status"`
+	// true: ping success; false: ping failed
+	Data bool `json:"data"`
 }
 
 // @Summary 实例连通性测试
@@ -145,25 +171,25 @@ func PingInst(c echo.Context) error {
 	if err != nil {
 		return c.JSON(200, PingInstRes{
 			BaseRes: NewBaseReq(-1, err.Error()),
-			Status:  false,
+			Data:    false,
 		})
 	}
 	if !exist {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(0, "inst not exist"),
-			Status:  false,
+			BaseRes: NewBaseReq(-1, "inst not exist"),
+			Data:    false,
 		})
 	}
 	fmt.Println(inst)
 	if err := executor.Ping(inst); err != nil {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(0, err.Error()),
-			Status:  false,
+			BaseRes: NewBaseReq(-1, err.Error()),
+			Data:    false,
 		})
 	}
 	return c.JSON(200, PingInstRes{
 		BaseRes: NewBaseReq(0, ""),
-		Status:  true,
+		Data:    true,
 	})
 }
 

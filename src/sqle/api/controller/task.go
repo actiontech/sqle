@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
+	"sqle"
 	"sqle/storage"
 )
 
@@ -138,13 +140,18 @@ type CreateTaskReq struct {
 	Sql      string `form:"sql" example:"alter table tb1 drop columns c1"`
 }
 
+type CreateTaskRes struct {
+	BaseRes
+	Data storage.Task `json:"data"`
+}
+
 // @Summary 创建Sql审核单
 // @Description create a task
 // @Accept json
 // @Accept json
 // @Param instance body controller.CreateTaskReq true "add task"
-// @Success 200 {object} controller.BaseRes
-// @router /tasks [post]
+// @Success 200 {object} controller.CreateTaskRes
+//// @router /tasks [post]
 func CreateTask(c echo.Context) error {
 	s := storage.GetStorage()
 	req := new(CreateTaskReq)
@@ -157,15 +164,19 @@ func CreateTask(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
 	if !exist {
-		return c.JSON(200, NewBaseReq(-1, "inst is not exist"))
+		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("instance %s is not exist", req.InstName)))
+	}
+
+	sql := storage.Sql{
+		Sql: req.Sql,
 	}
 
 	task := &storage.Task{
 		Name:   req.Name,
 		Desc:   req.Desc,
 		Schema: req.Schema,
-		ReqSql: req.Sql,
 		InstId: inst.ID,
+		Sql:    sql,
 	}
 	err = s.Save(task)
 	if err != nil {
@@ -182,7 +193,7 @@ type GetAllTaskRes struct {
 // @Summary Sql审核列表
 // @Description get all tasks
 // @Success 200 {object} controller.GetAllTaskRes
-// @router /tasks [get]
+//// @router /tasks [get]
 func GetTasks(c echo.Context) error {
 	s := storage.GetStorage()
 	if s == nil {
@@ -200,24 +211,43 @@ func GetTasks(c echo.Context) error {
 
 // @Summary Sql提交审核
 // @Description inspect sql
+// @Param task_id path string true "Task ID"
 // @Success 200 {object} controller.BaseRes
-// @router /task/{task_id}/inspection [post]
+// @router /tasks/{task_id}/inspection [post]
 func InspectTask(c echo.Context) error {
-	return nil
+	s := storage.GetStorage()
+	taskId := c.Param("task_id")
+	_, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+	}
+	actionChan, err := sqle.GetSqled().AddTask(taskId, storage.TASK_ACTION_INSPECT)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	action := <-actionChan
+	if action.Error != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, action.Error.Error()))
+	}
+	return c.JSON(200, action.Task.Sql)
 }
 
 // @Summary Sql提交上线
 // @Description commit sql
 // @Success 200 {object} controller.BaseRes
-// @router /task/{task_id}/commit [post]
+// @router /tasks/{task_id}/commit [post]
 func CommitTask(c echo.Context) error {
 	return nil
 }
 
 // @Summary Sql提交回滚
 // @Description rollback sql
+// @Param manual_execute query boolean false "manual execute rollback sql"
 // @Success 200 {object} controller.BaseRes
-// @router /task/{task_id}/rollback [post]
+// @router /tasks/{task_id}/rollback [post]
 func RollbackTask(c echo.Context) error {
 	return nil
 }
@@ -230,7 +260,7 @@ type GetTaskReq struct {
 // @Summary 获取Sql审核单信息
 // @Description get task
 // @Success 200 {object} controller.GetTaskReq
-// @router /task/{task_id} [get]
+// @router /tasks/{task_id} [get]
 func GetTask(c echo.Context) error {
 	return nil
 }

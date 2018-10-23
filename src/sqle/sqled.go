@@ -2,57 +2,61 @@ package sqle
 
 import (
 	"fmt"
+	"sqle/inspector"
 	"sqle/storage"
 	"sync"
-	"time"
 )
 
 var sqled *Sqled
 
-func SendAction(task *storage.Task, typ int, callback func(task *storage.Task) error, async bool) error {
-	sqled.Lock()
-	action := &Action{
-		task:      task,
-		actionTyp: typ,
-	}
-	if _, ok := sqled.listen[action.String()]; ok {
-		return fmt.Errorf("exist")
-	}
-	end := make(chan struct{})
-	sqled.listen[action.String()] = end
-	sqled.queue <- action
-
-	if async {
-		return nil
-	}
-	<-end
-	return nil
-}
-
-type Action struct {
-	task      *storage.Task
-	actionTyp int
-	callback  func(task *storage.Task) error
-}
-
-func (a *Action) String() string {
-	return fmt.Sprintf("%d:%d", a.task.ID, a.actionTyp)
+func GetSqled() *Sqled {
+	return sqled
 }
 
 type Sqled struct {
 	sync.Mutex
-	exit   chan struct{}
-	listen map[string]chan struct{}
-	queue  chan *Action
+	exit        chan struct{}
+	currentTask map[string]chan *Action
+	queue       chan *Action
+}
+
+type Action struct {
+	Task  *storage.Task
+	Typ   int
+	Error error
 }
 
 func InitSqled(exit chan struct{}) {
 	sqled = &Sqled{
-		exit:   exit,
-		listen: map[string]chan struct{}{},
-		queue:  make(chan *Action, 1024),
+		exit:        exit,
+		currentTask: map[string]chan *Action{},
+		queue:       make(chan *Action, 1024),
 	}
 	sqled.Start()
+}
+
+func (s *Sqled) AddTask(taskId string, typ int) (chan *Action, error) {
+	s.Lock()
+	if _, ok := s.currentTask[taskId]; ok {
+		return nil, fmt.Errorf("action is exist")
+	}
+	done := make(chan *Action)
+	s.currentTask[taskId] = done
+	s.Unlock()
+
+	task, exist, err := storage.GetStorage().GetTaskById(taskId)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("task not exist")
+	}
+	action := &Action{
+		Task: task,
+		Typ:  typ,
+	}
+	s.queue <- action
+	return done, nil
 }
 
 func (s *Sqled) Start() {
@@ -60,80 +64,62 @@ func (s *Sqled) Start() {
 }
 
 func (s *Sqled) TaskLoop() {
-
-	t := time.Tick(5 * time.Second)
 	for {
 		select {
 		case <-s.exit:
 			return
-		case <-t:
+		case action := <-s.queue:
+			go s.Do(action)
 		}
-		for action := range s.queue {
-			currentAction := action
-			switch currentAction.actionTyp {
-			case storage.TASK_ACTION_INSPECT:
-				go s.inspect(currentAction.task)
-			case storage.TASK_ACTION_COMMIT:
-				go s.commit(currentAction.task)
-			case storage.TASK_ACTION_ROLLBACK:
-				go s.rollback(currentAction.task)
-			}
-		}
-		//tasks, err := s.Storage.GetTasks()
-		//if err != nil {
-		//	continue
-		//}
-		//for _, task := range tasks {
-		//	currentTask := task
-		//	switch currentTask.Action {
-		//	case storage.TASK_ACTION_INSPECT:
-		//		s.inspect(currentTask)
-		//		s.Storage.UpdateTaskById(fmt.Sprintf("%v", task.ID),
-		//			map[string]interface{}{"action": storage.TASK_ACTION_INIT, "progress": storage.TASK_PROGRESS_INSPECT_END})
-		//	case storage.TASK_ACTION_COMMIT:
-		//		s.commit(currentTask)
-		//		s.Storage.UpdateTaskById(fmt.Sprintf("%v", task.ID),
-		//			map[string]interface{}{"action": storage.TASK_ACTION_INIT, "progress": storage.TASK_PROGRESS_COMMIT_END})
-		//	case storage.TASK_ACTION_ROLLBACK:
-		//		s.rollback(currentTask)
-		//		s.Storage.UpdateTaskById(fmt.Sprintf("%v", task.ID),
-		//			map[string]interface{}{"action": storage.TASK_ACTION_INIT, "progress": storage.TASK_PROGRESS_ROLLACK_END})
-		//	}
-		//}
 	}
 }
 
-func (s *Sqled) Do(action Action) error {
+func (s *Sqled) Do(action *Action) error {
 	var err error
-	switch action.actionTyp {
+	switch action.Typ {
 	case storage.TASK_ACTION_INSPECT:
-		err = s.inspect(action.task)
+		err = s.inspect(action.Task)
 	case storage.TASK_ACTION_COMMIT:
-		err = s.commit(action.task)
+		err = s.commit(action.Task)
 	case storage.TASK_ACTION_ROLLBACK:
-		err = s.rollback(action.task)
+		err = s.rollback(action.Task)
 	}
 	if err != nil {
-		return err
+		action.Error = err
 	}
-	err = action.callback(action.task)
-	//s.Lock()
-	//_ := s.listen[action.String()]
+	s.Lock()
+	taskId := fmt.Sprintf(fmt.Sprintf("%d", action.Task.ID))
+	done, ok := s.currentTask[taskId]
+	delete(s.currentTask, taskId)
+	s.Unlock()
+	if ok {
+		select {
+		case done <- action:
+		default:
+		}
+		close(done)
+	}
 	return err
 }
 
 func (s *Sqled) inspect(task *storage.Task) error {
-	//_, err := inspector.Inspect(nil, task)
-	//if err != nil {
-	//	return err
-	//}
-	//err = s.Storage.UpdateTaskSqls(task, sqls)
-	//if err != nil {
-	//	return err
-	//}
-	//		s.Storage.UpdateTaskById(fmt.Sprintf("%v", task.ID),
-	//			map[string]interface{}{"action": storage.TASK_ACTION_INIT, "progress": storage.TASK_PROGRESS_INSPECT_END})
-	return nil
+	st := storage.GetStorage()
+	err := st.UpdateProgress(&task.Sql, storage.TASK_PROGRESS_INSPECT_START)
+	if err != nil {
+		return err
+	}
+	i := inspector.NewInspector(nil, task.Instance, task.Schema, task.Sql.Sql)
+	sqls, err := i.Inspect()
+	if err != nil {
+		return err
+	}
+	fmt.Println("1111")
+	err = st.UpdateCommitSql(&task.Sql, sqls)
+	if err != nil {
+		return err
+	}
+	fmt.Println("2222")
+	return st.UpdateProgress(&task.Sql, storage.TASK_PROGRESS_INSPECT_END)
 }
 
 func (s *Sqled) commit(task *storage.Task) error {

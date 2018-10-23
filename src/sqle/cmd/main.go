@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"os"
 	"sqle"
@@ -34,13 +35,24 @@ func main() {
 		},
 	}
 	rootCmd.PersistentFlags().StringVarP(&user, "user", "u", "actiontech-universe", "run uagent by which user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql_user", "", "actiontech-universe", "run uagent by which user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql_password", "", "actiontech-universe", "run uagent by which user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql_host", "", "actiontech-universe", "run uagent by which user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql_port", "", "actiontech-universe", "run uagent by which user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql_schema", "", "actiontech-universe", "run uagent by which user")
+	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql_user", "", "", "mysql user")
+	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql_password", "", "", "mysql password")
+	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql_host", "", "localhost", "mysql host")
+	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql_port", "", "3306", "mysql port")
+	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql_schema", "", "sqle", "mysql schema")
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 5799, "http server port")
 	//rootCmd.SetHelpTemplate(ucobra.HELP_TEMPLATE)
+
+	var docsCmd = &cobra.Command{
+		Use:   "docs",
+		Short: "a swagger server",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := docs(cmd, args); err != nil {
+				os.Exit(1)
+			}
+		},
+	}
+	rootCmd.AddCommand(docsCmd)
 	rootCmd.Execute()
 }
 
@@ -81,6 +93,16 @@ func run(cmd *cobra.Command, _ []string) error {
 
 		//os.HaltIfShutdown(stage)
 		//log.UserInfo(stage, "Exit by signal %v", sig)
+	}
+	return nil
+}
+
+func docs(cmd *cobra.Command, _ []string) error {
+	exitChan := make(chan struct{}, 0)
+	go api.StartDocs(port, exitChan)
+	fmt.Printf("open browser: http://localhost:%d/swagger/index.html\n", port)
+	select {
+	case <-exitChan:
 	}
 	return nil
 }

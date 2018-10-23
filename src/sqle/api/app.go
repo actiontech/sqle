@@ -26,11 +26,16 @@ func StartApi(port int, exitChan chan struct{}) {
 
 	e.GET("/tasks", controller.GetTasks)
 	e.POST("/tasks", controller.CreateTask)
+	e.POST("/tasks/:task_id/inspection",controller.InspectTask)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)
 }
 
-func InitSwagger() {
-
+func StartDocs(port int, exitChan chan struct{}) {
+	e := echo.New()
+	e.HideBanner = true
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.Start(fmt.Sprintf(":%v", port))
+	close(exitChan)
 }

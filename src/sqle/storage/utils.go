@@ -30,7 +30,7 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 		return nil, err
 	}
 	db.LogMode(true)
-	db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &Sql{}, &Action{})
+	db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &Sql{}, &CommitSql{}, &RollbackSql{})
 
 	//if err := createTable(db, &Instance{}); err != nil {
 	//	return nil, err

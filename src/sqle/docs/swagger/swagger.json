@@ -48,6 +48,62 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
+                            "$ref": "#/definitions/controller.CreateInstRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/instances/{inst_id}/": {
+            "put": {
+                "description": "update instance db",
+                "summary": "更新实例",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "inst_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update instance",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.CreateInstReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete instance db",
+                "summary": "删除实例",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "inst_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
                             "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
@@ -102,9 +158,62 @@
                 }
             }
         },
+        "/rule_template/template_id/": {
+            "get": {
+                "description": "get rule template",
+                "summary": "获取规则模板",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.GetAllRuleRes"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "update rule template",
+                "summary": "更新规则模板",
+                "parameters": [
+                    {
+                        "description": "update rule template",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.CreateTplReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete rule template",
+                "summary": "删除规则模板",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/rule_templates": {
             "get": {
-                "description": "get all instances",
+                "description": "get all rule template",
                 "summary": "规则模板列表",
                 "responses": {
                     "200": {
@@ -117,7 +226,7 @@
                 }
             },
             "post": {
-                "description": "create a instance",
+                "description": "create a rule template",
                 "consumes": [
                     "application/json",
                     "application/json"
@@ -146,61 +255,16 @@
                 }
             }
         },
-        "/task/{task_id}": {
+        "/rules": {
             "get": {
-                "description": "get task",
-                "summary": "获取Sql审核单信息",
+                "description": "get all rule template",
+                "summary": "规则列表",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.GetTaskReq"
-                        }
-                    }
-                }
-            }
-        },
-        "/task/{task_id}/commit": {
-            "post": {
-                "description": "commit sql",
-                "summary": "Sql提交上线",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/task/{task_id}/inspection": {
-            "post": {
-                "description": "inspect sql",
-                "summary": "Sql提交审核",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/task/{task_id}/rollback": {
-            "post": {
-                "description": "rollback sql",
-                "summary": "Sql提交回滚",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/controller.GetAllRuleRes"
                         }
                     }
                 }
@@ -244,6 +308,83 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
+                            "$ref": "#/definitions/controller.CreateTaskRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{task_id}": {
+            "get": {
+                "description": "get task",
+                "summary": "获取Sql审核单信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.GetTaskReq"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{task_id}/commit": {
+            "post": {
+                "description": "commit sql",
+                "summary": "Sql提交上线",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{task_id}/inspection": {
+            "post": {
+                "description": "inspect sql",
+                "summary": "Sql提交审核",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{task_id}/rollback": {
+            "post": {
+                "description": "rollback sql",
+                "summary": "Sql提交回滚",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "manual execute rollback sql",
+                        "name": "manual_execute",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
                             "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
@@ -268,9 +409,10 @@
         "controller.CreateInstReq": {
             "type": "object",
             "properties": {
-                "dbType": {
-                    "type": "integer",
-                    "example": 1
+                "db_type": {
+                    "description": "mysql, mycat, sqlserver",
+                    "type": "string",
+                    "example": "mysql"
                 },
                 "desc": {
                     "type": "string",
@@ -292,15 +434,36 @@
                     "type": "string",
                     "example": "3306"
                 },
-                "ruleTemplates": {
+                "rule_templates": {
+                    "description": "this a list for rule template name",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "template_1"
+                    ]
                 },
                 "user": {
                     "type": "string",
                     "example": "root"
+                }
+            }
+        },
+        "controller.CreateInstRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/storage.Instance"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -329,6 +492,23 @@
                 }
             }
         },
+        "controller.CreateTaskRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/storage.Task"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "controller.CreateTplReq": {
             "type": "object",
             "properties": {
@@ -341,8 +521,11 @@
                 "rules": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/controller.RuleReq"
-                    }
+                        "type": "string"
+                    },
+                    "example": [
+                        "check_name_length"
+                    ]
                 }
             }
         },
@@ -357,6 +540,25 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/storage.Instance"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "controller.GetAllRuleRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.Rule"
                     }
                 },
                 "message": {
@@ -449,56 +651,36 @@
                     "type": "integer",
                     "example": 0
                 },
+                "data": {
+                    "description": "true: ping success; false: ping failed",
+                    "type": "boolean"
+                },
                 "message": {
                     "type": "string",
                     "example": "ok"
-                },
-                "status": {
-                    "description": "true: success; false: failed",
-                    "type": "boolean"
                 }
             }
         },
-        "controller.RuleReq": {
+        "storage.CommitSql": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "check_name_length"
-                },
-                "level": {
-                    "description": "0:SUGGEST, 1:WARN, 2:ERROR",
-                    "type": "string",
-                    "example": "0"
-                },
-                "value": {
-                    "type": "string",
-                    "example": "64"
-                }
-            }
-        },
-        "storage.Action": {
-            "type": "object",
-            "properties": {
-                "action": {
+                "exec_result": {
                     "type": "string"
                 },
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "error": {
+                "exec_status": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "result": {
+                "inspect_level": {
                     "type": "string"
                 },
-                "status": {
-                    "type": "boolean"
+                "inspect_result": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "sql": {
+                    "type": "string"
                 }
             }
         },
@@ -508,6 +690,10 @@
                 "create_at": {
                     "type": "string",
                     "example": "2018-10-21T16:40:23+08:00"
+                },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
                 },
                 "desc": {
                     "type": "string",
@@ -528,31 +714,41 @@
                     "type": "string",
                     "example": "3306"
                 },
-                "type": {
-                    "type": "integer",
-                    "example": 0
-                },
                 "user": {
                     "type": "string",
                     "example": "root"
                 }
             }
         },
+        "storage.RollbackSql": {
+            "type": "object",
+            "properties": {
+                "exec_result": {
+                    "type": "string"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
         "storage.Rule": {
             "type": "object",
             "properties": {
-                "code": {
+                "desc": {
                     "type": "string"
                 },
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "level": {
+                    "description": "notice, warn, error",
+                    "type": "string",
+                    "example": "error"
+                },
+                "name": {
                     "type": "string"
                 },
                 "value": {
@@ -588,12 +784,11 @@
         "storage.Sql": {
             "type": "object",
             "properties": {
-                "commit": {
-                    "type": "object",
-                    "$ref": "#/definitions/storage.Action"
-                },
-                "commit_sql": {
-                    "type": "string"
+                "commit_sqls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.CommitSql"
+                    }
                 },
                 "create_at": {
                     "type": "string",
@@ -603,18 +798,13 @@
                     "type": "integer",
                     "example": 1
                 },
-                "inspect": {
-                    "type": "object",
-                    "$ref": "#/definitions/storage.Action"
+                "rollback_sqls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.RollbackSql"
+                    }
                 },
-                "number": {
-                    "type": "integer"
-                },
-                "rollback": {
-                    "type": "object",
-                    "$ref": "#/definitions/storage.Action"
-                },
-                "rollback_sql": {
+                "sql": {
                     "type": "string"
                 }
             }
@@ -622,41 +812,33 @@
         "storage.Task": {
             "type": "object",
             "properties": {
-                "action": {
-                    "type": "integer"
-                },
                 "create_at": {
                     "type": "string",
                     "example": "2018-10-21T16:40:23+08:00"
                 },
                 "desc": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "this is a task"
                 },
                 "id": {
                     "type": "integer",
                     "example": 1
                 },
-                "inst": {
+                "instance": {
                     "type": "object",
                     "$ref": "#/definitions/storage.Instance"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "progress": {
-                    "type": "integer"
-                },
-                "result": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/storage.Sql"
-                    }
+                    "type": "string",
+                    "example": "REQ201812578"
                 },
                 "schema": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "db1"
                 },
                 "sql": {
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/storage.Sql"
                 }
             }
         }

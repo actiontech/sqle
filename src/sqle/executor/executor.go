@@ -13,7 +13,7 @@ type Conn struct {
 	*gorm.DB
 }
 
-func NewConn(dbType int, user, password, host, port, schema string) (*Conn, error) {
+func NewConn(dbType string, user, password, host, port, schema string) (*Conn, error) {
 	var db *gorm.DB
 	var err error
 	switch dbType {
@@ -57,7 +57,7 @@ func ShowDatabase(db *storage.Instance) ([]string, error) {
 }
 
 func OpenDbWithTask(task *storage.Task) (*Conn, error) {
-	db := task.Inst
+	db := task.Instance
 	schema := task.Schema
 	return NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, schema)
 }

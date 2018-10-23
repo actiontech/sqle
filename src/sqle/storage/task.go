@@ -2,57 +2,74 @@ package storage
 
 import (
 	"fmt"
+	"github.com/jinzhu/gorm"
 )
 
 type Task struct {
 	Model
-	Name     string
-	Desc     string
-	Schema   string
-	ReqSql   string `json:"sql"`
-	Action   int
-	Progress int
-	Inst     Instance `gorm:"foreignkey:InstId"`
+	Name     string   `json:"name" example:"REQ201812578"`
+	Desc     string   `json:"desc" example:"this is a task"`
+	Schema   string   `json:"schema" example:"db1"`
+	Instance Instance `json:"instance" gorm:"foreignkey:InstId"`
 	InstId   uint     `json:"-"`
-	Sqls     []Sql    `json:"result" gorm:"foreignkey:TaskId"`
+	Sql      Sql      `json:"sql" gorm:"foreignkey:SqlId"`
+	SqlId    uint     `json:"-"`
 }
 
 type Sql struct {
 	Model
-	TaskId      uint `json:"-"`
-	Number      uint
-	CommitSql   string `json:"commit_sql"`
-	RollbackSql string `json:"rollback_sql"`
-	Inspect     Action `gorm:"foreignkey:InspectId"`
-	InspectId   uint   `json:"-"`
-	Commit      Action `gorm:"foreignkey:CommitId"`
-	CommitId    uint   `json:"-"`
-	Rollback    Action `gorm:"foreignkey:RollbackId"`
-	RollbackId  uint   `json:"-"`
+	Sql          string        `json:"sql"`
+	Progress     string        `json:"progress"`
+	CommitSqls   []CommitSql   `json:"commit_sqls" gorm:"foreignkey:SqlId"`
+	RollbackSqls []RollbackSql `json:"rollback_sqls" gorm:"foreignkey:SqlId"`
 }
 
-type Action struct {
+func (s Sql) TableName() string {
+	return "sqls"
+}
+
+type CommitSql struct {
 	Model
-	Status bool
-	Action string
-	Result string
-	Error  string
+	SqlId         uint   `json:"-"`
+	Number        uint   `json:"number"`
+	Sql           string `json:"sql"`
+	InspectResult string `json:"inspect_result"`
+	InspectLevel  string `json:"inspect_level"`
+	ExecStatus    string `json:"exec_status"`
+	ExecResult    string `json:"exec_result"`
+}
+
+func (s CommitSql) TableName() string {
+	return "commit_sql_detail"
+}
+
+type RollbackSql struct {
+	Model
+	SqlId      uint   `json:"-"`
+	Number     uint   `json:"number"`
+	Sql        string `json:"sql"`
+	ExecStatus string `json:"exec_status"`
+	ExecResult string `json:"exec_result"`
+}
+
+func (s RollbackSql) TableName() string {
+	return "rollback_sql_detail"
 }
 
 // task progress
 const (
-	TASK_PROGRESS_INIT = iota
+	TASK_PROGRESS_INIT = ""
 
-	TASK_PROGRESS_INSPECT_START
-	TASK_PROGRESS_INSPECT_END
+	TASK_PROGRESS_INSPECT_START = "inspecting"
+	TASK_PROGRESS_INSPECT_END   = "inspected"
 
-	TASK_PROGRESS_COMMIT_START
-	TASK_PROGRESS_COMMIT_END
+	TASK_PROGRESS_COMMIT_START = "committing"
+	TASK_PROGRESS_COMMIT_END   = "committed"
 
-	TASK_PROGRESS_ROLLACK_START
-	TASK_PROGRESS_ROLLACK_END
+	TASK_PROGRESS_ROLLACK_START = "rolling back"
+	TASK_PROGRESS_ROLLACK_END   = "rolled back"
 
-	TASK_PROGRESS_ERROR
+	TASK_PROGRESS_ERROR = "error"
 )
 
 // task action
@@ -69,24 +86,54 @@ var ActionMap = map[int]string{
 	TASK_ACTION_ROLLBACK: "",
 }
 
-func (s *Storage) GetTaskByName(id string) (*Task, error) {
+func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Preload("Inst").Preload("Sqls").First(&task, id).Error
-	return task, err
+	err := s.db.Preload("Instance").First(&task, taskId).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	if err != nil {
+		return task, true, err
+	}
+	sql, exist, err := s.GetSqlById(fmt.Sprintf("%v", task.SqlId))
+	if err != nil {
+		return task, true, err
+	}
+	if exist {
+		task.Sql = *sql
+	}
+	return task, true, nil
 }
 
 func (s *Storage) GetTasks() ([]Task, error) {
 	tasks := []Task{}
-	err := s.db.Preload("Inst").Preload("Sqls").Find(&tasks).Error
+	err := s.db.Preload("Instance").Preload("Sql").Find(&tasks).Error
 	return tasks, err
 }
 
-func (s *Storage) UpdateTaskSql(task *Task, sqls []*Sql) error {
-	return s.db.Model(task).Association("Sqls").Replace(sqls).Error
+func (s *Storage) GetSqlById(SqlId string) (*Sql, bool, error) {
+	sql := &Sql{}
+	err := s.db.Preload("CommitSqls").Preload("RollbackSqls").First(&sql, SqlId).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	return sql, true, err
 }
 
 func (s *Storage) UpdateTaskById(taskId string, attrs ...interface{}) error {
 	return s.db.Table("tasks").Where("id = ?", taskId).Update(attrs...).Error
+}
+
+func (s *Storage) UpdateSqlsById(sqlsId uint, attrs ...interface{}) error {
+	return s.db.Table(Sql{}.TableName()).Where("id = ?", sqlsId).Update(attrs...).Error
+}
+
+func (s *Storage) UpdateCommitSql(sql *Sql, commitSql []*CommitSql) error {
+	return s.db.Model(sql).Association("CommitSqls").Append(commitSql).Error
+}
+
+func (s *Storage) UpdateRollbackSql(sql *Sql, rollbackSql []*RollbackSql) error {
+	return s.db.Model(sql).Association("RollbackSqls").Replace(rollbackSql).Error
 }
 
 func (s *Storage) InspectTask(task *Task) error {
@@ -123,4 +170,8 @@ func (s *Storage) RollbackTask(task *Task) error {
 	//	return errors.New("not commit")
 	//}
 	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), "action", TASK_ACTION_ROLLBACK)
+}
+
+func (s *Storage) UpdateProgress(sql *Sql, progress string) error {
+	return s.UpdateSqlsById(sql.ID, map[string]interface{}{"progress": progress})
 }
