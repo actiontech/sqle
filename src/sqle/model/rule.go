@@ -4,9 +4,9 @@ import "github.com/jinzhu/gorm"
 
 type RuleTemplate struct {
 	Model
-	Name  string
-	Desc  string
-	Rules []Rule `gorm:"many2many:rule_template_rule"`
+	Name  string `json:"name"`
+	Desc  string `json:"desc"`
+	Rules []Rule `json:"-" gorm:"many2many:rule_template_rule"`
 }
 
 type Rule struct {
@@ -15,6 +15,24 @@ type Rule struct {
 	Value string `json:"value"`
 	// notice, warn, error
 	Level string `json:"level" example:"error"`
+}
+
+// RuleTemplateDetail use for http request and swagger docs;
+// it is same as RuleTemplate, but display Rules in json format.
+type RuleTemplateDetail struct {
+	RuleTemplate
+	Rules []Rule `json:"rule_list"`
+}
+
+func (r *RuleTemplate) Detail() RuleTemplateDetail {
+	data := RuleTemplateDetail{
+		RuleTemplate: *r,
+		Rules:        r.Rules,
+	}
+	if r.Rules == nil {
+		data.Rules = []Rule{}
+	}
+	return data
 }
 
 const (
@@ -68,13 +86,13 @@ func (s *Storage) GetTemplateByName(name string) (RuleTemplate, bool, error) {
 	return t, true, err
 }
 
-func (s *Storage) UpdateRules(tpl *RuleTemplate, rules ...Rule) error {
-	return s.db.Model(tpl).Association("Rules").Append(rules).Error
+func (s *Storage) UpdateTemplateRules(tpl *RuleTemplate, rules ...Rule) error {
+	return s.db.Model(tpl).Association("Rules").Replace(rules).Error
 }
 
 func (s *Storage) GetAllTemplate() ([]RuleTemplate, error) {
 	ts := []RuleTemplate{}
-	err := s.db.Preload("Rules").Find(&ts).Error
+	err := s.db.Find(&ts).Error
 	return ts, err
 }
 

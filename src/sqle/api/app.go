@@ -17,14 +17,20 @@ func StartApi(port int, exitChan chan struct{}) {
 	e := echo.New()
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
+	e.GET("/instances", controller.GetInsts)
 	e.POST("/instances", controller.CreateInst)
+	e.GET("/instances/:instance_id/", controller.GetInstance)
+	e.DELETE("/instances/:instance_id/", controller.DeleteInstance)
+	e.PUT("/instances/:instance_id/", controller.UpdateInstance)
 	e.GET("/instances/:instance_id/connection", controller.PingInst)
 	e.GET("/instances/:instance_id/schemas", controller.GetInstSchemas)
-	e.GET("/instances", controller.GetInsts)
 
 	e.GET("/rule_templates", controller.GetAllTpl)
-	e.GET("/rule_templates/:template_id/", controller.GetRuleTemplate)
 	e.POST("/rule_templates", controller.CreateTemplate)
+	e.GET("/rule_templates/:template_id/", controller.GetRuleTemplate)
+	e.DELETE("/rule_templates/:template_id/", controller.DeleteRuleTemplate)
+	e.PUT("/rule_templates/:template_id/", controller.UpdateRuleTemplate)
+
 	e.GET("/rules", controller.GetRules)
 
 	e.GET("/tasks", controller.GetTasks)

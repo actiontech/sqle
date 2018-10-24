@@ -18,7 +18,7 @@ func GetStorage() *Storage {
 
 type Model struct {
 	ID        uint       `json:"id" gorm:"primary_key" example:"1"`
-	CreatedAt time.Time  `json:"create_at" example:"2018-10-21T16:40:23+08:00"`
+	CreatedAt time.Time  `json:"-" example:"2018-10-21T16:40:23+08:00"`
 	UpdatedAt time.Time  `json:"-"`
 	DeletedAt *time.Time `json:"-" sql:"index"`
 }
@@ -72,4 +72,8 @@ func (s *Storage) Save(model interface{}) error {
 
 func (s *Storage) Update(model interface{}, attrs ...interface{}) error {
 	return s.db.Model(model).UpdateColumns(attrs).Error
+}
+
+func (s *Storage) Delete(model interface{}) error {
+	return s.db.Delete(model).Error
 }

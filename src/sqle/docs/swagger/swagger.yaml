@@ -9,7 +9,7 @@ definitions:
         example: ok
         type: string
     type: object
-  controller.CreateInstReq:
+  controller.CreateInstanceReq:
     properties:
       db_type:
         description: mysql, mycat, sqlserver
@@ -30,7 +30,7 @@ definitions:
       port:
         example: "3306"
         type: string
-      rule_templates:
+      rule_template_name_list:
         description: this a list for rule template name
         example:
         - template_1
@@ -39,18 +39,6 @@ definitions:
         type: array
       user:
         example: root
-        type: string
-    type: object
-  controller.CreateInstRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/model.Instance'
-        type: object
-      message:
-        example: ok
         type: string
     type: object
   controller.CreateTaskReq:
@@ -148,6 +136,18 @@ definitions:
         example: ok
         type: string
     type: object
+  controller.GetRuleTplRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/model.RuleTemplateDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   controller.GetSchemaRes:
     properties:
       code:
@@ -175,6 +175,18 @@ definitions:
         example: ok
         type: string
     type: object
+  controller.InstanceRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/model.InstanceDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   controller.PingInstRes:
     properties:
       code:
@@ -189,9 +201,6 @@ definitions:
     type: object
   model.CommitSql:
     properties:
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
       exec_result:
         type: string
       exec_status:
@@ -210,9 +219,6 @@ definitions:
     type: object
   model.Instance:
     properties:
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
       db_type:
         example: mysql
         type: string
@@ -234,11 +240,35 @@ definitions:
         example: root
         type: string
     type: object
+  model.InstanceDetail:
+    properties:
+      db_type:
+        example: mysql
+        type: string
+      desc:
+        example: this is a instance
+        type: string
+      host:
+        example: 10.10.10.10
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        type: string
+      port:
+        example: "3306"
+        type: string
+      rule_template_list:
+        items:
+          $ref: '#/definitions/model.RuleTemplate'
+        type: array
+      user:
+        example: root
+        type: string
+    type: object
   model.RollbackSql:
     properties:
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
       exec_result:
         type: string
       exec_status:
@@ -266,9 +296,16 @@ definitions:
     type: object
   model.RuleTemplate:
     properties:
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
+      desc:
         type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        type: string
+    type: object
+  model.RuleTemplateDetail:
+    properties:
       desc:
         type: string
       id:
@@ -287,9 +324,6 @@ definitions:
         items:
           $ref: '#/definitions/model.CommitSql'
         type: array
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
       id:
         example: 1
         type: integer
@@ -304,9 +338,6 @@ definitions:
     type: object
   model.Task:
     properties:
-      create_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
       desc:
         example: this is a task
         type: string
@@ -355,22 +386,22 @@ paths:
         name: instance
         required: true
         schema:
-          $ref: '#/definitions/controller.CreateInstReq'
+          $ref: '#/definitions/controller.CreateInstanceReq'
           type: object
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.CreateInstRes'
+            $ref: '#/definitions/controller.InstanceRes'
             type: object
       summary: 添加实例
-  /instances/{inst_id}/:
+  /instances/{instance_id}/:
     delete:
       description: delete instance db
       parameters:
       - description: Instance ID
         in: path
-        name: inst_id
+        name: instance_id
         required: true
         type: string
       responses:
@@ -380,12 +411,27 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
             type: object
       summary: 删除实例
+    get:
+      description: get instance db
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.InstanceRes'
+            type: object
+      summary: 获取实例信息
     put:
       description: update instance db
       parameters:
       - description: Instance ID
         in: path
-        name: inst_id
+        name: instance_id
         required: true
         type: string
       - description: update instance
@@ -393,7 +439,7 @@ paths:
         name: instance
         required: true
         schema:
-          $ref: '#/definitions/controller.CreateInstReq'
+          $ref: '#/definitions/controller.CreateInstanceReq'
           type: object
       responses:
         "200":
@@ -465,6 +511,21 @@ paths:
             type: object
       summary: 添加规则模板
   /rule_templates/{template_id}/:
+    delete:
+      description: delete rule template
+      parameters:
+      - description: Template ID
+        in: path
+        name: template_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 删除规则模板
     get:
       description: get rule template
       parameters:
@@ -477,22 +538,17 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.GetAllRuleRes'
+            $ref: '#/definitions/controller.GetRuleTplRes'
             type: object
       summary: 获取规则模板
-  /rule_templates/template_id/:
-    delete:
-      description: delete rule template
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-            type: object
-      summary: 删除规则模板
     put:
       description: update rule template
       parameters:
+      - description: Template ID
+        in: path
+        name: template_id
+        required: true
+        type: string
       - description: update rule template
         in: body
         name: instance

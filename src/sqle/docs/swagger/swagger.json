@@ -39,7 +39,7 @@
                         "required": true,
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.CreateInstReq"
+                            "$ref": "#/definitions/controller.CreateInstanceReq"
                         }
                     }
                 ],
@@ -48,13 +48,35 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.CreateInstRes"
+                            "$ref": "#/definitions/controller.InstanceRes"
                         }
                     }
                 }
             }
         },
-        "/instances/{inst_id}/": {
+        "/instances/{instance_id}/": {
+            "get": {
+                "description": "get instance db",
+                "summary": "获取实例信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance ID",
+                        "name": "instance_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.InstanceRes"
+                        }
+                    }
+                }
+            },
             "put": {
                 "description": "update instance db",
                 "summary": "更新实例",
@@ -62,7 +84,7 @@
                     {
                         "type": "string",
                         "description": "Instance ID",
-                        "name": "inst_id",
+                        "name": "instance_id",
                         "in": "path",
                         "required": true
                     },
@@ -73,7 +95,7 @@
                         "required": true,
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.CreateInstReq"
+                            "$ref": "#/definitions/controller.CreateInstanceReq"
                         }
                     }
                 ],
@@ -94,7 +116,7 @@
                     {
                         "type": "string",
                         "description": "Instance ID",
-                        "name": "inst_id",
+                        "name": "instance_id",
                         "in": "path",
                         "required": true
                     }
@@ -202,11 +224,40 @@
                 }
             }
         },
-        "/rule_templates/template_id/": {
+        "/rule_templates/{template_id}/": {
+            "get": {
+                "description": "get rule template",
+                "summary": "获取规则模板",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rule Template ID",
+                        "name": "template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.GetRuleTplRes"
+                        }
+                    }
+                }
+            },
             "put": {
                 "description": "update rule template",
                 "summary": "更新规则模板",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID",
+                        "name": "template_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "update rule template",
                         "name": "instance",
@@ -231,25 +282,10 @@
             "delete": {
                 "description": "delete rule template",
                 "summary": "删除规则模板",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/rule_templates/{template_id}/": {
-            "get": {
-                "description": "get rule template",
-                "summary": "获取规则模板",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Rule Template ID",
+                        "description": "Template ID",
                         "name": "template_id",
                         "in": "path",
                         "required": true
@@ -260,7 +296,7 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.GetAllRuleRes"
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -417,7 +453,7 @@
                 }
             }
         },
-        "controller.CreateInstReq": {
+        "controller.CreateInstanceReq": {
             "type": "object",
             "properties": {
                 "db_type": {
@@ -445,7 +481,7 @@
                     "type": "string",
                     "example": "3306"
                 },
-                "rule_templates": {
+                "rule_template_name_list": {
                     "description": "this a list for rule template name",
                     "type": "array",
                     "items": {
@@ -458,23 +494,6 @@
                 "user": {
                     "type": "string",
                     "example": "root"
-                }
-            }
-        },
-        "controller.CreateInstRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.Instance"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
@@ -616,6 +635,23 @@
                 }
             }
         },
+        "controller.GetRuleTplRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.RuleTemplateDetail"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "controller.GetSchemaRes": {
             "type": "object",
             "properties": {
@@ -655,6 +691,23 @@
                 }
             }
         },
+        "controller.InstanceRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.InstanceDetail"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "controller.PingInstRes": {
             "type": "object",
             "properties": {
@@ -675,10 +728,6 @@
         "model.CommitSql": {
             "type": "object",
             "properties": {
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
                 "exec_result": {
                     "type": "string"
                 },
@@ -706,10 +755,6 @@
         "model.Instance": {
             "type": "object",
             "properties": {
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
                 "db_type": {
                     "type": "string",
                     "example": "mysql"
@@ -739,13 +784,47 @@
                 }
             }
         },
+        "model.InstanceDetail": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a instance"
+                },
+                "host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "rule_template_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RuleTemplate"
+                    }
+                },
+                "user": {
+                    "type": "string",
+                    "example": "root"
+                }
+            }
+        },
         "model.RollbackSql": {
             "type": "object",
             "properties": {
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
                 "exec_result": {
                     "type": "string"
                 },
@@ -786,10 +865,21 @@
         "model.RuleTemplate": {
             "type": "object",
             "properties": {
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
+                "desc": {
+                    "type": "string"
                 },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RuleTemplateDetail": {
+            "type": "object",
+            "properties": {
                 "desc": {
                     "type": "string"
                 },
@@ -817,10 +907,6 @@
                         "$ref": "#/definitions/model.CommitSql"
                     }
                 },
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -842,10 +928,6 @@
         "model.Task": {
             "type": "object",
             "properties": {
-                "create_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
                 "desc": {
                     "type": "string",
                     "example": "this is a task"

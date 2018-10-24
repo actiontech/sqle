@@ -18,12 +18,30 @@ type Instance struct {
 	User          string         `json:"user" gorm:"not null" example:"root"`
 	Password      string         `json:"-" gorm:"not null"`
 	Desc          string         `json:"desc" example:"this is a instance"`
-	RuleTemplates []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template" example:"template_1"`
+	RuleTemplates []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
+}
+
+// InstanceDetail use for http request and swagger docs;
+// it is same as Instance, but display RuleTemplates in json format.
+type InstanceDetail struct {
+	Instance
+	RuleTemplates []RuleTemplate `json:"rule_template_list"`
+}
+
+func (i *Instance) Detail() InstanceDetail {
+	data := InstanceDetail{
+		Instance:      *i,
+		RuleTemplates: i.RuleTemplates,
+	}
+	if i.RuleTemplates == nil {
+		data.RuleTemplates = []RuleTemplate{}
+	}
+	return data
 }
 
 func (s *Storage) GetInstById(id string) (Instance, bool, error) {
 	inst := Instance{}
-	err := s.db.Where("id = ?", id).First(&inst).Error
+	err := s.db.Preload("RuleTemplates").Where("id = ?", id).First(&inst).Error
 	if err == gorm.ErrRecordNotFound {
 		return inst, false, nil
 	}
@@ -32,7 +50,7 @@ func (s *Storage) GetInstById(id string) (Instance, bool, error) {
 
 func (s *Storage) GetInstByName(name string) (*Instance, bool, error) {
 	inst := &Instance{}
-	err := s.db.Where("name = ?", name).First(inst).Error
+	err := s.db.Preload("RuleTemplates").Where("name = ?", name).First(inst).Error
 	if err == gorm.ErrRecordNotFound {
 		return inst, false, nil
 	}
@@ -47,12 +65,12 @@ func (s *Storage) DelInstByName(inst *Instance) error {
 	return s.db.Delete(inst).Error
 }
 
-func (s *Storage) GetDatabases() ([]Instance, error) {
+func (s *Storage) GetInstances() ([]Instance, error) {
 	inst := []Instance{}
 	err := s.db.Find(&inst).Error
 	return inst, err
 }
 
 func (s *Storage) UpdateInstRuleTemplate(inst *Instance, ts ...RuleTemplate) error {
-	return s.db.Model(inst).Association("RuleTemplates").Append(ts).Error
+	return s.db.Model(inst).Association("RuleTemplates").Replace(ts).Error
 }

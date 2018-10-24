@@ -27,8 +27,6 @@ func CreateTemplate(c echo.Context) error {
 		return err
 	}
 
-	fmt.Println(req)
-
 	_, exist, err := s.GetTemplateByName(req.Name)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
@@ -59,6 +57,114 @@ func CreateTemplate(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
 
+	return c.JSON(200, NewBaseReq(0, "ok"))
+}
+
+type GetRuleTplRes struct {
+	BaseRes
+	Data model.RuleTemplateDetail `json:"data"`
+}
+
+// @Summary 获取规则模板
+// @Description get rule template
+// @Param template_id path string true "Rule Template ID"
+// @Success 200 {object} controller.GetRuleTplRes
+// @router /rule_templates/{template_id}/ [get]
+func GetRuleTemplate(c echo.Context) error {
+	s := model.GetStorage()
+	templateId := c.Param("template_id")
+	template, exist, err := s.GetTemplateById(templateId)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("template id %v not exist", templateId)))
+	}
+	return c.JSON(http.StatusOK, &GetRuleTplRes{
+		BaseRes: NewBaseReq(0, "ok"),
+		Data:    template.Detail(),
+	})
+	return c.JSON(200, template)
+}
+
+// @Summary 删除规则模板
+// @Description delete rule template
+// @Param template_id path string true "Template ID"
+// @Success 200 {object} controller.BaseRes
+// @router /rule_templates/{template_id}/ [delete]
+func DeleteRuleTemplate(c echo.Context) error {
+	s := model.GetStorage()
+	templateId := c.Param("template_id")
+	template, exist, err := s.GetTemplateById(templateId)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(200, NewBaseReq(-1, "template is not exist"))
+	}
+	err = s.Delete(template)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	return c.JSON(200, NewBaseReq(0, "ok"))
+}
+
+// @Summary 更新规则模板
+// @Description update rule template
+// @Param template_id path string true "Template ID"
+// @Param instance body controller.CreateTplReq true "update rule template"
+// @Success 200 {object} controller.BaseRes
+// @router /rule_templates/{template_id}/ [put]
+func UpdateRuleTemplate(c echo.Context) error {
+	s := model.GetStorage()
+	templateId := c.Param("template_id")
+	req := new(CreateTplReq)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+
+	template, exist, err := s.GetTemplateById(templateId)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("template id %v not exist", templateId)))
+	}
+
+	if template.Name != req.Name {
+		_, exist, err := s.GetTemplateByName(req.Name)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(-1, err.Error()))
+		}
+		if exist {
+			return c.JSON(200, NewBaseReq(-1, "template is exist"))
+		}
+	}
+	template.Name = req.Name
+	template.Desc = req.Name
+	template.Rules = nil
+
+	templateRules := []model.Rule{}
+	rules, err := s.GetAllRule()
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	ruleMap := model.GetRuleMapFromAllArray(rules)
+	for _, name := range req.RulesName {
+		if rule, ok := ruleMap[name]; !ok {
+			return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("rule: %s is invalid", name)))
+		} else {
+			templateRules = append(templateRules, rule)
+		}
+	}
+	err = s.Save(&template)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	err = s.UpdateTemplateRules(&template, templateRules...)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
 	return c.JSON(200, NewBaseReq(0, "ok"))
 }
 
@@ -105,49 +211,5 @@ func GetRules(c echo.Context) error {
 		BaseRes: NewBaseReq(0, "ok"),
 		Data:    rules,
 	})
-	return nil
-}
-
-type GetRuleTplRes struct {
-	BaseRes
-	Data model.RuleTemplate `json:"data"`
-}
-
-// @Summary 获取规则模板
-// @Description get rule template
-// @Param template_id path string true "Rule Template ID"
-// @Success 200 {object} controller.GetAllRuleRes
-// @router /rule_templates/{template_id}/ [get]
-func GetRuleTemplate(c echo.Context) error {
-	s := model.GetStorage()
-	templateId := c.Param("template_id")
-	template, exist, err := s.GetTemplateById(templateId)
-	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
-	}
-	if !exist {
-		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("template id %v not exist", templateId)))
-	}
-	return c.JSON(http.StatusOK, &GetRuleTplRes{
-		BaseRes: NewBaseReq(0, "ok"),
-		Data:    template,
-	})
-	return c.JSON(200, template)
-}
-
-// @Summary 更新规则模板
-// @Description update rule template
-// @Param instance body controller.CreateTplReq true "update rule template"
-// @Success 200 {object} controller.BaseRes
-// @router /rule_templates/template_id/ [put]
-func UpdateRuleTemplate(c echo.Context) error {
-	return nil
-}
-
-// @Summary 删除规则模板
-// @Description delete rule template
-// @Success 200 {object} controller.BaseRes
-// @router /rule_templates/template_id/ [delete]
-func DeleteRuleTemplate(c echo.Context) error {
 	return nil
 }
