@@ -59,18 +59,6 @@ definitions:
         example: alter table tb1 drop columns c1
         type: string
     type: object
-  controller.CreateTaskRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/model.Task'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   controller.CreateTplReq:
     properties:
       desc:
@@ -163,13 +151,13 @@ definitions:
         example: ok
         type: string
     type: object
-  controller.GetTaskReq:
+  controller.GetTaskRes:
     properties:
       code:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/model.Task'
+        $ref: '#/definitions/model.TaskDetail'
         type: object
       message:
         example: ok
@@ -313,31 +301,44 @@ definitions:
         type: integer
       name:
         type: string
-      rules:
+      rule_list:
         items:
           $ref: '#/definitions/model.Rule'
         type: array
     type: object
-  model.Sql:
+  model.Task:
     properties:
-      commit_sqls:
-        items:
-          $ref: '#/definitions/model.CommitSql'
-        type: array
+      _:
+        $ref: '#/definitions/model.Instance'
+        type: object
+      desc:
+        example: this is a task
+        type: string
       id:
         example: 1
         type: integer
+      instance_id:
+        type: integer
+      name:
+        example: REQ201812578
+        type: string
       progress:
         type: string
-      rollback_sqls:
-        items:
-          $ref: '#/definitions/model.RollbackSql'
-        type: array
+      schema:
+        example: db1
+        type: string
       sql:
         type: string
     type: object
-  model.Task:
+  model.TaskDetail:
     properties:
+      _:
+        $ref: '#/definitions/model.Instance'
+        type: object
+      commit_sql_list:
+        items:
+          $ref: '#/definitions/model.CommitSql'
+        type: array
       desc:
         example: this is a task
         type: string
@@ -347,15 +348,22 @@ definitions:
       instance:
         $ref: '#/definitions/model.Instance'
         type: object
+      instance_id:
+        type: integer
       name:
         example: REQ201812578
         type: string
+      progress:
+        type: string
+      rollback_sql_list:
+        items:
+          $ref: '#/definitions/model.RollbackSql'
+        type: array
       schema:
         example: db1
         type: string
       sql:
-        $ref: '#/definitions/model.Sql'
-        type: object
+        type: string
     type: object
 host: '{{.Host}}'
 info:
@@ -600,19 +608,40 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.CreateTaskRes'
+            $ref: '#/definitions/controller.GetTaskRes'
             type: object
-      summary: 创建Sql审核单
-  /tasks/{task_id}:
-    get:
-      description: get task
+      summary: 创建Sql审核任务
+  /tasks/{task_id}/:
+    delete:
+      description: delete task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.GetTaskReq'
+            $ref: '#/definitions/controller.BaseRes'
             type: object
-      summary: 获取Sql审核单信息
+      summary: 删除审核任务
+    get:
+      description: get task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskRes'
+            type: object
+      summary: 获取Sql审核任务信息
   /tasks/{task_id}/commit:
     post:
       description: commit sql

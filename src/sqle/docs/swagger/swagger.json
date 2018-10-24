@@ -337,7 +337,7 @@
                     "application/json",
                     "application/json"
                 ],
-                "summary": "创建Sql审核单",
+                "summary": "创建Sql审核任务",
                 "parameters": [
                     {
                         "description": "add task",
@@ -355,22 +355,53 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.CreateTaskRes"
+                            "$ref": "#/definitions/controller.GetTaskRes"
                         }
                     }
                 }
             }
         },
-        "/tasks/{task_id}": {
+        "/tasks/{task_id}/": {
             "get": {
                 "description": "get task",
-                "summary": "获取Sql审核单信息",
+                "summary": "获取Sql审核任务信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.GetTaskReq"
+                            "$ref": "#/definitions/controller.GetTaskRes"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete task",
+                "summary": "删除审核任务",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -522,23 +553,6 @@
                 }
             }
         },
-        "controller.CreateTaskRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.Task"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "controller.CreateTplReq": {
             "type": "object",
             "properties": {
@@ -674,7 +688,7 @@
                 }
             }
         },
-        "controller.GetTaskReq": {
+        "controller.GetTaskRes": {
             "type": "object",
             "properties": {
                 "code": {
@@ -683,7 +697,7 @@
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/model.Task"
+                    "$ref": "#/definitions/model.TaskDetail"
                 },
                 "message": {
                     "type": "string",
@@ -890,7 +904,7 @@
                 "name": {
                     "type": "string"
                 },
-                "rules": {
+                "rule_list": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Rule"
@@ -898,36 +912,53 @@
                 }
             }
         },
-        "model.Sql": {
+        "model.Task": {
             "type": "object",
             "properties": {
-                "commit_sqls": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CommitSql"
-                    }
+                "_": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.Instance"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a task"
                 },
                 "id": {
                     "type": "integer",
                     "example": 1
                 },
+                "instance_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "REQ201812578"
+                },
                 "progress": {
                     "type": "string"
                 },
-                "rollback_sqls": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.RollbackSql"
-                    }
+                "schema": {
+                    "type": "string",
+                    "example": "db1"
                 },
                 "sql": {
                     "type": "string"
                 }
             }
         },
-        "model.Task": {
+        "model.TaskDetail": {
             "type": "object",
             "properties": {
+                "_": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.Instance"
+                },
+                "commit_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CommitSql"
+                    }
+                },
                 "desc": {
                     "type": "string",
                     "example": "this is a task"
@@ -940,17 +971,28 @@
                     "type": "object",
                     "$ref": "#/definitions/model.Instance"
                 },
+                "instance_id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string",
                     "example": "REQ201812578"
+                },
+                "progress": {
+                    "type": "string"
+                },
+                "rollback_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RollbackSql"
+                    }
                 },
                 "schema": {
                     "type": "string",
                     "example": "db1"
                 },
                 "sql": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.Sql"
+                    "type": "string"
                 }
             }
         }

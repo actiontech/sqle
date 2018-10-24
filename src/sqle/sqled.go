@@ -104,22 +104,22 @@ func (s *Sqled) Do(action *Action) error {
 
 func (s *Sqled) inspect(task *model.Task) error {
 	st := model.GetStorage()
-	err := st.UpdateProgress(&task.Sql, model.TASK_PROGRESS_INSPECT_START)
+	err := st.UpdateProgress(task, model.TASK_PROGRESS_INSPECT_START)
 	if err != nil {
 		return err
 	}
-	i := inspector.NewInspector(nil, task.Instance, task.Schema, task.Sql.Sql)
+	i := inspector.NewInspector(nil, task.Instance, task.Schema, task.Sql)
 	sqls, err := i.Inspect()
 	if err != nil {
 		return err
 	}
 	fmt.Println("1111")
-	err = st.UpdateCommitSql(&task.Sql, sqls)
+	err = st.UpdateCommitSql(task, sqls)
 	if err != nil {
 		return err
 	}
 	fmt.Println("2222")
-	return st.UpdateProgress(&task.Sql, model.TASK_PROGRESS_INSPECT_END)
+	return st.UpdateProgress(task, model.TASK_PROGRESS_INSPECT_END)
 }
 
 func (s *Sqled) commit(task *model.Task) error {

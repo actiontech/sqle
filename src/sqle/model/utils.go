@@ -31,7 +31,7 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	}
 	db.LogMode(true)
 	// create tables
-	db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &Sql{}, &CommitSql{}, &RollbackSql{})
+	db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{})
 	storage := &Storage{db: db}
 	// update default rules
 	err = storage.CreateDefaultRules()

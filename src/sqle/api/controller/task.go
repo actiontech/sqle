@@ -16,18 +16,18 @@ type CreateTaskReq struct {
 	Sql      string `form:"sql" example:"alter table tb1 drop columns c1"`
 }
 
-type CreateTaskRes struct {
+type GetTaskRes struct {
 	BaseRes
-	Data model.Task `json:"data"`
+	Data model.TaskDetail `json:"data"`
 }
 
-// @Summary 创建Sql审核单
+// @Summary 创建Sql审核任务
 // @Description create a task
 // @Accept json
 // @Accept json
 // @Param instance body controller.CreateTaskReq true "add task"
-// @Success 200 {object} controller.CreateTaskRes
-//// @router /tasks [post]
+// @Success 200 {object} controller.GetTaskRes
+// @router /tasks [post]
 func CreateTask(c echo.Context) error {
 	s := model.GetStorage()
 	req := new(CreateTaskReq)
@@ -43,22 +43,70 @@ func CreateTask(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("instance %s is not exist", req.InstName)))
 	}
 
-	sql := model.Sql{
-		Sql: req.Sql,
-	}
-
 	task := &model.Task{
-		Name:   req.Name,
-		Desc:   req.Desc,
-		Schema: req.Schema,
-		InstId: inst.ID,
-		Sql:    sql,
+		Name:       req.Name,
+		Desc:       req.Desc,
+		Schema:     req.Schema,
+		InstanceId: inst.ID,
+		Sql:        req.Sql,
 	}
 	err = s.Save(task)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
-	return c.JSON(200, NewBaseReq(0, "ok"))
+	return c.JSON(200, &GetTaskRes{
+		BaseRes: NewBaseReq(0, "ok"),
+		Data:    task.Detail(),
+	})
+}
+
+// @Summary 获取Sql审核任务信息
+// @Description get task
+// @Param task_id path string true "Task ID"
+// @Success 200 {object} controller.GetTaskRes
+// @router /tasks/{task_id}/ [get]
+func GetTask(c echo.Context) error {
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+	}
+	return c.JSON(http.StatusOK, &GetTaskRes{
+		BaseRes: NewBaseReq(0, "ok"),
+		Data:    task.Detail(),
+	})
+}
+
+// @Summary 删除审核任务
+// @Description delete task
+// @Param task_id path string true "Task ID"
+// @Success 200 {object} controller.BaseRes
+// @router /tasks/{task_id}/ [delete]
+func DeleteTask(c echo.Context) error {
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+	}
+
+	// must check task not running
+
+	err = s.Delete(task)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	return c.JSON(http.StatusOK, &GetTaskRes{
+		BaseRes: NewBaseReq(0, "ok"),
+		Data:    task.Detail(),
+	})
 }
 
 type GetAllTaskRes struct {
@@ -69,7 +117,7 @@ type GetAllTaskRes struct {
 // @Summary Sql审核列表
 // @Description get all tasks
 // @Success 200 {object} controller.GetAllTaskRes
-//// @router /tasks [get]
+// @router /tasks [get]
 func GetTasks(c echo.Context) error {
 	s := model.GetStorage()
 	if s == nil {
@@ -125,18 +173,5 @@ func CommitTask(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /tasks/{task_id}/rollback [post]
 func RollbackTask(c echo.Context) error {
-	return nil
-}
-
-type GetTaskReq struct {
-	BaseRes
-	Data model.Task `json:"data"`
-}
-
-// @Summary 获取Sql审核单信息
-// @Description get task
-// @Success 200 {object} controller.GetTaskReq
-// @router /tasks/{task_id} [get]
-func GetTask(c echo.Context) error {
 	return nil
 }
