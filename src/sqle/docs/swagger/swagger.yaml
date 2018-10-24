@@ -47,7 +47,7 @@ definitions:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/storage.Instance'
+        $ref: '#/definitions/model.Instance'
         type: object
       message:
         example: ok
@@ -77,7 +77,7 @@ definitions:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/storage.Task'
+        $ref: '#/definitions/model.Task'
         type: object
       message:
         example: ok
@@ -89,9 +89,9 @@ definitions:
         type: string
       name:
         type: string
-      rules:
+      rule_name_list:
         example:
-        - check_name_length
+        - ddl_create_table_not_exist
         items:
           type: string
         type: array
@@ -103,7 +103,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/storage.Instance'
+          $ref: '#/definitions/model.Instance'
         type: array
       message:
         example: ok
@@ -116,7 +116,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/storage.Rule'
+          $ref: '#/definitions/model.Rule'
         type: array
       message:
         example: ok
@@ -129,7 +129,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/storage.Task'
+          $ref: '#/definitions/model.Task'
         type: array
       message:
         example: ok
@@ -142,7 +142,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/storage.RuleTemplate'
+          $ref: '#/definitions/model.RuleTemplate'
         type: array
       message:
         example: ok
@@ -169,7 +169,7 @@ definitions:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/storage.Task'
+        $ref: '#/definitions/model.Task'
         type: object
       message:
         example: ok
@@ -187,12 +187,18 @@ definitions:
         example: ok
         type: string
     type: object
-  storage.CommitSql:
+  model.CommitSql:
     properties:
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
       exec_result:
         type: string
       exec_status:
         type: string
+      id:
+        example: 1
+        type: integer
       inspect_level:
         type: string
       inspect_result:
@@ -202,7 +208,7 @@ definitions:
       sql:
         type: string
     type: object
-  storage.Instance:
+  model.Instance:
     properties:
       create_at:
         example: "2018-10-21T16:40:23+08:00"
@@ -228,18 +234,24 @@ definitions:
         example: root
         type: string
     type: object
-  storage.RollbackSql:
+  model.RollbackSql:
     properties:
+      create_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
       exec_result:
         type: string
       exec_status:
         type: string
+      id:
+        example: 1
+        type: integer
       number:
         type: integer
       sql:
         type: string
     type: object
-  storage.Rule:
+  model.Rule:
     properties:
       desc:
         type: string
@@ -252,7 +264,7 @@ definitions:
       value:
         type: string
     type: object
-  storage.RuleTemplate:
+  model.RuleTemplate:
     properties:
       create_at:
         example: "2018-10-21T16:40:23+08:00"
@@ -266,14 +278,14 @@ definitions:
         type: string
       rules:
         items:
-          $ref: '#/definitions/storage.Rule'
+          $ref: '#/definitions/model.Rule'
         type: array
     type: object
-  storage.Sql:
+  model.Sql:
     properties:
       commit_sqls:
         items:
-          $ref: '#/definitions/storage.CommitSql'
+          $ref: '#/definitions/model.CommitSql'
         type: array
       create_at:
         example: "2018-10-21T16:40:23+08:00"
@@ -281,14 +293,16 @@ definitions:
       id:
         example: 1
         type: integer
+      progress:
+        type: string
       rollback_sqls:
         items:
-          $ref: '#/definitions/storage.RollbackSql'
+          $ref: '#/definitions/model.RollbackSql'
         type: array
       sql:
         type: string
     type: object
-  storage.Task:
+  model.Task:
     properties:
       create_at:
         example: "2018-10-21T16:40:23+08:00"
@@ -300,7 +314,7 @@ definitions:
         example: 1
         type: integer
       instance:
-        $ref: '#/definitions/storage.Instance'
+        $ref: '#/definitions/model.Instance'
         type: object
       name:
         example: REQ201812578
@@ -309,7 +323,7 @@ definitions:
         example: db1
         type: string
       sql:
-        $ref: '#/definitions/storage.Sql'
+        $ref: '#/definitions/model.Sql'
         type: object
     type: object
 host: '{{.Host}}'
@@ -420,42 +434,6 @@ paths:
             $ref: '#/definitions/controller.GetSchemaRes'
             type: object
       summary: 实例 Schema 列表
-  /rule_template/template_id/:
-    delete:
-      description: delete rule template
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-            type: object
-      summary: 删除规则模板
-    get:
-      description: get rule template
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetAllRuleRes'
-            type: object
-      summary: 获取规则模板
-    put:
-      description: update rule template
-      parameters:
-      - description: update rule template
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateTplReq'
-          type: object
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-            type: object
-      summary: 更新规则模板
   /rule_templates:
     get:
       description: get all rule template
@@ -486,6 +464,49 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
             type: object
       summary: 添加规则模板
+  /rule_templates/{template_id}/:
+    get:
+      description: get rule template
+      parameters:
+      - description: Rule Template ID
+        in: path
+        name: template_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllRuleRes'
+            type: object
+      summary: 获取规则模板
+  /rule_templates/template_id/:
+    delete:
+      description: delete rule template
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 删除规则模板
+    put:
+      description: update rule template
+      parameters:
+      - description: update rule template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateTplReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 更新规则模板
   /rules:
     get:
       description: get all rule template

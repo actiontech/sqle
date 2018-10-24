@@ -5,7 +5,7 @@ import (
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle/executor"
-	"sqle/storage"
+	"sqle/model"
 	"strings"
 )
 
@@ -24,7 +24,7 @@ type CreateInstReq struct {
 
 type CreateInstRes struct {
 	BaseRes
-	Data storage.Instance `json:"data"`
+	Data model.Instance `json:"data"`
 }
 
 // @Summary 添加实例
@@ -36,30 +36,12 @@ type CreateInstRes struct {
 // @Success 200 {object} controller.CreateInstRes
 //// @router /instances [post]
 func CreateInst(c echo.Context) error {
-	s := storage.GetStorage()
+	s := model.GetStorage()
 	req := new(CreateInstReq)
 	if err := c.Bind(req); err != nil {
 		return err
 	}
-
-	notExistTs := []string{}
-	ts := []storage.RuleTemplate{}
-	for _, tplName := range req.RuleTemplates {
-		t, exist, err := s.GetTemplateByName(tplName)
-		if err != nil {
-			return c.JSON(200, NewBaseReq(-1, err.Error()))
-		}
-		if !exist {
-			notExistTs = append(notExistTs, tplName)
-		}
-		ts = append(ts, *t)
-	}
-	if len(notExistTs) > 0 {
-		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("rule_template %s not exist", strings.Join(notExistTs, ", "))))
-	}
-
 	_, exist, err := s.GetInstByName(req.Name)
-
 	if err != nil {
 		return err
 	}
@@ -67,7 +49,7 @@ func CreateInst(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(-1, "inst is exist"))
 	}
 
-	inst := &storage.Instance{
+	instance := &model.Instance{
 		Name:     req.Name,
 		DbType:   req.DbType,
 		User:     req.User,
@@ -76,22 +58,39 @@ func CreateInst(c echo.Context) error {
 		Password: req.Password,
 		Desc:     req.Desc,
 	}
-	err = s.Save(inst)
+
+	notExistTs := []string{}
+	for _, tplName := range req.RuleTemplates {
+		t, exist, err := s.GetTemplateByName(tplName)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(-1, err.Error()))
+		}
+		if !exist {
+			notExistTs = append(notExistTs, tplName)
+		}
+		instance.RuleTemplates = append(instance.RuleTemplates, t)
+	}
+
+	if len(notExistTs) > 0 {
+		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("rule_template %s not exist", strings.Join(notExistTs, ", "))))
+	}
+
+	err = s.Save(instance)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
 
-	err = s.UpdateInstRuleTemplate(inst, ts...)
-	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
-	}
+	//err = s.UpdateInstRuleTemplate(instance, ts...)
+	//if err != nil {
+	//	return c.JSON(200, NewBaseReq(-1, err.Error()))
+	//}
 
 	return c.JSON(200, NewBaseReq(0, "ok"))
 }
 
 //func (c *BaseController) GetDatabaseSchemas() {
 //	dbId := c.Ctx.Input.Param(":dbId")
-//	db, err := c.storage.GetDatabaseById(dbId)
+//	db, err := c.model.GetDatabaseById(dbId)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -103,7 +102,7 @@ func CreateInst(c echo.Context) error {
 //}
 //
 //func (c *BaseController) DatabaseList() {
-//	databases, err := c.storage.GetDatabases()
+//	databases, err := c.model.GetDatabases()
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -131,7 +130,7 @@ func UpdateInstance(c echo.Context) error {
 
 type GetAllInstReq struct {
 	BaseRes
-	Data []storage.Instance `json:"data"`
+	Data []model.Instance `json:"data"`
 }
 
 // @Summary 实例列表
@@ -139,7 +138,7 @@ type GetAllInstReq struct {
 // @Success 200 {object} controller.GetAllInstReq
 // @router /instances [get]
 func GetInsts(c echo.Context) error {
-	s := storage.GetStorage()
+	s := model.GetStorage()
 	if s == nil {
 		c.String(500, "nil")
 	}
@@ -165,7 +164,7 @@ type PingInstRes struct {
 // @Success 200 {object} controller.PingInstRes
 // @router /instances/{inst_id}/connection [get]
 func PingInst(c echo.Context) error {
-	s := storage.GetStorage()
+	s := model.GetStorage()
 	instId := c.Param("inst_id")
 	inst, exist, err := s.GetInstById(instId)
 	if err != nil {

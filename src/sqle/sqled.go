@@ -3,7 +3,7 @@ package sqle
 import (
 	"fmt"
 	"sqle/inspector"
-	"sqle/storage"
+	"sqle/model"
 	"sync"
 )
 
@@ -21,7 +21,7 @@ type Sqled struct {
 }
 
 type Action struct {
-	Task  *storage.Task
+	Task  *model.Task
 	Typ   int
 	Error error
 }
@@ -44,7 +44,7 @@ func (s *Sqled) AddTask(taskId string, typ int) (chan *Action, error) {
 	s.currentTask[taskId] = done
 	s.Unlock()
 
-	task, exist, err := storage.GetStorage().GetTaskById(taskId)
+	task, exist, err := model.GetStorage().GetTaskById(taskId)
 	if err != nil {
 		return nil, err
 	}
@@ -77,11 +77,11 @@ func (s *Sqled) TaskLoop() {
 func (s *Sqled) Do(action *Action) error {
 	var err error
 	switch action.Typ {
-	case storage.TASK_ACTION_INSPECT:
+	case model.TASK_ACTION_INSPECT:
 		err = s.inspect(action.Task)
-	case storage.TASK_ACTION_COMMIT:
+	case model.TASK_ACTION_COMMIT:
 		err = s.commit(action.Task)
-	case storage.TASK_ACTION_ROLLBACK:
+	case model.TASK_ACTION_ROLLBACK:
 		err = s.rollback(action.Task)
 	}
 	if err != nil {
@@ -102,9 +102,9 @@ func (s *Sqled) Do(action *Action) error {
 	return err
 }
 
-func (s *Sqled) inspect(task *storage.Task) error {
-	st := storage.GetStorage()
-	err := st.UpdateProgress(&task.Sql, storage.TASK_PROGRESS_INSPECT_START)
+func (s *Sqled) inspect(task *model.Task) error {
+	st := model.GetStorage()
+	err := st.UpdateProgress(&task.Sql, model.TASK_PROGRESS_INSPECT_START)
 	if err != nil {
 		return err
 	}
@@ -119,10 +119,10 @@ func (s *Sqled) inspect(task *storage.Task) error {
 		return err
 	}
 	fmt.Println("2222")
-	return st.UpdateProgress(&task.Sql, storage.TASK_PROGRESS_INSPECT_END)
+	return st.UpdateProgress(&task.Sql, model.TASK_PROGRESS_INSPECT_END)
 }
 
-func (s *Sqled) commit(task *storage.Task) error {
+func (s *Sqled) commit(task *model.Task) error {
 	//for _, sql := range task.Sqls {
 	//	if sql.CommitSql == "" {
 	//		continue
@@ -146,7 +146,7 @@ func (s *Sqled) commit(task *storage.Task) error {
 	return nil
 }
 
-func (s *Sqled) rollback(task *storage.Task) error {
+func (s *Sqled) rollback(task *model.Task) error {
 	//defer func() {
 	//
 	//}()

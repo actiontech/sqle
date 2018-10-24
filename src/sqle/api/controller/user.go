@@ -1,6 +1,6 @@
 package controller
 
-//import "sqle/storage"
+//import "sqle/model"
 //
 //type UserController struct {
 //	BaseController
@@ -15,10 +15,10 @@ package controller
 //	req := &UserReq{}
 //	c.validForm(req)
 //
-//	user := &storage.User{
+//	user := &model.User{
 //		Name: req.Name,
 //	}
-//	exist, err := c.storage.Exist(user)
+//	exist, err := c.model.Exist(user)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -27,7 +27,7 @@ package controller
 //	}
 //
 //	user.Password = req.Password
-//	err = c.storage.Create(user)
+//	err = c.model.Create(user)
 //	if nil != err {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -36,8 +36,8 @@ package controller
 //}
 //
 //func (c *BaseController) UserList() {
-//	users := []*storage.User{}
-//	users, err := c.storage.GetUsers()
+//	users := []*model.User{}
+//	users, err := c.model.GetUsers()
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}

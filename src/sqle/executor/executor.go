@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"sqle/storage"
+	"sqle/model"
 )
 
 type Conn struct {
@@ -17,7 +17,7 @@ func NewConn(dbType string, user, password, host, port, schema string) (*Conn, e
 	var db *gorm.DB
 	var err error
 	switch dbType {
-	case storage.DB_TYPE_MYSQL:
+	case model.DB_TYPE_MYSQL:
 		db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 			user, password, host, port, schema))
 	default:
@@ -29,7 +29,7 @@ func NewConn(dbType string, user, password, host, port, schema string) (*Conn, e
 	return &Conn{db}, nil
 }
 
-func Ping(db *storage.Instance) error {
+func Ping(db *model.Instance) error {
 	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func Ping(db *storage.Instance) error {
 	return conn.ping()
 }
 
-func ShowDatabase(db *storage.Instance) ([]string, error) {
+func ShowDatabase(db *model.Instance) ([]string, error) {
 	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
 	if err != nil {
 		return nil, err
@@ -56,13 +56,13 @@ func ShowDatabase(db *storage.Instance) ([]string, error) {
 	return dbs, nil
 }
 
-func OpenDbWithTask(task *storage.Task) (*Conn, error) {
+func OpenDbWithTask(task *model.Task) (*Conn, error) {
 	db := task.Instance
 	schema := task.Schema
 	return NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, schema)
 }
 
-func Exec(task *storage.Task, sql string) error {
+func Exec(task *model.Task, sql string) error {
 	conn, err := OpenDbWithTask(task)
 	if err != nil {
 		return err

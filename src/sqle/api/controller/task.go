@@ -5,14 +5,14 @@ import (
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle"
-	"sqle/storage"
+	"sqle/model"
 )
 
 //import (
 //	"fmt"
 //	"github.com/astaxie/beego/validation"
 //	"log"
-//	"sqle/storage"
+//	"sqle/model"
 //)
 //
 //type AddTaskReq struct {
@@ -30,24 +30,24 @@ import (
 //	req := &AddTaskReq{}
 //	c.validForm(req)
 //
-//	approver, err := c.storage.GetUserByName(req.ApproverName)
+//	approver, err := c.model.GetUserByName(req.ApproverName)
 //	if err != nil {
 //		fmt.Println(1)
 //		c.CustomAbort(500, err.Error())
 //	}
-//	database, _, err := c.storage.GetDatabaseById(req.DbId)
+//	database, _, err := c.model.GetDatabaseById(req.DbId)
 //	if err != nil {
 //		fmt.Println(2)
 //		c.CustomAbort(500, err.Error())
 //	}
 //
-//	task := storage.Task{
+//	task := model.Task{
 //		User:     *c.currentUser,
 //		Db:       *database,
 //		Approver: *approver,
 //		ReqSql:   req.Sql,
 //	}
-//	err = c.storage.Save(&task)
+//	err = c.model.Save(&task)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -56,7 +56,7 @@ import (
 //}
 //
 //func (c *BaseController) TaskList() {
-//	tasks, err := c.storage.GetTasks()
+//	tasks, err := c.model.GetTasks()
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -72,11 +72,11 @@ import (
 //		}
 //	}()
 //	taskId := c.Ctx.Input.Param(":taskId")
-//	task, err := c.storage.GetTaskById(taskId)
+//	task, err := c.model.GetTaskById(taskId)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
-//	err = c.storage.InspectTask(task)
+//	err = c.model.InspectTask(task)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -86,7 +86,7 @@ import (
 //
 //func (c *BaseController) Approve() {
 //	taskId := c.Ctx.Input.Param(":taskId")
-//	task, err := c.storage.GetTaskById(taskId)
+//	task, err := c.model.GetTaskById(taskId)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -96,7 +96,7 @@ import (
 //	if task.Approved {
 //		c.CustomAbort(500, "task has approved")
 //	}
-//	err = c.storage.ApproveTask(task)
+//	err = c.model.ApproveTask(task)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -106,11 +106,11 @@ import (
 //
 //func (c *BaseController) Commit() {
 //	taskId := c.Ctx.Input.Param(":taskId")
-//	task, err := c.storage.GetTaskById(taskId)
+//	task, err := c.model.GetTaskById(taskId)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
-//	err = c.storage.CommitTask(task)
+//	err = c.model.CommitTask(task)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -120,11 +120,11 @@ import (
 //
 //func (c *BaseController) Rollback() {
 //	taskId := c.Ctx.Input.Param(":taskId")
-//	task, err := c.storage.GetTaskById(taskId)
+//	task, err := c.model.GetTaskById(taskId)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
-//	err = c.storage.RollbackTask(task)
+//	err = c.model.RollbackTask(task)
 //	if err != nil {
 //		c.CustomAbort(500, err.Error())
 //	}
@@ -142,7 +142,7 @@ type CreateTaskReq struct {
 
 type CreateTaskRes struct {
 	BaseRes
-	Data storage.Task `json:"data"`
+	Data model.Task `json:"data"`
 }
 
 // @Summary 创建Sql审核单
@@ -153,7 +153,7 @@ type CreateTaskRes struct {
 // @Success 200 {object} controller.CreateTaskRes
 //// @router /tasks [post]
 func CreateTask(c echo.Context) error {
-	s := storage.GetStorage()
+	s := model.GetStorage()
 	req := new(CreateTaskReq)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -167,11 +167,11 @@ func CreateTask(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("instance %s is not exist", req.InstName)))
 	}
 
-	sql := storage.Sql{
+	sql := model.Sql{
 		Sql: req.Sql,
 	}
 
-	task := &storage.Task{
+	task := &model.Task{
 		Name:   req.Name,
 		Desc:   req.Desc,
 		Schema: req.Schema,
@@ -187,7 +187,7 @@ func CreateTask(c echo.Context) error {
 
 type GetAllTaskRes struct {
 	BaseRes
-	Data []storage.Task `json:"data"`
+	Data []model.Task `json:"data"`
 }
 
 // @Summary Sql审核列表
@@ -195,7 +195,7 @@ type GetAllTaskRes struct {
 // @Success 200 {object} controller.GetAllTaskRes
 //// @router /tasks [get]
 func GetTasks(c echo.Context) error {
-	s := storage.GetStorage()
+	s := model.GetStorage()
 	if s == nil {
 		c.String(500, "nil")
 	}
@@ -215,7 +215,7 @@ func GetTasks(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /tasks/{task_id}/inspection [post]
 func InspectTask(c echo.Context) error {
-	s := storage.GetStorage()
+	s := model.GetStorage()
 	taskId := c.Param("task_id")
 	_, exist, err := s.GetTaskById(taskId)
 	if err != nil {
@@ -224,7 +224,7 @@ func InspectTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
 	}
-	actionChan, err := sqle.GetSqled().AddTask(taskId, storage.TASK_ACTION_INSPECT)
+	actionChan, err := sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_INSPECT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
 	}
@@ -254,7 +254,7 @@ func RollbackTask(c echo.Context) error {
 
 type GetTaskReq struct {
 	BaseRes
-	Data storage.Task `json:"data"`
+	Data model.Task `json:"data"`
 }
 
 // @Summary 获取Sql审核单信息

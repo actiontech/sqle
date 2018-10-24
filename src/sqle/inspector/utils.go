@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	"strings"
-	"sqle/storage"
+	"sqle/model"
 	"errors"
 	"github.com/pingcap/tidb/parser"
 )
 
 func parseSql(dbType string, sql string) ([]ast.StmtNode, error) {
 	switch dbType {
-	case storage.DB_TYPE_MYSQL:
+	case model.DB_TYPE_MYSQL:
 		p := parser.New()
 		stmts, err := p.Parse(sql, "", "")
 		if err != nil {

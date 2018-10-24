@@ -3,19 +3,19 @@ package inspector
 import (
 	"errors"
 	"github.com/pingcap/tidb/ast"
-	"github.com/pingcap/tidb/model"
+	_model "github.com/pingcap/tidb/model"
 	"sqle/executor"
-	"sqle/storage"
+	"sqle/model"
 )
 
-func CreateRollbackSql(task *storage.Task, sql string) (string, error) {
+func CreateRollbackSql(task *model.Task, sql string) (string, error) {
 	return "", nil
 	conn, err := executor.OpenDbWithTask(task)
 	if err != nil {
 		return "", err
 	}
 	switch task.Instance.DbType {
-	case storage.DB_TYPE_MYSQL:
+	case model.DB_TYPE_MYSQL:
 		return createRollbackSql(conn, sql)
 	default:
 		return "", errors.New("db type is invalid")
@@ -24,7 +24,7 @@ func CreateRollbackSql(task *storage.Task, sql string) (string, error) {
 
 // createRollbackSql create rollback sql for input sql; this sql is single sql.
 func createRollbackSql(conn *executor.Conn, query string) (string, error) {
-	stmts, err := parseSql(storage.DB_TYPE_MYSQL, query)
+	stmts, err := parseSql(model.DB_TYPE_MYSQL, query)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +36,7 @@ func createRollbackSql(conn *executor.Conn, query string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		t, err := parseSql(storage.DB_TYPE_MYSQL, createQuery)
+		t, err := parseSql(model.DB_TYPE_MYSQL, createQuery)
 
 		createStmt, ok := t[0].(*ast.CreateTableStmt)
 		if !ok {
@@ -64,7 +64,7 @@ func alterTableRollbackSql(t1 *ast.CreateTableStmt, t2 *ast.AlterTableStmt) (str
 			t.Table = spec.NewTable
 			t.Table.Schema = t2.Table.Schema
 			newTable := t1.Table
-			newTable.Schema = model.CIStr{}
+			newTable.Schema = _model.CIStr{}
 			t.Specs = append(t.Specs, &ast.AlterTableSpec{
 				Tp:       ast.AlterTableRenameTable,
 				NewTable: t1.Table,

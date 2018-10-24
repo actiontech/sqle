@@ -2,7 +2,7 @@ package inspector
 
 import (
 	"github.com/pingcap/tidb/ast"
-	"sqle/storage"
+	"sqle/model"
 	"testing"
 )
 
@@ -25,12 +25,12 @@ PRIMARY KEY (id)
 	}
 
 	runTest := func(tc *testCase) {
-		t1, err := parseSql(storage.DB_TYPE_MYSQL, tc.create)
+		t1, err := parseSql(model.DB_TYPE_MYSQL, tc.create)
 		if err != nil {
 			t.Errorf("%s test failled, error: %v", tc.desc, err)
 			return
 		}
-		t2, err := parseSql(storage.DB_TYPE_MYSQL, tc.alter)
+		t2, err := parseSql(model.DB_TYPE_MYSQL, tc.alter)
 		if err != nil {
 			t.Errorf("%s test failled, error: %v", tc.desc, err)
 			return

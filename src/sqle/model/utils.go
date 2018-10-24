@@ -1,4 +1,4 @@
-package storage
+package model
 
 import (
 	"fmt"
@@ -30,26 +30,12 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 		return nil, err
 	}
 	db.LogMode(true)
+	// create tables
 	db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &Sql{}, &CommitSql{}, &RollbackSql{})
-
-	//if err := createTable(db, &Instance{}); err != nil {
-	//	return nil, err
-	//}
-	////if err := createTable(db, &Sql{}); err != nil {
-	////	return nil, err
-	////}
-	////if err := createTable(db, &Task{}); err != nil {
-	////	return nil, err
-	////}
-	//if err := createTable(db, &RuleTemplate{}); err != nil {
-	//	return nil, err
-	//}
-	//if err := createTable(db, &Rule{}); err != nil {
-	//	return nil, err
-	//}
-	return &Storage{
-		db: db,
-	}, nil
+	storage := &Storage{db: db}
+	// update default rules
+	err = storage.CreateDefaultRules()
+	return storage, err
 }
 
 func createTable(db *gorm.DB, model interface{}) error {

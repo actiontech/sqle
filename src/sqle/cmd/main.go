@@ -6,7 +6,7 @@ import (
 	"os"
 	"sqle"
 	"sqle/api"
-	"sqle/storage"
+	"sqle/model"
 )
 
 const (
@@ -73,11 +73,11 @@ func run(cmd *cobra.Command, _ []string) error {
 	//
 	//log.InitFileLoggerWithHouseKeep(100, 1024, user, true)
 
-	s, err := storage.NewMysql(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema)
+	s, err := model.NewMysql(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema)
 	if err != nil {
 		return err
 	}
-	storage.InitStorage(s)
+	model.InitStorage(s)
 
 	exitChan := make(chan struct{}, 0)
 	sqle.InitSqled(exitChan)

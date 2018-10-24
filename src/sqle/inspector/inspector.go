@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	"sqle/executor"
-	"sqle/storage"
+	"sqle/model"
 	"strings"
 )
 
 type Inspector struct {
-	Config        map[string]*storage.InspectConfig
-	Db            storage.Instance
+	Config        map[string]*model.Rule
+	Db            model.Instance
 	CurrentSchema string
 	Sql           string
 	sqlStmt       string
@@ -18,46 +18,33 @@ type Inspector struct {
 	isConnected   bool
 }
 
-const (
-	INSPECT_LEVEL_NORMAL = iota
-	INSPECT_Level_NOTICE
-	INSPECT_Level_WARN
-	INSPECT_LEVEL_ERROR
-)
-
-var InspectLevelMap = map[int]string{
-	INSPECT_LEVEL_NORMAL: "normal",
-	INSPECT_Level_NOTICE: "notice",
-	INSPECT_Level_WARN:   "warn",
-	INSPECT_LEVEL_ERROR:  "error",
-}
-
 type Result struct {
-	Level   int
+	Level   string
 	Message string
 }
 
 type Results []Result
 
+// level find highest level in result
 func (rs Results) level() string {
-	level := INSPECT_LEVEL_NORMAL
+	level := model.RULE_LEVEL_NOTICE
 	for _, result := range rs {
-		if result.Level > level {
+		if model.RuleLevelMap[level] < model.RuleLevelMap[result.Level] {
 			level = result.Level
 		}
 	}
-	return InspectLevelMap[level]
+	return level
 }
 
 func (rs Results) message() string {
 	messages := make([]string, len(rs))
 	for n, result := range rs {
-		messages[n] = fmt.Sprintf("[%s]%s", InspectLevelMap[result.Level], result.Message)
+		messages[n] = fmt.Sprintf("[%s]%s", result.Level, result.Message)
 	}
 	return strings.Join(messages, "\n")
 }
 
-func NewInspector(config map[string]*storage.InspectConfig, db storage.Instance, Schema, sql string) *Inspector {
+func NewInspector(config map[string]*model.Rule, db model.Instance, Schema, sql string) *Inspector {
 	return &Inspector{
 		Config:        config,
 		Db:            db,
@@ -86,14 +73,14 @@ func (i *Inspector) closeDbConn() {
 	}
 }
 
-func (i *Inspector) Inspect() ([]*storage.CommitSql, error) {
+func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 	defer i.closeDbConn()
 
 	stmts, err := parseSql(i.Db.DbType, i.Sql)
 	if err != nil {
 		return nil, err
 	}
-	commitSqls := make([]*storage.CommitSql, len(stmts))
+	commitSqls := make([]*model.CommitSql, len(stmts))
 	for n, stmt := range stmts {
 		var results Results
 		var err error
@@ -106,7 +93,7 @@ func (i *Inspector) Inspect() ([]*storage.CommitSql, error) {
 		if err != nil {
 			return nil, err
 		}
-		commitSqls[n] = &storage.CommitSql{
+		commitSqls[n] = &model.CommitSql{
 			Number:        uint(n),
 			Sql:           stmt.Text(),
 			InspectResult: results.message(),
@@ -141,7 +128,7 @@ func (i *Inspector) inspectSelectStmt(stmt *ast.SelectStmt) (Results, error) {
 		}
 	}
 	if len(notExistTables) > 0 {
-		results = append(results, Result{INSPECT_LEVEL_ERROR,
+		results = append(results, Result{model.RULE_LEVEL_ERROR,
 			fmt.Sprintf("table %s is not exist", strings.Join(notExistTables, ", "))})
 	}
 
