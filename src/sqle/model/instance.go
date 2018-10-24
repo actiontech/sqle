@@ -21,9 +21,9 @@ type Instance struct {
 	RuleTemplates []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template" example:"template_1"`
 }
 
-func (s *Storage) GetInstById(id string) (*Instance, bool, error) {
-	inst := &Instance{}
-	err := s.db.Where("id = ?", id).First(inst).Error
+func (s *Storage) GetInstById(id string) (Instance, bool, error) {
+	inst := Instance{}
+	err := s.db.Where("id = ?", id).First(&inst).Error
 	if err == gorm.ErrRecordNotFound {
 		return inst, false, nil
 	}

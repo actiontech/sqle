@@ -34,7 +34,7 @@ type CreateInstRes struct {
 // @Accept json
 // @Param instance body controller.CreateInstReq true "add instance"
 // @Success 200 {object} controller.CreateInstRes
-//// @router /instances [post]
+// @router /instances [post]
 func CreateInst(c echo.Context) error {
 	s := model.GetStorage()
 	req := new(CreateInstReq)
@@ -79,35 +79,8 @@ func CreateInst(c echo.Context) error {
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
-
-	//err = s.UpdateInstRuleTemplate(instance, ts...)
-	//if err != nil {
-	//	return c.JSON(200, NewBaseReq(-1, err.Error()))
-	//}
-
 	return c.JSON(200, NewBaseReq(0, "ok"))
 }
-
-//func (c *BaseController) GetDatabaseSchemas() {
-//	dbId := c.Ctx.Input.Param(":dbId")
-//	db, err := c.model.GetDatabaseById(dbId)
-//	if err != nil {
-//		c.CustomAbort(500, err.Error())
-//	}
-//	schemas, err := executor.ShowDatabase(db)
-//	if err != nil {
-//		c.CustomAbort(500, err.Error())
-//	}
-//	c.serveJson(schemas)
-//}
-//
-//func (c *BaseController) DatabaseList() {
-//	databases, err := c.model.GetDatabases()
-//	if err != nil {
-//		c.CustomAbort(500, err.Error())
-//	}
-//	c.serveJson(databases)
-//}
 
 // @Summary 删除实例
 // @Description delete instance db
@@ -160,9 +133,9 @@ type PingInstRes struct {
 
 // @Summary 实例连通性测试
 // @Description test instance db connection
-// @Param inst_id path string true "Instance ID"
+// @Param instance_id path string true "Instance ID"
 // @Success 200 {object} controller.PingInstRes
-// @router /instances/{inst_id}/connection [get]
+// @router /instances/{instance_id}/connection [get]
 func PingInst(c echo.Context) error {
 	s := model.GetStorage()
 	instId := c.Param("inst_id")
@@ -199,9 +172,26 @@ type GetSchemaRes struct {
 
 // @Summary 实例 Schema 列表
 // @Description instance schema list
-// @Param inst_id path string true "Instance ID"
+// @Param instance_id path string true "Instance ID"
 // @Success 200 {object} controller.GetSchemaRes
-// @router /instances/{inst_id}/schemas [get]
+// @router /instances/{instance_id}/schemas [get]
 func GetInstSchemas(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	instanceId := c.Param("instance_id")
+	instance, exist, err := s.GetInstById(instanceId)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(200, NewBaseReq(-1, "instance not exist"))
+	}
+
+	schemas, err := executor.ShowDatabase(instance)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	return c.JSON(200, &GetSchemaRes{
+		BaseRes: NewBaseReq(0, "ok"),
+		Data:    schemas,
+	})
 }

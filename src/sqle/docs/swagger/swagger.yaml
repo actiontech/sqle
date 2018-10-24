@@ -402,13 +402,13 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
             type: object
       summary: 更新实例
-  /instances/{inst_id}/connection:
+  /instances/{instance_id}/connection:
     get:
       description: test instance db connection
       parameters:
       - description: Instance ID
         in: path
-        name: inst_id
+        name: instance_id
         required: true
         type: string
       responses:
@@ -418,13 +418,13 @@ paths:
             $ref: '#/definitions/controller.PingInstRes'
             type: object
       summary: 实例连通性测试
-  /instances/{inst_id}/schemas:
+  /instances/{instance_id}/schemas:
     get:
       description: instance schema list
       parameters:
       - description: Instance ID
         in: path
-        name: inst_id
+        name: instance_id
         required: true
         type: string
       responses:

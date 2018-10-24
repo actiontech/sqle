@@ -18,7 +18,8 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	e.POST("/instances", controller.CreateInst)
-	e.GET("/instances/:inst_id/connection", controller.PingInst)
+	e.GET("/instances/:instance_id/connection", controller.PingInst)
+	e.GET("/instances/:instance_id/schemas", controller.GetInstSchemas)
 	e.GET("/instances", controller.GetInsts)
 
 	e.GET("/rule_templates", controller.GetAllTpl)

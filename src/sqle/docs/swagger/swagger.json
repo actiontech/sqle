@@ -110,7 +110,7 @@
                 }
             }
         },
-        "/instances/{inst_id}/connection": {
+        "/instances/{instance_id}/connection": {
             "get": {
                 "description": "test instance db connection",
                 "summary": "实例连通性测试",
@@ -118,7 +118,7 @@
                     {
                         "type": "string",
                         "description": "Instance ID",
-                        "name": "inst_id",
+                        "name": "instance_id",
                         "in": "path",
                         "required": true
                     }
@@ -134,7 +134,7 @@
                 }
             }
         },
-        "/instances/{inst_id}/schemas": {
+        "/instances/{instance_id}/schemas": {
             "get": {
                 "description": "instance schema list",
                 "summary": "实例 Schema 列表",
@@ -142,7 +142,7 @@
                     {
                         "type": "string",
                         "description": "Instance ID",
-                        "name": "inst_id",
+                        "name": "instance_id",
                         "in": "path",
                         "required": true
                     }

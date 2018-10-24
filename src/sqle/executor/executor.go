@@ -29,7 +29,7 @@ func NewConn(dbType string, user, password, host, port, schema string) (*Conn, e
 	return &Conn{db}, nil
 }
 
-func Ping(db *model.Instance) error {
+func Ping(db model.Instance) error {
 	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func Ping(db *model.Instance) error {
 	return conn.ping()
 }
 
-func ShowDatabase(db *model.Instance) ([]string, error) {
+func ShowDatabase(db model.Instance) ([]string, error) {
 	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
 	if err != nil {
 		return nil, err
