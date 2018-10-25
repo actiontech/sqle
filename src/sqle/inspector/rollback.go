@@ -2,8 +2,8 @@ package inspector
 
 import (
 	"errors"
-	"github.com/pingcap/tidb/ast"
-	_model "github.com/pingcap/tidb/model"
+	"github.com/pingcap/parser/ast"
+	_model "github.com/pingcap/parser/model"
 	"sqle/executor"
 	"sqle/model"
 )
@@ -32,7 +32,7 @@ func createRollbackSql(conn *executor.Conn, query string) (string, error) {
 	switch n := stmt.(type) {
 	case *ast.AlterTableStmt:
 		tableName := getTableName(n.Table)
-		createQuery, err := conn.ShowCreateDatabase(tableName)
+		createQuery, err := conn.ShowCreateTable(tableName)
 		if err != nil {
 			return "", err
 		}

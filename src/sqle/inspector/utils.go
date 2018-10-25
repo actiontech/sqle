@@ -2,15 +2,58 @@ package inspector
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/pingcap/tidb/ast"
-	"strings"
-	"sqle/model"
 	"errors"
-	"github.com/pingcap/tidb/parser"
+	"fmt"
+	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser"
+	"sqle/model"
+	"strings"
 )
 
-func parseSql(dbType string, sql string) ([]ast.StmtNode, error) {
+type Result struct {
+	Level   string
+	Message string
+}
+
+type InspectResults struct {
+	results []*Result
+}
+
+func newInspectResults(results ...*Result) *InspectResults {
+	ir := &InspectResults{
+		results: []*Result{},
+	}
+	ir.results = append(ir.results, results...)
+	return ir
+}
+
+// level find highest level in result
+func (rs *InspectResults) level() string {
+	level := model.RULE_LEVEL_NORMAL
+	for _, result := range rs.results {
+		if model.RuleLevelMap[level] < model.RuleLevelMap[result.Level] {
+			level = result.Level
+		}
+	}
+	return level
+}
+
+func (rs *InspectResults) message() string {
+	messages := make([]string, len(rs.results))
+	for n, result := range rs.results {
+		messages[n] = fmt.Sprintf("[%s]%s", result.Level, result.Message)
+	}
+	return strings.Join(messages, "\n")
+}
+
+func (rs *InspectResults) add(level, message string) {
+	rs.results = append(rs.results, &Result{
+		Level:   level,
+		Message: message,
+	})
+}
+
+func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 	switch dbType {
 	case model.DB_TYPE_MYSQL:
 		p := parser.New()
@@ -20,6 +63,21 @@ func parseSql(dbType string, sql string) ([]ast.StmtNode, error) {
 			return nil, err
 		}
 		return stmts, nil
+	default:
+		return nil, errors.New("db type is invalid")
+	}
+}
+
+func parseOneSql(dbType, sql string) (ast.StmtNode, error) {
+	switch dbType {
+	case model.DB_TYPE_MYSQL:
+		p := parser.New()
+		stmt, err := p.ParseOneStmt(sql, "", "")
+		if err != nil {
+			fmt.Printf("parse error: %v\nsql: %v", err, sql)
+			return nil, err
+		}
+		return stmt, nil
 	default:
 		return nil, errors.New("db type is invalid")
 	}
@@ -114,4 +172,16 @@ func exprFormat(node ast.ExprNode) string {
 	writer := bytes.NewBufferString("")
 	node.Format(writer)
 	return writer.String()
+}
+
+func SplitSql(dbType, sql string) ([]string, error) {
+	stmts, err := parseSql(dbType, sql)
+	if err != nil {
+		return nil, err
+	}
+	sqlArray := make([]string, len(stmts))
+	for n, stmt := range stmts {
+		sqlArray[n] = stmt.Text()
+	}
+	return sqlArray, nil
 }

@@ -440,7 +440,7 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/controller.GetTaskRes"
                         }
                     }
                 }
@@ -758,6 +758,9 @@
                 "inspect_result": {
                     "type": "string"
                 },
+                "inspect_status": {
+                    "type": "string"
+                },
                 "number": {
                     "type": "integer"
                 },
@@ -915,10 +918,6 @@
         "model.Task": {
             "type": "object",
             "properties": {
-                "_": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.Instance"
-                },
                 "desc": {
                     "type": "string",
                     "example": "this is a task"
@@ -934,9 +933,6 @@
                     "type": "string",
                     "example": "REQ201812578"
                 },
-                "progress": {
-                    "type": "string"
-                },
                 "schema": {
                     "type": "string",
                     "example": "db1"
@@ -949,10 +945,6 @@
         "model.TaskDetail": {
             "type": "object",
             "properties": {
-                "_": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.Instance"
-                },
                 "commit_sql_list": {
                     "type": "array",
                     "items": {
@@ -977,9 +969,6 @@
                 "name": {
                     "type": "string",
                     "example": "REQ201812578"
-                },
-                "progress": {
-                    "type": "string"
                 },
                 "rollback_sql_list": {
                     "type": "array",

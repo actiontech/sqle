@@ -16,47 +16,85 @@ func GetSqled() *Sqled {
 type Sqled struct {
 	sync.Mutex
 	exit        chan struct{}
-	currentTask map[string]chan *Action
+	currentTask map[string]struct{}
 	queue       chan *Action
 }
 
 type Action struct {
+	sync.Mutex
 	Task  *model.Task
 	Typ   int
 	Error error
+	Done  chan struct{}
 }
 
 func InitSqled(exit chan struct{}) {
 	sqled = &Sqled{
 		exit:        exit,
-		currentTask: map[string]chan *Action{},
+		currentTask: map[string]struct{}{},
 		queue:       make(chan *Action, 1024),
 	}
 	sqled.Start()
 }
 
-func (s *Sqled) AddTask(taskId string, typ int) (chan *Action, error) {
+func (s *Sqled) HasTask(taskId string) bool {
+	s.Lock()
+	_, ok := s.currentTask[taskId]
+	s.Unlock()
+	return ok
+}
+
+func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
+	var err error
+	action := &Action{
+		Typ:  typ,
+		Done: make(chan struct{}),
+	}
 	s.Lock()
 	if _, ok := s.currentTask[taskId]; ok {
-		return nil, fmt.Errorf("action is exist")
+		return action, fmt.Errorf("action is exist")
 	}
-	done := make(chan *Action)
-	s.currentTask[taskId] = done
+	s.currentTask[taskId] = struct{}{}
 	s.Unlock()
 
 	task, exist, err := model.GetStorage().GetTaskById(taskId)
 	if err != nil {
-		return nil, err
+		goto Error
 	}
 	if !exist {
-		return nil, fmt.Errorf("task not exist")
+		err = fmt.Errorf("task not exist")
+		goto Error
 	}
-	action := &Action{
-		Task: task,
-		Typ:  typ,
+
+	// valid
+	err = task.ValidAction(typ)
+	if err != nil {
+		goto Error
 	}
+
+	action.Task = task
 	s.queue <- action
-	return done, nil
+	return action, nil
+
+Error:
+	s.Lock()
+	delete(s.currentTask, taskId)
+	s.Unlock()
+	return action, err
+}
+
+func (s *Sqled) AddTask(taskId string, typ int) error {
+	_, err := s.addTask(taskId, typ)
+	return err
+}
+
+func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
+	action, err := s.addTask(taskId, typ)
+	if err != nil {
+		return nil, err
+	}
+	<-action.Done
+	return action.Task, action.Error
 }
 
 func (s *Sqled) Start() {
@@ -89,37 +127,30 @@ func (s *Sqled) Do(action *Action) error {
 	}
 	s.Lock()
 	taskId := fmt.Sprintf(fmt.Sprintf("%d", action.Task.ID))
-	done, ok := s.currentTask[taskId]
 	delete(s.currentTask, taskId)
 	s.Unlock()
-	if ok {
-		select {
-		case done <- action:
-		default:
-		}
-		close(done)
+
+	select {
+	case action.Done <- struct{}{}:
+	default:
 	}
 	return err
 }
 
 func (s *Sqled) inspect(task *model.Task) error {
 	st := model.GetStorage()
-	err := st.UpdateProgress(task, model.TASK_PROGRESS_INSPECT_START)
+
+	i := inspector.NewInspector(nil, task.Instance, task.CommitSqls, task.Schema)
+	sqlArray, err := i.Inspect()
 	if err != nil {
 		return err
 	}
-	i := inspector.NewInspector(nil, task.Instance, task.Schema, task.Sql)
-	sqls, err := i.Inspect()
-	if err != nil {
-		return err
+	for _, sql := range sqlArray {
+		if err := st.Save(&sql); err != nil {
+			return err
+		}
 	}
-	fmt.Println("1111")
-	err = st.UpdateCommitSql(task, sqls)
-	if err != nil {
-		return err
-	}
-	fmt.Println("2222")
-	return st.UpdateProgress(task, model.TASK_PROGRESS_INSPECT_END)
+	return nil
 }
 
 func (s *Sqled) commit(task *model.Task) error {

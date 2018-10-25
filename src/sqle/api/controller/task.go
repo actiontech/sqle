@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle"
+	"sqle/inspector"
 	"sqle/model"
 )
 
@@ -49,6 +50,17 @@ func CreateTask(c echo.Context) error {
 		Schema:     req.Schema,
 		InstanceId: inst.ID,
 		Sql:        req.Sql,
+		CommitSqls: []*model.CommitSql{},
+	}
+	sqlArray, err := inspector.SplitSql(inst.DbType, req.Sql)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(-1, err.Error()))
+	}
+	for n, sql := range sqlArray {
+		task.CommitSqls = append(task.CommitSqls, &model.CommitSql{
+			Number: n + 1,
+			Sql:    sql,
+		})
 	}
 	err = s.Save(task)
 	if err != nil {
@@ -136,7 +148,7 @@ func GetTasks(c echo.Context) error {
 // @Summary Sql提交审核
 // @Description inspect sql
 // @Param task_id path string true "Task ID"
-// @Success 200 {object} controller.BaseRes
+// @Success 200 {object} controller.GetTaskRes
 // @router /tasks/{task_id}/inspection [post]
 func InspectTask(c echo.Context) error {
 	s := model.GetStorage()
@@ -148,15 +160,15 @@ func InspectTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
 	}
-	actionChan, err := sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_INSPECT)
+	task, err := sqle.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
 	}
-	action := <-actionChan
-	if action.Error != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, action.Error.Error()))
-	}
-	return c.JSON(200, action.Task.Sql)
+
+	return c.JSON(http.StatusOK, &GetTaskRes{
+		BaseRes: NewBaseReq(0, "ok"),
+		Data:    task.Detail(),
+	})
 }
 
 // @Summary Sql提交上线

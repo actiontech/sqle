@@ -44,16 +44,7 @@ func ShowDatabase(db model.Instance) ([]string, error) {
 		return nil, err
 	}
 	defer conn.Close()
-	result, err := conn.query("show databases")
-	if err != nil {
-		return nil, err
-	}
-	dbs := make([]string, 0, len(result))
-	for _, v := range result {
-		dbName := v["Database"]
-		dbs = append(dbs, fmt.Sprintf("%v", dbName))
-	}
-	return dbs, nil
+	return conn.ShowDatabases()
 }
 
 func OpenDbWithTask(task *model.Task) (*Conn, error) {
@@ -111,7 +102,7 @@ func (c *Conn) query(query string) ([]map[string]string, error) {
 	return result, nil
 }
 
-func (c *Conn) ShowCreateDatabase(tableName string) (string, error) {
+func (c *Conn) ShowCreateTable(tableName string) (string, error) {
 	result, err := c.query(fmt.Sprintf("show create table %s", tableName))
 	if err != nil {
 		return "", err
@@ -124,4 +115,17 @@ func (c *Conn) ShowCreateDatabase(tableName string) (string, error) {
 	} else {
 		return query, nil
 	}
+}
+
+func (c *Conn) ShowDatabases() ([]string, error) {
+	result, err := c.query("show databases")
+	if err != nil {
+		return nil, err
+	}
+	dbs := make([]string, 0, len(result))
+	for _, v := range result {
+		dbName := v["Database"]
+		dbs = append(dbs, fmt.Sprintf("%v", dbName))
+	}
+	return dbs, nil
 }
