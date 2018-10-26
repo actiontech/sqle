@@ -98,6 +98,32 @@ definitions:
         example: ok
         type: string
     type: object
+  controller.GetAllSchemasData:
+    properties:
+      host:
+        type: string
+      name:
+        type: string
+      port:
+        type: string
+      schemas:
+        items:
+          type: string
+        type: array
+    type: object
+  controller.GetAllSchemasRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/controller.GetAllSchemasData'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   controller.GetAllTaskRes:
     properties:
       code:
@@ -573,6 +599,16 @@ paths:
             $ref: '#/definitions/controller.GetAllRuleRes'
             type: object
       summary: 规则列表
+  /schemas/:
+    get:
+      description: all schema list
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllSchemasRes'
+            type: object
+      summary: 所有实例的 Schema 列表
   /tasks:
     get:
       description: get all tasks

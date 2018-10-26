@@ -183,8 +183,9 @@ func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) (*InspectResults, er
 	return results, nil
 }
 
-func (i *Inspector) InspectAlterTableStmt(stmt *ast.AlterTableSpec) (*InspectResults, error) {
+func (i *Inspector) InspectAlterTableStmt(stmt *ast.AlterTableStmt) (*InspectResults, error) {
 	i.DDLStmtCounter++
+	return nil, nil
 }
 
 func (i *Inspector) InspectUseStmt(stmt *ast.UseStmt) (*InspectResults, error) {

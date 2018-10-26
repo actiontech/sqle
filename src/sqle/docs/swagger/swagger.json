@@ -317,6 +317,21 @@
                 }
             }
         },
+        "/schemas/": {
+            "get": {
+                "description": "all schema list",
+                "summary": "所有实例的 Schema 列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.GetAllSchemasRes"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks": {
             "get": {
                 "description": "get all tasks",
@@ -603,6 +618,45 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Rule"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "controller.GetAllSchemasData": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "schemas": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "controller.GetAllSchemasRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controller.GetAllSchemasData"
                     }
                 },
                 "message": {

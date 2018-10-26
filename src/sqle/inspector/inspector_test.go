@@ -79,3 +79,13 @@ func TestInspector_Inspect(t *testing.T) {
 			}),
 	)
 }
+
+//func Test_Tmp(t *testing.T) {
+//	stmt, _ := parseOneSql("mysql", "select * from a1 where 1=1;")
+//	s, ok := stmt.(*ast.SelectStmt)
+//	if !ok {
+//		return
+//	}
+//	//where := s.Where
+//	//w,ok:= where.(ast.)
+//}

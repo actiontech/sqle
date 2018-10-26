@@ -246,7 +246,7 @@ type PingInstRes struct {
 // @router /instances/{instance_id}/connection [get]
 func PingInst(c echo.Context) error {
 	s := model.GetStorage()
-	instId := c.Param("inst_id")
+	instId := c.Param("instance_id")
 	inst, exist, err := s.GetInstById(instId)
 	if err != nil {
 		return c.JSON(200, PingInstRes{
@@ -292,8 +292,7 @@ func GetInstSchemas(c echo.Context) error {
 	if !exist {
 		return c.JSON(200, NewBaseReq(-1, "instance not exist"))
 	}
-
-	schemas, err := executor.ShowDatabase(instance)
+	schemas, err := executor.ShowDatabases(instance)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
@@ -301,4 +300,24 @@ func GetInstSchemas(c echo.Context) error {
 		BaseRes: NewBaseReq(0, "ok"),
 		Data:    schemas,
 	})
+}
+
+type GetAllSchemasRes struct {
+	BaseRes
+	Data []GetAllSchemasData `json:"data"`
+}
+
+type GetAllSchemasData struct {
+	Name    string
+	Host    string
+	Port    string
+	Schemas []string
+}
+
+// @Summary 所有实例的 Schema 列表
+// @Description all schema list
+// @Success 200 {object} controller.GetAllSchemasRes
+// @router /schemas/ [get]
+func GetAllSchemas(c echo.Context) error {
+	return nil
 }

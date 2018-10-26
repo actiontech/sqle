@@ -38,7 +38,7 @@ func Ping(db model.Instance) error {
 	return conn.ping()
 }
 
-func ShowDatabase(db model.Instance) ([]string, error) {
+func ShowDatabases(db model.Instance) ([]string, error) {
 	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (c *Conn) Exec(query string) error {
 }
 
 func (c *Conn) query(query string, args ...interface{}) ([]map[string]string, error) {
-	rows, err := c.DB.DB().Query(query, args)
+	rows, err := c.DB.DB().Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
