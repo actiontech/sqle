@@ -2,8 +2,8 @@ package inspector
 
 import (
 	"errors"
-	"github.com/pingcap/parser/ast"
-	_model "github.com/pingcap/parser/model"
+	"github.com/pingcap/tidb/ast"
+	_model "github.com/pingcap/tidb/model"
 	"sqle/executor"
 	"sqle/model"
 )

@@ -71,8 +71,8 @@ func (c *Conn) Exec(query string) error {
 	return err
 }
 
-func (c *Conn) query(query string) ([]map[string]string, error) {
-	rows, err := c.DB.DB().Query(query)
+func (c *Conn) query(query string, args ...interface{}) ([]map[string]string, error) {
+	rows, err := c.DB.DB().Query(query, args)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +122,21 @@ func (c *Conn) ShowDatabases() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbs := make([]string, 0, len(result))
-	for _, v := range result {
-		dbName := v["Database"]
-		dbs = append(dbs, fmt.Sprintf("%v", dbName))
+	dbs := make([]string, len(result))
+	for n, v := range result {
+		dbs[n] = v["Database"]
 	}
 	return dbs, nil
+}
+
+func (c *Conn) ShowSchemaTables(schema string) ([]string, error) {
+	result, err := c.query("select table_name from information_schema.tables where table_schema = ?", schema)
+	if err != nil {
+		return nil, err
+	}
+	tables := make([]string, len(result))
+	for n, v := range result {
+		tables[n] = v["table_name"]
+	}
+	return tables, nil
 }

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/pingcap/parser/ast"
-	"github.com/pingcap/parser"
+	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/tidb/parser"
 	"sqle/model"
 	"strings"
 )
@@ -184,4 +184,20 @@ func SplitSql(dbType, sql string) ([]string, error) {
 		sqlArray[n] = stmt.Text()
 	}
 	return sqlArray, nil
+}
+
+func RemoveArrayRepeat(input []string) (output []string) {
+	for _, i := range input {
+		repeat := false
+		for _, j := range output {
+			if i == j {
+				repeat = true
+				break
+			}
+		}
+		if !repeat {
+			output = append(output, i)
+		}
+	}
+	return output
 }

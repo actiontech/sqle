@@ -2,7 +2,7 @@ package inspector
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/tidb/ast"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
@@ -16,14 +16,14 @@ type Inspector struct {
 	isConnected bool
 
 	// currentSchema will change after sql "use database"
-	currentSchema string
-	allSchema     map[string] /*schema*/ struct{}
-	schemaHasLoad bool
-	allTable      map[string] /*schema*/ map[string] /*table*/ struct{}
-	isDDLStmt     bool
-	isDMLStmt     bool
-	createTable   string
-	alterTable    string
+	currentSchema  string
+	allSchema      map[string] /*schema*/ struct{}
+	schemaHasLoad  bool
+	allTable       map[string] /*schema*/ map[string] /*table*/ struct{}
+	DDLStmtCounter int
+	DMLStmtCounter int
+	createTable    string
+	alterTable     string
 }
 
 func NewInspector(config map[string]*model.Rule, db model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
@@ -75,6 +75,43 @@ func (i *Inspector) isSchemaExist(schema string) (bool, error) {
 	return ok, nil
 }
 
+func (i *Inspector) isTableExist(tableName string) (bool, error) {
+	var schema = i.currentSchema
+	var table = ""
+	if strings.Contains(tableName, ".") {
+		splitStrings := strings.SplitN(tableName, ".", 2)
+		schema = splitStrings[0]
+		table = splitStrings[1]
+	} else {
+		table = tableName
+	}
+
+	tables, hasLoad := i.allTable[schema]
+	if !hasLoad {
+		schemaExist, err := i.isSchemaExist(schema)
+		if err != nil {
+			return schemaExist, err
+		}
+		if !schemaExist {
+			return false, nil
+		}
+		conn, err := i.getDbConn()
+		if err != nil {
+			return false, err
+		}
+		tables, err := conn.ShowSchemaTables(schema)
+		if err != nil {
+			return false, err
+		}
+		i.allTable[schema] = make(map[string]struct{}, len(tables))
+		for _, table := range tables {
+			i.allTable[schema][table] = struct{}{}
+		}
+	}
+	_, exist := tables[table]
+	return exist, nil
+}
+
 func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 	defer i.closeDbConn()
 
@@ -86,9 +123,11 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 		stmt, err = parseOneSql(i.Db.DbType, sql.Sql)
 		switch s := stmt.(type) {
 		case *ast.SelectStmt:
-			results, err = i.inspectSelectStmt(s)
+			results, err = i.InspectSelectStmt(s)
+		case *ast.AlterTableStmt:
+			results, err = i.InspectAlterTableStmt(s)
 		case *ast.UseStmt:
-			results, err = i.inspectUseStmt(s)
+			results, err = i.InspectUseStmt(s)
 		default:
 		}
 		if err != nil {
@@ -103,42 +142,52 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 	return i.SqlArray, nil
 }
 
-func (i *Inspector) inspectSelectStmt(stmt *ast.SelectStmt) (*InspectResults, error) {
+func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) (*InspectResults, error) {
+	i.DMLStmtCounter++
 	results := newInspectResults()
 
-	// check table must exist
-	tablerefs := stmt.From.TableRefs
-	tables := getTables(tablerefs)
-	tablesName := map[string]struct{}{}
-	for _, t := range tables {
-		tablesName[getTableName(t)] = struct{}{}
-	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return results, err
-	}
+	// check schema, table must exist
+	notExistSchemas := []string{}
 	notExistTables := []string{}
-	for name, _ := range tablesName {
-		exist := conn.HasTable(name)
-		if conn.Error != nil {
-			return results, conn.Error
+	tableRefs := stmt.From.TableRefs
+	for _, table := range getTables(tableRefs) {
+		schema := table.Schema.String()
+		tableName := getTableName(table)
+		exist, err := i.isSchemaExist(schema)
+		if err != nil {
+			return results, err
 		}
 		if !exist {
-			notExistTables = append(notExistTables, name)
+			notExistSchemas = append(notExistSchemas, schema)
+			continue
+		}
+		// if schema not exist, table must not exist
+		exist, err = i.isTableExist(tableName)
+		if err != nil {
+			return results, err
+		}
+		if !exist {
+			notExistTables = append(notExistTables, tableName)
 		}
 	}
-	if len(notExistTables) > 0 {
-		msg := fmt.Sprintf("table %s not exist", strings.Join(notExistTables, ", "))
+	if len(notExistSchemas) > 0 {
+		msg := fmt.Sprintf("schema %s not exist", strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
 		results.add(model.TASK_ACTION_ERROR, msg)
 	}
+	if len(notExistTables) > 0 {
+		msg := fmt.Sprintf("table %s not exist", strings.Join(RemoveArrayRepeat(notExistTables), ", "))
+		results.add(model.TASK_ACTION_ERROR, msg)
+	}
+
+	// where
 	return results, nil
 }
 
-func (i *Inspector) inspectAlterTableStmt(stmt *ast.AlterTableSpec) {
-
+func (i *Inspector) InspectAlterTableStmt(stmt *ast.AlterTableSpec) (*InspectResults, error) {
+	i.DDLStmtCounter++
 }
 
-func (i *Inspector) inspectUseStmt(stmt *ast.UseStmt) (*InspectResults, error) {
+func (i *Inspector) InspectUseStmt(stmt *ast.UseStmt) (*InspectResults, error) {
 	results := newInspectResults()
 	exist, err := i.isSchemaExist(stmt.DBName)
 	if err != nil {
