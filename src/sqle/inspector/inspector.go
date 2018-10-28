@@ -1,8 +1,8 @@
 package inspector
 
 import (
-	"fmt"
 	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/tidb/mysql"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
@@ -57,6 +57,9 @@ func (i *Inspector) closeDbConn() {
 }
 
 func (i *Inspector) isSchemaExist(schema string) (bool, error) {
+	if schema == "" {
+		schema = i.currentSchema
+	}
 	if !i.schemaHasLoad {
 		conn, err := i.getDbConn()
 		if err != nil {
@@ -118,7 +121,7 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 	for _, sql := range i.SqlArray {
 		var stmt ast.StmtNode
 		var err error
-		var results *InspectResults
+		var results = newInspectResults()
 
 		stmt, err = parseOneSql(i.Db.DbType, sql.Sql)
 		switch s := stmt.(type) {
@@ -128,6 +131,8 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 			results, err = i.InspectAlterTableStmt(s)
 		case *ast.UseStmt:
 			results, err = i.InspectUseStmt(s)
+		case *ast.CreateTableStmt:
+			results, err = i.InspectCreateTableStmt(s)
 		default:
 		}
 		if err != nil {
@@ -171,15 +176,126 @@ func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) (*InspectResults, er
 		}
 	}
 	if len(notExistSchemas) > 0 {
-		msg := fmt.Sprintf("schema %s not exist", strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
-		results.add(model.TASK_ACTION_ERROR, msg)
+		results.add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
 	}
 	if len(notExistTables) > 0 {
-		msg := fmt.Sprintf("table %s not exist", strings.Join(RemoveArrayRepeat(notExistTables), ", "))
-		results.add(model.TASK_ACTION_ERROR, msg)
+		results.add(model.RULE_LEVEL_ERROR, model.TABLE_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistTables), ", "))
 	}
 
 	// where
+	return results, nil
+}
+
+func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) (*InspectResults, error) {
+	results := newInspectResults()
+
+	// check schema
+	schema := stmt.Table.Schema.String()
+	if schema == "" {
+		schema = i.currentSchema
+	}
+	exist, err := i.isSchemaExist(schema)
+	if err != nil {
+		return results, err
+	}
+	if !exist {
+		results.add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, schema)
+
+	} else {
+		// check table
+		tableName := getTableName(stmt.Table)
+		exist, err = i.isTableExist(tableName)
+		if err != nil {
+			return results, err
+		}
+		if exist {
+			results.add(model.RULE_LEVEL_ERROR, model.TABLE_EXIST, tableName)
+		}
+	}
+
+	// check `if not exists`
+	if !stmt.IfNotExists {
+		results.add(model.RULE_LEVEL_ERROR, model.DDL_CREATE_TABLE_NOT_EXIST)
+	}
+
+	// check table length
+	if len(stmt.Table.Name.String()) > 64 {
+		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_TABLE_NAME_LENGTH, stmt.Table.Name.String())
+	}
+
+	// check column length
+	invalidColNames := []string{}
+	for _, col := range stmt.Cols {
+		colName := col.Name.Name.String()
+		if len(colName) > 64 {
+			invalidColNames = append(invalidColNames, colName)
+		}
+	}
+	if len(invalidColNames) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_COLUMNS_NAME_LENGTH, strings.Join(invalidColNames, ", "))
+	}
+
+	// check primary key
+	hasPk := false
+	pkIsAutoIncrementUnsigned := false
+	/*
+		match sql like:
+		CREATE TABLE  tb1 (
+		a1.id int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+		);
+	*/
+	for _, col := range stmt.Cols {
+		if HasSpecialOption(col.Options, ast.ColumnOptionPrimaryKey) {
+			hasPk = true
+			if mysql.HasUnsignedFlag(col.Tp.Flag) && HasSpecialOption(col.Options, ast.ColumnOptionAutoIncrement) {
+				pkIsAutoIncrementUnsigned = true
+			}
+		}
+
+	}
+	/*
+		match sql like:
+		CREATE TABLE  tb1 (
+		a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+		PRIMARY KEY (id)
+		);
+	*/
+	for _, constraint := range stmt.Constraints {
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			hasPk = true
+			if len(constraint.Keys) == 1 {
+				columnName := constraint.Keys[0].Column.Name.String()
+				for _, col := range stmt.Cols {
+					if col.Name.Name.String() == columnName {
+						if mysql.HasUnsignedFlag(col.Tp.Flag) && HasSpecialOption(col.Options, ast.ColumnOptionAutoIncrement) {
+							pkIsAutoIncrementUnsigned = true
+						}
+					}
+				}
+			}
+		}
+	}
+	if !hasPk {
+		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_PRIMARY_KEY_EXIST)
+	}
+	if hasPk && !pkIsAutoIncrementUnsigned {
+		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_PRIMARY_KEY_TYPE)
+	}
+
+	// if char length >20 using varchar.
+	for _, col := range stmt.Cols {
+		if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
+			results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_TYPE_CHAR_LENGTH)
+		}
+	}
+
+	// index
+	//for _,constraint:=range stmt.Constraints {
+	//	if constraint.Tp == ast.ConstraintIndex {
+	//
+	//	}
+	//	constraint.Keys
+	//}
 	return results, nil
 }
 
@@ -195,7 +311,7 @@ func (i *Inspector) InspectUseStmt(stmt *ast.UseStmt) (*InspectResults, error) {
 		return results, err
 	}
 	if !exist {
-		results.add(model.TASK_ACTION_ERROR, fmt.Sprintf("database %s not exist", stmt.DBName))
+		results.add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, stmt.DBName)
 	}
 	// change current schema
 	i.currentSchema = stmt.DBName

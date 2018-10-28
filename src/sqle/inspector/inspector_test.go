@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"fmt"
 	"sqle/model"
 	"testing"
 )
@@ -47,45 +48,191 @@ func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results
 	for n, sql := range i.SqlArray {
 		result := results[n]
 		if sql.InspectLevel != result.level() || sql.InspectResult != result.message() {
-			t.Errorf("%s test failled, \nsql: %s\nexpect level: %s\nexpect result:\n%s\nactual level: %s\nactual result:\n%s\n",
+			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
 				desc, sql.Sql, result.level(), result.message(), sql.InspectLevel, sql.InspectResult)
 		}
 	}
 }
 
-func TestInspector_Inspect(t *testing.T) {
-	runInspectCase(t, "use_database: database exist", DefaultMysqlInspect(),
+func TestInspector_Inspect_UseDatabaseStmt(t *testing.T) {
+	runInspectCase(t, "use_database: ok", DefaultMysqlInspect(),
 		"use exist_db",
 		newInspectResults(),
 	)
 	runInspectCase(t, "use_database: database not exist", DefaultMysqlInspect(),
 		"use no_exist_db",
-		newInspectResults(
-			&Result{
-				Level:   model.RULE_LEVEL_ERROR,
-				Message: "database no_exist_db not exist",
-			}),
-	)
-	runInspectCase(t, "select_from: schema_exist", DefaultMysqlInspect(),
-		"select * from exist_db.exist_tb_1",
-		newInspectResults(),
-	)
-	runInspectCase(t, "select_from: schema_not_exist", DefaultMysqlInspect(),
-		"select * from not_exist_db.exist_tb_1, not_exist_db.exist_tb_2",
-		newInspectResults(
-			&Result{
-				Level:   model.RULE_LEVEL_ERROR,
-				Message: "schema not_exist_db not exist",
-			}),
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, "no_exist_db"),
 	)
 }
 
-//func Test_Tmp(t *testing.T) {
-//	stmt, _ := parseOneSql("mysql", "select * from a1 where 1=1;")
-//	s, ok := stmt.(*ast.SelectStmt)
-//	if !ok {
-//		return
-//	}
-//	//where := s.Where
-//	//w,ok:= where.(ast.)
-//}
+func TestInspector_Inspect_SelectStmt(t *testing.T) {
+	runInspectCase(t, "select_from: ok", DefaultMysqlInspect(),
+		"select * from exist_db.exist_tb_1",
+		newInspectResults(),
+	)
+	runInspectCase(t, "select_from: schema not exist", DefaultMysqlInspect(),
+		"select * from not_exist_db.exist_tb_1, not_exist_db.exist_tb_2",
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, "not_exist_db"),
+	)
+	runInspectCase(t, "select_from: table not exist", DefaultMysqlInspect(),
+		"select * from exist_db.exist_tb_1, exist_db.exist_tb_3",
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.TABLE_NOT_EXIST, "exist_db.exist_tb_3"),
+	)
+}
+
+func TestInspector_Inspect_CreateTableStmt(t *testing.T) {
+	runInspectCase(t, "create_table: ok", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+`,
+		newInspectResults(),
+	)
+
+	runInspectCase(t, "create_table: need \"if not exists\"", DefaultMysqlInspect(),
+		`
+CREATE TABLE exist_db.not_exist_tb_1 (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+`,
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_CREATE_TABLE_NOT_EXIST),
+	)
+
+	runInspectCase(t, "create_table: schema not exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists not_exist_db.not_exist_tb_1 (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+`,
+		newInspectResults().
+			add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, "not_exist_db"),
+	)
+
+	length64 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcd"
+	length65 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcde"
+
+	runInspectCase(t, "create_table: table length <= 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+CREATE TABLE  if not exists exist_db.%s (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;`, length64),
+		newInspectResults(),
+	)
+
+	runInspectCase(t, "create_table: table length > 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+CREATE TABLE  if not exists exist_db.%s (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;`, length65),
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_TABLE_NAME_LENGTH, length65),
+	)
+
+	runInspectCase(t, "create_table: columns length > 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+%s varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;`, length65),
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_COLUMNS_NAME_LENGTH, length65),
+	)
+
+	runInspectCase(t, "create_table: primary key exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+`,
+		newInspectResults(),
+	)
+
+	runInspectCase(t, "create_table: primary key not exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+`,
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_PRIMARY_KEY_EXIST),
+	)
+
+	runInspectCase(t, "create_table: primary key not auto increment", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+a1.id int(10) unsigned NOT NULL,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+`,
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_PRIMARY_KEY_TYPE),
+	)
+
+	runInspectCase(t, "create_table: primary key not unsigned", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+a1.id int(10) NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+`,
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_PRIMARY_KEY_TYPE),
+	)
+
+	//	runInspectCase(t, "create_table: disable varchar(max)", DefaultMysqlInspect(),
+	//		`
+	//CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+	//a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+	//v1 varchar(65535) DEFAULT NULL,
+	//v2 varchar(255) DEFAULT NULL,
+	//PRIMARY KEY (id)
+	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+	//`,
+	//		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_DISABLE_VARCHAR_MAX),
+	//	)
+
+	runInspectCase(t, "create_table: check char(20)", DefaultMysqlInspect(),
+		`
+	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+	a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+	v1 char(20) DEFAULT NULL,
+	v2 varchar(255) DEFAULT NULL,
+	PRIMARY KEY (id)
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+	`,
+		newInspectResults(),
+	)
+
+	runInspectCase(t, "create_table: check char(21)", DefaultMysqlInspect(),
+		`
+	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+	a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+	v1 char(21) DEFAULT NULL,
+	v2 varchar(255) DEFAULT NULL,
+	PRIMARY KEY (id)
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+	`,
+		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_TYPE_CHAR_LENGTH),
+	)
+}

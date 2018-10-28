@@ -1,7 +1,6 @@
 package inspector
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/pingcap/tidb/ast"
@@ -46,11 +45,20 @@ func (rs *InspectResults) message() string {
 	return strings.Join(messages, "\n")
 }
 
-func (rs *InspectResults) add(level, message string) {
+//func (rs *InspectResults) add(level, message string) {
+//	rs.results = append(rs.results, &Result{
+//		Level:   level,
+//		Message: message,
+//	})
+//}
+
+func (rs *InspectResults) add(level, rule string, args ...interface{}) *InspectResults {
+	msg := model.RuleMessageMap[rule]
 	rs.results = append(rs.results, &Result{
 		Level:   level,
-		Message: message,
+		Message: fmt.Sprintf(msg, args...),
 	})
+	return rs
 }
 
 func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
@@ -118,62 +126,6 @@ func getTableName(stmt *ast.TableName) string {
 	}
 }
 
-func alterTableStmtFormat(stmt *ast.AlterTableStmt) string {
-	ops := []string{}
-	for _, spec := range stmt.Specs {
-		ops = append(ops, alterTableSpecFormat(spec))
-	}
-	return fmt.Sprintf("ALTER TABLE %s\n%s;", getTableName(stmt.Table), strings.Join(ops, ",\n"))
-}
-
-var ColumnOptionMap = map[ast.ColumnOptionType]string{
-	ast.ColumnOptionNotNull:       "NOT NULL",
-	ast.ColumnOptionNull:          "NULL",
-	ast.ColumnOptionAutoIncrement: "AUTO_INCREMENT",
-	ast.ColumnOptionPrimaryKey:    "PRIMARY KEY",
-	ast.ColumnOptionUniqKey:       "UNIQUE KEY",
-}
-
-func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
-	switch stmt.Tp {
-	case ast.AlterTableRenameTable:
-		return fmt.Sprintf("RENAME AS %s", getTableName(stmt.NewTable))
-	case ast.AlterTableDropColumn:
-		return fmt.Sprintf("DROP COLUMN %s", stmt.OldColumnName)
-	case ast.AlterTableAddColumns:
-		if len(stmt.NewColumns) == 1 {
-			col := stmt.NewColumns[0]
-			ops := []string{}
-			for _, op := range col.Options {
-				switch op.Tp {
-				case ast.ColumnOptionDefaultValue:
-					ops = append(ops, fmt.Sprintf("DEFAULT %s", exprFormat(op.Expr)))
-				case ast.ColumnOptionGenerated:
-					v := fmt.Sprintf("GENERATED ALWAYS AS (%s)", exprFormat(op.Expr))
-					if op.Stored {
-						v = fmt.Sprintf("%s STORED", v)
-					}
-					ops = append(ops, v)
-				case ast.ColumnOptionComment:
-					ops = append(ops, fmt.Sprintf("COMMENT %s", exprFormat(op.Expr)))
-				default:
-					if v, ok := ColumnOptionMap[op.Tp]; ok {
-						ops = append(ops, v)
-					}
-				}
-			}
-			return fmt.Sprintf("ADD COLUMN %s %s %s", col.Name, col.Tp, strings.Join(ops, " "))
-		}
-	}
-	return ""
-}
-
-func exprFormat(node ast.ExprNode) string {
-	writer := bytes.NewBufferString("")
-	node.Format(writer)
-	return writer.String()
-}
-
 func SplitSql(dbType, sql string) ([]string, error) {
 	stmts, err := parseSql(dbType, sql)
 	if err != nil {
@@ -200,4 +152,21 @@ func RemoveArrayRepeat(input []string) (output []string) {
 		}
 	}
 	return output
+}
+
+func HasSpecialOption(Options []*ast.ColumnOption, opTp ...ast.ColumnOptionType) bool {
+	exists := make(map[ast.ColumnOptionType]bool, len(opTp))
+	for _, op := range Options {
+		for _, tp := range opTp {
+			if op.Tp == tp {
+				exists[tp] = true
+			}
+		}
+	}
+	for _, tp := range opTp {
+		if _, exist := exists[tp]; !exist {
+			return false
+		}
+	}
+	return true
 }

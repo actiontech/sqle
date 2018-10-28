@@ -51,13 +51,38 @@ var RuleLevelMap = map[string]int{
 
 // inspector rule code
 const (
-	DDL_ALL_CHECK_NAME_LENGTH  = "ddl_all_check_name_length"
-	DDL_CREATE_TABLE_NOT_EXIST = "ddl_create_table_not_exist"
+	SCHEMA_NOT_EXIST              = "schema_not_exist"
+	SCHEMA_EXIST                  = "schema_exist"
+	TABLE_NOT_EXIST               = "table_not_exist"
+	TABLE_EXIST                   = "table_exist"
+	DDL_CREATE_TABLE_NOT_EXIST    = "ddl_create_table_not_exist"
+	DDL_CHECK_TABLE_NAME_LENGTH   = "ddl_check_table_name_length"
+	DDL_CHECK_COLUMNS_NAME_LENGTH = "ddl_check_columns_name_length"
+	DDL_CHECK_INDEX_NAME_LENGTH   = "ddl_check_schema_name_length"
+	DDL_CHECK_PRIMARY_KEY_EXIST   = "ddl_check_primary_key_exist"
+	DDL_CHECK_PRIMARY_KEY_TYPE    = "ddl_check_primary_key_type"
+	DDL_DISABLE_VARCHAR_MAX       = "ddl_disable_varchar_max"
+	DDL_CHECK_TYPE_CHAR_LENGTH    = "ddl_check_type_char_length"
 )
+
+var RuleMessageMap = map[string]string{
+	SCHEMA_NOT_EXIST:              "schema %s 不存在",
+	SCHEMA_EXIST:                  "schema %s 已存在",
+	TABLE_NOT_EXIST:               "表 %s 不存在",
+	TABLE_EXIST:                   "表 %s 已存在",
+	DDL_CREATE_TABLE_NOT_EXIST:    "新建表必须加入if not exists create，保证重复执行不报错",
+	DDL_CHECK_TABLE_NAME_LENGTH:   "%s 表名长度不能大于64字节",
+	DDL_CHECK_COLUMNS_NAME_LENGTH: "%s 列名长度不能大于64字节",
+	DDL_CHECK_INDEX_NAME_LENGTH:   "%s 索引名长度不能大于64字节",
+	DDL_CHECK_PRIMARY_KEY_EXIST:   "表必须有主键",
+	DDL_CHECK_PRIMARY_KEY_TYPE:    "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
+	DDL_DISABLE_VARCHAR_MAX:       "禁止使用 varchar(max)",
+	DDL_CHECK_TYPE_CHAR_LENGTH:    "char长度大于20时，必须使用varchar类型",
+}
 
 var DefaultRules = []Rule{
 	Rule{
-		Name:  DDL_ALL_CHECK_NAME_LENGTH,
+		Name:  DDL_CHECK_TABLE_NAME_LENGTH,
 		Desc:  "",
 		Level: RULE_LEVEL_ERROR,
 	},
