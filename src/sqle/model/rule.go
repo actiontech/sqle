@@ -1,6 +1,9 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"fmt"
+	"github.com/jinzhu/gorm"
+)
 
 type RuleTemplate struct {
 	Model
@@ -15,6 +18,10 @@ type Rule struct {
 	Value string `json:"value"`
 	// notice, warn, error
 	Level string `json:"level" example:"error"`
+}
+
+func (r Rule) TableName() string {
+	return "rules"
 }
 
 // RuleTemplateDetail use for http request and swagger docs;
@@ -82,13 +89,63 @@ var RuleMessageMap = map[string]string{
 
 var DefaultRules = []Rule{
 	Rule{
-		Name:  DDL_CHECK_TABLE_NAME_LENGTH,
-		Desc:  "",
+		Name:  SCHEMA_NOT_EXIST,
+		Desc:  "操作数据库时，数据库必须存在",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  SCHEMA_EXIST,
+		Desc:  "创建数据库时，数据库不能存在",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  TABLE_NOT_EXIST,
+		Desc:  "操作表时，表必须不存在",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  TABLE_EXIST,
+		Desc:  "创建表时，表不能存在",
 		Level: RULE_LEVEL_ERROR,
 	},
 	Rule{
 		Name:  DDL_CREATE_TABLE_NOT_EXIST,
-		Desc:  "",
+		Desc:  "新建表必须加入if not exists create，保证重复执行不报错",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_CHECK_TABLE_NAME_LENGTH,
+		Desc:  "表名长度不能大于64字节",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_CHECK_COLUMNS_NAME_LENGTH,
+		Desc:  "列名长度不能大于64字节",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_CHECK_INDEX_NAME_LENGTH,
+		Desc:  "索引名长度不能大于64字节",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_CHECK_PRIMARY_KEY_EXIST,
+		Desc:  "表必须有主键",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_CHECK_PRIMARY_KEY_TYPE,
+		Desc:  "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_DISABLE_VARCHAR_MAX,
+		Desc:  "禁止使用 varchar(max)",
+		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_CHECK_TYPE_CHAR_LENGTH,
+		Desc:  "char长度大于20时，必须使用varchar类型",
 		Level: RULE_LEVEL_ERROR,
 	},
 }
@@ -151,5 +208,26 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 func (s *Storage) GetAllRule() ([]Rule, error) {
 	rules := []Rule{}
 	err := s.db.Find(&rules).Error
+	return rules, err
+}
+
+func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
+	rules := []Rule{}
+	instance, _, err := s.GetInstById(instanceId)
+	if err != nil {
+		return rules, err
+	}
+	templates := instance.RuleTemplates
+	if len(templates) <= 0 {
+		return rules, nil
+	}
+	templateIds := make([]string, len(templates))
+	for n, template := range templates {
+		templateIds[n] = fmt.Sprintf("%v", template.ID)
+	}
+
+	err = s.db.Table("rules").Select("rules.name, rules.value, rules.level").
+		Joins("inner join rule_template_rule on rule_template_rule.rule_name = rules.name").
+		Where("rule_template_rule.rule_template_id in (?)", templateIds).Scan(&rules).Error
 	return rules, err
 }

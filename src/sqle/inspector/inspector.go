@@ -9,7 +9,8 @@ import (
 )
 
 type Inspector struct {
-	Config      map[string]*model.Rule
+	Results     *InspectResults
+	Rules       map[string]model.Rule
 	Db          model.Instance
 	SqlArray    []*model.CommitSql
 	dbConn      *executor.Conn
@@ -26,15 +27,27 @@ type Inspector struct {
 	alterTable     string
 }
 
-func NewInspector(config map[string]*model.Rule, db model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
+func NewInspector(rules map[string]model.Rule, db model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
 	return &Inspector{
-		Config:        config,
+		Results:       newInspectResults(),
+		Rules:         rules,
 		Db:            db,
 		currentSchema: Schema,
 		SqlArray:      sqlArray,
 		allSchema:     map[string]struct{}{},
 		allTable:      map[string]map[string]struct{}{},
 	}
+}
+
+func (i *Inspector) addResult(ruleName string, args ...interface{}) {
+
+	// if rule is not exist, ignore save the message.
+	rule, ok := i.Rules[ruleName]
+	if !ok {
+		return
+	}
+	level := rule.Level
+	i.Results.add(level, ruleName, args...)
 }
 
 func (i *Inspector) getDbConn() (*executor.Conn, error) {
@@ -121,18 +134,17 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 	for _, sql := range i.SqlArray {
 		var stmt ast.StmtNode
 		var err error
-		var results = newInspectResults()
 
 		stmt, err = parseOneSql(i.Db.DbType, sql.Sql)
 		switch s := stmt.(type) {
 		case *ast.SelectStmt:
-			results, err = i.InspectSelectStmt(s)
+			err = i.InspectSelectStmt(s)
 		case *ast.AlterTableStmt:
-			results, err = i.InspectAlterTableStmt(s)
+			err = i.InspectAlterTableStmt(s)
 		case *ast.UseStmt:
-			results, err = i.InspectUseStmt(s)
+			err = i.InspectUseStmt(s)
 		case *ast.CreateTableStmt:
-			results, err = i.InspectCreateTableStmt(s)
+			err = i.InspectCreateTableStmt(s)
 		default:
 		}
 		if err != nil {
@@ -141,15 +153,17 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 			return i.SqlArray, err
 		}
 		sql.InspectStatus = model.TASK_ACTION_DONE
-		sql.InspectLevel = results.level()
-		sql.InspectResult = results.message()
+		sql.InspectLevel = i.Results.level()
+		sql.InspectResult = i.Results.message()
+
+		//clean up results
+		i.Results = newInspectResults()
 	}
 	return i.SqlArray, nil
 }
 
-func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) (*InspectResults, error) {
+func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) error {
 	i.DMLStmtCounter++
-	results := newInspectResults()
 
 	// check schema, table must exist
 	notExistSchemas := []string{}
@@ -160,7 +174,7 @@ func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) (*InspectResults, er
 		tableName := getTableName(table)
 		exist, err := i.isSchemaExist(schema)
 		if err != nil {
-			return results, err
+			return err
 		}
 		if !exist {
 			notExistSchemas = append(notExistSchemas, schema)
@@ -169,25 +183,25 @@ func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) (*InspectResults, er
 		// if schema not exist, table must not exist
 		exist, err = i.isTableExist(tableName)
 		if err != nil {
-			return results, err
+			return err
 		}
 		if !exist {
 			notExistTables = append(notExistTables, tableName)
 		}
 	}
 	if len(notExistSchemas) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
+		i.addResult(model.SCHEMA_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
 	}
 	if len(notExistTables) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, model.TABLE_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistTables), ", "))
+		i.addResult(model.TABLE_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistTables), ", "))
 	}
 
 	// where
-	return results, nil
+	return nil
 }
 
-func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) (*InspectResults, error) {
-	results := newInspectResults()
+func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) error {
+	i.DDLStmtCounter++
 
 	// check schema
 	schema := stmt.Table.Schema.String()
@@ -196,31 +210,31 @@ func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) (*InspectR
 	}
 	exist, err := i.isSchemaExist(schema)
 	if err != nil {
-		return results, err
+		return err
 	}
 	if !exist {
-		results.add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, schema)
+		i.addResult(model.SCHEMA_NOT_EXIST, schema)
 
 	} else {
 		// check table
 		tableName := getTableName(stmt.Table)
 		exist, err = i.isTableExist(tableName)
 		if err != nil {
-			return results, err
+			return err
 		}
 		if exist {
-			results.add(model.RULE_LEVEL_ERROR, model.TABLE_EXIST, tableName)
+			i.addResult(model.TABLE_EXIST, tableName)
 		}
 	}
 
 	// check `if not exists`
 	if !stmt.IfNotExists {
-		results.add(model.RULE_LEVEL_ERROR, model.DDL_CREATE_TABLE_NOT_EXIST)
+		i.addResult(model.DDL_CREATE_TABLE_NOT_EXIST)
 	}
 
 	// check table length
 	if len(stmt.Table.Name.String()) > 64 {
-		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_TABLE_NAME_LENGTH, stmt.Table.Name.String())
+		i.addResult(model.DDL_CHECK_TABLE_NAME_LENGTH, stmt.Table.Name.String())
 	}
 
 	// check column length
@@ -232,7 +246,7 @@ func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) (*InspectR
 		}
 	}
 	if len(invalidColNames) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_COLUMNS_NAME_LENGTH, strings.Join(invalidColNames, ", "))
+		i.addResult(model.DDL_CHECK_COLUMNS_NAME_LENGTH, strings.Join(invalidColNames, ", "))
 	}
 
 	// check primary key
@@ -276,16 +290,16 @@ func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) (*InspectR
 		}
 	}
 	if !hasPk {
-		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_PRIMARY_KEY_EXIST)
+		i.addResult(model.DDL_CHECK_PRIMARY_KEY_EXIST)
 	}
 	if hasPk && !pkIsAutoIncrementUnsigned {
-		results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_PRIMARY_KEY_TYPE)
+		i.addResult(model.DDL_CHECK_PRIMARY_KEY_TYPE)
 	}
 
 	// if char length >20 using varchar.
 	for _, col := range stmt.Cols {
 		if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-			results.add(model.RULE_LEVEL_ERROR, model.DDL_CHECK_TYPE_CHAR_LENGTH)
+			i.addResult(model.DDL_CHECK_TYPE_CHAR_LENGTH)
 		}
 	}
 
@@ -296,24 +310,23 @@ func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) (*InspectR
 	//	}
 	//	constraint.Keys
 	//}
-	return results, nil
+	return nil
 }
 
-func (i *Inspector) InspectAlterTableStmt(stmt *ast.AlterTableStmt) (*InspectResults, error) {
+func (i *Inspector) InspectAlterTableStmt(stmt *ast.AlterTableStmt) error {
 	i.DDLStmtCounter++
-	return nil, nil
+	return nil
 }
 
-func (i *Inspector) InspectUseStmt(stmt *ast.UseStmt) (*InspectResults, error) {
-	results := newInspectResults()
+func (i *Inspector) InspectUseStmt(stmt *ast.UseStmt) error {
 	exist, err := i.isSchemaExist(stmt.DBName)
 	if err != nil {
-		return results, err
+		return err
 	}
 	if !exist {
-		results.add(model.RULE_LEVEL_ERROR, model.SCHEMA_NOT_EXIST, stmt.DBName)
+		i.addResult(model.SCHEMA_NOT_EXIST, stmt.DBName)
 	}
 	// change current schema
 	i.currentSchema = stmt.DBName
-	return results, nil
+	return nil
 }

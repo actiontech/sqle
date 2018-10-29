@@ -30,6 +30,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := run(cmd, args); nil != err {
 				//os.ErrExit(err)
+				fmt.Println(err)
 				os.Exit(1)
 			}
 		},

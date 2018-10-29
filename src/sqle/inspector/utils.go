@@ -9,21 +9,19 @@ import (
 	"strings"
 )
 
-type Result struct {
+type InspectResult struct {
 	Level   string
 	Message string
 }
 
 type InspectResults struct {
-	results []*Result
+	results []*InspectResult
 }
 
-func newInspectResults(results ...*Result) *InspectResults {
-	ir := &InspectResults{
-		results: []*Result{},
+func newInspectResults() *InspectResults {
+	return &InspectResults{
+		results: []*InspectResult{},
 	}
-	ir.results = append(ir.results, results...)
-	return ir
 }
 
 // level find highest level in result
@@ -45,20 +43,12 @@ func (rs *InspectResults) message() string {
 	return strings.Join(messages, "\n")
 }
 
-//func (rs *InspectResults) add(level, message string) {
-//	rs.results = append(rs.results, &Result{
-//		Level:   level,
-//		Message: message,
-//	})
-//}
-
-func (rs *InspectResults) add(level, rule string, args ...interface{}) *InspectResults {
+func (rs *InspectResults) add(level, rule string, args ...interface{}) {
 	msg := model.RuleMessageMap[rule]
-	rs.results = append(rs.results, &Result{
+	rs.results = append(rs.results, &InspectResult{
 		Level:   level,
 		Message: fmt.Sprintf(msg, args...),
 	})
-	return rs
 }
 
 func parseSql(dbType, sql string) ([]ast.StmtNode, error) {

@@ -106,6 +106,12 @@ func GetInstance(c echo.Context) error {
 			Data:    false,
 		})
 	}
+	rules, err := s.GetRulesByTemplates(instance.RuleTemplates)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(model.GetRuleMapFromAllArray(rules))
+	}
 	return c.JSON(200, &InstanceRes{
 		BaseRes: NewBaseReq(0, "ok"),
 		Data:    instance.Detail(),

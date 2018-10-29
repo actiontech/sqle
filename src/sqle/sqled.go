@@ -140,7 +140,11 @@ func (s *Sqled) Do(action *Action) error {
 func (s *Sqled) inspect(task *model.Task) error {
 	st := model.GetStorage()
 
-	i := inspector.NewInspector(nil, task.Instance, task.CommitSqls, task.Schema)
+	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
+	if err != nil {
+		return err
+	}
+	i := inspector.NewInspector(model.GetRuleMapFromAllArray(rules), task.Instance, task.CommitSqls, task.Schema)
 	sqlArray, err := i.Inspect()
 	if err != nil {
 		return err
