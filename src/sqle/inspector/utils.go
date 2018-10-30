@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/tidb/mysql"
 	"github.com/pingcap/tidb/parser"
 	"sqle/model"
 	"strings"
@@ -144,19 +145,41 @@ func RemoveArrayRepeat(input []string) (output []string) {
 	return output
 }
 
-func HasSpecialOption(Options []*ast.ColumnOption, opTp ...ast.ColumnOptionType) bool {
+func IsAllInOptions(Options []*ast.ColumnOption, opTp ...ast.ColumnOptionType) bool {
 	exists := make(map[ast.ColumnOptionType]bool, len(opTp))
-	for _, op := range Options {
-		for _, tp := range opTp {
-			if op.Tp == tp {
+	for _, tp := range opTp {
+		for _, op := range Options {
+			if tp == op.Tp {
 				exists[tp] = true
 			}
 		}
 	}
+	// has one no exists, return false
 	for _, tp := range opTp {
 		if _, exist := exists[tp]; !exist {
 			return false
 		}
 	}
 	return true
+}
+
+func HasOneInOptions(Options []*ast.ColumnOption, opTp ...ast.ColumnOptionType) bool {
+	// has one exists, return true
+	for _, tp := range opTp {
+		for _, op := range Options {
+			if tp == op.Tp {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func MysqlDataTypeIsBlob(tp byte) bool {
+	switch tp {
+	case mysql.TypeBlob, mysql.TypeLongBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob:
+		return true
+	default:
+		return false
+	}
 }

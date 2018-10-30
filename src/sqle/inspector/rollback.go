@@ -36,9 +36,11 @@ func createRollbackSql(conn *executor.Conn, query string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		t, err := parseSql(model.DB_TYPE_MYSQL, createQuery)
-
-		createStmt, ok := t[0].(*ast.CreateTableStmt)
+		t, err := parseOneSql(model.DB_TYPE_MYSQL, createQuery)
+		if err != nil {
+			return "", err
+		}
+		createStmt, ok := t.(*ast.CreateTableStmt)
 		if !ok {
 			return "", errors.New("")
 		}

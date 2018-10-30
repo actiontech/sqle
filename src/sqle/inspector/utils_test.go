@@ -14,24 +14,34 @@ func TestRemoveArrayRepeat(t *testing.T) {
 	assert.Equal(t, expect, actual)
 }
 
-func TestHasSpecialOption(t *testing.T) {
-	options := []*ast.ColumnOption{
-		&ast.ColumnOption{
-			Tp: ast.ColumnOptionAutoIncrement,
-		},
-		&ast.ColumnOption{
-			Tp: ast.ColumnOptionPrimaryKey,
-		},
-		&ast.ColumnOption{
-			Tp: ast.ColumnOptionNotNull,
-		},
-	}
-	assert.Equal(t, HasSpecialOption(options, ast.ColumnOptionPrimaryKey), true)
-	assert.Equal(t, HasSpecialOption(options, ast.ColumnOptionAutoIncrement), true)
-	assert.Equal(t, HasSpecialOption(options, ast.ColumnOptionNotNull), true)
-	assert.Equal(t, HasSpecialOption(options, ast.ColumnOptionNull), false)
-	assert.Equal(t, HasSpecialOption(options, ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey), true)
-	assert.Equal(t, HasSpecialOption(options, ast.ColumnOptionNull, ast.ColumnOptionPrimaryKey), false)
+var columnOptionsForTest = []*ast.ColumnOption{
+	&ast.ColumnOption{
+		Tp: ast.ColumnOptionAutoIncrement,
+	},
+	&ast.ColumnOption{
+		Tp: ast.ColumnOptionPrimaryKey,
+	},
+	&ast.ColumnOption{
+		Tp: ast.ColumnOptionNotNull,
+	},
+}
+
+func TestIsAllInOptions(t *testing.T) {
+	assert.Equal(t, IsAllInOptions(columnOptionsForTest, ast.ColumnOptionPrimaryKey), true)
+	assert.Equal(t, IsAllInOptions(columnOptionsForTest, ast.ColumnOptionAutoIncrement), true)
+	assert.Equal(t, IsAllInOptions(columnOptionsForTest, ast.ColumnOptionNotNull), true)
+	assert.Equal(t, IsAllInOptions(columnOptionsForTest, ast.ColumnOptionNull), false)
+	assert.Equal(t, IsAllInOptions(columnOptionsForTest, ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey), true)
+	assert.Equal(t, IsAllInOptions(columnOptionsForTest, ast.ColumnOptionNull, ast.ColumnOptionPrimaryKey), false)
+}
+
+func TestHasOneInOptions(t *testing.T) {
+	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionPrimaryKey), true)
+	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionAutoIncrement), true)
+	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionNotNull), true)
+	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionNull), false)
+	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey), true)
+	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionNull, ast.ColumnOptionPrimaryKey), true)
 }
 
 func TestInspectResults(t *testing.T) {
