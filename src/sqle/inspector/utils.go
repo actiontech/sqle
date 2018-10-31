@@ -183,3 +183,26 @@ func MysqlDataTypeIsBlob(tp byte) bool {
 		return false
 	}
 }
+
+func scanWhereColumn(where ast.ExprNode) bool {
+	switch x := where.(type) {
+	case nil:
+	case *ast.ColumnNameExpr:
+		return true
+	case *ast.BinaryOperationExpr:
+		if scanWhereColumn(x.R) || scanWhereColumn(x.L) {
+			return true
+		} else {
+			return false
+		}
+	case *ast.IsTruthExpr:
+		return scanWhereColumn(x.Expr)
+	case *ast.UnaryOperationExpr:
+		return scanWhereColumn(x.V)
+	case *ast.IsNullExpr:
+		return scanWhereColumn(x.Expr)
+	case *ast.CompareSubqueryExpr:
+		return true
+	}
+	return false
+}

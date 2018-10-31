@@ -86,6 +86,7 @@ func DefaultMysqlInspect() *Inspector {
 			"exist_db.exist_tb_1": DefaultCreateTableStmt(),
 			"exist_db.exist_tb_2": DefaultCreateTableStmt2(),
 		},
+		alterTableStmts: map[string][]*ast.AlterTableStmt{},
 	}
 }
 
@@ -146,16 +147,31 @@ func TestInspector_Inspect_UseDatabaseStmt(t *testing.T) {
 
 func TestInspector_Inspect_SelectStmt(t *testing.T) {
 	runInspectCase(t, "select_from: ok", DefaultMysqlInspect(),
-		"select * from exist_db.exist_tb_1",
+		"select id from exist_db.exist_tb_1 where id =1;",
 		newTestResult(),
 	)
 	runInspectCase(t, "select_from: schema not exist", DefaultMysqlInspect(),
-		"select * from not_exist_db.exist_tb_1, not_exist_db.exist_tb_2",
+		"select id from not_exist_db.exist_tb_1, not_exist_db.exist_tb_2 where id =1;",
 		newTestResult().addResult(model.SCHEMA_NOT_EXIST, "not_exist_db"),
 	)
 	runInspectCase(t, "select_from: table not exist", DefaultMysqlInspect(),
-		"select * from exist_db.exist_tb_1, exist_db.exist_tb_3",
+		"select id from exist_db.exist_tb_1, exist_db.exist_tb_3 where id =1",
 		newTestResult().addResult(model.TABLE_NOT_EXIST, "exist_db.exist_tb_3"),
+	)
+
+	runInspectCase(t, "select_from: all columns", DefaultMysqlInspect(),
+		"select * from exist_db.exist_tb_1 where id =1;",
+		newTestResult().addResult(model.DML_DISABE_SELECT_ALL_COLUMN),
+	)
+
+	runInspectCase(t, "select_from: no where condition", DefaultMysqlInspect(),
+		"select id from exist_db.exist_tb_1;",
+		newTestResult().addResult(model.DML_CHECK_INVALID_WHERE_CONDITION),
+	)
+
+	runInspectCase(t, "select_from: no where condition", DefaultMysqlInspect(),
+		"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
+		newTestResult().addResult(model.DML_CHECK_INVALID_WHERE_CONDITION),
 	)
 }
 
@@ -196,6 +212,51 @@ PRIMARY KEY (id)
 		newTestResult().addResult(model.SCHEMA_NOT_EXIST, "not_exist_db"),
 	)
 
+	runInspectCase(t, "create_table: using keyword", DefaultMysqlInspect(),
+		"CREATE TABLE if not exists exist_db.`select` ("+
+			"id bigint unsigned NOT NULL AUTO_INCREMENT,"+
+			"v1 varchar(255) DEFAULT NULL,"+
+			"v2 varchar(255) DEFAULT NULL,"+
+			"PRIMARY KEY (id),"+
+			"INDEX `create` (v1)"+
+			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;",
+		newTestResult().addResult(model.DDL_DISABLE_USING_KEYWORD, "select, create"),
+	)
+}
+
+func TestInspector_InspectAlterTableStmt(t *testing.T) {
+	runInspectCase(t, "alter_table: ok", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
+`,
+		newTestResult().addResult(model.SCHEMA_NOT_EXIST, "not_exist_db"),
+	)
+
+	runInspectCase(t, "alter_table: table not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL;
+`,
+		newTestResult().addResult(model.TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
+	)
+
+	runInspectCase(t, "alter_table: alter table need merge", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
+ALTER TABLE exist_db.exist_tb_1 add primary key (id);
+`,
+		newTestResult(),
+		newTestResult().addResult(model.DDL_CHECK_ALTER_TABLE_NEED_MERGE),
+	)
+}
+
+func TestInspector_InspectCheck_Object_Name_Length(t *testing.T) {
 	length64 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcd"
 	length65 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcde"
 
@@ -244,6 +305,38 @@ INDEX %s (v1)
 		newTestResult().addResult(model.DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
+	runInspectCase(t, "alter_table: table length > 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+ALTER TABLE exist_db.exist_tb_1 RENAME %s;`, length65),
+		newTestResult().addResult(model.DDL_CHECK_OBJECT_NAME_LENGTH),
+	)
+
+	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255);`, length65),
+		newTestResult().addResult(model.DDL_CHECK_OBJECT_NAME_LENGTH),
+	)
+
+	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255);`, length65),
+		newTestResult().addResult(model.DDL_CHECK_OBJECT_NAME_LENGTH),
+	)
+
+	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+ALTER TABLE exist_db.exist_tb_1 ADD index %s (v1);`, length65),
+		newTestResult().addResult(model.DDL_CHECK_OBJECT_NAME_LENGTH),
+	)
+
+	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+		fmt.Sprintf(`
+ALTER TABLE exist_db.exist_tb_1 RENAME index v1_d TO %s;`, length65),
+		newTestResult().addResult(model.DDL_CHECK_OBJECT_NAME_LENGTH),
+	)
+}
+
+func TestInspector_Inspect_Check_Primary_Key(t *testing.T) {
 	runInspectCase(t, "create_table: primary key exist", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
@@ -289,32 +382,9 @@ PRIMARY KEY (id)
 `,
 		newTestResult().addResult(model.DDL_CHECK_PRIMARY_KEY_TYPE),
 	)
+}
 
-	runInspectCase(t, "alter_table: primary key is auto bigint unsigned", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.exist_tb_1 add primary key (id);
-`,
-		newTestResult(),
-	)
-	runInspectCase(t, "alter_table: primary key not bigint unsigned", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.exist_tb_2 add primary key (id);
-`,
-		newTestResult().addResult(model.DDL_CHECK_PRIMARY_KEY_TYPE),
-	)
-
-	//	runInspectCase(t, "create_table: disable varchar(max)", DefaultMysqlInspect(),
-	//		`
-	//CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-	//a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
-	//v1 varchar(65535) DEFAULT NULL,
-	//v2 varchar(255) DEFAULT NULL,
-	//PRIMARY KEY (id)
-	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
-	//`,
-	//		newInspectResults().add(model.RULE_LEVEL_ERROR, model.DDL_DISABLE_VARCHAR_MAX),
-	//	)
-
+func TestInspector_Inspect_Check_String_Type(t *testing.T) {
 	runInspectCase(t, "create_table: check char(20)", DefaultMysqlInspect(),
 		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
@@ -338,20 +408,9 @@ ALTER TABLE exist_db.exist_tb_2 add primary key (id);
 	`,
 		newTestResult().addResult(model.DDL_CHECK_TYPE_CHAR_LENGTH),
 	)
+}
 
-	runInspectCase(t, "create_table: has foreign key", DefaultMysqlInspect(),
-		`
-CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-PRIMARY KEY (id),
-FOREIGN KEY (id) REFERENCES exist_tb_1(id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
-`,
-		newTestResult().addResult(model.DDL_DISABLE_FOREIGN_KEY),
-	)
-
+func TestInspector_Inspect_Check_Index(t *testing.T) {
 	runInspectCase(t, "create_table: index <= 5", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
@@ -417,18 +476,9 @@ INDEX index_1 (id,v1,v2,v3,v4,v5)
 `,
 		newTestResult().addResult(model.DDL_CHECK_COMPOSITE_INDEX_MAX),
 	)
+}
 
-	runInspectCase(t, "create_table: using keyword", DefaultMysqlInspect(),
-		"CREATE TABLE if not exists exist_db.`select` ("+
-			"id bigint unsigned NOT NULL AUTO_INCREMENT,"+
-			"v1 varchar(255) DEFAULT NULL,"+
-			"v2 varchar(255) DEFAULT NULL,"+
-			"PRIMARY KEY (id),"+
-			"INDEX `create` (v1)"+
-			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;",
-		newTestResult().addResult(model.DDL_DISABLE_USING_KEYWORD, "select, create"),
-	)
-
+func TestInspector_Inspect_Check_Index_Column_Type(t *testing.T) {
 	runInspectCase(t, "create_table: disable index column blob (1)", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
@@ -457,12 +507,18 @@ PRIMARY KEY (id)
 	)
 }
 
-//func TestInspector_Inspect(t *testing.T) {
-//	sql := `
-//create table tb8 ( id SERIAL, index i_1 (id))engine=INNOdb;
-//`
-//	_, err := parseOneSql("mysql", sql)
-//	if err != nil {
-//		t.Error(err)
-//	}
-//}
+func TestInspector_Inspect_Check_Foreign_Key(t *testing.T) {
+	runInspectCase(t, "create_table: has foreign key", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id),
+FOREIGN KEY (id) REFERENCES exist_tb_1(id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`,
+		newTestResult().addResult(model.DDL_DISABLE_FOREIGN_KEY),
+	)
+
+}

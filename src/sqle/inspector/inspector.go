@@ -31,8 +31,10 @@ type Inspector struct {
 
 	// save create table parser object from db by query "show create table tb_1";
 	// using in inspect and generate rollback sql
-	createTableStmts map[string]*ast.CreateTableStmt
-	alterTable       string
+	createTableStmts map[string] /*schema.table*/ *ast.CreateTableStmt
+
+	// save alter table parse object from input sql;
+	alterTableStmts map[string] /*schema.table*/ []*ast.AlterTableStmt
 }
 
 func NewInspector(rules map[string]model.Rule, db model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
@@ -45,6 +47,7 @@ func NewInspector(rules map[string]model.Rule, db model.Instance, sqlArray []*mo
 		allSchema:        map[string]struct{}{},
 		allTable:         map[string]map[string]struct{}{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
+		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
 	}
 }
 
@@ -75,6 +78,14 @@ func (i *Inspector) closeDbConn() {
 	if i.isConnected {
 		i.dbConn.Close()
 		i.isConnected = false
+	}
+}
+
+func (i *Inspector) getSchemaName(stmt *ast.TableName) string {
+	if stmt.Schema.String() == "" {
+		return i.currentSchema
+	} else {
+		return stmt.Schema.String()
 	}
 }
 
@@ -147,42 +158,62 @@ func (i *Inspector) isTableExist(tableName string) (bool, error) {
 	return exist, nil
 }
 
-func (i *Inspector) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, error) {
+// getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
+func (i *Inspector) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bool, error) {
+
+	exist, err := i.isTableExist(tableName)
+	if err != nil {
+		return nil, exist, err
+	}
+	if !exist {
+		return nil, exist, nil
+	}
 
 	// check local memory first, for uint test
 	createStmt, ok := i.createTableStmts[tableName]
 	if ok {
-		return createStmt, nil
+		return createStmt, exist, nil
 	}
+
+	// create from connection
 	conn, err := i.getDbConn()
 	if err != nil {
-		return nil, err
+		return nil, exist, err
 	}
 	sql, err := conn.ShowCreateTable(tableName)
 	if err != nil {
-		return nil, err
+		return nil, exist, err
 	}
 	t, err := parseOneSql(i.Db.DbType, sql)
 	if err != nil {
-		return nil, err
+		return nil, exist, err
 	}
 	createStmt, ok = t.(*ast.CreateTableStmt)
 	if !ok {
-		return nil, fmt.Errorf("stmt not support")
+		return nil, exist, fmt.Errorf("stmt not support")
 	}
 	i.createTableStmts[tableName] = createStmt
-	return createStmt, nil
+	return createStmt, exist, nil
 }
 
 func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 	defer i.closeDbConn()
 
+	var inspectFns = []func(stmt ast.StmtNode) error{
+		i.checkEngineAndCharacterSet,
+		i.disableAddIndexForColumnsTypeBlob,
+		i.checkNewObjectName,
+		i.checkForeignKey,
+		i.checkIndex,
+		i.checkStringType,
+	}
+
 	for _, sql := range i.SqlArray {
-		var stmt ast.StmtNode
+		var node ast.StmtNode
 		var err error
 
-		stmt, err = parseOneSql(i.Db.DbType, sql.Sql)
-		switch stmt.(type) {
+		node, err = parseOneSql(i.Db.DbType, sql.Sql)
+		switch node.(type) {
 		case ast.DDLNode:
 			if i.DMLStmtCounter > 0 {
 				return nil, SQL_STMT_CONFLICT_ERROR
@@ -194,32 +225,18 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 			}
 		}
 
-		// base check
-		i.CheckObjectNameUsingKeyword(stmt)
-		i.CheckEngineAndCharacterSet(stmt)
-		i.DisableAddIndexForColumnsTypeBlob(stmt)
-		i.CheckObjectNameLength(stmt)
-		err = i.CheckPrimaryKey(stmt)
+		err = i.InspectSpecificStmt(node)
 		if err != nil {
 			return nil, err
 		}
-		// specific check
-		switch s := stmt.(type) {
-		case *ast.SelectStmt:
-			err = i.InspectSelectStmt(s)
-		case *ast.AlterTableStmt:
-			err = i.InspectAlterTableStmt(s)
-		case *ast.UseStmt:
-			err = i.InspectUseStmt(s)
-		case *ast.CreateTableStmt:
-			err = i.InspectCreateTableStmt(s)
-		default:
+
+		// base check
+		for _, fn := range inspectFns {
+			if err := fn(node); err != nil {
+				return nil, err
+			}
 		}
-		if err != nil {
-			sql.InspectStatus = model.TASK_ACTION_ERROR
-			sql.InspectResult = err.Error()
-			return i.SqlArray, err
-		}
+
 		sql.InspectStatus = model.TASK_ACTION_DONE
 		sql.InspectLevel = i.Results.level()
 		sql.InspectResult = i.Results.message()
@@ -230,16 +247,29 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 	return i.SqlArray, nil
 }
 
-func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) error {
-	i.DMLStmtCounter++
+func (i *Inspector) InspectSpecificStmt(node ast.StmtNode) error {
+	// specific check
+	switch s := node.(type) {
+	case *ast.SelectStmt:
+		return i.inspectSelectStmt(s)
+	case *ast.AlterTableStmt:
+		return i.inspectAlterTableStmt(s)
+	case *ast.UseStmt:
+		return i.inspectUseStmt(s)
+	case *ast.CreateTableStmt:
+		return i.inspectCreateTableStmt(s)
+	default:
+		return nil
+	}
+}
 
+func (i *Inspector) inspectSelectStmt(stmt *ast.SelectStmt) error {
 	// check schema, table must exist
 	notExistSchemas := []string{}
 	notExistTables := []string{}
 	tableRefs := stmt.From.TableRefs
 	for _, table := range getTables(tableRefs) {
-		schema := table.Schema.String()
-		tableName := i.getTableName(table)
+		schema := i.getSchemaName(table)
 		exist, err := i.isSchemaExist(schema)
 		if err != nil {
 			return err
@@ -249,6 +279,7 @@ func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) error {
 			continue
 		}
 		// if schema not exist, table must not exist
+		tableName := i.getTableName(table)
 		exist, err = i.isTableExist(tableName)
 		if err != nil {
 			return err
@@ -264,16 +295,24 @@ func (i *Inspector) InspectSelectStmt(stmt *ast.SelectStmt) error {
 		i.addResult(model.TABLE_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistTables), ", "))
 	}
 
-	// where
+	// check select all column
+	if stmt.Fields != nil && stmt.Fields.Fields != nil {
+		for _, field := range stmt.Fields.Fields {
+			if field.WildCard != nil {
+				i.addResult(model.DML_DISABE_SELECT_ALL_COLUMN)
+			}
+		}
+	}
+	// where condition
+	if stmt.Where == nil || !scanWhereColumn(stmt.Where) {
+		i.addResult(model.DML_CHECK_INVALID_WHERE_CONDITION)
+	}
 	return nil
 }
 
-func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) error {
+func (i *Inspector) inspectCreateTableStmt(stmt *ast.CreateTableStmt) error {
 	// check schema
-	schema := stmt.Table.Schema.String()
-	if schema == "" {
-		schema = i.currentSchema
-	}
+	schema := i.getSchemaName(stmt.Table)
 	exist, err := i.isSchemaExist(schema)
 	if err != nil {
 		return err
@@ -282,7 +321,7 @@ func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) error {
 		i.addResult(model.SCHEMA_NOT_EXIST, schema)
 
 	} else {
-		// check table
+		// check table need not exist
 		tableName := i.getTableName(stmt.Table)
 		exist, err = i.isTableExist(tableName)
 		if err != nil {
@@ -292,58 +331,96 @@ func (i *Inspector) InspectCreateTableStmt(stmt *ast.CreateTableStmt) error {
 			i.addResult(model.TABLE_EXIST, tableName)
 		}
 	}
-
 	// check `if not exists`
 	if !stmt.IfNotExists {
 		i.addResult(model.DDL_CREATE_TABLE_NOT_EXIST)
 	}
 
-	// if char length >20 using varchar.
+	// check primary key
+	var hasPk = false
+	var pkIsAutoIncrementBigIntUnsigned = false
+	// TODO: tidb parser not support keyword for SERIAL; it is a alias for "BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
+	/*
+		match sql like:
+		CREATE TABLE  tb1 (
+		a1.id int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+		);
+	*/
 	for _, col := range stmt.Cols {
-		if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-			i.addResult(model.DDL_CHECK_TYPE_CHAR_LENGTH)
-		}
-	}
-
-	// check foreign key
-	hasRefer := false
-	for _, constraint := range stmt.Constraints {
-		if constraint.Refer != nil {
-			hasRefer = true
-			break
-		}
-	}
-	if hasRefer {
-		i.addResult(model.DDL_DISABLE_FOREIGN_KEY)
-	}
-
-	// check index
-	// TODO: include keyword "KEY" "UNIQUE KEY"
-	indexCounter := 0
-	compositeIndexMax := 0
-	for _, constraint := range stmt.Constraints {
-		switch constraint.Tp {
-		case ast.ConstraintIndex, ast.ConstraintUniqIndex:
-			indexCounter++
-			if compositeIndexMax < len(constraint.Keys) {
-				compositeIndexMax = len(constraint.Keys)
+		if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+			hasPk = true
+			if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
+				IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+				pkIsAutoIncrementBigIntUnsigned = true
 			}
 		}
 	}
-	if indexCounter > 5 {
-		i.addResult(model.DDL_CHECK_INDEX_COUNT)
+	/*
+		match sql like:
+		CREATE TABLE  tb1 (
+		a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
+		PRIMARY KEY (id)
+		);
+	*/
+	for _, constraint := range stmt.Constraints {
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			hasPk = true
+			if len(constraint.Keys) == 1 {
+				columnName := constraint.Keys[0].Column.Name.String()
+				for _, col := range stmt.Cols {
+					if col.Name.Name.String() == columnName {
+						if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
+							IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+							pkIsAutoIncrementBigIntUnsigned = true
+						}
+					}
+				}
+			}
+		}
 	}
-	if compositeIndexMax > 5 {
-		i.addResult(model.DDL_CHECK_COMPOSITE_INDEX_MAX)
+	if !hasPk {
+		i.addResult(model.DDL_CHECK_PRIMARY_KEY_EXIST)
+	}
+	if hasPk && !pkIsAutoIncrementBigIntUnsigned {
+		i.addResult(model.DDL_CHECK_PRIMARY_KEY_TYPE)
 	}
 	return nil
 }
 
-func (i *Inspector) InspectAlterTableStmt(stmt *ast.AlterTableStmt) error {
+func (i *Inspector) inspectAlterTableStmt(stmt *ast.AlterTableStmt) error {
+	// check schema
+	schema := i.getSchemaName(stmt.Table)
+	tableName := i.getTableName(stmt.Table)
+	schemaExist, err := i.isSchemaExist(schema)
+	if err != nil {
+		return err
+	}
+	if !schemaExist {
+		i.addResult(model.SCHEMA_NOT_EXIST, schema)
+
+	} else {
+		// check table, need exist
+		tableExist, err := i.isTableExist(tableName)
+		if err != nil {
+			return err
+		}
+		if !tableExist {
+			i.addResult(model.TABLE_NOT_EXIST, tableName)
+		}
+	}
+
+	// merge alter table
+	_, ok := i.alterTableStmts[tableName]
+	if ok {
+		i.addResult(model.DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+		i.alterTableStmts[tableName] = append(i.alterTableStmts[tableName], stmt)
+	} else {
+		i.alterTableStmts[tableName] = []*ast.AlterTableStmt{stmt}
+	}
 	return nil
 }
 
-func (i *Inspector) InspectUseStmt(stmt *ast.UseStmt) error {
+func (i *Inspector) inspectUseStmt(stmt *ast.UseStmt) error {
 	exist, err := i.isSchemaExist(stmt.DBName)
 	if err != nil {
 		return err
@@ -356,68 +433,11 @@ func (i *Inspector) InspectUseStmt(stmt *ast.UseStmt) error {
 	return nil
 }
 
-func (i *Inspector) CheckObjectNameUsingKeyword(stmt ast.StmtNode) (err error) {
-	names := []string{}
-	invalidNames := []string{}
-
-	// collect object name
-	switch s := stmt.(type) {
-	case *ast.CreateDatabaseStmt:
-		// schema
-		names = append(names, s.Name)
-	case *ast.CreateTableStmt:
-		// table
-		names = append(names, s.Table.Name.String())
-		for _, col := range s.Cols {
-			names = append(names, col.Name.Name.String())
-		}
-		//index
-		for _, constraint := range s.Constraints {
-			if constraint.Name != "" {
-				names = append(names, constraint.Name)
-			}
-		}
-	case *ast.AlterTableStmt:
-		// table
-		names = append(names, s.Table.Name.String())
-		for _, spec := range s.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns, ast.AlterTableChangeColumn:
-				for _, col := range spec.NewColumns {
-					// column
-					names = append(names, col.Name.Name.String())
-				}
-			case ast.AlterTableRenameTable:
-				// table
-				names = append(names, spec.NewTable.Name.String())
-			case ast.AlterTableRenameIndex:
-				// index
-				names = append(names, spec.ToKey.String())
-			case ast.AlterTableAddConstraint:
-				if spec.Constraint.Name != "" {
-					names = append(names, spec.Constraint.Name)
-				}
-			}
-		}
-	case *ast.CreateIndexStmt:
-		// index
-		names = append(names, s.IndexName)
-	}
-
-	// filter object name
-	for _, name := range names {
-		if IsMysqlReservedKeyword(name) {
-			invalidNames = append(invalidNames, name)
-		}
-	}
-
-	if len(invalidNames) > 0 {
-		i.addResult(model.DDL_DISABLE_USING_KEYWORD, strings.Join(RemoveArrayRepeat(invalidNames), ", "))
-	}
+func (i *Inspector) inspectDropTableStmt(stmt *ast.DropTableStmt) error {
 	return nil
 }
 
-func (i *Inspector) CheckEngineAndCharacterSet(node ast.StmtNode) error {
+func (i *Inspector) checkEngineAndCharacterSet(node ast.StmtNode) error {
 	var engine string
 	var characterSet string
 	switch stmt := node.(type) {
@@ -440,8 +460,9 @@ func (i *Inspector) CheckEngineAndCharacterSet(node ast.StmtNode) error {
 	return nil
 }
 
-func (i *Inspector) DisableAddIndexForColumnsTypeBlob(node ast.StmtNode) error {
+func (i *Inspector) disableAddIndexForColumnsTypeBlob(node ast.StmtNode) error {
 	indexColumns := map[string]struct{}{}
+	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -457,14 +478,92 @@ func (i *Inspector) DisableAddIndexForColumnsTypeBlob(node ast.StmtNode) error {
 			if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
 				if MysqlDataTypeIsBlob(col.Tp.Tp) {
 					indexDataTypeIsBlob = true
+					break
 				}
 			}
 			if _, ok := indexColumns[col.Name.Name.String()]; ok {
 				if MysqlDataTypeIsBlob(col.Tp.Tp) {
 					indexDataTypeIsBlob = true
+					break
 				}
 			}
 		}
+	case *ast.AlterTableStmt:
+		// collect index column
+		for _, spec := range stmt.Specs {
+			if spec.NewColumns == nil {
+				continue
+			}
+			for _, col := range spec.NewColumns {
+				if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
+					indexColumns[col.Name.Name.String()] = struct{}{}
+				}
+			}
+			if spec.Constraint != nil {
+				switch spec.Constraint.Tp {
+				case ast.ConstraintKey, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintIndex:
+					for _, col := range spec.Constraint.Keys {
+						indexColumns[col.Column.Name.String()] = struct{}{}
+					}
+				}
+			}
+		}
+		if len(indexColumns) <= 0 {
+			return nil
+		}
+
+		// collect columns type
+		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		if err != nil {
+			return err
+		}
+		if exist {
+			for _, col := range createTableStmt.Cols {
+				if MysqlDataTypeIsBlob(col.Tp.Tp) {
+					isTypeBlobCols[col.Name.Name.String()] = true
+				} else {
+					isTypeBlobCols[col.Name.Name.String()] = false
+				}
+			}
+		}
+		for _, spec := range stmt.Specs {
+			if spec.NewColumns != nil {
+				for _, col := range spec.NewColumns {
+					if MysqlDataTypeIsBlob(col.Tp.Tp) {
+						isTypeBlobCols[col.Name.Name.String()] = true
+					} else {
+						isTypeBlobCols[col.Name.Name.String()] = false
+					}
+				}
+			}
+		}
+		// check index columns string type
+		for colName, _ := range indexColumns {
+			if isTypeBlobCols[colName] {
+				indexDataTypeIsBlob = true
+				break
+			}
+		}
+	case *ast.CreateIndexStmt:
+		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		if err != nil || !exist {
+			return err
+		}
+		for _, col := range createTableStmt.Cols {
+			if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) && MysqlDataTypeIsBlob(col.Tp.Tp) {
+				isTypeBlobCols[col.Name.Name.String()] = true
+			} else {
+				isTypeBlobCols[col.Name.Name.String()] = false
+			}
+		}
+		for _, indexColumns := range stmt.IndexColNames {
+			if isTypeBlobCols[indexColumns.Column.Name.String()] {
+				indexDataTypeIsBlob = true
+				break
+			}
+		}
+	default:
+		return nil
 	}
 	if indexDataTypeIsBlob {
 		i.addResult(model.DDL_DISABLE_INDEX_DATA_TYPE_BLOB)
@@ -472,8 +571,10 @@ func (i *Inspector) DisableAddIndexForColumnsTypeBlob(node ast.StmtNode) error {
 	return nil
 }
 
-func (i *Inspector) CheckObjectNameLength(node ast.StmtNode) error {
+func (i *Inspector) checkNewObjectName(node ast.StmtNode) error {
 	names := []string{}
+	invalidNames := []string{}
+
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		// schema
@@ -513,122 +614,152 @@ func (i *Inspector) CheckObjectNameLength(node ast.StmtNode) error {
 			case ast.AlterTableAddConstraint:
 				// if spec.Constraint.Name not index name, it will be null
 				names = append(names, spec.Constraint.Name)
+			case ast.AlterTableRenameIndex:
+				names = append(names, spec.ToKey.String())
 			}
 		}
 	case *ast.CreateIndexStmt:
 		names = append(names, stmt.IndexName)
+	default:
+		return nil
 	}
 
+	// check length
 	for _, name := range names {
 		if len(name) > 64 {
 			i.addResult(model.DDL_CHECK_OBJECT_NAME_LENGTH)
-			return nil
+			break
 		}
+	}
+	// check keyword
+	for _, name := range names {
+		if IsMysqlReservedKeyword(name) {
+			invalidNames = append(invalidNames, name)
+		}
+	}
+	if len(invalidNames) > 0 {
+		i.addResult(model.DDL_DISABLE_USING_KEYWORD, strings.Join(RemoveArrayRepeat(invalidNames), ", "))
 	}
 	return nil
 }
 
-// CheckPrimaryKey used for "create table stmt" and "alter table stmt".
-func (i *Inspector) CheckPrimaryKey(node ast.StmtNode) error {
-	var hasPk = false
-	var pkIsAutoIncrementBigIntUnsigned = false
+func (i *Inspector) checkForeignKey(node ast.StmtNode) error {
+	hasFk := false
 
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
-		// TODO: tidb parser not support keyword for SERIAL; it is a alias for "BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
-		/*
-			match sql like:
-			CREATE TABLE  tb1 (
-			a1.id int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-			);
-		*/
-		for _, col := range stmt.Cols {
-			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-				hasPk = true
-				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-					IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-					pkIsAutoIncrementBigIntUnsigned = true
-				}
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp == ast.ConstraintForeignKey {
+				hasFk = true
+				break
 			}
 		}
-		/*
-			match sql like:
-			CREATE TABLE  tb1 (
-			a1.id int(10) unsigned NOT NULL AUTO_INCREMENT,
-			PRIMARY KEY (id)
-			);
-		*/
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Constraint != nil && spec.Constraint.Tp == ast.ConstraintForeignKey {
+				hasFk = true
+				break
+			}
+		}
+	default:
+		return nil
+	}
+	if hasFk {
+		i.addResult(model.DDL_DISABLE_FOREIGN_KEY)
+	}
+	return nil
+}
+
+func (i *Inspector) checkIndex(node ast.StmtNode) error {
+	indexCounter := 0
+	compositeIndexMax := 0
+
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		// check index
 		for _, constraint := range stmt.Constraints {
-			if constraint.Tp == ast.ConstraintPrimaryKey {
-				hasPk = true
-				if len(constraint.Keys) == 1 {
-					columnName := constraint.Keys[0].Column.Name.String()
-					for _, col := range stmt.Cols {
-						if col.Name.Name.String() == columnName {
-							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-								IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrementBigIntUnsigned = true
-							}
-						}
-					}
+			switch constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+				indexCounter++
+				if compositeIndexMax < len(constraint.Keys) {
+					compositeIndexMax = len(constraint.Keys)
 				}
 			}
 		}
 	case *ast.AlterTableStmt:
-		var newColumns = map[string]*ast.ColumnDef{}
 		for _, spec := range stmt.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, col := range spec.NewColumns {
-					//
-					newColumns[col.Name.Name.String()] = col
-					if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-						hasPk = true
-						if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-							IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-							pkIsAutoIncrementBigIntUnsigned = true
-						}
-					}
+			if spec.Constraint == nil {
+				continue
+			}
+			switch spec.Constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+				indexCounter++
+				if compositeIndexMax < len(spec.Constraint.Keys) {
+					compositeIndexMax = len(spec.Constraint.Keys)
 				}
-			case ast.AlterTableAddConstraint:
-				if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
-					hasPk = true
-					for _, colName := range spec.Constraint.Keys {
-						if col, ok := newColumns[colName.Column.Name.String()]; ok {
-							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-								IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrementBigIntUnsigned = true
-							}
-						} else {
-							// if column not exist in new columns, column will exists in old table
-							tableName := i.getTableName(stmt.Table)
-							tableExist, err := i.isTableExist(tableName)
-							if err != nil || !tableExist {
-								return err
-							}
-							createTableStmt, err := i.getCreateTableStmt(tableName)
-							for _, col := range createTableStmt.Cols {
-								if colName.Column.Name.String() != col.Name.Name.String() {
-									continue
-								}
-								if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-									IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-									pkIsAutoIncrementBigIntUnsigned = true
-								}
-							}
-						}
-					}
+			}
+		}
+		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		if err != nil {
+			return err
+		}
+		if exist {
+			for _, constraint := range createTableStmt.Constraints {
+				switch constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+					indexCounter++
+				}
+			}
+		}
+
+	case *ast.CreateIndexStmt:
+		indexCounter++
+		if compositeIndexMax < len(stmt.IndexColNames) {
+			compositeIndexMax = len(stmt.IndexColNames)
+		}
+		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		if err != nil {
+			return err
+		}
+		if exist {
+			for _, constraint := range createTableStmt.Constraints {
+				switch constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+					indexCounter++
 				}
 			}
 		}
 	default:
 		return nil
 	}
-	if !hasPk {
-		i.addResult(model.DDL_CHECK_PRIMARY_KEY_EXIST)
+	if indexCounter > 5 {
+		i.addResult(model.DDL_CHECK_INDEX_COUNT)
 	}
-	if hasPk && !pkIsAutoIncrementBigIntUnsigned {
-		i.addResult(model.DDL_CHECK_PRIMARY_KEY_TYPE)
+	if compositeIndexMax > 5 {
+		i.addResult(model.DDL_CHECK_COMPOSITE_INDEX_MAX)
+	}
+	return nil
+}
+
+func (i *Inspector) checkStringType(node ast.StmtNode) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		// if char length >20 using varchar.
+		for _, col := range stmt.Cols {
+			if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
+				i.addResult(model.DDL_CHECK_TYPE_CHAR_LENGTH)
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, col := range spec.NewColumns {
+				if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
+					i.addResult(model.DDL_CHECK_TYPE_CHAR_LENGTH)
+				}
+			}
+		}
+	default:
+		return nil
 	}
 	return nil
 }

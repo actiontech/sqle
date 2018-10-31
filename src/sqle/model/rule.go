@@ -74,7 +74,9 @@ const (
 	DDL_DISABLE_USING_KEYWORD         = "ddl_disable_using_keyword"
 	DDL_TABLE_USING_INNODB_UTF8MB4    = "ddl_create_table_using_innodb"
 	DDL_DISABLE_INDEX_DATA_TYPE_BLOB  = "ddl_disable_index_column_blob"
+	DDL_CHECK_ALTER_TABLE_NEED_MERGE  = "ddl_check_alter_table_need_merge"
 	DML_CHECK_INVALID_WHERE_CONDITION = "ddl_check_invalid_where_condition"
+	DML_DISABE_SELECT_ALL_COLUMN      = "dml_disable_select_all_column"
 )
 
 var RuleMessageMap = map[string]string{
@@ -94,7 +96,9 @@ var RuleMessageMap = map[string]string{
 	DDL_DISABLE_USING_KEYWORD:         "数据库对象命名禁止使用关键字 %s",
 	DDL_TABLE_USING_INNODB_UTF8MB4:    "建议使用Innodb引擎,utf8mb4字符集",
 	DDL_DISABLE_INDEX_DATA_TYPE_BLOB:  "禁止将blob类型的列加入索引",
+	DDL_CHECK_ALTER_TABLE_NEED_MERGE:  "已存在对该表的修改语句，建议合并成一个ALTER语句",
 	DML_CHECK_INVALID_WHERE_CONDITION: "必须使用有效的 where 条件查询",
+	DML_DISABE_SELECT_ALL_COLUMN:      "不建议使用select *",
 }
 
 var DefaultRules = []Rule{
@@ -182,6 +186,16 @@ var DefaultRules = []Rule{
 		Name:  DML_CHECK_INVALID_WHERE_CONDITION,
 		Desc:  "必须使用有效的 where 条件查询",
 		Level: RULE_LEVEL_ERROR,
+	},
+	Rule{
+		Name:  DDL_CHECK_ALTER_TABLE_NEED_MERGE,
+		Desc:  "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
+		Level: RULE_LEVEL_NOTICE,
+	},
+	Rule{
+		Name:  DML_DISABE_SELECT_ALL_COLUMN,
+		Desc:  "不建议使用select *",
+		Level: RULE_LEVEL_NOTICE,
 	},
 }
 
