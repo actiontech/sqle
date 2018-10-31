@@ -75,6 +75,7 @@ const (
 	DDL_TABLE_USING_INNODB_UTF8MB4    = "ddl_create_table_using_innodb"
 	DDL_DISABLE_INDEX_DATA_TYPE_BLOB  = "ddl_disable_index_column_blob"
 	DDL_CHECK_ALTER_TABLE_NEED_MERGE  = "ddl_check_alter_table_need_merge"
+	DDL_DISABLE_DROP_STATEMENT        = "ddl_disable_drop_statement"
 	DML_CHECK_INVALID_WHERE_CONDITION = "ddl_check_invalid_where_condition"
 	DML_DISABE_SELECT_ALL_COLUMN      = "dml_disable_select_all_column"
 )
@@ -97,6 +98,7 @@ var RuleMessageMap = map[string]string{
 	DDL_TABLE_USING_INNODB_UTF8MB4:    "建议使用Innodb引擎,utf8mb4字符集",
 	DDL_DISABLE_INDEX_DATA_TYPE_BLOB:  "禁止将blob类型的列加入索引",
 	DDL_CHECK_ALTER_TABLE_NEED_MERGE:  "已存在对该表的修改语句，建议合并成一个ALTER语句",
+	DDL_DISABLE_DROP_STATEMENT:        "禁止除索引外的drop操作",
 	DML_CHECK_INVALID_WHERE_CONDITION: "必须使用有效的 where 条件查询",
 	DML_DISABE_SELECT_ALL_COLUMN:      "不建议使用select *",
 }

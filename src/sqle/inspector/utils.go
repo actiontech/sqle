@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/pingcap/tidb/ast"
+	_model "github.com/pingcap/tidb/model"
 	"github.com/pingcap/tidb/mysql"
 	"github.com/pingcap/tidb/parser"
 	"sqle/model"
@@ -205,4 +206,21 @@ func scanWhereColumn(where ast.ExprNode) bool {
 		return true
 	}
 	return false
+}
+
+func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, tp ast.AlterTableType) []*ast.AlterTableSpec {
+	s := []*ast.AlterTableSpec{}
+	for _, spec := range specs {
+		if spec.Tp == tp {
+			s = append(s, spec)
+		}
+	}
+	return s
+}
+
+func newTableName(schema, table string) *ast.TableName {
+	return &ast.TableName{
+		Name:   _model.NewCIStr(table),
+		Schema: _model.NewCIStr(schema),
+	}
 }

@@ -258,6 +258,8 @@ func (i *Inspector) InspectSpecificStmt(node ast.StmtNode) error {
 		return i.inspectUseStmt(s)
 	case *ast.CreateTableStmt:
 		return i.inspectCreateTableStmt(s)
+	case *ast.CreateDatabaseStmt:
+		return i.inspectCreateSchemaStmt(s)
 	default:
 		return nil
 	}
@@ -307,6 +309,19 @@ func (i *Inspector) inspectSelectStmt(stmt *ast.SelectStmt) error {
 	if stmt.Where == nil || !scanWhereColumn(stmt.Where) {
 		i.addResult(model.DML_CHECK_INVALID_WHERE_CONDITION)
 	}
+	return nil
+}
+
+func (i *Inspector) inspectCreateSchemaStmt(stmt *ast.CreateDatabaseStmt) error {
+	schemaName := stmt.Name
+	exist, err := i.isSchemaExist(schemaName)
+	if err != nil {
+		return err
+	}
+	if exist {
+		i.addResult(model.SCHEMA_EXIST)
+	}
+	i.allSchema[schemaName] = struct{}{}
 	return nil
 }
 
@@ -433,7 +448,8 @@ func (i *Inspector) inspectUseStmt(stmt *ast.UseStmt) error {
 	return nil
 }
 
-func (i *Inspector) inspectDropTableStmt(stmt *ast.DropTableStmt) error {
+func (i *Inspector) inspectDropStmt(stmt *ast.DropTableStmt) error {
+	i.addResult(model.DDL_DISABLE_DROP_STATEMENT)
 	return nil
 }
 

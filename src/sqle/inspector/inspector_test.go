@@ -3,39 +3,45 @@ package inspector
 import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
-	_model "github.com/pingcap/tidb/model"
-	"github.com/pingcap/tidb/mysql"
-	"github.com/pingcap/tidb/types"
 	"sqle/model"
 	"testing"
 )
 
-var DefaultRules = model.GetRuleMapFromAllArray(model.DefaultRules)
-
-func DefaultCreateTableStmt() *ast.CreateTableStmt {
-	field := types.NewFieldType(mysql.TypeLonglong)
-	field.Flag |= mysql.UnsignedFlag
-	stmt := &ast.CreateTableStmt{
-		Cols: []*ast.ColumnDef{
-			&ast.ColumnDef{
-				Name: &ast.ColumnName{Name: _model.CIStr{O: "id", L: "id"}},
-				Tp:   field,
-				Options: []*ast.ColumnOption{
-					&ast.ColumnOption{
-						Tp: ast.ColumnOptionAutoIncrement,
-					},
-				},
-			},
-		},
+func getTestCreateTableStmt1() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.exist_tb_1 (
+id int(10) unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`
+	node, err := parseOneSql("mysql", baseCreateQuery)
+	if err != nil {
+		panic(err)
 	}
+	stmt, _ := node.(*ast.CreateTableStmt)
 	return stmt
 }
 
-func DefaultCreateTableStmt2() *ast.CreateTableStmt {
-	stmt := DefaultCreateTableStmt()
-	stmt.Cols[0].Tp.Tp = mysql.TypeLong
+func getTestCreateTableStmt2() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.exist_tb_2 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`
+	node, err := parseOneSql("mysql", baseCreateQuery)
+	if err != nil {
+		panic(err)
+	}
+	stmt, _ := node.(*ast.CreateTableStmt)
 	return stmt
 }
+
+var DefaultRules = model.GetRuleMapFromAllArray(model.DefaultRules)
 
 type testResult struct {
 	Results *InspectResults
@@ -83,8 +89,8 @@ func DefaultMysqlInspect() *Inspector {
 				"exist_tb_2": struct{}{},
 			}},
 		createTableStmts: map[string]*ast.CreateTableStmt{
-			"exist_db.exist_tb_1": DefaultCreateTableStmt(),
-			"exist_db.exist_tb_2": DefaultCreateTableStmt2(),
+			"exist_db.exist_tb_1": getTestCreateTableStmt1(),
+			"exist_db.exist_tb_2": getTestCreateTableStmt2(),
 		},
 		alterTableStmts: map[string][]*ast.AlterTableStmt{},
 	}

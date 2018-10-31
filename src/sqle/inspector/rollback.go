@@ -1,94 +1,106 @@
 package inspector
 
 import (
-	"errors"
+	"fmt"
 	"github.com/pingcap/tidb/ast"
 	_model "github.com/pingcap/tidb/model"
-	"sqle/executor"
-	"sqle/model"
 )
 
-func CreateRollbackSql(task *model.Task, sql string) (string, error) {
-	return "", nil
-	conn, err := executor.OpenDbWithTask(task)
-	if err != nil {
+//func CreateRollbackSql(task *model.Task, sql string) (string, error) {
+//	return "", nil
+//	conn, err := executor.OpenDbWithTask(task)
+//	if err != nil {
+//		return "", err
+//	}
+//	switch task.Instance.DbType {
+//	case model.DB_TYPE_MYSQL:
+//		return generateRollbackSql(conn, sql)
+//	default:
+//		return "", errors.New("db type is invalid")
+//	}
+//}
+//
+//// createRollbackSql create rollback sql for input sql; this sql is single sql.
+//func generateRollbackSql(conn *executor.Conn, query string) (string, error) {
+//	stmts, err := parseSql(model.DB_TYPE_MYSQL, query)
+//	if err != nil {
+//		return "", err
+//	}
+//	stmt := stmts[0]
+//	switch n := stmt.(type) {
+//	case *ast.AlterTableStmt:
+//		tableName := getTableName(n.Table)
+//		createQuery, err := conn.ShowCreateTable(tableName)
+//		if err != nil {
+//			return "", err
+//		}
+//		t, err := parseOneSql(model.DB_TYPE_MYSQL, createQuery)
+//		if err != nil {
+//			return "", err
+//		}
+//		createStmt, ok := t.(*ast.CreateTableStmt)
+//		if !ok {
+//			return "", errors.New("")
+//		}
+//		return alterTableRollbackSql(createStmt, n)
+//	default:
+//		return "", nil
+//	}
+//}
+
+func (i *Inspector) alterTableRollbackSql(stmt *ast.AlterTableStmt) (string, error) {
+	schemaName := i.getSchemaName(stmt.Table)
+	tableName := stmt.Table.Name.String()
+
+	createTableStmt, exist, err := i.getCreateTableStmt(fmt.Sprintf("%s.%s", schemaName, tableName))
+	if err != nil || !exist {
 		return "", err
 	}
-	switch task.Instance.DbType {
-	case model.DB_TYPE_MYSQL:
-		return createRollbackSql(conn, sql)
-	default:
-		return "", errors.New("db type is invalid")
-	}
-}
 
-// createRollbackSql create rollback sql for input sql; this sql is single sql.
-func createRollbackSql(conn *executor.Conn, query string) (string, error) {
-	stmts, err := parseSql(model.DB_TYPE_MYSQL, query)
-	if err != nil {
-		return "", err
-	}
-	stmt := stmts[0]
-	switch n := stmt.(type) {
-	case *ast.AlterTableStmt:
-		tableName := getTableName(n.Table)
-		createQuery, err := conn.ShowCreateTable(tableName)
-		if err != nil {
-			return "", err
-		}
-		t, err := parseOneSql(model.DB_TYPE_MYSQL, createQuery)
-		if err != nil {
-			return "", err
-		}
-		createStmt, ok := t.(*ast.CreateTableStmt)
-		if !ok {
-			return "", errors.New("")
-		}
-		return alterTableRollbackSql(createStmt, n)
-	default:
-		return "", nil
-	}
-}
-
-func alterTableRollbackSql(t1 *ast.CreateTableStmt, t2 *ast.AlterTableStmt) (string, error) {
-	table := t1.Table
-	table.Schema = t2.Table.Schema
-
-	t := &ast.AlterTableStmt{
-		Table: table,
+	rollbackStmt := &ast.AlterTableStmt{
+		Table: newTableName(schemaName, tableName),
 		Specs: []*ast.AlterTableSpec{},
 	}
-	// table name
-	specs := t2.Specs
-	for _, spec := range specs {
-		switch spec.Tp {
-		case ast.AlterTableRenameTable:
-			t.Table = spec.NewTable
-			t.Table.Schema = t2.Table.Schema
-			newTable := t1.Table
-			newTable.Schema = _model.CIStr{}
-			t.Specs = append(t.Specs, &ast.AlterTableSpec{
-				Tp:       ast.AlterTableRenameTable,
-				NewTable: t1.Table,
-			})
-		case ast.AlterTableAddColumns:
-			for _, col := range spec.NewColumns {
-				t.Specs = append(t.Specs, &ast.AlterTableSpec{
-					Tp:            ast.AlterTableDropColumn,
-					OldColumnName: col.Name,
+
+	// rename table
+	if specs := getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable); len(specs) > 0 {
+		spec := specs[len(specs)-1]
+		rollbackStmt.Table = newTableName(schemaName, spec.NewTable.Name.String())
+		rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+			Tp:       ast.AlterTableRenameTable,
+			NewTable: newTableName(schemaName, tableName),
+		})
+	}
+
+	// add columns need drop columns
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
+		if spec.NewColumns == nil {
+			continue
+		}
+		rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+			Tp:            ast.AlterTableDropColumn,
+			OldColumnName: &ast.ColumnName{Name: _model.NewCIStr(spec.NewColumns[0].Name.String())},
+		})
+	}
+
+	// drop columns need add columns
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
+		colName := spec.OldColumnName.String()
+		for _, col := range createTableStmt.Cols {
+			if col.Name.String() == colName {
+				rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+					Tp:         ast.AlterTableAddColumns,
+					NewColumns: []*ast.ColumnDef{col},
 				})
-			}
-		case ast.AlterTableDropColumn:
-			colName := spec.OldColumnName.String()
-			for _, col := range t1.Cols {
-				if col.Name.String() == colName {
-					t.Specs = append(t.Specs, &ast.AlterTableSpec{
-						Tp:         ast.AlterTableAddColumns,
-						NewColumns: []*ast.ColumnDef{col},
-					})
-				}
 			}
 		}
 	}
-	return alterTableStmtFormat(t), nil
+
+	// add index
+
+	// drop index
+
+	// add primary key
+
+	return alterTableStmtFormat(rollbackStmt), nil
 }
