@@ -12,8 +12,10 @@ func getTestCreateTableStmt1() *ast.CreateTableStmt {
 CREATE TABLE exist_db.exist_tb_1 (
 id int(10) unsigned NOT NULL AUTO_INCREMENT,
 v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-PRIMARY KEY (id)
+v2 varchar(255),
+PRIMARY KEY (id) USING BTREE,
+KEY v1 (v1),
+UNIQUE KEY v2 (v1,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
@@ -29,8 +31,8 @@ func getTestCreateTableStmt2() *ast.CreateTableStmt {
 CREATE TABLE exist_db.exist_tb_2 (
 id bigint unsigned NOT NULL AUTO_INCREMENT,
 v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-PRIMARY KEY (id)
+v2 varchar(255),
+UNIQUE KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
@@ -528,3 +530,11 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 	)
 
 }
+
+//func TestNewInspector(t *testing.T) {
+//	sql := "alter table tb1 add foreign key fk_1 (id) references tb2 (id) ON UPDATE CASCADE"
+//	_, err := parseOneSql("mysql", sql)
+//	if err != nil {
+//		t.Error(err)
+//	}
+//}

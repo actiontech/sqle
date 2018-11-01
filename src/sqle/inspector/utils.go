@@ -112,9 +112,10 @@ func getTables(stmt *ast.Join) []*ast.TableName {
 
 func getTableName(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
-		return stmt.Name.String()
+
+		return fmt.Sprintf("`%s`", stmt.Name)
 	} else {
-		return fmt.Sprintf("%s.%s", stmt.Schema, stmt.Name)
+		return fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
 	}
 }
 
