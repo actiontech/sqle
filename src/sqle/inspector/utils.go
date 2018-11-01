@@ -110,7 +110,7 @@ func getTables(stmt *ast.Join) []*ast.TableName {
 	return tables
 }
 
-func getTableName(stmt *ast.TableName) string {
+func getTableNameWithQuote(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
 
 		return fmt.Sprintf("`%s`", stmt.Name)

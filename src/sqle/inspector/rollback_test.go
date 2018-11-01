@@ -79,7 +79,7 @@ ALTER COLUMN v2 SET DEFAULT "test";`,
 	runrollbackCase(t, "alter column need alter column(2_2)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ALTER COLUMN v2 DROP DEFAULT;`,
-		"",
+		[]string{}...,
 	)
 
 	runrollbackCase(t, "alter column add index need drop", DefaultMysqlInspect(),

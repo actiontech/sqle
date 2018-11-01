@@ -35,6 +35,7 @@ type Inspector struct {
 
 	// save alter table parse object from input sql;
 	alterTableStmts map[string] /*schema.table*/ []*ast.AlterTableStmt
+	rollbackSqls    []string
 }
 
 func NewInspector(rules map[string]model.Rule, db model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
@@ -48,6 +49,7 @@ func NewInspector(rules map[string]model.Rule, db model.Instance, sqlArray []*mo
 		allTable:         map[string]map[string]struct{}{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
+		rollbackSqls:     []string{},
 	}
 }
 
@@ -260,9 +262,18 @@ func (i *Inspector) InspectSpecificStmt(node ast.StmtNode) error {
 		return i.inspectCreateTableStmt(s)
 	case *ast.CreateDatabaseStmt:
 		return i.inspectCreateSchemaStmt(s)
+	case *ast.DropDatabaseStmt:
+		delete(i.allSchema, s.Name)
+		i.addResult(model.DDL_DISABLE_DROP_STATEMENT)
+	case *ast.DropTableStmt:
+		for _, table := range s.Tables {
+			delete(i.alterTableStmts, i.getTableName(table))
+		}
+		i.addResult(model.DDL_DISABLE_DROP_STATEMENT)
 	default:
 		return nil
 	}
+	return nil
 }
 
 func (i *Inspector) inspectSelectStmt(stmt *ast.SelectStmt) error {
@@ -445,11 +456,6 @@ func (i *Inspector) inspectUseStmt(stmt *ast.UseStmt) error {
 	}
 	// change current schema
 	i.currentSchema = stmt.DBName
-	return nil
-}
-
-func (i *Inspector) inspectDropStmt(stmt *ast.DropTableStmt) error {
-	i.addResult(model.DDL_DISABLE_DROP_STATEMENT)
 	return nil
 }
 

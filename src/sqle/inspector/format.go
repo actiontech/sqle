@@ -15,13 +15,13 @@ func alterTableStmtFormat(stmt *ast.AlterTableStmt) string {
 	for _, spec := range stmt.Specs {
 		ops = append(ops, alterTableSpecFormat(spec))
 	}
-	return fmt.Sprintf("ALTER TABLE %s\n%s;", getTableName(stmt.Table), strings.Join(ops, ",\n"))
+	return fmt.Sprintf("ALTER TABLE %s\n%s;", getTableNameWithQuote(stmt.Table), strings.Join(ops, ",\n"))
 }
 
 func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 	switch stmt.Tp {
 	case ast.AlterTableRenameTable:
-		return fmt.Sprintf("RENAME AS %s", getTableName(stmt.NewTable))
+		return fmt.Sprintf("RENAME AS %s", getTableNameWithQuote(stmt.NewTable))
 	case ast.AlterTableDropColumn:
 		return fmt.Sprintf("DROP COLUMN `%s`", stmt.OldColumnName)
 	case ast.AlterTableAddColumns:

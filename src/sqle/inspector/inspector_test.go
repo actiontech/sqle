@@ -95,6 +95,7 @@ func DefaultMysqlInspect() *Inspector {
 			"exist_db.exist_tb_2": getTestCreateTableStmt2(),
 		},
 		alterTableStmts: map[string][]*ast.AlterTableStmt{},
+		rollbackSqls:    []string{},
 	}
 }
 
@@ -531,10 +532,10 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 
 }
 
-//func TestNewInspector(t *testing.T) {
-//	sql := "alter table tb1 add foreign key fk_1 (id) references tb2 (id) ON UPDATE CASCADE"
-//	_, err := parseOneSql("mysql", sql)
-//	if err != nil {
-//		t.Error(err)
-//	}
-//}
+func TestNewInspector(t *testing.T) {
+	sql := "create index id_1 on tb1 (id);"
+	_, err := parseOneSql("mysql", sql)
+	if err != nil {
+		t.Error(err)
+	}
+}
