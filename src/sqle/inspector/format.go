@@ -120,9 +120,14 @@ func columnDefFormat(col *ast.ColumnDef) string {
 }
 
 func exprFormat(node ast.ExprNode) string {
-	writer := bytes.NewBufferString("")
-	node.Format(writer)
-	return writer.String()
+	switch node.(type) {
+	case *ast.DefaultExpr:
+		return "DEFAULT"
+	default:
+		writer := bytes.NewBufferString("")
+		node.Format(writer)
+		return writer.String()
+	}
 }
 
 func indexOptionFormat(op *ast.IndexOption) string {

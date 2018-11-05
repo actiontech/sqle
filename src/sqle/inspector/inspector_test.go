@@ -533,9 +533,25 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 }
 
 func TestNewInspector(t *testing.T) {
-	sql := "create index id_1 on tb1 (id);"
-	_, err := parseOneSql("mysql", sql)
+	sql := `
+DELETE FROM tb1 WHERE id=10 and v1=DEFAULT;
+`
+	node, err := parseOneSql("mysql", sql)
 	if err != nil {
 		t.Error(err)
+	}
+	stmt, _ := node.(*ast.InsertStmt)
+	table := getTables(stmt.Table.TableRefs)
+	fmt.Println(getTableNameWithQuote(table[0]))
+	for n, column := range stmt.Columns {
+		fmt.Println("column: ", column.String())
+		for _, expr := range stmt.Lists {
+			switch expr[n].(type) {
+			case *ast.DefaultExpr:
+				fmt.Println("DEFAULT")
+			default:
+				fmt.Println("expr: ", exprFormat(expr[n]))
+			}
+		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	_model "github.com/pingcap/tidb/model"
+	"strings"
 )
 
 func (i *Inspector) GenerateRollbackSql() ([]string, error) {
@@ -17,6 +18,8 @@ func (i *Inspector) GenerateRollbackSql() ([]string, error) {
 		switch stmt := node.(type) {
 		case *ast.AlterTableStmt:
 			err = i.generateAlterTableRollbackSql(stmt)
+		case *ast.InsertStmt:
+			err = i.generateInsertRollbackSql(stmt)
 		}
 		if err != nil {
 			return nil, err
@@ -245,13 +248,13 @@ func (i *Inspector) generateDropTableRollbackSql(stmt *ast.DropTableStmt) error 
 	return nil
 }
 
-func (i *Inspector) generateCreateIndex(stmt *ast.CreateIndexStmt) error {
+func (i *Inspector) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
 	i.rollbackSqls = append(i.rollbackSqls,
 		fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, getTableNameWithQuote(stmt.Table)))
 	return nil
 }
 
-func (i *Inspector) generateDropIndex(stmt *ast.CreateIndexStmt) error {
+func (i *Inspector) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
 	if err != nil {
@@ -276,5 +279,141 @@ func (i *Inspector) generateDropIndex(stmt *ast.CreateIndexStmt) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (i *Inspector) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
+	table := getTables(stmt.Table.TableRefs)
+	// table just has one in insert stmt.
+	if len(table) != 1 {
+		return nil
+	}
+	tableName := i.getTableName(table[0])
+
+	if stmt.OnDuplicate != nil {
+		return nil
+	}
+
+	createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+	if err != nil {
+		return err
+	}
+	// if table not exist, insert will failed.
+	if !exist {
+		return nil
+	}
+	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
+	if !hasPk {
+		return nil
+	}
+
+	rollbackSql := ""
+
+	// match "insert into table_name (column_name,...) value (v1,...)"
+	// match "insert into table_name value (v1,...)"
+	if stmt.Lists != nil {
+		columnsName := []string{}
+		if stmt.Columns != nil {
+			for _, col := range stmt.Columns {
+				columnsName = append(columnsName, col.Name.String())
+			}
+		} else {
+			for _, col := range createTableStmt.Cols {
+				columnsName = append(columnsName, col.Name.String())
+			}
+		}
+		for _, value := range stmt.Lists {
+			where := []string{}
+			// mysql will throw error: 1136 (21S01): Column count doesn't match value count
+			if len(columnsName) != len(value) {
+				return nil
+			}
+			for n, name := range columnsName {
+				_, isPk := pkColumnsName[name]
+				if isPk {
+					where = append(where, fmt.Sprintf("%s = %s", name, exprFormat(value[n])))
+				}
+			}
+			if len(where) != len(pkColumnsName) {
+				return nil
+			}
+			rollbackSql += fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
+				getTableNameWithQuote(table[0]), strings.Join(where, ", "))
+		}
+		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
+		return nil
+	}
+
+	// match "insert into table_name set col_name = value1, ..."
+	if stmt.Setlist != nil {
+		where := []string{}
+		for _, setExpr := range stmt.Setlist {
+			name := setExpr.Column.Name.String()
+			_, isPk := pkColumnsName[name]
+			if isPk {
+				where = append(where, fmt.Sprintf("%s = %s", name, exprFormat(setExpr.Expr)))
+			}
+		}
+		if len(where) != len(pkColumnsName) {
+			return nil
+		}
+		i.rollbackSqls = append(i.rollbackSqls, fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
+			getTableNameWithQuote(table[0]), strings.Join(where, " AND ")))
+	}
+	return nil
+}
+
+func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
+	// not support multi-table syntax
+	if stmt.IsMultiTable {
+		return nil
+	}
+	tables := getTables(stmt.TableRefs.TableRefs)
+	table := tables[0]
+	createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(table))
+	if err != nil || !exist {
+		return err
+	}
+	_, hasPk := getPrimaryKey(createTableStmt)
+	if !hasPk {
+		return nil
+	}
+
+	columnsName := []string{}
+	for _, col := range createTableStmt.Cols {
+		columnsName = append(columnsName, col.Name.Name.String())
+	}
+
+	recordSql := fmt.Sprintf("SELECT * FROM %s", getTableNameWithQuote(table))
+	if stmt.Where != nil {
+		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return err
+	}
+	records, err := conn.Query(recordSql)
+	if err != nil {
+		return err
+	}
+	rollbackSql := "INSERT INTO %s (%s) VALUES "
+	for _, record := range records {
+		if len(record) != len(columnsName) {
+			return nil
+		}
+		values := []string{}
+		for k, v := range record {
+			values = append(values, fmt.Sprintf("%s = '%s'", k, v))
+		}
+		rollbackSql += fmt.Sprintf("INSERT INTO %s SET %s",
+			getTableNameWithQuote(table), strings.Join(values, ", "))
+	}
+	if rollbackSql != "" {
+		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
+	}
+	return nil
+}
+
+func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 	return nil
 }

@@ -71,7 +71,7 @@ func (c *Conn) Exec(query string) error {
 	return err
 }
 
-func (c *Conn) query(query string, args ...interface{}) ([]map[string]string, error) {
+func (c *Conn) Query(query string, args ...interface{}) ([]map[string]string, error) {
 	rows, err := c.DB.DB().Query(query, args...)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (c *Conn) query(query string, args ...interface{}) ([]map[string]string, er
 }
 
 func (c *Conn) ShowCreateTable(tableName string) (string, error) {
-	result, err := c.query(fmt.Sprintf("show create table %s", tableName))
+	result, err := c.Query(fmt.Sprintf("show create table %s", tableName))
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +118,7 @@ func (c *Conn) ShowCreateTable(tableName string) (string, error) {
 }
 
 func (c *Conn) ShowDatabases() ([]string, error) {
-	result, err := c.query("show databases")
+	result, err := c.Query("show databases")
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (c *Conn) ShowDatabases() ([]string, error) {
 }
 
 func (c *Conn) ShowSchemaTables(schema string) ([]string, error) {
-	result, err := c.query("select table_name from information_schema.tables where table_schema = ?", schema)
+	result, err := c.Query("select table_name from information_schema.tables where table_schema = ?", schema)
 	if err != nil {
 		return nil, err
 	}

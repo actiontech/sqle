@@ -23,7 +23,7 @@ func runrollbackCase(t *testing.T, desc string, i *Inspector, sql string, result
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
-	assert.Equal(t, rollbackSqls, results, desc)
+	assert.Equal(t, results, rollbackSqls, desc)
 }
 
 func TestAlterTableRollbackSql(t *testing.T) {
@@ -115,5 +115,22 @@ ADD PRIMARY KEY (id) USING BTREE;`,
 DROP PRIMARY KEY;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"ADD PRIMARY KEY (`id`) USING BTREE;",
+	)
+}
+
+func TestInsertRollbackSql(t *testing.T) {
+	runrollbackCase(t, "insert into: need delete(1)", DefaultMysqlInspect(),
+		`INSERT INTO exist_db.exist_tb_1 (id,v1,v2) value (10,"v1","v2"),(11,"v1","v2");`,
+		"DELETE FROM `exist_db`.`exist_tb_1` WHERE id = 10;"+
+			"\nDELETE FROM `exist_db`.`exist_tb_1` WHERE id = 11;\n",
+	)
+	runrollbackCase(t, "insert into: need delete(2)", DefaultMysqlInspect(),
+		`INSERT INTO exist_db.exist_tb_1 value (10,"v1","v2"),(11,"v1","v2");`,
+		"DELETE FROM `exist_db`.`exist_tb_1` WHERE id = 10;\n"+
+			"DELETE FROM `exist_db`.`exist_tb_1` WHERE id = 11;\n",
+	)
+	runrollbackCase(t, "insert into: need delete(3)", DefaultMysqlInspect(),
+		`INSERT INTO exist_db.exist_tb_1 set id=10,v1="v1",v2="v2";`,
+		"DELETE FROM `exist_db`.`exist_tb_1` WHERE id = 10;\n",
 	)
 }

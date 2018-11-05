@@ -225,3 +225,17 @@ func newTableName(schema, table string) *ast.TableName {
 		Schema: _model.NewCIStr(schema),
 	}
 }
+
+func getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
+	hasPk := false
+	pkColumnsName := map[string]struct{}{}
+	for _, constraint := range stmt.Constraints {
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			hasPk = true
+			for _, col := range constraint.Keys {
+				pkColumnsName[col.Column.Name.String()] = struct{}{}
+			}
+		}
+	}
+	return pkColumnsName, hasPk
+}
