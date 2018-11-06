@@ -173,17 +173,44 @@ func InspectTask(c echo.Context) error {
 
 // @Summary Sql提交上线
 // @Description commit sql
+// @Param task_id path string true "Task ID"
 // @Success 200 {object} controller.BaseRes
 // @router /tasks/{task_id}/commit [post]
 func CommitTask(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	_, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+	}
+	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	return c.JSON(http.StatusOK, NewBaseReq(0, "ok"))
 }
 
 // @Summary Sql提交回滚
 // @Description rollback sql
-// @Param manual_execute query boolean false "manual execute rollback sql"
+// @Param task_id path string true "Task ID"
 // @Success 200 {object} controller.BaseRes
 // @router /tasks/{task_id}/rollback [post]
 func RollbackTask(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	_, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+	}
+	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+	}
+	return c.JSON(http.StatusOK, NewBaseReq(0, "ok"))
 }

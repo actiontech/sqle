@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
+	"sqle"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
@@ -262,7 +263,7 @@ func PingInst(c echo.Context) error {
 	}
 	if err := executor.Ping(inst); err != nil {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(-1, err.Error()),
+			BaseRes: NewBaseReq(0, err.Error()),
 			Data:    false,
 		})
 	}
@@ -292,32 +293,28 @@ func GetInstSchemas(c echo.Context) error {
 	if !exist {
 		return c.JSON(200, NewBaseReq(-1, "instance not exist"))
 	}
-	schemas, err := executor.ShowDatabases(instance)
+	status, err := sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
 	return c.JSON(200, &GetSchemaRes{
 		BaseRes: NewBaseReq(0, "ok"),
-		Data:    schemas,
+		Data:    status.Schemas,
 	})
 }
 
 type GetAllSchemasRes struct {
 	BaseRes
-	Data []GetAllSchemasData `json:"data"`
-}
-
-type GetAllSchemasData struct {
-	Name    string
-	Host    string
-	Port    string
-	Schemas []string
+	Data []sqle.InstanceStatus `json:"data"`
 }
 
 // @Summary 所有实例的 Schema 列表
 // @Description all schema list
 // @Success 200 {object} controller.GetAllSchemasRes
-// @router /schemas/ [get]
+// @router /schemas [get]
 func GetAllSchemas(c echo.Context) error {
-	return nil
+	return c.JSON(200, &GetAllSchemasRes{
+		BaseRes: NewBaseReq(0, "ok"),
+		Data:    sqle.GetSqled().GetAllInstanceStatus(),
+	})
 }

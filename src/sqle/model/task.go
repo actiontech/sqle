@@ -31,8 +31,8 @@ const (
 const (
 	TASK_ACTION_INIT  = ""
 	TASK_ACTION_DOING = "doing"
-	TASK_ACTION_DONE  = "done"
-	TASK_ACTION_ERROR = "error"
+	TASK_ACTION_DONE  = "finish"
+	TASK_ACTION_ERROR = "failed"
 )
 
 var ActionMap = map[int]string{
@@ -84,8 +84,8 @@ type Task struct {
 
 type TaskDetail struct {
 	Task
-	Instance     Instance      `json:"instance"`
-	InstanceId   uint          `json:"-"`
+	Instance     Instance       `json:"instance"`
+	InstanceId   uint           `json:"-"`
 	CommitSqls   []*CommitSql   `json:"commit_sql_list"`
 	RollbackSqls []*RollbackSql `json:"rollback_sql_list"`
 }
@@ -164,10 +164,44 @@ func (s *Storage) UpdateCommitSql(task *Task, commitSql []CommitSql) error {
 	return s.db.Model(task).Association("CommitSqls").Replace(commitSql).Error
 }
 
-func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) error {
+func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []RollbackSql) error {
 	return s.db.Model(task).Association("RollbackSqls").Replace(rollbackSql).Error
 }
 
 func (s *Storage) UpdateProgress(task *Task, progress string) error {
 	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), map[string]interface{}{"progress": progress})
+}
+
+func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {
+	return s.db.Table(CommitSql{}.TableName()).Where("id = ?", commitSqlId).Update(attrs...).Error
+}
+
+func (s *Storage) UpdateCommitSqlStatus(sql *CommitSql, status, result string) error {
+	attr := map[string]interface{}{}
+	if status != "" {
+		sql.ExecStatus = status
+		attr["exec_status"] = status
+	}
+	if result != "" {
+		sql.ExecResult = result
+		attr["exec_result"] = result
+	}
+	return s.UpdateCommitSqlById(fmt.Sprintf("%v", sql.ID), attr)
+}
+
+func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface{}) error {
+	return s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
+}
+
+func (s *Storage) UpdateRollbackSqlStatus(sql *RollbackSql, status, result string) error {
+	attr := map[string]interface{}{}
+	if status != "" {
+		sql.ExecStatus = status
+		attr["exec_status"] = status
+	}
+	if result != "" {
+		sql.ExecResult = result
+		attr["exec_result"] = result
+	}
+	return s.UpdateRollbackSqlById(fmt.Sprintf("%v", sql.ID), attr)
 }

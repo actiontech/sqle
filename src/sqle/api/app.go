@@ -38,6 +38,10 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.GET("/tasks/:task_id/", controller.GetTask)
 	e.POST("/tasks/:task_id/", controller.DeleteTask)
 	e.POST("/tasks/:task_id/inspection", controller.InspectTask)
+	e.POST("/tasks/:task_id/commit", controller.CommitTask)
+	e.POST("/tasks/:task_id/rollback", controller.RollbackTask)
+
+	e.GET("/schemas", controller.GetAllSchemas)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)
