@@ -1,8 +1,10 @@
 package inspector
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/pingcap/tidb/ast"
+	"sqle/executor"
 	"sqle/model"
 	"testing"
 )
@@ -533,25 +535,15 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 }
 
 func TestNewInspector(t *testing.T) {
-	sql := `
-DELETE FROM tb1 WHERE id=10 and v1=DEFAULT;
-`
-	node, err := parseOneSql("mysql", sql)
+	conn, err := executor.NewConn("mysql", "root", "asd2010", "10.186.18.118", "23306", "sqle")
 	if err != nil {
 		t.Error(err)
 	}
-	stmt, _ := node.(*ast.InsertStmt)
-	table := getTables(stmt.Table.TableRefs)
-	fmt.Println(getTableNameWithQuote(table[0]))
-	for n, column := range stmt.Columns {
-		fmt.Println("column: ", column.String())
-		for _, expr := range stmt.Lists {
-			switch expr[n].(type) {
-			case *ast.DefaultExpr:
-				fmt.Println("DEFAULT")
-			default:
-				fmt.Println("expr: ", exprFormat(expr[n]))
-			}
-		}
+	defer conn.Close()
+	records, err := conn.Query("select * from tb1;")
+	if err != nil {
+		t.Error(err)
 	}
+	v, _ := json.Marshal(records)
+	fmt.Println(string(v))
 }

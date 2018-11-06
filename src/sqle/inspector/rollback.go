@@ -18,12 +18,24 @@ func (i *Inspector) GenerateRollbackSql() ([]string, error) {
 		switch stmt := node.(type) {
 		case *ast.AlterTableStmt:
 			err = i.generateAlterTableRollbackSql(stmt)
+		case *ast.CreateTableStmt:
+			err = i.generateCreateTableRollbackSql(stmt)
+		case *ast.CreateDatabaseStmt:
+			err = i.generateCreateSchemaRollbackSql(stmt)
+		case *ast.DropTableStmt:
+			err = i.generateDropTableRollbackSql(stmt)
 		case *ast.InsertStmt:
 			err = i.generateInsertRollbackSql(stmt)
+		case *ast.DeleteStmt:
+			err = i.generateDeleteRollbackSql(stmt)
+		case *ast.UpdateStmt:
+			err = i.generateUpdateRollbackSql(stmt)
 		}
 		if err != nil {
 			return nil, err
 		}
+		// update schema info
+		i.UpdateSchemaCtx(node)
 	}
 	rollbackSqls := []string{}
 	// Reverse order
@@ -224,7 +236,7 @@ func (i *Inspector) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) er
 		return nil
 	}
 	i.rollbackSqls = append(i.rollbackSqls,
-		fmt.Sprintf("DROP TABLE IF EXISTS `%s`", getTableNameWithQuote(stmt.Table)))
+		fmt.Sprintf("DROP TABLE IF EXISTS %s", i.getTableNameWithQuote(stmt.Table)))
 	return nil
 }
 
@@ -250,7 +262,7 @@ func (i *Inspector) generateDropTableRollbackSql(stmt *ast.DropTableStmt) error 
 
 func (i *Inspector) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
 	i.rollbackSqls = append(i.rollbackSqls,
-		fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, getTableNameWithQuote(stmt.Table)))
+		fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)))
 	return nil
 }
 
@@ -269,7 +281,7 @@ func (i *Inspector) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) erro
 			switch constraint.Tp {
 			case ast.ConstraintIndex:
 				sql := fmt.Sprintf("CREATE INDEX `%s` ON %s",
-					indexName, getTableNameWithQuote(stmt.Table))
+					indexName, i.getTableNameWithQuote(stmt.Table))
 				if constraint.Option != nil {
 					sql = fmt.Sprintf("%s %s", sql, indexOptionFormat(constraint.Option))
 				}
@@ -338,7 +350,7 @@ func (i *Inspector) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 				return nil
 			}
 			rollbackSql += fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
-				getTableNameWithQuote(table[0]), strings.Join(where, ", "))
+				i.getTableNameWithQuote(table[0]), strings.Join(where, ", "))
 		}
 		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
 		return nil
@@ -358,7 +370,7 @@ func (i *Inspector) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 			return nil
 		}
 		i.rollbackSqls = append(i.rollbackSqls, fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
-			getTableNameWithQuote(table[0]), strings.Join(where, " AND ")))
+			i.getTableNameWithQuote(table[0]), strings.Join(where, " AND ")))
 	}
 	return nil
 }
@@ -379,12 +391,7 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 		return nil
 	}
 
-	columnsName := []string{}
-	for _, col := range createTableStmt.Cols {
-		columnsName = append(columnsName, col.Name.Name.String())
-	}
-
-	recordSql := fmt.Sprintf("SELECT * FROM %s", getTableNameWithQuote(table))
+	recordSql := fmt.Sprintf("SELECT * FROM %s", i.getTableNameWithQuote(table))
 	if stmt.Where != nil {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
 	}
@@ -396,17 +403,28 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 	if err != nil {
 		return err
 	}
-	rollbackSql := "INSERT INTO %s (%s) VALUES "
+
+	values := []string{}
+
+	columnsName := []string{}
+	for _, col := range createTableStmt.Cols {
+		columnsName = append(columnsName, col.Name.Name.String())
+	}
 	for _, record := range records {
 		if len(record) != len(columnsName) {
 			return nil
 		}
-		values := []string{}
-		for k, v := range record {
-			values = append(values, fmt.Sprintf("%s = '%s'", k, v))
+		value := []string{}
+		for _, name := range columnsName {
+			value = append(value, record[name])
 		}
-		rollbackSql += fmt.Sprintf("INSERT INTO %s SET %s",
-			getTableNameWithQuote(table), strings.Join(values, ", "))
+		values = append(values, fmt.Sprintf("(%s)", strings.Join(value, ", ")))
+	}
+	rollbackSql := ""
+	if len(values) > 0 {
+		rollbackSql = fmt.Sprintf("INSERT INTO %s (`%s`) VALUES %s;",
+			i.getTableNameWithQuote(table), strings.Join(columnsName, "`, `"),
+			strings.Join(values, ", "))
 	}
 	if rollbackSql != "" {
 		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
@@ -415,5 +433,76 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 }
 
 func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
+	tables := getTables(stmt.TableRefs.TableRefs)
+	// multi table syntax
+	if len(tables) != 1 {
+		return nil
+	}
+	table := tables[0]
+	createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(table))
+	if err != nil || !exist {
+		return err
+	}
+	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
+	if !hasPk {
+		return nil
+	}
+
+	conn, err := i.getDbConn()
+	if err != nil {
+		return err
+	}
+	recordSql := fmt.Sprintf("SELECT * FROM %s", i.getTableNameWithQuote(table))
+	if stmt.Where != nil {
+		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
+	}
+	records, err := conn.Query(recordSql)
+	if err != nil {
+		return err
+	}
+
+	pkChangedList := map[string]string{}
+	// if update primary key, pk will change.
+	for _, l := range stmt.List {
+		_, isPk := pkColumnsName[l.Column.Name.String()]
+		if isPk {
+			pkChangedList[l.Column.Name.String()] = exprFormat(l.Expr)
+		}
+	}
+
+	values := []string{}
+	columnsName := []string{}
+	rollbackSql := ""
+	for _, col := range createTableStmt.Cols {
+		columnsName = append(columnsName, col.Name.Name.String())
+	}
+	for _, record := range records {
+		if len(record) != len(columnsName) {
+			return nil
+		}
+		where := []string{}
+		value := []string{}
+		for _, name := range columnsName {
+			value = append(value, fmt.Sprintf("%s = %s", name, record[name]))
+			_, isPk := pkColumnsName[name]
+			if isPk {
+				if v, isChanged := pkChangedList[name]; isChanged {
+					where = append(where, fmt.Sprintf("%s = %s", name, v))
+				} else {
+					where = append(where, fmt.Sprintf("%s = %s", name, record[name]))
+				}
+			}
+		}
+		rollbackSql += fmt.Sprintf("UPDATE %s SET %s WHERE %s", i.getTableNameWithQuote(table),
+			strings.Join(values, ", "), strings.Join(where, " AND "))
+	}
+	if len(values) > 0 {
+		rollbackSql = fmt.Sprintf("INSERT INTO %s (`%s`) VALUES %s;",
+			i.getTableNameWithQuote(table), strings.Join(columnsName, "`, `"),
+			strings.Join(values, ", "))
+	}
+	if rollbackSql != "" {
+		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
+	}
 	return nil
 }

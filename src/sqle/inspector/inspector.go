@@ -120,7 +120,23 @@ func (i *Inspector) getTableName(stmt *ast.TableName) string {
 	} else {
 		schema = stmt.Schema.String()
 	}
+	if schema == "" {
+		return fmt.Sprintf("%s", stmt.Name)
+	}
 	return fmt.Sprintf("%s.%s", schema, stmt.Name)
+}
+
+func (i *Inspector) getTableNameWithQuote(stmt *ast.TableName) string {
+	var schema string
+	if stmt.Schema.String() == "" {
+		schema = i.currentSchema
+	} else {
+		schema = stmt.Schema.String()
+	}
+	if schema == "" {
+		return fmt.Sprintf("`%s`", stmt.Name)
+	}
+	return fmt.Sprintf("`%s`.`%s`", schema, stmt.Name)
 }
 
 func (i *Inspector) isTableExist(tableName string) (bool, error) {
@@ -243,10 +259,32 @@ func (i *Inspector) Inspect() ([]*model.CommitSql, error) {
 		sql.InspectLevel = i.Results.level()
 		sql.InspectResult = i.Results.message()
 
-		//clean up results
+		// update schema info
+		i.UpdateSchemaCtx(node)
+
+		// clean up results
 		i.Results = newInspectResults()
 	}
 	return i.SqlArray, nil
+}
+
+func (i *Inspector) UpdateSchemaCtx(node ast.StmtNode) {
+	switch s := node.(type) {
+	case *ast.UseStmt:
+		// change current schema
+		i.currentSchema = s.DBName
+	case *ast.CreateDatabaseStmt:
+		i.allSchema[s.Name] = struct{}{}
+	case *ast.CreateTableStmt:
+		i.createTableStmts[i.getTableName(s.Table)] = s
+	case *ast.DropDatabaseStmt:
+		delete(i.allSchema, s.Name)
+	case *ast.DropTableStmt:
+		for _, table := range s.Tables {
+			delete(i.alterTableStmts, i.getTableName(table))
+		}
+	default:
+	}
 }
 
 func (i *Inspector) InspectSpecificStmt(node ast.StmtNode) error {
@@ -263,12 +301,8 @@ func (i *Inspector) InspectSpecificStmt(node ast.StmtNode) error {
 	case *ast.CreateDatabaseStmt:
 		return i.inspectCreateSchemaStmt(s)
 	case *ast.DropDatabaseStmt:
-		delete(i.allSchema, s.Name)
 		i.addResult(model.DDL_DISABLE_DROP_STATEMENT)
 	case *ast.DropTableStmt:
-		for _, table := range s.Tables {
-			delete(i.alterTableStmts, i.getTableName(table))
-		}
 		i.addResult(model.DDL_DISABLE_DROP_STATEMENT)
 	default:
 		return nil
@@ -332,7 +366,6 @@ func (i *Inspector) inspectCreateSchemaStmt(stmt *ast.CreateDatabaseStmt) error 
 	if exist {
 		i.addResult(model.SCHEMA_EXIST)
 	}
-	i.allSchema[schemaName] = struct{}{}
 	return nil
 }
 
@@ -454,8 +487,6 @@ func (i *Inspector) inspectUseStmt(stmt *ast.UseStmt) error {
 	if !exist {
 		i.addResult(model.SCHEMA_NOT_EXIST, stmt.DBName)
 	}
-	// change current schema
-	i.currentSchema = stmt.DBName
 	return nil
 }
 
