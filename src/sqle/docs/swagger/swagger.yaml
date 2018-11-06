@@ -98,19 +98,6 @@ definitions:
         example: ok
         type: string
     type: object
-  controller.GetAllSchemasData:
-    properties:
-      host:
-        type: string
-      name:
-        type: string
-      port:
-        type: string
-      schemas:
-        items:
-          type: string
-        type: array
-    type: object
   controller.GetAllSchemasRes:
     properties:
       code:
@@ -118,7 +105,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/controller.GetAllSchemasData'
+          $ref: '#/definitions/sqle.InstanceStatus'
         type: array
       message:
         example: ok
@@ -383,6 +370,23 @@ definitions:
       sql:
         type: string
     type: object
+  sqle.InstanceStatus:
+    properties:
+      host:
+        type: string
+      id:
+        type: integer
+      is_connect_failed:
+        type: boolean
+      name:
+        type: string
+      port:
+        type: string
+      schema_list:
+        items:
+          type: string
+        type: array
+    type: object
 host: '{{.Host}}'
 info:
   contact: {}
@@ -599,7 +603,7 @@ paths:
             $ref: '#/definitions/controller.GetAllRuleRes'
             type: object
       summary: 规则列表
-  /schemas/:
+  /schemas:
     get:
       description: all schema list
       responses:
@@ -673,6 +677,12 @@ paths:
   /tasks/{task_id}/commit:
     post:
       description: commit sql
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
@@ -700,10 +710,11 @@ paths:
     post:
       description: rollback sql
       parameters:
-      - description: manual execute rollback sql
-        in: query
-        name: manual_execute
-        type: boolean
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
