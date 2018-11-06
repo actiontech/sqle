@@ -447,7 +447,6 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 	if !hasPk {
 		return nil
 	}
-
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
@@ -456,11 +455,12 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 	if stmt.Where != nil {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
 	}
+	recordSql += ";"
 	records, err := conn.Query(recordSql)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
-
 	pkChangedList := map[string]string{}
 	// if update primary key, pk will change.
 	for _, l := range stmt.List {

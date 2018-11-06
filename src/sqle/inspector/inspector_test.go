@@ -540,7 +540,11 @@ func TestNewInspector(t *testing.T) {
 		t.Error(err)
 	}
 	defer conn.Close()
-	records, err := conn.Query("select * from tb1;")
+	sql1 := "select * from sqle.rules where name <> \"\";"
+	_ = sql1
+	sql2 := "delete from sqle.rules"
+	_ = sql2
+	records, err := conn.Explain(sql2)
 	if err != nil {
 		t.Error(err)
 	}

@@ -141,16 +141,14 @@ func (i *Inspector) getTableNameWithQuote(stmt *ast.TableName) string {
 
 func (i *Inspector) isTableExist(tableName string) (bool, error) {
 	var schema = i.currentSchema
-	var table = ""
+	var table = tableName
 	if strings.Contains(tableName, ".") {
 		splitStrings := strings.SplitN(tableName, ".", 2)
 		schema = splitStrings[0]
 		table = splitStrings[1]
-	} else {
-		table = tableName
 	}
 
-	tables, hasLoad := i.allTable[schema]
+	_, hasLoad := i.allTable[schema]
 	if !hasLoad {
 		schemaExist, err := i.isSchemaExist(schema)
 		if err != nil {
@@ -172,7 +170,7 @@ func (i *Inspector) isTableExist(tableName string) (bool, error) {
 			i.allTable[schema][table] = struct{}{}
 		}
 	}
-	_, exist := tables[table]
+	_, exist := i.allTable[schema][table]
 	return exist, nil
 }
 
