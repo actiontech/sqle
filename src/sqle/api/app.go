@@ -42,6 +42,7 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.POST("/tasks/:task_id/rollback", controller.RollbackTask)
 
 	e.GET("/schemas", controller.GetAllSchemas)
+	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)

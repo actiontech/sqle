@@ -80,6 +80,9 @@ func CreateInst(c echo.Context) error {
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
+
+	go sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
+
 	return c.JSON(200, &InstanceRes{
 		BaseRes: NewBaseReq(0, "ok"),
 		Data:    instance.Detail(),
@@ -138,6 +141,8 @@ func DeleteInstance(c echo.Context) error {
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
+
+	sqle.GetSqled().DeleteInstanceStatus(instance)
 	return c.JSON(200, NewBaseReq(0, "ok"))
 }
 
@@ -206,6 +211,8 @@ func UpdateInstance(c echo.Context) error {
 	if err != nil {
 		return c.JSON(200, NewBaseReq(-1, err.Error()))
 	}
+
+	go sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
 
 	return c.JSON(200, NewBaseReq(0, "ok"))
 }
@@ -317,4 +324,13 @@ func GetAllSchemas(c echo.Context) error {
 		BaseRes: NewBaseReq(0, "ok"),
 		Data:    sqle.GetSqled().GetAllInstanceStatus(),
 	})
+}
+
+// @Summary 手动刷新 Schema 列表
+// @Description update schema list
+// @Success 200 {object} controller.BaseRes
+// @router /schemas/manual_update [post]
+func ManualUpdateAllSchemas(c echo.Context) error {
+	go sqle.GetSqled().UpdateAllInstanceStatus()
+	return c.JSON(200, NewBaseReq(0, "ok"))
 }

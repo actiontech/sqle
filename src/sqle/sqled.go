@@ -70,10 +70,10 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 	}
 
 	// valid
-	err = task.ValidAction(typ)
-	if err != nil {
-		goto Error
-	}
+	//err = task.ValidAction(typ)
+	//if err != nil {
+	//	goto Error
+	//}
 
 	action.Task = task
 	s.queue <- action
@@ -263,21 +263,31 @@ func (s *Sqled) UpdateAllInstanceStatus() error {
 		return err
 	}
 	instancesStatus := map[uint]*InstanceStatus{}
+	wait := sync.WaitGroup{}
+	mutex := sync.Mutex{}
 	for _, instance := range instances {
-		status := &InstanceStatus{
-			ID:   instance.ID,
-			Name: instance.Name,
-			Host: instance.Host,
-			Port: instance.Port,
-		}
-		schemas, err := executor.ShowDatabases(instance)
-		if err != nil {
-			status.IsConnectFailed = true
-		} else {
-			status.Schemas = schemas
-		}
-		instancesStatus[instance.ID] = status
+		wait.Add(1)
+		currentInstance := instance
+		go func() {
+			status := &InstanceStatus{
+				ID:   currentInstance.ID,
+				Name: currentInstance.Name,
+				Host: currentInstance.Host,
+				Port: currentInstance.Port,
+			}
+			schemas, err := executor.ShowDatabases(currentInstance)
+			if err != nil {
+				status.IsConnectFailed = true
+			} else {
+				status.Schemas = schemas
+			}
+			mutex.Lock()
+			instancesStatus[currentInstance.ID] = status
+			mutex.Unlock()
+			wait.Done()
+		}()
 	}
+	wait.Wait()
 	s.Lock()
 	s.instancesStatus = instancesStatus
 	s.Unlock()
@@ -311,4 +321,10 @@ func (s *Sqled) GetAllInstanceStatus() []InstanceStatus {
 	}
 	s.Unlock()
 	return statusList
+}
+
+func (s *Sqled) DeleteInstanceStatus(instance model.Instance) {
+	s.Lock()
+	delete(s.instancesStatus, instance.ID)
+	s.Unlock()
 }
