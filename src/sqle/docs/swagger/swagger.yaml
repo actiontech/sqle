@@ -613,6 +613,16 @@ paths:
             $ref: '#/definitions/controller.GetAllSchemasRes'
             type: object
       summary: 所有实例的 Schema 列表
+  /schemas/manual_update:
+    post:
+      description: update schema list
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 手动刷新 Schema 列表
   /tasks:
     get:
       description: get all tasks

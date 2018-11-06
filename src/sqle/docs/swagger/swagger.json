@@ -332,6 +332,21 @@
                 }
             }
         },
+        "/schemas/manual_update": {
+            "post": {
+                "description": "update schema list",
+                "summary": "手动刷新 Schema 列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks": {
             "get": {
                 "description": "get all tasks",
