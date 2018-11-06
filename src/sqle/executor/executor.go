@@ -2,6 +2,7 @@ package executor
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -139,4 +140,24 @@ func (c *Conn) ShowSchemaTables(schema string) ([]string, error) {
 		tables[n] = v["table_name"]
 	}
 	return tables, nil
+}
+
+type ExecutionPlanJson struct {
+	QueryBlock struct {
+		CostInfo struct {
+			QueryCost string `json:"query_cost"`
+		} `json:"cost_info"`
+	} `json:"query_block"`
+}
+
+func (c *Conn) Explain(query string) (ExecutionPlanJson, error) {
+	ep := ExecutionPlanJson{}
+	result, err := c.Query(fmt.Sprintf("EXPLAIN FORMAT=\"json\" %s", query))
+	if err != nil {
+		return ep, err
+	}
+	if len(result) == 1 {
+		json.Unmarshal([]byte(result[0]["EXPLAIN"]), &ep)
+	}
+	return ep, nil
 }
