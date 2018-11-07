@@ -1,10 +1,8 @@
 package inspector
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/pingcap/tidb/ast"
-	"sqle/executor"
 	"sqle/model"
 	"testing"
 )
@@ -534,20 +532,30 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 
 }
 
+//func TestNewInspector(t *testing.T) {
+//	conn, err := executor.NewConn("mysql", "root", "asd2010", "10.186.18.118", "23306", "sqle")
+//	if err != nil {
+//		t.Error(err)
+//	}
+//	defer conn.Close()
+//	sql1 := "select * from sqle.rules where name <> \"\";"
+//	_ = sql1
+//	sql2 := "delete from sqle.rules"
+//	_ = sql2
+//	records, err := conn.Explain(sql2)
+//	if err != nil {
+//		t.Error(err)
+//	}
+//	v, _ := json.Marshal(records)
+//	fmt.Println(string(v))
+//}
+
 func TestNewInspector(t *testing.T) {
-	conn, err := executor.NewConn("mysql", "root", "asd2010", "10.186.18.118", "23306", "sqle")
+	sql := "update tb1 set id=10 where id=1 and v1 >' == ' && 1+1>=1;"
+	node, err := parseOneSql("mysql", sql)
 	if err != nil {
 		t.Error(err)
 	}
-	defer conn.Close()
-	sql1 := "select * from sqle.rules where name <> \"\";"
-	_ = sql1
-	sql2 := "delete from sqle.rules"
-	_ = sql2
-	records, err := conn.Explain(sql2)
-	if err != nil {
-		t.Error(err)
-	}
-	v, _ := json.Marshal(records)
-	fmt.Println(string(v))
+	stmt,_:=node.(*ast.UpdateStmt)
+	fmt.Println(exprFormat(stmt.Where))
 }

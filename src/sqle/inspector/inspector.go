@@ -127,16 +127,8 @@ func (i *Inspector) getTableName(stmt *ast.TableName) string {
 }
 
 func (i *Inspector) getTableNameWithQuote(stmt *ast.TableName) string {
-	var schema string
-	if stmt.Schema.String() == "" {
-		schema = i.currentSchema
-	} else {
-		schema = stmt.Schema.String()
-	}
-	if schema == "" {
-		return fmt.Sprintf("`%s`", stmt.Name)
-	}
-	return fmt.Sprintf("`%s`.`%s`", schema, stmt.Name)
+	name := strings.Replace(i.getTableName(stmt), ".", "`.`", -1)
+	return fmt.Sprintf("`%s`", name)
 }
 
 func (i *Inspector) isTableExist(tableName string) (bool, error) {

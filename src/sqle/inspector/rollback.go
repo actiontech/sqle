@@ -343,7 +343,7 @@ func (i *Inspector) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 			for n, name := range columnsName {
 				_, isPk := pkColumnsName[name]
 				if isPk {
-					where = append(where, fmt.Sprintf("%s = %s", name, exprFormat(value[n])))
+					where = append(where, fmt.Sprintf("%s = '%s'", name, exprFormat(value[n])))
 				}
 			}
 			if len(where) != len(pkColumnsName) {
@@ -418,7 +418,7 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 		for _, name := range columnsName {
 			value = append(value, record[name])
 		}
-		values = append(values, fmt.Sprintf("(%s)", strings.Join(value, ", ")))
+		values = append(values, fmt.Sprintf("('%s')", strings.Join(value, "', '")))
 	}
 	rollbackSql := ""
 	if len(values) > 0 {
@@ -461,16 +461,7 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 		fmt.Println(err)
 		return err
 	}
-	pkChangedList := map[string]string{}
-	// if update primary key, pk will change.
-	for _, l := range stmt.List {
-		_, isPk := pkColumnsName[l.Column.Name.String()]
-		if isPk {
-			pkChangedList[l.Column.Name.String()] = exprFormat(l.Expr)
-		}
-	}
 
-	values := []string{}
 	columnsName := []string{}
 	rollbackSql := ""
 	for _, col := range createTableStmt.Cols {
@@ -482,24 +473,36 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 		}
 		where := []string{}
 		value := []string{}
-		for _, name := range columnsName {
-			value = append(value, fmt.Sprintf("%s = %s", name, record[name]))
-			_, isPk := pkColumnsName[name]
+		for _, col := range createTableStmt.Cols {
+			colChanged := false
+			_, isPk := pkColumnsName[col.Name.Name.L]
+			isPkChanged := false
+			pkValue := ""
+
+			for _, l := range stmt.List {
+				if col.Name.Name.L == l.Column.Name.L {
+					colChanged = true
+					if isPk {
+						isPkChanged = true
+						pkValue = exprFormat(l.Expr)
+					}
+				}
+			}
+			name := col.Name.String()
+			if colChanged {
+				value = append(value, fmt.Sprintf("%s = '%s'", name, record[name]))
+			}
 			if isPk {
-				if v, isChanged := pkChangedList[name]; isChanged {
-					where = append(where, fmt.Sprintf("%s = %s", name, v))
+				if isPkChanged {
+					where = append(where, fmt.Sprintf("%s = '%s'", name, pkValue))
 				} else {
-					where = append(where, fmt.Sprintf("%s = %s", name, record[name]))
+					where = append(where, fmt.Sprintf("%s = '%s'", name, record[name]))
+
 				}
 			}
 		}
 		rollbackSql += fmt.Sprintf("UPDATE %s SET %s WHERE %s", i.getTableNameWithQuote(table),
-			strings.Join(values, ", "), strings.Join(where, " AND "))
-	}
-	if len(values) > 0 {
-		rollbackSql = fmt.Sprintf("INSERT INTO %s (`%s`) VALUES %s;",
-			i.getTableNameWithQuote(table), strings.Join(columnsName, "`, `"),
-			strings.Join(values, ", "))
+			strings.Join(value, ", "), strings.Join(where, " AND "))
 	}
 	if rollbackSql != "" {
 		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)

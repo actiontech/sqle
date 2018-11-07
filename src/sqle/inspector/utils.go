@@ -232,7 +232,7 @@ func getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
 		if constraint.Tp == ast.ConstraintPrimaryKey {
 			hasPk = true
 			for _, col := range constraint.Keys {
-				pkColumnsName[col.Column.Name.String()] = struct{}{}
+				pkColumnsName[col.Column.Name.L] = struct{}{}
 			}
 		}
 	}
