@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle"
+	"sqle/errors"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
@@ -44,10 +45,11 @@ func CreateInst(c echo.Context) error {
 	}
 	_, exist, err := s.GetInstByName(req.Name)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if exist {
-		return c.JSON(200, NewBaseReq(-1, "inst is exist"))
+		err := fmt.Errorf("inst is exist")
+		return c.JSON(200, NewBaseReq(errors.New(errors.INSTANCE_EXIST, err)))
 	}
 
 	instance := model.Instance{
@@ -64,7 +66,7 @@ func CreateInst(c echo.Context) error {
 	for _, tplName := range req.RuleTemplates {
 		t, exist, err := s.GetTemplateByName(tplName)
 		if err != nil {
-			return c.JSON(200, NewBaseReq(-1, err.Error()))
+			return c.JSON(200, NewBaseReq(err))
 		}
 		if !exist {
 			notExistTs = append(notExistTs, tplName)
@@ -73,18 +75,19 @@ func CreateInst(c echo.Context) error {
 	}
 
 	if len(notExistTs) > 0 {
-		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("rule_template %s not exist", strings.Join(notExistTs, ", "))))
+		err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTs, ", "))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
 	}
 
 	err = s.Save(&instance)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 
 	go sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
 
 	return c.JSON(200, &InstanceRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    instance.Detail(),
 	})
 }
@@ -100,18 +103,18 @@ func GetInstance(c echo.Context) error {
 	instance, exist, err := s.GetInstById(instanceId)
 	if err != nil {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(-1, err.Error()),
+			BaseRes: NewBaseReq(err),
 			Data:    false,
 		})
 	}
 	if !exist {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(-1, "inst not exist"),
+			BaseRes: INSTANCE_NOT_EXIST_ERROR,
 			Data:    false,
 		})
 	}
 	return c.JSON(200, &InstanceRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    instance.Detail(),
 	})
 }
@@ -127,23 +130,23 @@ func DeleteInstance(c echo.Context) error {
 	instance, exist, err := s.GetInstById(instanceId)
 	if err != nil {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(-1, err.Error()),
+			BaseRes: NewBaseReq(err),
 			Data:    false,
 		})
 	}
 	if !exist {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(-1, "inst not exist"),
+			BaseRes: INSTANCE_NOT_EXIST_ERROR,
 			Data:    false,
 		})
 	}
 	err = s.Delete(instance)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 
 	sqle.GetSqled().DeleteInstanceStatus(instance)
-	return c.JSON(200, NewBaseReq(0, "ok"))
+	return c.JSON(200, NewBaseReq(nil))
 }
 
 // @Summary 更新实例
@@ -161,18 +164,19 @@ func UpdateInstance(c echo.Context) error {
 	}
 	instance, exist, err := s.GetInstById(instanceId)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(200, NewBaseReq(-1, "instance not exist"))
+		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
 	}
 	if instance.Name != req.Name {
 		_, exist, err := s.GetInstByName(req.Name)
 		if err != nil {
-			return c.JSON(200, NewBaseReq(-1, err.Error()))
+			return c.JSON(200, NewBaseReq(err))
 		}
 		if exist {
-			return c.JSON(200, NewBaseReq(-1, "instance name is exist"))
+			return c.JSON(200, NewBaseReq(errors.New(errors.INSTANCE_EXIST,
+				fmt.Errorf("instance name is exist"))))
 		}
 	}
 
@@ -190,7 +194,7 @@ func UpdateInstance(c echo.Context) error {
 	for _, tplName := range req.RuleTemplates {
 		t, exist, err := s.GetTemplateByName(tplName)
 		if err != nil {
-			return c.JSON(200, NewBaseReq(-1, err.Error()))
+			return c.JSON(200, NewBaseReq(err))
 		}
 		if !exist {
 			notExistTs = append(notExistTs, tplName)
@@ -199,22 +203,23 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	if len(notExistTs) > 0 {
-		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("rule_template %s not exist", strings.Join(notExistTs, ", "))))
+		err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTs, ", "))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
 	}
 
 	err = s.Save(&instance)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 
 	err = s.UpdateInstRuleTemplate(&instance, ruleTemplates...)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 
 	go sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
 
-	return c.JSON(200, NewBaseReq(0, "ok"))
+	return c.JSON(200, NewBaseReq(nil))
 }
 
 type GetAllInstReq struct {
@@ -228,15 +233,12 @@ type GetAllInstReq struct {
 // @router /instances [get]
 func GetInsts(c echo.Context) error {
 	s := model.GetStorage()
-	if s == nil {
-		c.String(500, "nil")
-	}
 	databases, err := s.GetInstances()
 	if err != nil {
-		return c.String(500, err.Error())
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, &GetAllInstReq{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    databases,
 	})
 }
@@ -258,24 +260,24 @@ func PingInst(c echo.Context) error {
 	inst, exist, err := s.GetInstById(instId)
 	if err != nil {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(-1, err.Error()),
+			BaseRes: NewBaseReq(err),
 			Data:    false,
 		})
 	}
 	if !exist {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(-1, "inst not exist"),
+			BaseRes: INSTANCE_NOT_EXIST_ERROR,
 			Data:    false,
 		})
 	}
 	if err := executor.Ping(inst); err != nil {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(0, err.Error()),
+			BaseRes: NewBaseReq(nil),
 			Data:    false,
 		})
 	}
 	return c.JSON(200, PingInstRes{
-		BaseRes: NewBaseReq(0, ""),
+		BaseRes: NewBaseReq(nil),
 		Data:    true,
 	})
 }
@@ -295,17 +297,17 @@ func GetInstSchemas(c echo.Context) error {
 	instanceId := c.Param("instance_id")
 	instance, exist, err := s.GetInstById(instanceId)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(200, NewBaseReq(-1, "instance not exist"))
+		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
 	}
 	status, err := sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	return c.JSON(200, &GetSchemaRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    status.Schemas,
 	})
 }
@@ -321,7 +323,7 @@ type GetAllSchemasRes struct {
 // @router /schemas [get]
 func GetAllSchemas(c echo.Context) error {
 	return c.JSON(200, &GetAllSchemasRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    sqle.GetSqled().GetAllInstanceStatus(),
 	})
 }
@@ -332,5 +334,5 @@ func GetAllSchemas(c echo.Context) error {
 // @router /schemas/manual_update [post]
 func ManualUpdateAllSchemas(c echo.Context) error {
 	go sqle.GetSqled().UpdateAllInstanceStatus()
-	return c.JSON(200, NewBaseReq(0, "ok"))
+	return c.JSON(200, NewBaseReq(nil))
 }

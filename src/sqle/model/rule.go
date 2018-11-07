@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"sqle/errors"
 )
 
 type RuleTemplate struct {
@@ -207,7 +208,7 @@ func (s *Storage) GetTemplateById(templateId string) (RuleTemplate, bool, error)
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
-	return t, true, err
+	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) GetTemplateByName(name string) (RuleTemplate, bool, error) {
@@ -216,17 +217,18 @@ func (s *Storage) GetTemplateByName(name string) (RuleTemplate, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
-	return t, true, err
+	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateTemplateRules(tpl *RuleTemplate, rules ...Rule) error {
-	return s.db.Model(tpl).Association("Rules").Replace(rules).Error
+	err := s.db.Model(tpl).Association("Rules").Replace(rules).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) GetAllTemplate() ([]RuleTemplate, error) {
 	ts := []RuleTemplate{}
 	err := s.db.Find(&ts).Error
-	return ts, err
+	return ts, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) CreateDefaultRules() error {
@@ -259,14 +261,14 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 func (s *Storage) GetAllRule() ([]Rule, error) {
 	rules := []Rule{}
 	err := s.db.Find(&rules).Error
-	return rules, err
+	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	rules := []Rule{}
 	instance, _, err := s.GetInstById(instanceId)
 	if err != nil {
-		return rules, err
+		return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	templates := instance.RuleTemplates
 	if len(templates) <= 0 {
@@ -280,5 +282,5 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	err = s.db.Table("rules").Select("rules.name, rules.value, rules.level").
 		Joins("inner join rule_template_rule on rule_template_rule.rule_name = rules.name").
 		Where("rule_template_rule.rule_template_id in (?)", templateIds).Scan(&rules).Error
-	return rules, err
+	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

@@ -1,6 +1,9 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+	"sqle/errors"
+)
 
 const (
 	DB_TYPE_MYSQL     = "mysql"
@@ -45,7 +48,7 @@ func (s *Storage) GetInstById(id string) (Instance, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return inst, false, nil
 	}
-	return inst, true, err
+	return inst, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) GetInstByName(name string) (*Instance, bool, error) {
@@ -54,23 +57,24 @@ func (s *Storage) GetInstByName(name string) (*Instance, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return inst, false, nil
 	}
-	return inst, true, err
+	return inst, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateInst(inst *Instance) error {
-	return s.db.Save(inst).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Save(inst).Error)
 }
 
 func (s *Storage) DelInstByName(inst *Instance) error {
-	return s.db.Delete(inst).Error
+	return 	errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(inst).Error)
 }
 
 func (s *Storage) GetInstances() ([]Instance, error) {
 	inst := []Instance{}
 	err := s.db.Find(&inst).Error
-	return inst, err
+	return inst, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateInstRuleTemplate(inst *Instance, ts ...RuleTemplate) error {
-	return s.db.Model(inst).Association("RuleTemplates").Replace(ts).Error
+	err:= s.db.Model(inst).Association("RuleTemplates").Replace(ts).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

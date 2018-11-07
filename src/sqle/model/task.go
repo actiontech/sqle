@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"sqle/errors"
 )
 
 // task progress
@@ -147,25 +148,28 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
-	return task, true, nil
+	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) GetTasks() ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Find(&tasks).Error
-	return tasks, err
+	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateTaskById(taskId string, attrs ...interface{}) error {
-	return s.db.Table("tasks").Where("id = ?", taskId).Update(attrs...).Error
+	err := s.db.Table("tasks").Where("id = ?", taskId).Update(attrs...).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateCommitSql(task *Task, commitSql []CommitSql) error {
-	return s.db.Model(task).Association("CommitSqls").Replace(commitSql).Error
+	err := s.db.Model(task).Association("CommitSqls").Replace(commitSql).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []RollbackSql) error {
-	return s.db.Model(task).Association("RollbackSqls").Replace(rollbackSql).Error
+	err := s.db.Model(task).Association("RollbackSqls").Replace(rollbackSql).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateProgress(task *Task, progress string) error {
@@ -173,7 +177,8 @@ func (s *Storage) UpdateProgress(task *Task, progress string) error {
 }
 
 func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {
-	return s.db.Table(CommitSql{}.TableName()).Where("id = ?", commitSqlId).Update(attrs...).Error
+	err := s.db.Table(CommitSql{}.TableName()).Where("id = ?", commitSqlId).Update(attrs...).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateCommitSqlStatus(sql *CommitSql, status, result string) error {
@@ -190,7 +195,8 @@ func (s *Storage) UpdateCommitSqlStatus(sql *CommitSql, status, result string) e
 }
 
 func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface{}) error {
-	return s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
+	err := s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateRollbackSqlStatus(sql *RollbackSql, status, result string) error {

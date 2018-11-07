@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"sqle/errors"
 	"time"
 )
 
@@ -27,7 +28,7 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user, password, host, port, schema))
 	if err != nil {
-		return nil, err
+		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	db.LogMode(true)
 	// create tables
@@ -35,18 +36,7 @@ func NewMysql(user, password, host, port, schema string) (*Storage, error) {
 	storage := &Storage{db: db}
 	// update default rules
 	err = storage.CreateDefaultRules()
-	return storage, err
-}
-
-func createTable(db *gorm.DB, model interface{}) error {
-	hasTable := db.HasTable(model)
-	if db.Error != nil {
-		return db.Error
-	}
-	if !hasTable {
-		return db.CreateTable(model).Error
-	}
-	return nil
+	return storage, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 type Storage struct {
@@ -57,23 +47,23 @@ func (s *Storage) Exist(model interface{}) (bool, error) {
 	var count int
 	err := s.db.Model(model).Where(model).Count(&count).Error
 	if err != nil {
-		return false, err
+		return false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	return count > 0, nil
 }
 
 func (s *Storage) Create(model interface{}) error {
-	return s.db.Create(model).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Create(model).Error)
 }
 
 func (s *Storage) Save(model interface{}) error {
-	return s.db.Save(model).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Save(model).Error)
 }
 
 func (s *Storage) Update(model interface{}, attrs ...interface{}) error {
-	return s.db.Model(model).UpdateColumns(attrs).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Model(model).UpdateColumns(attrs).Error)
 }
 
 func (s *Storage) Delete(model interface{}) error {
-	return s.db.Delete(model).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(model).Error)
 }

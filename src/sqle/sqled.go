@@ -2,6 +2,7 @@ package sqle
 
 import (
 	"fmt"
+	"sqle/errors"
 	"sqle/executor"
 	"sqle/inspector"
 	"sqle/model"
@@ -65,7 +66,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		goto Error
 	}
 	if !exist {
-		err = fmt.Errorf("task not exist")
+		err = errors.New(errors.TASK_NOT_EXIST, fmt.Errorf("task not exist"))
 		goto Error
 	}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
+	"sqle/errors"
 	"sqle/model"
 )
 
@@ -29,10 +30,11 @@ func CreateTemplate(c echo.Context) error {
 
 	_, exist, err := s.GetTemplateByName(req.Name)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if exist {
-		return c.JSON(200, NewBaseReq(-1, "template is exist"))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_EXIST,
+			fmt.Errorf("template is exist"))))
 	}
 	t := &model.RuleTemplate{
 		Name: req.Name,
@@ -40,13 +42,13 @@ func CreateTemplate(c echo.Context) error {
 	}
 	rules, err := s.GetAllRule()
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	ruleMap := model.GetRuleMapFromAllArray(rules)
 	for _, name := range req.RulesName {
-		fmt.Println("check: ", name)
 		if rule, ok := ruleMap[name]; !ok {
-			return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("rule: %s is invalid", name)))
+			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_NOT_EXIST,
+				fmt.Errorf("rule: %s is invalid", name))))
 		} else {
 			t.Rules = append(t.Rules, rule)
 		}
@@ -54,10 +56,10 @@ func CreateTemplate(c echo.Context) error {
 
 	err = s.Save(t)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 
-	return c.JSON(200, NewBaseReq(0, "ok"))
+	return c.JSON(200, NewBaseReq(nil))
 }
 
 type GetRuleTplRes struct {
@@ -75,13 +77,14 @@ func GetRuleTemplate(c echo.Context) error {
 	templateId := c.Param("template_id")
 	template, exist, err := s.GetTemplateById(templateId)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("template id %v not exist", templateId)))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST,
+			fmt.Errorf("rule template is not exist"))))
 	}
 	return c.JSON(http.StatusOK, &GetRuleTplRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    template.Detail(),
 	})
 	return c.JSON(200, template)
@@ -97,16 +100,17 @@ func DeleteRuleTemplate(c echo.Context) error {
 	templateId := c.Param("template_id")
 	template, exist, err := s.GetTemplateById(templateId)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(200, NewBaseReq(-1, "template is not exist"))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST,
+			fmt.Errorf("rule template is not exist"))))
 	}
 	err = s.Delete(template)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
-	return c.JSON(200, NewBaseReq(0, "ok"))
+	return c.JSON(200, NewBaseReq(nil))
 }
 
 // @Summary 更新规则模板
@@ -120,24 +124,26 @@ func UpdateRuleTemplate(c echo.Context) error {
 	templateId := c.Param("template_id")
 	req := new(CreateTplReq)
 	if err := c.Bind(req); err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 
 	template, exist, err := s.GetTemplateById(templateId)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("template id %v not exist", templateId)))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST,
+			fmt.Errorf("rule template is not exist"))))
 	}
 
 	if template.Name != req.Name {
 		_, exist, err := s.GetTemplateByName(req.Name)
 		if err != nil {
-			return c.JSON(200, NewBaseReq(-1, err.Error()))
+			return c.JSON(200, NewBaseReq(err))
 		}
 		if exist {
-			return c.JSON(200, NewBaseReq(-1, "template is exist"))
+			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_EXIST,
+				fmt.Errorf("template is exist"))))
 		}
 	}
 	template.Name = req.Name
@@ -147,25 +153,26 @@ func UpdateRuleTemplate(c echo.Context) error {
 	templateRules := []model.Rule{}
 	rules, err := s.GetAllRule()
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	ruleMap := model.GetRuleMapFromAllArray(rules)
 	for _, name := range req.RulesName {
 		if rule, ok := ruleMap[name]; !ok {
-			return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("rule: %s is invalid", name)))
+			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_NOT_EXIST,
+				fmt.Errorf("rule: %s is invalid", name))))
 		} else {
 			templateRules = append(templateRules, rule)
 		}
 	}
 	err = s.Save(&template)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	err = s.UpdateTemplateRules(&template, templateRules...)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
-	return c.JSON(200, NewBaseReq(0, "ok"))
+	return c.JSON(200, NewBaseReq(nil))
 }
 
 type GetAllTplRes struct {
@@ -179,15 +186,12 @@ type GetAllTplRes struct {
 // @router /rule_templates [get]
 func GetAllTpl(c echo.Context) error {
 	s := model.GetStorage()
-	if s == nil {
-		c.String(500, "nil")
-	}
 	ts, err := s.GetAllTemplate()
 	if err != nil {
-		return c.String(500, err.Error())
+		return c.JSON(200, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, &GetAllTplRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    ts,
 	})
 }
@@ -205,10 +209,10 @@ func GetRules(c echo.Context) error {
 	s := model.GetStorage()
 	rules, err := s.GetAllRule()
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	return c.JSON(200, &GetAllRuleRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    rules,
 	})
 	return nil

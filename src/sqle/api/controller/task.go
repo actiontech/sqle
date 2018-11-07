@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle"
@@ -38,10 +37,10 @@ func CreateTask(c echo.Context) error {
 
 	inst, exist, err := s.GetInstByName(req.InstName)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(200, NewBaseReq(-1, fmt.Sprintf("instance %s is not exist", req.InstName)))
+		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
 	}
 
 	task := &model.Task{
@@ -54,7 +53,7 @@ func CreateTask(c echo.Context) error {
 	}
 	sqlArray, err := inspector.SplitSql(inst.DbType, req.Sql)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	for n, sql := range sqlArray {
 		task.CommitSqls = append(task.CommitSqls, &model.CommitSql{
@@ -64,10 +63,10 @@ func CreateTask(c echo.Context) error {
 	}
 	err = s.Save(task)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(-1, err.Error()))
+		return c.JSON(200, NewBaseReq(err))
 	}
 	return c.JSON(200, &GetTaskRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    task.Detail(),
 	})
 }
@@ -82,13 +81,13 @@ func GetTask(c echo.Context) error {
 	taskId := c.Param("task_id")
 	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
 	return c.JSON(http.StatusOK, &GetTaskRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    task.Detail(),
 	})
 }
@@ -103,20 +102,20 @@ func DeleteTask(c echo.Context) error {
 	taskId := c.Param("task_id")
 	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
 
 	// must check task not running
 
 	err = s.Delete(task)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, &GetTaskRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    task.Detail(),
 	})
 }
@@ -137,10 +136,10 @@ func GetTasks(c echo.Context) error {
 	}
 	tasks, err := s.GetTasks()
 	if err != nil {
-		return c.String(500, err.Error())
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, &GetAllTaskRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    tasks,
 	})
 }
@@ -155,18 +154,17 @@ func InspectTask(c echo.Context) error {
 	taskId := c.Param("task_id")
 	_, exist, err := s.GetTaskById(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
 	task, err := sqle.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-
 	return c.JSON(http.StatusOK, &GetTaskRes{
-		BaseRes: NewBaseReq(0, "ok"),
+		BaseRes: NewBaseReq(nil),
 		Data:    task.Detail(),
 	})
 }
@@ -181,16 +179,16 @@ func CommitTask(c echo.Context) error {
 	taskId := c.Param("task_id")
 	_, exist, err := s.GetTaskById(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
 	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	return c.JSON(http.StatusOK, NewBaseReq(0, "ok"))
+	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
 
 // @Summary Sql提交回滚
@@ -203,14 +201,14 @@ func RollbackTask(c echo.Context) error {
 	taskId := c.Param("task_id")
 	_, exist, err := s.GetTaskById(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, "task not exist"))
+		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
 	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(-1, err.Error()))
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	return c.JSON(http.StatusOK, NewBaseReq(0, "ok"))
+	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
