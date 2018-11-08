@@ -55,11 +55,14 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		Done: make(chan struct{}),
 	}
 	s.Lock()
-	if _, ok := s.currentTask[taskId]; ok {
-		return action, fmt.Errorf("action is exist")
+	_, taskRunning := s.currentTask[taskId]
+	if !taskRunning {
+		s.currentTask[taskId] = struct{}{}
 	}
-	s.currentTask[taskId] = struct{}{}
 	s.Unlock()
+	if taskRunning {
+		return action, errors.New(errors.TASK_RUNNING, fmt.Errorf("task is running"))
+	}
 
 	task, exist, err := model.GetStorage().GetTaskById(taskId)
 	if err != nil {

@@ -6,22 +6,6 @@ import (
 	"sqle/errors"
 )
 
-// task progress
-//const (
-//	TASK_PROGRESS_INIT = ""
-//
-//	TASK_PROGRESS_INSPECT_START = "inspecting"
-//	TASK_PROGRESS_INSPECT_END   = "inspected"
-//
-//	TASK_PROGRESS_COMMIT_START = "committing"
-//	TASK_PROGRESS_COMMIT_END   = "committed"
-//
-//	TASK_PROGRESS_ROLLACK_START = "rolling back"
-//	TASK_PROGRESS_ROLLACK_END   = "rolled back"
-//
-//	TASK_PROGRESS_ERROR = "error"
-//)
-
 // task action
 const (
 	TASK_ACTION_INSPECT = iota
@@ -117,24 +101,24 @@ func (t *Task) ValidAction(typ int) error {
 	if typ == TASK_ACTION_COMMIT {
 		if t.CommitSqls != nil {
 			for _, commitSql := range t.CommitSqls {
-				if commitSql.ExecStatus != "" {
-					return fmt.Errorf("task has committed")
+				if commitSql.ExecStatus != TASK_ACTION_INIT {
+					return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has committed"))
 				}
 			}
 		}
 	}
-	// rollback is only allowed to commit once
-	// and when commit success
+	// rollback is only allowed to exec once
+	// and after commit success
 	if typ == TASK_ACTION_ROLLBACK {
 		if t.RollbackSqls != nil {
 			for _, rollbackSql := range t.RollbackSqls {
-				if rollbackSql.ExecStatus != "" {
-					return fmt.Errorf("task has rolled back")
+				if rollbackSql.ExecStatus != TASK_ACTION_INIT {
+					return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has rolled back"))
 				}
 			}
 			for _, commitSql := range t.CommitSqls {
-				if commitSql.ExecStatus != TASK_ACTION_DONE {
-					return fmt.Errorf("task has committed")
+				if commitSql.ExecStatus != TASK_ACTION_INIT {
+					return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task has committed"))
 				}
 			}
 		}

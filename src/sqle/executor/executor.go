@@ -3,10 +3,10 @@ package executor
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"sqle/errors"
 	"sqle/model"
 )
 
@@ -22,10 +22,10 @@ func NewConn(dbType string, user, password, host, port, schema string) (*Conn, e
 		db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 			user, password, host, port, schema))
 	default:
-		return nil, errors.New("db is not support")
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("db type is not support"))
 	}
 	if err != nil {
-		return nil, err
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	return &Conn{db}, nil
 }
@@ -36,7 +36,7 @@ func Ping(db model.Instance) error {
 		return err
 	}
 	defer conn.Close()
-	return conn.ping()
+	return conn.Ping()
 }
 
 func ShowDatabases(db model.Instance) ([]string, error) {
@@ -63,23 +63,24 @@ func Exec(task *model.Task, sql string) error {
 	return conn.Exec(sql)
 }
 
-func (c *Conn) ping() error {
-	return c.DB.DB().Ping()
+func (c *Conn) Ping() error {
+	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, c.DB.DB().Ping())
 }
 
 func (c *Conn) Exec(query string) error {
 	_, err := c.DB.DB().Exec(query)
-	return err
+	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
 func (c *Conn) Query(query string, args ...interface{}) ([]map[string]string, error) {
 	rows, err := c.DB.DB().Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	defer rows.Close()
 	columns, err := rows.Columns()
 	if err != nil {
+		// unknown error
 		return nil, err
 	}
 	result := make([]map[string]string, 0)
@@ -109,10 +110,12 @@ func (c *Conn) ShowCreateTable(tableName string) (string, error) {
 		return "", err
 	}
 	if len(result) != 1 {
-		return "", fmt.Errorf("show create table error, result is %v", result)
+		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR,
+			fmt.Errorf("show create table error, result is %v", result))
 	}
 	if query, ok := result[0]["Create Table"]; !ok {
-		return "", fmt.Errorf("show create table error, column \"Create Table\" not found")
+		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR,
+			fmt.Errorf("show create table error, column \"Create Table\" not found"))
 	} else {
 		return query, nil
 	}
@@ -125,7 +128,12 @@ func (c *Conn) ShowDatabases() ([]string, error) {
 	}
 	dbs := make([]string, len(result))
 	for n, v := range result {
-		dbs[n] = v["Database"]
+		if db, ok := v["Database"]; !ok {
+			return dbs, errors.New(errors.CONNECT_REMOTE_DB_ERROR,
+				fmt.Errorf("show databases error, column \"Database\" not found"))
+		} else {
+			dbs[n] = db
+		}
 	}
 	return dbs, nil
 }
