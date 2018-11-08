@@ -40,7 +40,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
 	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
 	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
-	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "f", "", "config file path")
+	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "", "", "config file path")
 	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "config file path")
 	//rootCmd.SetHelpTemplate(ucobra.HELP_TEMPLATE)
 
