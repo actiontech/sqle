@@ -18,7 +18,6 @@ import (
 	"github.com/pingcap/tidb/ast"
 	"github.com/pingcap/tidb/expression"
 	"github.com/pingcap/tidb/model"
-	"github.com/pingcap/tidb/types/parser_driver"
 )
 
 var _ = Suite(&testCacheableSuite{})
@@ -67,7 +66,7 @@ func (s *testCacheableSuite) TestCacheable(c *C) {
 	c.Assert(Cacheable(stmt), IsFalse)
 
 	limitStmt := &ast.Limit{
-		Count: &driver.ParamMarkerExpr{},
+		Count: &ast.ParamMarkerExpr{},
 	}
 	stmt = &ast.SelectStmt{
 		Limit: limitStmt,
@@ -75,7 +74,7 @@ func (s *testCacheableSuite) TestCacheable(c *C) {
 	c.Assert(Cacheable(stmt), IsFalse)
 
 	limitStmt = &ast.Limit{
-		Offset: &driver.ParamMarkerExpr{},
+		Offset: &ast.ParamMarkerExpr{},
 	}
 	stmt = &ast.SelectStmt{
 		Limit: limitStmt,

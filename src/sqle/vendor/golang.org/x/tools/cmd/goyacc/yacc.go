@@ -1,5 +1,5 @@
 /*
-Derived from Inferno's utils/iyacc/yacc.c
+Derived from Inferno's errors/iyacc/yacc.c
 http://code.google.com/p/inferno-os/source/browse/utils/iyacc/yacc.c
 
 This copyright NOTICE applies to all files in this directory and

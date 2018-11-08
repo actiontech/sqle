@@ -93,7 +93,6 @@ func (s *testSuite) TestDataForTableStatsField(c *C) {
 	session.SetStatsLease(0)
 	do, err := session.BootstrapSession(store)
 	c.Assert(err, IsNil)
-	do.SetStatsUpdating(true)
 	defer do.Close()
 	oldExpiryTime := infoschema.TableStatsCacheExpiry
 	infoschema.TableStatsCacheExpiry = 0

@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/pingcap/kvproto/pkg/metapb"
-	"github.com/pingcap/pd/client"
+	"github.com/pingcap/pd/pd-client"
 	"golang.org/x/net/context"
 )
 

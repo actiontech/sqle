@@ -24,9 +24,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/ngaut/pools"
-	"github.com/ngaut/sync2"
 	"github.com/pingcap/tidb/ast"
-	"github.com/pingcap/tidb/config"
 	"github.com/pingcap/tidb/ddl"
 	"github.com/pingcap/tidb/infoschema"
 	"github.com/pingcap/tidb/kv"
@@ -44,7 +42,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 )
 
 // Domain represents a storage space. Different domains can use the same database name.
@@ -55,7 +52,6 @@ type Domain struct {
 	privHandle      *privileges.Handle
 	statsHandle     unsafe.Pointer
 	statsLease      time.Duration
-	statsUpdating   sync2.AtomicInt32
 	ddl             ddl.DDL
 	info            *InfoSyncer
 	m               sync.Mutex
@@ -337,12 +333,6 @@ func (do *Domain) Reload() error {
 
 // LogSlowQuery keeps topN recent slow queries in domain.
 func (do *Domain) LogSlowQuery(query *SlowQueryInfo) {
-	do.slowQuery.mu.RLock()
-	defer do.slowQuery.mu.RUnlock()
-	if do.slowQuery.mu.closed {
-		return
-	}
-
 	select {
 	case do.slowQuery.ch <- query:
 	default:
@@ -415,16 +405,16 @@ func (do *Domain) loadSchemaInLoop(lease time.Duration) {
 		case <-syncer.Done():
 			// The schema syncer stops, we need stop the schema validator to synchronize the schema version.
 			log.Info("[ddl] reload schema in loop, schema syncer need restart")
+			do.SchemaValidator.Stop()
 			err := do.mustRestartSyncer()
 			if err != nil {
 				log.Errorf("[ddl] reload schema in loop, schema syncer restart err %v", errors.ErrorStack(err))
 				break
 			}
-			log.Info("[ddl] schema syncer restarted.")
+			do.SchemaValidator.Restart()
 		case <-do.info.Done():
 			log.Info("[ddl] reload schema in loop, server info syncer need restart")
 			do.info.Restart(context.Background())
-			log.Info("[ddl] server info syncer restarted.")
 		case <-do.exit:
 			return
 		}
@@ -465,8 +455,8 @@ func (do *Domain) Close() {
 	if do.etcdClient != nil {
 		terror.Log(errors.Trace(do.etcdClient.Close()))
 	}
-	do.sysSessionPool.Close()
 	do.slowQuery.Close()
+	do.sysSessionPool.Close()
 	do.wg.Wait()
 	log.Info("[domain] close")
 }
@@ -537,19 +527,12 @@ func NewDomain(store kv.Storage, ddlLease time.Duration, statsLease time.Duratio
 func (do *Domain) Init(ddlLease time.Duration, sysFactory func(*Domain) (pools.Resource, error)) error {
 	if ebd, ok := do.store.(EtcdBackend); ok {
 		if addrs := ebd.EtcdAddrs(); addrs != nil {
-			cfg := config.GetGlobalConfig()
 			cli, err := clientv3.New(clientv3.Config{
 				Endpoints:   addrs,
 				DialTimeout: 5 * time.Second,
 				DialOptions: []grpc.DialOption{
 					grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
 					grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
-					grpc.WithBackoffMaxDelay(time.Second * 3),
-					grpc.WithKeepaliveParams(keepalive.ClientParameters{
-						Time:                time.Duration(cfg.TiKVClient.GrpcKeepAliveTime) * time.Second,
-						Timeout:             time.Duration(cfg.TiKVClient.GrpcKeepAliveTimeout) * time.Second,
-						PermitWithoutStream: true,
-					}),
 				},
 				TLS: ebd.TLSConfig(),
 			})
@@ -672,20 +655,6 @@ func (do *Domain) CreateStatsHandle(ctx sessionctx.Context) {
 	atomic.StorePointer(&do.statsHandle, unsafe.Pointer(statistics.NewHandle(ctx, do.statsLease)))
 }
 
-// StatsUpdating checks if the stats worker is updating.
-func (do *Domain) StatsUpdating() bool {
-	return do.statsUpdating.Get() > 0
-}
-
-// SetStatsUpdating sets the value of stats updating.
-func (do *Domain) SetStatsUpdating(val bool) {
-	if val {
-		do.statsUpdating.Set(1)
-	} else {
-		do.statsUpdating.Set(0)
-	}
-}
-
 // RunAutoAnalyze indicates if this TiDB server starts auto analyze worker and can run auto analyze job.
 var RunAutoAnalyze = true
 
@@ -702,7 +671,6 @@ func (do *Domain) UpdateTableStatsLoop(ctx sessionctx.Context) error {
 	}
 	owner := do.newStatsOwner()
 	do.wg.Add(1)
-	do.SetStatsUpdating(true)
 	go do.updateStatsWorker(ctx, owner)
 	if RunAutoAnalyze {
 		do.wg.Add(1)
@@ -752,7 +720,6 @@ func (do *Domain) updateStatsWorker(ctx sessionctx.Context, owner owner.Manager)
 		log.Info("[stats] init stats info takes ", time.Now().Sub(t))
 	}
 	defer func() {
-		do.SetStatsUpdating(false)
 		recoverInDomain("updateStatsWorker", false)
 		do.wg.Done()
 	}()

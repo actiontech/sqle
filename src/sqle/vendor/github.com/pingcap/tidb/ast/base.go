@@ -62,12 +62,20 @@ func (dn *dmlNode) dmlStatement() {}
 // Expression implementations should embed it in.
 type exprNode struct {
 	node
+	types.Datum
 	Type types.FieldType
 	flag uint64
 }
 
-// TexprNode is exported for parser driver.
-type TexprNode = exprNode
+// SetDatum implements ExprNode interface.
+func (en *exprNode) SetDatum(datum types.Datum) {
+	en.Datum = datum
+}
+
+// GetDatum implements ExprNode interface.
+func (en *exprNode) GetDatum() *types.Datum {
+	return &en.Datum
+}
 
 // SetType implements ExprNode interface.
 func (en *exprNode) SetType(tp *types.FieldType) {

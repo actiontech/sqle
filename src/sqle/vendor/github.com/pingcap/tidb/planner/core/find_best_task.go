@@ -77,11 +77,6 @@ func (p *LogicalTableDual) findBestTask(prop *property.PhysicalProperty) (task, 
 
 // findBestTask implements LogicalPlan interface.
 func (p *baseLogicalPlan) findBestTask(prop *property.PhysicalProperty) (bestTask task, err error) {
-	// If p is an inner plan in an IndexJoin, the IndexJoin will generate an inner plan by itself,
-	// and set inner child prop nil, so here we do nothing.
-	if prop == nil {
-		return nil, nil
-	}
 	// Look up the task with this prop in the task map.
 	// It's used to reduce double counting.
 	bestTask = p.getTask(prop)
@@ -184,7 +179,7 @@ func (ds *DataSource) tryToGetMemTask(prop *property.PhysicalProperty) (task tas
 // tryToGetDualTask will check if the push down predicate has false constant. If so, it will return table dual.
 func (ds *DataSource) tryToGetDualTask() (task, error) {
 	for _, cond := range ds.pushedDownConds {
-		if con, ok := cond.(*expression.Constant); ok && con.DeferredExpr == nil {
+		if _, ok := cond.(*expression.Constant); ok {
 			result, err := expression.EvalBool(ds.ctx, []expression.Expression{cond}, chunk.Row{})
 			if err != nil {
 				return nil, errors.Trace(err)
@@ -204,8 +199,10 @@ func (ds *DataSource) tryToGetDualTask() (task, error) {
 // findBestTask implements the PhysicalPlan interface.
 // It will enumerate all the available indices and choose a plan with least cost.
 func (ds *DataSource) findBestTask(prop *property.PhysicalProperty) (t task, err error) {
-	// If ds is an inner plan in an IndexJoin, the IndexJoin will generate an inner plan by itself,
-	// and set inner child prop nil, so here we do nothing.
+	// If ds is an inner plan in an IndexJoin, the IndexJoin will generate an inner plan by itself.
+	// So here we do nothing.
+	// TODO: Add a special prop to handle IndexJoin's inner plan.
+	// Then we can remove forceToTableScan and forceToIndexScan.
 	if prop == nil {
 		return nil, nil
 	}

@@ -115,11 +115,6 @@ type topNSlowQueries struct {
 	period   time.Duration
 	ch       chan *SlowQueryInfo
 	msgCh    chan *showSlowMessage
-
-	mu struct {
-		sync.RWMutex
-		closed bool
-	}
 }
 
 func newTopNSlowQueries(topN int, period time.Duration, queueSize int) *topNSlowQueries {
@@ -201,10 +196,6 @@ func (q *topNSlowQueries) QueryTop(count int, kind ast.ShowSlowKind) []*SlowQuer
 }
 
 func (q *topNSlowQueries) Close() {
-	q.mu.Lock()
-	q.mu.closed = true
-	q.mu.Unlock()
-
 	close(q.ch)
 }
 

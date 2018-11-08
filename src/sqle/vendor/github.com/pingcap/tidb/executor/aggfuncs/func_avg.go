@@ -14,8 +14,6 @@
 package aggfuncs
 
 import (
-	"github.com/cznic/mathutil"
-	"github.com/pingcap/tidb/mysql"
 	"github.com/pingcap/tidb/sessionctx"
 	"github.com/pingcap/tidb/types"
 	"github.com/pingcap/tidb/util/chunk"
@@ -58,19 +56,7 @@ func (e *baseAvgDecimal) AppendFinalResult2Chunk(sctx sessionctx.Context, pr Par
 	finalResult := new(types.MyDecimal)
 	err := types.DecimalDiv(&p.sum, decimalCount, finalResult, types.DivFracIncr)
 	if err != nil {
-		return err
-	}
-	// Make the decimal be the result of type inferring.
-	frac := e.args[0].GetType().Decimal
-	if len(e.args) == 2 {
-		frac = e.args[1].GetType().Decimal
-	}
-	if frac == -1 {
-		frac = mysql.MaxDecimalScale
-	}
-	err = finalResult.Round(finalResult, mathutil.Min(frac, mysql.MaxDecimalScale), types.ModeHalfEven)
-	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	chk.AppendMyDecimal(e.ordinal, finalResult)
 	return nil
@@ -208,15 +194,6 @@ func (e *avgOriginal4DistinctDecimal) AppendFinalResult2Chunk(sctx sessionctx.Co
 	err := types.DecimalDiv(&p.sum, decimalCount, finalResult, types.DivFracIncr)
 	if err != nil {
 		return errors.Trace(err)
-	}
-	// Make the decimal be the result of type inferring.
-	frac := e.args[0].GetType().Decimal
-	if frac == -1 {
-		frac = mysql.MaxDecimalScale
-	}
-	err = finalResult.Round(finalResult, mathutil.Min(frac, mysql.MaxDecimalScale), types.ModeHalfEven)
-	if err != nil {
-		return err
 	}
 	chk.AppendMyDecimal(e.ordinal, finalResult)
 	return nil

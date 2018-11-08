@@ -15,7 +15,6 @@ package executor
 
 import (
 	"sync"
-	"time"
 
 	"github.com/pingcap/tidb/executor/aggfuncs"
 	"github.com/pingcap/tidb/expression"
@@ -502,10 +501,6 @@ func (w *HashAggFinalWorker) run(ctx sessionctx.Context, waitGroup *sync.WaitGro
 
 // Next implements the Executor Next interface.
 func (e *HashAggExec) Next(ctx context.Context, chk *chunk.Chunk) error {
-	if e.runtimeStats != nil {
-		start := time.Now()
-		defer func() { e.runtimeStats.Record(time.Now().Sub(start), chk.NumRows()) }()
-	}
 	chk.Reset()
 	if e.isUnparallelExec {
 		return errors.Trace(e.unparallelExec(ctx, chk))
@@ -761,11 +756,8 @@ func (e *StreamAggExec) Close() error {
 
 // Next implements the Executor Next interface.
 func (e *StreamAggExec) Next(ctx context.Context, chk *chunk.Chunk) error {
-	if e.runtimeStats != nil {
-		start := time.Now()
-		defer func() { e.runtimeStats.Record(time.Now().Sub(start), chk.NumRows()) }()
-	}
 	chk.Reset()
+
 	for !e.executed && chk.NumRows() < e.maxChunkSize {
 		err := e.consumeOneGroup(ctx, chk)
 		if err != nil {

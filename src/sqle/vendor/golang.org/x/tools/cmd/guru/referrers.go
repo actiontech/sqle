@@ -650,7 +650,7 @@ func clearInfoFields(info *loader.PackageInfo) {
 	info.Selections = nil
 }
 
-// -------- utils --------
+// -------- errors --------
 
 // An deterministic ordering for token.Pos that doesn't
 // depend on the order in which packages were loaded.

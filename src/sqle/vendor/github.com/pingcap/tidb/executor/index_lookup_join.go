@@ -18,7 +18,6 @@ import (
 	"runtime"
 	"sort"
 	"sync"
-	"time"
 	"unsafe"
 
 	"github.com/pingcap/tidb/expression"
@@ -190,10 +189,6 @@ func (e *IndexLookUpJoin) newInnerWorker(taskCh chan *lookUpJoinTask) *innerWork
 
 // Next implements the Executor interface.
 func (e *IndexLookUpJoin) Next(ctx context.Context, chk *chunk.Chunk) error {
-	if e.runtimeStats != nil {
-		start := time.Now()
-		defer func() { e.runtimeStats.Record(time.Now().Sub(start), chk.NumRows()) }()
-	}
 	chk.Reset()
 	e.joinResult.Reset()
 	for {

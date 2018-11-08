@@ -24,11 +24,10 @@ type testFunctionsSuite struct {
 }
 
 func (ts *testFunctionsSuite) TestFunctionsVisitorCover(c *C) {
-	valueExpr := NewValueExpr(42)
 	stmts := []Node{
-		&AggregateFuncExpr{Args: []ExprNode{valueExpr}},
-		&FuncCallExpr{Args: []ExprNode{valueExpr}},
-		&FuncCastExpr{Expr: valueExpr},
+		&AggregateFuncExpr{Args: []ExprNode{&ValueExpr{}}},
+		&FuncCallExpr{Args: []ExprNode{&ValueExpr{}}},
+		&FuncCastExpr{Expr: &ValueExpr{}},
 	}
 
 	for _, stmt := range stmts {

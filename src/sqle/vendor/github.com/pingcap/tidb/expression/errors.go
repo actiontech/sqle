@@ -53,7 +53,6 @@ func init() {
 		mysql.ErrInvalidDefault:                    mysql.ErrInvalidDefault,
 		mysql.ErrWarnDeprecatedSyntaxNoReplacement: mysql.ErrWarnDeprecatedSyntaxNoReplacement,
 		mysql.ErrOperandColumns:                    mysql.ErrOperandColumns,
-		mysql.ErrCutValueGroupConcat:               mysql.ErrCutValueGroupConcat,
 		mysql.ErrRegexp:                            mysql.ErrRegexp,
 		mysql.ErrWarnAllowedPacketOverflowed:       mysql.ErrWarnAllowedPacketOverflowed,
 		mysql.WarnOptionIgnored:                    mysql.WarnOptionIgnored,
@@ -64,7 +63,7 @@ func init() {
 
 // handleInvalidTimeError reports error or warning depend on the context.
 func handleInvalidTimeError(ctx sessionctx.Context, err error) error {
-	if err == nil || !(terror.ErrorEqual(err, types.ErrInvalidTimeFormat) || types.ErrIncorrectDatetimeValue.Equal(err) || types.ErrTruncatedWrongValue.Equal(err)) {
+	if err == nil || !(terror.ErrorEqual(err, types.ErrInvalidTimeFormat) || types.ErrIncorrectDatetimeValue.Equal(err)) {
 		return err
 	}
 	sc := ctx.GetSessionVars().StmtCtx

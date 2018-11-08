@@ -207,7 +207,7 @@ func (r *freevarsResult) JSON(fset *token.FileSet) []byte {
 	return buf.Bytes()
 }
 
-// -------- utils --------
+// -------- errors --------
 
 type byRef []freevarsRef
 

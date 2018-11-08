@@ -27,6 +27,7 @@ import (
 type ReplaceExec struct {
 	*InsertValues
 	Priority int
+	finished bool
 }
 
 // Close implements the Executor Close interface.
@@ -172,12 +173,16 @@ func (e *ReplaceExec) exec(newRows [][]types.Datum) error {
 			return errors.Trace(err)
 		}
 	}
+	e.finished = true
 	return nil
 }
 
 // Next implements the Executor Next interface.
 func (e *ReplaceExec) Next(ctx context.Context, chk *chunk.Chunk) error {
 	chk.Reset()
+	if e.finished {
+		return nil
+	}
 	cols, err := e.getColumns(e.Table.Cols())
 	if err != nil {
 		return errors.Trace(err)

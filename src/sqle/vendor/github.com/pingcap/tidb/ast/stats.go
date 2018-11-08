@@ -25,10 +25,9 @@ var (
 type AnalyzeTableStmt struct {
 	stmtNode
 
-	TableNames     []*TableName
-	PartitionNames []model.CIStr
-	IndexNames     []model.CIStr
-	MaxNumBuckets  uint64
+	TableNames    []*TableName
+	IndexNames    []model.CIStr
+	MaxNumBuckets uint64
 
 	// IndexFlag is true when we only analyze indices for a table.
 	IndexFlag bool

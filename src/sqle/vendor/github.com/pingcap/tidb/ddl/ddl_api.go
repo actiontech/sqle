@@ -727,9 +727,6 @@ func buildTableInfo(ctx sessionctx.Context, d *ddl, tableName model.CIStr, cols 
 			fk.RefTable = constr.Refer.Table.Name
 			fk.State = model.StatePublic
 			for _, key := range constr.Keys {
-				if table.FindCol(cols, key.Column.Name.O) == nil {
-					return nil, errKeyColumnDoesNotExits.GenWithStackByArgs(key.Column.Name)
-				}
 				fk.Cols = append(fk.Cols, key.Column.Name)
 			}
 			for _, key := range constr.Refer.IndexColNames {
@@ -752,7 +749,7 @@ func buildTableInfo(ctx sessionctx.Context, d *ddl, tableName model.CIStr, cols 
 			for _, key := range constr.Keys {
 				col = table.FindCol(cols, key.Column.Name.O)
 				if col == nil {
-					return nil, errKeyColumnDoesNotExits.GenWithStackByArgs(key.Column.Name)
+					return nil, errKeyColumnDoesNotExits.GenWithStack("key column %s doesn't exist in table", key.Column.Name)
 				}
 				// Virtual columns cannot be used in primary key.
 				if col.IsGenerated() && !col.GeneratedStored {
@@ -1460,22 +1457,7 @@ func modifiable(origin *types.FieldType, to *types.FieldType) error {
 			return nil
 		}
 	case mysql.TypeEnum:
-		if origin.Tp == to.Tp {
-			if len(to.Elems) < len(origin.Elems) {
-				msg := fmt.Sprintf("the number of enum column's elements is less than the original: %d", len(origin.Elems))
-				return errUnsupportedModifyColumn.GenWithStackByArgs(msg)
-			}
-			for index, originElem := range origin.Elems {
-				toElem := to.Elems[index]
-				if originElem != toElem {
-					msg := fmt.Sprintf("cannot modify enum column value %s to %s", originElem, toElem)
-					return errUnsupportedModifyColumn.GenWithStackByArgs(msg)
-				}
-			}
-			return nil
-		}
-		msg := fmt.Sprintf("cannot modify enum type column's to type %s", to.String())
-		return errUnsupportedModifyColumn.GenWithStackByArgs(msg)
+		return errUnsupportedModifyColumn.GenWithStackByArgs("modify enum column is not supported")
 	default:
 		if origin.Tp == to.Tp {
 			return nil
@@ -1655,14 +1637,9 @@ func (d *ddl) getModifiableColumnJob(ctx sessionctx.Context, ident ast.Ident, or
 		return nil, errUnsupportedModifyColumn.GenWithStackByArgs("set auto_increment")
 	}
 
-	// We support modifying the type definitions of 'null' to 'not null' now.
-	var modifyColumnTp byte
+	// We don't support modifying the type definitions from 'null' to 'not null' now.
 	if !mysql.HasNotNullFlag(col.Flag) && mysql.HasNotNullFlag(newCol.Flag) {
-		if err = checkForNullValue(ctx, col.Tp == newCol.Tp, ident.Schema, ident.Name, col.Name, newCol.Name); err != nil {
-			return nil, errors.Trace(err)
-		}
-		// `modifyColumnTp` indicates that there is a type modification.
-		modifyColumnTp = mysql.TypeNull
+		return nil, errUnsupportedModifyColumn.GenWithStackByArgs("null to not null")
 	}
 	// As same with MySQL, we don't support modifying the stored status for generated columns.
 	if err = checkModifyGeneratedColumn(t.Cols(), col, newCol); err != nil {
@@ -1674,7 +1651,7 @@ func (d *ddl) getModifiableColumnJob(ctx sessionctx.Context, ident ast.Ident, or
 		TableID:    t.Meta().ID,
 		Type:       model.ActionModifyColumn,
 		BinlogInfo: &model.HistoryInfo{},
-		Args:       []interface{}{&newCol, originalColName, spec.Position, modifyColumnTp},
+		Args:       []interface{}{&newCol, originalColName, spec.Position},
 	}
 	return job, nil
 }

@@ -241,7 +241,7 @@ func (r *peersResult) JSON(fset *token.FileSet) []byte {
 	return toJSON(peers)
 }
 
-// -------- utils --------
+// -------- errors --------
 
 // NB: byPos is not deterministic across packages since it depends on load order.
 // Use lessPos if the tests need it.

@@ -19,7 +19,6 @@ import (
 	"sort"
 	"sync"
 	"sync/atomic"
-	"time"
 	"unsafe"
 
 	"github.com/pingcap/tidb/distsql"
@@ -244,10 +243,6 @@ func (e *IndexReaderExecutor) Close() error {
 
 // Next implements the Executor Next interface.
 func (e *IndexReaderExecutor) Next(ctx context.Context, chk *chunk.Chunk) error {
-	if e.runtimeStats != nil {
-		start := time.Now()
-		defer func() { e.runtimeStats.Record(time.Now().Sub(start), chk.NumRows()) }()
-	}
 	err := e.result.Next(ctx, chk)
 	if err != nil {
 		e.feedback.Invalidate()
@@ -479,7 +474,7 @@ func (e *IndexLookUpExecutor) startTableWorker(ctx context.Context, workCh <-cha
 }
 
 func (e *IndexLookUpExecutor) buildTableReader(ctx context.Context, handles []int64) (Executor, error) {
-	tableReaderExec := &TableReaderExecutor{
+	tableReader, err := e.dataReaderBuilder.buildTableReaderFromHandles(ctx, &TableReaderExecutor{
 		baseExecutor:    newBaseExecutor(e.ctx, e.schema, e.id+"_tableReader"),
 		table:           e.table,
 		physicalTableID: e.physicalTableID,
@@ -488,11 +483,7 @@ func (e *IndexLookUpExecutor) buildTableReader(ctx context.Context, handles []in
 		feedback:        statistics.NewQueryFeedback(0, nil, 0, false),
 		corColInFilter:  e.corColInTblSide,
 		plans:           e.tblPlans,
-	}
-	// We assign `nil` to `runtimeStats` to forbidden `TableWorker` driven `IndexLookupExecutor`'s runtime stats collecting,
-	// because TableWorker information isn't showing in explain result now.
-	tableReaderExec.runtimeStats = nil
-	tableReader, err := e.dataReaderBuilder.buildTableReaderFromHandles(ctx, tableReaderExec, handles)
+	}, handles)
 	if err != nil {
 		log.Error(err)
 		return nil, errors.Trace(err)
@@ -521,10 +512,6 @@ func (e *IndexLookUpExecutor) Close() error {
 
 // Next implements Exec Next interface.
 func (e *IndexLookUpExecutor) Next(ctx context.Context, chk *chunk.Chunk) error {
-	if e.runtimeStats != nil {
-		start := time.Now()
-		defer func() { e.runtimeStats.Record(time.Now().Sub(start), chk.NumRows()) }()
-	}
 	chk.Reset()
 	for {
 		resultTask, err := e.getResultTask()

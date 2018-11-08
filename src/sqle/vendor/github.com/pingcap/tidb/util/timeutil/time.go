@@ -117,13 +117,9 @@ func SystemLocation() *time.Location {
 	return loc
 }
 
-var setSysTZOnce sync.Once
-
 // SetSystemTZ sets systemTZ by the value loaded from mysql.tidb.
 func SetSystemTZ(name string) {
-	setSysTZOnce.Do(func() {
-		systemTZ = name
-	})
+	systemTZ = name
 }
 
 // getLoc first trying to load location from a cache map. If nothing found in such map, then call

@@ -15,7 +15,6 @@ package executor
 
 import (
 	"sort"
-	"time"
 
 	"github.com/pingcap/tidb/expression"
 	"github.com/pingcap/tidb/model"
@@ -126,10 +125,6 @@ func (us *UnionScanExec) Open(ctx context.Context) error {
 
 // Next implements the Executor Next interface.
 func (us *UnionScanExec) Next(ctx context.Context, chk *chunk.Chunk) error {
-	if us.runtimeStats != nil {
-		start := time.Now()
-		defer func() { us.runtimeStats.Record(time.Now().Sub(start), chk.NumRows()) }()
-	}
 	chk.GrowAndReset(us.maxChunkSize)
 	mutableRow := chunk.MutRowFromTypes(us.retTypes())
 	for i, batchSize := 0, chk.Capacity(); i < batchSize; i++ {

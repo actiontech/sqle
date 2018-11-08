@@ -16,10 +16,8 @@ package latch
 import (
 	"sync/atomic"
 	"testing"
-	"time"
 
 	. "github.com/pingcap/check"
-	"github.com/pingcap/tidb/store/tikv/oracle"
 )
 
 func TestT(t *testing.T) {
@@ -50,7 +48,7 @@ func getTso() uint64 {
 
 func (s *testLatchSuite) TestWakeUp(c *C) {
 	keysA := [][]byte{
-		[]byte("a"), []byte("b"), []byte("c")}
+		[]byte("a"), []byte("b"), []byte("c"), []byte("c")}
 	_, lockA := s.newLock(keysA)
 
 	keysB := [][]byte{[]byte("d"), []byte("e"), []byte("a"), []byte("c")}
@@ -67,8 +65,7 @@ func (s *testLatchSuite) TestWakeUp(c *C) {
 	// A release lock, and get wakeup list.
 	commitTSA := getTso()
 	wakeupList := make([]*Lock, 0)
-	lockA.SetCommitTS(commitTSA)
-	wakeupList = s.latches.release(lockA, wakeupList)
+	wakeupList = s.latches.release(lockA, commitTSA, wakeupList)
 	c.Assert(wakeupList[0].startTS, Equals, startTSB)
 
 	// B acquire failed since startTSB has stale for some keys.
@@ -76,7 +73,7 @@ func (s *testLatchSuite) TestWakeUp(c *C) {
 	c.Assert(result, Equals, acquireStale)
 
 	// B release lock since it received a stale.
-	wakeupList = s.latches.release(lockB, wakeupList)
+	wakeupList = s.latches.release(lockB, 0, wakeupList)
 	c.Assert(wakeupList, HasLen, 0)
 
 	// B restart:get a new startTS.
@@ -88,7 +85,7 @@ func (s *testLatchSuite) TestWakeUp(c *C) {
 
 func (s *testLatchSuite) TestFirstAcquireFailedWithStale(c *C) {
 	keys := [][]byte{
-		[]byte("a"), []byte("b"), []byte("c")}
+		[]byte("a"), []byte("b"), []byte("c"), []byte("c")}
 	_, lockA := s.newLock(keys)
 	startTSB, lockB := s.newLock(keys)
 	// acquire lockA success
@@ -97,53 +94,11 @@ func (s *testLatchSuite) TestFirstAcquireFailedWithStale(c *C) {
 	// release lockA
 	commitTSA := getTso()
 	wakeupList := make([]*Lock, 0)
-	lockA.SetCommitTS(commitTSA)
-	s.latches.release(lockA, wakeupList)
+	s.latches.release(lockA, commitTSA, wakeupList)
 
 	c.Assert(commitTSA, Greater, startTSB)
 	// acquire lockB first time, should be failed with stale since commitTSA > startTSB
 	result = s.latches.acquire(lockB)
 	c.Assert(result, Equals, acquireStale)
-	s.latches.release(lockB, wakeupList)
-}
-
-func (s *testLatchSuite) TestRecycle(c *C) {
-	latches := NewLatches(8)
-	now := time.Now()
-	startTS := oracle.ComposeTS(oracle.GetPhysical(now), 0)
-	lock := latches.genLock(startTS, [][]byte{
-		[]byte("a"), []byte("b"),
-	})
-	lock1 := latches.genLock(startTS, [][]byte{
-		[]byte("b"), []byte("c"),
-	})
-	c.Assert(latches.acquire(lock), Equals, acquireSuccess)
-	c.Assert(latches.acquire(lock1), Equals, acquireLocked)
-	lock.SetCommitTS(startTS + 1)
-	var wakeupList []*Lock
-	latches.release(lock, wakeupList)
-
-	lock2 := latches.genLock(startTS+3, [][]byte{
-		[]byte("b"), []byte("c"),
-	})
-	c.Assert(latches.acquire(lock2), Equals, acquireSuccess)
-	wakeupList = wakeupList[:0]
-	latches.release(lock2, wakeupList)
-
-	allEmpty := true
-	for i := 0; i < len(latches.slots); i++ {
-		latch := &latches.slots[i]
-		if latch.queue != nil {
-			allEmpty = false
-		}
-	}
-	c.Assert(allEmpty, IsFalse)
-
-	currentTS := oracle.ComposeTS(oracle.GetPhysical(now.Add(expireDuration)), 3)
-	latches.recycle(currentTS)
-
-	for i := 0; i < len(latches.slots); i++ {
-		latch := &latches.slots[i]
-		c.Assert(latch.queue, IsNil)
-	}
+	s.latches.release(lockB, 0, wakeupList)
 }

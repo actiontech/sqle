@@ -16,4 +16,3 @@ profile.coverprofile
 explain_test
 cmd/explaintest/explain-test.out
 _tools/
-*.fail.go

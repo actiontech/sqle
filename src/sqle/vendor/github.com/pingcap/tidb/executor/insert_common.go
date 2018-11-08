@@ -34,11 +34,11 @@ type InsertValues struct {
 	baseExecutor
 	batchChecker
 
-	rowCount       uint64
-	maxRowsInBatch uint64
-	lastInsertID   uint64
-	hasRefCols     bool
-	hasExtraHandle bool
+	rowCount              uint64
+	maxRowsInBatch        uint64
+	lastInsertID          uint64
+	needFillDefaultValues bool
+	hasExtraHandle        bool
 
 	SelectExec Executor
 
@@ -135,7 +135,7 @@ func (e *InsertValues) lazilyInitColDefaultValBuf() (ok bool) {
 	return false
 }
 
-func (e *InsertValues) processSetList() error {
+func (e *InsertValues) fillValueList() error {
 	if len(e.SetList) > 0 {
 		if len(e.Lists) > 0 {
 			return errors.Errorf("INSERT INTO %s: set type should not use values", e.Table)
@@ -149,21 +149,19 @@ func (e *InsertValues) processSetList() error {
 	return nil
 }
 
-// insertRows processes `insert|replace into values ()` or `insert|replace into set x=y`
 func (e *InsertValues) insertRows(cols []*table.Column, exec func(rows [][]types.Datum) error) (err error) {
-	// For `insert|replace into set x=y`, process the set list here.
-	if err = e.processSetList(); err != nil {
+	// process `insert|replace ... set x=y...`
+	if err = e.fillValueList(); err != nil {
 		return errors.Trace(err)
 	}
 
-	rows := make([][]types.Datum, 0, len(e.Lists))
+	rows := make([][]types.Datum, len(e.Lists))
 	for i, list := range e.Lists {
 		e.rowCount++
-		row, err := e.evalRow(cols, list, i)
+		rows[i], err = e.getRow(cols, list, i)
 		if err != nil {
 			return errors.Trace(err)
 		}
-		rows = append(rows, row)
 	}
 	return errors.Trace(exec(rows))
 }
@@ -187,9 +185,9 @@ func (e *InsertValues) handleErr(col *table.Column, val *types.Datum, rowIdx int
 	return e.filterErr(err)
 }
 
-// evalRow evaluates a to-be-inserted row. The value of the column may base on another column,
-// so we use setValueForRefColumn to fill the empty row some default values when needFillDefaultValues is true.
-func (e *InsertValues) evalRow(cols []*table.Column, list []expression.Expression, rowIdx int) ([]types.Datum, error) {
+// getRow eval the insert statement. Because the value of column may calculated based on other column,
+// it use fillDefaultValues to init the empty row before eval expressions when needFillDefaultValues is true.
+func (e *InsertValues) getRow(cols []*table.Column, list []expression.Expression, rowIdx int) ([]types.Datum, error) {
 	rowLen := len(e.Table.Cols())
 	if e.hasExtraHandle {
 		rowLen++
@@ -197,9 +195,8 @@ func (e *InsertValues) evalRow(cols []*table.Column, list []expression.Expressio
 	row := make([]types.Datum, rowLen)
 	hasValue := make([]bool, rowLen)
 
-	// For statements like `insert into t set a = b + 1`.
-	if e.hasRefCols {
-		if err := e.setValueForRefColumn(row, hasValue); err != nil {
+	if e.needFillDefaultValues {
+		if err := e.fillDefaultValues(row, hasValue); err != nil {
 			return nil, errors.Trace(err)
 		}
 	}
@@ -218,36 +215,34 @@ func (e *InsertValues) evalRow(cols []*table.Column, list []expression.Expressio
 		row[offset], hasValue[offset] = val1, true
 	}
 
-	return e.fillRow(row, hasValue)
+	return e.fillGenColData(cols, len(list), hasValue, row)
 }
 
-// setValueForRefColumn set some default values for the row to eval the row value with other columns,
-// it follows these rules:
+// fillDefaultValues fills a row followed by these rules:
 //     1. for nullable and no default value column, use NULL.
 //     2. for nullable and have default value column, use it's default value.
 //     3. for not null column, use zero value even in strict mode.
 //     4. for auto_increment column, use zero value.
 //     5. for generated column, use NULL.
-func (e *InsertValues) setValueForRefColumn(row []types.Datum, hasValue []bool) error {
+func (e *InsertValues) fillDefaultValues(row []types.Datum, hasValue []bool) error {
 	for i, c := range e.Table.Cols() {
-		d, err := e.getColDefaultValue(i, c)
-		if err == nil {
-			row[i] = d
-			if !mysql.HasAutoIncrementFlag(c.Flag) {
-				// It is an interesting behavior in MySQL.
-				// If the value of auto ID is not explicit, MySQL use 0 value for auto ID when it is
-				// evaluated by another column, but it should be used once only.
-				// When we fill it as an auto ID column, it should be set as it used to be.
-				// So just keep `hasValue` false for auto ID, and the others set true.
-				hasValue[c.Offset] = true
-			}
-		} else if table.ErrNoDefaultValue.Equal(err) {
+		var err error
+		if c.IsGenerated() {
+			continue
+		} else if mysql.HasAutoIncrementFlag(c.Flag) {
 			row[i] = table.GetZeroValue(c.ToInfo())
-			hasValue[c.Offset] = false
-		} else if e.filterErr(err) != nil {
-			return errors.Trace(err)
+		} else {
+			row[i], err = e.getColDefaultValue(i, c)
+			hasValue[c.Offset] = true
+			if table.ErrNoDefaultValue.Equal(err) {
+				row[i] = table.GetZeroValue(c.ToInfo())
+				hasValue[c.Offset] = false
+			} else if e.filterErr(err) != nil {
+				return errors.Trace(err)
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -275,7 +270,7 @@ func (e *InsertValues) insertRowsFromSelect(ctx context.Context, cols []*table.C
 		for innerChunkRow := iter.Begin(); innerChunkRow != iter.End(); innerChunkRow = iter.Next() {
 			innerRow := types.CopyRow(innerChunkRow.GetDatumRow(fields))
 			e.rowCount++
-			row, err := e.getRow(cols, innerRow)
+			row, err := e.fillRowData(cols, innerRow)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -302,10 +297,7 @@ func (e *InsertValues) insertRowsFromSelect(ctx context.Context, cols []*table.C
 	return nil
 }
 
-// getRow gets the row which from `insert into select from` or `load data`.
-// The input values from these two statements are datums instead of
-// expressions which are used in `insert into set x=y`.
-func (e *InsertValues) getRow(cols []*table.Column, vals []types.Datum) ([]types.Datum, error) {
+func (e *InsertValues) fillRowData(cols []*table.Column, vals []types.Datum) ([]types.Datum, error) {
 	row := make([]types.Datum, len(e.Table.Cols()))
 	hasValue := make([]bool, len(e.Table.Cols()))
 	for i, v := range vals {
@@ -319,7 +311,32 @@ func (e *InsertValues) getRow(cols []*table.Column, vals []types.Datum) ([]types
 		hasValue[offset] = true
 	}
 
-	return e.fillRow(row, hasValue)
+	return e.fillGenColData(cols, len(vals), hasValue, row)
+}
+
+func (e *InsertValues) fillGenColData(cols []*table.Column, valLen int, hasValue []bool, row []types.Datum) ([]types.Datum, error) {
+	err := e.initDefaultValues(row, hasValue)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	for i, expr := range e.GenExprs {
+		var val types.Datum
+		val, err = expr.Eval(chunk.MutRowFromDatums(row).ToRow())
+		if e.filterErr(err) != nil {
+			return nil, errors.Trace(err)
+		}
+		val, err = table.CastValue(e.ctx, val, cols[valLen+i].ToInfo())
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		offset := cols[valLen+i].Offset
+		row[offset] = val
+	}
+
+	if err = table.CheckNotNull(e.Table.Cols(), row); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return row, nil
 }
 
 func (e *InsertValues) filterErr(err error) error {
@@ -334,7 +351,6 @@ func (e *InsertValues) filterErr(err error) error {
 	return nil
 }
 
-// getColDefaultValue gets the column default value.
 func (e *InsertValues) getColDefaultValue(idx int, col *table.Column) (d types.Datum, err error) {
 	if e.colDefaultVals != nil && e.colDefaultVals[idx].valid {
 		return e.colDefaultVals[idx].val, nil
@@ -352,100 +368,81 @@ func (e *InsertValues) getColDefaultValue(idx int, col *table.Column) (d types.D
 	return defaultVal, nil
 }
 
-// fillColValue fills the column value if it is not set in the insert statement.
-func (e *InsertValues) fillColValue(datum types.Datum, idx int, column *table.Column, hasValue bool) (types.Datum,
-	error) {
-	if mysql.HasAutoIncrementFlag(column.Flag) {
-		d, err := e.adjustAutoIncrementDatum(datum, hasValue, column)
-		if err != nil {
-			return types.Datum{}, errors.Trace(err)
-		}
-		return d, nil
-	}
-	if !hasValue {
-		d, err := e.getColDefaultValue(idx, column)
-		if e.filterErr(err) != nil {
-			return types.Datum{}, errors.Trace(err)
-		}
-		return d, nil
-	}
-	return datum, nil
-}
-
-// fillRow fills generated columns, auto_increment column and empty column.
+// initDefaultValues fills generated columns, auto_increment column and empty column.
 // For NOT NULL column, it will return error or use zero value based on sql_mode.
-func (e *InsertValues) fillRow(row []types.Datum, hasValue []bool) ([]types.Datum, error) {
-	gIdx := 0
+func (e *InsertValues) initDefaultValues(row []types.Datum, hasValue []bool) error {
 	for i, c := range e.Table.Cols() {
-		var err error
-		// Get the default value for all no value columns, the auto increment column is different from the others.
-		row[i], err = e.fillColValue(row[i], i, c, hasValue[i])
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-
-		// Evaluate the generated columns.
-		if c.IsGenerated() {
-			var val types.Datum
-			val, err = e.GenExprs[gIdx].Eval(chunk.MutRowFromDatums(row).ToRow())
-			gIdx++
-			if e.filterErr(err) != nil {
-				return nil, errors.Trace(err)
+		if mysql.HasAutoIncrementFlag(c.Flag) || c.IsGenerated() {
+			// Just leave generated column as null. It will be calculated later
+			// but before we check whether the column can be null or not.
+			if !hasValue[i] {
+				row[i].SetNull()
 			}
-			row[i], err = table.CastValue(e.ctx, val, c.ToInfo())
-			if err != nil {
-				return nil, errors.Trace(err)
+			// Adjust the value if this column has auto increment flag.
+			if mysql.HasAutoIncrementFlag(c.Flag) {
+				if err := e.adjustAutoIncrementDatum(row, i, c); err != nil {
+					return errors.Trace(err)
+				}
 			}
-		}
-
-		// Handle the bad null error.
-		if row[i], err = c.HandleBadNull(row[i], e.ctx.GetSessionVars().StmtCtx); err != nil {
-			return nil, errors.Trace(err)
+		} else {
+			if !hasValue[i] || (mysql.HasNotNullFlag(c.Flag) && row[i].
+				IsNull() && e.ctx.GetSessionVars().StmtCtx.BadNullAsWarning) {
+				var err error
+				row[i], err = e.getColDefaultValue(i, c)
+				if e.filterErr(err) != nil {
+					return errors.Trace(err)
+				}
+			}
 		}
 	}
-	return row, nil
+	return nil
 }
 
-func (e *InsertValues) adjustAutoIncrementDatum(d types.Datum, hasValue bool, c *table.Column) (types.Datum, error) {
+func (e *InsertValues) adjustAutoIncrementDatum(row []types.Datum, i int, c *table.Column) error {
 	retryInfo := e.ctx.GetSessionVars().RetryInfo
 	if retryInfo.Retrying {
 		id, err := retryInfo.GetCurrAutoIncrementID()
 		if err != nil {
-			return types.Datum{}, errors.Trace(err)
+			return errors.Trace(err)
 		}
-		d.SetAutoID(id, c.Flag)
-		return d, nil
+		if mysql.HasUnsignedFlag(c.Flag) {
+			row[i].SetUint64(uint64(id))
+		} else {
+			row[i].SetInt64(id)
+		}
+		return nil
 	}
 
 	var err error
 	var recordID int64
-	if !hasValue {
-		d.SetNull()
-	}
-	if !d.IsNull() {
-		recordID, err = d.ToInt64(e.ctx.GetSessionVars().StmtCtx)
+	if !row[i].IsNull() {
+		recordID, err = row[i].ToInt64(e.ctx.GetSessionVars().StmtCtx)
 		if e.filterErr(err) != nil {
-			return types.Datum{}, errors.Trace(err)
+			return errors.Trace(err)
 		}
 	}
 	// Use the value if it's not null and not 0.
 	if recordID != 0 {
 		err = e.Table.RebaseAutoID(e.ctx, recordID, true)
 		if err != nil {
-			return types.Datum{}, errors.Trace(err)
+			return errors.Trace(err)
 		}
 		e.ctx.GetSessionVars().InsertID = uint64(recordID)
+		if mysql.HasUnsignedFlag(c.Flag) {
+			row[i].SetUint64(uint64(recordID))
+		} else {
+			row[i].SetInt64(recordID)
+		}
 		retryInfo.AddAutoIncrementID(recordID)
-		d.SetAutoID(recordID, c.Flag)
-		return d, nil
+		return nil
 	}
 
 	// Change NULL to auto id.
 	// Change value 0 to auto id, if NoAutoValueOnZero SQL mode is not set.
-	if d.IsNull() || e.ctx.GetSessionVars().SQLMode&mysql.ModeNoAutoValueOnZero == 0 {
+	if row[i].IsNull() || e.ctx.GetSessionVars().SQLMode&mysql.ModeNoAutoValueOnZero == 0 {
 		recordID, err = e.Table.AllocAutoID(e.ctx)
 		if e.filterErr(err) != nil {
-			return types.Datum{}, errors.Trace(err)
+			return errors.Trace(err)
 		}
 		// It's compatible with mysql. So it sets last insert id to the first row.
 		if e.rowCount == 1 {
@@ -453,15 +450,20 @@ func (e *InsertValues) adjustAutoIncrementDatum(d types.Datum, hasValue bool, c 
 		}
 	}
 
-	d.SetAutoID(recordID, c.Flag)
+	if mysql.HasUnsignedFlag(c.Flag) {
+		row[i].SetUint64(uint64(recordID))
+	} else {
+		row[i].SetInt64(recordID)
+	}
 	retryInfo.AddAutoIncrementID(recordID)
 
-	// the value of d is adjusted by auto ID, so we need to cast it again.
-	casted, err := table.CastValue(e.ctx, d, c.ToInfo())
+	// the value of row[i] is adjusted by autoid, so we need to cast it again.
+	casted, err := table.CastValue(e.ctx, row[i], c.ToInfo())
 	if err != nil {
-		return types.Datum{}, errors.Trace(err)
+		return errors.Trace(err)
 	}
-	return casted, nil
+	row[i] = casted
+	return nil
 }
 
 func (e *InsertValues) handleWarning(err error, logInfo string) {
@@ -516,9 +518,7 @@ func (e *InsertValues) batchCheckAndInsert(rows [][]types.Datum, addRecord func(
 }
 
 func (e *InsertValues) addRecord(row []types.Datum) (int64, error) {
-	if !e.ctx.GetSessionVars().ConstraintCheckInPlace {
-		e.ctx.Txn().SetOption(kv.PresumeKeyNotExists, nil)
-	}
+	e.ctx.Txn().SetOption(kv.PresumeKeyNotExists, nil)
 	h, err := e.Table.AddRecord(e.ctx, row, false)
 	e.ctx.Txn().DelOption(kv.PresumeKeyNotExists)
 	if err != nil {

@@ -103,7 +103,7 @@ func readBool(input string) (value bool, valid bool) {
 }
 
 /******************************************************************************
-*                           Time related utils                                *
+*                           Time related errors                                *
 ******************************************************************************/
 
 // NullTime represents a time.Time that may be NULL.
@@ -664,7 +664,7 @@ func escapeStringQuotes(buf []byte, v string) []byte {
 }
 
 /******************************************************************************
-*                               Sync utils                                    *
+*                               Sync errors                                    *
 ******************************************************************************/
 
 // noCopy may be embedded into structs which must not be copied

@@ -24,7 +24,6 @@ import (
 	"github.com/pingcap/tidb/sessionctx/variable"
 	"github.com/pingcap/tidb/terror"
 	"github.com/pingcap/tidb/types"
-	"github.com/pingcap/tidb/types/parser_driver"
 	"github.com/pkg/errors"
 )
 
@@ -75,7 +74,7 @@ func GetTimeValue(ctx sessionctx.Context, v interface{}, tp byte, fsp int) (d ty
 				return d, errors.Trace(err)
 			}
 		}
-	case *driver.ValueExpr:
+	case *ast.ValueExpr:
 		switch x.Kind() {
 		case types.KindString:
 			value, err = types.ParseTime(sc, x.GetString(), tp, fsp)

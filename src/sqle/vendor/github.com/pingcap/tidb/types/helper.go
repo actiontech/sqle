@@ -59,8 +59,7 @@ func Truncate(f float64, dec int) float64 {
 	return math.Trunc(tmp) / shift
 }
 
-// GetMaxFloat gets the max float for given flen and decimal.
-func GetMaxFloat(flen int, decimal int) float64 {
+func getMaxFloat(flen int, decimal int) float64 {
 	intPartLen := flen - decimal
 	f := math.Pow10(intPartLen)
 	f -= math.Pow10(-decimal)
@@ -75,7 +74,7 @@ func TruncateFloat(f float64, flen int, decimal int) (float64, error) {
 		return 0, ErrOverflow.GenWithStackByArgs("DOUBLE", "")
 	}
 
-	maxF := GetMaxFloat(flen, decimal)
+	maxF := getMaxFloat(flen, decimal)
 
 	if !math.IsInf(f, 0) {
 		f = Round(f, decimal)

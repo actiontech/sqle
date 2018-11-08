@@ -40,7 +40,6 @@ var UnCacheableFunctions = map[string]struct{}{
 
 // unFoldableFunctions stores functions which can not be folded duration constant folding stage.
 var unFoldableFunctions = map[string]struct{}{
-	ast.Sysdate:   {},
 	ast.FoundRows: {},
 	ast.Rand:      {},
 	ast.UUID:      {},
@@ -50,9 +49,4 @@ var unFoldableFunctions = map[string]struct{}{
 	ast.SetVar:    {},
 	ast.GetVar:    {},
 	ast.GetParam:  {},
-}
-
-// inequalFunctions stores functions which cannot be propagated from column equal condition.
-var inequalFunctions = map[string]struct{}{
-	ast.IsNull: {},
 }
