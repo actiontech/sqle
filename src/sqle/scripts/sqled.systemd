@@ -10,7 +10,6 @@ User=
 LimitNOFILE=65535
 LimitNPROC=65535
 TasksMax=infinity
-Type=forking
 PIDFile=
 WorkingDirectory=
 ExecStart=
