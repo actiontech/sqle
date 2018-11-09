@@ -5,11 +5,9 @@
 /pkg/
 /bin/
 /logs/
-src/sqle/**/logs/
-src/sqle/**/main
-src/sqle/**/sqle
-src/sqle/swag
 
-src/github.com/
-src/golang.org/
-src/gopkg.in/
+#build
+docs
+*.rpm
+sqled
+swag
