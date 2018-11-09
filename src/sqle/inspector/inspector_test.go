@@ -549,13 +549,3 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 //	v, _ := json.Marshal(records)
 //	fmt.Println(string(v))
 //}
-
-func TestNewInspector(t *testing.T) {
-	sql := "update tb1 set id=10 where id=1 and v1 >' == ' && 1+1>=1;"
-	node, err := parseOneSql("mysql", sql)
-	if err != nil {
-		t.Error(err)
-	}
-	stmt,_:=node.(*ast.UpdateStmt)
-	fmt.Println(exprFormat(stmt.Where))
-}

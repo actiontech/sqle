@@ -363,7 +363,7 @@ func (i *Inspector) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 			name := setExpr.Column.Name.String()
 			_, isPk := pkColumnsName[name]
 			if isPk {
-				where = append(where, fmt.Sprintf("%s = %s", name, exprFormat(setExpr.Expr)))
+				where = append(where, fmt.Sprintf("%s = '%s'", name, exprFormat(setExpr.Expr)))
 			}
 		}
 		if len(where) != len(pkColumnsName) {
