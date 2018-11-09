@@ -87,7 +87,6 @@ func GetRuleTemplate(c echo.Context) error {
 		BaseRes: NewBaseReq(nil),
 		Data:    template.Detail(),
 	})
-	return c.JSON(200, template)
 }
 
 // @Summary 删除规则模板
@@ -215,5 +214,4 @@ func GetRules(c echo.Context) error {
 		BaseRes: NewBaseReq(nil),
 		Data:    rules,
 	})
-	return nil
 }

@@ -26,10 +26,10 @@ pull_image:
 build: parser vet
 	$(GOBUILD) -o sqled -ldflags "-X 'main.version=\"${GIT_VERSION}\"'" ./cmd/main.go
 
-vet:
-	$(GOVET) $(GOLIST) ./... | grep -v vendor/)
+vet: swagger
+	$(GOVET) $$($(GOLIST) ./... | grep -v vendor/)
 
-test: parser
+test: parser swagger
 	$(GOTEST) -v ./...
 
 clean:
