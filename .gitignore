@@ -1,0 +1,10 @@
+# ide
+.idea
+
+#build
+/docs
+*.rpm
+*.log
+/sqled
+/sqled.cnf*
+/swag
