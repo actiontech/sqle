@@ -1,13 +1,10 @@
 # ide
 .idea
 
-# go
-/pkg/
-/bin/
-/logs/
-
 #build
-docs
+/docs
 *.rpm
-sqled
-swag
+*.log
+/sqled
+/sqled.cnf*
+/swag
