@@ -1,4 +1,4 @@
-GOCMD=$(shell which go ||go)
+GOCMD=$(shell which go)
 GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
 GOVET=$(GOCMD) vet
@@ -9,7 +9,7 @@ GIT_VERSION   = $(shell git rev-parse --abbrev-ref HEAD) $(shell git rev-parse H
 LDFLAGS       = -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
 RPM_BUILD_BIN = $(shell type -p rpmbuild 2>/dev/null)
 COMPILE_FLAG  =
-DOCKER        = $(shell which docker ||docker)
+DOCKER        = $(shell which docker)
 DOCKER_IMAGE  = docker-registry:5000/actiontech/universe-compiler-go1.10
 DOCKER_REGISTRY ?=10.186.18.20
 
