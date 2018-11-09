@@ -23,20 +23,20 @@ default: build
 pull_image:
     $(DOCKER) pull ${DOCKER_IMAGE}
 
-build: parser vet
+build: swagger parser vet
 	$(GOBUILD) -o sqled -ldflags "-X 'main.version=\"${GIT_VERSION}\"'" ./cmd/main.go
 
 vet: swagger
 	$(GOVET) $$($(GOLIST) ./... | grep -v vendor/)
 
-test: parser swagger
+test: swagger parser
 	$(GOTEST) -v ./...
 
 clean:
 	$(GOCLEAN)
 
 docker_rpm: pull_image
-	$(DOCKER) run -v $(shell pwd):/universe/src/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1); cd /root/rpmbuild/SOURCES; (tar zcf ${PROJECT_NAME}.tar.gz /universe --exclude=/universe/pkg --exclude=/universe/bin --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild -bb --with qa /universe/src/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${PROJECT_NAME}.x86_64.rpm
+	$(DOCKER) run -v $(shell pwd):/universe/src/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild -bb --with qa /universe/src/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${PROJECT_NAME}.x86_64.rpm
 
 docker_test: pull_image
 	CTN_NAME="universe_docker_test_$$RANDOM" && \
@@ -51,5 +51,5 @@ parser:
 	cd $(shell pwd)/vendor/github.com/pingcap/tidb && make parser && cd -
 
 swagger:
-	$(GOBUILD) -o $(shell pwd)/swag -v $(shell pwd)/vendor/github.com/swaggo/swag/cmd/swag/main.go
+	$(GOBUILD) -o $(shell pwd)/swag $(shell pwd)/vendor/github.com/swaggo/swag/cmd/swag/main.go
 	$(shell pwd)/swag init -g $(shell pwd)/api/app.go

@@ -29,6 +29,7 @@ Acitontech Sqle
 
 %build
 echo "build sqle..."
+export GOPATH=%{_builddir}/%{buildsubdir}
 cd %{_builddir}/%{buildsubdir}/src/sqle
 make build
 
