@@ -30,7 +30,7 @@ type CommitSql struct {
 	Model
 	TaskId        uint   `json:"-"`
 	Number        int    `json:"number"`
-	Sql           string `json:"sql"`
+	Sql           string `json:"sql" gorm:"type:text"`
 	InspectStatus string `json:"inspect_status"`
 	InspectResult string `json:"inspect_result"`
 	InspectLevel  string `json:"inspect_level"`
@@ -46,7 +46,7 @@ type RollbackSql struct {
 	Model
 	TaskId     uint   `json:"-"`
 	Number     uint   `json:"number"`
-	Sql        string `json:"sql"`
+	Sql        string `json:"sql" gorm:"type:text"`
 	ExecStatus string `json:"exec_status"`
 	ExecResult string `json:"exec_result"`
 }
@@ -62,7 +62,7 @@ type Task struct {
 	Schema       string         `json:"schema" example:"db1"`
 	Instance     Instance       `json:"-" gorm:"foreignkey:InstanceId"`
 	InstanceId   uint           `json:"instance_id"`
-	Sql          string         `json:"sql"`
+	Sql          string         `json:"sql" gorm:"type:text"`
 	CommitSqls   []*CommitSql   `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSqls []*RollbackSql `json:"-" gorm:"foreignkey:TaskId"`
 }
