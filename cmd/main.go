@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
-	"sqle"
 	"sqle/api"
+	"sqle/inspector"
 	"sqle/model"
 	"sqle/utils"
+	"sqle/api/server"
 )
 
 var version string
@@ -20,12 +21,14 @@ var mysqlPort string
 var mysqlSchema string
 var configPath string
 var pidFile string
+var debug bool
+var autoMigrateTable bool
 
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "sqle",
-		Short: "Universe Database Platform",
-		Long:  "Universe Database Platform\n\nVersion:\n  " + version,
+		Short: "SQLe",
+		Long:  "SQLe\n\nVersion:\n  " + version,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := run(cmd, args); nil != err {
 				//os.ErrExit(err)
@@ -42,18 +45,8 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "", "", "config file path")
 	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "config file path")
-	//rootCmd.SetHelpTemplate(ucobra.HELP_TEMPLATE)
-
-	var docsCmd = &cobra.Command{
-		Use:   "docs",
-		Short: "a swagger server",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := docs(cmd, args); err != nil {
-				os.Exit(1)
-			}
-		},
-	}
-	rootCmd.AddCommand(docsCmd)
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
+	rootCmd.PersistentFlags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
 	rootCmd.Execute()
 }
 
@@ -85,14 +78,25 @@ func run(cmd *cobra.Command, _ []string) error {
 		}()
 	}
 
-	s, err := model.NewMysql(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema)
+	s, err := model.NewStorage(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema, debug)
 	if err != nil {
 		return err
 	}
 	model.InitStorage(s)
 
+	if autoMigrateTable {
+		err := s.AutoMigrate()
+		if err != nil {
+			return err
+		}
+		err = s.CreateRulesIfNotExist(inspector.DefaultRules)
+		if err != nil {
+			return err
+		}
+	}
+
 	exitChan := make(chan struct{}, 0)
-	sqle.InitSqled(exitChan)
+	server.InitSqled(exitChan)
 	go api.StartApi(port, exitChan)
 
 	select {
@@ -105,16 +109,6 @@ func run(cmd *cobra.Command, _ []string) error {
 		//
 		//os.HaltIfShutdown(stage)
 		//log.UserInfo(stage, "Exit by signal %v", sig)
-	}
-	return nil
-}
-
-func docs(cmd *cobra.Command, _ []string) error {
-	exitChan := make(chan struct{}, 0)
-	go api.StartDocs(port, exitChan)
-	fmt.Printf("open browser: http://localhost:%d/swagger/index.html\n", port)
-	select {
-	case <-exitChan:
 	}
 	return nil
 }

@@ -3,9 +3,9 @@ package controller
 import (
 	"github.com/labstack/echo"
 	"net/http"
-	"sqle"
 	"sqle/inspector"
 	"sqle/model"
+	"sqle/api/server"
 )
 
 type CreateTaskReq struct {
@@ -159,7 +159,7 @@ func InspectTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	task, err := sqle.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
+	task, err := server.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -184,7 +184,7 @@ func CommitTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
+	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -206,7 +206,7 @@ func RollbackTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
+	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}

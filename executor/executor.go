@@ -2,12 +2,14 @@ package executor
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"sqle/errors"
 	"sqle/model"
+	"strconv"
 )
 
 type Conn struct {
@@ -54,10 +56,10 @@ func OpenDbWithTask(task *model.Task) (*Conn, error) {
 	return NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, schema)
 }
 
-func Exec(task *model.Task, sql string) error {
+func Exec(task *model.Task, sql string) (driver.Result, error) {
 	conn, err := OpenDbWithTask(task)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer conn.Close()
 	return conn.Exec(sql)
@@ -67,9 +69,9 @@ func (c *Conn) Ping() error {
 	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, c.DB.DB().Ping())
 }
 
-func (c *Conn) Exec(query string) error {
-	_, err := c.DB.DB().Exec(query)
-	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+func (c *Conn) Exec(query string) (driver.Result, error) {
+	result, err := c.DB.DB().Exec(query)
+	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
 func (c *Conn) Query(query string, args ...interface{}) ([]map[string]string, error) {
@@ -168,4 +170,33 @@ func (c *Conn) Explain(query string) (ExecutionPlanJson, error) {
 		json.Unmarshal([]byte(result[0]["EXPLAIN"]), &ep)
 	}
 	return ep, nil
+}
+
+func (c *Conn) ShowMasterStatus() ([]map[string]string, error) {
+	result, err := c.Query(fmt.Sprintf("show master status"))
+	if err != nil {
+		return nil, err
+	}
+	// result may be empty
+	if len(result) != 1 && len(result) != 0 {
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR,
+			fmt.Errorf("show master status error, result is %v", result))
+	}
+	return result, nil
+}
+
+func (c *Conn) FetchMasterBinlogPos() (string, int64, error) {
+	result, err := c.ShowMasterStatus()
+	if err != nil {
+		return "", 0, err
+	}
+	if len(result) == 0 {
+		return "", 0, nil
+	}
+	file := result[0]["File"]
+	pos, err := strconv.ParseInt(result[0]["Position"], 10, 64)
+	if err != nil {
+		return "", 0, err
+	}
+	return file, pos, nil
 }

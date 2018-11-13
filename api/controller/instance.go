@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
-	"sqle"
 	"sqle/errors"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
+	"sqle/api/server"
 )
 
 type CreateInstanceReq struct {
@@ -84,7 +84,7 @@ func CreateInst(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	go sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
+	go server.GetSqled().UpdateAndGetInstanceStatus(instance)
 
 	return c.JSON(200, &InstanceRes{
 		BaseRes: NewBaseReq(nil),
@@ -145,7 +145,7 @@ func DeleteInstance(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	sqle.GetSqled().DeleteInstanceStatus(instance)
+	server.GetSqled().DeleteInstanceStatus(instance)
 	return c.JSON(200, NewBaseReq(nil))
 }
 
@@ -217,7 +217,7 @@ func UpdateInstance(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	go sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
+	go server.GetSqled().UpdateAndGetInstanceStatus(instance)
 
 	return c.JSON(200, NewBaseReq(nil))
 }
@@ -302,7 +302,7 @@ func GetInstSchemas(c echo.Context) error {
 	if !exist {
 		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
 	}
-	status, err := sqle.GetSqled().UpdateAndGetInstanceStatus(instance)
+	status, err := server.GetSqled().UpdateAndGetInstanceStatus(instance)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -314,7 +314,7 @@ func GetInstSchemas(c echo.Context) error {
 
 type GetAllSchemasRes struct {
 	BaseRes
-	Data []sqle.InstanceStatus `json:"data"`
+	Data []server.InstanceStatus `json:"data"`
 }
 
 // @Summary 所有实例的 Schema 列表
@@ -324,7 +324,7 @@ type GetAllSchemasRes struct {
 func GetAllSchemas(c echo.Context) error {
 	return c.JSON(200, &GetAllSchemasRes{
 		BaseRes: NewBaseReq(nil),
-		Data:    sqle.GetSqled().GetAllInstanceStatus(),
+		Data:    server.GetSqled().GetAllInstanceStatus(),
 	})
 }
 
@@ -333,6 +333,6 @@ func GetAllSchemas(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /schemas/manual_update [post]
 func ManualUpdateAllSchemas(c echo.Context) error {
-	go sqle.GetSqled().UpdateAllInstanceStatus()
+	go server.GetSqled().UpdateAllInstanceStatus()
 	return c.JSON(200, NewBaseReq(nil))
 }

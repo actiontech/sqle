@@ -47,11 +47,3 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)
 }
-
-func StartDocs(port int, exitChan chan struct{}) {
-	e := echo.New()
-	e.HideBanner = true
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
-	e.Start(fmt.Sprintf(":%v", port))
-	close(exitChan)
-}

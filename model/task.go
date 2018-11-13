@@ -28,14 +28,19 @@ var ActionMap = map[int]string{
 
 type CommitSql struct {
 	Model
-	TaskId        uint   `json:"-"`
-	Number        int    `json:"number"`
-	Sql           string `json:"sql" gorm:"type:text"`
-	InspectStatus string `json:"inspect_status"`
-	InspectResult string `json:"inspect_result"`
-	InspectLevel  string `json:"inspect_level"`
-	ExecStatus    string `json:"exec_status"`
-	ExecResult    string `json:"exec_result"`
+	TaskId          uint   `json:"-"`
+	Number          int    `json:"number"`
+	Sql             string `json:"sql" gorm:"type:text"`
+	InspectStatus   string `json:"inspect_status"`
+	InspectResult   string `json:"inspect_result"`
+	InspectLevel    string `json:"inspect_level"`
+	StartBinlogFile string `json:"start_binlog_file"`
+	StartBinlogPos  int64  `json:"start_binlog_pos"`
+	EndBinlogFile   string `json:"end_binlog_file"`
+	EndBinlogPos    int64  `json:"end_binlog_pos"`
+	RowAffects      int64  `json:"row_affects"`
+	ExecStatus      string `json:"exec_status"`
+	ExecResult      string `json:"exec_result"`
 }
 
 func (s CommitSql) TableName() string {

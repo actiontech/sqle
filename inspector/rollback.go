@@ -35,7 +35,7 @@ func (i *Inspector) GenerateRollbackSql() ([]string, error) {
 			return nil, err
 		}
 		// update schema info
-		i.UpdateSchemaCtx(node)
+		i.updateSchemaCtx(node)
 	}
 	rollbackSqls := []string{}
 	// Reverse order

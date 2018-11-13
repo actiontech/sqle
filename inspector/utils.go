@@ -28,9 +28,9 @@ func newInspectResults() *InspectResults {
 
 // level find highest level in result
 func (rs *InspectResults) level() string {
-	level := model.RULE_LEVEL_NORMAL
+	level := RULE_LEVEL_NORMAL
 	for _, result := range rs.results {
-		if model.RuleLevelMap[level] < model.RuleLevelMap[result.Level] {
+		if RuleLevelMap[level] < RuleLevelMap[result.Level] {
 			level = result.Level
 		}
 	}
@@ -45,11 +45,10 @@ func (rs *InspectResults) message() string {
 	return strings.Join(messages, "\n")
 }
 
-func (rs *InspectResults) add(level, rule string, args ...interface{}) {
-	msg := model.RuleMessageMap[rule]
+func (rs *InspectResults) add(rule model.Rule, args ...interface{}) {
 	rs.results = append(rs.results, &InspectResult{
-		Level:   level,
-		Message: fmt.Sprintf(msg, args...),
+		Level:   rule.Level,
+		Message: fmt.Sprintf(rule.Message, args...),
 	})
 }
 
@@ -85,6 +84,9 @@ func parseOneSql(dbType, sql string) (ast.StmtNode, error) {
 
 func getTables(stmt *ast.Join) []*ast.TableName {
 	tables := []*ast.TableName{}
+	if stmt == nil {
+		return tables
+	}
 	if n := stmt.Right; n != nil {
 		switch t := n.(type) {
 		case *ast.TableSource:
