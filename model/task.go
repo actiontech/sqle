@@ -151,7 +151,7 @@ func (s *Storage) UpdateTaskById(taskId string, attrs ...interface{}) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateCommitSql(task *Task, commitSql []CommitSql) error {
+func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
 	err := s.db.Model(task).Association("CommitSqls").Replace(commitSql).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

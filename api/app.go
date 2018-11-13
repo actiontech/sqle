@@ -40,10 +40,10 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.POST("/tasks/:task_id/inspection", controller.InspectTask)
 	e.POST("/tasks/:task_id/commit", controller.CommitTask)
 	e.POST("/tasks/:task_id/rollback", controller.RollbackTask)
+	e.POST("/tasks/:task_id/upload_sql_file", controller.UploadSqlFile)
 
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
-
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)
 }
