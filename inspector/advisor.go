@@ -75,7 +75,7 @@ func (i *Inspector) checkSelectWhere(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// where condition
-		if stmt.Where == nil || !scanWhereColumn(stmt.Where) {
+		if stmt.Where == nil || !whereStmtHasColumn(stmt.Where) {
 			i.addResult(DML_CHECK_INVALID_WHERE_CONDITION)
 		}
 	}

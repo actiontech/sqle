@@ -44,8 +44,6 @@ UNIQUE KEY (id)
 	return stmt
 }
 
-var DefaultRulesMap = model.GetRuleMapFromAllArray(DefaultRules)
-
 type testResult struct {
 	Results *InspectResults
 	rules   map[string]model.Rule
@@ -139,6 +137,8 @@ func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results
 		if sql.InspectLevel != result.level() || sql.InspectResult != result.message() {
 			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
 				desc, sql.Sql, result.level(), result.message(), sql.InspectLevel, sql.InspectResult)
+		} else {
+			t.Log(fmt.Sprintf("\n\ncase:%s\nactual result:\n%s\n\n", desc, sql.InspectResult))
 		}
 	}
 }
@@ -175,12 +175,12 @@ func TestInspector_Advise_Select(t *testing.T) {
 		newTestResult().addResult(DML_DISABE_SELECT_ALL_COLUMN),
 	)
 
-	runInspectCase(t, "select_from: no where condition", DefaultMysqlInspect(),
+	runInspectCase(t, "select_from: no where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1;",
 		newTestResult().addResult(DML_CHECK_INVALID_WHERE_CONDITION),
 	)
 
-	runInspectCase(t, "select_from: no where condition", DefaultMysqlInspect(),
+	runInspectCase(t, "select_from: no where condition(2)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
 		newTestResult().addResult(DML_CHECK_INVALID_WHERE_CONDITION),
 	)
@@ -594,27 +594,27 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 
 }
 
-//
 //func TestNewInspector(t *testing.T) {
-//	conn, err := executor.NewConn("mysql", "root", "asd2010", "10.186.18.118", "23306", "sqle")
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	defer conn.Close()
-//	sql1 := "select * from sqle.rules where name <> \"\";"
-//	_ = sql1
-//	sql2 := "insert into tb1 values(6,'v1');"
-//	_ = sql2
-//	result, err := conn.Exec(sql2)
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	ra, _ := result.RowsAffected()
-//	fmt.Println("row_affects: ", ra)
-//	//result, err := conn.ShowMasterStatus()
-//	//if err != nil {
-//	//	t.Error(err)
-//	//	return
-//	//}
-//	//fmt.Println(result)
+	//conn, err := executor.NewConn("mysql", "root", "asd2010", "10.186.18.118", "23306", "sqle")
+	//if err != nil {
+	//	t.Error(err)
+	//}
+	//defer conn.Close()
+	//sql1 := "select * from sqle.rules where name <> \"\";"
+	//_ = sql1
+	//sql2 := "insert into tb1 values(6,'v1');"
+	//_ = sql2
+	//result, err := conn.Exec(sql2)
+	//if err != nil {
+	//	t.Error(err)
+	//}
+	//ra, _ := result.RowsAffected()
+	//fmt.Println("row_affects: ", ra)
+
+	//result, err := conn.ShowMasterStatus()
+	//if err != nil {
+	//	t.Error(err)
+	//	return
+	//}
+	//fmt.Println(result)
 //}

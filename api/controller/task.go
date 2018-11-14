@@ -50,7 +50,6 @@ func CreateTask(c echo.Context) error {
 		Desc:       req.Desc,
 		Schema:     req.Schema,
 		InstanceId: inst.ID,
-		Sql:        req.Sql,
 		CommitSqls: []*model.CommitSql{},
 	}
 	sqlArray, err := inspector.SplitSql(inst.DbType, req.Sql)

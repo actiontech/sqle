@@ -66,6 +66,24 @@ func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
 	return nil
 }
 
+func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
+	_, exist, err := s.GetTemplateByName("all")
+	if err != nil {
+		return err
+	}
+	if !exist {
+		t := &RuleTemplate{
+			Name: "all",
+			Desc: "default template for all rule",
+		}
+		if err := s.Save(t); err != nil {
+			return err
+		}
+		return s.UpdateTemplateRules(t, rules...)
+	}
+	return nil
+}
+
 func (s *Storage) Exist(model interface{}) (bool, error) {
 	var count int
 	err := s.db.Model(model).Where(model).Count(&count).Error

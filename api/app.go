@@ -44,6 +44,7 @@ func StartApi(port int, exitChan chan struct{}) {
 
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
+
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)
 }

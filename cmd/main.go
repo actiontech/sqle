@@ -5,10 +5,10 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"sqle/api"
+	"sqle/api/server"
 	"sqle/inspector"
 	"sqle/model"
 	"sqle/utils"
-	"sqle/api/server"
 )
 
 var version string
@@ -85,12 +85,13 @@ func run(cmd *cobra.Command, _ []string) error {
 	model.InitStorage(s)
 
 	if autoMigrateTable {
-		err := s.AutoMigrate()
-		if err != nil {
+		if err := s.AutoMigrate(); err != nil {
 			return err
 		}
-		err = s.CreateRulesIfNotExist(inspector.DefaultRules)
-		if err != nil {
+		if err := s.CreateRulesIfNotExist(inspector.DefaultRules); err != nil {
+			return err
+		}
+		if err := s.CreateDefaultTemplate(inspector.DefaultRules); err != nil {
 			return err
 		}
 	}

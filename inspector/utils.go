@@ -28,9 +28,9 @@ func newInspectResults() *InspectResults {
 
 // level find highest level in result
 func (rs *InspectResults) level() string {
-	level := RULE_LEVEL_NORMAL
+	level := model.RULE_LEVEL_NORMAL
 	for _, result := range rs.results {
-		if RuleLevelMap[level] < RuleLevelMap[result.Level] {
+		if model.RuleLevelMap[level] < model.RuleLevelMap[result.Level] {
 			level = result.Level
 		}
 	}
@@ -48,7 +48,7 @@ func (rs *InspectResults) message() string {
 func (rs *InspectResults) add(rule model.Rule, args ...interface{}) {
 	rs.results = append(rs.results, &InspectResult{
 		Level:   rule.Level,
-		Message: fmt.Sprintf(rule.Message, args...),
+		Message: fmt.Sprintf(DefaultRulesMap[rule.Name].Message, args...),
 	})
 }
 
@@ -187,23 +187,23 @@ func MysqlDataTypeIsBlob(tp byte) bool {
 	}
 }
 
-func scanWhereColumn(where ast.ExprNode) bool {
+func whereStmtHasColumn(where ast.ExprNode) bool {
 	switch x := where.(type) {
 	case nil:
 	case *ast.ColumnNameExpr:
 		return true
 	case *ast.BinaryOperationExpr:
-		if scanWhereColumn(x.R) || scanWhereColumn(x.L) {
+		if whereStmtHasColumn(x.R) || whereStmtHasColumn(x.L) {
 			return true
 		} else {
 			return false
 		}
 	case *ast.IsTruthExpr:
-		return scanWhereColumn(x.Expr)
+		return whereStmtHasColumn(x.Expr)
 	case *ast.UnaryOperationExpr:
-		return scanWhereColumn(x.V)
+		return whereStmtHasColumn(x.V)
 	case *ast.IsNullExpr:
-		return scanWhereColumn(x.Expr)
+		return whereStmtHasColumn(x.Expr)
 	case *ast.CompareSubqueryExpr:
 		return true
 	}
