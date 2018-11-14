@@ -28,14 +28,19 @@ var ActionMap = map[int]string{
 
 type CommitSql struct {
 	Model
-	TaskId        uint   `json:"-"`
-	Number        int    `json:"number"`
-	Sql           string `json:"sql"`
-	InspectStatus string `json:"inspect_status"`
-	InspectResult string `json:"inspect_result"`
-	InspectLevel  string `json:"inspect_level"`
-	ExecStatus    string `json:"exec_status"`
-	ExecResult    string `json:"exec_result"`
+	TaskId          uint   `json:"-"`
+	Number          int    `json:"number"`
+	Sql             string `json:"sql" gorm:"type:text"`
+	InspectStatus   string `json:"inspect_status"`
+	InspectResult   string `json:"inspect_result"`
+	InspectLevel    string `json:"inspect_level"`
+	StartBinlogFile string `json:"start_binlog_file"`
+	StartBinlogPos  int64  `json:"start_binlog_pos"`
+	EndBinlogFile   string `json:"end_binlog_file"`
+	EndBinlogPos    int64  `json:"end_binlog_pos"`
+	RowAffects      int64  `json:"row_affects"`
+	ExecStatus      string `json:"exec_status"`
+	ExecResult      string `json:"exec_result"`
 }
 
 func (s CommitSql) TableName() string {
@@ -46,7 +51,7 @@ type RollbackSql struct {
 	Model
 	TaskId     uint   `json:"-"`
 	Number     uint   `json:"number"`
-	Sql        string `json:"sql"`
+	Sql        string `json:"sql" gorm:"type:text"`
 	ExecStatus string `json:"exec_status"`
 	ExecResult string `json:"exec_result"`
 }
@@ -62,7 +67,7 @@ type Task struct {
 	Schema       string         `json:"schema" example:"db1"`
 	Instance     Instance       `json:"-" gorm:"foreignkey:InstanceId"`
 	InstanceId   uint           `json:"instance_id"`
-	Sql          string         `json:"sql"`
+	Sql          string         `json:"sql" gorm:"type:text"`
 	CommitSqls   []*CommitSql   `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSqls []*RollbackSql `json:"-" gorm:"foreignkey:TaskId"`
 }
@@ -146,7 +151,7 @@ func (s *Storage) UpdateTaskById(taskId string, attrs ...interface{}) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateCommitSql(task *Task, commitSql []CommitSql) error {
+func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
 	err := s.db.Model(task).Association("CommitSqls").Replace(commitSql).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

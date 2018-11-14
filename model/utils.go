@@ -17,6 +17,10 @@ func GetStorage() *Storage {
 	return storage
 }
 
+func GetDb() *gorm.DB {
+	return storage.db
+}
+
 type Model struct {
 	ID        uint       `json:"id" gorm:"primary_key" example:"1"`
 	CreatedAt time.Time  `json:"-" example:"2018-10-21T16:40:23+08:00"`
@@ -24,23 +28,42 @@ type Model struct {
 	DeletedAt *time.Time `json:"-" sql:"index"`
 }
 
-func NewMysql(user, password, host, port, schema string) (*Storage, error) {
+func NewStorage(user, password, host, port, schema string, debug bool) (*Storage, error) {
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user, password, host, port, schema))
 	if err != nil {
 		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
-	db.LogMode(true)
-	// create tables
-	db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{})
-	storage := &Storage{db: db}
-	// update default rules
-	err = storage.CreateDefaultRules()
-	return storage, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	if debug {
+		db.LogMode(true)
+	}
+	return &Storage{db: db}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 type Storage struct {
 	db *gorm.DB
+}
+
+func (s *Storage) AutoMigrate() error {
+	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
+	for _, rule := range rules {
+		exist, err := s.Exist(&rule)
+		if err != nil {
+			return err
+		}
+		if exist {
+			continue
+		}
+		err = s.Save(rule)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Storage) Exist(model interface{}) (bool, error) {

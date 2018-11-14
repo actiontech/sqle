@@ -2,8 +2,10 @@ package controller
 
 import (
 	"github.com/labstack/echo"
+	"io/ioutil"
 	"net/http"
-	"sqle"
+	"sqle/api/server"
+	"sqle/errors"
 	"sqle/inspector"
 	"sqle/model"
 )
@@ -24,7 +26,7 @@ type GetTaskRes struct {
 // @Summary 创建Sql审核任务
 // @Description create a task
 // @Accept json
-// @Accept json
+// @Produce json
 // @Param instance body controller.CreateTaskReq true "add task"
 // @Success 200 {object} controller.GetTaskRes
 // @router /tasks [post]
@@ -69,6 +71,51 @@ func CreateTask(c echo.Context) error {
 		BaseRes: NewBaseReq(nil),
 		Data:    task.Detail(),
 	})
+}
+
+// @Summary 上传 SQL 文件
+// @Description upload SQL file
+// @Accept mpfd
+// @Param task_id path string true "Task ID"
+// @Param sql_file formData file true "SQL file"
+// @Success 200 {object} controller.BaseRes
+// @router /tasks/{task_id}/upload_sql_file [post]
+func UploadSqlFile(c echo.Context) error {
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
+	}
+	file, err := c.FormFile("sql_file")
+	if err != nil {
+		return c.JSON(http.StatusOK, errors.New(errors.READ_SQL_FILE_ERROR, err))
+	}
+	src, err := file.Open()
+	if err != nil {
+		return c.JSON(http.StatusOK, errors.New(errors.READ_SQL_FILE_ERROR, err))
+	}
+	defer src.Close()
+	sql, err := ioutil.ReadAll(src)
+	if err != nil {
+		return c.JSON(http.StatusOK, errors.New(errors.READ_SQL_FILE_ERROR, err))
+	}
+	sqlArray, err := inspector.SplitSql(task.Instance.DbType, string(sql))
+	if err != nil {
+		return c.JSON(200, NewBaseReq(err))
+	}
+	commitSqls := []*model.CommitSql{}
+	for n, sql := range sqlArray {
+		commitSqls = append(commitSqls, &model.CommitSql{
+			Number: n + 1,
+			Sql:    sql,
+		})
+	}
+	s.UpdateCommitSql(task, commitSqls)
+	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
 
 // @Summary 获取Sql审核任务信息
@@ -159,7 +206,7 @@ func InspectTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	task, err := sqle.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
+	task, err := server.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -184,7 +231,7 @@ func CommitTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
+	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -206,7 +253,7 @@ func RollbackTask(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	err = sqle.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
+	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
