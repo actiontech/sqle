@@ -5,20 +5,6 @@ import (
 	"sqle/model"
 )
 
-const (
-	RULE_LEVEL_NORMAL = "normal"
-	RULE_LEVEL_NOTICE = "notice"
-	RULE_LEVEL_WARN   = "warn"
-	RULE_LEVEL_ERROR  = "error"
-)
-
-var RuleLevelMap = map[string]int{
-	RULE_LEVEL_NORMAL: 0,
-	RULE_LEVEL_NOTICE: 1,
-	RULE_LEVEL_WARN:   2,
-	RULE_LEVEL_ERROR:  3,
-}
-
 // inspector rule code
 const (
 	SCHEMA_NOT_EXIST                  = "schema_not_exist"
@@ -48,122 +34,128 @@ var DefaultRules = []model.Rule{
 		Name:    SCHEMA_NOT_EXIST,
 		Desc:    "操作数据库时，数据库必须存在",
 		Message: "schema %s 不存在",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    SCHEMA_EXIST,
 		Desc:    "创建数据库时，数据库不能存在",
 		Message: "schema %s 已存在",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    TABLE_NOT_EXIST,
 		Desc:    "操作表时，表必须存在",
 		Message: "表 %s 不存在",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    TABLE_EXIST,
 		Desc:    "创建表时，表不能存在",
 		Message: "表 %s 已存在",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_CREATE_TABLE_NOT_EXIST,
 		Desc:    "新建表必须加入if not exists create，保证重复执行不报错",
 		Message: "新建表必须加入if not exists create，保证重复执行不报错",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_CHECK_OBJECT_NAME_LENGTH,
 		Desc:    "表名、列名、索引名的长度不能大于64字节",
 		Message: "表名、列名、索引名的长度不能大于64字节",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_CHECK_PRIMARY_KEY_EXIST,
 		Desc:    "表必须有主键",
 		Message: "表必须有主键",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_CHECK_PRIMARY_KEY_TYPE,
 		Desc:    "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
 		Message: "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_DISABLE_VARCHAR_MAX,
 		Desc:    "禁止使用 varchar(max)",
 		Message: "禁止使用 varchar(max)",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_CHECK_TYPE_CHAR_LENGTH,
 		Desc:    "char长度大于20时，必须使用varchar类型",
 		Message: "char长度大于20时，必须使用varchar类型",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_DISABLE_FOREIGN_KEY,
 		Desc:    "禁止使用外键",
 		Message: "禁止使用外键",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_CHECK_INDEX_COUNT,
 		Desc:    "索引个数建议不超过5个",
 		Message: "索引个数建议不超过5个",
-		Level:   RULE_LEVEL_NOTICE,
+		Level:   model.RULE_LEVEL_NOTICE,
 	},
 	model.Rule{
 		Name:    DDL_CHECK_COMPOSITE_INDEX_MAX,
 		Desc:    "复合索引的列数量不建议超过5个",
 		Message: "复合索引的列数量不建议超过5个",
-		Level:   RULE_LEVEL_NOTICE,
+		Level:   model.RULE_LEVEL_NOTICE,
 	},
 	model.Rule{
 		Name:    DDL_DISABLE_USING_KEYWORD,
 		Desc:    "数据库对象命名禁止使用关键字",
 		Message: "数据库对象命名禁止使用关键字 %s",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_TABLE_USING_INNODB_UTF8MB4,
 		Desc:    "建议使用Innodb引擎,utf8mb4字符集",
 		Message: "建议使用Innodb引擎,utf8mb4字符集",
-		Level:   RULE_LEVEL_NOTICE,
+		Level:   model.RULE_LEVEL_NOTICE,
 	},
 	model.Rule{
 		Name:    DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
 		Desc:    "禁止将blob类型的列加入索引",
 		Message: "禁止将blob类型的列加入索引",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DML_CHECK_INVALID_WHERE_CONDITION,
-		Desc:    "必须使用有效的 where 条件查询",
-		Message: "schema %s 已存在",
-		Level:   RULE_LEVEL_ERROR,
+		Desc:    "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
+		Message: "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
+		Level:   model.RULE_LEVEL_ERROR,
 	},
 	model.Rule{
 		Name:    DDL_CHECK_ALTER_TABLE_NEED_MERGE,
 		Desc:    "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
 		Message: "已存在对该表的修改语句，建议合并成一个ALTER语句",
-		Level:   RULE_LEVEL_NOTICE,
+		Level:   model.RULE_LEVEL_NOTICE,
 	},
 	model.Rule{
 		Name:    DML_DISABE_SELECT_ALL_COLUMN,
 		Desc:    "不建议使用select *",
 		Message: "不建议使用select *",
-		Level:   RULE_LEVEL_NOTICE,
+		Level:   model.RULE_LEVEL_NOTICE,
 	},
 	model.Rule{
 		Name:    DDL_DISABLE_DROP_STATEMENT,
 		Desc:    "禁止除索引外的drop操作",
 		Message: "禁止除索引外的drop操作",
-		Level:   RULE_LEVEL_ERROR,
+		Level:   model.RULE_LEVEL_ERROR,
 	},
+}
+
+var DefaultRulesMap = map[string]model.Rule{}
+
+func init() {
+	DefaultRulesMap = model.GetRuleMapFromAllArray(DefaultRules)
 }
 
 func (i *Inspector) initRulesFunc() {

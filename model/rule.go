@@ -6,6 +6,20 @@ import (
 	"sqle/errors"
 )
 
+const (
+	RULE_LEVEL_NORMAL = "normal"
+	RULE_LEVEL_NOTICE = "notice"
+	RULE_LEVEL_WARN   = "warn"
+	RULE_LEVEL_ERROR  = "error"
+)
+
+var RuleLevelMap = map[string]int{
+	RULE_LEVEL_NORMAL: 0,
+	RULE_LEVEL_NOTICE: 1,
+	RULE_LEVEL_WARN:   2,
+	RULE_LEVEL_ERROR:  3,
+}
+
 type RuleTemplate struct {
 	Model
 	Name  string `json:"name"`

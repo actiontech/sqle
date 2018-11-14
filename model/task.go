@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"math"
 	"sqle/errors"
 )
 
@@ -28,11 +29,12 @@ var ActionMap = map[int]string{
 
 type CommitSql struct {
 	Model
-	TaskId          uint   `json:"-"`
-	Number          int    `json:"number"`
-	Sql             string `json:"sql" gorm:"type:text"`
-	InspectStatus   string `json:"inspect_status"`
-	InspectResult   string `json:"inspect_result"`
+	TaskId        uint   `json:"-"`
+	Number        int    `json:"number"`
+	Sql           string `json:"sql" gorm:"type:text"`
+	InspectStatus string `json:"inspect_status"`
+	InspectResult string `json:"inspect_result"`
+	// level: error, warn, notice, normal
 	InspectLevel    string `json:"inspect_level"`
 	StartBinlogFile string `json:"start_binlog_file"`
 	StartBinlogPos  int64  `json:"start_binlog_pos"`
@@ -67,7 +69,7 @@ type Task struct {
 	Schema       string         `json:"schema" example:"db1"`
 	Instance     Instance       `json:"-" gorm:"foreignkey:InstanceId"`
 	InstanceId   uint           `json:"instance_id"`
-	Sql          string         `json:"sql" gorm:"type:text"`
+	NormalRate   float64        `json:"normal_rate"`
 	CommitSqls   []*CommitSql   `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSqls []*RollbackSql `json:"-" gorm:"foreignkey:TaskId"`
 }
@@ -161,8 +163,26 @@ func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []RollbackSql) error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateProgress(task *Task, progress string) error {
-	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), map[string]interface{}{"progress": progress})
+func (s *Storage) UpdateNormalRate(task *Task) error {
+	if len(task.CommitSqls) == 0 {
+		return nil
+	}
+	var normalCount float64
+	var sum float64
+	for _, sql := range task.CommitSqls {
+		sum += 1
+		if sql.InspectLevel == RULE_LEVEL_NORMAL {
+			normalCount += 1
+		}
+	}
+	rate := round(normalCount/sum, 4)
+	task.NormalRate = rate
+	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), map[string]interface{}{"normal_rate": rate})
+}
+
+func round(f float64, n int) float64 {
+	p := math.Pow10(n)
+	return math.Trunc(f*p+0.5) / p
 }
 
 func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {

@@ -161,7 +161,7 @@ func (s *Sqled) inspect(task *model.Task) error {
 			return err
 		}
 	}
-	return nil
+	return st.UpdateNormalRate(task)
 }
 
 func (s *Sqled) commit(task *model.Task) error {
@@ -196,7 +196,7 @@ func (s *Sqled) commit(task *model.Task) error {
 			return err
 		}
 	}
-	return nil
+	return st.UpdateNormalRate(task)
 }
 
 func (s *Sqled) rollback(task *model.Task) error {
