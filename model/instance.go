@@ -65,7 +65,7 @@ func (s *Storage) UpdateInst(inst *Instance) error {
 }
 
 func (s *Storage) DelInstByName(inst *Instance) error {
-	return 	errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(inst).Error)
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(inst).Error)
 }
 
 func (s *Storage) GetInstances() ([]Instance, error) {
@@ -75,6 +75,6 @@ func (s *Storage) GetInstances() ([]Instance, error) {
 }
 
 func (s *Storage) UpdateInstRuleTemplate(inst *Instance, ts ...RuleTemplate) error {
-	err:= s.db.Model(inst).Association("RuleTemplates").Replace(ts).Error
+	err := s.db.Model(inst).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
