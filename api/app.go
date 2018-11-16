@@ -17,6 +17,7 @@ func StartApi(port int, exitChan chan struct{}) {
 	e := echo.New()
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
+	e.POST("/instance/load_mycat_config", controller.UploadMycatConfig)
 	e.GET("/instances", controller.GetInsts)
 	e.POST("/instances", controller.CreateInst)
 	e.GET("/instances/:instance_id/", controller.GetInstance)

@@ -2,10 +2,8 @@ package controller
 
 import (
 	"github.com/labstack/echo"
-	"io/ioutil"
 	"net/http"
 	"sqle/api/server"
-	"sqle/errors"
 	"sqle/inspector"
 	"sqle/model"
 )
@@ -89,24 +87,15 @@ func UploadSqlFile(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	file, err := c.FormFile("sql_file")
+	_, sql, err := readFileToByte(c, "sql_file")
 	if err != nil {
-		return c.JSON(http.StatusOK, errors.New(errors.READ_SQL_FILE_ERROR, err))
-	}
-	src, err := file.Open()
-	if err != nil {
-		return c.JSON(http.StatusOK, errors.New(errors.READ_SQL_FILE_ERROR, err))
-	}
-	defer src.Close()
-	sql, err := ioutil.ReadAll(src)
-	if err != nil {
-		return c.JSON(http.StatusOK, errors.New(errors.READ_SQL_FILE_ERROR, err))
+		return c.JSON(http.StatusOK, err)
 	}
 	sqlArray, err := inspector.SplitSql(task.Instance.DbType, string(sql))
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
-	commitSqls := []*model.CommitSql{}
+	commitSqls := make([]*model.CommitSql, 0, len(sqlArray))
 	for n, sql := range sqlArray {
 		commitSqls = append(commitSqls, &model.CommitSql{
 			Number: n + 1,
@@ -168,7 +157,7 @@ func DeleteTask(c echo.Context) error {
 
 type GetAllTaskRes struct {
 	BaseRes
-	Data []model.Task `json:"data"`
+	Data []*model.Task `json:"data"`
 }
 
 // @Summary Sql审核列表

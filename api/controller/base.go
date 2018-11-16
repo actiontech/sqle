@@ -2,6 +2,8 @@ package controller
 
 import (
 	"fmt"
+	"github.com/labstack/echo"
+	"io/ioutil"
 	"sqle/errors"
 )
 
@@ -30,4 +32,24 @@ func NewBaseReq(err error) BaseRes {
 		}
 	}
 	return res
+}
+
+func readFileToByte(c echo.Context, name string) (fileName string, data []byte, err error) {
+	file, err := c.FormFile(name)
+	if err != nil {
+		err = errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
+		return
+	}
+	src, err := file.Open()
+	if err != nil {
+		err = errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
+		return
+	}
+	defer src.Close()
+	data, err = ioutil.ReadAll(src)
+	if err != nil {
+		err = errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
+		return
+	}
+	return
 }

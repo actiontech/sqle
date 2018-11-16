@@ -594,7 +594,7 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 
 }
 
-//func TestNewInspector(t *testing.T) {
+func TestNewInspector(t *testing.T) {
 	//conn, err := executor.NewConn("mysql", "root", "asd2010", "10.186.18.118", "23306", "sqle")
 	//if err != nil {
 	//	t.Error(err)
@@ -617,4 +617,4 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 	//	return
 	//}
 	//fmt.Println(result)
-//}
+}
