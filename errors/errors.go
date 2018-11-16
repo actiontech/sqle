@@ -5,7 +5,7 @@ type ErrorCode int
 const (
 	CONNECT_STORAGE_ERROR   ErrorCode = 5001
 	CONNECT_REMOTE_DB_ERROR ErrorCode = 5002
-	READ_SQL_FILE_ERROR     ErrorCode = 5003
+	READ_UPLOAD_FILE_ERROR  ErrorCode = 5003
 
 	INSTANCE_EXIST          ErrorCode = 4001
 	RULE_TEMPLATE_NOT_EXIST ErrorCode = 4002

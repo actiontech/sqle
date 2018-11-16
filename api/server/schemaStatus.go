@@ -67,7 +67,7 @@ func (s *Sqled) UpdateAllInstanceStatus() error {
 	return nil
 }
 
-func (s *Sqled) UpdateAndGetInstanceStatus(instance model.Instance) (*InstanceStatus, error) {
+func (s *Sqled) UpdateAndGetInstanceStatus(instance *model.Instance) (*InstanceStatus, error) {
 	status := &InstanceStatus{
 		ID:   instance.ID,
 		Name: instance.Name,
@@ -96,7 +96,7 @@ func (s *Sqled) GetAllInstanceStatus() []InstanceStatus {
 	return statusList
 }
 
-func (s *Sqled) DeleteInstanceStatus(instance model.Instance) {
+func (s *Sqled) DeleteInstanceStatus(instance *model.Instance) {
 	s.Lock()
 	delete(s.instancesStatus, instance.ID)
 	s.Unlock()

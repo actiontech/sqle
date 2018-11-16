@@ -6,102 +6,140 @@ import (
 	"strings"
 )
 
-type MycatServer struct {
-	Host             string
-	User             string
-	Port             string
-	Password         string
-	AlgorithmSchemas map[string]AlgorithmSchema
-	DataHosts        map[string]Instance
+type MycatConfig struct {
+	AlgorithmSchemas map[string]*AlgorithmSchema `json:"schema_list"`
+	DataHosts        map[string]*DataHost        `json:"data_host_list"`
 }
 
 type AlgorithmSchema struct {
-	AlgorithmTables map[string]AlgorithmTable
-	DataNodes       string
+	AlgorithmTables map[string]*AlgorithmTable `json:"table_list"`
+	DataNode        *DataNode                  `json:"data_node"`
 }
 
 type AlgorithmTable struct {
 	name           string
-	ShardingColumn string
-	DataNodes      map[string]ShardingSchema
+	ShardingColumn string      `json:"sharding_columns"`
+	DataNodes      []*DataNode `json:"data_node_list"`
 }
 
-type ShardingSchema struct {
-	DataHostName string
-	Database     string
+type DataNode struct {
+	DataHostName string `json:"data_host"`
+	Database     string `json:"database"`
 }
 
-func LoadMycatServerConfig(server, schema, rule []byte) (*MycatServer, error) {
-	var mycat = &MycatServer{
-		AlgorithmSchemas: map[string]AlgorithmSchema{},
-		DataHosts:        map[string]Instance{},
+type DataHost struct {
+	User     string `json:"user"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Password string `json:"password"`
+}
+
+func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesXML *RulesXML) (*Instance, error) {
+	var instance = &Instance{
+		DbType: DB_TYPE_MYCAT,
 	}
-
-	var rulesXML = new(RulesXML)
-	var schemasXML = new(SchemasXML)
-	var serverXML = new(ServerXML)
+	instance.MycatConfig = &MycatConfig{
+		AlgorithmSchemas: map[string]*AlgorithmSchema{},
+		DataHosts:        map[string]*DataHost{},
+	}
 	var err error
-	err = xml.Unmarshal(server, serverXML)
-	if err != nil {
-		goto ERROR
-	}
-	err = xml.Unmarshal(schema, schemasXML)
-	if err != nil {
-		goto ERROR
-	}
-	err = xml.Unmarshal(rule, rulesXML)
-	if err != nil {
-		goto ERROR
-	}
 
+	// load all dataHost from schema.xml
+	var allDataHosts = map[string]*DataHost{}
 	for _, hosts := range schemasXML.DataHosts {
 		// just get first writeHost, if writeHost exists
 		if len(hosts.WriteHosts) >= 1 {
 			host := hosts.WriteHosts[0]
-			ip := ""
-			port := ""
-			url := strings.Split(host.Url, ":")
-			if len(url) >= 2 {
-				ip = url[len(url)-2]
-				port = url[len(url)-1]
-			}
-			mycat.DataHosts[hosts.Name] = Instance{
-				User:   host.User,
-				Port:   port,
-				Host:   ip,
-				DbType: "mysql",
+			ip, port := unmarshalUrl(host.Url)
+			allDataHosts[hosts.Name] = &DataHost{
+				User: host.User,
+				Port: port,
+				Host: ip,
 			}
 		}
 	}
 
+	// load all schema form schema.xml
+	var AllAlgorithmSchemas = map[string]*AlgorithmSchema{}
 	for _, schema := range schemasXML.Schemas {
-		as := AlgorithmSchema{}
+		as := &AlgorithmSchema{}
 		if schema.Tables != nil {
+			as.AlgorithmTables = map[string]*AlgorithmTable{}
 			for _, table := range schema.Tables {
 				t := &AlgorithmTable{
-					name: table.Name,
+					name:      table.Name,
+					DataNodes: []*DataNode{},
 				}
+				nodeList := strings.Split(table.DataNodeList, ",")
+				for _, nodeName := range nodeList {
+					node, err := schemasXML.getDataNode(nodeName)
+					if err != nil {
+						return nil, err
+					}
+					t.DataNodes = append(t.DataNodes, &DataNode{
+						DataHostName: node.DataHostName,
+						Database:     node.Database,
+					})
+				}
+
 				if table.RuleName != "" {
 					rule, exist := rulesXML.getRuleByName(table.RuleName)
 					if !exist {
 						err = fmt.Errorf("rule %s not found in rule.xml", table.RuleName)
-						goto ERROR
+						return nil, err
 					}
 					t.ShardingColumn = rule.ShardingColumn
 				}
-				node, err := schemasXML.getDataNode(table.DataNodeName)
-				if err != nil {
-					goto ERROR
-				}
+
+				as.AlgorithmTables[table.Name] = t
 			}
 		}
-		as.DataNodes = schema.DataNodeName
-
-		mycat.AlgorithmSchemas[schema.Name] = as
+		if schema.DataNodeName != "" {
+			node, err := schemasXML.getDataNode(schema.DataNodeName)
+			if err != nil {
+				return nil, err
+			}
+			as.DataNode = &DataNode{
+				DataHostName: node.DataHostName,
+				Database:     node.Database,
+			}
+		}
+		AllAlgorithmSchemas[schema.Name] = as
 	}
 
-ERROR:
-	return nil, err
+	instance.User = serverXML.User.Name
+
+	schemas := []string{}
+	for _, property := range serverXML.User.PropertyList {
+		if property.Name == "schemas" {
+			schemas = strings.Split(property.Value, ",")
+			break
+		}
+	}
+	if len(schemas) <= 0 {
+		return instance, nil
+	}
+
+	for _, schema := range schemas {
+		s, ok := AllAlgorithmSchemas[schema]
+		if !ok {
+			err = fmt.Errorf("schema %s not found in schema.xml", schema)
+		}
+		instance.MycatConfig.AlgorithmSchemas[schema] = s
+		if s.DataNode != nil {
+			instance.MycatConfig.DataHosts[s.DataNode.DataHostName] = allDataHosts[s.DataNode.DataHostName]
+		}
+		for _, table := range s.AlgorithmTables {
+			for _, node := range table.DataNodes {
+				_, ok := allDataHosts[node.DataHostName]
+				if !ok {
+					err = fmt.Errorf("dataHost %s not found in schema.xml", node.DataHostName)
+				}
+				instance.MycatConfig.DataHosts[node.DataHostName] = allDataHosts[node.DataHostName]
+			}
+		}
+	}
+	return instance, nil
 }
 
 // ServerXML is the unmarshal struct object for server.xml
@@ -136,7 +174,7 @@ type SchemaXML struct {
 
 type TableXML struct {
 	Name         string `xml:"name,attr"`
-	DataNodeName string `xml:"dataNode,attr"`
+	DataNodeList string `xml:"dataNode,attr"` // "dn1,dn2"
 	RuleName     string `xml:"rule,attr"`
 }
 
@@ -179,10 +217,10 @@ func (r *RulesXML) getRuleByName(name string) (*RuleXML, bool) {
 	return nil, false
 }
 
-func (r *SchemasXML) getDataNode(name string) (*DataNodeXML, error) {
+func (s *SchemasXML) getDataNode(name string) (*DataNodeXML, error) {
 	var node *DataNodeXML
-	for _, n := range r.DataNodes {
-		if n.DataHostName == name {
+	for _, n := range s.DataNodes {
+		if name == n.Name {
 			node = n
 			break
 		}
@@ -190,18 +228,14 @@ func (r *SchemasXML) getDataNode(name string) (*DataNodeXML, error) {
 	if node == nil {
 		return nil, fmt.Errorf("dataNode %s not found in schema.xml", name)
 	}
-	count := 0
-	hosts := strings.Split(node.DataHostName, ",")
-	for _, host := range hosts {
-		for _, dataHost := range r.DataHosts {
-			if dataHost.Name == host {
-				count += 1
-				continue
-			}
-		}
-	}
-	if len(hosts) > count {
-		return nil, fmt.Errorf("dataNode ")
-	}
 	return node, nil
+}
+
+func unmarshalUrl(url string) (host, port string) {
+	u := strings.Split(url, ":")
+	if len(url) >= 2 {
+		host = u[len(u)-2]
+		port = u[len(u)-1]
+	}
+	return
 }
