@@ -48,7 +48,7 @@ func (s *Sqled) UpdateAllInstanceStatus() error {
 				Host: currentInstance.Host,
 				Port: currentInstance.Port,
 			}
-			schemas, err := executor.ShowDatabases(currentInstance)
+			schemas, err := executor.ShowDatabases(&currentInstance)
 			if err != nil {
 				status.IsConnectFailed = true
 			} else {

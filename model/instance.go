@@ -98,8 +98,8 @@ func (s *Storage) UpdateInstanceById(InstanceId string, attrs ...interface{}) er
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetInstances() ([]*Instance, error) {
-	instances := []*Instance{}
+func (s *Storage) GetInstances() ([]Instance, error) {
+	instances := []Instance{}
 	err := s.db.Find(&instances).Error
 	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

@@ -157,7 +157,7 @@ func DeleteTask(c echo.Context) error {
 
 type GetAllTaskRes struct {
 	BaseRes
-	Data []*model.Task `json:"data"`
+	Data []model.Task `json:"data"`
 }
 
 // @Summary Sql审核列表
