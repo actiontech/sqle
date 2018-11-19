@@ -9,9 +9,9 @@ import (
 )
 
 type CreateTplReq struct {
-	Name      string   `form:"name"`
-	Desc      string   `form:"desc"`
-	RulesName []string `json:"rule_name_list" form:"rule_name_list" example:"ddl_create_table_not_exist"`
+	Name      string   `json:"name"`
+	Desc      string   `json:"desc"`
+	RulesName []string `json:"rule_name_list" example:"ddl_create_table_not_exist"`
 }
 
 // @Summary 添加规则模板

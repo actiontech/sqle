@@ -13,18 +13,18 @@ import (
 )
 
 type CreateInstanceReq struct {
-	Name string `json:"name" form:"name" example:"test"`
+	Name *string `json:"name" example:"test"`
 	// mysql, mycat, sqlserver
-	DbType   string `json:"db_type" form:"type" example:"mysql"`
-	User     string `json:"user" form:"user" example:"root"`
-	Host     string `json:"host" form:"host" example:"10.10.10.10"`
-	Port     string `json:"port" form:"port" example:"3306"`
-	Password string `json:"password" form:"password" example:"123456"`
-	Desc     string `json:"desc" form:"desc" example:"this is a test instance"`
+	DbType   *string `json:"db_type" example:"mysql" validate:"required,oneof=mysql mycat sqlserver"`
+	User     *string `json:"user" example:"root"`
+	Host     *string `json:"host" example:"10.10.10.10"`
+	Port     *string `json:"port" example:"3306"`
+	Password *string `json:"password" example:"123456"`
+	Desc     *string `json:"desc" example:"this is a test instance"`
 	// this a list for rule template name
-	RuleTemplates []string `json:"rule_template_name_list" form:"rule_template_name_list" example:"template_1"`
+	RuleTemplates []string `json:"rule_template_name_list" example:"all"`
 	// mycat_config is required if db_type is "mycat"
-	MycatConfig *model.MycatConfig `json:"mycat_config" form:"mycat_config"`
+	MycatConfig *model.MycatConfig `json:"mycat_config"`
 }
 
 type InstanceRes struct {
@@ -42,9 +42,9 @@ func CreateInst(c echo.Context) error {
 	s := model.GetStorage()
 	req := new(CreateInstanceReq)
 	if err := c.Bind(req); err != nil {
-		return err
+		return c.JSON(200, NewBaseReq(err))
 	}
-	_, exist, err := s.GetInstByName(req.Name)
+	_, exist, err := s.GetInstByName(*req.Name)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -54,13 +54,13 @@ func CreateInst(c echo.Context) error {
 	}
 
 	instance := &model.Instance{
-		Name:        req.Name,
-		DbType:      req.DbType,
-		User:        req.User,
-		Host:        req.Host,
-		Port:        req.Port,
-		Password:    req.Password,
-		Desc:        req.Desc,
+		Name:        *req.Name,
+		DbType:      *req.DbType,
+		User:        *req.User,
+		Host:        *req.Host,
+		Port:        *req.Port,
+		Password:    *req.Password,
+		Desc:        *req.Desc,
 		MycatConfig: req.MycatConfig,
 	}
 	err = instance.MarshalMycatConfig()
@@ -160,14 +160,10 @@ func DeleteInstance(c echo.Context) error {
 // @Param instance_id path string true "Instance ID"
 // @param instance body controller.CreateInstanceReq true "update instance"
 // @Success 200 {object} controller.BaseRes
-// @router /instances/{instance_id}/ [put]
+// @router /instances/{instance_id}/ [patch]
 func UpdateInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceId := c.Param("instance_id")
-	req := new(CreateInstanceReq)
-	if err := c.Bind(req); err != nil {
-		return err
-	}
 	instance, exist, err := s.GetInstById(instanceId)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
@@ -175,56 +171,87 @@ func UpdateInstance(c echo.Context) error {
 	if !exist {
 		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
 	}
-	if instance.Name != req.Name {
-		_, exist, err := s.GetInstByName(req.Name)
-		if err != nil {
-			return c.JSON(200, NewBaseReq(err))
-		}
-		if exist {
-			return c.JSON(200, NewBaseReq(errors.New(errors.INSTANCE_EXIST,
-				fmt.Errorf("instance name is exist"))))
-		}
-	}
 
-	instance.Name = req.Name
-	instance.Desc = req.Desc
-	instance.DbType = req.DbType
-	instance.Host = req.Host
-	instance.Port = req.Port
-	instance.User = req.User
-	instance.Password = req.Password
-	instance.RuleTemplates = nil
-
-	notExistTs := []string{}
-	ruleTemplates := []model.RuleTemplate{}
-	for _, tplName := range req.RuleTemplates {
-		t, exist, err := s.GetTemplateByName(tplName)
-		if err != nil {
-			return c.JSON(200, NewBaseReq(err))
-		}
-		if !exist {
-			notExistTs = append(notExistTs, tplName)
-		}
-		ruleTemplates = append(ruleTemplates, t)
-	}
-
-	if len(notExistTs) > 0 {
-		err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTs, ", "))
-		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
-	}
-
-	err = s.Save(instance)
-	if err != nil {
+	req := new(CreateInstanceReq)
+	if err := c.Bind(req); err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	err = s.UpdateInstRuleTemplate(instance, ruleTemplates...)
+	updateMap := map[string]string{}
+	if req.Name != nil {
+		if instance.Name != *req.Name {
+			_, exist, err := s.GetInstByName(*req.Name)
+			if err != nil {
+				return c.JSON(200, NewBaseReq(err))
+			}
+			if exist {
+				return c.JSON(200, NewBaseReq(errors.New(errors.INSTANCE_EXIST,
+					fmt.Errorf("instance name is exist"))))
+			}
+		}
+	}
+	if req.Name != nil {
+		updateMap["name"] = *req.Name
+	}
+	if req.Desc != nil {
+		updateMap["desc"] = *req.Desc
+	}
+	if req.DbType != nil {
+		updateMap["db_type"] = *req.DbType
+	}
+	if req.Host != nil {
+		updateMap["host"] = *req.Host
+	}
+	if req.Port != nil {
+		updateMap["port"] = *req.Port
+	}
+	if req.User != nil {
+		updateMap["user"] = *req.User
+	}
+	if req.Password != nil {
+		updateMap["password"] = *req.Password
+	}
+
+	if req.MycatConfig != nil {
+		instance.MycatConfig = req.MycatConfig
+		err := instance.MarshalMycatConfig()
+		if err != nil {
+			return c.JSON(200, NewBaseReq(err))
+		}
+		updateMap["mycat_config"] = instance.MycatConfigJson
+	}
+
+	if req.RuleTemplates != nil {
+		notExistTs := []string{}
+		ruleTemplates := []model.RuleTemplate{}
+		for _, tplName := range req.RuleTemplates {
+			t, exist, err := s.GetTemplateByName(tplName)
+			if err != nil {
+				return c.JSON(200, NewBaseReq(err))
+			}
+			if !exist {
+				notExistTs = append(notExistTs, tplName)
+			}
+			ruleTemplates = append(ruleTemplates, t)
+		}
+
+		if len(notExistTs) > 0 {
+			err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTs, ", "))
+			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
+		}
+
+		err = s.UpdateInstRuleTemplate(instance, ruleTemplates...)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(err))
+		}
+	}
+
+	err = s.UpdateInstanceById(instanceId, updateMap)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
 	go server.GetSqled().UpdateAndGetInstanceStatus(instance)
-
 	return c.JSON(200, NewBaseReq(nil))
 }
 
@@ -290,13 +317,13 @@ func PingInstanceById(c echo.Context) error {
 
 type PingInstanceReq struct {
 	// mysql, mycat, sqlserver
-	DbType   string `json:"db_type" form:"type" example:"mysql"`
-	User     string `json:"user" form:"user" example:"root"`
-	Host     string `json:"host" form:"host" example:"10.10.10.10"`
-	Port     string `json:"port" form:"port" example:"3306"`
-	Password string `json:"password" form:"password" example:"123456"`
+	DbType   string `json:"db_type" example:"mysql"`
+	User     string `json:"user" example:"root"`
+	Host     string `json:"host" example:"10.10.10.10"`
+	Port     string `json:"port" example:"3306"`
+	Password string `json:"password" example:"123456"`
 	// mycat_config is required if db_type is "mycat"
-	MycatConfig *model.MycatConfig `json:"mycat_config" form:"mycat_config"`
+	MycatConfig *model.MycatConfig `json:"mycat_config"`
 }
 
 // @Summary 实例连通性测试（实例提交前）
@@ -441,8 +468,8 @@ func UploadMycatConfig(c echo.Context) error {
 	return c.JSON(http.StatusOK, LoadMycatConfigRes{
 		BaseRes: NewBaseReq(nil),
 		Data: CreateInstanceReq{
-			DbType:        instance.DbType,
-			User:          instance.User,
+			DbType:        &instance.DbType,
+			User:          &instance.User,
 			RuleTemplates: []string{},
 			MycatConfig:   instance.MycatConfig,
 		},
