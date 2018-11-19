@@ -257,7 +257,7 @@ func UpdateInstance(c echo.Context) error {
 
 type GetAllInstReq struct {
 	BaseRes
-	Data []*model.Instance `json:"data"`
+	Data []model.Instance `json:"data"`
 }
 
 // @Summary 实例列表

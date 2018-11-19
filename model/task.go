@@ -142,8 +142,8 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetTasks() ([]*Task, error) {
-	tasks := []*Task{}
+func (s *Storage) GetTasks() ([]Task, error) {
+	tasks := []Task{}
 	err := s.db.Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
