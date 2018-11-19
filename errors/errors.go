@@ -3,6 +3,7 @@ package errors
 type ErrorCode int
 
 const (
+	STATUS_OK               ErrorCode = 0
 	CONNECT_STORAGE_ERROR   ErrorCode = 5001
 	CONNECT_REMOTE_DB_ERROR ErrorCode = 5002
 	READ_UPLOAD_FILE_ERROR  ErrorCode = 5003
@@ -33,7 +34,7 @@ func (e *CodeError) Error() string {
 
 func (e *CodeError) Code() int {
 	if e.err == nil {
-		return 0
+		return int(STATUS_OK)
 	}
 	return int(e.code)
 }

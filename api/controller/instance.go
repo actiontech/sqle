@@ -34,8 +34,6 @@ type InstanceRes struct {
 
 // @Summary 添加实例
 // @Description create a instance
-// @Description create a instance
-// @Accept json
 // @Accept json
 // @Param instance body controller.CreateInstanceReq true "add instance"
 // @Success 200 {object} controller.InstanceRes
@@ -257,12 +255,12 @@ type PingInstRes struct {
 	Data bool `json:"data"`
 }
 
-// @Summary 实例连通性测试
+// @Summary 实例连通性测试（实例提交后）
 // @Description test instance db connection
 // @Param instance_id path string true "Instance ID"
 // @Success 200 {object} controller.PingInstRes
 // @router /instances/{instance_id}/connection [get]
-func PingInst(c echo.Context) error {
+func PingInstanceById(c echo.Context) error {
 	s := model.GetStorage()
 	instId := c.Param("instance_id")
 	inst, exist, err := s.GetInstById(instId)
@@ -280,7 +278,54 @@ func PingInst(c echo.Context) error {
 	}
 	if err := executor.Ping(inst); err != nil {
 		return c.JSON(200, PingInstRes{
-			BaseRes: NewBaseReq(nil),
+			BaseRes: NewBaseReq(errors.New(errors.STATUS_OK, err)),
+			Data:    false,
+		})
+	}
+	return c.JSON(200, PingInstRes{
+		BaseRes: NewBaseReq(nil),
+		Data:    true,
+	})
+}
+
+type PingInstanceReq struct {
+	// mysql, mycat, sqlserver
+	DbType   string `json:"db_type" form:"type" example:"mysql"`
+	User     string `json:"user" form:"user" example:"root"`
+	Host     string `json:"host" form:"host" example:"10.10.10.10"`
+	Port     string `json:"port" form:"port" example:"3306"`
+	Password string `json:"password" form:"password" example:"123456"`
+	// mycat_config is required if db_type is "mycat"
+	MycatConfig *model.MycatConfig `json:"mycat_config" form:"mycat_config"`
+}
+
+// @Summary 实例连通性测试（实例提交前）
+// @Description test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集
+// @Accept json
+// @Param instance body controller.PingInstanceReq true "instance info"
+// @Success 200 {object} controller.PingInstRes
+// @router /instance/connection [post]
+func PingInstance(c echo.Context) error {
+	req := new(PingInstanceReq)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+	instance := &model.Instance{
+		DbType:      req.DbType,
+		User:        req.User,
+		Host:        req.Host,
+		Port:        req.Port,
+		Password:    req.Password,
+		MycatConfig: req.MycatConfig,
+	}
+	err := instance.MarshalMycatConfig()
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	if err := executor.Ping(instance); err != nil {
+		return c.JSON(200, PingInstRes{
+			BaseRes: NewBaseReq(errors.New(errors.STATUS_OK, err)),
 			Data:    false,
 		})
 	}
