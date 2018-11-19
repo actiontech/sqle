@@ -93,8 +93,9 @@ func (s *Storage) GetInstByName(name string) (*Instance, bool, error) {
 	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) DelInstByName(inst *Instance) error {
-	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(inst).Error)
+func (s *Storage) UpdateInstanceById(InstanceId string, attrs ...interface{}) error {
+	err := s.db.Table("instances").Where("id = ?", InstanceId).Update(attrs...).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) GetInstances() ([]*Instance, error) {

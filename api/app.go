@@ -24,7 +24,7 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.POST("/instances", controller.CreateInst)
 	e.GET("/instances/:instance_id/", controller.GetInstance)
 	e.DELETE("/instances/:instance_id/", controller.DeleteInstance)
-	e.PUT("/instances/:instance_id/", controller.UpdateInstance)
+	e.PATCH("/instances/:instance_id/", controller.UpdateInstance)
 	e.GET("/instances/:instance_id/connection", controller.PingInstanceById)
 	e.GET("/instances/:instance_id/schemas", controller.GetInstSchemas)
 

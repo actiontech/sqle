@@ -9,11 +9,11 @@ import (
 )
 
 type CreateTaskReq struct {
-	Name     string `form:"name" example:"test"`
-	Desc     string `form:"desc" example:"this is a test task"`
+	Name     string `json:"name" example:"test"`
+	Desc     string `json:"desc" example:"this is a test task"`
 	InstName string `json:"inst_name" form:"inst_name" example:"inst_1"`
-	Schema   string `form:"schema" example:"db1"`
-	Sql      string `form:"sql" example:"alter table tb1 drop columns c1"`
+	Schema   string `json:"schema" example:"db1"`
+	Sql      string `json:"sql" example:"alter table tb1 drop columns c1"`
 }
 
 type GetTaskRes struct {
