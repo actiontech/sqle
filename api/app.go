@@ -18,12 +18,14 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	e.POST("/instance/load_mycat_config", controller.UploadMycatConfig)
+	e.POST("/instance/connection", controller.PingInstance)
+
 	e.GET("/instances", controller.GetInsts)
 	e.POST("/instances", controller.CreateInst)
 	e.GET("/instances/:instance_id/", controller.GetInstance)
 	e.DELETE("/instances/:instance_id/", controller.DeleteInstance)
 	e.PUT("/instances/:instance_id/", controller.UpdateInstance)
-	e.GET("/instances/:instance_id/connection", controller.PingInst)
+	e.GET("/instances/:instance_id/connection", controller.PingInstanceById)
 	e.GET("/instances/:instance_id/schemas", controller.GetInstSchemas)
 
 	e.GET("/rule_templates", controller.GetAllTpl)
