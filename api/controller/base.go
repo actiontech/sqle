@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo"
 	"io/ioutil"
 	"sqle/errors"
@@ -52,4 +53,12 @@ func readFileToByte(c echo.Context, name string) (fileName string, data []byte, 
 		return
 	}
 	return
+}
+
+type CustomValidator struct {
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	_, err := govalidator.ValidateStruct(i)
+	return err
 }

@@ -15,6 +15,8 @@ import (
 // @BasePath /
 func StartApi(port int, exitChan chan struct{}) {
 	e := echo.New()
+	e.Validator = &controller.CustomValidator{}
+
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	e.POST("/instance/load_mycat_config", controller.UploadMycatConfig)
