@@ -9,9 +9,9 @@ import (
 )
 
 type CreateTplReq struct {
-	Name      string   `json:"name"`
-	Desc      string   `json:"desc"`
-	RulesName []string `json:"rule_name_list" example:"ddl_create_table_not_exist"`
+	Name      string   `json:"name" valid:"required"`
+	Desc      string   `json:"desc" valid:"-"`
+	RulesName []string `json:"rule_name_list" example:"ddl_create_table_not_exist" valid:"-"`
 }
 
 // @Summary 添加规则模板
@@ -26,6 +26,9 @@ func CreateTemplate(c echo.Context) error {
 	req := new(CreateTplReq)
 	if err := c.Bind(req); err != nil {
 		return err
+	}
+	if err := c.Validate(req); err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
 	_, exist, err := s.GetTemplateByName(req.Name)

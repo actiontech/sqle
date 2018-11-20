@@ -9,11 +9,11 @@ import (
 )
 
 type CreateTaskReq struct {
-	Name     string `json:"name" example:"test"`
-	Desc     string `json:"desc" example:"this is a test task"`
-	InstName string `json:"inst_name" form:"inst_name" example:"inst_1"`
-	Schema   string `json:"schema" example:"db1"`
-	Sql      string `json:"sql" example:"alter table tb1 drop columns c1"`
+	Name     string `json:"name" example:"test" valid:"required"`
+	Desc     string `json:"desc" example:"this is a test task" valid:"-"`
+	InstName string `json:"inst_name" form:"inst_name" example:"inst_1" valid:"-"`
+	Schema   string `json:"schema" example:"db1" valid:"-"`
+	Sql      string `json:"sql" example:"alter table tb1 drop columns c1" valid:"-"`
 }
 
 type GetTaskRes struct {
@@ -33,6 +33,9 @@ func CreateTask(c echo.Context) error {
 	req := new(CreateTaskReq)
 	if err := c.Bind(req); err != nil {
 		return err
+	}
+	if err := c.Validate(req); err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
 	inst, exist, err := s.GetInstByName(req.InstName)
