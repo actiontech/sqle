@@ -14,7 +14,7 @@ func (i *Inspector) GenerateRollbackSql() ([]string, error) {
 		var node ast.StmtNode
 		var err error
 
-		node, err = parseOneSql(i.Db.DbType, sql.Sql)
+		node, err = parseOneSql(i.Instance.DbType, sql.Sql)
 		switch stmt := node.(type) {
 		case *ast.AlterTableStmt:
 			err = i.generateAlterTableRollbackSql(stmt)
@@ -399,7 +399,7 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 	if err != nil {
 		return err
 	}
-	records, err := conn.Query(recordSql)
+	records, err := conn.Db.Query(recordSql)
 	if err != nil {
 		return err
 	}
@@ -456,7 +456,7 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
 	}
 	recordSql += ";"
-	records, err := conn.Query(recordSql)
+	records, err := conn.Db.Query(recordSql)
 	if err != nil {
 		fmt.Println(err)
 		return err

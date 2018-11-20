@@ -67,7 +67,7 @@ type Task struct {
 	Name         string         `json:"name" example:"REQ201812578"`
 	Desc         string         `json:"desc" example:"this is a task"`
 	Schema       string         `json:"schema" example:"db1"`
-	Instance     Instance       `json:"-" gorm:"foreignkey:InstanceId"`
+	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
 	InstanceId   uint           `json:"instance_id"`
 	NormalRate   float64        `json:"normal_rate"`
 	CommitSqls   []*CommitSql   `json:"-" gorm:"foreignkey:TaskId"`
@@ -76,7 +76,7 @@ type Task struct {
 
 type TaskDetail struct {
 	Task
-	Instance     Instance       `json:"instance"`
+	Instance     *Instance      `json:"instance"`
 	InstanceId   uint           `json:"-"`
 	CommitSqls   []*CommitSql   `json:"commit_sql_list"`
 	RollbackSqls []*RollbackSql `json:"rollback_sql_list"`

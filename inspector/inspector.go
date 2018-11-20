@@ -17,9 +17,9 @@ type Inspector struct {
 	Rules       []model.Rule
 	currentRule model.Rule
 	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
-	Db          model.Instance
+	Instance    *model.Instance
 	SqlArray    []*model.CommitSql
-	dbConn      *executor.Conn
+	dbConn      *executor.Executor
 	isConnected bool
 
 	// currentSchema will change after sql "use database"
@@ -39,11 +39,11 @@ type Inspector struct {
 	rollbackSqls    []string
 }
 
-func NewInspector(rules []model.Rule, db model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
+func NewInspector(rules []model.Rule, instance *model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
 	return &Inspector{
 		Results:          newInspectResults(),
 		Rules:            rules,
-		Db:               db,
+		Instance:         instance,
 		currentSchema:    Schema,
 		SqlArray:         sqlArray,
 		allSchema:        map[string]struct{}{},
@@ -62,11 +62,11 @@ func (i *Inspector) addResult(ruleName string, args ...interface{}) {
 	i.Results.add(i.currentRule, args...)
 }
 
-func (i *Inspector) getDbConn() (*executor.Conn, error) {
+func (i *Inspector) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := executor.NewConn(i.Db.DbType, i.Db.User, i.Db.Password, i.Db.Host, i.Db.Port, i.currentSchema)
+	conn, err := executor.NewExecutor(i.Instance, i.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -76,7 +76,7 @@ func (i *Inspector) getDbConn() (*executor.Conn, error) {
 
 func (i *Inspector) closeDbConn() {
 	if i.isConnected {
-		i.dbConn.Close()
+		i.dbConn.Db.Close()
 		i.isConnected = false
 	}
 }
@@ -190,7 +190,7 @@ func (i *Inspector) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, 
 	if err != nil {
 		return nil, exist, err
 	}
-	t, err := parseOneSql(i.Db.DbType, sql)
+	t, err := parseOneSql(i.Instance.DbType, sql)
 	if err != nil {
 		return nil, exist, err
 	}

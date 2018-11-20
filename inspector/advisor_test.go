@@ -77,7 +77,7 @@ func DefaultMysqlInspect() *Inspector {
 	return &Inspector{
 		Results: newInspectResults(),
 		Rules:   DefaultRules,
-		Db: model.Instance{
+		Instance: &model.Instance{
 			DbType: "mysql",
 		},
 		SqlArray:      []*model.CommitSql{},
@@ -112,7 +112,7 @@ func TestInspectResults(t *testing.T) {
 }
 
 func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results ...*testResult) {
-	stmts, err := parseSql(i.Db.DbType, sql)
+	stmts, err := parseSql(i.Instance.DbType, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return

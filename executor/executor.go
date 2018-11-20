@@ -12,69 +12,48 @@ import (
 	"strconv"
 )
 
-type Conn struct {
+type Db interface {
+	Close()
+	Ping() error
+	Exec(query string) (driver.Result, error)
+	Query(query string, args ...interface{}) ([]map[string]string, error)
+}
+
+type BaseConn struct {
 	*gorm.DB
 }
 
-func NewConn(dbType string, user, password, host, port, schema string) (*Conn, error) {
+func newConn(instance *model.Instance, schema string) (*BaseConn, error) {
 	var db *gorm.DB
 	var err error
-	switch dbType {
+	switch instance.DbType {
 	case model.DB_TYPE_MYSQL:
 		db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
-			user, password, host, port, schema))
+			instance.User, instance.Password, instance.Host, instance.Port, schema))
 	default:
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("db type is not support"))
 	}
 	if err != nil {
+		err = fmt.Errorf("connect to %s:%s failed, %s", instance.Host, instance.Port, err)
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
-	return &Conn{db}, nil
+	return &BaseConn{db}, nil
 }
 
-func Ping(db *model.Instance) error {
-	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	return conn.Ping()
+func (c *BaseConn) Close() {
+	c.DB.Close()
 }
 
-func ShowDatabases(db *model.Instance) ([]string, error) {
-	conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	return conn.ShowDatabases()
-}
-
-func OpenDbWithTask(task *model.Task) (*Conn, error) {
-	db := task.Instance
-	schema := task.Schema
-	return NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, schema)
-}
-
-func Exec(task *model.Task, sql string) (driver.Result, error) {
-	conn, err := OpenDbWithTask(task)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	return conn.Exec(sql)
-}
-
-func (c *Conn) Ping() error {
+func (c *BaseConn) Ping() error {
 	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, c.DB.DB().Ping())
 }
 
-func (c *Conn) Exec(query string) (driver.Result, error) {
+func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	result, err := c.DB.DB().Exec(query)
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
-func (c *Conn) Query(query string, args ...interface{}) ([]map[string]string, error) {
+func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]string, error) {
 	rows, err := c.DB.DB().Query(query, args...)
 	if err != nil {
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
@@ -106,8 +85,62 @@ func (c *Conn) Query(query string, args ...interface{}) ([]map[string]string, er
 	return result, nil
 }
 
-func (c *Conn) ShowCreateTable(tableName string) (string, error) {
-	result, err := c.Query(fmt.Sprintf("show create table %s", tableName))
+type Executor struct {
+	Db Db
+}
+
+func NewExecutor(instance *model.Instance, schema string) (*Executor, error) {
+	var executor = &Executor{}
+	var conn Db
+	var err error
+	switch instance.DbType {
+	case model.DB_TYPE_MYCAT:
+		conn, err = newMycatConn(instance, schema)
+	default:
+		conn, err = newConn(instance, schema)
+	}
+	if err != nil {
+		return nil, err
+	}
+	executor.Db = conn
+	return executor, nil
+}
+
+func Ping(instance *model.Instance) error {
+	conn, err := NewExecutor(instance, "")
+	//conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
+	if err != nil {
+		return err
+	}
+	defer conn.Db.Close()
+	return conn.Db.Ping()
+}
+
+func ShowDatabases(instance *model.Instance) ([]string, error) {
+	conn, err := NewExecutor(instance, "")
+	//conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Db.Close()
+	return conn.ShowDatabases()
+}
+
+func OpenDbWithTask(task *model.Task) (*Executor, error) {
+	return NewExecutor(task.Instance, task.Schema)
+}
+
+func Exec(task *model.Task, sql string) (driver.Result, error) {
+	conn, err := OpenDbWithTask(task)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Db.Close()
+	return conn.Db.Exec(sql)
+}
+
+func (c *Executor) ShowCreateTable(tableName string) (string, error) {
+	result, err := c.Db.Query(fmt.Sprintf("show create table %s", tableName))
 	if err != nil {
 		return "", err
 	}
@@ -123,8 +156,8 @@ func (c *Conn) ShowCreateTable(tableName string) (string, error) {
 	}
 }
 
-func (c *Conn) ShowDatabases() ([]string, error) {
-	result, err := c.Query("show databases")
+func (c *Executor) ShowDatabases() ([]string, error) {
+	result, err := c.Db.Query("show databases")
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +173,8 @@ func (c *Conn) ShowDatabases() ([]string, error) {
 	return dbs, nil
 }
 
-func (c *Conn) ShowSchemaTables(schema string) ([]string, error) {
-	result, err := c.Query("select table_name from information_schema.tables where table_schema = ?", schema)
+func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
+	result, err := c.Db.Query("select table_name from information_schema.tables where table_schema = ?", schema)
 	if err != nil {
 		return nil, err
 	}
@@ -160,9 +193,9 @@ type ExecutionPlanJson struct {
 	} `json:"query_block"`
 }
 
-func (c *Conn) Explain(query string) (ExecutionPlanJson, error) {
+func (c *Executor) Explain(query string) (ExecutionPlanJson, error) {
 	ep := ExecutionPlanJson{}
-	result, err := c.Query(fmt.Sprintf("EXPLAIN FORMAT=\"json\" %s", query))
+	result, err := c.Db.Query(fmt.Sprintf("EXPLAIN FORMAT=\"json\" %s", query))
 	if err != nil {
 		return ep, err
 	}
@@ -172,8 +205,8 @@ func (c *Conn) Explain(query string) (ExecutionPlanJson, error) {
 	return ep, nil
 }
 
-func (c *Conn) ShowMasterStatus() ([]map[string]string, error) {
-	result, err := c.Query(fmt.Sprintf("show master status"))
+func (c *Executor) ShowMasterStatus() ([]map[string]string, error) {
+	result, err := c.Db.Query(fmt.Sprintf("show master status"))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +218,7 @@ func (c *Conn) ShowMasterStatus() ([]map[string]string, error) {
 	return result, nil
 }
 
-func (c *Conn) FetchMasterBinlogPos() (string, int64, error) {
+func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 	result, err := c.ShowMasterStatus()
 	if err != nil {
 		return "", 0, err

@@ -14,7 +14,7 @@ func (i *Inspector) Advise() error {
 		var node ast.StmtNode
 		var err error
 
-		node, err = parseOneSql(i.Db.DbType, sql.Sql)
+		node, err = parseOneSql(i.Instance.DbType, sql.Sql)
 		if err != nil {
 			return err
 		}

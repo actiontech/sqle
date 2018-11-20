@@ -23,7 +23,7 @@ func (i *Inspector) commitDDL() error {
 		return err
 	}
 	for _, sql := range i.SqlArray {
-		_, err := conn.Exec(sql.Sql)
+		_, err := conn.Db.Exec(sql.Sql)
 		if err != nil {
 			sql.ExecStatus = model.TASK_ACTION_ERROR
 			sql.ExecResult = err.Error()
@@ -48,7 +48,7 @@ func (i *Inspector) commitDML() error {
 		if err != nil {
 			goto ERROR
 		}
-		result, err = conn.Exec(sql.Sql)
+		result, err = conn.Db.Exec(sql.Sql)
 		if err != nil {
 			goto ERROR
 		}

@@ -7,7 +7,7 @@ import (
 )
 
 func runrollbackCase(t *testing.T, desc string, i *Inspector, sql string, results ...string) {
-	stmts, err := parseSql(i.Db.DbType, sql)
+	stmts, err := parseSql(i.Instance.DbType, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
