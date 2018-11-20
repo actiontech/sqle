@@ -38,6 +38,18 @@ func (i *Ini) GetInt(section, key string, _default int) int {
 	return v
 }
 
+func (i *Ini) GetBool(section, key string, _default bool) bool {
+	k, err := i.getValue(section, key)
+	if err != nil {
+		return _default
+	}
+	v, err := k.Bool()
+	if err != nil {
+		return _default
+	}
+	return v
+}
+
 func (i *Ini) getValue(section, key string) (*ini.Key, error) {
 	s, err := i.f.GetSection(section)
 	if err != nil {

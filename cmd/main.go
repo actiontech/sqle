@@ -64,6 +64,8 @@ func run(cmd *cobra.Command, _ []string) error {
 		mysqlPort = conf.GetString("server", "mysql_port", "")
 		mysqlSchema = conf.GetString("server", "mysql_schema", "")
 		port = conf.GetInt("server", "port", 12160)
+		autoMigrateTable = conf.GetBool("server", "auto_migrate_table", false)
+		debug = conf.GetBool("server", "debug", false)
 	}
 
 	if pidFile != "" {

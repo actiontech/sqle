@@ -102,6 +102,10 @@ mysql_port=
 mysql_user=
 mysql_password=
 mysql_schema=
+
+#
+auto_migrate_table=true
+debug=false
 EOF
 
 #chown
