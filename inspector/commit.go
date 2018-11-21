@@ -3,14 +3,16 @@ package inspector
 import (
 	"database/sql/driver"
 	"fmt"
+	"github.com/pingcap/tidb/ast"
 	"sqle/model"
 )
 
 func (i *Inspector) Commit() error {
-	err := i.Advise()
+	err := i.prepare()
 	if err != nil {
 		return err
 	}
+	defer i.closeDbConn()
 	if i.isDMLStmt {
 		return i.commitDML()
 	}
@@ -22,8 +24,22 @@ func (i *Inspector) commitDDL() error {
 	if err != nil {
 		return err
 	}
-	for _, sql := range i.SqlArray {
-		_, err := conn.Db.Exec(sql.Sql)
+	for n, node := range i.SqlStmt {
+		sql := i.SqlArray[n]
+		var schema string
+		var table string
+
+		switch stmt:=node.(type) {
+		case *ast.CreateTableStmt:
+			schema = i.getSchemaName(stmt.Table)
+			table = stmt.Table.Name.String()
+		case *ast.AlterTableStmt:
+			schema = i.getSchemaName(stmt.Table)
+			table = stmt.Table.Name.String()
+		default:
+
+		}
+		err := conn.Db.ExecDDL(sql.Sql,schema,table)
 		if err != nil {
 			sql.ExecStatus = model.TASK_ACTION_ERROR
 			sql.ExecResult = err.Error()
@@ -31,6 +47,7 @@ func (i *Inspector) commitDDL() error {
 			sql.ExecStatus = model.TASK_ACTION_DONE
 			sql.ExecResult = "ok"
 		}
+		i.updateSchemaCtx(node)
 	}
 	return nil
 }

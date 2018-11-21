@@ -16,6 +16,7 @@ type Db interface {
 	Close()
 	Ping() error
 	Exec(query string) (driver.Result, error)
+	ExecDDL(query, schema, table string) error
 	Query(query string, args ...interface{}) ([]map[string]string, error)
 }
 
@@ -51,6 +52,11 @@ func (c *BaseConn) Ping() error {
 func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	result, err := c.DB.DB().Exec(query)
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+}
+
+func (c *BaseConn) ExecDDL(query, schema, table string) error {
+	_, err := c.Exec(query)
+	return err
 }
 
 func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]string, error) {

@@ -19,6 +19,7 @@ type Inspector struct {
 	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
 	Instance    *model.Instance
 	SqlArray    []*model.CommitSql
+	SqlStmt     []ast.StmtNode
 	dbConn      *executor.Executor
 	isConnected bool
 
@@ -46,12 +47,38 @@ func NewInspector(rules []model.Rule, instance *model.Instance, sqlArray []*mode
 		Instance:         instance,
 		currentSchema:    Schema,
 		SqlArray:         sqlArray,
+		SqlStmt:          []ast.StmtNode{},
 		allSchema:        map[string]struct{}{},
 		allTable:         map[string]map[string]struct{}{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
 		rollbackSqls:     []string{},
 	}
+}
+
+func (i *Inspector) prepare() error {
+	var nodes = make([]ast.StmtNode, len(i.SqlArray))
+	for _, sql := range i.SqlArray {
+		node, err := parseOneSql(i.Instance.DbType, sql.Sql)
+		if err != nil {
+			return err
+		}
+		switch node.(type) {
+		case ast.DDLNode:
+			if i.isDMLStmt {
+				return SQL_STMT_CONFLICT_ERROR
+			}
+			i.isDDLStmt = true
+		case ast.DMLNode:
+			if i.isDDLStmt {
+				return SQL_STMT_CONFLICT_ERROR
+			}
+			i.isDMLStmt = true
+		}
+		nodes = append(nodes, node)
+	}
+	i.SqlStmt = nodes
+	return nil
 }
 
 func (i *Inspector) addResult(ruleName string, args ...interface{}) {

@@ -10,27 +10,9 @@ import (
 func (i *Inspector) Advise() error {
 	i.initRulesFunc()
 	defer i.closeDbConn()
-	for _, sql := range i.SqlArray {
-		var node ast.StmtNode
-		var err error
 
-		node, err = parseOneSql(i.Instance.DbType, sql.Sql)
-		if err != nil {
-			return err
-		}
-		switch node.(type) {
-		case ast.DDLNode:
-			if i.isDMLStmt {
-				return SQL_STMT_CONFLICT_ERROR
-			}
-			i.isDDLStmt = true
-		case ast.DMLNode:
-			if i.isDDLStmt {
-				return SQL_STMT_CONFLICT_ERROR
-			}
-			i.isDMLStmt = true
-		}
-
+	i.prepare()
+	for n, node:=range i.SqlStmt {
 		for _, rule := range i.Rules {
 			i.currentRule = rule
 			if fn, ok := i.RulesFunc[rule.Name]; ok {
@@ -43,13 +25,13 @@ func (i *Inspector) Advise() error {
 				}
 			}
 		}
+		sql := i.SqlArray[n]
 		sql.InspectStatus = model.TASK_ACTION_DONE
 		sql.InspectLevel = i.Results.level()
 		sql.InspectResult = i.Results.message()
 
 		// update schema info
 		i.updateSchemaCtx(node)
-
 		// clean up results
 		i.Results = newInspectResults()
 	}
