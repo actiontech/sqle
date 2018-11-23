@@ -119,8 +119,10 @@ func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results
 	}
 	for n, stmt := range stmts {
 		i.SqlArray = append(i.SqlArray, &model.CommitSql{
-			Number: n + 1,
-			Sql:    stmt.Text(),
+			Sql: model.Sql{
+				Number:  uint(n + 1),
+				Content: stmt.Text(),
+			},
 		})
 	}
 	err = i.Advise()
@@ -136,7 +138,7 @@ func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results
 		result := results[n]
 		if sql.InspectLevel != result.level() || sql.InspectResult != result.message() {
 			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
-				desc, sql.Sql, result.level(), result.message(), sql.InspectLevel, sql.InspectResult)
+				desc, sql.Content, result.level(), result.message(), sql.InspectLevel, sql.InspectResult)
 		} else {
 			t.Log(fmt.Sprintf("\n\ncase:%s\nactual result:\n%s\n\n", desc, sql.InspectResult))
 		}

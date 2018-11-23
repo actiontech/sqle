@@ -8,13 +8,12 @@ import (
 )
 
 type MycatConn struct {
-	Conn *BaseConn
+	Conn   *BaseConn
 	config *model.MycatConfig
 }
 
 func newMycatConn(instance *model.Instance, schema string) (Db, error) {
 	var mc = &MycatConn{
-		//DataHost: map[string]*BaseConn{},
 		config: instance.MycatConfig,
 	}
 	conn, err := newConn(instance, schema)
@@ -22,19 +21,6 @@ func newMycatConn(instance *model.Instance, schema string) (Db, error) {
 		return nil, err
 	}
 	mc.Conn = conn
-	//for name, dataHost := range mc.config.DataHosts {
-	//	conn, err := newConn(&model.Instance{
-	//		DbType:   model.DB_TYPE_MYSQL,
-	//		Host:     dataHost.Host,
-	//		Port:     dataHost.Port,
-	//		User:     dataHost.User,
-	//		Password: dataHost.Password,
-	//	}, "")
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	mc.DataHost[name] = conn
-	//}
 	return mc, nil
 }
 
@@ -107,7 +93,6 @@ func (mc *MycatConn) ExecDDL(query, schema, table string) error {
 			}
 			conns = append(conns, conn)
 		}
-		// TODO: if data host database name is not same as algorithm schema name, replace schema name in query if provided
 		for _, conn := range conns {
 			err := conn.ExecDDL(query, "", "")
 			if err != nil {
@@ -119,5 +104,5 @@ func (mc *MycatConn) ExecDDL(query, schema, table string) error {
 }
 
 func (mc *MycatConn) Query(query string, args ...interface{}) ([]map[string]string, error) {
-	return mc.Query(query, args...)
+	return mc.Conn.Query(query, args...)
 }

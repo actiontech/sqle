@@ -3,6 +3,7 @@ package inspector
 import (
 	"github.com/pingcap/tidb/ast"
 	"github.com/stretchr/testify/assert"
+	"sqle/model"
 	"testing"
 )
 
@@ -41,4 +42,11 @@ func TestHasOneInOptions(t *testing.T) {
 	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionNull), false)
 	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey), true)
 	assert.Equal(t, HasOneInOptions(columnOptionsForTest, ast.ColumnOptionNull, ast.ColumnOptionPrimaryKey), true)
+}
+
+func TestReplaceSchemaName(t *testing.T) {
+	input := "alter table `db1`.tb1 drop column a1"
+	output := "alter table `tb1` drop column a1"
+	node, _ := parseOneSql(model.DB_TYPE_MYSQL, input)
+	assert.Equal(t, ReplaceTableName(node), output)
 }

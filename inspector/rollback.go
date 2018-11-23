@@ -9,12 +9,12 @@ import (
 
 func (i *Inspector) GenerateRollbackSql() ([]string, error) {
 	defer i.closeDbConn()
-
+	fmt.Println(1.1)
 	for _, sql := range i.SqlArray {
 		var node ast.StmtNode
 		var err error
 
-		node, err = parseOneSql(i.Instance.DbType, sql.Sql)
+		node, err = parseOneSql(i.Instance.DbType, sql.Content)
 		switch stmt := node.(type) {
 		case *ast.AlterTableStmt:
 			err = i.generateAlterTableRollbackSql(stmt)
@@ -37,6 +37,7 @@ func (i *Inspector) GenerateRollbackSql() ([]string, error) {
 		// update schema info
 		i.updateSchemaCtx(node)
 	}
+	fmt.Println(1.2)
 	rollbackSqls := []string{}
 	// Reverse order
 	for n := len(i.rollbackSqls) - 1; n >= 0; n-- {

@@ -11,8 +11,11 @@ func (i *Inspector) Advise() error {
 	i.initRulesFunc()
 	defer i.closeDbConn()
 
-	i.prepare()
-	for n, node:=range i.SqlStmt {
+	err := i.Prepare()
+	if err != nil {
+		return err
+	}
+	for n, node := range i.SqlStmt {
 		for _, rule := range i.Rules {
 			i.currentRule = rule
 			if fn, ok := i.RulesFunc[rule.Name]; ok {

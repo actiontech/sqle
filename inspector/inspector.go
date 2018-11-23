@@ -18,6 +18,7 @@ type Inspector struct {
 	currentRule model.Rule
 	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
 	Instance    *model.Instance
+	index       int
 	SqlArray    []*model.CommitSql
 	SqlStmt     []ast.StmtNode
 	dbConn      *executor.Executor
@@ -56,10 +57,10 @@ func NewInspector(rules []model.Rule, instance *model.Instance, sqlArray []*mode
 	}
 }
 
-func (i *Inspector) prepare() error {
+func (i *Inspector) Prepare() error {
 	var nodes = make([]ast.StmtNode, len(i.SqlArray))
-	for _, sql := range i.SqlArray {
-		node, err := parseOneSql(i.Instance.DbType, sql.Sql)
+	for n, sql := range i.SqlArray {
+		node, err := parseOneSql(i.Instance.DbType, sql.Content)
 		if err != nil {
 			return err
 		}
@@ -75,10 +76,38 @@ func (i *Inspector) prepare() error {
 			}
 			i.isDMLStmt = true
 		}
-		nodes = append(nodes, node)
+		nodes[n] = node
 	}
 	i.SqlStmt = nodes
 	return nil
+}
+
+func (i *Inspector) NextCommitSql() bool {
+	i.index += 1
+	if i.index > len(i.SqlArray) {
+		return false
+	}
+	return true
+}
+
+func (i *Inspector) GetCommitSql() *model.CommitSql {
+	if i.index == 0 {
+		return nil
+	}
+	if i.index > len(i.SqlArray) {
+		panic("out of index")
+	}
+	return i.SqlArray[i.index-1]
+}
+
+func (i *Inspector) GetSqlStmt() ast.StmtNode {
+	if i.index == 0 {
+		return nil
+	}
+	if i.index > len(i.SqlStmt) {
+		panic("out of index")
+	}
+	return i.SqlStmt[i.index-1]
 }
 
 func (i *Inspector) addResult(ruleName string, args ...interface{}) {

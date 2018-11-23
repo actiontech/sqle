@@ -145,6 +145,7 @@ func (s *Sqled) do(action *Action) error {
 }
 
 func (s *Sqled) inspect(task *model.Task) error {
+	fmt.Printf("start inspect task %d\n", task.ID)
 	st := model.GetStorage()
 
 	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
@@ -165,6 +166,7 @@ func (s *Sqled) inspect(task *model.Task) error {
 }
 
 func (s *Sqled) commit(task *model.Task) error {
+	fmt.Printf("start commit task %d\n", task.ID)
 	st := model.GetStorage()
 
 	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
@@ -172,6 +174,11 @@ func (s *Sqled) commit(task *model.Task) error {
 		return err
 	}
 	i := inspector.NewInspector(rules, task.Instance, task.CommitSqls, task.Schema)
+
+	err = i.Prepare()
+	if err != nil {
+		return err
+	}
 	sqls, err := i.GenerateRollbackSql()
 	if err != nil {
 		return err
@@ -179,7 +186,9 @@ func (s *Sqled) commit(task *model.Task) error {
 	rollbackSql := []model.RollbackSql{}
 	for _, sql := range sqls {
 		rollbackSql = append(rollbackSql, model.RollbackSql{
-			Sql: sql,
+			Sql: model.Sql{
+				Content: sql,
+			},
 		})
 	}
 	err = st.UpdateRollbackSql(task, rollbackSql)
@@ -187,24 +196,25 @@ func (s *Sqled) commit(task *model.Task) error {
 		return err
 	}
 
-	if err := i.Commit(); err != nil {
-		return err
-	}
-	for _, sql := range task.CommitSqls {
-		err := st.Save(sql)
+	for i.NextCommitSql() {
+		sql := i.GetCommitSql()
+		st.UpdateCommitSqlStatus(sql, model.TASK_ACTION_DOING, "")
+		err := i.Commit()
+		st.UpdateCommitSqlStatus(sql, sql.ExecStatus, sql.ExecResult)
 		if err != nil {
 			return err
 		}
 	}
-	return st.UpdateNormalRate(task)
+	return nil
 }
 
 func (s *Sqled) rollback(task *model.Task) error {
+	fmt.Printf("start rollback task %d\n", task.ID)
 	st := model.GetStorage()
 
 	// TODO: 1. using transaction for dml; 2. support mycat
 	for _, sql := range task.RollbackSqls {
-		if sql.Sql == "" {
+		if sql.Content == "" {
 			continue
 		}
 		err := st.UpdateRollbackSqlStatus(sql, model.TASK_ACTION_DOING, "")
@@ -213,7 +223,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 		}
 		status := model.TASK_ACTION_DONE
 		result := "ok"
-		_, err = executor.Exec(task, sql.Sql)
+		_, err = executor.Exec(task, sql.Content)
 		if err != nil {
 			status = model.TASK_ACTION_ERROR
 			result = err.Error()

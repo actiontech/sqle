@@ -27,15 +27,11 @@ var ActionMap = map[int]string{
 	TASK_ACTION_ROLLBACK: "",
 }
 
-type CommitSql struct {
+type Sql struct {
 	Model
-	TaskId        uint   `json:"-"`
-	Number        int    `json:"number"`
-	Sql           string `json:"sql" gorm:"type:text"`
-	InspectStatus string `json:"inspect_status"`
-	InspectResult string `json:"inspect_result"`
-	// level: error, warn, notice, normal
-	InspectLevel    string `json:"inspect_level"`
+	TaskId          uint   `json:"-"`
+	Number          uint   `json:"number"`
+	Content         string `json:"sql" gorm:"type:text"`
 	StartBinlogFile string `json:"start_binlog_file"`
 	StartBinlogPos  int64  `json:"start_binlog_pos"`
 	EndBinlogFile   string `json:"end_binlog_file"`
@@ -45,17 +41,20 @@ type CommitSql struct {
 	ExecResult      string `json:"exec_result"`
 }
 
+type CommitSql struct {
+	Sql
+	InspectStatus string `json:"inspect_status"`
+	InspectResult string `json:"inspect_result"`
+	// level: error, warn, notice, normal
+	InspectLevel string `json:"inspect_level"`
+}
+
 func (s CommitSql) TableName() string {
 	return "commit_sql_detail"
 }
 
 type RollbackSql struct {
-	Model
-	TaskId     uint   `json:"-"`
-	Number     uint   `json:"number"`
-	Sql        string `json:"sql" gorm:"type:text"`
-	ExecStatus string `json:"exec_status"`
-	ExecResult string `json:"exec_result"`
+	Sql
 }
 
 func (s RollbackSql) TableName() string {
@@ -139,6 +138,7 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
+	task.Instance.UnmarshalMycatConfig()
 	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 

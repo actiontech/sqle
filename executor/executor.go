@@ -21,6 +21,9 @@ type Db interface {
 }
 
 type BaseConn struct {
+	host string
+	port string
+	user string
 	*gorm.DB
 }
 
@@ -28,7 +31,7 @@ func newConn(instance *model.Instance, schema string) (*BaseConn, error) {
 	var db *gorm.DB
 	var err error
 	switch instance.DbType {
-	case model.DB_TYPE_MYSQL:
+	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
 		db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 			instance.User, instance.Password, instance.Host, instance.Port, schema))
 	default:
@@ -38,7 +41,12 @@ func newConn(instance *model.Instance, schema string) (*BaseConn, error) {
 		err = fmt.Errorf("connect to %s:%s failed, %s", instance.Host, instance.Port, err)
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
-	return &BaseConn{db}, nil
+	return &BaseConn{
+		host: instance.Host,
+		port: instance.Port,
+		user: instance.User,
+		DB:   db,
+	}, nil
 }
 
 func (c *BaseConn) Close() {
@@ -51,6 +59,13 @@ func (c *BaseConn) Ping() error {
 
 func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	result, err := c.DB.DB().Exec(query)
+	if err != nil {
+		fmt.Printf("exec sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
+			c.host, c.port, c.user, query, err.Error())
+	} else {
+		fmt.Printf("exec sql success; host: %s, port: %s, user: %s, query: %s\n",
+			c.host, c.port, c.user, query)
+	}
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
@@ -169,24 +184,33 @@ func (c *Executor) ShowDatabases() ([]string, error) {
 	}
 	dbs := make([]string, len(result))
 	for n, v := range result {
-		if db, ok := v["Database"]; !ok {
+		if len(v) != 1 {
 			return dbs, errors.New(errors.CONNECT_REMOTE_DB_ERROR,
-				fmt.Errorf("show databases error, column \"Database\" not found"))
-		} else {
+				fmt.Errorf("show databases error"))
+		}
+		for _, db := range v {
 			dbs[n] = db
+			break
 		}
 	}
 	return dbs, nil
 }
 
 func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
-	result, err := c.Db.Query("select table_name from information_schema.tables where table_schema = ?", schema)
+	result, err := c.Db.Query(fmt.Sprintf("show tables from %s", schema))
 	if err != nil {
 		return nil, err
 	}
 	tables := make([]string, len(result))
 	for n, v := range result {
-		tables[n] = v["table_name"]
+		if len(v) != 1 {
+			return tables, errors.New(errors.CONNECT_REMOTE_DB_ERROR,
+				fmt.Errorf("show tables error"))
+		}
+		for _, table := range v {
+			tables[n] = table
+			break
+		}
 	}
 	return tables, nil
 }

@@ -7,6 +7,7 @@ import (
 	_model "github.com/pingcap/tidb/model"
 	"github.com/pingcap/tidb/mysql"
 	"github.com/pingcap/tidb/parser"
+	"regexp"
 	"sqle/model"
 	"strings"
 )
@@ -54,7 +55,7 @@ func (rs *InspectResults) add(rule model.Rule, args ...interface{}) {
 
 func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 	switch dbType {
-	case model.DB_TYPE_MYSQL:
+	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
 		p := parser.New()
 		stmts, err := p.Parse(sql, "", "")
 		if err != nil {
@@ -69,7 +70,7 @@ func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 
 func parseOneSql(dbType, sql string) (ast.StmtNode, error) {
 	switch dbType {
-	case model.DB_TYPE_MYSQL:
+	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
 		p := parser.New()
 		stmt, err := p.ParseOneStmt(sql, "", "")
 		if err != nil {
@@ -239,4 +240,28 @@ func getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
 		}
 	}
 	return pkColumnsName, hasPk
+}
+
+func ReplaceTableName(node ast.StmtNode) string {
+	var schema string
+	var table string
+	query := node.Text()
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		schema = stmt.Table.Schema.String()
+		table = stmt.Table.Name.String()
+	case *ast.AlterTableStmt:
+		schema = stmt.Table.Schema.String()
+		table = stmt.Table.Name.String()
+	}
+	if schema != "" {
+		return replaceTableName(query, schema, table)
+	}
+	return query
+}
+
+func replaceTableName(query, schema, table string) string {
+	re := regexp.MustCompile(fmt.Sprintf("%s\\.%s|`%s`\\.`%s`|`%s`\\.%s|%s\\.`%s`",
+		schema, table, schema, table, schema, table, schema, table))
+	return re.ReplaceAllString(query, fmt.Sprintf("`%s`", table))
 }

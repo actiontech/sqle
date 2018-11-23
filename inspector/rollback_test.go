@@ -14,8 +14,10 @@ func runrollbackCase(t *testing.T, desc string, i *Inspector, sql string, result
 	}
 	for n, stmt := range stmts {
 		i.SqlArray = append(i.SqlArray, &model.CommitSql{
-			Number: n + 1,
-			Sql:    stmt.Text(),
+			Sql: model.Sql{
+				Number:  uint(n + 1),
+				Content: stmt.Text(),
+			},
 		})
 	}
 	rollbackSqls, err := i.GenerateRollbackSql()

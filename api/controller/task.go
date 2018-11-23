@@ -59,8 +59,10 @@ func CreateTask(c echo.Context) error {
 	}
 	for n, sql := range sqlArray {
 		task.CommitSqls = append(task.CommitSqls, &model.CommitSql{
-			Number: n + 1,
-			Sql:    sql,
+			Sql: model.Sql{
+				Number:  uint(n + 1),
+				Content: sql,
+			},
 		})
 	}
 	err = s.Save(task)
@@ -101,8 +103,10 @@ func UploadSqlFile(c echo.Context) error {
 	commitSqls := make([]*model.CommitSql, 0, len(sqlArray))
 	for n, sql := range sqlArray {
 		commitSqls = append(commitSqls, &model.CommitSql{
-			Number: n + 1,
-			Sql:    sql,
+			Sql: model.Sql{
+				Number:  uint(n + 1),
+				Content: sql,
+			},
 		})
 	}
 	s.UpdateCommitSql(task, commitSqls)
