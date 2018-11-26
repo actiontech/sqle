@@ -7,53 +7,39 @@ import (
 	"strings"
 )
 
-func (i *Inspector) Advise() error {
+func (i *Inspector) Advise(rules []model.Rule) error {
 	i.initRulesFunc()
 	defer i.closeDbConn()
-	for _, sql := range i.SqlArray {
-		var node ast.StmtNode
-		var err error
 
-		node, err = parseOneSql(i.Db.DbType, sql.Sql)
+	for _, commitSql := range i.Task.CommitSqls {
+		currentSql := commitSql
+		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+			for _, rule := range rules {
+				i.currentRule = rule
+				if fn, ok := i.RulesFunc[rule.Name]; ok {
+					if fn == nil {
+						continue
+					}
+					for _, node := range sql.Stmts {
+						err := fn(node, rule.Name)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+			currentSql.InspectStatus = model.TASK_ACTION_DONE
+			currentSql.InspectLevel = i.Results.level()
+			currentSql.InspectResult = i.Results.message()
+			// clean up results
+			i.Results = newInspectResults()
+			return nil
+		})
 		if err != nil {
 			return err
 		}
-		switch node.(type) {
-		case ast.DDLNode:
-			if i.isDMLStmt {
-				return SQL_STMT_CONFLICT_ERROR
-			}
-			i.isDDLStmt = true
-		case ast.DMLNode:
-			if i.isDDLStmt {
-				return SQL_STMT_CONFLICT_ERROR
-			}
-			i.isDMLStmt = true
-		}
-
-		for _, rule := range i.Rules {
-			i.currentRule = rule
-			if fn, ok := i.RulesFunc[rule.Name]; ok {
-				if fn == nil {
-					continue
-				}
-				err := fn(node, rule.Name)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		sql.InspectStatus = model.TASK_ACTION_DONE
-		sql.InspectLevel = i.Results.level()
-		sql.InspectResult = i.Results.message()
-
-		// update schema info
-		i.updateSchemaCtx(node)
-
-		// clean up results
-		i.Results = newInspectResults()
 	}
-	return nil
+	return i.Do()
 }
 
 func (i *Inspector) checkSelectAll(node ast.StmtNode, rule string) error {

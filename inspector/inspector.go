@@ -14,14 +14,15 @@ var (
 
 type Inspector struct {
 	Results     *InspectResults
-	Rules       []model.Rule
 	currentRule model.Rule
 	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
-	Db          model.Instance
-	SqlArray    []*model.CommitSql
-	dbConn      *executor.Conn
+	Task        *model.Task
+	dbConn      *executor.Executor
 	isConnected bool
 
+	index     int
+	SqlArray  []*model.Sql
+	SqlAction []func(sql *model.Sql) error
 	// currentSchema will change after sql "use database"
 	currentSchema string
 	allSchema     map[string] /*schema*/ struct{}
@@ -39,19 +40,57 @@ type Inspector struct {
 	rollbackSqls    []string
 }
 
-func NewInspector(rules []model.Rule, db model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
+func NewInspector(task *model.Task) *Inspector {
 	return &Inspector{
 		Results:          newInspectResults(),
-		Rules:            rules,
-		Db:               db,
-		currentSchema:    Schema,
-		SqlArray:         sqlArray,
+		Task:             task,
+		currentSchema:    task.Schema,
+		SqlArray:         []*model.Sql{},
 		allSchema:        map[string]struct{}{},
 		allTable:         map[string]map[string]struct{}{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
 		rollbackSqls:     []string{},
 	}
+}
+
+func (i *Inspector) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
+	nodes, err := parseSql(i.Task.Instance.DbType, sql.Content)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
+		switch node.(type) {
+		case ast.DDLNode:
+			if i.isDMLStmt {
+				return SQL_STMT_CONFLICT_ERROR
+			}
+			i.isDDLStmt = true
+		case ast.DMLNode:
+			if i.isDDLStmt {
+				return SQL_STMT_CONFLICT_ERROR
+			}
+			i.isDMLStmt = true
+		}
+	}
+	sql.Stmts = nodes
+	i.SqlArray = append(i.SqlArray, sql)
+	i.SqlAction = append(i.SqlAction, action)
+	return nil
+}
+
+func (i *Inspector) Do() error {
+	for n, sql := range i.SqlArray {
+		err := i.SqlAction[n](sql)
+		if err != nil {
+			return err
+		}
+		// update schema info
+		for _, node := range sql.Stmts {
+			i.updateSchemaCtx(node)
+		}
+	}
+	return nil
 }
 
 func (i *Inspector) addResult(ruleName string, args ...interface{}) {
@@ -62,11 +101,11 @@ func (i *Inspector) addResult(ruleName string, args ...interface{}) {
 	i.Results.add(i.currentRule, args...)
 }
 
-func (i *Inspector) getDbConn() (*executor.Conn, error) {
+func (i *Inspector) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := executor.NewConn(i.Db.DbType, i.Db.User, i.Db.Password, i.Db.Host, i.Db.Port, i.currentSchema)
+	conn, err := executor.NewExecutor(i.Task.Instance, i.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -76,7 +115,7 @@ func (i *Inspector) getDbConn() (*executor.Conn, error) {
 
 func (i *Inspector) closeDbConn() {
 	if i.isConnected {
-		i.dbConn.Close()
+		i.dbConn.Db.Close()
 		i.isConnected = false
 	}
 }
@@ -190,7 +229,7 @@ func (i *Inspector) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, 
 	if err != nil {
 		return nil, exist, err
 	}
-	t, err := parseOneSql(i.Db.DbType, sql)
+	t, err := parseOneSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		return nil, exist, err
 	}

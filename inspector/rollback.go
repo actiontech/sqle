@@ -4,45 +4,66 @@ import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	_model "github.com/pingcap/tidb/model"
+	"sqle/model"
 	"strings"
 )
 
-func (i *Inspector) GenerateRollbackSql() ([]string, error) {
+func (i *Inspector) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	defer i.closeDbConn()
 
-	for _, sql := range i.SqlArray {
-		var node ast.StmtNode
-		var err error
-
-		node, err = parseOneSql(i.Db.DbType, sql.Sql)
-		switch stmt := node.(type) {
-		case *ast.AlterTableStmt:
-			err = i.generateAlterTableRollbackSql(stmt)
-		case *ast.CreateTableStmt:
-			err = i.generateCreateTableRollbackSql(stmt)
-		case *ast.CreateDatabaseStmt:
-			err = i.generateCreateSchemaRollbackSql(stmt)
-		case *ast.DropTableStmt:
-			err = i.generateDropTableRollbackSql(stmt)
-		case *ast.InsertStmt:
-			err = i.generateInsertRollbackSql(stmt)
-		case *ast.DeleteStmt:
-			err = i.generateDeleteRollbackSql(stmt)
-		case *ast.UpdateStmt:
-			err = i.generateUpdateRollbackSql(stmt)
-		}
+	for _, commitSql := range i.Task.CommitSqls {
+		err := i.Add(&commitSql.Sql, func(sql *model.Sql) error {
+			return i.GenerateRollbackSql(sql)
+		})
 		if err != nil {
 			return nil, err
 		}
-		// update schema info
-		i.updateSchemaCtx(node)
 	}
-	rollbackSqls := []string{}
+	if err := i.Do(); err != nil {
+		return nil, err
+	}
+	return i.GetAllRollbackSql(), nil
+}
+
+func (i *Inspector) GenerateRollbackSql(sql *model.Sql) error {
+	var err error
+	node := sql.Stmts[0]
+	switch stmt := node.(type) {
+	case *ast.AlterTableStmt:
+		err = i.generateAlterTableRollbackSql(stmt)
+	case *ast.CreateTableStmt:
+		err = i.generateCreateTableRollbackSql(stmt)
+	case *ast.CreateDatabaseStmt:
+		err = i.generateCreateSchemaRollbackSql(stmt)
+	case *ast.DropTableStmt:
+		err = i.generateDropTableRollbackSql(stmt)
+	case *ast.InsertStmt:
+		err = i.generateInsertRollbackSql(stmt)
+	case *ast.DeleteStmt:
+		err = i.generateDeleteRollbackSql(stmt)
+	case *ast.UpdateStmt:
+		err = i.generateUpdateRollbackSql(stmt)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *Inspector) GetAllRollbackSql() []*model.RollbackSql {
+	rollbackSqls := []*model.RollbackSql{}
 	// Reverse order
+	var number uint = 1
 	for n := len(i.rollbackSqls) - 1; n >= 0; n-- {
-		rollbackSqls = append(rollbackSqls, i.rollbackSqls[n])
+		rollbackSqls = append(rollbackSqls, &model.RollbackSql{
+			Sql: model.Sql{
+				Number:  number,
+				Content: i.rollbackSqls[n],
+			},
+		})
+		number += 1
 	}
-	return rollbackSqls, nil
+	return rollbackSqls
 }
 
 func (i *Inspector) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error {
@@ -399,7 +420,7 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 	if err != nil {
 		return err
 	}
-	records, err := conn.Query(recordSql)
+	records, err := conn.Db.Query(recordSql)
 	if err != nil {
 		return err
 	}
@@ -456,7 +477,7 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
 	}
 	recordSql += ";"
-	records, err := conn.Query(recordSql)
+	records, err := conn.Db.Query(recordSql)
 	if err != nil {
 		fmt.Println(err)
 		return err

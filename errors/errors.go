@@ -9,9 +9,9 @@ const (
 	READ_UPLOAD_FILE_ERROR  ErrorCode = 5003
 
 	INSTANCE_EXIST          ErrorCode = 4001
-	RULE_TEMPLATE_NOT_EXIST ErrorCode = 4002
+	RULE_TEMPLATE_EXIST     ErrorCode = 4002
 	INSTANCE_NOT_EXIST      ErrorCode = 4003
-	RULE_TEMPLATE_EXIST     ErrorCode = 4004
+	RULE_TEMPLATE_NOT_EXIST ErrorCode = 4004
 	RULE_NOT_EXIST          ErrorCode = 4005
 	TASK_NOT_EXIST          ErrorCode = 4006
 	TASK_ACTION_INVALID     ErrorCode = 4009
