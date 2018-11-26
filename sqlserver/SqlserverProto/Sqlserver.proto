@@ -1,0 +1,31 @@
+﻿syntax = "proto3";
+
+package SqlserverProto;
+
+service SqlserverService {
+    rpc Advise(AdviseInput) returns (AdviseOutput) {}
+    rpc GetRollbackSqls(GetRollbackSqlsInput) returns (GetRollbackSqlsOutput) {}
+}
+
+message AdviseInput {
+    repeated string Sqls = 1;
+    repeated string Rules = 2;
+}
+
+message AdviseOutput {
+    repeated InspectResult InspectResults = 1;
+}
+
+message InspectResult {
+    string InspectStatus = 1;
+    string InspectLevel = 2;
+    string InspectResult = 3;
+}
+
+message GetRollbackSqlsInput {
+    repeated string Sqls = 1;
+}
+
+message GetRollbackSqlsOutput {
+    repeated string RollbackSqls = 1;
+}
