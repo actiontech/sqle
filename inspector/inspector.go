@@ -14,16 +14,15 @@ var (
 
 type Inspector struct {
 	Results     *InspectResults
-	Rules       []model.Rule
 	currentRule model.Rule
 	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
-	Instance    *model.Instance
-	index       int
-	SqlArray    []*model.CommitSql
-	SqlStmt     []ast.StmtNode
+	Task        *model.Task
 	dbConn      *executor.Executor
 	isConnected bool
 
+	index     int
+	SqlArray  []*model.Sql
+	SqlAction []func(sql *model.Sql) error
 	// currentSchema will change after sql "use database"
 	currentSchema string
 	allSchema     map[string] /*schema*/ struct{}
@@ -41,14 +40,12 @@ type Inspector struct {
 	rollbackSqls    []string
 }
 
-func NewInspector(rules []model.Rule, instance *model.Instance, sqlArray []*model.CommitSql, Schema string) *Inspector {
+func NewInspector(task *model.Task) *Inspector {
 	return &Inspector{
 		Results:          newInspectResults(),
-		Rules:            rules,
-		Instance:         instance,
-		currentSchema:    Schema,
-		SqlArray:         sqlArray,
-		SqlStmt:          []ast.StmtNode{},
+		Task:             task,
+		currentSchema:    task.Schema,
+		SqlArray:         []*model.Sql{},
 		allSchema:        map[string]struct{}{},
 		allTable:         map[string]map[string]struct{}{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
@@ -57,13 +54,12 @@ func NewInspector(rules []model.Rule, instance *model.Instance, sqlArray []*mode
 	}
 }
 
-func (i *Inspector) Prepare() error {
-	var nodes = make([]ast.StmtNode, len(i.SqlArray))
-	for n, sql := range i.SqlArray {
-		node, err := parseOneSql(i.Instance.DbType, sql.Content)
-		if err != nil {
-			return err
-		}
+func (i *Inspector) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
+	nodes, err := parseSql(i.Task.Instance.DbType, sql.Content)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
 		switch node.(type) {
 		case ast.DDLNode:
 			if i.isDMLStmt {
@@ -76,38 +72,25 @@ func (i *Inspector) Prepare() error {
 			}
 			i.isDMLStmt = true
 		}
-		nodes[n] = node
 	}
-	i.SqlStmt = nodes
+	sql.Stmts = nodes
+	i.SqlArray = append(i.SqlArray, sql)
+	i.SqlAction = append(i.SqlAction, action)
 	return nil
 }
 
-func (i *Inspector) NextCommitSql() bool {
-	i.index += 1
-	if i.index > len(i.SqlArray) {
-		return false
+func (i *Inspector) Do() error {
+	for n, sql := range i.SqlArray {
+		err := i.SqlAction[n](sql)
+		if err != nil {
+			return err
+		}
+		// update schema info
+		for _, node := range sql.Stmts {
+			i.updateSchemaCtx(node)
+		}
 	}
-	return true
-}
-
-func (i *Inspector) GetCommitSql() *model.CommitSql {
-	if i.index == 0 {
-		return nil
-	}
-	if i.index > len(i.SqlArray) {
-		panic("out of index")
-	}
-	return i.SqlArray[i.index-1]
-}
-
-func (i *Inspector) GetSqlStmt() ast.StmtNode {
-	if i.index == 0 {
-		return nil
-	}
-	if i.index > len(i.SqlStmt) {
-		panic("out of index")
-	}
-	return i.SqlStmt[i.index-1]
+	return nil
 }
 
 func (i *Inspector) addResult(ruleName string, args ...interface{}) {
@@ -122,7 +105,7 @@ func (i *Inspector) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := executor.NewExecutor(i.Instance, i.currentSchema)
+	conn, err := executor.NewExecutor(i.Task.Instance, i.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -246,7 +229,7 @@ func (i *Inspector) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, 
 	if err != nil {
 		return nil, exist, err
 	}
-	t, err := parseOneSql(i.Instance.DbType, sql)
+	t, err := parseOneSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		return nil, exist, err
 	}

@@ -76,11 +76,14 @@ func (t *testResult) message() string {
 func DefaultMysqlInspect() *Inspector {
 	return &Inspector{
 		Results: newInspectResults(),
-		Rules:   DefaultRules,
-		Instance: &model.Instance{
-			DbType: "mysql",
+		Task: &model.Task{
+			Instance: &model.Instance{
+				DbType: model.DB_TYPE_MYSQL,
+			},
+			CommitSqls:   []*model.CommitSql{},
+			RollbackSqls: []*model.RollbackSql{},
 		},
-		SqlArray:      []*model.CommitSql{},
+		SqlArray:      []*model.Sql{},
 		currentSchema: "exist_db",
 		allSchema:     map[string]struct{}{"exist_db": struct{}{}},
 		schemaHasLoad: true,
@@ -112,20 +115,20 @@ func TestInspectResults(t *testing.T) {
 }
 
 func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results ...*testResult) {
-	stmts, err := parseSql(i.Instance.DbType, sql)
+	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
 	for n, stmt := range stmts {
-		i.SqlArray = append(i.SqlArray, &model.CommitSql{
+		i.Task.CommitSqls = append(i.Task.CommitSqls, &model.CommitSql{
 			Sql: model.Sql{
 				Number:  uint(n + 1),
 				Content: stmt.Text(),
 			},
 		})
 	}
-	err = i.Advise()
+	err = i.Advise(DefaultRules)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
@@ -134,13 +137,13 @@ func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results
 		t.Errorf("%s test failled, error: result is unknow\n", desc)
 		return
 	}
-	for n, sql := range i.SqlArray {
+	for n, sql := range i.Task.CommitSqls {
 		result := results[n]
 		if sql.InspectLevel != result.level() || sql.InspectResult != result.message() {
 			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
 				desc, sql.Content, result.level(), result.message(), sql.InspectLevel, sql.InspectResult)
 		} else {
-			t.Log(fmt.Sprintf("\n\ncase:%s\nactual result:\n%s\n\n", desc, sql.InspectResult))
+			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, sql.InspectLevel, sql.InspectResult))
 		}
 	}
 }

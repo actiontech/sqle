@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"sqle/errors"
-	"sqle/executor"
 	"sqle/inspector"
 	"sqle/model"
 	"sync"
@@ -152,8 +151,8 @@ func (s *Sqled) inspect(task *model.Task) error {
 	if err != nil {
 		return err
 	}
-	i := inspector.NewInspector(rules, task.Instance, task.CommitSqls, task.Schema)
-	err = i.Advise()
+	i := inspector.NewInspector(task)
+	err = i.Advise(rules)
 	if err != nil {
 		return err
 	}
@@ -169,41 +168,33 @@ func (s *Sqled) commit(task *model.Task) error {
 	fmt.Printf("start commit task %d\n", task.ID)
 	st := model.GetStorage()
 
-	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
-	if err != nil {
-		return err
-	}
-	i := inspector.NewInspector(rules, task.Instance, task.CommitSqls, task.Schema)
+	i := inspector.NewInspector(task)
 
-	err = i.Prepare()
-	if err != nil {
-		return err
-	}
-	sqls, err := i.GenerateRollbackSql()
-	if err != nil {
-		return err
-	}
-	rollbackSql := []model.RollbackSql{}
-	for _, sql := range sqls {
-		rollbackSql = append(rollbackSql, model.RollbackSql{
-			Sql: model.Sql{
-				Content: sql,
-			},
+	for _, commitSql := range task.CommitSqls {
+		currentSql := commitSql
+		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+			err := i.GenerateRollbackSql(sql)
+			if err != nil {
+				return err
+			}
+			err = st.UpdateCommitSqlStatus(sql, model.TASK_ACTION_DOING, "")
+			if err != nil {
+				return err
+			}
+			i.Commit(sql)
+			return st.Save(currentSql)
 		})
-	}
-	err = st.UpdateRollbackSql(task, rollbackSql)
-	if err != nil {
-		return err
-	}
-
-	for i.NextCommitSql() {
-		sql := i.GetCommitSql()
-		st.UpdateCommitSqlStatus(sql, model.TASK_ACTION_DOING, "")
-		err := i.Commit()
-		st.UpdateCommitSqlStatus(sql, sql.ExecStatus, sql.ExecResult)
 		if err != nil {
 			return err
 		}
+	}
+	err := i.Do()
+	if err != nil {
+		return err
+	}
+	err = st.UpdateRollbackSql(task, i.GetAllRollbackSql())
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -211,27 +202,25 @@ func (s *Sqled) commit(task *model.Task) error {
 func (s *Sqled) rollback(task *model.Task) error {
 	fmt.Printf("start rollback task %d\n", task.ID)
 	st := model.GetStorage()
+	i := inspector.NewInspector(task)
 
-	// TODO: 1. using transaction for dml; 2. support mycat
-	for _, sql := range task.RollbackSqls {
-		if sql.Content == "" {
+	// TODO: 1. using transaction for dml;
+	for _, rollbackSql := range task.RollbackSqls {
+		currentSql := rollbackSql
+		if currentSql.Content == "" {
 			continue
 		}
-		err := st.UpdateRollbackSqlStatus(sql, model.TASK_ACTION_DOING, "")
-		if err != nil {
-			return err
-		}
-		status := model.TASK_ACTION_DONE
-		result := "ok"
-		_, err = executor.Exec(task, sql.Content)
-		if err != nil {
-			status = model.TASK_ACTION_ERROR
-			result = err.Error()
-		}
-		err = st.UpdateRollbackSqlStatus(sql, status, result)
+		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+			err := st.UpdateRollbackSqlStatus(sql, model.TASK_ACTION_DOING, "")
+			if err != nil {
+				return err
+			}
+			i.Commit(sql)
+			return st.Save(currentSql)
+		})
 		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return i.Do()
 }

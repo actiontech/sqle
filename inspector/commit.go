@@ -8,37 +8,57 @@ import (
 )
 
 func (i *Inspector) CommitAll() error {
-	err := i.Prepare()
-	if err != nil {
-		return err
-	}
 	defer i.closeDbConn()
-	for i.NextCommitSql() {
-		err := i.Commit()
+	for _, commitSql := range i.Task.CommitSqls {
+		currentSql := commitSql
+		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+			err := i.Commit(sql)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return i.Do()
 }
 
-func (i *Inspector) Commit() error {
+func (i *Inspector) RollbackAll(sql *model.RollbackSql) error {
+	for _, rollbackSql := range i.Task.RollbackSqls {
+		currentSql := rollbackSql
+		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+			err := i.Commit(sql)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return i.Do()
+}
+
+func (i *Inspector) Commit(sql *model.Sql) error {
 	if i.isDMLStmt {
-		return i.commitDML()
+		return i.commitDML(sql)
 	} else {
-		return i.commitDDL()
+		return i.commitDDL(sql)
 	}
 }
 
-func (i *Inspector) commitDDL() error {
+func (i *Inspector) commitDDL(sql *model.Sql) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
 	}
-	if i.Instance.DbType == model.DB_TYPE_MYCAT {
-		return i.commitMycatDDL()
+	if i.Task.Instance.DbType == model.DB_TYPE_MYCAT {
+		return i.commitMycatDDL(sql)
 	}
-	sql := i.GetCommitSql()
+	//sql := i.GetCommitSql()
 	_, err = conn.Db.Exec(sql.Content)
 	if err != nil {
 		sql.ExecStatus = model.TASK_ACTION_ERROR
@@ -50,12 +70,11 @@ func (i *Inspector) commitDDL() error {
 	return nil
 }
 
-func (i *Inspector) commitDML() error {
+func (i *Inspector) commitDML(sql *model.Sql) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
 	}
-	sql := i.GetCommitSql()
 	var result driver.Result
 	var a int64
 
@@ -85,19 +104,15 @@ ERROR:
 	return err
 }
 
-func (i *Inspector) commitMycatDDL() error {
+func (i *Inspector) commitMycatDDL(sql *model.Sql) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
 	}
-	node := i.GetSqlStmt()
-	sql := i.GetCommitSql()
-	i.updateSchemaCtx(node)
-
 	var schema string
 	var table string
 
-	switch stmt := node.(type) {
+	switch stmt := sql.Stmts[0].(type) {
 	case *ast.CreateTableStmt:
 		schema = i.getSchemaName(stmt.Table)
 		table = stmt.Table.Name.String()
@@ -111,7 +126,7 @@ func (i *Inspector) commitMycatDDL() error {
 		goto DONE
 	default:
 	}
-	err = conn.Db.ExecDDL(ReplaceTableName(node), schema, table)
+	err = conn.Db.ExecDDL(ReplaceTableName(sql.Stmts[0]), schema, table)
 
 DONE:
 	if err != nil {
@@ -123,16 +138,3 @@ DONE:
 	}
 	return nil
 }
-
-//func (i *Inspector) Rollback(sql *model.RollbackSql) error {
-//	nodes, err := parseSql(i.Instance.DbType, sql.Sql)
-//	if err != nil {
-//		return err
-//	}
-//	for _, node := range nodes {
-//		switch node.(type) {
-//		case ast.DDLNode:
-//
-//		}
-//	}
-//}

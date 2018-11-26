@@ -7,25 +7,29 @@ import (
 )
 
 func runrollbackCase(t *testing.T, desc string, i *Inspector, sql string, results ...string) {
-	stmts, err := parseSql(i.Instance.DbType, sql)
+	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
 	for n, stmt := range stmts {
-		i.SqlArray = append(i.SqlArray, &model.CommitSql{
+		i.Task.CommitSqls = append(i.Task.CommitSqls, &model.CommitSql{
 			Sql: model.Sql{
 				Number:  uint(n + 1),
 				Content: stmt.Text(),
 			},
 		})
 	}
-	rollbackSqls, err := i.GenerateRollbackSql()
+	rollbackSqls, err := i.GenerateAllRollbackSql()
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
-	assert.Equal(t, results, rollbackSqls, desc)
+	sqls := []string{}
+	for _, sql := range rollbackSqls {
+		sqls = append(sqls, sql.Content)
+	}
+	assert.Equal(t, results, sqls, desc)
 }
 
 func TestAlterTableRollbackSql(t *testing.T) {

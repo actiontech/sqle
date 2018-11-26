@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/pingcap/tidb/ast"
 	"math"
 	"sqle/errors"
 )
@@ -29,16 +30,17 @@ var ActionMap = map[int]string{
 
 type Sql struct {
 	Model
-	TaskId          uint   `json:"-"`
-	Number          uint   `json:"number"`
-	Content         string `json:"sql" gorm:"type:text"`
-	StartBinlogFile string `json:"start_binlog_file"`
-	StartBinlogPos  int64  `json:"start_binlog_pos"`
-	EndBinlogFile   string `json:"end_binlog_file"`
-	EndBinlogPos    int64  `json:"end_binlog_pos"`
-	RowAffects      int64  `json:"row_affects"`
-	ExecStatus      string `json:"exec_status"`
-	ExecResult      string `json:"exec_result"`
+	TaskId          uint           `json:"-"`
+	Number          uint           `json:"number"`
+	Content         string         `json:"sql" gorm:"type:text"`
+	StartBinlogFile string         `json:"start_binlog_file"`
+	StartBinlogPos  int64          `json:"start_binlog_pos"`
+	EndBinlogFile   string         `json:"end_binlog_file"`
+	EndBinlogPos    int64          `json:"end_binlog_pos"`
+	RowAffects      int64          `json:"row_affects"`
+	ExecStatus      string         `json:"exec_status"`
+	ExecResult      string         `json:"exec_result"`
+	Stmts           []ast.StmtNode `json:"-" gorm:"-"`
 }
 
 type CommitSql struct {
@@ -158,7 +160,7 @@ func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []RollbackSql) error {
+func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) error {
 	err := s.db.Model(task).Association("RollbackSqls").Replace(rollbackSql).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
@@ -190,7 +192,7 @@ func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) 
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateCommitSqlStatus(sql *CommitSql, status, result string) error {
+func (s *Storage) UpdateCommitSqlStatus(sql *Sql, status, result string) error {
 	attr := map[string]interface{}{}
 	if status != "" {
 		sql.ExecStatus = status
@@ -208,7 +210,7 @@ func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateRollbackSqlStatus(sql *RollbackSql, status, result string) error {
+func (s *Storage) UpdateRollbackSqlStatus(sql *Sql, status, result string) error {
 	attr := map[string]interface{}{}
 	if status != "" {
 		sql.ExecStatus = status
