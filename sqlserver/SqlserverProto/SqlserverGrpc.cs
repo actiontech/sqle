@@ -12,17 +12,26 @@ namespace SqlserverProto {
   {
     static readonly string __ServiceName = "SqlserverProto.SqlserverService";
 
-    static readonly grpc::Marshaller<global::SqlserverProto.AdviseInput> __Marshaller_SqlserverProto_AdviseInput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.AdviseInput.Parser.ParseFrom);
-    static readonly grpc::Marshaller<global::SqlserverProto.AdviseOutput> __Marshaller_SqlserverProto_AdviseOutput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.AdviseOutput.Parser.ParseFrom);
+    static readonly grpc::Marshaller<global::SqlserverProto.SplitSqlsInput> __Marshaller_SqlserverProto_SplitSqlsInput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.SplitSqlsInput.Parser.ParseFrom);
+    static readonly grpc::Marshaller<global::SqlserverProto.SplitSqlsOutput> __Marshaller_SqlserverProto_SplitSqlsOutput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.SplitSqlsOutput.Parser.ParseFrom);
+    static readonly grpc::Marshaller<global::SqlserverProto.AuditInput> __Marshaller_SqlserverProto_AuditInput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.AuditInput.Parser.ParseFrom);
+    static readonly grpc::Marshaller<global::SqlserverProto.AuditOutput> __Marshaller_SqlserverProto_AuditOutput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.AuditOutput.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::SqlserverProto.GetRollbackSqlsInput> __Marshaller_SqlserverProto_GetRollbackSqlsInput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.GetRollbackSqlsInput.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::SqlserverProto.GetRollbackSqlsOutput> __Marshaller_SqlserverProto_GetRollbackSqlsOutput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.GetRollbackSqlsOutput.Parser.ParseFrom);
 
-    static readonly grpc::Method<global::SqlserverProto.AdviseInput, global::SqlserverProto.AdviseOutput> __Method_Advise = new grpc::Method<global::SqlserverProto.AdviseInput, global::SqlserverProto.AdviseOutput>(
+    static readonly grpc::Method<global::SqlserverProto.SplitSqlsInput, global::SqlserverProto.SplitSqlsOutput> __Method_GetSplitSqls = new grpc::Method<global::SqlserverProto.SplitSqlsInput, global::SqlserverProto.SplitSqlsOutput>(
         grpc::MethodType.Unary,
         __ServiceName,
-        "Advise",
-        __Marshaller_SqlserverProto_AdviseInput,
-        __Marshaller_SqlserverProto_AdviseOutput);
+        "GetSplitSqls",
+        __Marshaller_SqlserverProto_SplitSqlsInput,
+        __Marshaller_SqlserverProto_SplitSqlsOutput);
+
+    static readonly grpc::Method<global::SqlserverProto.AuditInput, global::SqlserverProto.AuditOutput> __Method_Audit = new grpc::Method<global::SqlserverProto.AuditInput, global::SqlserverProto.AuditOutput>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "Audit",
+        __Marshaller_SqlserverProto_AuditInput,
+        __Marshaller_SqlserverProto_AuditOutput);
 
     static readonly grpc::Method<global::SqlserverProto.GetRollbackSqlsInput, global::SqlserverProto.GetRollbackSqlsOutput> __Method_GetRollbackSqls = new grpc::Method<global::SqlserverProto.GetRollbackSqlsInput, global::SqlserverProto.GetRollbackSqlsOutput>(
         grpc::MethodType.Unary,
@@ -40,7 +49,12 @@ namespace SqlserverProto {
     /// <summary>Base class for server-side implementations of SqlserverService</summary>
     public abstract partial class SqlserverServiceBase
     {
-      public virtual global::System.Threading.Tasks.Task<global::SqlserverProto.AdviseOutput> Advise(global::SqlserverProto.AdviseInput request, grpc::ServerCallContext context)
+      public virtual global::System.Threading.Tasks.Task<global::SqlserverProto.SplitSqlsOutput> GetSplitSqls(global::SqlserverProto.SplitSqlsInput request, grpc::ServerCallContext context)
+      {
+        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
+      }
+
+      public virtual global::System.Threading.Tasks.Task<global::SqlserverProto.AuditOutput> Audit(global::SqlserverProto.AuditInput request, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -75,21 +89,37 @@ namespace SqlserverProto {
       {
       }
 
-      public virtual global::SqlserverProto.AdviseOutput Advise(global::SqlserverProto.AdviseInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual global::SqlserverProto.SplitSqlsOutput GetSplitSqls(global::SqlserverProto.SplitSqlsInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return Advise(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return GetSplitSqls(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
-      public virtual global::SqlserverProto.AdviseOutput Advise(global::SqlserverProto.AdviseInput request, grpc::CallOptions options)
+      public virtual global::SqlserverProto.SplitSqlsOutput GetSplitSqls(global::SqlserverProto.SplitSqlsInput request, grpc::CallOptions options)
       {
-        return CallInvoker.BlockingUnaryCall(__Method_Advise, null, options, request);
+        return CallInvoker.BlockingUnaryCall(__Method_GetSplitSqls, null, options, request);
       }
-      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.AdviseOutput> AdviseAsync(global::SqlserverProto.AdviseInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.SplitSqlsOutput> GetSplitSqlsAsync(global::SqlserverProto.SplitSqlsInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return AdviseAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return GetSplitSqlsAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
-      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.AdviseOutput> AdviseAsync(global::SqlserverProto.AdviseInput request, grpc::CallOptions options)
+      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.SplitSqlsOutput> GetSplitSqlsAsync(global::SqlserverProto.SplitSqlsInput request, grpc::CallOptions options)
       {
-        return CallInvoker.AsyncUnaryCall(__Method_Advise, null, options, request);
+        return CallInvoker.AsyncUnaryCall(__Method_GetSplitSqls, null, options, request);
+      }
+      public virtual global::SqlserverProto.AuditOutput Audit(global::SqlserverProto.AuditInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return Audit(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      public virtual global::SqlserverProto.AuditOutput Audit(global::SqlserverProto.AuditInput request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_Audit, null, options, request);
+      }
+      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.AuditOutput> AuditAsync(global::SqlserverProto.AuditInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return AuditAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.AuditOutput> AuditAsync(global::SqlserverProto.AuditInput request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_Audit, null, options, request);
       }
       public virtual global::SqlserverProto.GetRollbackSqlsOutput GetRollbackSqls(global::SqlserverProto.GetRollbackSqlsInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
@@ -119,7 +149,8 @@ namespace SqlserverProto {
     public static grpc::ServerServiceDefinition BindService(SqlserverServiceBase serviceImpl)
     {
       return grpc::ServerServiceDefinition.CreateBuilder()
-          .AddMethod(__Method_Advise, serviceImpl.Advise)
+          .AddMethod(__Method_GetSplitSqls, serviceImpl.GetSplitSqls)
+          .AddMethod(__Method_Audit, serviceImpl.Audit)
           .AddMethod(__Method_GetRollbackSqls, serviceImpl.GetRollbackSqls).Build();
     }
 

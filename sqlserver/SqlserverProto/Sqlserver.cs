@@ -22,25 +22,31 @@ namespace SqlserverProto {
     static SqlserverReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "Cg9TcWxzZXJ2ZXIucHJvdG8SDlNxbHNlcnZlclByb3RvIioKC0FkdmlzZUlu",
-            "cHV0EgwKBFNxbHMYASADKAkSDQoFUnVsZXMYAiADKAkiRQoMQWR2aXNlT3V0",
-            "cHV0EjUKDkluc3BlY3RSZXN1bHRzGAEgAygLMh0uU3Fsc2VydmVyUHJvdG8u",
-            "SW5zcGVjdFJlc3VsdCJTCg1JbnNwZWN0UmVzdWx0EhUKDUluc3BlY3RTdGF0",
-            "dXMYASABKAkSFAoMSW5zcGVjdExldmVsGAIgASgJEhUKDUluc3BlY3RSZXN1",
-            "bHQYAyABKAkiJAoUR2V0Um9sbGJhY2tTcWxzSW5wdXQSDAoEU3FscxgBIAMo",
-            "CSItChVHZXRSb2xsYmFja1NxbHNPdXRwdXQSFAoMUm9sbGJhY2tTcWxzGAEg",
-            "AygJMrsBChBTcWxzZXJ2ZXJTZXJ2aWNlEkUKBkFkdmlzZRIbLlNxbHNlcnZl",
-            "clByb3RvLkFkdmlzZUlucHV0GhwuU3Fsc2VydmVyUHJvdG8uQWR2aXNlT3V0",
-            "cHV0IgASYAoPR2V0Um9sbGJhY2tTcWxzEiQuU3Fsc2VydmVyUHJvdG8uR2V0",
-            "Um9sbGJhY2tTcWxzSW5wdXQaJS5TcWxzZXJ2ZXJQcm90by5HZXRSb2xsYmFj",
-            "a1NxbHNPdXRwdXQiAGIGcHJvdG8z"));
+            "Cg9TcWxzZXJ2ZXIucHJvdG8SDlNxbHNlcnZlclByb3RvIi8KDlNwbGl0U3Fs",
+            "c0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAEoCSIfCg9TcGxp",
+            "dFNxbHNPdXRwdXQSDAoEU3FscxgBIAMoCSI+CgpBdWRpdElucHV0Eg8KB1Zl",
+            "cnNpb24YASABKAkSDAoEU3FscxgCIAMoCRIRCglSdWxlTmFtZXMYAyADKAki",
+            "QAoLQXVkaXRPdXRwdXQSMQoMQXVkaXRSZXN1bHRzGAEgAygLMhsuU3Fsc2Vy",
+            "dmVyUHJvdG8uQXVkaXRSZXN1bHQiUgoLQXVkaXRSZXN1bHQSEwoLQXVkaXRT",
+            "dGF0dXMYASABKAkSEgoKQXVkaXRMZXZlbBgCIAEoCRIaChJBdWRpdFJlc3Vs",
+            "dE1lc3NhZ2UYAyABKAkiNQoUR2V0Um9sbGJhY2tTcWxzSW5wdXQSDwoHVmVy",
+            "c2lvbhgBIAEoCRIMCgRTcWxzGAIgAygJIi0KFUdldFJvbGxiYWNrU3Fsc091",
+            "dHB1dBIUCgxSb2xsYmFja1NxbHMYASADKAkyiwIKEFNxbHNlcnZlclNlcnZp",
+            "Y2USUQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxz",
+            "SW5wdXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQiABJCCgVB",
+            "dWRpdBIaLlNxbHNlcnZlclByb3RvLkF1ZGl0SW5wdXQaGy5TcWxzZXJ2ZXJQ",
+            "cm90by5BdWRpdE91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3FscxIkLlNxbHNl",
+            "cnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJv",
+            "dG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Sqls", "Rules" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "InspectResults" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.InspectResult), global::SqlserverProto.InspectResult.Parser, new[]{ "InspectStatus", "InspectLevel", "InspectResult_" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Sqls" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsInput), global::SqlserverProto.SplitSqlsInput.Parser, new[]{ "Version", "Sqls" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsOutput), global::SqlserverProto.SplitSqlsOutput.Parser, new[]{ "Sqls" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AuditInput), global::SqlserverProto.AuditInput.Parser, new[]{ "Version", "Sqls", "RuleNames" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AuditOutput), global::SqlserverProto.AuditOutput.Parser, new[]{ "AuditResults" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AuditResult), global::SqlserverProto.AuditResult.Parser, new[]{ "AuditStatus", "AuditLevel", "AuditResultMessage" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null)
           }));
     }
@@ -48,10 +54,10 @@ namespace SqlserverProto {
 
   }
   #region Messages
-  public sealed partial class AdviseInput : pb::IMessage<AdviseInput> {
-    private static readonly pb::MessageParser<AdviseInput> _parser = new pb::MessageParser<AdviseInput>(() => new AdviseInput());
+  public sealed partial class SplitSqlsInput : pb::IMessage<SplitSqlsInput> {
+    private static readonly pb::MessageParser<SplitSqlsInput> _parser = new pb::MessageParser<SplitSqlsInput>(() => new SplitSqlsInput());
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static pb::MessageParser<AdviseInput> Parser { get { return _parser; } }
+    public static pb::MessageParser<SplitSqlsInput> Parser { get { return _parser; } }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
@@ -64,21 +70,165 @@ namespace SqlserverProto {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public AdviseInput() {
+    public SplitSqlsInput() {
       OnConstruction();
     }
 
     partial void OnConstruction();
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public AdviseInput(AdviseInput other) : this() {
-      sqls_ = other.sqls_.Clone();
-      rules_ = other.rules_.Clone();
+    public SplitSqlsInput(SplitSqlsInput other) : this() {
+      version_ = other.version_;
+      sqls_ = other.sqls_;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public AdviseInput Clone() {
-      return new AdviseInput(this);
+    public SplitSqlsInput Clone() {
+      return new SplitSqlsInput(this);
+    }
+
+    /// <summary>Field number for the "Version" field.</summary>
+    public const int VersionFieldNumber = 1;
+    private string version_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string Version {
+      get { return version_; }
+      set {
+        version_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "Sqls" field.</summary>
+    public const int SqlsFieldNumber = 2;
+    private string sqls_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string Sqls {
+      get { return sqls_; }
+      set {
+        sqls_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as SplitSqlsInput);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(SplitSqlsInput other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Version != other.Version) return false;
+      if (Sqls != other.Sqls) return false;
+      return true;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Version.Length != 0) hash ^= Version.GetHashCode();
+      if (Sqls.Length != 0) hash ^= Sqls.GetHashCode();
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      if (Version.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Version);
+      }
+      if (Sqls.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Sqls);
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (Version.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Version);
+      }
+      if (Sqls.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Sqls);
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(SplitSqlsInput other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Version.Length != 0) {
+        Version = other.Version;
+      }
+      if (other.Sqls.Length != 0) {
+        Sqls = other.Sqls;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            input.SkipLastField();
+            break;
+          case 10: {
+            Version = input.ReadString();
+            break;
+          }
+          case 18: {
+            Sqls = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
+  public sealed partial class SplitSqlsOutput : pb::IMessage<SplitSqlsOutput> {
+    private static readonly pb::MessageParser<SplitSqlsOutput> _parser = new pb::MessageParser<SplitSqlsOutput>(() => new SplitSqlsOutput());
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<SplitSqlsOutput> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[1]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public SplitSqlsOutput() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public SplitSqlsOutput(SplitSqlsOutput other) : this() {
+      sqls_ = other.sqls_.Clone();
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public SplitSqlsOutput Clone() {
+      return new SplitSqlsOutput(this);
     }
 
     /// <summary>Field number for the "Sqls" field.</summary>
@@ -91,23 +241,13 @@ namespace SqlserverProto {
       get { return sqls_; }
     }
 
-    /// <summary>Field number for the "Rules" field.</summary>
-    public const int RulesFieldNumber = 2;
-    private static readonly pb::FieldCodec<string> _repeated_rules_codec
-        = pb::FieldCodec.ForString(18);
-    private readonly pbc::RepeatedField<string> rules_ = new pbc::RepeatedField<string>();
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<string> Rules {
-      get { return rules_; }
-    }
-
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
-      return Equals(other as AdviseInput);
+      return Equals(other as SplitSqlsOutput);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool Equals(AdviseInput other) {
+    public bool Equals(SplitSqlsOutput other) {
       if (ReferenceEquals(other, null)) {
         return false;
       }
@@ -115,7 +255,6 @@ namespace SqlserverProto {
         return true;
       }
       if(!sqls_.Equals(other.sqls_)) return false;
-      if(!rules_.Equals(other.rules_)) return false;
       return true;
     }
 
@@ -123,7 +262,6 @@ namespace SqlserverProto {
     public override int GetHashCode() {
       int hash = 1;
       hash ^= sqls_.GetHashCode();
-      hash ^= rules_.GetHashCode();
       return hash;
     }
 
@@ -135,24 +273,21 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
       sqls_.WriteTo(output, _repeated_sqls_codec);
-      rules_.WriteTo(output, _repeated_rules_codec);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
       size += sqls_.CalculateSize(_repeated_sqls_codec);
-      size += rules_.CalculateSize(_repeated_rules_codec);
       return size;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public void MergeFrom(AdviseInput other) {
+    public void MergeFrom(SplitSqlsOutput other) {
       if (other == null) {
         return;
       }
       sqls_.Add(other.sqls_);
-      rules_.Add(other.rules_);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -167,129 +302,16 @@ namespace SqlserverProto {
             sqls_.AddEntriesFrom(input, _repeated_sqls_codec);
             break;
           }
-          case 18: {
-            rules_.AddEntriesFrom(input, _repeated_rules_codec);
-            break;
-          }
         }
       }
     }
 
   }
 
-  public sealed partial class AdviseOutput : pb::IMessage<AdviseOutput> {
-    private static readonly pb::MessageParser<AdviseOutput> _parser = new pb::MessageParser<AdviseOutput>(() => new AdviseOutput());
+  public sealed partial class AuditInput : pb::IMessage<AuditInput> {
+    private static readonly pb::MessageParser<AuditInput> _parser = new pb::MessageParser<AuditInput>(() => new AuditInput());
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static pb::MessageParser<AdviseOutput> Parser { get { return _parser; } }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[1]; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    pbr::MessageDescriptor pb::IMessage.Descriptor {
-      get { return Descriptor; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public AdviseOutput() {
-      OnConstruction();
-    }
-
-    partial void OnConstruction();
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public AdviseOutput(AdviseOutput other) : this() {
-      inspectResults_ = other.inspectResults_.Clone();
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public AdviseOutput Clone() {
-      return new AdviseOutput(this);
-    }
-
-    /// <summary>Field number for the "InspectResults" field.</summary>
-    public const int InspectResultsFieldNumber = 1;
-    private static readonly pb::FieldCodec<global::SqlserverProto.InspectResult> _repeated_inspectResults_codec
-        = pb::FieldCodec.ForMessage(10, global::SqlserverProto.InspectResult.Parser);
-    private readonly pbc::RepeatedField<global::SqlserverProto.InspectResult> inspectResults_ = new pbc::RepeatedField<global::SqlserverProto.InspectResult>();
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::SqlserverProto.InspectResult> InspectResults {
-      get { return inspectResults_; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public override bool Equals(object other) {
-      return Equals(other as AdviseOutput);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool Equals(AdviseOutput other) {
-      if (ReferenceEquals(other, null)) {
-        return false;
-      }
-      if (ReferenceEquals(other, this)) {
-        return true;
-      }
-      if(!inspectResults_.Equals(other.inspectResults_)) return false;
-      return true;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public override int GetHashCode() {
-      int hash = 1;
-      hash ^= inspectResults_.GetHashCode();
-      return hash;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public override string ToString() {
-      return pb::JsonFormatter.ToDiagnosticString(this);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public void WriteTo(pb::CodedOutputStream output) {
-      inspectResults_.WriteTo(output, _repeated_inspectResults_codec);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public int CalculateSize() {
-      int size = 0;
-      size += inspectResults_.CalculateSize(_repeated_inspectResults_codec);
-      return size;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public void MergeFrom(AdviseOutput other) {
-      if (other == null) {
-        return;
-      }
-      inspectResults_.Add(other.inspectResults_);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public void MergeFrom(pb::CodedInputStream input) {
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            input.SkipLastField();
-            break;
-          case 10: {
-            inspectResults_.AddEntriesFrom(input, _repeated_inspectResults_codec);
-            break;
-          }
-        }
-      }
-    }
-
-  }
-
-  public sealed partial class InspectResult : pb::IMessage<InspectResult> {
-    private static readonly pb::MessageParser<InspectResult> _parser = new pb::MessageParser<InspectResult>(() => new InspectResult());
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static pb::MessageParser<InspectResult> Parser { get { return _parser; } }
+    public static pb::MessageParser<AuditInput> Parser { get { return _parser; } }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
@@ -302,82 +324,80 @@ namespace SqlserverProto {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public InspectResult() {
+    public AuditInput() {
       OnConstruction();
     }
 
     partial void OnConstruction();
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public InspectResult(InspectResult other) : this() {
-      inspectStatus_ = other.inspectStatus_;
-      inspectLevel_ = other.inspectLevel_;
-      inspectResult_ = other.inspectResult_;
+    public AuditInput(AuditInput other) : this() {
+      version_ = other.version_;
+      sqls_ = other.sqls_.Clone();
+      ruleNames_ = other.ruleNames_.Clone();
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public InspectResult Clone() {
-      return new InspectResult(this);
+    public AuditInput Clone() {
+      return new AuditInput(this);
     }
 
-    /// <summary>Field number for the "InspectStatus" field.</summary>
-    public const int InspectStatusFieldNumber = 1;
-    private string inspectStatus_ = "";
+    /// <summary>Field number for the "Version" field.</summary>
+    public const int VersionFieldNumber = 1;
+    private string version_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public string InspectStatus {
-      get { return inspectStatus_; }
+    public string Version {
+      get { return version_; }
       set {
-        inspectStatus_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        version_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
-    /// <summary>Field number for the "InspectLevel" field.</summary>
-    public const int InspectLevelFieldNumber = 2;
-    private string inspectLevel_ = "";
+    /// <summary>Field number for the "Sqls" field.</summary>
+    public const int SqlsFieldNumber = 2;
+    private static readonly pb::FieldCodec<string> _repeated_sqls_codec
+        = pb::FieldCodec.ForString(18);
+    private readonly pbc::RepeatedField<string> sqls_ = new pbc::RepeatedField<string>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public string InspectLevel {
-      get { return inspectLevel_; }
-      set {
-        inspectLevel_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
+    public pbc::RepeatedField<string> Sqls {
+      get { return sqls_; }
     }
 
-    /// <summary>Field number for the "InspectResult" field.</summary>
-    public const int InspectResult_FieldNumber = 3;
-    private string inspectResult_ = "";
+    /// <summary>Field number for the "RuleNames" field.</summary>
+    public const int RuleNamesFieldNumber = 3;
+    private static readonly pb::FieldCodec<string> _repeated_ruleNames_codec
+        = pb::FieldCodec.ForString(26);
+    private readonly pbc::RepeatedField<string> ruleNames_ = new pbc::RepeatedField<string>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public string InspectResult_ {
-      get { return inspectResult_; }
-      set {
-        inspectResult_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
+    public pbc::RepeatedField<string> RuleNames {
+      get { return ruleNames_; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
-      return Equals(other as InspectResult);
+      return Equals(other as AuditInput);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool Equals(InspectResult other) {
+    public bool Equals(AuditInput other) {
       if (ReferenceEquals(other, null)) {
         return false;
       }
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (InspectStatus != other.InspectStatus) return false;
-      if (InspectLevel != other.InspectLevel) return false;
-      if (InspectResult_ != other.InspectResult_) return false;
+      if (Version != other.Version) return false;
+      if(!sqls_.Equals(other.sqls_)) return false;
+      if(!ruleNames_.Equals(other.ruleNames_)) return false;
       return true;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override int GetHashCode() {
       int hash = 1;
-      if (InspectStatus.Length != 0) hash ^= InspectStatus.GetHashCode();
-      if (InspectLevel.Length != 0) hash ^= InspectLevel.GetHashCode();
-      if (InspectResult_.Length != 0) hash ^= InspectResult_.GetHashCode();
+      if (Version.Length != 0) hash ^= Version.GetHashCode();
+      hash ^= sqls_.GetHashCode();
+      hash ^= ruleNames_.GetHashCode();
       return hash;
     }
 
@@ -388,48 +408,316 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
-      if (InspectStatus.Length != 0) {
+      if (Version.Length != 0) {
         output.WriteRawTag(10);
-        output.WriteString(InspectStatus);
+        output.WriteString(Version);
       }
-      if (InspectLevel.Length != 0) {
+      sqls_.WriteTo(output, _repeated_sqls_codec);
+      ruleNames_.WriteTo(output, _repeated_ruleNames_codec);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (Version.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Version);
+      }
+      size += sqls_.CalculateSize(_repeated_sqls_codec);
+      size += ruleNames_.CalculateSize(_repeated_ruleNames_codec);
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(AuditInput other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Version.Length != 0) {
+        Version = other.Version;
+      }
+      sqls_.Add(other.sqls_);
+      ruleNames_.Add(other.ruleNames_);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            input.SkipLastField();
+            break;
+          case 10: {
+            Version = input.ReadString();
+            break;
+          }
+          case 18: {
+            sqls_.AddEntriesFrom(input, _repeated_sqls_codec);
+            break;
+          }
+          case 26: {
+            ruleNames_.AddEntriesFrom(input, _repeated_ruleNames_codec);
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
+  public sealed partial class AuditOutput : pb::IMessage<AuditOutput> {
+    private static readonly pb::MessageParser<AuditOutput> _parser = new pb::MessageParser<AuditOutput>(() => new AuditOutput());
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<AuditOutput> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[3]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public AuditOutput() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public AuditOutput(AuditOutput other) : this() {
+      auditResults_ = other.auditResults_.Clone();
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public AuditOutput Clone() {
+      return new AuditOutput(this);
+    }
+
+    /// <summary>Field number for the "AuditResults" field.</summary>
+    public const int AuditResultsFieldNumber = 1;
+    private static readonly pb::FieldCodec<global::SqlserverProto.AuditResult> _repeated_auditResults_codec
+        = pb::FieldCodec.ForMessage(10, global::SqlserverProto.AuditResult.Parser);
+    private readonly pbc::RepeatedField<global::SqlserverProto.AuditResult> auditResults_ = new pbc::RepeatedField<global::SqlserverProto.AuditResult>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public pbc::RepeatedField<global::SqlserverProto.AuditResult> AuditResults {
+      get { return auditResults_; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as AuditOutput);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(AuditOutput other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if(!auditResults_.Equals(other.auditResults_)) return false;
+      return true;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      hash ^= auditResults_.GetHashCode();
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      auditResults_.WriteTo(output, _repeated_auditResults_codec);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      size += auditResults_.CalculateSize(_repeated_auditResults_codec);
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(AuditOutput other) {
+      if (other == null) {
+        return;
+      }
+      auditResults_.Add(other.auditResults_);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            input.SkipLastField();
+            break;
+          case 10: {
+            auditResults_.AddEntriesFrom(input, _repeated_auditResults_codec);
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
+  public sealed partial class AuditResult : pb::IMessage<AuditResult> {
+    private static readonly pb::MessageParser<AuditResult> _parser = new pb::MessageParser<AuditResult>(() => new AuditResult());
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<AuditResult> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[4]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public AuditResult() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public AuditResult(AuditResult other) : this() {
+      auditStatus_ = other.auditStatus_;
+      auditLevel_ = other.auditLevel_;
+      auditResultMessage_ = other.auditResultMessage_;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public AuditResult Clone() {
+      return new AuditResult(this);
+    }
+
+    /// <summary>Field number for the "AuditStatus" field.</summary>
+    public const int AuditStatusFieldNumber = 1;
+    private string auditStatus_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string AuditStatus {
+      get { return auditStatus_; }
+      set {
+        auditStatus_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "AuditLevel" field.</summary>
+    public const int AuditLevelFieldNumber = 2;
+    private string auditLevel_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string AuditLevel {
+      get { return auditLevel_; }
+      set {
+        auditLevel_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "AuditResultMessage" field.</summary>
+    public const int AuditResultMessageFieldNumber = 3;
+    private string auditResultMessage_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string AuditResultMessage {
+      get { return auditResultMessage_; }
+      set {
+        auditResultMessage_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as AuditResult);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(AuditResult other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (AuditStatus != other.AuditStatus) return false;
+      if (AuditLevel != other.AuditLevel) return false;
+      if (AuditResultMessage != other.AuditResultMessage) return false;
+      return true;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (AuditStatus.Length != 0) hash ^= AuditStatus.GetHashCode();
+      if (AuditLevel.Length != 0) hash ^= AuditLevel.GetHashCode();
+      if (AuditResultMessage.Length != 0) hash ^= AuditResultMessage.GetHashCode();
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      if (AuditStatus.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(AuditStatus);
+      }
+      if (AuditLevel.Length != 0) {
         output.WriteRawTag(18);
-        output.WriteString(InspectLevel);
+        output.WriteString(AuditLevel);
       }
-      if (InspectResult_.Length != 0) {
+      if (AuditResultMessage.Length != 0) {
         output.WriteRawTag(26);
-        output.WriteString(InspectResult_);
+        output.WriteString(AuditResultMessage);
       }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
-      if (InspectStatus.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(InspectStatus);
+      if (AuditStatus.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(AuditStatus);
       }
-      if (InspectLevel.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(InspectLevel);
+      if (AuditLevel.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(AuditLevel);
       }
-      if (InspectResult_.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(InspectResult_);
+      if (AuditResultMessage.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(AuditResultMessage);
       }
       return size;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public void MergeFrom(InspectResult other) {
+    public void MergeFrom(AuditResult other) {
       if (other == null) {
         return;
       }
-      if (other.InspectStatus.Length != 0) {
-        InspectStatus = other.InspectStatus;
+      if (other.AuditStatus.Length != 0) {
+        AuditStatus = other.AuditStatus;
       }
-      if (other.InspectLevel.Length != 0) {
-        InspectLevel = other.InspectLevel;
+      if (other.AuditLevel.Length != 0) {
+        AuditLevel = other.AuditLevel;
       }
-      if (other.InspectResult_.Length != 0) {
-        InspectResult_ = other.InspectResult_;
+      if (other.AuditResultMessage.Length != 0) {
+        AuditResultMessage = other.AuditResultMessage;
       }
     }
 
@@ -442,15 +730,15 @@ namespace SqlserverProto {
             input.SkipLastField();
             break;
           case 10: {
-            InspectStatus = input.ReadString();
+            AuditStatus = input.ReadString();
             break;
           }
           case 18: {
-            InspectLevel = input.ReadString();
+            AuditLevel = input.ReadString();
             break;
           }
           case 26: {
-            InspectResult_ = input.ReadString();
+            AuditResultMessage = input.ReadString();
             break;
           }
         }
@@ -466,7 +754,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[3]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -483,6 +771,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public GetRollbackSqlsInput(GetRollbackSqlsInput other) : this() {
+      version_ = other.version_;
       sqls_ = other.sqls_.Clone();
     }
 
@@ -491,10 +780,21 @@ namespace SqlserverProto {
       return new GetRollbackSqlsInput(this);
     }
 
+    /// <summary>Field number for the "Version" field.</summary>
+    public const int VersionFieldNumber = 1;
+    private string version_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string Version {
+      get { return version_; }
+      set {
+        version_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     /// <summary>Field number for the "Sqls" field.</summary>
-    public const int SqlsFieldNumber = 1;
+    public const int SqlsFieldNumber = 2;
     private static readonly pb::FieldCodec<string> _repeated_sqls_codec
-        = pb::FieldCodec.ForString(10);
+        = pb::FieldCodec.ForString(18);
     private readonly pbc::RepeatedField<string> sqls_ = new pbc::RepeatedField<string>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public pbc::RepeatedField<string> Sqls {
@@ -514,6 +814,7 @@ namespace SqlserverProto {
       if (ReferenceEquals(other, this)) {
         return true;
       }
+      if (Version != other.Version) return false;
       if(!sqls_.Equals(other.sqls_)) return false;
       return true;
     }
@@ -521,6 +822,7 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override int GetHashCode() {
       int hash = 1;
+      if (Version.Length != 0) hash ^= Version.GetHashCode();
       hash ^= sqls_.GetHashCode();
       return hash;
     }
@@ -532,12 +834,19 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
+      if (Version.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Version);
+      }
       sqls_.WriteTo(output, _repeated_sqls_codec);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
+      if (Version.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Version);
+      }
       size += sqls_.CalculateSize(_repeated_sqls_codec);
       return size;
     }
@@ -546,6 +855,9 @@ namespace SqlserverProto {
     public void MergeFrom(GetRollbackSqlsInput other) {
       if (other == null) {
         return;
+      }
+      if (other.Version.Length != 0) {
+        Version = other.Version;
       }
       sqls_.Add(other.sqls_);
     }
@@ -559,6 +871,10 @@ namespace SqlserverProto {
             input.SkipLastField();
             break;
           case 10: {
+            Version = input.ReadString();
+            break;
+          }
+          case 18: {
             sqls_.AddEntriesFrom(input, _repeated_sqls_codec);
             break;
           }
@@ -575,7 +891,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[4]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
