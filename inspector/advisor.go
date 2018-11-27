@@ -31,6 +31,9 @@ func (i *Inspector) Advise(rules []model.Rule) error {
 			currentSql.InspectStatus = model.TASK_ACTION_DONE
 			currentSql.InspectLevel = i.Results.level()
 			currentSql.InspectResult = i.Results.message()
+
+			// print osc
+
 			// clean up results
 			i.Results = newInspectResults()
 			return nil

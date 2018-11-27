@@ -1,10 +1,11 @@
 package server
 
 import (
-	"time"
+	"sqle/executor"
+	"sqle/inspector"
 	"sqle/model"
 	"sync"
-	"sqle/executor"
+	"time"
 )
 
 type InstanceStatus struct {
@@ -19,12 +20,14 @@ type InstanceStatus struct {
 func (s *Sqled) statusLoop() {
 	tick := time.Tick(1 * time.Hour)
 	s.UpdateAllInstanceStatus()
+	s.UpdateInspectorConfigs()
 	for {
 		select {
 		case <-s.exit:
 			return
 		case <-tick:
 			s.UpdateAllInstanceStatus()
+			s.UpdateInspectorConfigs()
 		}
 	}
 }
@@ -100,4 +103,16 @@ func (s *Sqled) DeleteInstanceStatus(instance *model.Instance) {
 	s.Lock()
 	delete(s.instancesStatus, instance.ID)
 	s.Unlock()
+}
+
+func (s *Sqled) UpdateInspectorConfigs() error {
+	st := model.GetStorage()
+	configs, err := st.GetAllConfig()
+	if err != nil {
+		return err
+	}
+	for _, config := range configs {
+		inspector.UpdateConfig(config.Name, config.Value)
+	}
+	return nil
 }
