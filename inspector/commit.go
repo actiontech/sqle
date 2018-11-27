@@ -98,6 +98,7 @@ func (i *Inspector) commitDML(sql *model.Sql) error {
 	sql.ExecResult = "ok"
 	// if sql has commit success, ignore error for check status.
 	sql.EndBinlogFile, sql.EndBinlogPos, _ = conn.FetchMasterBinlogPos()
+	return nil
 ERROR:
 	sql.ExecStatus = model.TASK_ACTION_ERROR
 	sql.ExecResult = err.Error()

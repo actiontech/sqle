@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	_model "github.com/pingcap/tidb/model"
@@ -25,31 +26,6 @@ func (i *Inspector) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	return i.GetAllRollbackSql(), nil
 }
 
-func (i *Inspector) GenerateRollbackSql(sql *model.Sql) error {
-	var err error
-	node := sql.Stmts[0]
-	switch stmt := node.(type) {
-	case *ast.AlterTableStmt:
-		err = i.generateAlterTableRollbackSql(stmt)
-	case *ast.CreateTableStmt:
-		err = i.generateCreateTableRollbackSql(stmt)
-	case *ast.CreateDatabaseStmt:
-		err = i.generateCreateSchemaRollbackSql(stmt)
-	case *ast.DropTableStmt:
-		err = i.generateDropTableRollbackSql(stmt)
-	case *ast.InsertStmt:
-		err = i.generateInsertRollbackSql(stmt)
-	case *ast.DeleteStmt:
-		err = i.generateDeleteRollbackSql(stmt)
-	case *ast.UpdateStmt:
-		err = i.generateUpdateRollbackSql(stmt)
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (i *Inspector) GetAllRollbackSql() []*model.RollbackSql {
 	rollbackSqls := []*model.RollbackSql{}
 	// Reverse order
@@ -64,6 +40,51 @@ func (i *Inspector) GetAllRollbackSql() []*model.RollbackSql {
 		number += 1
 	}
 	return rollbackSqls
+}
+
+func (i *Inspector) GenerateRollbackSql(sql *model.Sql) error {
+	node := sql.Stmts[0]
+	switch node.(type) {
+	case ast.DDLNode:
+		return i.GenerateDDLStmtRollbackSql(node)
+	case ast.DMLNode:
+		return i.GenerateDMLStmtRollbackSql(node)
+	}
+	return nil
+}
+
+func (i *Inspector) GenerateDDLStmtRollbackSql(node ast.StmtNode) error {
+	var err error
+	switch stmt := node.(type) {
+	case *ast.AlterTableStmt:
+		err = i.generateAlterTableRollbackSql(stmt)
+	case *ast.CreateTableStmt:
+		err = i.generateCreateTableRollbackSql(stmt)
+	case *ast.CreateDatabaseStmt:
+		err = i.generateCreateSchemaRollbackSql(stmt)
+	case *ast.DropTableStmt:
+		err = i.generateDropTableRollbackSql(stmt)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *Inspector) GenerateDMLStmtRollbackSql(node ast.StmtNode) error {
+	var err error
+	switch stmt := node.(type) {
+	case *ast.InsertStmt:
+		err = i.generateInsertRollbackSql(stmt)
+	case *ast.DeleteStmt:
+		err = i.generateDeleteRollbackSql(stmt)
+	case *ast.UpdateStmt:
+		err = i.generateUpdateRollbackSql(stmt)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (i *Inspector) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error {
@@ -261,10 +282,6 @@ func (i *Inspector) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) er
 	return nil
 }
 
-func (i *Inspector) generateDropSchemaRollbackSql(stmt *ast.DropDatabaseStmt) error {
-	return nil
-}
-
 func (i *Inspector) generateDropTableRollbackSql(stmt *ast.DropTableStmt) error {
 	for _, table := range stmt.Tables {
 		tableName := i.getTableName(table)
@@ -412,18 +429,7 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 		return nil
 	}
 
-	recordSql := fmt.Sprintf("SELECT * FROM %s", i.getTableNameWithQuote(table))
-	if stmt.Where != nil {
-		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
-	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return err
-	}
-	records, err := conn.Db.Query(recordSql)
-	if err != nil {
-		return err
-	}
+	records, err := i.getRecords(table, stmt.Where, stmt.Order, stmt.Limit)
 
 	values := []string{}
 
@@ -435,11 +441,15 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 		if len(record) != len(columnsName) {
 			return nil
 		}
-		value := []string{}
+		vs := []string{}
 		for _, name := range columnsName {
-			value = append(value, record[name])
+			v := "NULL"
+			if record[name].Valid {
+				v = fmt.Sprintf("'%s'", record[name].String)
+			}
+			vs = append(vs, v)
 		}
-		values = append(values, fmt.Sprintf("('%s')", strings.Join(value, "', '")))
+		values = append(values, fmt.Sprintf("(%s)", strings.Join(vs, ", ")))
 	}
 	rollbackSql := ""
 	if len(values) > 0 {
@@ -468,20 +478,8 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 	if !hasPk {
 		return nil
 	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return err
-	}
-	recordSql := fmt.Sprintf("SELECT * FROM %s", i.getTableNameWithQuote(table))
-	if stmt.Where != nil {
-		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(stmt.Where))
-	}
-	recordSql += ";"
-	records, err := conn.Db.Query(recordSql)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+
+	records, err := i.getRecords(table, stmt.Where, stmt.Order, stmt.Limit)
 
 	columnsName := []string{}
 	rollbackSql := ""
@@ -510,23 +508,57 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 				}
 			}
 			name := col.Name.String()
+			v := "NULL"
+			if record[name].Valid {
+				v = fmt.Sprintf("'%s'", record[name].String)
+			}
+
 			if colChanged {
-				value = append(value, fmt.Sprintf("%s = '%s'", name, record[name]))
+				value = append(value, fmt.Sprintf("%s = %s", name, v))
 			}
 			if isPk {
 				if isPkChanged {
 					where = append(where, fmt.Sprintf("%s = '%s'", name, pkValue))
 				} else {
-					where = append(where, fmt.Sprintf("%s = '%s'", name, record[name]))
+					where = append(where, fmt.Sprintf("%s = %s", name, v))
 
 				}
 			}
 		}
-		rollbackSql += fmt.Sprintf("UPDATE %s SET %s WHERE %s", i.getTableNameWithQuote(table),
+		rollbackSql += fmt.Sprintf("UPDATE %s SET %s WHERE %s;", i.getTableNameWithQuote(table),
 			strings.Join(value, ", "), strings.Join(where, " AND "))
 	}
 	if rollbackSql != "" {
 		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
 	}
 	return nil
+}
+
+func (i *Inspector) getRecords(tableName *ast.TableName, where ast.ExprNode,
+	order *ast.OrderByClause, limit *ast.Limit) ([]map[string]sql.NullString, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	recordSql := fmt.Sprintf("SELECT * FROM %s", i.getTableNameWithQuote(tableName))
+	if where != nil {
+		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(where))
+	}
+	if order != nil {
+		recordSql = fmt.Sprintf("%s ORDER BY", recordSql)
+		for _, item := range order.Items {
+			recordSql = fmt.Sprintf("%s %s", recordSql, exprFormat(item.Expr))
+			if item.Desc {
+				recordSql = fmt.Sprintf("%s DESC", recordSql)
+			}
+		}
+	}
+	if limit != nil {
+		recordSql = fmt.Sprintf("%s LIMIT %s", recordSql, exprFormat(limit.Count))
+	} else {
+		count := GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS)
+		recordSql = fmt.Sprintf("%s LIMIT %d", recordSql, count)
+	}
+	recordSql += ";"
+	return conn.Db.Query(recordSql)
 }
