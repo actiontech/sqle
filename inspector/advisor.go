@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func (i *Inspector) Advise(rules []model.Rule) error {
+func (i *Inspect) Advise(rules []model.Rule) error {
 	i.initRulesFunc()
 	defer i.closeDbConn()
 
@@ -42,7 +42,7 @@ func (i *Inspector) Advise(rules []model.Rule) error {
 	return i.Do()
 }
 
-func (i *Inspector) checkSelectAll(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkSelectAll(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// check select all column
@@ -57,7 +57,7 @@ func (i *Inspector) checkSelectAll(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkSelectWhere(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkSelectWhere(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// where condition
@@ -68,7 +68,7 @@ func (i *Inspector) checkSelectWhere(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkPrimaryKey(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkPrimaryKey(node ast.StmtNode, rule string) error {
 	var hasPk = false
 	var pkIsAutoIncrementBigIntUnsigned = false
 
@@ -127,7 +127,7 @@ func (i *Inspector) checkPrimaryKey(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkMergeAlterTable(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkMergeAlterTable(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
@@ -144,7 +144,7 @@ func (i *Inspector) checkMergeAlterTable(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkEngineAndCharacterSet(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkEngineAndCharacterSet(node ast.StmtNode, rule string) error {
 	var engine string
 	var characterSet string
 	switch stmt := node.(type) {
@@ -167,7 +167,7 @@ func (i *Inspector) checkEngineAndCharacterSet(node ast.StmtNode, rule string) e
 	return nil
 }
 
-func (i *Inspector) disableAddIndexForColumnsTypeBlob(node ast.StmtNode, rule string) error {
+func (i *Inspect) disableAddIndexForColumnsTypeBlob(node ast.StmtNode, rule string) error {
 	indexColumns := map[string]struct{}{}
 	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
@@ -278,7 +278,7 @@ func (i *Inspector) disableAddIndexForColumnsTypeBlob(node ast.StmtNode, rule st
 	return nil
 }
 
-func (i *Inspector) checkNewObjectName(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkNewObjectName(node ast.StmtNode, rule string) error {
 	names := []string{}
 	invalidNames := []string{}
 
@@ -350,7 +350,7 @@ func (i *Inspector) checkNewObjectName(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkForeignKey(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkForeignKey(node ast.StmtNode, rule string) error {
 	hasFk := false
 
 	switch stmt := node.(type) {
@@ -377,7 +377,7 @@ func (i *Inspector) checkForeignKey(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkIndex(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkIndex(node ast.StmtNode, rule string) error {
 	indexCounter := 0
 	compositeIndexMax := 0
 
@@ -448,7 +448,7 @@ func (i *Inspector) checkIndex(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkStringType(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkStringType(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
@@ -471,7 +471,7 @@ func (i *Inspector) checkStringType(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkObjectExist(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkObjectExist(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check schema
@@ -508,7 +508,7 @@ func (i *Inspector) checkObjectExist(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkObjectNotExist(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkObjectNotExist(node ast.StmtNode, rule string) error {
 	var tablesName = []string{}
 	var schemasName = []string{}
 
@@ -583,7 +583,7 @@ func (i *Inspector) checkObjectNotExist(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkIfNotExist(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkIfNotExist(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
@@ -594,7 +594,7 @@ func (i *Inspector) checkIfNotExist(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) disableDropStmt(node ast.StmtNode, rule string) error {
+func (i *Inspect) disableDropStmt(node ast.StmtNode, rule string) error {
 	// specific check
 	switch node.(type) {
 	case *ast.DropDatabaseStmt:

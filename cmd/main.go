@@ -8,6 +8,7 @@ import (
 	"sqle/api/server"
 	"sqle/inspector"
 	"sqle/model"
+	"sqle/sqlserverClient"
 	"sqle/utils"
 )
 
@@ -85,6 +86,10 @@ func run(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	model.InitStorage(s)
+	err = sqlserverClient.InitClient("127.0.0.1", "10086")
+	if err != nil {
+		return err
+	}
 
 	if autoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {

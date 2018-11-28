@@ -169,14 +169,19 @@ func (s *Sqled) commit(task *model.Task) error {
 	st := model.GetStorage()
 
 	i := inspector.NewInspector(task)
+	rollbackSqls, err := i.GenerateAllRollbackSql()
+	if err != nil {
+		return err
+	}
+	err = st.UpdateRollbackSql(task, rollbackSqls)
+	if err != nil {
+		return err
+	}
 
+	i = inspector.NewInspector(task)
 	for _, commitSql := range task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
-			err := i.GenerateRollbackSql(sql)
-			if err != nil {
-				return err
-			}
 			err = st.UpdateCommitSqlStatus(sql, model.TASK_ACTION_DOING, "")
 			if err != nil {
 				return err
@@ -188,15 +193,7 @@ func (s *Sqled) commit(task *model.Task) error {
 			return err
 		}
 	}
-	err := i.Do()
-	if err != nil {
-		return err
-	}
-	err = st.UpdateRollbackSql(task, i.GetAllRollbackSql())
-	if err != nil {
-		return err
-	}
-	return nil
+	return i.Do()
 }
 
 func (s *Sqled) rollback(task *model.Task) error {

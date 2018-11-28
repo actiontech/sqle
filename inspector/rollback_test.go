@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func runrollbackCase(t *testing.T, desc string, i *Inspector, sql string, results ...string) {
+func runrollbackCase(t *testing.T, desc string, i *Inspect, sql string, results ...string) {
 	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)

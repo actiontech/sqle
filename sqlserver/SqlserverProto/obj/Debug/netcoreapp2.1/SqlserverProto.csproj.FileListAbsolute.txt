@@ -1,0 +1,9 @@
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/bin/Debug/netcoreapp2.1/SqlserverProto.deps.json
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/bin/Debug/netcoreapp2.1/SqlserverProto.dll
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/bin/Debug/netcoreapp2.1/SqlserverProto.pdb
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/obj/Debug/netcoreapp2.1/SqlserverProto.csprojAssemblyReference.cache
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/obj/Debug/netcoreapp2.1/SqlserverProto.csproj.CoreCompileInputs.cache
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/obj/Debug/netcoreapp2.1/SqlserverProto.AssemblyInfoInputs.cache
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/obj/Debug/netcoreapp2.1/SqlserverProto.AssemblyInfo.cs
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/obj/Debug/netcoreapp2.1/SqlserverProto.dll
+/home/sunjian/code/sqle_path/src/sqle/sqlserver/SqlserverProto/obj/Debug/netcoreapp2.1/SqlserverProto.pdb
