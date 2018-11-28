@@ -148,7 +148,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 	template.Name = req.Name
-	template.Desc = req.Name
+	template.Desc = req.Desc
 	template.Rules = nil
 
 	templateRules := []model.Rule{}
