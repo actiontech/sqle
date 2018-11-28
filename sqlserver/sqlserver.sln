@@ -5,7 +5,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlserverProtoServer", "Sql
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlserverProto", "SqlserverProto\SqlserverProto.csproj", "{BF4B35F8-8776-4934-8BA2-78583B41B661}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlServerProtoServerTest", "SqlServerProtoServerTest\SqlServerProtoServerTest.csproj", "{28B979D0-57F9-4366-9C65-4C1369707EFB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlserverProtoServerTest", "SqlserverProtoServerTest\SqlserverProtoServerTest.csproj", "{28B979D0-57F9-4366-9C65-4C1369707EFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
