@@ -234,7 +234,7 @@ namespace SqlserverProtoServer {
             AllSchemas = new Dictionary<string, bool>();
             AllTables = new Dictionary<string, Dictionary<string, bool>>();
             AuditResultContext = new AuditResultContext();
-                   }
+        }
     }
 
     /// <summary>
