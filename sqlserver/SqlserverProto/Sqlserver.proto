@@ -28,9 +28,8 @@ message AuditOutput {
 }
 
 message AuditResult {
-    string AuditStatus = 1;
-    string AuditLevel = 2;
-    string AuditResultMessage = 3;
+    string AuditLevel = 1;
+    string AuditResultMessage = 2;
 }
 
 message GetRollbackSqlsInput {

@@ -11,5 +11,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.1.1" />
     <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="14.0.3811.1" />
+    <PackageReference Include="CommandLineParser" Version="2.3.0" />
   </ItemGroup>
 </Project>

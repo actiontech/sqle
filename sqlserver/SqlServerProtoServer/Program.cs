@@ -4,12 +4,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using CommandLine;
 
 namespace SqlserverProtoServer {
-    public class Program {// todo get Port from Main's args
-        const int Port = 10086;
+    public class Options {
+        [Option('p', "port", Required = false, HelpText = "aaa")]
+        public int Port { get; set; }
+    }
+
+    public class Program {
+        // default grpc port
+        public static int Port = 10086;
 
         public static async Task Main(string[] args) {
+            Parser.Default.ParseArguments<Options>(args)
+                  .WithParsed<Options>(o => {
+                      Port = o.Port;
+                  });
+
             var hostBuilder = new HostBuilder().ConfigureServices((hostContext, services) => {
                 Server server = new Server {
                     Services = { SqlserverService.BindService(new SqlServerServiceImpl()) },

@@ -27,17 +27,17 @@ namespace SqlserverProto {
             "dFNxbHNPdXRwdXQSDAoEU3FscxgBIAMoCSI+CgpBdWRpdElucHV0Eg8KB1Zl",
             "cnNpb24YASABKAkSDAoEU3FscxgCIAMoCRIRCglSdWxlTmFtZXMYAyADKAki",
             "QAoLQXVkaXRPdXRwdXQSMQoMQXVkaXRSZXN1bHRzGAEgAygLMhsuU3Fsc2Vy",
-            "dmVyUHJvdG8uQXVkaXRSZXN1bHQiUgoLQXVkaXRSZXN1bHQSEwoLQXVkaXRT",
-            "dGF0dXMYASABKAkSEgoKQXVkaXRMZXZlbBgCIAEoCRIaChJBdWRpdFJlc3Vs",
-            "dE1lc3NhZ2UYAyABKAkiNQoUR2V0Um9sbGJhY2tTcWxzSW5wdXQSDwoHVmVy",
-            "c2lvbhgBIAEoCRIMCgRTcWxzGAIgAygJIi0KFUdldFJvbGxiYWNrU3Fsc091",
-            "dHB1dBIUCgxSb2xsYmFja1NxbHMYASADKAkyiwIKEFNxbHNlcnZlclNlcnZp",
-            "Y2USUQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxz",
-            "SW5wdXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQiABJCCgVB",
-            "dWRpdBIaLlNxbHNlcnZlclByb3RvLkF1ZGl0SW5wdXQaGy5TcWxzZXJ2ZXJQ",
-            "cm90by5BdWRpdE91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3FscxIkLlNxbHNl",
-            "cnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJv",
-            "dG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
+            "dmVyUHJvdG8uQXVkaXRSZXN1bHQiPQoLQXVkaXRSZXN1bHQSEgoKQXVkaXRM",
+            "ZXZlbBgBIAEoCRIaChJBdWRpdFJlc3VsdE1lc3NhZ2UYAiABKAkiNQoUR2V0",
+            "Um9sbGJhY2tTcWxzSW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIg",
+            "AygJIi0KFUdldFJvbGxiYWNrU3Fsc091dHB1dBIUCgxSb2xsYmFja1NxbHMY",
+            "ASADKAkyiwIKEFNxbHNlcnZlclNlcnZpY2USUQoMR2V0U3BsaXRTcWxzEh4u",
+            "U3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxzSW5wdXQaHy5TcWxzZXJ2ZXJQcm90",
+            "by5TcGxpdFNxbHNPdXRwdXQiABJCCgVBdWRpdBIaLlNxbHNlcnZlclByb3Rv",
+            "LkF1ZGl0SW5wdXQaGy5TcWxzZXJ2ZXJQcm90by5BdWRpdE91dHB1dCIAEmAK",
+            "D0dldFJvbGxiYWNrU3FscxIkLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNr",
+            "U3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzT3V0",
+            "cHV0IgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -45,7 +45,7 @@ namespace SqlserverProto {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsOutput), global::SqlserverProto.SplitSqlsOutput.Parser, new[]{ "Sqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AuditInput), global::SqlserverProto.AuditInput.Parser, new[]{ "Version", "Sqls", "RuleNames" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AuditOutput), global::SqlserverProto.AuditOutput.Parser, new[]{ "AuditResults" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AuditResult), global::SqlserverProto.AuditResult.Parser, new[]{ "AuditStatus", "AuditLevel", "AuditResultMessage" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AuditResult), global::SqlserverProto.AuditResult.Parser, new[]{ "AuditLevel", "AuditResultMessage" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null)
           }));
@@ -598,7 +598,6 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public AuditResult(AuditResult other) : this() {
-      auditStatus_ = other.auditStatus_;
       auditLevel_ = other.auditLevel_;
       auditResultMessage_ = other.auditResultMessage_;
     }
@@ -608,19 +607,8 @@ namespace SqlserverProto {
       return new AuditResult(this);
     }
 
-    /// <summary>Field number for the "AuditStatus" field.</summary>
-    public const int AuditStatusFieldNumber = 1;
-    private string auditStatus_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public string AuditStatus {
-      get { return auditStatus_; }
-      set {
-        auditStatus_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
     /// <summary>Field number for the "AuditLevel" field.</summary>
-    public const int AuditLevelFieldNumber = 2;
+    public const int AuditLevelFieldNumber = 1;
     private string auditLevel_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public string AuditLevel {
@@ -631,7 +619,7 @@ namespace SqlserverProto {
     }
 
     /// <summary>Field number for the "AuditResultMessage" field.</summary>
-    public const int AuditResultMessageFieldNumber = 3;
+    public const int AuditResultMessageFieldNumber = 2;
     private string auditResultMessage_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public string AuditResultMessage {
@@ -654,7 +642,6 @@ namespace SqlserverProto {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (AuditStatus != other.AuditStatus) return false;
       if (AuditLevel != other.AuditLevel) return false;
       if (AuditResultMessage != other.AuditResultMessage) return false;
       return true;
@@ -663,7 +650,6 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override int GetHashCode() {
       int hash = 1;
-      if (AuditStatus.Length != 0) hash ^= AuditStatus.GetHashCode();
       if (AuditLevel.Length != 0) hash ^= AuditLevel.GetHashCode();
       if (AuditResultMessage.Length != 0) hash ^= AuditResultMessage.GetHashCode();
       return hash;
@@ -676,16 +662,12 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
-      if (AuditStatus.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(AuditStatus);
-      }
       if (AuditLevel.Length != 0) {
-        output.WriteRawTag(18);
+        output.WriteRawTag(10);
         output.WriteString(AuditLevel);
       }
       if (AuditResultMessage.Length != 0) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(18);
         output.WriteString(AuditResultMessage);
       }
     }
@@ -693,9 +675,6 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
-      if (AuditStatus.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(AuditStatus);
-      }
       if (AuditLevel.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(AuditLevel);
       }
@@ -709,9 +688,6 @@ namespace SqlserverProto {
     public void MergeFrom(AuditResult other) {
       if (other == null) {
         return;
-      }
-      if (other.AuditStatus.Length != 0) {
-        AuditStatus = other.AuditStatus;
       }
       if (other.AuditLevel.Length != 0) {
         AuditLevel = other.AuditLevel;
@@ -730,14 +706,10 @@ namespace SqlserverProto {
             input.SkipLastField();
             break;
           case 10: {
-            AuditStatus = input.ReadString();
-            break;
-          }
-          case 18: {
             AuditLevel = input.ReadString();
             break;
           }
-          case 26: {
+          case 18: {
             AuditResultMessage = input.ReadString();
             break;
           }

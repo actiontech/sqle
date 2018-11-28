@@ -8,11 +8,6 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlserverProtoServer {
     public class SqlServerServiceImpl : SqlserverService.SqlserverServiceBase {
-        private const string TASK_ACTION_INIT = "";
-        private const string TASK_ACTION_DOING = "";
-        private const string TASK_ACTION_DONE = "";
-        private const string TASK_ACTION_ERROR = "";
-
         /*
          * The following compatibility level values can be configured (not all versions supports all of the above listed compatibility level):
          * Product                          Database Engine Version         Compatibility Level Designation         Supported Compatibility Level Values
@@ -117,12 +112,10 @@ namespace SqlserverProtoServer {
                             continue;
                         }
                         ruleValidator.Check(ruleValidatorContext, statement);
-
-                        // todo set status
-                        AuditResult auditResult = new AuditResult();
-                        auditResult.AuditStatus = TASK_ACTION_DONE;
-                        output.AuditResults.Add(auditResult);
                     }
+
+                    output.AuditResults.Add(ruleValidatorContext.AuditResultContext.GetAuditResult());
+                    ruleValidatorContext.AuditResultContext.ResetAuditResult();
                 }
             }
 
