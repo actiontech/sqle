@@ -10,9 +10,11 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
+    <PackageReference Include="Grpc.Core" Version="1.16.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SqlserverProtoServer\SqlserverProtoServer.csproj" />
+    <ProjectReference Include="..\SqlserverProto\SqlserverProto.csproj" />
   </ItemGroup>
 </Project>

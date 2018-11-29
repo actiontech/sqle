@@ -9,9 +9,9 @@
 /sqled.cnf*
 /swag
 sqlserver/.vs/
-sqlserver/SqlServerProtoServer/obj/
+sqlserver/SqlserverProtoServer/obj/
 sqlserver/SqlserverProtoServer/bin/
-sqlserver/SqlServerProto/obj/
+sqlserver/SqlserverProto/obj/
 sqlserver/SqlserverProto/bin/
-sqlserver/SqlServerProtoServerTest/obj/
+sqlserver/SqlserverProtoServerTest/obj/
 sqlserver/SqlserverProtoServerTest/bin/

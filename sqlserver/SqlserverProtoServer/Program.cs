@@ -8,7 +8,7 @@ using CommandLine;
 
 namespace SqlserverProtoServer {
     public class Options {
-        [Option('p', "port", Required = false, HelpText = "aaa")]
+        [Option('p', "port", Required = false, HelpText = "grpc server port")]
         public int Port { get; set; }
     }
 
@@ -19,7 +19,10 @@ namespace SqlserverProtoServer {
         public static async Task Main(string[] args) {
             Parser.Default.ParseArguments<Options>(args)
                   .WithParsed<Options>(o => {
-                      Port = o.Port;
+                      if (o.Port > 0) {
+                          Port = o.Port;
+
+                      }
                   });
 
             var hostBuilder = new HostBuilder().ConfigureServices((hostContext, services) => {
@@ -27,6 +30,7 @@ namespace SqlserverProtoServer {
                     Services = { SqlserverService.BindService(new SqlServerServiceImpl()) },
                     Ports = { new ServerPort("localhost", Port, ServerCredentials.Insecure) }
                 };
+
                 services.AddSingleton<Server>(server);
                 services.AddSingleton<IHostedService, GrpcHostedService>();
             });

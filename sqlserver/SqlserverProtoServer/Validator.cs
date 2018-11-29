@@ -10,29 +10,29 @@ namespace SqlserverProtoServer {
 
     public static class DefaultRules {
         // rule names
-        public const string SCHEMA_NOT_EXIST = "schema_not_exist";
-        public const string SCHEMA_EXIST = "schema_exist";
-        public const string TABLE_NOT_EXIST = "table_not_exist";
-        public const string TABLE_EXIST = "table_exist";
-        public const string DDL_CREATE_TABLE_NOT_EXIST = "ddl_create_table_not_exist";
-        public const string DDL_CHECK_OBJECT_NAME_LENGTH = "ddl_check_object_name_length";
-        public const string DDL_CHECK_PRIMARY_KEY_EXIST = "ddl_check_primary_key_exist";
-        public const string DDL_CHECK_PRIMARY_KEY_TYPE = "ddl_check_primary_key_type";
-        public const string DDL_DISABLE_VARCHAR_MAX = "ddl_disable_varchar_max";
-        public const string DDL_CHECK_TYPE_CHAR_LENGTH = "ddl_check_type_char_length";
-        public const string DDL_DISABLE_FOREIGN_KEY = "ddl_disable_foreign_key";
-        public const string DDL_CHECK_INDEX_COUNT = "ddl_check_index_count";
-        public const string DDL_CHECK_COMPOSITE_INDEX_MAX = "ddl_check_composite_index_max";
-        public const string DDL_DISABLE_USING_KEYWORD = "ddl_disable_using_keyword";
+        public const String SCHEMA_NOT_EXIST = "schema_not_exist";
+        public const String SCHEMA_EXIST = "schema_exist";
+        public const String TABLE_NOT_EXIST = "table_not_exist";
+        public const String TABLE_EXIST = "table_exist";
+        public const String DDL_CREATE_TABLE_NOT_EXIST = "ddl_create_table_not_exist";
+        public const String DDL_CHECK_OBJECT_NAME_LENGTH = "ddl_check_object_name_length";
+        public const String DDL_CHECK_PRIMARY_KEY_EXIST = "ddl_check_primary_key_exist";
+        public const String DDL_CHECK_PRIMARY_KEY_TYPE = "ddl_check_primary_key_type";
+        public const String DDL_DISABLE_VARCHAR_MAX = "ddl_disable_varchar_max";
+        public const String DDL_CHECK_TYPE_CHAR_LENGTH = "ddl_check_type_char_length";
+        public const String DDL_DISABLE_FOREIGN_KEY = "ddl_disable_foreign_key";
+        public const String DDL_CHECK_INDEX_COUNT = "ddl_check_index_count";
+        public const String DDL_CHECK_COMPOSITE_INDEX_MAX = "ddl_check_composite_index_max";
+        public const String DDL_DISABLE_USING_KEYWORD = "ddl_disable_using_keyword";
         //private const string DDL_TABLE_USING_INNODB_UTF8MB4 = "ddl_create_table_using_innodb";
-        public const string DDL_DISABLE_INDEX_DATA_TYPE_BLOB = "ddl_disable_index_column_blob";
-        public const string DDL_CHECK_ALTER_TABLE_NEED_MERGE = "ddl_check_alter_table_need_merge";
-        public const string DDL_DISABLE_DROP_STATEMENT = "ddl_disable_drop_statement";
-        public const string DML_CHECK_INVALID_WHERE_CONDITION = "ddl_check_invalid_where_condition";
-        public const string DML_DISABE_SELECT_ALL_COLUMN = "dml_disable_select_all_column";
+        public const String DDL_DISABLE_INDEX_DATA_TYPE_BLOB = "ddl_disable_index_column_blob";
+        public const String DDL_CHECK_ALTER_TABLE_NEED_MERGE = "ddl_check_alter_table_need_merge";
+        public const String DDL_DISABLE_DROP_STATEMENT = "ddl_disable_drop_statement";
+        public const String DML_CHECK_INVALID_WHERE_CONDITION = "ddl_check_invalid_where_condition";
+        public const String DML_DISABE_SELECT_ALL_COLUMN = "dml_disable_select_all_column";
 
         // rules
-        public static Dictionary<string, RuleValidator> RuleValidators = new Dictionary<string, RuleValidator> {
+        public static Dictionary<String, RuleValidator> RuleValidators = new Dictionary<String, RuleValidator> {
             {
                 SCHEMA_NOT_EXIST,
                 new ObjectNotExistRuleValidator(
@@ -221,18 +221,18 @@ namespace SqlserverProtoServer {
     /// Rule validator context represens context of sqls.
     /// </summary>
     public class RuleValidatorContext {
-        public string CurrentSchema;
-        public Dictionary<string/*schema*/, bool> AllSchemas;
+        public String CurrentSchema;
+        public Dictionary<String/*schema*/, bool> AllSchemas;
         public bool IsSchemaLoaded;
-        public Dictionary<string/*schema*/, Dictionary<string/*table*/, bool>> AllTables;
+        public Dictionary<String/*schema*/, Dictionary<String/*table*/, bool>> AllTables;
         public bool IsDDL;
         public bool IsDML;
 
         public AuditResultContext AuditResultContext;
 
         public RuleValidatorContext() {
-            AllSchemas = new Dictionary<string, bool>();
-            AllTables = new Dictionary<string, Dictionary<string, bool>>();
+            AllSchemas = new Dictionary<String, bool>();
+            AllTables = new Dictionary<String, Dictionary<String, bool>>();
             AuditResultContext = new AuditResultContext();
         }
     }
@@ -242,8 +242,8 @@ namespace SqlserverProtoServer {
     /// </summary>
     public class AuditResultContext {
         public RULE_LEVEL Level;
-        public string Message;
-        public static Dictionary<RULE_LEVEL, string> RuleLevels = new Dictionary<RULE_LEVEL, string> {
+        public String Message;
+        public static Dictionary<RULE_LEVEL, String> RuleLevels = new Dictionary<RULE_LEVEL, String> {
             {RULE_LEVEL.NORMAL, "normal"},
             {RULE_LEVEL.NOTICE, "notice"},
             {RULE_LEVEL.WARN, "warn"},
@@ -255,7 +255,7 @@ namespace SqlserverProtoServer {
             Message = "";
         }
 
-        public void AddAuditResult(RULE_LEVEL level, string message) {
+        public void AddAuditResult(RULE_LEVEL level, String message) {
             if (Level < level) {
                 Level = level;
             }
@@ -280,33 +280,33 @@ namespace SqlserverProtoServer {
             return auditResult;
         }
 
-        public string GetLevel() {
+        public String GetLevel() {
             return RuleLevels[Level];
         }
 
-        public string GetMessage() {
+        public String GetMessage() {
             return Message;
         }
     }
 
     public abstract class RuleValidator {
-        protected string Name;
-        protected string Desc;
-        protected string Message;
+        protected String Name;
+        protected String Desc;
+        protected String Message;
         protected RULE_LEVEL Level;
 
         // if check failed, it will throw exception
         public abstract void Check(RuleValidatorContext context, TSqlStatement statement);
         // return validator name
-        public string GetName() {
+        public String GetName() {
             return Name;
         }
         // return validator description
-        public string GetDescription() {
+        public String GetDescription() {
             return Desc;
         }
         // return validator message
-        public string GetMessage(params string[] paras) {
+        public String GetMessage(params String[] paras) {
             return String.Format(Message, paras);
         }
         // return validator level
@@ -314,7 +314,7 @@ namespace SqlserverProtoServer {
             return Level;
         }
 
-        protected RuleValidator(string name, string desc, string msg, RULE_LEVEL level) {
+        protected RuleValidator(String name, String desc, String msg, RULE_LEVEL level) {
             Name = name;
             Desc = desc;
             Message = msg;
@@ -327,7 +327,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public ObjectNotExistRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public ObjectNotExistRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class ObjectExistRuleValidator : RuleValidator {
@@ -335,7 +335,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public ObjectExistRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public ObjectExistRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class IfNotExistRuleValidator : RuleValidator {
@@ -343,7 +343,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public IfNotExistRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public IfNotExistRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class NewObjectNameRuleValidator : RuleValidator {
@@ -351,7 +351,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public NewObjectNameRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public NewObjectNameRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class PrimaryKeyRuleValidator : RuleValidator {
@@ -359,7 +359,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public PrimaryKeyRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public PrimaryKeyRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class DisableVarcharMaxRuleValidator : RuleValidator {
@@ -367,7 +367,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public DisableVarcharMaxRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public DisableVarcharMaxRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class StringTypeRuleValidator : RuleValidator {
@@ -375,7 +375,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public StringTypeRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public StringTypeRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class ForeignKeyRuleValidator : RuleValidator {
@@ -383,7 +383,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public ForeignKeyRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public ForeignKeyRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class IndexRuleValidator : RuleValidator {
@@ -391,7 +391,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public IndexRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public IndexRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
     /*
     public class EngineAndCharacterSetRuleValidator : RuleValidator {
@@ -408,7 +408,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public DisableAddIndexForColumnsTypeBlob(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public DisableAddIndexForColumnsTypeBlob(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class MergeAlterTableRuleValidator : RuleValidator {
@@ -416,7 +416,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public MergeAlterTableRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public MergeAlterTableRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class DisableDropRuleValidator : RuleValidator {
@@ -424,7 +424,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public DisableDropRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public DisableDropRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class SelectWhereRuleValidator : RuleValidator {
@@ -432,7 +432,7 @@ namespace SqlserverProtoServer {
             throw new NotImplementedException();
         }
 
-        public SelectWhereRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public SelectWhereRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 
     public class SelectAllRuleValidator : RuleValidator {
@@ -448,6 +448,6 @@ namespace SqlserverProtoServer {
             }
         }
 
-        public SelectAllRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public SelectAllRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 }
