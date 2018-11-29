@@ -158,10 +158,7 @@ func DeleteTask(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	return c.JSON(http.StatusOK, &GetTaskRes{
-		BaseRes: NewBaseReq(nil),
-		Data:    task.Detail(),
-	})
+	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
 
 type GetAllTaskRes struct {
