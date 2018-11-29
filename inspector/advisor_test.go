@@ -596,7 +596,6 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 `,
 		newTestResult().addResult(DDL_DISABLE_FOREIGN_KEY),
 	)
-
 }
 
 func TestNewInspector(t *testing.T) {
@@ -622,4 +621,80 @@ func TestNewInspector(t *testing.T) {
 	//	return
 	//}
 	//fmt.Println(result)
+}
+
+func DefaultMycatInspect() *Inspector {
+	return &Inspector{
+		Results: newInspectResults(),
+		Task: &model.Task{
+			Instance: &model.Instance{
+				DbType: model.DB_TYPE_MYCAT,
+				MycatConfig: &model.MycatConfig{
+					AlgorithmSchemas: map[string]*model.AlgorithmSchema{
+						"multidb": &model.AlgorithmSchema{
+							AlgorithmTables: map[string]*model.AlgorithmTable{
+								"exist_tb_1": &model.AlgorithmTable{
+									ShardingColumn: "sharding_id",
+								},
+								"exist_tb_2": &model.AlgorithmTable{
+									ShardingColumn: "sharding_id",
+								},
+							},
+						},
+					},
+				},
+			},
+			CommitSqls:   []*model.CommitSql{},
+			RollbackSqls: []*model.RollbackSql{},
+		},
+		SqlArray:      []*model.Sql{},
+		currentSchema: "multidb",
+		allSchema:     map[string]struct{}{"multidb": struct{}{}},
+		schemaHasLoad: true,
+		allTable: map[string]map[string]struct{}{
+			"multidb": map[string]struct{}{
+				"exist_tb_1": struct{}{},
+				"exist_tb_2": struct{}{},
+			}},
+		createTableStmts: map[string]*ast.CreateTableStmt{},
+		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
+		rollbackSqls:     []string{},
+	}
+}
+
+func TestInspector_Inspect_Mycat(t *testing.T) {
+	runInspectCase(t, "insert: mycat dml must using sharding_id", DefaultMycatInspect(),
+		`
+insert into exist_tb_1 set id=1,v1="1";
+insert into exist_tb_2 (id,v1) values(1,"1");
+insert into exist_tb_1 set id=1,sharding_id="1",v1="1";
+insert into exist_tb_2 (id,sharding_id,v1) value (1,"1","1");
+`,
+		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
+		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
+		newTestResult(),
+		newTestResult(),
+	)
+
+	runInspectCase(t, "update: mycat dml must using sharding_id", DefaultMycatInspect(),
+		`
+update exist_tb_1 set v1="1" where id=1;
+update exist_tb_1 set v1="1" where sharding_id=1;
+update exist_tb_2 set v1="1" where sharding_id=1 and id=1;
+`,
+		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
+		newTestResult(),
+		newTestResult(),
+	)
+
+	runInspectCase(t, "delete: mycat dml must using sharding_id", DefaultMycatInspect(),
+		`
+delete from exist_tb_1 where id=1;
+delete from exist_tb_1 where sharding_id=1;
+delete from exist_tb_1 where sharding_id=1 and id=1;
+`,
+		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
+		newTestResult(),
+		newTestResult(),
+	)
 }

@@ -7,26 +7,27 @@ import (
 
 // inspector rule code
 const (
-	SCHEMA_NOT_EXIST                  = "schema_not_exist"
-	SCHEMA_EXIST                      = "schema_exist"
-	TABLE_NOT_EXIST                   = "table_not_exist"
-	TABLE_EXIST                       = "table_exist"
-	DDL_CREATE_TABLE_NOT_EXIST        = "ddl_create_table_not_exist"
-	DDL_CHECK_OBJECT_NAME_LENGTH      = "ddl_check_object_name_length"
-	DDL_CHECK_PRIMARY_KEY_EXIST       = "ddl_check_primary_key_exist"
-	DDL_CHECK_PRIMARY_KEY_TYPE        = "ddl_check_primary_key_type"
-	DDL_DISABLE_VARCHAR_MAX           = "ddl_disable_varchar_max"
-	DDL_CHECK_TYPE_CHAR_LENGTH        = "ddl_check_type_char_length"
-	DDL_DISABLE_FOREIGN_KEY           = "ddl_disable_foreign_key"
-	DDL_CHECK_INDEX_COUNT             = "ddl_check_index_count"
-	DDL_CHECK_COMPOSITE_INDEX_MAX     = "ddl_check_composite_index_max"
-	DDL_DISABLE_USING_KEYWORD         = "ddl_disable_using_keyword"
-	DDL_TABLE_USING_INNODB_UTF8MB4    = "ddl_create_table_using_innodb"
-	DDL_DISABLE_INDEX_DATA_TYPE_BLOB  = "ddl_disable_index_column_blob"
-	DDL_CHECK_ALTER_TABLE_NEED_MERGE  = "ddl_check_alter_table_need_merge"
-	DDL_DISABLE_DROP_STATEMENT        = "ddl_disable_drop_statement"
-	DML_CHECK_INVALID_WHERE_CONDITION = "ddl_check_invalid_where_condition"
-	DML_DISABE_SELECT_ALL_COLUMN      = "dml_disable_select_all_column"
+	SCHEMA_NOT_EXIST                     = "schema_not_exist"
+	SCHEMA_EXIST                         = "schema_exist"
+	TABLE_NOT_EXIST                      = "table_not_exist"
+	TABLE_EXIST                          = "table_exist"
+	DDL_CREATE_TABLE_NOT_EXIST           = "ddl_create_table_not_exist"
+	DDL_CHECK_OBJECT_NAME_LENGTH         = "ddl_check_object_name_length"
+	DDL_CHECK_PRIMARY_KEY_EXIST          = "ddl_check_primary_key_exist"
+	DDL_CHECK_PRIMARY_KEY_TYPE           = "ddl_check_primary_key_type"
+	DDL_DISABLE_VARCHAR_MAX              = "ddl_disable_varchar_max"
+	DDL_CHECK_TYPE_CHAR_LENGTH           = "ddl_check_type_char_length"
+	DDL_DISABLE_FOREIGN_KEY              = "ddl_disable_foreign_key"
+	DDL_CHECK_INDEX_COUNT                = "ddl_check_index_count"
+	DDL_CHECK_COMPOSITE_INDEX_MAX        = "ddl_check_composite_index_max"
+	DDL_DISABLE_USING_KEYWORD            = "ddl_disable_using_keyword"
+	DDL_TABLE_USING_INNODB_UTF8MB4       = "ddl_create_table_using_innodb"
+	DDL_DISABLE_INDEX_DATA_TYPE_BLOB     = "ddl_disable_index_column_blob"
+	DDL_CHECK_ALTER_TABLE_NEED_MERGE     = "ddl_check_alter_table_need_merge"
+	DDL_DISABLE_DROP_STATEMENT           = "ddl_disable_drop_statement"
+	DML_CHECK_INVALID_WHERE_CONDITION    = "ddl_check_invalid_where_condition"
+	DML_DISABE_SELECT_ALL_COLUMN         = "dml_disable_select_all_column"
+	DML_MYCAT_MUST_USING_SHARDING_CLOUNM = "dml_mycat_must_using_sharding_column"
 )
 
 var DefaultRules = []model.Rule{
@@ -150,6 +151,12 @@ var DefaultRules = []model.Rule{
 		Message: "禁止除索引外的drop操作",
 		Level:   model.RULE_LEVEL_ERROR,
 	},
+	model.Rule{
+		Name:    DML_MYCAT_MUST_USING_SHARDING_CLOUNM,
+		Desc:    "mycat dml 必须使用分片字段",
+		Message: "mycat dml 必须使用分片字段",
+		Level:   model.RULE_LEVEL_ERROR,
+	},
 }
 
 var DefaultRulesMap = map[string]model.Rule{}
@@ -160,25 +167,26 @@ func init() {
 
 func (i *Inspect) initRulesFunc() {
 	i.RulesFunc = map[string]func(stmt ast.StmtNode, rule string) error{
-		SCHEMA_NOT_EXIST:                  i.checkObjectNotExist,
-		TABLE_NOT_EXIST:                   i.checkObjectNotExist,
-		SCHEMA_EXIST:                      i.checkObjectExist,
-		TABLE_EXIST:                       i.checkObjectExist,
-		DDL_CREATE_TABLE_NOT_EXIST:        i.checkIfNotExist,
-		DDL_CHECK_OBJECT_NAME_LENGTH:      i.checkNewObjectName,
-		DDL_CHECK_PRIMARY_KEY_EXIST:       i.checkPrimaryKey,
-		DDL_CHECK_PRIMARY_KEY_TYPE:        i.checkPrimaryKey,
-		DDL_DISABLE_VARCHAR_MAX:           nil,
-		DDL_CHECK_TYPE_CHAR_LENGTH:        i.checkStringType,
-		DDL_DISABLE_FOREIGN_KEY:           i.checkForeignKey,
-		DDL_CHECK_INDEX_COUNT:             i.checkIndex,
-		DDL_CHECK_COMPOSITE_INDEX_MAX:     i.checkIndex,
-		DDL_DISABLE_USING_KEYWORD:         i.checkNewObjectName,
-		DDL_TABLE_USING_INNODB_UTF8MB4:    i.checkEngineAndCharacterSet,
-		DDL_DISABLE_INDEX_DATA_TYPE_BLOB:  i.disableAddIndexForColumnsTypeBlob,
-		DDL_CHECK_ALTER_TABLE_NEED_MERGE:  i.checkMergeAlterTable,
-		DDL_DISABLE_DROP_STATEMENT:        i.disableDropStmt,
-		DML_CHECK_INVALID_WHERE_CONDITION: i.checkSelectWhere,
-		DML_DISABE_SELECT_ALL_COLUMN:      i.checkSelectAll,
+		SCHEMA_NOT_EXIST:                     i.checkObjectNotExist,
+		TABLE_NOT_EXIST:                      i.checkObjectNotExist,
+		SCHEMA_EXIST:                         i.checkObjectExist,
+		TABLE_EXIST:                          i.checkObjectExist,
+		DDL_CREATE_TABLE_NOT_EXIST:           i.checkIfNotExist,
+		DDL_CHECK_OBJECT_NAME_LENGTH:         i.checkNewObjectName,
+		DDL_CHECK_PRIMARY_KEY_EXIST:          i.checkPrimaryKey,
+		DDL_CHECK_PRIMARY_KEY_TYPE:           i.checkPrimaryKey,
+		DDL_DISABLE_VARCHAR_MAX:              nil,
+		DDL_CHECK_TYPE_CHAR_LENGTH:           i.checkStringType,
+		DDL_DISABLE_FOREIGN_KEY:              i.checkForeignKey,
+		DDL_CHECK_INDEX_COUNT:                i.checkIndex,
+		DDL_CHECK_COMPOSITE_INDEX_MAX:        i.checkIndex,
+		DDL_DISABLE_USING_KEYWORD:            i.checkNewObjectName,
+		DDL_TABLE_USING_INNODB_UTF8MB4:       i.checkEngineAndCharacterSet,
+		DDL_DISABLE_INDEX_DATA_TYPE_BLOB:     i.disableAddIndexForColumnsTypeBlob,
+		DDL_CHECK_ALTER_TABLE_NEED_MERGE:     i.checkMergeAlterTable,
+		DDL_DISABLE_DROP_STATEMENT:           i.disableDropStmt,
+		DML_CHECK_INVALID_WHERE_CONDITION:    i.checkSelectWhere,
+		DML_DISABE_SELECT_ALL_COLUMN:         i.checkSelectAll,
+		DML_MYCAT_MUST_USING_SHARDING_CLOUNM: i.checkMycatShardingColumn,
 	}
 }

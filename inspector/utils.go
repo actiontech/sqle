@@ -188,25 +188,68 @@ func MysqlDataTypeIsBlob(tp byte) bool {
 	}
 }
 
-func whereStmtHasColumn(where ast.ExprNode) bool {
+func whereStmtHasOneColumn(where ast.ExprNode) bool {
+	return scanWhereStmtColumn(where, func(expr *ast.ColumnNameExpr) bool {
+		return true
+	})
+}
+
+func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
+	return scanWhereStmtColumn(where, func(expr *ast.ColumnNameExpr) bool {
+		if expr.Name.Name.L == strings.ToLower(columnName) {
+			return true
+		}
+		return false
+	})
+}
+
+func scanWhereStmtColumn(where ast.ExprNode, fn func(expr *ast.ColumnNameExpr) bool) bool {
 	switch x := where.(type) {
 	case nil:
 	case *ast.ColumnNameExpr:
-		return true
+		return fn(x)
 	case *ast.BinaryOperationExpr:
-		if whereStmtHasColumn(x.R) || whereStmtHasColumn(x.L) {
+		if scanWhereStmtColumn(x.R, fn) || scanWhereStmtColumn(x.L, fn) {
 			return true
 		} else {
 			return false
 		}
-	case *ast.IsTruthExpr:
-		return whereStmtHasColumn(x.Expr)
 	case *ast.UnaryOperationExpr:
-		return whereStmtHasColumn(x.V)
+		return scanWhereStmtColumn(x.V, fn)
+	// boolean_primary is true|false
+	case *ast.IsTruthExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary is (not) null
 	case *ast.IsNullExpr:
-		return whereStmtHasColumn(x.Expr)
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary comparison_operator {ALL | ANY} (subquery)
 	case *ast.CompareSubqueryExpr:
-		return true
+		return scanWhereStmtColumn(x.L, fn)
+	// boolean_primary IN (expr,...)
+	case *ast.PatternInExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary Between expr and expr
+	case *ast.BetweenExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary (not) like expr
+	case *ast.PatternLikeExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary (not) regexp expr
+	case *ast.PatternRegexpExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	case *ast.RowExpr:
+		if x.Values != nil {
+			ok := false
+			for _, expr := range x.Values {
+				ok = ok || scanWhereStmtColumn(expr, fn)
+				if ok {
+					return ok
+				}
+			}
+			return ok
+		}
+	default:
+		return false
 	}
 	return false
 }

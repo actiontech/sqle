@@ -18,7 +18,7 @@ type Db interface {
 	Ping() error
 	Exec(query string) (driver.Result, error)
 	ExecDDL(query, schema, table string) error
-	Query(query string, args ...interface{}) ([]map[string]string, error)
+	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 }
 
 type BaseConn struct {
@@ -79,10 +79,15 @@ func (c *BaseConn) ExecDDL(query, schema, table string) error {
 	return err
 }
 
-func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]string, error) {
+func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	rows, err := c.DB.DB().Query(query, args...)
 	if err != nil {
+		fmt.Printf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
+			c.host, c.port, c.user, query, err.Error())
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+	} else {
+		fmt.Printf("query sql success; host: %s, port: %s, user: %s, query: %s\n",
+			c.host, c.port, c.user, query)
 	}
 	defer rows.Close()
 	columns, err := rows.Columns()
@@ -90,7 +95,7 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]string
 		// unknown error
 		return nil, err
 	}
-	result := make([]map[string]string, 0)
+	result := make([]map[string]sql.NullString, 0)
 	for rows.Next() {
 		buf := make([]interface{}, len(columns))
 		data := make([]sql.NullString, len(columns))
@@ -100,10 +105,10 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]string
 		if err := rows.Scan(buf...); err != nil {
 			return nil, err
 		}
-		value := make(map[string]string, len(columns))
+		value := make(map[string]sql.NullString, len(columns))
 		for i := 0; i < len(columns); i++ {
 			k := columns[i]
-			v := data[i].String
+			v := data[i]
 			value[k] = v
 		}
 		result = append(result, value)
@@ -178,7 +183,7 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR,
 			fmt.Errorf("show create table error, column \"Create Table\" not found"))
 	} else {
-		return query, nil
+		return query.String, nil
 	}
 }
 
@@ -194,7 +199,7 @@ func (c *Executor) ShowDatabases() ([]string, error) {
 				fmt.Errorf("show databases error"))
 		}
 		for _, db := range v {
-			dbs[n] = db
+			dbs[n] = db.String
 			break
 		}
 	}
@@ -213,7 +218,7 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 				fmt.Errorf("show tables error"))
 		}
 		for _, table := range v {
-			tables[n] = table
+			tables[n] = table.String
 			break
 		}
 	}
@@ -225,6 +230,9 @@ type ExecutionPlanJson struct {
 		CostInfo struct {
 			QueryCost string `json:"query_cost"`
 		} `json:"cost_info"`
+		TABLE struct {
+			Rows int `json:"rows_examined_per_scan"`
+		}
 	} `json:"query_block"`
 }
 
@@ -235,12 +243,12 @@ func (c *Executor) Explain(query string) (ExecutionPlanJson, error) {
 		return ep, err
 	}
 	if len(result) == 1 {
-		json.Unmarshal([]byte(result[0]["EXPLAIN"]), &ep)
+		json.Unmarshal([]byte(result[0]["EXPLAIN"].String), &ep)
 	}
 	return ep, nil
 }
 
-func (c *Executor) ShowMasterStatus() ([]map[string]string, error) {
+func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
 	result, err := c.Db.Query(fmt.Sprintf("show master status"))
 	if err != nil {
 		return nil, err
@@ -261,8 +269,8 @@ func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 	if len(result) == 0 {
 		return "", 0, nil
 	}
-	file := result[0]["File"]
-	pos, err := strconv.ParseInt(result[0]["Position"], 10, 64)
+	file := result[0]["File"].String
+	pos, err := strconv.ParseInt(result[0]["Position"].String, 10, 64)
 	if err != nil {
 		return "", 0, err
 	}

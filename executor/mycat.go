@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"sqle/errors"
@@ -103,6 +104,6 @@ func (mc *MycatConn) ExecDDL(query, schema, table string) error {
 	return nil
 }
 
-func (mc *MycatConn) Query(query string, args ...interface{}) ([]map[string]string, error) {
+func (mc *MycatConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	return mc.Conn.Query(query, args...)
 }

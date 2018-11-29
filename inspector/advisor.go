@@ -31,6 +31,9 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 			currentSql.InspectStatus = model.TASK_ACTION_DONE
 			currentSql.InspectLevel = i.Results.level()
 			currentSql.InspectResult = i.Results.message()
+
+			// print osc
+
 			// clean up results
 			i.Results = newInspectResults()
 			return nil
@@ -61,7 +64,7 @@ func (i *Inspect) checkSelectWhere(node ast.StmtNode, rule string) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// where condition
-		if stmt.Where == nil || !whereStmtHasColumn(stmt.Where) {
+		if stmt.Where == nil || !whereStmtHasOneColumn(stmt.Where) {
 			i.addResult(DML_CHECK_INVALID_WHERE_CONDITION)
 		}
 	}
@@ -601,6 +604,99 @@ func (i *Inspect) disableDropStmt(node ast.StmtNode, rule string) error {
 		i.addResult(DDL_DISABLE_DROP_STATEMENT)
 	case *ast.DropTableStmt:
 		i.addResult(DDL_DISABLE_DROP_STATEMENT)
+	}
+	return nil
+}
+
+func (i *Inspector) checkMycatShardingColumn(node ast.StmtNode, rule string) error {
+	if i.Task.Instance.DbType != model.DB_TYPE_MYCAT {
+		return nil
+	}
+	config := i.Task.Instance.MycatConfig
+	hasShardingColumn := false
+	switch stmt := node.(type) {
+	case *ast.InsertStmt:
+		tables := getTables(stmt.Table.TableRefs)
+		// tables must be one on InsertIntoStmt in parser.go
+		if len(tables) != 1 {
+			return nil
+		}
+		table := tables[0]
+		schema, ok := config.AlgorithmSchemas[i.getSchemaName(table)]
+		if !ok {
+			return nil
+		}
+		tableName := table.Name.String()
+		if schema.AlgorithmTables == nil {
+			return nil
+		}
+		at, ok := schema.AlgorithmTables[tableName]
+		if !ok {
+			return nil
+		}
+		shardingCoulmn := at.ShardingColumn
+		if stmt.Columns != nil {
+			for _, column := range stmt.Columns {
+				if column.Name.L == strings.ToLower(shardingCoulmn) {
+					hasShardingColumn = true
+				}
+			}
+		}
+		if stmt.Setlist != nil {
+			for _, set := range stmt.Setlist {
+				if set.Column.Name.L == strings.ToLower(shardingCoulmn) {
+					hasShardingColumn = true
+				}
+			}
+		}
+	case *ast.UpdateStmt:
+		tables := getTables(stmt.TableRefs.TableRefs)
+		// multi table related update not supported on mycat
+		if len(tables) != 1 {
+			return nil
+		}
+		table := tables[0]
+		schema, ok := config.AlgorithmSchemas[i.getSchemaName(table)]
+		if !ok {
+			return nil
+		}
+		tableName := table.Name.String()
+		if schema.AlgorithmTables == nil {
+			return nil
+		}
+		at, ok := schema.AlgorithmTables[tableName]
+		if !ok {
+			return nil
+		}
+		shardingCoulmn := at.ShardingColumn
+		hasShardingColumn = whereStmtHasSpecificColumn(stmt.Where, shardingCoulmn)
+	case *ast.DeleteStmt:
+		// not support multi table related delete
+		if stmt.IsMultiTable {
+			return nil
+		}
+		tables := getTables(stmt.TableRefs.TableRefs)
+		if len(tables) != 1 {
+			return nil
+		}
+		table := tables[0]
+		schema, ok := config.AlgorithmSchemas[i.getSchemaName(table)]
+		if !ok {
+			return nil
+		}
+		tableName := table.Name.String()
+		if schema.AlgorithmTables == nil {
+			return nil
+		}
+		at, ok := schema.AlgorithmTables[tableName]
+		if !ok {
+			return nil
+		}
+		shardingCoulmn := at.ShardingColumn
+		hasShardingColumn = whereStmtHasSpecificColumn(stmt.Where, shardingCoulmn)
+	}
+	if !hasShardingColumn {
+		i.addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM)
 	}
 	return nil
 }
