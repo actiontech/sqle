@@ -1,0 +1,42 @@
+﻿syntax = "proto3";
+
+package SqlserverProto;
+
+service SqlserverService {
+    rpc GetSplitSqls(SplitSqlsInput) returns (SplitSqlsOutput) {}
+    rpc Audit(AuditInput) returns (AuditOutput) {}
+    rpc GetRollbackSqls(GetRollbackSqlsInput) returns (GetRollbackSqlsOutput) {}
+}
+
+message SplitSqlsInput {
+    string Version = 1;
+    string Sqls = 2;
+}
+
+message SplitSqlsOutput {
+    repeated string Sqls = 1;
+}
+
+message AuditInput {
+    string Version = 1;
+    repeated string Sqls = 2;
+    repeated string RuleNames = 3;
+}
+
+message AuditOutput {
+    repeated AuditResult AuditResults = 1;
+}
+
+message AuditResult {
+    string AuditLevel = 1;
+    string AuditResultMessage = 2;
+}
+
+message GetRollbackSqlsInput {
+    string Version = 1;
+    repeated string Sqls = 2;
+}
+
+message GetRollbackSqlsOutput {
+    repeated string RollbackSqls = 1;
+}

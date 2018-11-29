@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (i *Inspector) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
+func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	defer i.closeDbConn()
 
 	for _, commitSql := range i.Task.CommitSqls {
@@ -26,7 +26,7 @@ func (i *Inspector) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	return i.GetAllRollbackSql(), nil
 }
 
-func (i *Inspector) GetAllRollbackSql() []*model.RollbackSql {
+func (i *Inspect) GetAllRollbackSql() []*model.RollbackSql {
 	rollbackSqls := []*model.RollbackSql{}
 	// Reverse order
 	var number uint = 1
@@ -42,7 +42,7 @@ func (i *Inspector) GetAllRollbackSql() []*model.RollbackSql {
 	return rollbackSqls
 }
 
-func (i *Inspector) GenerateRollbackSql(sql *model.Sql) error {
+func (i *Inspect) GenerateRollbackSql(sql *model.Sql) error {
 	node := sql.Stmts[0]
 	switch node.(type) {
 	case ast.DDLNode:
@@ -53,7 +53,7 @@ func (i *Inspector) GenerateRollbackSql(sql *model.Sql) error {
 	return nil
 }
 
-func (i *Inspector) GenerateDDLStmtRollbackSql(node ast.StmtNode) error {
+func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.StmtNode) error {
 	var err error
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
@@ -71,7 +71,7 @@ func (i *Inspector) GenerateDDLStmtRollbackSql(node ast.StmtNode) error {
 	return nil
 }
 
-func (i *Inspector) GenerateDMLStmtRollbackSql(node ast.StmtNode) error {
+func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.StmtNode) error {
 	var err error
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
@@ -87,7 +87,7 @@ func (i *Inspector) GenerateDMLStmtRollbackSql(node ast.StmtNode) error {
 	return nil
 }
 
-func (i *Inspector) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error {
+func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
@@ -243,7 +243,7 @@ func (i *Inspector) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) erro
 	return nil
 }
 
-func (i *Inspector) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) error {
+func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) error {
 	schemaName := stmt.Name
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
@@ -256,7 +256,7 @@ func (i *Inspector) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt
 	return nil
 }
 
-func (i *Inspector) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) error {
+func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	tableName := i.getTableName(stmt.Table)
 
@@ -282,7 +282,7 @@ func (i *Inspector) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) er
 	return nil
 }
 
-func (i *Inspector) generateDropTableRollbackSql(stmt *ast.DropTableStmt) error {
+func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) error {
 	for _, table := range stmt.Tables {
 		tableName := i.getTableName(table)
 		stmt, tableExist, err := i.getCreateTableStmt(tableName)
@@ -298,13 +298,13 @@ func (i *Inspector) generateDropTableRollbackSql(stmt *ast.DropTableStmt) error 
 	return nil
 }
 
-func (i *Inspector) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
+func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
 	i.rollbackSqls = append(i.rollbackSqls,
 		fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)))
 	return nil
 }
 
-func (i *Inspector) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
+func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
 	if err != nil {
@@ -332,7 +332,7 @@ func (i *Inspector) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) erro
 	return nil
 }
 
-func (i *Inspector) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
+func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 	table := getTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(table) != 1 {
@@ -413,7 +413,7 @@ func (i *Inspector) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 	return nil
 }
 
-func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
+func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
 		return nil
@@ -463,7 +463,7 @@ func (i *Inspector) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 	return nil
 }
 
-func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
+func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 	tables := getTables(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tables) != 1 {
@@ -534,7 +534,7 @@ func (i *Inspector) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 	return nil
 }
 
-func (i *Inspector) getRecords(tableName *ast.TableName, where ast.ExprNode,
+func (i *Inspect) getRecords(tableName *ast.TableName, where ast.ExprNode,
 	order *ast.OrderByClause, limit *ast.Limit) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {

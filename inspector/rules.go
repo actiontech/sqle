@@ -165,7 +165,7 @@ func init() {
 	DefaultRulesMap = model.GetRuleMapFromAllArray(DefaultRules)
 }
 
-func (i *Inspector) initRulesFunc() {
+func (i *Inspect) initRulesFunc() {
 	i.RulesFunc = map[string]func(stmt ast.StmtNode, rule string) error{
 		SCHEMA_NOT_EXIST:                     i.checkObjectNotExist,
 		TABLE_NOT_EXIST:                      i.checkObjectNotExist,

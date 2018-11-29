@@ -51,9 +51,10 @@ func CreateTask(c echo.Context) error {
 		Desc:       req.Desc,
 		Schema:     req.Schema,
 		InstanceId: inst.ID,
+		Instance:   inst,
 		CommitSqls: []*model.CommitSql{},
 	}
-	sqlArray, err := inspector.SplitSql(inst.DbType, req.Sql)
+	sqlArray, err := inspector.NewInspector(task).SplitSql(req.Sql)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -65,6 +66,7 @@ func CreateTask(c echo.Context) error {
 			},
 		})
 	}
+	task.Instance = nil
 	err = s.Save(task)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
@@ -96,7 +98,7 @@ func UploadSqlFile(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, err)
 	}
-	sqlArray, err := inspector.SplitSql(task.Instance.DbType, string(sql))
+	sqlArray, err := inspector.NewInspector(task).SplitSql(string(sql))
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}

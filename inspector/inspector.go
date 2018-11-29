@@ -12,7 +12,24 @@ var (
 	SQL_STMT_CONFLICT_ERROR = fmt.Errorf("不能同时提交 DDL 和 DML 语句")
 )
 
-type Inspector struct {
+type Inspector interface {
+	Add(sql *model.Sql, action func(sql *model.Sql) error) error
+	Do() error
+	Advise(rules []model.Rule) error
+	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
+	Commit(sql *model.Sql) error
+	SplitSql(sql string) ([]string, error)
+}
+
+func NewInspector(task *model.Task) Inspector {
+	if task.Instance.DbType == model.DB_TYPE_SQLSERVER {
+		return NeSqlserverInspect(task)
+	} else {
+		return NewInspect(task)
+	}
+}
+
+type Inspect struct {
 	Results     *InspectResults
 	currentRule model.Rule
 	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
@@ -40,8 +57,8 @@ type Inspector struct {
 	rollbackSqls    []string
 }
 
-func NewInspector(task *model.Task) *Inspector {
-	return &Inspector{
+func NewInspect(task *model.Task) *Inspect {
+	return &Inspect{
 		Results:          newInspectResults(),
 		Task:             task,
 		currentSchema:    task.Schema,
@@ -54,7 +71,7 @@ func NewInspector(task *model.Task) *Inspector {
 	}
 }
 
-func (i *Inspector) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
+func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 	nodes, err := parseSql(i.Task.Instance.DbType, sql.Content)
 	if err != nil {
 		return err
@@ -79,7 +96,7 @@ func (i *Inspector) Add(sql *model.Sql, action func(sql *model.Sql) error) error
 	return nil
 }
 
-func (i *Inspector) Do() error {
+func (i *Inspect) Do() error {
 	for n, sql := range i.SqlArray {
 		err := i.SqlAction[n](sql)
 		if err != nil {
@@ -93,7 +110,19 @@ func (i *Inspector) Do() error {
 	return nil
 }
 
-func (i *Inspector) addResult(ruleName string, args ...interface{}) {
+func (i *Inspect) SplitSql(sql string) ([]string, error) {
+	stmts, err := parseSql(i.Task.Instance.DbType, sql)
+	if err != nil {
+		return nil, err
+	}
+	sqlArray := make([]string, len(stmts))
+	for n, stmt := range stmts {
+		sqlArray[n] = stmt.Text()
+	}
+	return sqlArray, nil
+}
+
+func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 	// if rule is not current rule, ignore save the message.
 	if ruleName != i.currentRule.Name {
 		return
@@ -101,7 +130,7 @@ func (i *Inspector) addResult(ruleName string, args ...interface{}) {
 	i.Results.add(i.currentRule, args...)
 }
 
-func (i *Inspector) getDbConn() (*executor.Executor, error) {
+func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
@@ -113,14 +142,14 @@ func (i *Inspector) getDbConn() (*executor.Executor, error) {
 	return conn, err
 }
 
-func (i *Inspector) closeDbConn() {
+func (i *Inspect) closeDbConn() {
 	if i.isConnected {
 		i.dbConn.Db.Close()
 		i.isConnected = false
 	}
 }
 
-func (i *Inspector) getSchemaName(stmt *ast.TableName) string {
+func (i *Inspect) getSchemaName(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
 		return i.currentSchema
 	} else {
@@ -128,7 +157,7 @@ func (i *Inspector) getSchemaName(stmt *ast.TableName) string {
 	}
 }
 
-func (i *Inspector) isSchemaExist(schema string) (bool, error) {
+func (i *Inspect) isSchemaExist(schema string) (bool, error) {
 	if schema == "" {
 		schema = i.currentSchema
 	}
@@ -150,7 +179,7 @@ func (i *Inspector) isSchemaExist(schema string) (bool, error) {
 	return ok, nil
 }
 
-func (i *Inspector) getTableName(stmt *ast.TableName) string {
+func (i *Inspect) getTableName(stmt *ast.TableName) string {
 	var schema string
 	if stmt.Schema.String() == "" {
 		schema = i.currentSchema
@@ -163,12 +192,12 @@ func (i *Inspector) getTableName(stmt *ast.TableName) string {
 	return fmt.Sprintf("%s.%s", schema, stmt.Name)
 }
 
-func (i *Inspector) getTableNameWithQuote(stmt *ast.TableName) string {
+func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
 	name := strings.Replace(i.getTableName(stmt), ".", "`.`", -1)
 	return fmt.Sprintf("`%s`", name)
 }
 
-func (i *Inspector) isTableExist(tableName string) (bool, error) {
+func (i *Inspect) isTableExist(tableName string) (bool, error) {
 	var schema = i.currentSchema
 	var table = tableName
 	if strings.Contains(tableName, ".") {
@@ -204,7 +233,7 @@ func (i *Inspector) isTableExist(tableName string) (bool, error) {
 }
 
 // getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
-func (i *Inspector) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bool, error) {
+func (i *Inspect) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bool, error) {
 
 	exist, err := i.isTableExist(tableName)
 	if err != nil {
@@ -241,7 +270,7 @@ func (i *Inspector) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, 
 	return createStmt, exist, nil
 }
 
-func (i *Inspector) updateSchemaCtx(node ast.StmtNode) {
+func (i *Inspect) updateSchemaCtx(node ast.StmtNode) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema

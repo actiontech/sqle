@@ -73,8 +73,8 @@ func (t *testResult) message() string {
 	return t.Results.message()
 }
 
-func DefaultMysqlInspect() *Inspector {
-	return &Inspector{
+func DefaultMysqlInspect() *Inspect {
+	return &Inspect{
 		Results: newInspectResults(),
 		Task: &model.Task{
 			Instance: &model.Instance{
@@ -114,7 +114,7 @@ func TestInspectResults(t *testing.T) {
 [error]表 not_exist_tb 不存在`, results.message())
 }
 
-func runInspectCase(t *testing.T, desc string, i *Inspector, sql string, results ...*testResult) {
+func runInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
 	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
@@ -623,8 +623,8 @@ func TestNewInspector(t *testing.T) {
 	//fmt.Println(result)
 }
 
-func DefaultMycatInspect() *Inspector {
-	return &Inspector{
+func DefaultMycatInspect() *Inspect {
+	return &Inspect{
 		Results: newInspectResults(),
 		Task: &model.Task{
 			Instance: &model.Instance{

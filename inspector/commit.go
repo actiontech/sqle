@@ -7,7 +7,7 @@ import (
 	"sqle/model"
 )
 
-func (i *Inspector) CommitAll() error {
+func (i *Inspect) CommitAll() error {
 	defer i.closeDbConn()
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
@@ -25,7 +25,7 @@ func (i *Inspector) CommitAll() error {
 	return i.Do()
 }
 
-func (i *Inspector) RollbackAll(sql *model.RollbackSql) error {
+func (i *Inspect) RollbackAll(sql *model.RollbackSql) error {
 	for _, rollbackSql := range i.Task.RollbackSqls {
 		currentSql := rollbackSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
@@ -42,7 +42,7 @@ func (i *Inspector) RollbackAll(sql *model.RollbackSql) error {
 	return i.Do()
 }
 
-func (i *Inspector) Commit(sql *model.Sql) error {
+func (i *Inspect) Commit(sql *model.Sql) error {
 	if i.isDMLStmt {
 		return i.commitDML(sql)
 	} else {
@@ -50,7 +50,7 @@ func (i *Inspector) Commit(sql *model.Sql) error {
 	}
 }
 
-func (i *Inspector) commitDDL(sql *model.Sql) error {
+func (i *Inspect) commitDDL(sql *model.Sql) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (i *Inspector) commitDDL(sql *model.Sql) error {
 	return nil
 }
 
-func (i *Inspector) commitDML(sql *model.Sql) error {
+func (i *Inspect) commitDML(sql *model.Sql) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
@@ -105,7 +105,7 @@ ERROR:
 	return err
 }
 
-func (i *Inspector) commitMycatDDL(sql *model.Sql) error {
+func (i *Inspect) commitMycatDDL(sql *model.Sql) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err

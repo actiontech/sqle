@@ -3,10 +3,11 @@ package errors
 type ErrorCode int
 
 const (
-	STATUS_OK               ErrorCode = 0
-	CONNECT_STORAGE_ERROR   ErrorCode = 5001
-	CONNECT_REMOTE_DB_ERROR ErrorCode = 5002
-	READ_UPLOAD_FILE_ERROR  ErrorCode = 5003
+	STATUS_OK                   ErrorCode = 0
+	CONNECT_STORAGE_ERROR       ErrorCode = 5001
+	CONNECT_REMOTE_DB_ERROR     ErrorCode = 5002
+	READ_UPLOAD_FILE_ERROR      ErrorCode = 5003
+	CONNECT_SQLSERVER_RPC_ERROR ErrorCode = 5004
 
 	INSTANCE_EXIST          ErrorCode = 4001
 	RULE_TEMPLATE_EXIST     ErrorCode = 4002

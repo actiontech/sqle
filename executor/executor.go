@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mssql"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"sqle/errors"
 	"sqle/model"
@@ -34,6 +35,10 @@ func newConn(instance *model.Instance, schema string) (*BaseConn, error) {
 	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
 		db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 			instance.User, instance.Password, instance.Host, instance.Port, schema))
+	case model.DB_TYPE_SQLSERVER:
+		db, err = gorm.Open("mssql", fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s",
+			instance.User, instance.Password, instance.Host, instance.Port, schema))
+
 	default:
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("db type is not support"))
 	}
