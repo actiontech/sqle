@@ -11,7 +11,7 @@ import (
 type CreateTaskReq struct {
 	Name     string `json:"name" example:"test" valid:"required"`
 	Desc     string `json:"desc" example:"this is a test task" valid:"-"`
-	InstName string `json:"inst_name" form:"inst_name" example:"inst_1" valid:"-"`
+	InstName string `json:"inst_name" form:"inst_name" example:"inst_1" valid:"required"`
 	Schema   string `json:"schema" example:"db1" valid:"-"`
 	Sql      string `json:"sql" example:"alter table tb1 drop columns c1" valid:"-"`
 }
@@ -196,14 +196,17 @@ func GetTasks(c echo.Context) error {
 func InspectTask(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	_, exist, err := s.GetTaskById(taskId)
+	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	task, err := server.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
+	if task.Instance == nil {
+		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
+	}
+	task, err = server.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -221,12 +224,15 @@ func InspectTask(c echo.Context) error {
 func CommitTask(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	_, exist, err := s.GetTaskById(taskId)
+	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
+	}
+	if task.Instance == nil {
+		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
 	}
 	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
 	if err != nil {
@@ -243,12 +249,15 @@ func CommitTask(c echo.Context) error {
 func RollbackTask(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	_, exist, err := s.GetTaskById(taskId)
+	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
+	}
+	if task.Instance == nil {
+		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
 	}
 	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
 	if err != nil {

@@ -28,6 +28,9 @@ type Instance struct {
 }
 
 func (i *Instance) UnmarshalMycatConfig() error {
+	if i == nil {
+		return nil
+	}
 	if i.MycatConfigJson == "" {
 		return nil
 	}
@@ -42,6 +45,9 @@ func (i *Instance) UnmarshalMycatConfig() error {
 }
 
 func (i *Instance) MarshalMycatConfig() error {
+	if i == nil {
+		return nil
+	}
 	if i.MycatConfig == nil {
 		return nil
 	}
