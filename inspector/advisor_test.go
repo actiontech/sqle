@@ -623,8 +623,8 @@ func TestNewInspector(t *testing.T) {
 	//fmt.Println(result)
 }
 
-func DefaultMycatInspect() *Inspector {
-	return &Inspector{
+func DefaultMycatInspect() *Inspect {
+	return &Inspect{
 		Results: newInspectResults(),
 		Task: &model.Task{
 			Instance: &model.Instance{

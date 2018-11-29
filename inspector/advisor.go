@@ -608,7 +608,7 @@ func (i *Inspect) disableDropStmt(node ast.StmtNode, rule string) error {
 	return nil
 }
 
-func (i *Inspector) checkMycatShardingColumn(node ast.StmtNode, rule string) error {
+func (i *Inspect) checkMycatShardingColumn(node ast.StmtNode, rule string) error {
 	if i.Task.Instance.DbType != model.DB_TYPE_MYCAT {
 		return nil
 	}
