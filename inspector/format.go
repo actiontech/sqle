@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/pingcap/tidb/ast"
+	"sqle/log"
 	"strings"
 )
 
@@ -63,12 +64,11 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 		case ast.ConstraintUniqIndex, ast.ConstraintUniqKey, ast.ConstraintUniq:
 			format = "ADD UNIQUE INDEX"
 		case ast.ConstraintFulltext:
-			format = "FULLTEXT INDEX"
+			format = "ADD FULLTEXT INDEX"
 		case ast.ConstraintForeignKey:
-			return ""
+			format = "ADD FOREIGN KEY"
 		default:
-			fmt.Println(constraint.Tp)
-			//constraint.Refer.
+			log.NewEntry().Errorf("constraint tp %d not support on format alterTableStmt", constraint.Tp)
 		}
 		if constraint.Name != "" {
 			format = fmt.Sprintf("%s `%s`", format, constraint.Name)
@@ -76,14 +76,24 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 		if indexColums := indexColumnsFormat(constraint.Keys); indexColums != "" {
 			format = fmt.Sprintf("%s %s", format, indexColums)
 		}
-		if indexOption := indexOptionFormat(constraint.Option); indexOption != "" {
-			format = fmt.Sprintf("%s %s", format, indexOption)
+		// if refer is not nil, this is add foreign key stmt.
+		if constraint.Refer != nil {
+			format = fmt.Sprintf("%s %s", format, referDefFormat(constraint.Refer))
+		}
+		// if option is not nil, this is add index/primary key stmt.
+		if constraint.Option != nil {
+			format = fmt.Sprintf("%s %s", format, indexOptionFormat(constraint.Option))
 		}
 		return format
+
 	case ast.AlterTableDropIndex:
 		return fmt.Sprintf("DROP INDEX `%s`", stmt.Name)
 	case ast.AlterTableDropPrimaryKey:
 		return fmt.Sprintf("DROP PRIMARY KEY")
+	case ast.AlterTableDropForeignKey:
+		return fmt.Sprintf("DROP FOREIGN KEY `%s`", stmt.Name)
+	case ast.AlterTableRenameIndex:
+		return fmt.Sprintf("RENAME INDEX `%s` TO `%s`", stmt.FromKey, stmt.ToKey)
 	}
 	return ""
 }
@@ -131,40 +141,51 @@ func exprFormat(node ast.ExprNode) string {
 }
 
 func indexOptionFormat(op *ast.IndexOption) string {
-	if op != nil {
-		ops := make([]string, 0, 3)
-		if op.Tp.String() != "" {
-			ops = append(ops, fmt.Sprintf("USING %s", op.Tp.String()))
-		}
-		if op.KeyBlockSize != 0 {
-			ops = append(ops, fmt.Sprintf("KEY_BLOCK_SIZE=%d", op.KeyBlockSize))
-		}
-		if op.Comment != "" {
-			ops = append(ops, fmt.Sprintf("COMMENT '%s'", op.Comment))
-		}
-		if len(ops) > 0 {
-			return fmt.Sprintf("%s", strings.Join(ops, " "))
-		}
+	if op == nil {
+		return ""
+	}
+	ops := make([]string, 0, 3)
+	if op.Tp.String() != "" {
+		ops = append(ops, fmt.Sprintf("USING %s", op.Tp.String()))
+	}
+	if op.KeyBlockSize != 0 {
+		ops = append(ops, fmt.Sprintf("KEY_BLOCK_SIZE=%d", op.KeyBlockSize))
+	}
+	if op.Comment != "" {
+		ops = append(ops, fmt.Sprintf("COMMENT '%s'", op.Comment))
+	}
+	if len(ops) > 0 {
+		return fmt.Sprintf("%s", strings.Join(ops, " "))
 	}
 	return ""
 }
 
 func indexColumnsFormat(keys []*ast.IndexColName) string {
-	if keys != nil {
-		columnsName := make([]string, 0, len(keys))
-		for _, key := range keys {
-			columnsName = append(columnsName, fmt.Sprintf("`%s`", key.Column.Name.String()))
-		}
-		if len(columnsName) > 0 {
-			return fmt.Sprintf("(%s)", strings.Join(columnsName, ","))
-		}
+	if keys == nil {
+		return ""
+	}
+	columnsName := make([]string, 0, len(keys))
+	for _, key := range keys {
+		columnsName = append(columnsName, fmt.Sprintf("`%s`", key.Column.Name.String()))
+	}
+	if len(columnsName) > 0 {
+		return fmt.Sprintf("(%s)", strings.Join(columnsName, ","))
 	}
 	return ""
 }
 
-//func referDefFormat(refer *ast.ReferenceDef) string {
-//	tableName := refer.Table.Name.String()
-//	indexColumns := indexColumnsFormat(refer.IndexColNames)
-//	format := fmt.Sprintf("REFERENCES %s (%s)", tableName, indexColumns)
-//	return format
-//}
+func referDefFormat(refer *ast.ReferenceDef) string {
+	if refer == nil {
+		return ""
+	}
+	tableName := getTableNameWithQuote(refer.Table)
+	indexColumns := indexColumnsFormat(refer.IndexColNames)
+	format := fmt.Sprintf("REFERENCES %s %s", tableName, indexColumns)
+	if refer.OnDelete.ReferOpt != ast.ReferOptionNoOption {
+		format = fmt.Sprintf("%s ON DELETE %s", format, refer.OnDelete.ReferOpt)
+	}
+	if refer.OnUpdate.ReferOpt != ast.ReferOptionNoOption {
+		format = fmt.Sprintf("%s ON UPDATE %s", format, refer.OnUpdate.ReferOpt)
+	}
+	return format
+}

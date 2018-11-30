@@ -35,7 +35,9 @@ CREATE TABLE exist_db.exist_tb_2 (
 id bigint unsigned NOT NULL AUTO_INCREMENT,
 v1 varchar(255) DEFAULT NULL,
 v2 varchar(255),
-UNIQUE KEY (id)
+user_id bigint unsigned NOT NULL,
+UNIQUE KEY (id),
+FOREIGN KEY pk_test_1 (user_id) REFERENCES exist_db.exist_tb_1 (id) ON DELETE NO ACTION
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
