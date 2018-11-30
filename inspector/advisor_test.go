@@ -3,7 +3,9 @@ package inspector
 import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"sqle/log"
 	"sqle/model"
 	"testing"
 )
@@ -74,7 +76,9 @@ func (t *testResult) message() string {
 }
 
 func DefaultMysqlInspect() *Inspect {
+	log.Logger().SetLevel(logrus.ErrorLevel)
 	return &Inspect{
+		log:     log.NewEntry(),
 		Results: newInspectResults(),
 		Task: &model.Task{
 			Instance: &model.Instance{
@@ -625,6 +629,7 @@ func TestNewInspector(t *testing.T) {
 
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
+		log:     log.NewEntry(),
 		Results: newInspectResults(),
 		Task: &model.Task{
 			Instance: &model.Instance{

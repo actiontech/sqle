@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sqle/api/server"
 	"sqle/inspector"
+	"sqle/log"
 	"sqle/model"
 )
 
@@ -54,7 +55,7 @@ func CreateTask(c echo.Context) error {
 		Instance:   inst,
 		CommitSqls: []*model.CommitSql{},
 	}
-	sqlArray, err := inspector.NewInspector(task).SplitSql(req.Sql)
+	sqlArray, err := inspector.NewInspector(log.NewEntry(), task).SplitSql(req.Sql)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -98,7 +99,7 @@ func UploadSqlFile(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, err)
 	}
-	sqlArray, err := inspector.NewInspector(task).SplitSql(string(sql))
+	sqlArray, err := inspector.NewInspector(log.NewEntry(), task).SplitSql(string(sql))
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}

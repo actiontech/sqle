@@ -11,18 +11,21 @@ import (
 
 func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	defer i.closeDbConn()
-
+	i.Logger().Info("start generate rollback sql")
 	for _, commitSql := range i.Task.CommitSqls {
 		err := i.Add(&commitSql.Sql, func(sql *model.Sql) error {
 			return i.GenerateRollbackSql(sql)
 		})
 		if err != nil {
+			i.Logger().Error("add rollback sql failed")
 			return nil, err
 		}
 	}
 	if err := i.Do(); err != nil {
+		i.Logger().Errorf("generate rollback sql failed")
 		return nil, err
 	}
+	i.Logger().Info("generate rollback sql finish")
 	return i.GetAllRollbackSql(), nil
 }
 

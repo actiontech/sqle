@@ -8,6 +8,7 @@ import (
 	"sqle/api/server"
 	"sqle/errors"
 	"sqle/executor"
+	"sqle/log"
 	"sqle/model"
 	"strings"
 )
@@ -94,7 +95,7 @@ func CreateInst(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	go server.GetSqled().UpdateAndGetInstanceStatus(instance)
+	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 
 	return c.JSON(200, &InstanceRes{
 		BaseRes: NewBaseReq(nil),
@@ -255,7 +256,7 @@ func UpdateInstance(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	go server.GetSqled().UpdateAndGetInstanceStatus(instance)
+	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 	return c.JSON(200, NewBaseReq(nil))
 }
 
@@ -307,7 +308,7 @@ func PingInstanceById(c echo.Context) error {
 			Data:    false,
 		})
 	}
-	if err := executor.Ping(inst); err != nil {
+	if err := executor.Ping(log.NewEntry(), inst); err != nil {
 		return c.JSON(200, PingInstRes{
 			BaseRes: NewBaseReq(errors.New(errors.STATUS_OK, err)),
 			Data:    false,
@@ -354,7 +355,7 @@ func PingInstance(c echo.Context) error {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
-	if err := executor.Ping(instance); err != nil {
+	if err := executor.Ping(log.NewEntry(), instance); err != nil {
 		return c.JSON(200, PingInstRes{
 			BaseRes: NewBaseReq(errors.New(errors.STATUS_OK, err)),
 			Data:    false,
@@ -386,7 +387,7 @@ func GetInstSchemas(c echo.Context) error {
 	if !exist {
 		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
 	}
-	status, err := server.GetSqled().UpdateAndGetInstanceStatus(instance)
+	status, err := server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -417,7 +418,7 @@ func GetAllSchemas(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /schemas/manual_update [post]
 func ManualUpdateAllSchemas(c echo.Context) error {
-	go server.GetSqled().UpdateAllInstanceStatus()
+	go server.GetSqled().UpdateAllInstanceStatus(log.NewEntry())
 	return c.JSON(200, NewBaseReq(nil))
 }
 

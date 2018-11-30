@@ -78,6 +78,7 @@ fi
 grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
+    -e "s|User=|User=actiontech-sqle|g" \
     -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/sqled.cnf --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
@@ -102,7 +103,7 @@ mysql_port=
 mysql_user=
 mysql_password=
 mysql_schema=
-
+log_path=./logs
 #
 auto_migrate_table=true
 debug=false

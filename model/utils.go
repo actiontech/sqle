@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"sqle/errors"
+	"sqle/log"
 	"time"
 )
 
@@ -35,6 +36,7 @@ func NewStorage(user, password, host, port, schema string, debug bool) (*Storage
 		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	if debug {
+		db.SetLogger(log.Logger().WithField("type", "sql"))
 		db.LogMode(true)
 	}
 	return &Storage{db: db}, errors.New(errors.CONNECT_STORAGE_ERROR, err)

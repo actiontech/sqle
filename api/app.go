@@ -5,16 +5,26 @@ import (
 	"sqle/api/controller"
 
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"github.com/swaggo/echo-swagger"
 	_ "sqle/docs"
+	"sqle/log"
 )
 
 // @title Sqle API Docs
 // @version 1.0
 // @description This is a sample server for dev.
 // @BasePath /
-func StartApi(port int, exitChan chan struct{}) {
+func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e := echo.New()
+	output := log.NewRotateFile(logPath, "/api.log", 1024 /*1GB*/)
+	defer output.Close()
+
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Output: output,
+	}))
+	e.HideBanner = true
+	e.HidePort = true
 	e.Validator = &controller.CustomValidator{}
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
@@ -50,8 +60,8 @@ func StartApi(port int, exitChan chan struct{}) {
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
 
-	e.GET("/configs",controller.GetAllConfig)
-	e.PATCH("/configs",controller.UpdateConfigs)
+	e.GET("/configs", controller.GetAllConfig)
+	e.PATCH("/configs", controller.UpdateConfigs)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
 	close(exitChan)
