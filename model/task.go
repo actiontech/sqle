@@ -164,36 +164,6 @@ func (t *Task) ValidAction(typ int) error {
 			return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task need commit first"))
 		}
 	}
-
-	if typ == TASK_ACTION_INSPECT {
-		return nil
-	}
-	// commit is only allowed to commit once
-	if typ == TASK_ACTION_COMMIT {
-		if t.CommitSqls != nil {
-			for _, commitSql := range t.CommitSqls {
-				if commitSql.ExecStatus != TASK_ACTION_INIT {
-					return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has committed"))
-				}
-			}
-		}
-	}
-	// rollback is only allowed to exec once
-	// and after commit success
-	if typ == TASK_ACTION_ROLLBACK {
-		if t.RollbackSqls != nil {
-			for _, rollbackSql := range t.RollbackSqls {
-				if rollbackSql.ExecStatus != TASK_ACTION_INIT {
-					return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has rolled back"))
-				}
-			}
-			for _, commitSql := range t.CommitSqls {
-				if commitSql.ExecStatus != TASK_ACTION_INIT {
-					return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task has committed"))
-				}
-			}
-		}
-	}
 	return nil
 }
 
