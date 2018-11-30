@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mssql"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"github.com/sirupsen/logrus"
 	"sqle/errors"
 	"sqle/model"
 	"strconv"
@@ -19,16 +20,18 @@ type Db interface {
 	Exec(query string) (driver.Result, error)
 	ExecDDL(query, schema, table string) error
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
+	Logger() *logrus.Entry
 }
 
 type BaseConn struct {
+	log  *logrus.Entry
 	host string
 	port string
 	user string
 	*gorm.DB
 }
 
-func newConn(instance *model.Instance, schema string) (*BaseConn, error) {
+func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*BaseConn, error) {
 	var db *gorm.DB
 	var err error
 	switch instance.DbType {
@@ -40,13 +43,17 @@ func newConn(instance *model.Instance, schema string) (*BaseConn, error) {
 			instance.User, instance.Password, instance.Host, instance.Port, schema))
 
 	default:
-		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("db type is not support"))
+		err := fmt.Errorf("db type is not support")
+		entry.Error(err)
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	if err != nil {
 		err = fmt.Errorf("connect to %s:%s failed, %s", instance.Host, instance.Port, err)
+		entry.Error(err)
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	return &BaseConn{
+		log:  entry,
 		host: instance.Host,
 		port: instance.Port,
 		user: instance.User,
@@ -65,10 +72,10 @@ func (c *BaseConn) Ping() error {
 func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	result, err := c.DB.DB().Exec(query)
 	if err != nil {
-		fmt.Printf("exec sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
+		c.Logger().Errorf("exec sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
 			c.host, c.port, c.user, query, err.Error())
 	} else {
-		fmt.Printf("exec sql success; host: %s, port: %s, user: %s, query: %s\n",
+		c.Logger().Infof("exec sql success; host: %s, port: %s, user: %s, query: %s\n",
 			c.host, c.port, c.user, query)
 	}
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
@@ -82,17 +89,18 @@ func (c *BaseConn) ExecDDL(query, schema, table string) error {
 func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	rows, err := c.DB.DB().Query(query, args...)
 	if err != nil {
-		fmt.Printf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
+		c.Logger().Errorf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
 			c.host, c.port, c.user, query, err.Error())
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	} else {
-		fmt.Printf("query sql success; host: %s, port: %s, user: %s, query: %s\n",
+		c.Logger().Infof("query sql success; host: %s, port: %s, user: %s, query: %s\n",
 			c.host, c.port, c.user, query)
 	}
 	defer rows.Close()
 	columns, err := rows.Columns()
 	if err != nil {
 		// unknown error
+		c.Logger().Error(err)
 		return nil, err
 	}
 	result := make([]map[string]sql.NullString, 0)
@@ -103,6 +111,7 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 			buf[i] = &data[i]
 		}
 		if err := rows.Scan(buf...); err != nil {
+			c.Logger().Error(err)
 			return nil, err
 		}
 		value := make(map[string]sql.NullString, len(columns))
@@ -116,19 +125,23 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 	return result, nil
 }
 
+func (c *BaseConn) Logger() *logrus.Entry {
+	return c.log
+}
+
 type Executor struct {
 	Db Db
 }
 
-func NewExecutor(instance *model.Instance, schema string) (*Executor, error) {
+func NewExecutor(entry *logrus.Entry, instance *model.Instance, schema string) (*Executor, error) {
 	var executor = &Executor{}
 	var conn Db
 	var err error
 	switch instance.DbType {
 	case model.DB_TYPE_MYCAT:
-		conn, err = newMycatConn(instance, schema)
+		conn, err = newMycatConn(entry, instance, schema)
 	default:
-		conn, err = newConn(instance, schema)
+		conn, err = newConn(entry, instance, schema)
 	}
 	if err != nil {
 		return nil, err
@@ -137,9 +150,8 @@ func NewExecutor(instance *model.Instance, schema string) (*Executor, error) {
 	return executor, nil
 }
 
-func Ping(instance *model.Instance) error {
-	conn, err := NewExecutor(instance, "")
-	//conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
+func Ping(entry *logrus.Entry, instance *model.Instance) error {
+	conn, err := NewExecutor(entry, instance, "")
 	if err != nil {
 		return err
 	}
@@ -147,9 +159,8 @@ func Ping(instance *model.Instance) error {
 	return conn.Db.Ping()
 }
 
-func ShowDatabases(instance *model.Instance) ([]string, error) {
-	conn, err := NewExecutor(instance, "")
-	//conn, err := NewConn(db.DbType, db.User, db.Password, db.Host, db.Port, "")
+func ShowDatabases(entry *logrus.Entry, instance *model.Instance) ([]string, error) {
+	conn, err := NewExecutor(entry, instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -157,12 +168,12 @@ func ShowDatabases(instance *model.Instance) ([]string, error) {
 	return conn.ShowDatabases()
 }
 
-func OpenDbWithTask(task *model.Task) (*Executor, error) {
-	return NewExecutor(task.Instance, task.Schema)
+func OpenDbWithTask(entry *logrus.Entry, task *model.Task) (*Executor, error) {
+	return NewExecutor(entry, task.Instance, task.Schema)
 }
 
-func Exec(task *model.Task, sql string) (driver.Result, error) {
-	conn, err := OpenDbWithTask(task)
+func Exec(entry *logrus.Entry, task *model.Task, sql string) (driver.Result, error) {
+	conn, err := OpenDbWithTask(entry, task)
 	if err != nil {
 		return nil, err
 	}
@@ -176,12 +187,14 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 		return "", err
 	}
 	if len(result) != 1 {
-		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR,
-			fmt.Errorf("show create table error, result is %v", result))
+		err := fmt.Errorf("show create table error, result is %v", result)
+		c.Db.Logger().Error(err)
+		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	if query, ok := result[0]["Create Table"]; !ok {
-		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR,
-			fmt.Errorf("show create table error, column \"Create Table\" not found"))
+		err := fmt.Errorf("show create table error, column \"Create Table\" not found")
+		c.Db.Logger().Error(err)
+		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	} else {
 		return query.String, nil
 	}
@@ -195,8 +208,9 @@ func (c *Executor) ShowDatabases() ([]string, error) {
 	dbs := make([]string, len(result))
 	for n, v := range result {
 		if len(v) != 1 {
-			return dbs, errors.New(errors.CONNECT_REMOTE_DB_ERROR,
-				fmt.Errorf("show databases error"))
+			err := fmt.Errorf("show databases error, result not match")
+			c.Db.Logger().Error(err)
+			return dbs, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 		}
 		for _, db := range v {
 			dbs[n] = db.String
@@ -214,8 +228,9 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	tables := make([]string, len(result))
 	for n, v := range result {
 		if len(v) != 1 {
-			return tables, errors.New(errors.CONNECT_REMOTE_DB_ERROR,
-				fmt.Errorf("show tables error"))
+			err := fmt.Errorf("show tables error, result not match")
+			c.Db.Logger().Error(err)
+			return tables, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 		}
 		for _, table := range v {
 			tables[n] = table.String
@@ -255,8 +270,9 @@ func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
 	}
 	// result may be empty
 	if len(result) != 1 && len(result) != 0 {
-		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR,
-			fmt.Errorf("show master status error, result is %v", result))
+		err := fmt.Errorf("show master status error, result is %v", result)
+		c.Db.Logger().Error(err)
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	return result, nil
 }
@@ -272,6 +288,7 @@ func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 	file := result[0]["File"].String
 	pos, err := strconv.ParseInt(result[0]["Position"].String, 10, 64)
 	if err != nil {
+		c.Db.Logger().Error(err)
 		return "", 0, err
 	}
 	return file, pos, nil

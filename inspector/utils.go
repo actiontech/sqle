@@ -121,18 +121,6 @@ func getTableNameWithQuote(stmt *ast.TableName) string {
 	}
 }
 
-func SplitSql(dbType, sql string) ([]string, error) {
-	stmts, err := parseSql(dbType, sql)
-	if err != nil {
-		return nil, err
-	}
-	sqlArray := make([]string, len(stmts))
-	for n, stmt := range stmts {
-		sqlArray[n] = stmt.Text()
-	}
-	return sqlArray, nil
-}
-
 func RemoveArrayRepeat(input []string) (output []string) {
 	for _, i := range input {
 		repeat := false

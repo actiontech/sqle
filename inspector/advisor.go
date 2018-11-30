@@ -10,7 +10,7 @@ import (
 func (i *Inspect) Advise(rules []model.Rule) error {
 	i.initRulesFunc()
 	defer i.closeDbConn()
-
+	i.Logger().Info("start advise sql")
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
@@ -39,10 +39,17 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 			return nil
 		})
 		if err != nil {
+			i.Logger().Error("add commit sql to task failed")
 			return err
 		}
 	}
-	return i.Do()
+	err := i.Do()
+	if err != nil {
+		i.Logger().Error("advise sql failed")
+	} else {
+		i.Logger().Info("advise sql finish")
+	}
+	return err
 }
 
 func (i *Inspect) checkSelectAll(node ast.StmtNode, rule string) error {
