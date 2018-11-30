@@ -198,7 +198,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error 
 			}
 		}
 	}
-	// add constraint (index key, primary key ...)
+	// add constraint (index key, primary key ...) need drop
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintIndex, ast.ConstraintUniqKey:
@@ -214,9 +214,14 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error 
 			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
 				Tp: ast.AlterTableDropPrimaryKey,
 			})
+		case ast.ConstraintForeignKey:
+			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+				Tp:   ast.AlterTableDropForeignKey,
+				Name: spec.Constraint.Name,
+			})
 		}
 	}
-	// drop index
+	// drop index need add
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
 		for _, constraint := range createTableStmt.Constraints {
 			if constraint.Name == spec.Name {
@@ -227,7 +232,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error 
 			}
 		}
 	}
-	// drop primary
+	// drop primary key need add
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey) {
 		_ = spec
 		for _, constraint := range createTableStmt.Constraints {
@@ -239,6 +244,25 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error 
 			}
 		}
 	}
+
+	// drop foreign key need add
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropForeignKey) {
+		for _, constraint := range createTableStmt.Constraints {
+			if constraint.Name == spec.Name {
+				rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+					Tp:         ast.AlterTableAddConstraint,
+					Constraint: constraint,
+				})
+			}
+		}
+	}
+
+	// rename index
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
+		spec.FromKey, spec.ToKey = spec.ToKey, spec.FromKey
+		rollbackStmt.Specs = append(rollbackStmt.Specs, spec)
+	}
+
 	rollbackSql := alterTableStmtFormat(rollbackStmt)
 	if rollbackSql != "" {
 		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
