@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle/api/server"
+	"sqle/errors"
 	"sqle/inspector"
 	"sqle/log"
 	"sqle/model"
@@ -94,6 +96,10 @@ func UploadSqlFile(c echo.Context) error {
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
+	}
+	if task.HasDoingCommit() {
+		return c.JSON(http.StatusOK, errors.New(errors.TASK_ACTION_INVALID,
+			fmt.Errorf("task has commit, not allow update sql")))
 	}
 	_, sql, err := readFileToByte(c, "sql_file")
 	if err != nil {

@@ -72,11 +72,10 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		goto Error
 	}
 
-	// valid
-	//err = task.ValidAction(typ)
-	//if err != nil {
-	//	goto Error
-	//}
+	err = task.ValidAction(typ)
+	if err != nil {
+		goto Error
+	}
 
 	action.Task = task
 	s.queue <- action
