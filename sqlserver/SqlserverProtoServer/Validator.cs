@@ -2,14 +2,29 @@
 using System.Collections.Generic;
 using SqlserverProto;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using System.Data.SqlClient;
 
 namespace SqlserverProtoServer {
     public enum RULE_LEVEL {
         NORMAL, NOTICE, WARN, ERROR
     }
 
+    public class RULE_LEVEL_STRING {
+        public static Dictionary<RULE_LEVEL, String> RuleLevels = new Dictionary<RULE_LEVEL, String> {
+            {RULE_LEVEL.NORMAL, "normal"},
+            {RULE_LEVEL.NOTICE, "notice"},
+            {RULE_LEVEL.WARN, "warn"},
+            {RULE_LEVEL.ERROR, "error"}
+        };
+
+        public static String GetRuleLevelString(RULE_LEVEL level) {
+            return RuleLevels[level];
+        }
+    }
+
     public static class DefaultRules {
         // rule names
+        // This SCHEMA is DATABASE which comes from MySQL
         public const String SCHEMA_NOT_EXIST = "schema_not_exist";
         public const String SCHEMA_EXIST = "schema_exist";
         public const String TABLE_NOT_EXIST = "table_not_exist";
@@ -24,7 +39,7 @@ namespace SqlserverProtoServer {
         public const String DDL_CHECK_INDEX_COUNT = "ddl_check_index_count";
         public const String DDL_CHECK_COMPOSITE_INDEX_MAX = "ddl_check_composite_index_max";
         public const String DDL_DISABLE_USING_KEYWORD = "ddl_disable_using_keyword";
-        //private const string DDL_TABLE_USING_INNODB_UTF8MB4 = "ddl_create_table_using_innodb";
+        private const string DDL_TABLE_USING_INNODB_UTF8MB4 = "ddl_create_table_using_innodb";
         public const String DDL_DISABLE_INDEX_DATA_TYPE_BLOB = "ddl_disable_index_column_blob";
         public const String DDL_CHECK_ALTER_TABLE_NEED_MERGE = "ddl_check_alter_table_need_merge";
         public const String DDL_DISABLE_DROP_STATEMENT = "ddl_disable_drop_statement";
@@ -35,25 +50,25 @@ namespace SqlserverProtoServer {
         public static Dictionary<String, RuleValidator> RuleValidators = new Dictionary<String, RuleValidator> {
             {
                 SCHEMA_NOT_EXIST,
-                new ObjectNotExistRuleValidator(
+                new DatabaseShouldExistRuleValidator(
                     SCHEMA_NOT_EXIST,
                     "操作数据库时，数据库必须存在",
-                    "schema {0} 不存在",
+                    "database或者schema {0} 不存在",
                     RULE_LEVEL.ERROR
                 )
             },
             {
                 SCHEMA_EXIST,
-                new ObjectExistRuleValidator(
+                new DatabaseShouldNotExistRuleValidator(
                     SCHEMA_EXIST,
                     "创建数据库时，数据库不能存在",
-                    "schema {0} 已存在",
+                    "database或者schema {0} 已存在",
                     RULE_LEVEL.ERROR
                 )
             },
             {
                 TABLE_NOT_EXIST,
-                new ObjectNotExistRuleValidator(
+                new TableShouldExistRuleValidator(
                     TABLE_NOT_EXIST,
                     "操作表时，表必须存在",
                     "表 {0} 不存在",
@@ -62,7 +77,7 @@ namespace SqlserverProtoServer {
             },
             {
                 TABLE_EXIST,
-                new ObjectExistRuleValidator(
+                new TableShouldNotExistRuleValidator(
                     TABLE_EXIST,
                     "创建表时，表不能存在",
                     "表 {0} 已存在",
@@ -70,8 +85,9 @@ namespace SqlserverProtoServer {
                 )
             },
             {
+                // There is no CREATE TABLE IF NOT EXISTS statement
                 DDL_CREATE_TABLE_NOT_EXIST,
-                new IfNotExistRuleValidator(
+                new FakerRuleValidator(
                     DDL_CREATE_TABLE_NOT_EXIST,
                     "新建表必须加入if not exists create，保证重复执行不报错",
                     "新建表必须加入if not exists create，保证重复执行不报错",
@@ -80,7 +96,7 @@ namespace SqlserverProtoServer {
             },
             {
                 DDL_CHECK_OBJECT_NAME_LENGTH,
-                new NewObjectNameRuleValidator(
+                new ObjectNameMaxLengthRuleValidator(
                     DDL_CHECK_OBJECT_NAME_LENGTH,
                     "表名、列名、索引名的长度不能大于64字节",
                     "表名、列名、索引名的长度不能大于64字节",
@@ -89,7 +105,7 @@ namespace SqlserverProtoServer {
             },
             {
                 DDL_CHECK_PRIMARY_KEY_EXIST,
-                new PrimaryKeyRuleValidator(
+                new PrimaryKeyShouldExistRuleValidator(
                     DDL_CHECK_PRIMARY_KEY_EXIST,
                     "表必须有主键",
                     "表必须有主键",
@@ -98,16 +114,16 @@ namespace SqlserverProtoServer {
             },
             {
                 DDL_CHECK_PRIMARY_KEY_TYPE,
-                new PrimaryKeyRuleValidator(
+                new PrimaryKeyAutoIncrementRuleValidator(
                     DDL_CHECK_PRIMARY_KEY_TYPE,
-                    "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
-                    "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
+                    "主键建议使用自增",
+                    "主键建议使用自增",
                     RULE_LEVEL.ERROR
                 )
             },
             {
                 DDL_DISABLE_VARCHAR_MAX,
-                new DisableVarcharMaxRuleValidator(
+                new StringTypeShouldNoVarcharMaxRuleValidator(
                     DDL_DISABLE_VARCHAR_MAX,
                     "禁止使用 varchar(max)",
                     "禁止使用 varchar(max)",
@@ -116,7 +132,7 @@ namespace SqlserverProtoServer {
             },
             {
                 DDL_CHECK_TYPE_CHAR_LENGTH,
-                new StringTypeRuleValidator(
+                new StringTypeShouldNotExceedMaxLengthRuleValidator(
                     DDL_CHECK_TYPE_CHAR_LENGTH,
                     "char长度大于20时，必须使用varchar类型",
                     "char长度大于20时，必须使用varchar类型",
@@ -134,7 +150,7 @@ namespace SqlserverProtoServer {
             },
             {
                 DDL_CHECK_INDEX_COUNT,
-                new IndexRuleValidator(
+                new NumberOfIndexesShouldNotExceedMaxRuleValidator(
                     DDL_CHECK_INDEX_COUNT,
                     "索引个数建议不超过5个",
                     "索引个数建议不超过5个",
@@ -143,7 +159,7 @@ namespace SqlserverProtoServer {
             },
             {
                 DDL_CHECK_COMPOSITE_INDEX_MAX,
-                new IndexRuleValidator(
+                new NumberOfCompsiteIndexColumnsShouldNotExceedMaxRuleValidator(
                     DDL_CHECK_COMPOSITE_INDEX_MAX,
                     "复合索引的列数量不建议超过5个",
                     "复合索引的列数量不建议超过5个",
@@ -152,24 +168,24 @@ namespace SqlserverProtoServer {
             },
             {
                 DDL_DISABLE_USING_KEYWORD,
-                new NewObjectNameRuleValidator(
+                new ObjectNameRuleValidator(
                     DDL_DISABLE_USING_KEYWORD,
                     "数据库对象命名禁止使用关键字",
                     "数据库对象命名禁止使用关键字 %s",
                     RULE_LEVEL.ERROR
                 )
             },
-            /*
-             * {
-             *  DDL_TABLE_USING_INNODB_UTF8MB4,
-             *  new EngineAndCharacterSetRuleValidator(
-             *      DDL_TABLE_USING_INNODB_UTF8MB4,
-             *      "建议使用Innodb引擎,utf8mb4字符集",
-             *      "建议使用Innodb引擎,utf8mb4字符集",
-             *      RULE_LEVEL.NOTICE
-             *  )
-             * },
-            */
+
+              {
+               DDL_TABLE_USING_INNODB_UTF8MB4,
+               new FakerRuleValidator(
+                  DDL_TABLE_USING_INNODB_UTF8MB4,
+                  "建议使用Innodb引擎,utf8mb4字符集",
+                   "建议使用Innodb引擎,utf8mb4字符集",
+                   RULE_LEVEL.NOTICE
+               )
+              },
+
             {
                 DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
                 new DisableAddIndexForColumnsTypeBlob(
@@ -218,49 +234,23 @@ namespace SqlserverProtoServer {
     }
 
     /// <summary>
-    /// Rule validator context represens context of sqls.
+    /// Advise result context represents context of all advise rule results for one sql.
     /// </summary>
-    public class RuleValidatorContext {
-        public String CurrentSchema;
-        public Dictionary<String/*schema*/, bool> AllSchemas;
-        public bool IsSchemaLoaded;
-        public Dictionary<String/*schema*/, Dictionary<String/*table*/, bool>> AllTables;
-        public bool IsDDL;
-        public bool IsDML;
-
-        public AuditResultContext AuditResultContext;
-
-        public RuleValidatorContext() {
-            AllSchemas = new Dictionary<String, bool>();
-            AllTables = new Dictionary<String, Dictionary<String, bool>>();
-            AuditResultContext = new AuditResultContext();
-        }
-    }
-
-    /// <summary>
-    /// Audit result context represents context of all audit rule results for one sql.
-    /// </summary>
-    public class AuditResultContext {
+    public class AdviseResultContext {
         public RULE_LEVEL Level;
         public String Message;
-        public static Dictionary<RULE_LEVEL, String> RuleLevels = new Dictionary<RULE_LEVEL, String> {
-            {RULE_LEVEL.NORMAL, "normal"},
-            {RULE_LEVEL.NOTICE, "notice"},
-            {RULE_LEVEL.WARN, "warn"},
-            {RULE_LEVEL.ERROR, "error"}
-        };
 
-        public AuditResultContext() {
+        public AdviseResultContext() {
             Level = RULE_LEVEL.NORMAL;
             Message = "";
         }
 
-        public void AddAuditResult(RULE_LEVEL level, String message) {
+        public void AddAdviseResult(RULE_LEVEL level, String message) {
             if (Level < level) {
                 Level = level;
             }
 
-            var formatMsg = String.Format("[{0}]{1}", RuleLevels[level], message);
+            var formatMsg = String.Format("[{0}]{1}", RULE_LEVEL_STRING.GetRuleLevelString(level), message);
             if (String.IsNullOrEmpty(Message)) {
                 Message = formatMsg;
             } else {
@@ -268,24 +258,54 @@ namespace SqlserverProtoServer {
             }
         }
 
-        public void ResetAuditResult() {
+        public void ResetAdviseResult() {
             Level = RULE_LEVEL.NORMAL;
             Message = "";
         }
 
-        public AuditResult GetAuditResult() {
-            AuditResult auditResult = new AuditResult();
-            auditResult.AuditLevel = GetLevel();
-            auditResult.AuditResultMessage = GetMessage();
-            return auditResult;
+        public AdviseResult GetAdviseResult() {
+            AdviseResult adviseResult = new AdviseResult();
+            adviseResult.AdviseLevel = GetLevel();
+            adviseResult.AdviseResultMessage = GetMessage();
+            return adviseResult;
         }
 
         public String GetLevel() {
-            return RuleLevels[Level];
+            return RULE_LEVEL_STRING.GetRuleLevelString(Level);
         }
 
         public String GetMessage() {
             return Message;
+        }
+    }
+
+
+    /// <summary>
+    /// Rule validator context represens context of sqls.
+    /// </summary>
+    public class RuleValidatorContext {
+        public SqlserverMeta SqlserverMeta;
+
+        public Dictionary<String/*database*/, bool> AllDatabases;
+        public Dictionary<String/*schema*/, bool> AllSchemas;
+        public Dictionary<String/*schema*/, Dictionary<String/*table*/, bool>> AllTables;
+        public Dictionary<String/*table*/, List<AlterTableStatement>> AlterTableStmts;
+        public bool hasLoadFromDB;
+        public bool IsDDL;
+        public bool IsDML;
+
+        public AdviseResultContext AdviseResultContext;
+
+        public RuleValidatorContext(SqlserverMeta sqlserverMeta) {
+            this.SqlserverMeta = sqlserverMeta;
+            AllDatabases = new Dictionary<String, bool>();
+            AllSchemas = new Dictionary<string, bool>();
+            AllTables = new Dictionary<String, Dictionary<String, bool>>();
+            AlterTableStmts = new Dictionary<string, List<AlterTableStatement>>();
+            AdviseResultContext = new AdviseResultContext();
+            hasLoadFromDB = false;
+            IsDDL = false;
+            IsDML = false;
         }
     }
 
@@ -295,23 +315,123 @@ namespace SqlserverProtoServer {
         protected String Message;
         protected RULE_LEVEL Level;
 
-        // if check failed, it will throw exception
-        public abstract void Check(RuleValidatorContext context, TSqlStatement statement);
         // return validator name
         public String GetName() {
             return Name;
         }
+
         // return validator description
         public String GetDescription() {
             return Desc;
         }
+
         // return validator message
         public String GetMessage(params String[] paras) {
             return String.Format(Message, paras);
         }
+
         // return validator level
         public RULE_LEVEL GetLevel() {
             return Level;
+        }
+
+        public String GetLevelString() {
+            return RULE_LEVEL_STRING.GetRuleLevelString(Level);
+        }
+
+        // if check failed, it will throw exception
+        public abstract void Check(RuleValidatorContext context, TSqlStatement statement);
+
+        void LoadFromDB(RuleValidatorContext context) {
+            if (context.hasLoadFromDB) {
+                return;
+            }
+
+            // for test
+            context.SqlserverMeta.Host = "10.186.62.15";
+            context.SqlserverMeta.Port = "1433";
+            context.SqlserverMeta.User = "sa";
+            context.SqlserverMeta.Password = "123456aB";
+
+            String connectionString = String.Format(
+                "Server=tcp:{0},{1};" +
+                "Database=master;" +
+                "User ID={2};" +
+                "Password={3};",
+                context.SqlserverMeta.Host, context.SqlserverMeta.Port,
+                context.SqlserverMeta.User,
+                context.SqlserverMeta.Password);
+
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT name FROM sys.databases", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while(reader.Read()) {
+                        context.AllDatabases[reader["name"] as String] = true;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT name FROM sys.schemas", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        context.AllSchemas[reader["name"] as String] = true;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        String schema = reader["TABLE_SCHEMA"] as String;
+                        String table = reader["TABLE_NAME"] as String;
+                        if (context.AllTables.ContainsKey(schema)) {
+                            context.AllTables[schema][table] = true;
+                        } else {
+                            Dictionary<String, bool> schemaTables = new Dictionary<String, bool>();
+                            schemaTables[table] = true;
+                            context.AllTables[schema] = schemaTables;
+                        }
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+        }
+
+        public bool DatabaseExists(RuleValidatorContext context, String databaseName) {
+            LoadFromDB(context);
+            return context.AllDatabases.ContainsKey(databaseName);
+        }
+
+        public bool SchemaExists(RuleValidatorContext context, String schema) {
+            LoadFromDB(context);
+            return context.AllSchemas.ContainsKey(schema);
+        }
+
+        public bool TableExists(RuleValidatorContext context, String table) {
+            foreach (var pair in context.AllTables) {
+                Dictionary<String, bool> valuePairs = pair.Value;
+                if (valuePairs.ContainsKey(table)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public TableDefinition GetTableDefinition(String tableName) {
+            return new TableDefinition();
         }
 
         protected RuleValidator(String name, String desc, String msg, RULE_LEVEL level) {
@@ -320,134 +440,96 @@ namespace SqlserverProtoServer {
             Message = msg;
             Level = level;
         }
-    }
 
-    public class ObjectNotExistRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
+        public List<String> AddDatabaseName(List<String> databaseNames, RuleValidatorContext context, SchemaObjectName schemaObjectName) {
+            var databaseIndentifier = schemaObjectName.DatabaseIdentifier;
+            if (databaseIndentifier != null && databaseIndentifier.Value != "" && !databaseNames.Contains(databaseIndentifier.Value)) {
+                databaseNames.Add(databaseIndentifier.Value);
+            } else if (!databaseNames.Contains(context.SqlserverMeta.CurrentDatabase)) {
+                databaseNames.Add(context.SqlserverMeta.CurrentDatabase);
+            }
+
+            return databaseNames;
         }
 
-        public ObjectNotExistRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class ObjectExistRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
+        public List<String> AddSchemaName(List<String> schemaNames, SchemaObjectName schemaObjectName) {
+            var schemaIndentifier = schemaObjectName.SchemaIdentifier;
+            if (schemaIndentifier != null && schemaIndentifier.Value != "" && !schemaNames.Contains(schemaIndentifier.Value)) {
+                schemaNames.Add(schemaIndentifier.Value);
+            }
+            return schemaNames;
         }
 
-        public ObjectExistRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class IfNotExistRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
+        public List<string> AddTableName(List<String> tableNames, SchemaObjectName schemaObjectName) {
+            var baseIndentifier = schemaObjectName.BaseIdentifier;
+            if (!tableNames.Contains(baseIndentifier.Value)) {
+                tableNames.Add(baseIndentifier.Value);
+            }
+            return tableNames;
         }
 
-        public IfNotExistRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class NewObjectNameRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public NewObjectNameRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class PrimaryKeyRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public PrimaryKeyRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class DisableVarcharMaxRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public DisableVarcharMaxRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class StringTypeRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public StringTypeRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class ForeignKeyRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public ForeignKeyRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class IndexRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public IndexRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-    /*
-    public class EngineAndCharacterSetRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public EngineAndCharacterSetRuleValidator(string name, string desc, string msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-    */
-
-    public class DisableAddIndexForColumnsTypeBlob : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public DisableAddIndexForColumnsTypeBlob(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class MergeAlterTableRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public MergeAlterTableRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class DisableDropRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public DisableDropRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class SelectWhereRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            throw new NotImplementedException();
-        }
-
-        public SelectWhereRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
-    }
-
-    public class SelectAllRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            if (statement is SelectStatement) {
-                var select = statement as SelectStatement;
-                var querySpec = select.QueryExpression as QuerySpecification;
-                foreach (var selectElement in querySpec.SelectElements) {
-                    if (selectElement is SelectStarExpression) {
-                        context.AuditResultContext.AddAuditResult(GetLevel(), GetMessage());
+        public List<SchemaObjectName> AddSchemaObjectNameFromTableReference(List<SchemaObjectName> schemaObjectNames, TableReference tableReference) {
+            switch (tableReference) {
+                // SELECT col1 FROM table1 JOIN (SELECT col2 FROM table2 JOIN table3 ON table2.col3=table3.col3) as table4 ON tabl4.col2=table1.col2
+                case QualifiedJoin qualifiedJoin:
+                    if (qualifiedJoin.FirstTableReference != null) {
+                        schemaObjectNames = AddSchemaObjectNameFromTableReference(schemaObjectNames, qualifiedJoin.FirstTableReference);
                     }
+                    if (qualifiedJoin.SecondTableReference != null) {
+                        schemaObjectNames = AddSchemaObjectNameFromTableReference(schemaObjectNames, qualifiedJoin.SecondTableReference);
+                    }
+                    break;
+                case QueryDerivedTable queryDerivedTable:
+                    if (queryDerivedTable.QueryExpression is QuerySpecification) {
+                        var querySpec = queryDerivedTable.QueryExpression as QuerySpecification;
+                        schemaObjectNames = AddSchemaObjectNameFromFromClause(schemaObjectNames, querySpec.FromClause);
+                    }
+                    break;
+
+                // SELECT col1 FROM database1.schema1.table1 AS table2
+                case NamedTableReference namedTableReference:
+                    schemaObjectNames.Add(namedTableReference.SchemaObject);
+                    break;
+                default:
+                    return schemaObjectNames;
+            }
+            return schemaObjectNames;
+        }
+
+        public List<SchemaObjectName> AddSchemaObjectNameFromQuerySpecification(List<SchemaObjectName> schemaObjectNames, QuerySpecification querySpecification) {
+            // FromClause could be null such as SELECT @@IDENTIFY
+            return AddSchemaObjectNameFromFromClause(schemaObjectNames, querySpecification.FromClause);
+        }
+
+        public List<SchemaObjectName> AddSchemaObjectNameFromFromClause(List<SchemaObjectName> schemaObjectNames, FromClause fromClause) {
+            if (fromClause != null) {
+                var tableReferences = fromClause.TableReferences;
+                foreach (var tableReference in tableReferences) {
+                    schemaObjectNames = AddSchemaObjectNameFromTableReference(schemaObjectNames, tableReference);
                 }
+            }
+            return schemaObjectNames;
+        }
+
+        public void GetDatabaseAndSchemaAndTableNames(List<SchemaObjectName> schemaObjectNames, RuleValidatorContext context, List<String> databaseNames, List<String> schemaNames, List<String> tableNames) {
+            foreach (var schemaObject in schemaObjectNames) {
+                databaseNames = AddDatabaseName(databaseNames, context, schemaObject);
+                schemaNames = AddSchemaName(schemaNames, schemaObject);
+                tableNames = AddTableName(tableNames, schemaObject);
             }
         }
 
-        public SelectAllRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+        public void Show(List<String> list, String format) {
+            foreach (var item in list) {
+                Console.WriteLine(format, item);
+            }
+        }
+    }
+
+    // FakeRuleValidator implements rule validator which do nothing.
+    public class FakerRuleValidator : RuleValidator {
+        public override void Check(RuleValidatorContext context, TSqlStatement statement) { }
+
+        public FakerRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 }
