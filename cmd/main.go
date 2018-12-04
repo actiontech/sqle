@@ -87,6 +87,11 @@ func run(cmd *cobra.Command, _ []string) error {
 		}()
 	}
 
+	err := inspector.LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template")
+	if err != nil {
+		return err
+	}
+
 	s, err := model.NewStorage(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema, debug)
 	if err != nil {
 		return err

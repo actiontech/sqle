@@ -293,3 +293,26 @@ func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 	}
 	return file, pos, nil
 }
+
+func (c *Executor) ShowTableSizeMB(schema, table string) (float64, error) {
+	sql := fmt.Sprintf(`select (DATA_LENGTH + INDEX_LENGTH)/1024/1024 as Size from information_schema.tables 
+where table_schema = '%s' and table_name = '%s'`, schema, table)
+	result, err := c.Db.Query(sql)
+	if err != nil {
+		return 0, err
+	}
+	// table not found, rows = 0
+	if len(result) == 0 {
+		return 0, nil
+	}
+	sizeStr := result[0]["Size"].String
+	if sizeStr == "" {
+		return 0, nil
+	}
+	size, err := strconv.ParseFloat(sizeStr, 10)
+	if err != nil {
+		c.Db.Logger().Error(err)
+		return 0, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+	}
+	return size, nil
+}

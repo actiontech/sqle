@@ -37,7 +37,23 @@ v1 varchar(255) DEFAULT NULL,
 v2 varchar(255),
 user_id bigint unsigned NOT NULL,
 UNIQUE KEY (id),
-FOREIGN KEY pk_test_1 (user_id) REFERENCES exist_db.exist_tb_1 (id) ON DELETE NO ACTION
+CONSTRAINT pk_test_1 FOREIGN KEY (user_id) REFERENCES exist_db.exist_tb_1 (id) ON DELETE NO ACTION
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`
+	node, err := parseOneSql("mysql", baseCreateQuery)
+	if err != nil {
+		panic(err)
+	}
+	stmt, _ := node.(*ast.CreateTableStmt)
+	return stmt
+}
+
+func getTestCreateTableStmt3() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.exist_tb_3 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
@@ -84,7 +100,11 @@ func DefaultMysqlInspect() *Inspect {
 		Results: newInspectResults(),
 		Task: &model.Task{
 			Instance: &model.Instance{
-				DbType: model.DB_TYPE_MYSQL,
+				Host:     "127.0.0.1",
+				Port:     "3306",
+				User:     "root",
+				Password: "123456",
+				DbType:   model.DB_TYPE_MYSQL,
 			},
 			CommitSqls:   []*model.CommitSql{},
 			RollbackSqls: []*model.RollbackSql{},
@@ -93,14 +113,25 @@ func DefaultMysqlInspect() *Inspect {
 		currentSchema: "exist_db",
 		allSchema:     map[string]struct{}{"exist_db": struct{}{}},
 		schemaHasLoad: true,
-		allTable: map[string]map[string]struct{}{
-			"exist_db": map[string]struct{}{
-				"exist_tb_1": struct{}{},
-				"exist_tb_2": struct{}{},
+		allTable: map[string]map[string]*TableInfo{
+			"exist_db": map[string]*TableInfo{
+				"exist_tb_1": &TableInfo{
+					sizeLoad: true,
+					Size:     1,
+				},
+				"exist_tb_2": &TableInfo{
+					sizeLoad: true,
+					Size:     1,
+				},
+				"exist_tb_3": &TableInfo{
+					sizeLoad: true,
+					Size:     1,
+				},
 			}},
 		createTableStmts: map[string]*ast.CreateTableStmt{
 			"exist_db.exist_tb_1": getTestCreateTableStmt1(),
 			"exist_db.exist_tb_2": getTestCreateTableStmt2(),
+			"exist_db.exist_tb_3": getTestCreateTableStmt3(),
 		},
 		alterTableStmts: map[string][]*ast.AlterTableStmt{},
 		rollbackSqls:    []string{},
@@ -235,8 +266,8 @@ PRIMARY KEY (id)
 			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
 	)
 	runInspectCase(t, "select_from: table not exist", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1, exist_db.exist_tb_3 where id =1",
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.exist_tb_3"),
+		"select id from exist_db.exist_tb_1, exist_db.not_exist_tb_1 where id =1",
+		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
 	)
 
 	runInspectCase(t, "delete: schema not exist", DefaultMysqlInspect(),
@@ -604,30 +635,25 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 	)
 }
 
-func TestNewInspector(t *testing.T) {
-	//conn, err := executor.NewConn("mysql", "root", "asd2010", "10.186.18.118", "23306", "sqle")
-	//if err != nil {
-	//	t.Error(err)
-	//}
-	//defer conn.Close()
-	//sql1 := "select * from sqle.rules where name <> \"\";"
-	//_ = sql1
-	//sql2 := "insert into tb1 values(6,'v1');"
-	//_ = sql2
-	//result, err := conn.Exec(sql2)
-	//if err != nil {
-	//	t.Error(err)
-	//}
-	//ra, _ := result.RowsAffected()
-	//fmt.Println("row_affects: ", ra)
-
-	//result, err := conn.ShowMasterStatus()
-	//if err != nil {
-	//	t.Error(err)
-	//	return
-	//}
-	//fmt.Println(result)
-}
+//func TestNewInspector(t *testing.T) {
+//	inst := &model.Instance{
+//		DbType:   model.DB_TYPE_MYSQL,
+//		Host:     "10.186.18.118",
+//		Port:     "23306",
+//		User:     "root",
+//		Password: "asd2010",
+//	}
+//	conn, err := executor.NewExecutor(log.NewEntry(), inst, "sqle")
+//	if err != nil {
+//		t.Error(err)
+//	}
+//	defer conn.Db.Close()
+//	result, err := conn.ShowTableSizeMB("sqle", "tb_has_pk")
+//	if err != nil {
+//		t.Error(err)
+//	}
+//	fmt.Println(result)
+//}
 
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
@@ -658,10 +684,16 @@ func DefaultMycatInspect() *Inspect {
 		currentSchema: "multidb",
 		allSchema:     map[string]struct{}{"multidb": struct{}{}},
 		schemaHasLoad: true,
-		allTable: map[string]map[string]struct{}{
-			"multidb": map[string]struct{}{
-				"exist_tb_1": struct{}{},
-				"exist_tb_2": struct{}{},
+		allTable: map[string]map[string]*TableInfo{
+			"multidb": map[string]*TableInfo{
+				"exist_tb_1": &TableInfo{
+					sizeLoad: true,
+					Size:     1,
+				},
+				"exist_tb_2": &TableInfo{
+					sizeLoad: true,
+					Size:     1,
+				},
 			}},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
