@@ -242,11 +242,13 @@ func scanWhereStmtColumn(where ast.ExprNode, fn func(expr *ast.ColumnNameExpr) b
 	return false
 }
 
-func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, tp ast.AlterTableType) []*ast.AlterTableSpec {
+func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
 	for _, spec := range specs {
-		if spec.Tp == tp {
-			s = append(s, spec)
+		for _, tp := range ts {
+			if spec.Tp == tp {
+				s = append(s, spec)
+			}
 		}
 	}
 	return s
@@ -271,6 +273,21 @@ func getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
 		}
 	}
 	return pkColumnsName, hasPk
+}
+
+func hasPrimaryKey(stmt *ast.CreateTableStmt) bool {
+	_, hasPk := getPrimaryKey(stmt)
+	return hasPk
+}
+
+func hasUniqIndex(stmt *ast.CreateTableStmt) bool {
+	for _, constraint := range stmt.Constraints {
+		switch constraint.Tp {
+		case ast.ConstraintUniq:
+			return true
+		}
+	}
+	return false
 }
 
 func ReplaceTableName(node ast.StmtNode) string {

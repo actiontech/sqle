@@ -201,7 +201,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error 
 	// add constraint (index key, primary key ...) need drop
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
-		case ast.ConstraintIndex, ast.ConstraintUniqKey:
+		case ast.ConstraintIndex, ast.ConstraintUniq:
 			// add index without index name, index name will be created by db
 			if spec.Constraint.Name == "" {
 				continue

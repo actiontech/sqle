@@ -156,3 +156,4 @@ fi
 /usr/local/sqle/bin/sqled
 /usr/local/sqle/scripts/sqled.systemd
 /usr/local/sqle/scripts/sqled.initd
+/usr/local/sqle/scripts/pt-online-schema-change.template

@@ -60,18 +60,15 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 		case ast.ConstraintPrimaryKey:
 			format = "ADD PRIMARY KEY"
 		case ast.ConstraintIndex, ast.ConstraintKey:
-			format = "ADD INDEX"
+			format = fmt.Sprintf("ADD INDEX `%s`", constraint.Name)
 		case ast.ConstraintUniqIndex, ast.ConstraintUniqKey, ast.ConstraintUniq:
-			format = "ADD UNIQUE INDEX"
+			format = fmt.Sprintf("ADD UNIQUE INDEX `%s`", constraint.Name)
 		case ast.ConstraintFulltext:
-			format = "ADD FULLTEXT INDEX"
+			format = fmt.Sprintf("ADD FULLTEXT INDEX `%s`", constraint.Name)
 		case ast.ConstraintForeignKey:
-			format = "ADD FOREIGN KEY"
+			format = fmt.Sprintf("ADD CONSTRAINT `%s` FOREIGN KEY", constraint.Name)
 		default:
 			log.NewEntry().Errorf("constraint tp %d not support on format alterTableStmt", constraint.Tp)
-		}
-		if constraint.Name != "" {
-			format = fmt.Sprintf("%s `%s`", format, constraint.Name)
 		}
 		if indexColums := indexColumnsFormat(constraint.Keys); indexColums != "" {
 			format = fmt.Sprintf("%s %s", format, indexColums)
@@ -126,7 +123,11 @@ func columnDefFormat(col *ast.ColumnDef) string {
 			}
 		}
 	}
-	return fmt.Sprintf("`%s` %s %s", col.Name, col.Tp, strings.Join(ops, " "))
+	format := fmt.Sprintf("`%s` %s", col.Name, col.Tp)
+	if len(ops) > 0 {
+		format = fmt.Sprintf("%s %s", format, strings.Join(ops, " "))
+	}
+	return format
 }
 
 func exprFormat(node ast.ExprNode) string {

@@ -47,7 +47,7 @@ type Inspect struct {
 	currentSchema string
 	allSchema     map[string] /*schema*/ struct{}
 	schemaHasLoad bool
-	allTable      map[string] /*schema*/ map[string] /*table*/ struct{}
+	allTable      map[string] /*schema*/ map[string] /*table*/ *TableInfo
 	isDDLStmt     bool
 	isDMLStmt     bool
 
@@ -60,6 +60,12 @@ type Inspect struct {
 	rollbackSqls    []string
 }
 
+type TableInfo struct {
+	Size            float64
+	sizeLoad        bool
+	CreateTableStmt *ast.AlterTableStmt
+}
+
 func NewInspect(entry *logrus.Entry, task *model.Task) *Inspect {
 	return &Inspect{
 		Results:          newInspectResults(),
@@ -68,7 +74,7 @@ func NewInspect(entry *logrus.Entry, task *model.Task) *Inspect {
 		currentSchema:    task.Schema,
 		SqlArray:         []*model.Sql{},
 		allSchema:        map[string]struct{}{},
-		allTable:         map[string]map[string]struct{}{},
+		allTable:         map[string]map[string]*TableInfo{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
 		rollbackSqls:     []string{},
@@ -235,13 +241,39 @@ func (i *Inspect) isTableExist(tableName string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		i.allTable[schema] = make(map[string]struct{}, len(tables))
+		i.allTable[schema] = make(map[string]*TableInfo, len(tables))
 		for _, table := range tables {
-			i.allTable[schema][table] = struct{}{}
+			i.allTable[schema][table] = &TableInfo{}
 		}
 	}
 	_, exist := i.allTable[schema][table]
 	return exist, nil
+}
+
+func (i *Inspect) getTableSize(tableName string) (float64, error) {
+	var schema = i.currentSchema
+	var table = tableName
+	if strings.Contains(tableName, ".") {
+		splitStrings := strings.SplitN(tableName, ".", 2)
+		schema = splitStrings[0]
+		table = splitStrings[1]
+	}
+	info := i.allTable[schema][table]
+	if info == nil {
+		return 0, nil
+	}
+	if !info.sizeLoad {
+		conn, err := i.getDbConn()
+		if err != nil {
+			return 0, err
+		}
+		size, err := conn.ShowTableSizeMB(schema, table)
+		if err != nil {
+			return 0, err
+		}
+		info.Size = size
+	}
+	return info.Size, nil
 }
 
 // getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.

@@ -28,7 +28,7 @@ func runrollbackCase(t *testing.T, desc string, i *Inspect, sql string, results 
 	sqls := []string{}
 	for _, sql := range rollbackSqls {
 		if _, err := parseSql(i.Task.Instance.DbType, sql.Content); err != nil {
-			panic(err)
+			t.Error(err)
 		}
 		sqls = append(sqls, sql.Content)
 	}
@@ -91,9 +91,16 @@ ALTER COLUMN v2 DROP DEFAULT;`,
 		[]string{}...,
 	)
 
-	runrollbackCase(t, "alter column add index need drop", DefaultMysqlInspect(),
+	runrollbackCase(t, "alter column add index need drop(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ADD INDEX v1(v1);`,
+		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
+			"DROP INDEX `v1`;",
+	)
+
+	runrollbackCase(t, "alter column add index need drop(2)", DefaultMysqlInspect(),
+		`ALTER TABLE exist_db.exist_tb_1
+ADD KEY v1(v1);`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"DROP INDEX `v1`;",
 	)
@@ -106,6 +113,20 @@ DROP INDEX v1;`,
 	)
 
 	runrollbackCase(t, "alter column drop index need add(2)", DefaultMysqlInspect(),
+		`ALTER TABLE exist_db.exist_tb_1
+DROP INDEX v2;`,
+		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
+			"ADD UNIQUE INDEX `v2` (`v1`,`v2`);",
+	)
+
+	runrollbackCase(t, "alter column add unique index need drop", DefaultMysqlInspect(),
+		`ALTER TABLE exist_db.exist_tb_1
+ADD UNIQUE INDEX v2(v1,v2);`,
+		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
+			"DROP INDEX `v2`;",
+	)
+
+	runrollbackCase(t, "alter column drop unique index need add(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 DROP INDEX v2;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
@@ -135,7 +156,7 @@ DROP PRIMARY KEY;`,
 		`ALTER TABLE exist_db.exist_tb_2
 DROP FOREIGN KEY pk_test_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_2`"+"\n"+
-			"ADD FOREIGN KEY `pk_test_1` (`user_id`) REFERENCES `exist_db`.`exist_tb_1` (`id`) ON DELETE NO ACTION;",
+			"ADD CONSTRAINT `pk_test_1` FOREIGN KEY (`user_id`) REFERENCES `exist_db`.`exist_tb_1` (`id`) ON DELETE NO ACTION;",
 	)
 	runrollbackCase(t, "alter column rename index", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1

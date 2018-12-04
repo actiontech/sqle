@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"fmt"
 	"github.com/pingcap/tidb/ast"
 	"github.com/pingcap/tidb/mysql"
 	"sqle/model"
@@ -33,6 +34,17 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 			currentSql.InspectResult = i.Results.message()
 
 			// print osc
+			oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
+			if err != nil {
+				return err
+			}
+			if oscCommandLine != "" {
+				if currentSql.InspectResult != "" {
+					currentSql.InspectResult += "\n"
+				}
+				currentSql.InspectResult = fmt.Sprintf("%s[osc]%s",
+					currentSql.InspectResult, oscCommandLine)
+			}
 
 			// clean up results
 			i.Results = newInspectResults()
