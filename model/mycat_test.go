@@ -106,3 +106,14 @@ func TestNewInspector(t *testing.T) {
 	assert.Nil(t, mycatConfig.AlgorithmSchemas["singledb"].AlgorithmTables)
 	assert.NotNil(t, mycatConfig.AlgorithmSchemas["singledb"].DataNode)
 }
+
+func TestSplitMultiNodes(t *testing.T) {
+	assert.Equal(t, []string{"abc1", "abc2", "abc3", "abc4", "abc5"},
+		splitMultiNodes("abc$1-5"))
+	assert.Equal(t, []string{"abc11", "abc12", "abc13", "abc14", "abc15", "abc21", "abc22"},
+		splitMultiNodes("abc1$1-5,abc2$1-2"))
+	assert.Equal(t, []string{"abc"}, splitMultiNodes("abc"))
+	assert.Equal(t, []string{"abc1", "abc2"}, splitMultiNodes("abc1,abc2"))
+	assert.Equal(t, []string{"abc11", "abc12", "abc2"}, splitMultiNodes("abc1$1-2,abc2"))
+	assert.Equal(t, []string{"abc1", "abc21", "abc22"}, splitMultiNodes("abc1,abc2$1-2"))
+}

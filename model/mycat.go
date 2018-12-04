@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/xml"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -238,4 +239,43 @@ func unmarshalUrl(url string) (host, port string) {
 		port = u[len(u)-1]
 	}
 	return
+}
+
+// splitMultiNodes split string to list, by using mycat config rule
+// eg: input: node1$1-5,node2$1-2 output: [node11, node12, node13, node14, node15, node21, node22]
+func splitMultiNodes(nodes string) []string {
+	result := []string{}
+	nodeList := strings.Split(nodes, ",")
+	for _, node := range nodeList {
+		s := strings.Split(node, "$")
+		if len(s) != 2 {
+			result = append(result, node)
+			continue
+		}
+		prefix := s[0]
+		interval := strings.Split(s[1], "-")
+		if len(interval) != 2 {
+			result = append(result, node)
+			continue
+		}
+		min, err := strconv.ParseInt(interval[0], 10, 64)
+		if err != nil {
+			fmt.Println(err)
+			result = append(result, node)
+			continue
+		}
+		max, err := strconv.ParseInt(interval[1], 10, 64)
+		if err != nil {
+			result = append(result, node)
+			continue
+		}
+		if min > max {
+			result = append(result, node)
+			continue
+		}
+		for i := min; i <= max; i++ {
+			result = append(result, fmt.Sprintf("%s%d", prefix, i))
+		}
+	}
+	return result
 }
