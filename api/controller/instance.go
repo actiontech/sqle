@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/xml"
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
@@ -12,6 +11,8 @@ import (
 	"sqle/model"
 	"strings"
 )
+
+var nullString = ""
 
 type CreateInstanceReq struct {
 	Name *string `json:"name" example:"test" valid:"required"`
@@ -433,53 +434,37 @@ type LoadMycatConfigRes struct {
 // @Param server_xml formData file true "server.xml"
 // @Param schema_xml formData file true "schema.xml"
 // @Param rule_xml formData file true "rule.xml"
-// @Success 200 {object} controller.CreateInstanceReq
+// @Success 200 {object} controller.LoadMycatConfigRes
 // @router /instance/load_mycat_config [post]
 func UploadMycatConfig(c echo.Context) error {
 	_, server, err := readFileToByte(c, "server_xml")
 	if err != nil {
-		return c.JSON(http.StatusOK, err)
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	_, schemas, err := readFileToByte(c, "schema_xml")
 	if err != nil {
-		return c.JSON(http.StatusOK, err)
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	_, rules, err := readFileToByte(c, "rule_xml")
 	if err != nil {
-		return c.JSON(http.StatusOK, err)
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	var serverXML = &model.ServerXML{}
-	var schemasXML = &model.SchemasXML{}
-	var rulesXML = &model.RulesXML{}
-	var instance *model.Instance
-
-	err = xml.Unmarshal(server, serverXML)
+	instance, err := model.LoadMycatServerFromXML(server, schemas, rules)
 	if err != nil {
-		goto ERROR
-	}
-
-	err = xml.Unmarshal(schemas, schemasXML)
-	if err != nil {
-		goto ERROR
-	}
-	err = xml.Unmarshal(rules, rulesXML)
-	if err != nil {
-		goto ERROR
-	}
-	instance, err = model.LoadMycatServerFromXML(serverXML, schemasXML, rulesXML)
-	if err != nil {
-		goto ERROR
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, LoadMycatConfigRes{
 		BaseRes: NewBaseReq(nil),
 		Data: CreateInstanceReq{
+			Name:          &nullString,
+			Desc:          &nullString,
+			Host:          &nullString,
+			Port:          &nullString,
+			Password:      &nullString,
 			DbType:        &instance.DbType,
 			User:          &instance.User,
 			RuleTemplates: []string{},
 			MycatConfig:   instance.MycatConfig,
 		},
 	})
-
-ERROR:
-	return c.JSON(http.StatusOK, errors.New(errors.READ_UPLOAD_FILE_ERROR, err))
 }
