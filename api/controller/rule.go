@@ -17,7 +17,6 @@ type CreateTplReq struct {
 // @Summary 添加规则模板
 // @Description create a rule template
 // @Accept json
-// @Accept json
 // @Param instance body controller.CreateTplReq true "add instance"
 // @Success 200 {object} controller.BaseRes
 // @router /rule_templates [post]
@@ -25,7 +24,7 @@ func CreateTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	req := new(CreateTplReq)
 	if err := c.Bind(req); err != nil {
-		return err
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if err := c.Validate(req); err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
@@ -149,7 +148,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 	template.Name = req.Name
-	template.Desc = req.Name
+	template.Desc = req.Desc
 	template.Rules = nil
 
 	templateRules := []model.Rule{}

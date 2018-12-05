@@ -3,6 +3,8 @@ package model
 import (
 	"encoding/xml"
 	"fmt"
+	"sqle/errors"
+	"strconv"
 	"strings"
 )
 
@@ -34,7 +36,23 @@ type DataHost struct {
 	Password string `json:"password"`
 }
 
-func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesXML *RulesXML) (*Instance, error) {
+func LoadMycatServerFromXML(serverText, schemasText, rulesText []byte) (*Instance, error) {
+	var err error
+	serverXML := &ServerXML{}
+	err = xml.Unmarshal(serverText, serverXML)
+	if err != nil {
+		return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
+	}
+	schemasXML := &SchemasXML{}
+	err = xml.Unmarshal(schemasText, schemasXML)
+	if err != nil {
+		return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
+	}
+	rulesXML := &RulesXML{}
+	err = xml.Unmarshal(rulesText, rulesXML)
+	if err != nil {
+		return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
+	}
 	var instance = &Instance{
 		DbType: DB_TYPE_MYCAT,
 	}
@@ -42,7 +60,6 @@ func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesX
 		AlgorithmSchemas: map[string]*AlgorithmSchema{},
 		DataHosts:        map[string]*DataHost{},
 	}
-	var err error
 
 	// load all dataHost from schema.xml
 	var allDataHosts = map[string]*DataHost{}
@@ -59,6 +76,30 @@ func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesX
 		}
 	}
 
+	// load all dataNode from schema.xml
+	// name, database, dataHost can use ',', '$', '-' to configure multi nodes
+	// but the (database size) * (dataHost size) must equal the size of name
+	// every dataHost has all database in its tag
+	// eg: <dataNode name="dn1$0-750" dataHost="host$1-10" database="db$0-75" />
+	// host1 has database of dn1$0-75 (name is dn$1-75)
+	// host2 has database of dn1$0-75 (name is dn$76-151)
+	var allDataNodes = map[string]*DataNode{}
+	for _, dataNode := range schemasXML.DataNodes {
+		names := splitMultiNodes(dataNode.Name)
+		databases := splitMultiNodes(dataNode.Database)
+		dataHosts := splitMultiNodes(dataNode.DataHostName)
+		if len(names) != len(databases)*len(dataHosts) {
+			return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR,
+				fmt.Errorf("parser dataNode %s failed", dataNode.Name))
+		}
+		for n, name := range names {
+			allDataNodes[name] = &DataNode{
+				DataHostName: dataHosts[n/len(databases)],
+				Database:     databases[n%len(databases)],
+			}
+		}
+	}
+
 	// load all schema form schema.xml
 	var AllAlgorithmSchemas = map[string]*AlgorithmSchema{}
 	for _, schema := range schemasXML.Schemas {
@@ -70,23 +111,21 @@ func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesX
 					name:      table.Name,
 					DataNodes: []*DataNode{},
 				}
-				nodeList := strings.Split(table.DataNodeList, ",")
-				for _, nodeName := range nodeList {
-					node, err := schemasXML.getDataNode(nodeName)
-					if err != nil {
-						return nil, err
+				nodeNames := splitMultiNodes(table.DataNodeList)
+				for _, nodeName := range nodeNames {
+					node, ok := allDataNodes[nodeName]
+					if !ok {
+						err = fmt.Errorf("dataNode %s not found in schema.xml", nodeName)
+						return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
 					}
-					t.DataNodes = append(t.DataNodes, &DataNode{
-						DataHostName: node.DataHostName,
-						Database:     node.Database,
-					})
+					t.DataNodes = append(t.DataNodes, node)
 				}
 
 				if table.RuleName != "" {
 					rule, exist := rulesXML.getRuleByName(table.RuleName)
 					if !exist {
 						err = fmt.Errorf("rule %s not found in rule.xml", table.RuleName)
-						return nil, err
+						return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
 					}
 					t.ShardingColumn = rule.ShardingColumn
 				}
@@ -95,14 +134,12 @@ func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesX
 			}
 		}
 		if schema.DataNodeName != "" {
-			node, err := schemasXML.getDataNode(schema.DataNodeName)
-			if err != nil {
-				return nil, err
+			node, ok := allDataNodes[schema.DataNodeName]
+			if !ok {
+				err = fmt.Errorf("dataNode %s not found in schema.xml", schema.DataNodeName)
+				return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
 			}
-			as.DataNode = &DataNode{
-				DataHostName: node.DataHostName,
-				Database:     node.Database,
-			}
+			as.DataNode = node
 		}
 		AllAlgorithmSchemas[schema.Name] = as
 	}
@@ -124,6 +161,7 @@ func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesX
 		s, ok := AllAlgorithmSchemas[schema]
 		if !ok {
 			err = fmt.Errorf("schema %s not found in schema.xml", schema)
+			return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
 		}
 		instance.MycatConfig.AlgorithmSchemas[schema] = s
 		if s.DataNode != nil {
@@ -134,6 +172,7 @@ func LoadMycatServerFromXML(serverXML *ServerXML, schemasXML *SchemasXML, rulesX
 				_, ok := allDataHosts[node.DataHostName]
 				if !ok {
 					err = fmt.Errorf("dataHost %s not found in schema.xml", node.DataHostName)
+					return nil, errors.New(errors.PARSER_MYCAT_CONFIG_ERROR, err)
 				}
 				instance.MycatConfig.DataHosts[node.DataHostName] = allDataHosts[node.DataHostName]
 			}
@@ -238,4 +277,43 @@ func unmarshalUrl(url string) (host, port string) {
 		port = u[len(u)-1]
 	}
 	return
+}
+
+// splitMultiNodes split string to list, by using mycat config rule
+// eg: input: node1$1-5,node2$1-2 output: [node11, node12, node13, node14, node15, node21, node22]
+func splitMultiNodes(nodes string) []string {
+	result := []string{}
+	nodeList := strings.Split(nodes, ",")
+	for _, node := range nodeList {
+		s := strings.Split(node, "$")
+		if len(s) != 2 {
+			result = append(result, node)
+			continue
+		}
+		prefix := s[0]
+		interval := strings.Split(s[1], "-")
+		if len(interval) != 2 {
+			result = append(result, node)
+			continue
+		}
+		min, err := strconv.ParseInt(interval[0], 10, 64)
+		if err != nil {
+			fmt.Println(err)
+			result = append(result, node)
+			continue
+		}
+		max, err := strconv.ParseInt(interval[1], 10, 64)
+		if err != nil {
+			result = append(result, node)
+			continue
+		}
+		if min > max {
+			result = append(result, node)
+			continue
+		}
+		for i := min; i <= max; i++ {
+			result = append(result, fmt.Sprintf("%s%d", prefix, i))
+		}
+	}
+	return result
 }

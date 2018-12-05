@@ -1,17 +1,20 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle/api/server"
+	"sqle/errors"
 	"sqle/inspector"
+	"sqle/log"
 	"sqle/model"
 )
 
 type CreateTaskReq struct {
 	Name     string `json:"name" example:"test" valid:"required"`
 	Desc     string `json:"desc" example:"this is a test task" valid:"-"`
-	InstName string `json:"inst_name" form:"inst_name" example:"inst_1" valid:"-"`
+	InstName string `json:"inst_name" form:"inst_name" example:"inst_1" valid:"required"`
 	Schema   string `json:"schema" example:"db1" valid:"-"`
 	Sql      string `json:"sql" example:"alter table tb1 drop columns c1" valid:"-"`
 }
@@ -54,7 +57,7 @@ func CreateTask(c echo.Context) error {
 		Instance:   inst,
 		CommitSqls: []*model.CommitSql{},
 	}
-	sqlArray, err := inspector.NewInspector(task).SplitSql(req.Sql)
+	sqlArray, err := inspector.NewInspector(log.NewEntry(), task).SplitSql(req.Sql)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -94,11 +97,15 @@ func UploadSqlFile(c echo.Context) error {
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
+	if task.HasDoingCommit() {
+		return c.JSON(http.StatusOK, errors.New(errors.TASK_ACTION_INVALID,
+			fmt.Errorf("task has commit, not allow update sql")))
+	}
 	_, sql, err := readFileToByte(c, "sql_file")
 	if err != nil {
 		return c.JSON(http.StatusOK, err)
 	}
-	sqlArray, err := inspector.NewInspector(task).SplitSql(string(sql))
+	sqlArray, err := inspector.NewInspector(log.NewEntry(), task).SplitSql(string(sql))
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -158,10 +165,7 @@ func DeleteTask(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	return c.JSON(http.StatusOK, &GetTaskRes{
-		BaseRes: NewBaseReq(nil),
-		Data:    task.Detail(),
-	})
+	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
 
 type GetAllTaskRes struct {
@@ -196,14 +200,17 @@ func GetTasks(c echo.Context) error {
 func InspectTask(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	_, exist, err := s.GetTaskById(taskId)
+	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
 	}
-	task, err := server.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
+	if task.Instance == nil {
+		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
+	}
+	task, err = server.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_INSPECT)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -221,12 +228,15 @@ func InspectTask(c echo.Context) error {
 func CommitTask(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	_, exist, err := s.GetTaskById(taskId)
+	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
+	}
+	if task.Instance == nil {
+		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
 	}
 	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
 	if err != nil {
@@ -243,12 +253,15 @@ func CommitTask(c echo.Context) error {
 func RollbackTask(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	_, exist, err := s.GetTaskById(taskId)
+	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
+	}
+	if task.Instance == nil {
+		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
 	}
 	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
 	if err != nil {

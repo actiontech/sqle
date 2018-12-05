@@ -100,35 +100,68 @@ func (t *Task) Detail() TaskDetail {
 	return data
 }
 
-func (t *Task) ValidAction(typ int) error {
-	// inspect sql allowed at all times
-	if typ == TASK_ACTION_INSPECT {
-		return nil
-	}
-	// commit is only allowed to commit once
-	if typ == TASK_ACTION_COMMIT {
-		if t.CommitSqls != nil {
-			for _, commitSql := range t.CommitSqls {
-				if commitSql.ExecStatus != TASK_ACTION_INIT {
-					return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has committed"))
-				}
+func (t *Task) HasDoingAdvise() bool {
+	if t.CommitSqls != nil {
+		for _, commitSql := range t.CommitSqls {
+			if commitSql.InspectStatus != TASK_ACTION_INIT {
+				return true
 			}
 		}
 	}
-	// rollback is only allowed to exec once
-	// and after commit success
-	if typ == TASK_ACTION_ROLLBACK {
-		if t.RollbackSqls != nil {
-			for _, rollbackSql := range t.RollbackSqls {
-				if rollbackSql.ExecStatus != TASK_ACTION_INIT {
-					return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has rolled back"))
-				}
+	return false
+}
+
+func (t *Task) HasDoingCommit() bool {
+	if t.CommitSqls != nil {
+		for _, commitSql := range t.CommitSqls {
+			if commitSql.ExecStatus != TASK_ACTION_INIT {
+				return true
 			}
-			for _, commitSql := range t.CommitSqls {
-				if commitSql.ExecStatus != TASK_ACTION_INIT {
-					return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task has committed"))
-				}
+		}
+	}
+	return false
+}
+
+func (t *Task) IsCommitFailed() bool {
+	if t.CommitSqls != nil {
+		for _, commitSql := range t.CommitSqls {
+			if commitSql.ExecStatus == TASK_ACTION_ERROR {
+				return true
 			}
+		}
+	}
+	return false
+}
+
+func (t *Task) HasDoingRollback() bool {
+	if t.RollbackSqls != nil {
+		for _, rollbackSql := range t.RollbackSqls {
+			if rollbackSql.ExecStatus != TASK_ACTION_INIT {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (t *Task) ValidAction(typ int) error {
+	switch typ {
+	case TASK_ACTION_INSPECT:
+		// inspect sql allowed at all times
+		return nil
+	case TASK_ACTION_COMMIT:
+		if t.HasDoingCommit() {
+			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has committed"))
+		}
+	case TASK_ACTION_ROLLBACK:
+		if t.HasDoingRollback() {
+			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has rolled back"))
+		}
+		if t.IsCommitFailed() {
+			return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task is commit failed, not allow rollback"))
+		}
+		if !t.HasDoingCommit() {
+			return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task need commit first"))
 		}
 	}
 	return nil

@@ -7,6 +7,7 @@ import (
 	"sqle/api"
 	"sqle/api/server"
 	"sqle/inspector"
+	"sqle/log"
 	"sqle/model"
 	"sqle/sqlserverClient"
 	"sqle/utils"
@@ -24,6 +25,7 @@ var configPath string
 var pidFile string
 var debug bool
 var autoMigrateTable bool
+var logPath = "./logs"
 
 func main() {
 	var rootCmd = &cobra.Command{
@@ -32,8 +34,7 @@ func main() {
 		Long:  "SQLe\n\nVersion:\n  " + version,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := run(cmd, args); nil != err {
-				//os.ErrExit(err)
-				fmt.Println(err)
+				fmt.Println(err.Error())
 				os.Exit(1)
 			}
 		},
@@ -67,7 +68,12 @@ func run(cmd *cobra.Command, _ []string) error {
 		port = conf.GetInt("server", "port", 12160)
 		autoMigrateTable = conf.GetBool("server", "auto_migrate_table", false)
 		debug = conf.GetBool("server", "debug", false)
+		logPath = conf.GetString("server", "log_path", "./logs")
 	}
+
+	// init logger
+	log.InitLogger(logPath)
+	defer log.ExitLogger()
 
 	if pidFile != "" {
 		f, err := os.Create(pidFile)
@@ -79,6 +85,11 @@ func run(cmd *cobra.Command, _ []string) error {
 		defer func() {
 			os.Remove(pidFile)
 		}()
+	}
+
+	err := inspector.LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template")
+	if err != nil {
+		return err
 	}
 
 	s, err := model.NewStorage(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlSchema, debug)
@@ -101,11 +112,14 @@ func run(cmd *cobra.Command, _ []string) error {
 		if err := s.CreateDefaultTemplate(inspector.DefaultRules); err != nil {
 			return err
 		}
+		if err := s.CreateConfigsIfNotExist(inspector.GetAllConfig()); err != nil {
+			return err
+		}
 	}
 
 	exitChan := make(chan struct{}, 0)
 	server.InitSqled(exitChan)
-	go api.StartApi(port, exitChan)
+	go api.StartApi(port, exitChan, logPath)
 
 	select {
 	case <-exitChan:

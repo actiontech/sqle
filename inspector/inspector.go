@@ -3,6 +3,7 @@ package inspector
 import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
+	"github.com/sirupsen/logrus"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
@@ -19,13 +20,14 @@ type Inspector interface {
 	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
 	Commit(sql *model.Sql) error
 	SplitSql(sql string) ([]string, error)
+	Logger() *logrus.Entry
 }
 
-func NewInspector(task *model.Task) Inspector {
+func NewInspector(entry *logrus.Entry, task *model.Task) Inspector {
 	if task.Instance.DbType == model.DB_TYPE_SQLSERVER {
-		return NeSqlserverInspect(task)
+		return NeSqlserverInspect(entry, task)
 	} else {
-		return NewInspect(task)
+		return NewInspect(entry, task)
 	}
 }
 
@@ -34,6 +36,7 @@ type Inspect struct {
 	currentRule model.Rule
 	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
 	Task        *model.Task
+	log         *logrus.Entry
 	dbConn      *executor.Executor
 	isConnected bool
 
@@ -44,7 +47,7 @@ type Inspect struct {
 	currentSchema string
 	allSchema     map[string] /*schema*/ struct{}
 	schemaHasLoad bool
-	allTable      map[string] /*schema*/ map[string] /*table*/ struct{}
+	allTable      map[string] /*schema*/ map[string] /*table*/ *TableInfo
 	isDDLStmt     bool
 	isDMLStmt     bool
 
@@ -57,14 +60,21 @@ type Inspect struct {
 	rollbackSqls    []string
 }
 
-func NewInspect(task *model.Task) *Inspect {
+type TableInfo struct {
+	Size            float64
+	sizeLoad        bool
+	CreateTableStmt *ast.AlterTableStmt
+}
+
+func NewInspect(entry *logrus.Entry, task *model.Task) *Inspect {
 	return &Inspect{
 		Results:          newInspectResults(),
 		Task:             task,
+		log:              entry,
 		currentSchema:    task.Schema,
 		SqlArray:         []*model.Sql{},
 		allSchema:        map[string]struct{}{},
-		allTable:         map[string]map[string]struct{}{},
+		allTable:         map[string]map[string]*TableInfo{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
 		rollbackSqls:     []string{},
@@ -74,17 +84,20 @@ func NewInspect(task *model.Task) *Inspect {
 func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 	nodes, err := parseSql(i.Task.Instance.DbType, sql.Content)
 	if err != nil {
+		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql.Content)
 		return err
 	}
 	for _, node := range nodes {
 		switch node.(type) {
 		case ast.DDLNode:
 			if i.isDMLStmt {
+				i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
 				return SQL_STMT_CONFLICT_ERROR
 			}
 			i.isDDLStmt = true
 		case ast.DMLNode:
 			if i.isDDLStmt {
+				i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
 				return SQL_STMT_CONFLICT_ERROR
 			}
 			i.isDMLStmt = true
@@ -113,6 +126,7 @@ func (i *Inspect) Do() error {
 func (i *Inspect) SplitSql(sql string) ([]string, error) {
 	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
+		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql)
 		return nil, err
 	}
 	sqlArray := make([]string, len(stmts))
@@ -120,6 +134,10 @@ func (i *Inspect) SplitSql(sql string) ([]string, error) {
 		sqlArray[n] = stmt.Text()
 	}
 	return sqlArray, nil
+}
+
+func (i *Inspect) Logger() *logrus.Entry {
+	return i.log
 }
 
 func (i *Inspect) addResult(ruleName string, args ...interface{}) {
@@ -134,7 +152,7 @@ func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := executor.NewExecutor(i.Task.Instance, i.currentSchema)
+	conn, err := executor.NewExecutor(i.log, i.Task.Instance, i.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -223,18 +241,43 @@ func (i *Inspect) isTableExist(tableName string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		i.allTable[schema] = make(map[string]struct{}, len(tables))
+		i.allTable[schema] = make(map[string]*TableInfo, len(tables))
 		for _, table := range tables {
-			i.allTable[schema][table] = struct{}{}
+			i.allTable[schema][table] = &TableInfo{}
 		}
 	}
 	_, exist := i.allTable[schema][table]
 	return exist, nil
 }
 
+func (i *Inspect) getTableSize(tableName string) (float64, error) {
+	var schema = i.currentSchema
+	var table = tableName
+	if strings.Contains(tableName, ".") {
+		splitStrings := strings.SplitN(tableName, ".", 2)
+		schema = splitStrings[0]
+		table = splitStrings[1]
+	}
+	info := i.allTable[schema][table]
+	if info == nil {
+		return 0, nil
+	}
+	if !info.sizeLoad {
+		conn, err := i.getDbConn()
+		if err != nil {
+			return 0, err
+		}
+		size, err := conn.ShowTableSizeMB(schema, table)
+		if err != nil {
+			return 0, err
+		}
+		info.Size = size
+	}
+	return info.Size, nil
+}
+
 // getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
 func (i *Inspect) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bool, error) {
-
 	exist, err := i.isTableExist(tableName)
 	if err != nil {
 		return nil, exist, err
@@ -260,10 +303,12 @@ func (i *Inspect) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bo
 	}
 	t, err := parseOneSql(i.Task.Instance.DbType, sql)
 	if err != nil {
+		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
 		return nil, exist, err
 	}
 	createStmt, ok = t.(*ast.CreateTableStmt)
 	if !ok {
+		i.Logger().Error("parse sql from show create failed, not createTableStmt")
 		return nil, exist, fmt.Errorf("stmt not support")
 	}
 	i.createTableStmts[tableName] = createStmt

@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"github.com/sirupsen/logrus"
 	"sqle/model"
 	"sqle/sqlserverClient"
 )
@@ -9,14 +10,18 @@ type SqlserverInspect struct {
 	*Inspect
 }
 
-func NeSqlserverInspect(task *model.Task)  Inspector {
+func NeSqlserverInspect(entry *logrus.Entry, task *model.Task) Inspector {
 	return &SqlserverInspect{
-		Inspect:NewInspect(task),
+		Inspect: NewInspect(entry, task),
 	}
 }
 
 func (i *SqlserverInspect) SplitSql(sql string) ([]string, error) {
-	return sqlserverClient.GetClient().SplitSql(sql)
+	sqls, err := sqlserverClient.GetClient().SplitSql(sql)
+	if err != nil {
+		i.Logger().Errorf("parser t-sql from ms grpc server failed, error: %v", err)
+	}
+	return sqls, err
 }
 
 func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
@@ -36,10 +41,18 @@ func (i *SqlserverInspect) Do() error {
 }
 
 func (i *SqlserverInspect) Advise(rules []model.Rule) error {
-	return sqlserverClient.GetClient().Advise(i.Task.CommitSqls, rules)
+	i.Logger().Info("start advise sql")
+	err := sqlserverClient.GetClient().Advise(i.Task.CommitSqls, rules)
+	if err != nil {
+		i.Logger().Errorf("advise t-sql from ms grpc server failed, error: %v", err)
+	} else {
+		i.Logger().Info("advise sql finish")
+	}
+	return err
 }
 
 func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
+	i.Logger().Info("start generate rollback sql")
+	i.Logger().Info("generate rollback sql finish")
 	return []*model.RollbackSql{}, nil
 }
-

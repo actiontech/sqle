@@ -1,16 +1,18 @@
 package controller
 
 import (
-	"encoding/xml"
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
 	"sqle/api/server"
 	"sqle/errors"
 	"sqle/executor"
+	"sqle/log"
 	"sqle/model"
 	"strings"
 )
+
+var nullString = ""
 
 type CreateInstanceReq struct {
 	Name *string `json:"name" example:"test" valid:"required"`
@@ -94,7 +96,7 @@ func CreateInst(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	go server.GetSqled().UpdateAndGetInstanceStatus(instance)
+	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 
 	return c.JSON(200, &InstanceRes{
 		BaseRes: NewBaseReq(nil),
@@ -255,7 +257,7 @@ func UpdateInstance(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(err))
 	}
 
-	go server.GetSqled().UpdateAndGetInstanceStatus(instance)
+	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 	return c.JSON(200, NewBaseReq(nil))
 }
 
@@ -307,7 +309,7 @@ func PingInstanceById(c echo.Context) error {
 			Data:    false,
 		})
 	}
-	if err := executor.Ping(inst); err != nil {
+	if err := executor.Ping(log.NewEntry(), inst); err != nil {
 		return c.JSON(200, PingInstRes{
 			BaseRes: NewBaseReq(errors.New(errors.STATUS_OK, err)),
 			Data:    false,
@@ -354,7 +356,7 @@ func PingInstance(c echo.Context) error {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
-	if err := executor.Ping(instance); err != nil {
+	if err := executor.Ping(log.NewEntry(), instance); err != nil {
 		return c.JSON(200, PingInstRes{
 			BaseRes: NewBaseReq(errors.New(errors.STATUS_OK, err)),
 			Data:    false,
@@ -386,7 +388,7 @@ func GetInstSchemas(c echo.Context) error {
 	if !exist {
 		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
 	}
-	status, err := server.GetSqled().UpdateAndGetInstanceStatus(instance)
+	status, err := server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -417,7 +419,7 @@ func GetAllSchemas(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /schemas/manual_update [post]
 func ManualUpdateAllSchemas(c echo.Context) error {
-	go server.GetSqled().UpdateAllInstanceStatus()
+	go server.GetSqled().UpdateAllInstanceStatus(log.NewEntry())
 	return c.JSON(200, NewBaseReq(nil))
 }
 
@@ -432,53 +434,37 @@ type LoadMycatConfigRes struct {
 // @Param server_xml formData file true "server.xml"
 // @Param schema_xml formData file true "schema.xml"
 // @Param rule_xml formData file true "rule.xml"
-// @Success 200 {object} controller.CreateInstanceReq
+// @Success 200 {object} controller.LoadMycatConfigRes
 // @router /instance/load_mycat_config [post]
 func UploadMycatConfig(c echo.Context) error {
 	_, server, err := readFileToByte(c, "server_xml")
 	if err != nil {
-		return c.JSON(http.StatusOK, err)
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	_, schemas, err := readFileToByte(c, "schema_xml")
 	if err != nil {
-		return c.JSON(http.StatusOK, err)
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	_, rules, err := readFileToByte(c, "rule_xml")
 	if err != nil {
-		return c.JSON(http.StatusOK, err)
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	var serverXML = &model.ServerXML{}
-	var schemasXML = &model.SchemasXML{}
-	var rulesXML = &model.RulesXML{}
-	var instance *model.Instance
-
-	err = xml.Unmarshal(server, serverXML)
+	instance, err := model.LoadMycatServerFromXML(server, schemas, rules)
 	if err != nil {
-		goto ERROR
-	}
-
-	err = xml.Unmarshal(schemas, schemasXML)
-	if err != nil {
-		goto ERROR
-	}
-	err = xml.Unmarshal(rules, rulesXML)
-	if err != nil {
-		goto ERROR
-	}
-	instance, err = model.LoadMycatServerFromXML(serverXML, schemasXML, rulesXML)
-	if err != nil {
-		goto ERROR
+		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, LoadMycatConfigRes{
 		BaseRes: NewBaseReq(nil),
 		Data: CreateInstanceReq{
+			Name:          &nullString,
+			Desc:          &nullString,
+			Host:          &nullString,
+			Port:          &nullString,
+			Password:      &nullString,
 			DbType:        &instance.DbType,
 			User:          &instance.User,
 			RuleTemplates: []string{},
 			MycatConfig:   instance.MycatConfig,
 		},
 	})
-
-ERROR:
-	return c.JSON(http.StatusOK, errors.New(errors.READ_UPLOAD_FILE_ERROR, err))
 }

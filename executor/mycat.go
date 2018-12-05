@@ -1,23 +1,28 @@
 package executor
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"sqle/errors"
 	"sqle/model"
 )
 
 type MycatConn struct {
+	log    *logrus.Entry
 	Conn   *BaseConn
 	config *model.MycatConfig
 }
 
-func newMycatConn(instance *model.Instance, schema string) (Db, error) {
+func newMycatConn(entry *logrus.Entry, instance *model.Instance, schema string) (Db, error) {
 	var mc = &MycatConn{
+		log:    entry,
 		config: instance.MycatConfig,
 	}
-	conn, err := newConn(instance, schema)
+	conn, err := newConn(entry, instance, schema)
 	if err != nil {
+		entry.Error(err)
 		return nil, err
 	}
 	mc.Conn = conn
@@ -30,7 +35,7 @@ func (mc *MycatConn) openDataHostConn(name, schema string) (Db, error) {
 		msg := fmt.Errorf("data host %s not found", name)
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, msg)
 	}
-	conn, err := newConn(&model.Instance{
+	conn, err := newConn(mc.log, &model.Instance{
 		DbType:   model.DB_TYPE_MYSQL,
 		Host:     dataHost.Host,
 		Port:     dataHost.Port,
@@ -38,6 +43,7 @@ func (mc *MycatConn) openDataHostConn(name, schema string) (Db, error) {
 		Password: dataHost.Password,
 	}, schema)
 	if err != nil {
+		mc.Logger().Error("connect mycat data host failed")
 		return nil, err
 	}
 	return conn, nil
@@ -62,6 +68,7 @@ func (mc *MycatConn) ExecDDL(query, schema, table string) error {
 	as, ok := mc.config.AlgorithmSchemas[schema]
 	if !ok {
 		msg := fmt.Errorf("schema %s not found in mycat algorithm schemas", schema)
+		mc.log.Error(msg)
 		return errors.New(errors.CONNECT_REMOTE_DB_ERROR, msg)
 	}
 	if as.AlgorithmTables == nil {
@@ -77,6 +84,7 @@ func (mc *MycatConn) ExecDDL(query, schema, table string) error {
 		at, ok := as.AlgorithmTables[table]
 		if !ok {
 			msg := fmt.Errorf("table %s not found in mycat algorithm schema %s", table, schema)
+			mc.log.Error(msg)
 			return errors.New(errors.CONNECT_REMOTE_DB_ERROR, msg)
 		}
 		conns := []Db{}
@@ -103,6 +111,10 @@ func (mc *MycatConn) ExecDDL(query, schema, table string) error {
 	return nil
 }
 
-func (mc *MycatConn) Query(query string, args ...interface{}) ([]map[string]string, error) {
+func (mc *MycatConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	return mc.Conn.Query(query, args...)
+}
+
+func (mc *MycatConn) Logger() *logrus.Entry {
+	return mc.log
 }

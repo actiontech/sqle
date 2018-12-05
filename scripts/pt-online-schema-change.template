@@ -1,0 +1,8 @@
+pt-online-schema-change D={{.Schema}},t={{.Table}} \
+--alter="{{.Alter}}" \
+--host={{.Host}} \
+--user={{.User}} \
+--port={{.Port}} \
+--ask-pass \
+--print \
+--execute

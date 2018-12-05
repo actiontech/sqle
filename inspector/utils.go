@@ -121,18 +121,6 @@ func getTableNameWithQuote(stmt *ast.TableName) string {
 	}
 }
 
-func SplitSql(dbType, sql string) ([]string, error) {
-	stmts, err := parseSql(dbType, sql)
-	if err != nil {
-		return nil, err
-	}
-	sqlArray := make([]string, len(stmts))
-	for n, stmt := range stmts {
-		sqlArray[n] = stmt.Text()
-	}
-	return sqlArray, nil
-}
-
 func RemoveArrayRepeat(input []string) (output []string) {
 	for _, i := range input {
 		repeat := false
@@ -188,34 +176,79 @@ func MysqlDataTypeIsBlob(tp byte) bool {
 	}
 }
 
-func whereStmtHasColumn(where ast.ExprNode) bool {
+func whereStmtHasOneColumn(where ast.ExprNode) bool {
+	return scanWhereStmtColumn(where, func(expr *ast.ColumnNameExpr) bool {
+		return true
+	})
+}
+
+func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
+	return scanWhereStmtColumn(where, func(expr *ast.ColumnNameExpr) bool {
+		if expr.Name.Name.L == strings.ToLower(columnName) {
+			return true
+		}
+		return false
+	})
+}
+
+func scanWhereStmtColumn(where ast.ExprNode, fn func(expr *ast.ColumnNameExpr) bool) bool {
 	switch x := where.(type) {
 	case nil:
 	case *ast.ColumnNameExpr:
-		return true
+		return fn(x)
 	case *ast.BinaryOperationExpr:
-		if whereStmtHasColumn(x.R) || whereStmtHasColumn(x.L) {
+		if scanWhereStmtColumn(x.R, fn) || scanWhereStmtColumn(x.L, fn) {
 			return true
 		} else {
 			return false
 		}
-	case *ast.IsTruthExpr:
-		return whereStmtHasColumn(x.Expr)
 	case *ast.UnaryOperationExpr:
-		return whereStmtHasColumn(x.V)
+		return scanWhereStmtColumn(x.V, fn)
+	// boolean_primary is true|false
+	case *ast.IsTruthExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary is (not) null
 	case *ast.IsNullExpr:
-		return whereStmtHasColumn(x.Expr)
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary comparison_operator {ALL | ANY} (subquery)
 	case *ast.CompareSubqueryExpr:
-		return true
+		return scanWhereStmtColumn(x.L, fn)
+	// boolean_primary IN (expr,...)
+	case *ast.PatternInExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary Between expr and expr
+	case *ast.BetweenExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary (not) like expr
+	case *ast.PatternLikeExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	// boolean_primary (not) regexp expr
+	case *ast.PatternRegexpExpr:
+		return scanWhereStmtColumn(x.Expr, fn)
+	case *ast.RowExpr:
+		if x.Values != nil {
+			ok := false
+			for _, expr := range x.Values {
+				ok = ok || scanWhereStmtColumn(expr, fn)
+				if ok {
+					return ok
+				}
+			}
+			return ok
+		}
+	default:
+		return false
 	}
 	return false
 }
 
-func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, tp ast.AlterTableType) []*ast.AlterTableSpec {
+func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
 	for _, spec := range specs {
-		if spec.Tp == tp {
-			s = append(s, spec)
+		for _, tp := range ts {
+			if spec.Tp == tp {
+				s = append(s, spec)
+			}
 		}
 	}
 	return s
@@ -240,6 +273,21 @@ func getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
 		}
 	}
 	return pkColumnsName, hasPk
+}
+
+func hasPrimaryKey(stmt *ast.CreateTableStmt) bool {
+	_, hasPk := getPrimaryKey(stmt)
+	return hasPk
+}
+
+func hasUniqIndex(stmt *ast.CreateTableStmt) bool {
+	for _, constraint := range stmt.Constraints {
+		switch constraint.Tp {
+		case ast.ConstraintUniq:
+			return true
+		}
+	}
+	return false
 }
 
 func ReplaceTableName(node ast.StmtNode) string {

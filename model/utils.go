@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"sqle/errors"
+	"sqle/log"
 	"time"
 )
 
@@ -35,6 +36,7 @@ func NewStorage(user, password, host, port, schema string, debug bool) (*Storage
 		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	if debug {
+		db.SetLogger(log.Logger().WithField("type", "sql"))
 		db.LogMode(true)
 	}
 	return &Storage{db: db}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
@@ -45,7 +47,7 @@ type Storage struct {
 }
 
 func (s *Storage) AutoMigrate() error {
-	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}).Error
+	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}, &Config{}).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
@@ -80,6 +82,23 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 			return err
 		}
 		return s.UpdateTemplateRules(t, rules...)
+	}
+	return nil
+}
+
+func (s *Storage) CreateConfigsIfNotExist(configs []Config) error {
+	for _, config := range configs {
+		exist, err := s.Exist(&config)
+		if err != nil {
+			return err
+		}
+		if exist {
+			continue
+		}
+		err = s.Save(config)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
