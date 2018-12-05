@@ -6,6 +6,36 @@ namespace SqlserverProtoServer {
     public class ObjectNameRuleValidator : RuleValidator {
         public List<String> Names;
 
+
+        public List<String> GetNamesFromConstraints(List<String> names, IList<ConstraintDefinition> constraints) {
+            foreach (var constraint in constraints) {
+                if (constraint.ConstraintIdentifier != null) {
+                    names.Add(constraint.ConstraintIdentifier.Value);
+                }
+            }
+            return names;
+        }
+
+        public List<String> GetNamesFromTableDefinition(List<String> names, TableDefinition tableDefinition) {
+            // column names
+            var columnDefinitions = tableDefinition.ColumnDefinitions;
+            foreach (var columnDefinition in columnDefinitions) {
+                names.Add(columnDefinition.ColumnIdentifier.Value);
+                names = GetNamesFromConstraints(names, columnDefinition.Constraints);
+            }
+
+            // index names
+            var indexes = tableDefinition.Indexes;
+            foreach (var index in indexes) {
+                names.Add(index.Name.Value);
+            }
+
+            // constraint
+            names = GetNamesFromConstraints(names, tableDefinition.TableConstraints);
+
+            return names;
+        }
+
         public override void Check(RuleValidatorContext context, TSqlStatement statement) {
             switch (statement) {
                 case CreateDatabaseStatement createDatabaseStatement:
@@ -14,30 +44,14 @@ namespace SqlserverProtoServer {
                 case CreateTableStatement createTableStatement:
                     // table name
                     Names.Add(createTableStatement.SchemaObjectName.BaseIdentifier.Value);
-                    // column names
-                    var columnDefinitions = createTableStatement.Definition.ColumnDefinitions;
-                    foreach (var columnDefinition in columnDefinitions) {
-                        Names.Add(columnDefinition.ColumnIdentifier.Value);
-                    }
-                    // index names
-                    var tableConstraints = createTableStatement.Definition.TableConstraints;
-                    foreach (var tableConstraint in tableConstraints) {
-                        Names.Add(tableConstraint.ConstraintIdentifier.Value);
-                    }
+                    Names = GetNamesFromTableDefinition(Names, createTableStatement.Definition);
                     break;
 
                 case AlterTableStatement alterTableStatement:
                     switch (alterTableStatement) {
                         // add column (with or without constraint)
                         case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
-                            foreach (var columnDefinition in alterTableAddTableElementStatement.Definition.ColumnDefinitions) {
-                                Names.Add(columnDefinition.ColumnIdentifier.Value);
-                                foreach (var constraint in columnDefinition.Constraints) {
-                                    if (constraint.ConstraintIdentifier != null) {
-                                        Names.Add(constraint.ConstraintIdentifier.Value);
-                                    }
-                                }
-                            }
+                            Names = GetNamesFromTableDefinition(Names, alterTableAddTableElementStatement.Definition);
                             break;
                     }
 
@@ -70,13 +84,7 @@ namespace SqlserverProtoServer {
                 case CreateIndexStatement createIndexStatement:
                     Names.Add(createIndexStatement.Name.Value);
                     break;
-                default:
-                    Console.WriteLine("type:{0}", statement.GetType());
-                    break;
             }
-
-            Show(Names, "name:{0}");
-            reset();
         }
 
         public void reset() {
@@ -88,13 +96,14 @@ namespace SqlserverProtoServer {
         }
     }
 
-    public class ObjectNameMaxLengthRuleValidator: ObjectNameRuleValidator {
+    public class ObjectNameMaxLengthRuleValidator : ObjectNameRuleValidator {
         public override void Check(RuleValidatorContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             foreach (var name in Names) {
                 if (name.Length > 64) {
                     context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                    break;
                 }
             }
 

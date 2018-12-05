@@ -131,7 +131,13 @@ namespace SqlserverProtoServer {
 
             List<String> notExistTableNames = new List<String>();
             foreach (var tableName in TableNames) {
-                var exist = TableExists(context, tableName);
+                var exist = false;
+                var schemaDotTable = tableName.Split('.');
+                if (schemaDotTable.Length == 2) {
+                    exist = TableExists(context, schemaDotTable[0], schemaDotTable[1]);
+                } else {
+                    exist = TableExists(context, "", schemaDotTable[0]);
+                }
                 if (!exist) {
                     notExistTableNames.Add(tableName);
                 }

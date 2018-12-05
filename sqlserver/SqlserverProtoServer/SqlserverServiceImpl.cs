@@ -114,6 +114,8 @@ namespace SqlserverProtoServer {
                         ruleValidator.Check(ruleValidatorContext, statement);
                     }
 
+                    ruleValidatorContext.UpdateContext(statement);
+
                     output.AdviseResults.Add(ruleValidatorContext.AdviseResultContext.GetAdviseResult());
                     ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
                 }

@@ -23,6 +23,7 @@ message SqlserverMeta {
     string Host = 3;
     string Port = 4;
     string CurrentDatabase = 5;
+    string CurrentSchema = 6;
 }
 
 message AdviseInput {

@@ -1,28 +1,31 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlserverProtoServer {
     public class ForeignKeyRuleValidator : RuleValidator {
+        public bool hasForeignKeyConstraint(IList<ConstraintDefinition> constraints) {
+            foreach (var constrait in constraints) {
+                if (constrait is ForeignKeyConstraintDefinition) {
+                    return true;
+                }
+            }
+            return false;
+        }
         public override void Check(RuleValidatorContext context, TSqlStatement statement) {
-            Console.WriteLine("statement type:{0}", statement);
             bool hasForeignKey = false;
             switch (statement) {
                 case CreateTableStatement createTableStatement:
                     foreach (var columnDefinition in createTableStatement.Definition.ColumnDefinitions) {
-                        foreach (var constraint in columnDefinition.Constraints) {
-                            if (constraint is ForeignKeyConstraintDefinition) {
-                                hasForeignKey = true;
-                            }
+                        if (hasForeignKeyConstraint(columnDefinition.Constraints)) {
+                            hasForeignKey = true;
                         }
                     }
                     break;
 
                 case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
-                    TableDefinition tableDefinition = alterTableAddTableElementStatement.Definition;
-                    foreach (var tableConstaint in tableDefinition.TableConstraints) {
-                        if (tableConstaint is ForeignKeyConstraintDefinition) {
-                            hasForeignKey = true;
-                        }
+                    if (hasForeignKeyConstraint(alterTableAddTableElementStatement.Definition.TableConstraints)) {
+                        hasForeignKey = true;
                     }
                     break;
             }

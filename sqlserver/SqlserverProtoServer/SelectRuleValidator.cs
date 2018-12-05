@@ -4,7 +4,6 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 namespace SqlserverProtoServer {
     public class SelectWhereRuleValidator : RuleValidator {
         public bool WhereClauseHasColumn(BooleanExpression booleanExpression) {
-            Console.WriteLine("booleanExpression:{0}", booleanExpression);
             switch (booleanExpression) {
                 case BooleanComparisonExpression comparisonExpression:
                     if (comparisonExpression.FirstExpression is ColumnReferenceExpression || comparisonExpression.SecondExpression is ColumnReferenceExpression) {

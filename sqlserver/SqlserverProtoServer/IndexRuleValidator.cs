@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlserverProtoServer {
@@ -20,7 +21,6 @@ namespace SqlserverProtoServer {
                     compositeIndexMax = createIndexStatement.Columns.Count;
                     break;
             }
-            Console.WriteLine(compositeIndexMax);
             if (compositeIndexMax > COMPOSITE_INDEX_MAX) {
                 context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
             }
@@ -59,10 +59,28 @@ namespace SqlserverProtoServer {
             return indexCounter;
         }
 
+        public int GetNumberOfIndexesOnTable(RuleValidatorContext context, String tableName) {
+            int indexNumber = 0;
+            String connectionString = context.GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                String queryString = String.Format("SELECT COUNT(*) AS Index_number FROM sys.indexes WHERE object_id=OBJECT_ID('{0}')", tableName);
+                SqlCommand command = new SqlCommand(queryString, connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        indexNumber = (int)reader["Index_number"];
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+            return indexNumber;
+        }
+        
         public const int INDEX_MAX_NUMBER = 5;
         public override void Check(RuleValidatorContext context, TSqlStatement statement) {
             int indexCounter = 0;
-            TableDefinition tableDefinition = null;
             String tableName = "";
 
             switch (statement) {
@@ -72,14 +90,13 @@ namespace SqlserverProtoServer {
 
                 case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
                     tableName = alterTableAddTableElementStatement.SchemaObjectName.BaseIdentifier.Value;
-                    tableDefinition = GetTableDefinition(tableName);
-                    indexCounter = GetIndexCounterFromTableDefinition(tableDefinition);
+                    indexCounter = GetNumberOfIndexesOnTable(context, tableName);
                     indexCounter += GetIndexCounterFromColumnDefinitions(alterTableAddTableElementStatement.Definition.ColumnDefinitions);
                     break;
 
                 case CreateIndexStatement createIndexStatement:
-                    tableDefinition = GetTableDefinition(createIndexStatement.OnName.BaseIdentifier.Value);
-                    indexCounter = GetIndexCounterFromTableDefinition(tableDefinition);
+                    tableName = createIndexStatement.OnName.BaseIdentifier.Value;
+                    indexCounter = GetNumberOfIndexesOnTable(context, tableName);
                     indexCounter++;
                     break;
             }
@@ -93,12 +110,40 @@ namespace SqlserverProtoServer {
     }
 
     public class DisableAddIndexForColumnsTypeBlob : RuleValidator {
+        public bool IsBlobTypeString(String type, IList<Literal> parameters) {
+            switch (type.ToLower()) {
+                case "image":
+                case "text":
+                case "xml":
+                    return true;
+                case "varbinary":
+                    foreach (var param in parameters) {
+                        if (param.Value.ToLower() == "max") {
+                            return true;
+                        }
+                    }
+                    break;
+            }
+            return false;
+        }
+
+        public bool IsBlobType(DataTypeReference dataTypeReference) {
+            switch (dataTypeReference) {
+                case SqlDataTypeReference sqlDataTypeReference:
+                    return IsBlobTypeString(sqlDataTypeReference.Name.BaseIdentifier.Value, sqlDataTypeReference.Parameters);
+
+                case XmlDataTypeReference xmlDataTypeReference:
+                    return IsBlobTypeString(xmlDataTypeReference.Name.BaseIdentifier.Value, null);
+            }
+            return false;
+        }
+
         public bool hasIndexForColumnsTypeBlobInTableDefinition(TableDefinition tableDefinition) {
             // unique index
             foreach (var columnDefinition in tableDefinition.ColumnDefinitions) {
                 foreach (var constriant in columnDefinition.Constraints) {
                     if (constriant is UniqueConstraintDefinition) {
-                        if (columnDefinition.DataType.Name.BaseIdentifier.Value.ToUpper() == "BLOB") {
+                        if (IsBlobType(columnDefinition.DataType)) {
                             return true;
                         }
                     }
@@ -113,12 +158,14 @@ namespace SqlserverProtoServer {
                     }
                 }
             }
+
             // indexes
             foreach (var index in tableDefinition.Indexes) {
                 if (hasIndexForColumnsTypeBlob(tableDefinition, index.Columns)) {
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -127,13 +174,51 @@ namespace SqlserverProtoServer {
                 ColumnReferenceExpression columnReferenceExpression = column.Column;
                 foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
                     foreach (var columnDefinition in tableDefinition.ColumnDefinitions) {
-                        if (identifier.Value == columnDefinition.ColumnIdentifier.Value && columnDefinition.DataType.Name.BaseIdentifier.Value.ToUpper() == "BLOB") {
+                        if (identifier.Value == columnDefinition.ColumnIdentifier.Value && IsBlobType(columnDefinition.DataType)) {
                             return true;
                         }
                     }
                 }
             }
             return false;
+        }
+
+        public Dictionary<String, bool> GetIndexColumnsOnTable(RuleValidatorContext context, String tableName) {
+            Dictionary<String, bool> indexedColumns = new Dictionary<string, bool>();
+            String connectionString = context.GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                String queryString = String.Format("SELECT COL_NAME(object_id, column_id) AS Column_name FROM sys.index_columns WHERE object_id=OBJECT_ID('{0}')", tableName);
+                SqlCommand command = new SqlCommand(queryString, connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        indexedColumns[reader["Column_name"] as String] = true;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+            return indexedColumns;
+        }
+
+        public Dictionary<String, String> GetColumnAndTypeOnTable(RuleValidatorContext context, String tableName) {
+            Dictionary<String, String> columnTypes = new Dictionary<String, String>();
+            String connectionString = context.GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                String queryString = String.Format("SELECT COLUMN_NAME AS Column_name, DATA_TYPE AS Data_type FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{0}'", tableName);
+                SqlCommand command = new SqlCommand(queryString, connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        columnTypes[reader["Column_name"] as String] = reader["Data_type"] as String;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+            return columnTypes;
         }
 
         public override void Check(RuleValidatorContext context, TSqlStatement statement) {
@@ -155,26 +240,25 @@ namespace SqlserverProtoServer {
                     break;
 
                 case AlterTableAlterColumnStatement alterTableAlterColumnStatement:
-                    if (alterTableAlterColumnStatement.DataType.Name.BaseIdentifier.Value.ToUpper() == "BLOB") {
+                    if (IsBlobType(alterTableAlterColumnStatement.DataType)) {
                         String columnName = alterTableAlterColumnStatement.ColumnIdentifier.Value;
-                        tableDefinition = GetTableDefinition(alterTableAlterColumnStatement.SchemaObjectName.BaseIdentifier.Value);
-                        foreach (var index in tableDefinition.Indexes) {
-                            foreach (var column in index.Columns) {
-                                ColumnReferenceExpression columnReferenceExpression = column.Column;
-                                foreach (var indentifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
-                                    if (indentifier.Value == columnName) {
-                                        indexDataTypeIsBlob = true;
-                                    }
-                                }
-                            }
+                        Dictionary<String, bool> indexedColumns = GetIndexColumnsOnTable(context, alterTableAlterColumnStatement.SchemaObjectName.BaseIdentifier.Value);
+                        if (indexedColumns.ContainsKey(columnName)) {
+                            indexDataTypeIsBlob = true;
                         }
                     }
                     break;
 
+
                 case CreateIndexStatement createIndexStatement:
-                    tableDefinition = GetTableDefinition(createIndexStatement.OnName.BaseIdentifier.Value);
-                    if (hasIndexForColumnsTypeBlob(tableDefinition, createIndexStatement.Columns)) {
-                        indexDataTypeIsBlob = true;
+                    Dictionary<String, String> columnTypes = GetColumnAndTypeOnTable(context, createIndexStatement.OnName.BaseIdentifier.Value);
+                    foreach (var column in createIndexStatement.Columns) {
+                        ColumnReferenceExpression columnReferenceExpression = column.Column;
+                        foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                            if (columnTypes.ContainsKey(identifier.Value) && IsBlobTypeString(columnTypes[identifier.Value], null)) {
+                                indexDataTypeIsBlob = true;
+                            }
+                        }
                     }
                     break;
             }

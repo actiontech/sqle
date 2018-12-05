@@ -53,7 +53,7 @@ namespace SqlserverProtoServer {
             base.Check(context, statement);
 
             foreach(var tableName in TableNames) {
-                var exist = TableExists(context, tableName);
+                var exist = TableExists(context, "", tableName);
                 if (exist) {
                     context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage(tableName));
                 }

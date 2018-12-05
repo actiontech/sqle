@@ -24,31 +24,31 @@ namespace SqlserverProto {
           string.Concat(
             "Cg9TcWxzZXJ2ZXIucHJvdG8SDlNxbHNlcnZlclByb3RvIi8KDlNwbGl0U3Fs",
             "c0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAEoCSIfCg9TcGxp",
-            "dFNxbHNPdXRwdXQSDAoEU3FscxgBIAMoCSJkCg1TcWxzZXJ2ZXJNZXRhEgwK",
+            "dFNxbHNPdXRwdXQSDAoEU3FscxgBIAMoCSJ7Cg1TcWxzZXJ2ZXJNZXRhEgwK",
             "BFVzZXIYASABKAkSEAoIUGFzc3dvcmQYAiABKAkSDAoESG9zdBgDIAEoCRIM",
-            "CgRQb3J0GAQgASgJEhcKD0N1cnJlbnREYXRhYmFzZRgFIAEoCSJ1CgtBZHZp",
-            "c2VJbnB1dBIPCgdWZXJzaW9uGAEgASgJEgwKBFNxbHMYAiADKAkSEQoJUnVs",
-            "ZU5hbWVzGAMgAygJEjQKDVNxbHNlcnZlck1ldGEYBCABKAsyHS5TcWxzZXJ2",
-            "ZXJQcm90by5TcWxzZXJ2ZXJNZXRhIkMKDEFkdmlzZU91dHB1dBIzCg1BZHZp",
-            "c2VSZXN1bHRzGAEgAygLMhwuU3Fsc2VydmVyUHJvdG8uQWR2aXNlUmVzdWx0",
-            "IkAKDEFkdmlzZVJlc3VsdBITCgtBZHZpc2VMZXZlbBgBIAEoCRIbChNBZHZp",
-            "c2VSZXN1bHRNZXNzYWdlGAIgASgJImsKFEdldFJvbGxiYWNrU3Fsc0lucHV0",
-            "Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAMoCRI0Cg1TcWxzZXJ2ZXJN",
-            "ZXRhGAMgASgLMh0uU3Fsc2VydmVyUHJvdG8uU3Fsc2VydmVyTWV0YSItChVH",
-            "ZXRSb2xsYmFja1NxbHNPdXRwdXQSFAoMUm9sbGJhY2tTcWxzGAEgAygJMo4C",
-            "ChBTcWxzZXJ2ZXJTZXJ2aWNlElEKDEdldFNwbGl0U3FscxIeLlNxbHNlcnZl",
-            "clByb3RvLlNwbGl0U3Fsc0lucHV0Gh8uU3Fsc2VydmVyUHJvdG8uU3BsaXRT",
-            "cWxzT3V0cHV0IgASRQoGQWR2aXNlEhsuU3Fsc2VydmVyUHJvdG8uQWR2aXNl",
-            "SW5wdXQaHC5TcWxzZXJ2ZXJQcm90by5BZHZpc2VPdXRwdXQiABJgCg9HZXRS",
-            "b2xsYmFja1NxbHMSJC5TcWxzZXJ2ZXJQcm90by5HZXRSb2xsYmFja1NxbHNJ",
-            "bnB1dBolLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc091dHB1dCIA",
-            "YgZwcm90bzM="));
+            "CgRQb3J0GAQgASgJEhcKD0N1cnJlbnREYXRhYmFzZRgFIAEoCRIVCg1DdXJy",
+            "ZW50U2NoZW1hGAYgASgJInUKC0FkdmlzZUlucHV0Eg8KB1ZlcnNpb24YASAB",
+            "KAkSDAoEU3FscxgCIAMoCRIRCglSdWxlTmFtZXMYAyADKAkSNAoNU3Fsc2Vy",
+            "dmVyTWV0YRgEIAEoCzIdLlNxbHNlcnZlclByb3RvLlNxbHNlcnZlck1ldGEi",
+            "QwoMQWR2aXNlT3V0cHV0EjMKDUFkdmlzZVJlc3VsdHMYASADKAsyHC5TcWxz",
+            "ZXJ2ZXJQcm90by5BZHZpc2VSZXN1bHQiQAoMQWR2aXNlUmVzdWx0EhMKC0Fk",
+            "dmlzZUxldmVsGAEgASgJEhsKE0FkdmlzZVJlc3VsdE1lc3NhZ2UYAiABKAki",
+            "awoUR2V0Um9sbGJhY2tTcWxzSW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRT",
+            "cWxzGAIgAygJEjQKDVNxbHNlcnZlck1ldGEYAyABKAsyHS5TcWxzZXJ2ZXJQ",
+            "cm90by5TcWxzZXJ2ZXJNZXRhIi0KFUdldFJvbGxiYWNrU3Fsc091dHB1dBIU",
+            "CgxSb2xsYmFja1NxbHMYASADKAkyjgIKEFNxbHNlcnZlclNlcnZpY2USUQoM",
+            "R2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxzSW5wdXQa",
+            "Hy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQiABJFCgZBZHZpc2US",
+            "Gy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJbnB1dBocLlNxbHNlcnZlclByb3Rv",
+            "LkFkdmlzZU91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3FscxIkLlNxbHNlcnZl",
+            "clByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJvdG8u",
+            "R2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsInput), global::SqlserverProto.SplitSqlsInput.Parser, new[]{ "Version", "Sqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsOutput), global::SqlserverProto.SplitSqlsOutput.Parser, new[]{ "Sqls" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SqlserverMeta), global::SqlserverProto.SqlserverMeta.Parser, new[]{ "User", "Password", "Host", "Port", "CurrentDatabase" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SqlserverMeta), global::SqlserverProto.SqlserverMeta.Parser, new[]{ "User", "Password", "Host", "Port", "CurrentDatabase", "CurrentSchema" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "AdviseResults" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage" }, null, null, null),
@@ -343,6 +343,7 @@ namespace SqlserverProto {
       host_ = other.host_;
       port_ = other.port_;
       currentDatabase_ = other.currentDatabase_;
+      currentSchema_ = other.currentSchema_;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -405,6 +406,17 @@ namespace SqlserverProto {
       }
     }
 
+    /// <summary>Field number for the "CurrentSchema" field.</summary>
+    public const int CurrentSchemaFieldNumber = 6;
+    private string currentSchema_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string CurrentSchema {
+      get { return currentSchema_; }
+      set {
+        currentSchema_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as SqlserverMeta);
@@ -423,6 +435,7 @@ namespace SqlserverProto {
       if (Host != other.Host) return false;
       if (Port != other.Port) return false;
       if (CurrentDatabase != other.CurrentDatabase) return false;
+      if (CurrentSchema != other.CurrentSchema) return false;
       return true;
     }
 
@@ -434,6 +447,7 @@ namespace SqlserverProto {
       if (Host.Length != 0) hash ^= Host.GetHashCode();
       if (Port.Length != 0) hash ^= Port.GetHashCode();
       if (CurrentDatabase.Length != 0) hash ^= CurrentDatabase.GetHashCode();
+      if (CurrentSchema.Length != 0) hash ^= CurrentSchema.GetHashCode();
       return hash;
     }
 
@@ -464,6 +478,10 @@ namespace SqlserverProto {
         output.WriteRawTag(42);
         output.WriteString(CurrentDatabase);
       }
+      if (CurrentSchema.Length != 0) {
+        output.WriteRawTag(50);
+        output.WriteString(CurrentSchema);
+      }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -483,6 +501,9 @@ namespace SqlserverProto {
       }
       if (CurrentDatabase.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(CurrentDatabase);
+      }
+      if (CurrentSchema.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(CurrentSchema);
       }
       return size;
     }
@@ -506,6 +527,9 @@ namespace SqlserverProto {
       }
       if (other.CurrentDatabase.Length != 0) {
         CurrentDatabase = other.CurrentDatabase;
+      }
+      if (other.CurrentSchema.Length != 0) {
+        CurrentSchema = other.CurrentSchema;
       }
     }
 
@@ -535,6 +559,10 @@ namespace SqlserverProto {
           }
           case 42: {
             CurrentDatabase = input.ReadString();
+            break;
+          }
+          case 50: {
+            CurrentSchema = input.ReadString();
             break;
           }
         }

@@ -62,7 +62,7 @@ namespace SqlserverProtoServer {
                 new DatabaseShouldNotExistRuleValidator(
                     SCHEMA_EXIST,
                     "创建数据库时，数据库不能存在",
-                    "database或者schema {0} 已存在",
+                    "database {0} 已存在",
                     RULE_LEVEL.ERROR
                 )
             },
@@ -179,8 +179,8 @@ namespace SqlserverProtoServer {
               {
                DDL_TABLE_USING_INNODB_UTF8MB4,
                new FakerRuleValidator(
-                  DDL_TABLE_USING_INNODB_UTF8MB4,
-                  "建议使用Innodb引擎,utf8mb4字符集",
+                   DDL_TABLE_USING_INNODB_UTF8MB4,
+                   "建议使用Innodb引擎,utf8mb4字符集",
                    "建议使用Innodb引擎,utf8mb4字符集",
                    RULE_LEVEL.NOTICE
                )
@@ -288,24 +288,318 @@ namespace SqlserverProtoServer {
 
         public Dictionary<String/*database*/, bool> AllDatabases;
         public Dictionary<String/*schema*/, bool> AllSchemas;
-        public Dictionary<String/*schema*/, Dictionary<String/*table*/, bool>> AllTables;
+        public Dictionary<String/*schema.table*/, bool> AllTables;
+        public bool databaseHasLoad;
+        public bool schemaHasLoad;
+        public bool tableHasLoad;
+
+        public class DDLAction {
+            public const String ADD_DATABASE = "add_database";
+            public const String ADD_SCHEMA = "add_schema";
+            public const String ADD_TABLE = "add_table";
+            public const String REMOVE_DATABASE = "remove_database";
+            public const String REMOVE_SCHEMA = "remove_schema";
+            public const String REMOVE_TABLE = "remove_table";
+
+            public String ID;
+            public String Action;
+        }
+
+        public List<DDLAction> DDLActions;
         public Dictionary<String/*table*/, List<AlterTableStatement>> AlterTableStmts;
-        public bool hasLoadFromDB;
         public bool IsDDL;
         public bool IsDML;
 
         public AdviseResultContext AdviseResultContext;
 
+        public String GetConnectionString() {
+            return String.Format(
+                "Server=tcp:{0},{1};" +
+                "Database=master;" +
+                "User ID={2};" +
+                "Password={3};",
+                SqlserverMeta.Host, SqlserverMeta.Port,
+                SqlserverMeta.User,
+                SqlserverMeta.Password);
+        }
+
+        public void LoadDatabasesFromDB() {
+            if (databaseHasLoad) {
+                return;
+            }
+
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT name FROM sys.databases", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        AllDatabases[reader["name"] as String] = true;
+                    }
+                    databaseHasLoad = true;
+                } finally {
+                    reader.Close();
+                }
+            }
+        }
+
+        public void LoadSchemasFromDB() {
+            if (schemaHasLoad) {
+                return;
+            }
+
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT name FROM sys.schemas", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        AllSchemas[reader["name"] as String] = true;
+                    }
+                    schemaHasLoad = true;
+                } finally {
+                    reader.Close();
+                }
+            }
+        }
+
+        public void LoadTablesFromDB() {
+            if (tableHasLoad) {
+                return;
+            }
+
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        String schema = reader["TABLE_SCHEMA"] as String;
+                        String table = reader["TABLE_NAME"] as String;
+                        AllTables[String.Format("{0}.{1}", schema, table)] = true;
+                    }
+                    tableHasLoad = true;
+                } finally {
+                    reader.Close();
+                }
+            }
+        }
+
+        public void LoadCurrentDatabase() {
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT DB_NAME() AS Database_name", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        SqlserverMeta.CurrentDatabase = reader["Database_name"] as String;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+        }
+
+        public void LoadCurrentSchema() {
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand("SELECT SCHEMA_NAME() AS Schema_name", connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        SqlserverMeta.CurrentDatabase = reader["Schema_name"] as String;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+        }
+
+        public Dictionary<String, bool> GetAllDatabases() {
+            LoadDatabasesFromDB();
+            return AllDatabases;
+        }
+
+        public Dictionary<String, bool> GetAllSchemas() {
+            LoadSchemasFromDB();
+            return AllSchemas;
+        }
+
+        public Dictionary<String, bool> GetAllTables() {
+            LoadTablesFromDB();
+            return AllTables;
+        }
+
+        public String GetCurrentDatabase() {
+            if (SqlserverMeta.CurrentDatabase != "") {
+                return SqlserverMeta.CurrentDatabase;
+            }
+
+            LoadCurrentDatabase();
+
+            return SqlserverMeta.CurrentDatabase;
+        }
+
+        public String GetCurrentSchema() {
+            if (SqlserverMeta.CurrentSchema != "") {
+                return SqlserverMeta.CurrentSchema;
+            }
+
+            LoadCurrentSchema();
+
+            return SqlserverMeta.CurrentSchema;
+        }
+
         public RuleValidatorContext(SqlserverMeta sqlserverMeta) {
             this.SqlserverMeta = sqlserverMeta;
             AllDatabases = new Dictionary<String, bool>();
             AllSchemas = new Dictionary<string, bool>();
-            AllTables = new Dictionary<String, Dictionary<String, bool>>();
+            AllTables = new Dictionary<String, bool>();
+            DDLActions = new List<DDLAction>();
             AlterTableStmts = new Dictionary<string, List<AlterTableStatement>>();
             AdviseResultContext = new AdviseResultContext();
-            hasLoadFromDB = false;
+            tableHasLoad = false;
+            schemaHasLoad = false;
+            databaseHasLoad = false;
             IsDDL = false;
             IsDML = false;
+        }
+
+        public bool DatabaseExists(String databaseName) {
+            bool notBeDroped = true;
+            foreach(var action in DDLActions) {
+                if (action.ID == databaseName && action.Action == DDLAction.ADD_DATABASE) {
+                    notBeDroped = true;
+                }
+                if (action.ID == databaseName && action.Action == DDLAction.REMOVE_DATABASE) {
+                    notBeDroped = false;
+                }
+            }
+
+            if (!notBeDroped) {
+                return false;
+            }
+
+            var allDatabases = GetAllDatabases();
+            return allDatabases.ContainsKey(databaseName);
+        }
+
+        public bool SchemaExists(String schema) {
+            bool notBeDroped = true;
+            foreach (var action in DDLActions) {
+                if (action.ID == schema && action.Action == DDLAction.ADD_SCHEMA) {
+                    notBeDroped = true;
+                }
+                if (action.ID == schema && action.Action == DDLAction.REMOVE_SCHEMA) {
+                    notBeDroped = false;
+                }
+            }
+
+            if (!notBeDroped) {
+                return false;
+            }
+
+            var allschemas = GetAllSchemas();
+            return allschemas.ContainsKey(schema);
+        }
+
+        public bool TableExists(String schema, String tableName) {
+            if (schema == "") {
+                schema = GetCurrentSchema();
+            }
+            String id = String.Format("{0}.{1}", schema, tableName);
+            bool notBeDroped = true;
+            foreach (var action in DDLActions) {
+                if (action.ID == id && action.Action == DDLAction.ADD_TABLE) {
+                    notBeDroped = true;
+                }
+                if (action.ID == id && action.Action == DDLAction.REMOVE_TABLE) {
+                    notBeDroped = false;
+                }
+            }
+
+            if (!notBeDroped) {
+                return false;
+            }
+
+            var allTables = GetAllTables();
+            return allTables.ContainsKey(id);
+        }
+
+        public void UpdateContext(TSqlStatement sqlStatement) {
+            String schemaName = "";
+            switch (sqlStatement) {
+                case UseStatement useStatement:
+                    SqlserverMeta.CurrentDatabase = useStatement.DatabaseName.Value;
+                    break;
+
+                case CreateDatabaseStatement createDatabaseStatement:
+                    DDLAction addDatabaseAction = new DDLAction {
+                        ID = createDatabaseStatement.DatabaseName.Value,
+                        Action = DDLAction.ADD_DATABASE,
+                    };
+                    DDLActions.Add(addDatabaseAction);
+                    break;
+
+                case CreateSchemaStatement createSchemaStatement:
+                    DDLAction addSchemaAction = new DDLAction {
+                        ID = createSchemaStatement.Name.Value,
+                        Action = DDLAction.ADD_SCHEMA,
+                    };
+                    DDLActions.Add(addSchemaAction);
+                    break;
+
+                case CreateTableStatement createTableStatement:
+                    if (createTableStatement.SchemaObjectName.SchemaIdentifier != null) {
+                        schemaName = createTableStatement.SchemaObjectName.SchemaIdentifier.Value;
+                    } else {
+                        schemaName = GetCurrentSchema();
+                    }
+                    DDLAction addTableAction = new DDLAction {
+                        ID = String.Format("{0}.{1}", schemaName, createTableStatement.SchemaObjectName.BaseIdentifier.Value),
+                        Action = DDLAction.ADD_TABLE,
+                    };
+                    DDLActions.Add(addTableAction);
+                    break;
+
+                case DropDatabaseStatement dropDatabaseStatement:
+                    foreach (var database in dropDatabaseStatement.Databases) {
+                        DDLAction removeDatabaseAction = new DDLAction {
+                            ID = database.Value,
+                            Action = DDLAction.REMOVE_DATABASE,
+                        };
+                        DDLActions.Add(removeDatabaseAction);
+                    }
+                    break;
+
+                case DropSchemaStatement dropSchemaStatement:
+                    DDLAction removeSchemaAction = new DDLAction {
+                        ID = dropSchemaStatement.Schema.BaseIdentifier.Value,
+                        Action = DDLAction.REMOVE_SCHEMA,
+                    };
+                    DDLActions.Add(removeSchemaAction);
+                    break;
+
+                case DropTableStatement dropTableStatement:
+                    foreach (var schemaObject in dropTableStatement.Objects) {
+                        if (schemaObject.SchemaIdentifier != null) {
+                            schemaName = schemaObject.SchemaIdentifier.Value;
+                        } else {
+                            schemaName = GetCurrentSchema();
+                        }
+                        DDLAction dropTableAction = new DDLAction {
+                            ID = String.Format("{0}.{1}", schemaName, schemaObject.BaseIdentifier.Value),
+                            Action = DDLAction.ADD_TABLE,
+                        };
+                        DDLActions.Add(dropTableAction);
+                    }
+                    break;
+            }
         }
     }
 
@@ -342,96 +636,16 @@ namespace SqlserverProtoServer {
         // if check failed, it will throw exception
         public abstract void Check(RuleValidatorContext context, TSqlStatement statement);
 
-        void LoadFromDB(RuleValidatorContext context) {
-            if (context.hasLoadFromDB) {
-                return;
-            }
-
-            // for test
-            context.SqlserverMeta.Host = "10.186.62.15";
-            context.SqlserverMeta.Port = "1433";
-            context.SqlserverMeta.User = "sa";
-            context.SqlserverMeta.Password = "123456aB";
-
-            String connectionString = String.Format(
-                "Server=tcp:{0},{1};" +
-                "Database=master;" +
-                "User ID={2};" +
-                "Password={3};",
-                context.SqlserverMeta.Host, context.SqlserverMeta.Port,
-                context.SqlserverMeta.User,
-                context.SqlserverMeta.Password);
-
-            using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand("SELECT name FROM sys.databases", connection);
-                connection.Open();
-                SqlDataReader reader = command.ExecuteReader();
-                try {
-                    while(reader.Read()) {
-                        context.AllDatabases[reader["name"] as String] = true;
-                    }
-                } finally {
-                    reader.Close();
-                }
-            }
-
-            using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand("SELECT name FROM sys.schemas", connection);
-                connection.Open();
-                SqlDataReader reader = command.ExecuteReader();
-                try {
-                    while (reader.Read()) {
-                        context.AllSchemas[reader["name"] as String] = true;
-                    }
-                } finally {
-                    reader.Close();
-                }
-            }
-
-            using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'", connection);
-                connection.Open();
-                SqlDataReader reader = command.ExecuteReader();
-                try {
-                    while (reader.Read()) {
-                        String schema = reader["TABLE_SCHEMA"] as String;
-                        String table = reader["TABLE_NAME"] as String;
-                        if (context.AllTables.ContainsKey(schema)) {
-                            context.AllTables[schema][table] = true;
-                        } else {
-                            Dictionary<String, bool> schemaTables = new Dictionary<String, bool>();
-                            schemaTables[table] = true;
-                            context.AllTables[schema] = schemaTables;
-                        }
-                    }
-                } finally {
-                    reader.Close();
-                }
-            }
-        }
-
         public bool DatabaseExists(RuleValidatorContext context, String databaseName) {
-            LoadFromDB(context);
-            return context.AllDatabases.ContainsKey(databaseName);
+            return context.DatabaseExists(databaseName);
         }
 
         public bool SchemaExists(RuleValidatorContext context, String schema) {
-            LoadFromDB(context);
-            return context.AllSchemas.ContainsKey(schema);
+            return context.SchemaExists(schema);
         }
 
-        public bool TableExists(RuleValidatorContext context, String table) {
-            foreach (var pair in context.AllTables) {
-                Dictionary<String, bool> valuePairs = pair.Value;
-                if (valuePairs.ContainsKey(table)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public TableDefinition GetTableDefinition(String tableName) {
-            return new TableDefinition();
+        public bool TableExists(RuleValidatorContext context, String schema, String table) {
+            return context.TableExists(schema, table);
         }
 
         protected RuleValidator(String name, String desc, String msg, RULE_LEVEL level) {
@@ -461,9 +675,16 @@ namespace SqlserverProtoServer {
         }
 
         public List<string> AddTableName(List<String> tableNames, SchemaObjectName schemaObjectName) {
+            var schemaIdentifier = schemaObjectName.SchemaIdentifier;
             var baseIndentifier = schemaObjectName.BaseIdentifier;
-            if (!tableNames.Contains(baseIndentifier.Value)) {
-                tableNames.Add(baseIndentifier.Value);
+            var tableName = "";
+            if (schemaIdentifier != null) {
+                tableName = String.Format("{0}.{1}", schemaIdentifier.Value, baseIndentifier.Value);
+            } else {
+                tableName = baseIndentifier.Value;
+            }
+            if (!tableNames.Contains(tableName)) {
+                tableNames.Add(tableName);
             }
             return tableNames;
         }
@@ -516,12 +737,6 @@ namespace SqlserverProtoServer {
                 databaseNames = AddDatabaseName(databaseNames, context, schemaObject);
                 schemaNames = AddSchemaName(schemaNames, schemaObject);
                 tableNames = AddTableName(tableNames, schemaObject);
-            }
-        }
-
-        public void Show(List<String> list, String format) {
-            foreach (var item in list) {
-                Console.WriteLine(format, item);
             }
         }
     }
