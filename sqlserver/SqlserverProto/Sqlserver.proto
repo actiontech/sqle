@@ -4,7 +4,7 @@ package SqlserverProto;
 
 service SqlserverService {
     rpc GetSplitSqls(SplitSqlsInput) returns (SplitSqlsOutput) {}
-    rpc Audit(AuditInput) returns (AuditOutput) {}
+    rpc Advise(AdviseInput) returns (AdviseOutput) {}
     rpc GetRollbackSqls(GetRollbackSqlsInput) returns (GetRollbackSqlsOutput) {}
 }
 
@@ -17,24 +17,35 @@ message SplitSqlsOutput {
     repeated string Sqls = 1;
 }
 
-message AuditInput {
+message SqlserverMeta {
+    string User = 1;
+    string Password = 2;
+    string Host = 3;
+    string Port = 4;
+    string CurrentDatabase = 5;
+    string CurrentSchema = 6;
+}
+
+message AdviseInput {
     string Version = 1;
     repeated string Sqls = 2;
     repeated string RuleNames = 3;
+    SqlserverMeta SqlserverMeta = 4;
 }
 
-message AuditOutput {
-    repeated AuditResult AuditResults = 1;
+message AdviseOutput {
+    repeated AdviseResult AdviseResults = 1;
 }
 
-message AuditResult {
-    string AuditLevel = 1;
-    string AuditResultMessage = 2;
+message AdviseResult {
+    string AdviseLevel = 1;
+    string AdviseResultMessage = 2;
 }
 
 message GetRollbackSqlsInput {
     string Version = 1;
     repeated string Sqls = 2;
+    SqlserverMeta SqlserverMeta = 3;
 }
 
 message GetRollbackSqlsOutput {

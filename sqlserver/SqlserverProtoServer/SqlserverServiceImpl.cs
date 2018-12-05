@@ -25,17 +25,17 @@ namespace SqlserverProtoServer {
          * 
          * more information: https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql-compatibility-level?view=sql-server-2017
          */
-        private const string SQL80 = "80";
-        private const string SQL90 = "90";
-        private const string SQL100 = "100";
-        private const string SQL110 = "110";
-        private const string SQL120 = "120";
-        private const string SQL130 = "130";
+        private const String SQL80 = "80";
+        private const String SQL90 = "90";
+        private const String SQL100 = "100";
+        private const String SQL110 = "110";
+        private const String SQL120 = "120";
+        private const String SQL130 = "130";
 
         // sql server parser
-        private readonly Dictionary<string, TSqlParser> SqlParsers;
+        private readonly Dictionary<String, TSqlParser> SqlParsers;
 
-        private TSqlParser GetParser(string version) {
+        private TSqlParser GetParser(String version) {
             // set default sql parser version to SQL100
             if (version == "") {
                 version = SQL130;
@@ -51,7 +51,7 @@ namespace SqlserverProtoServer {
 
         // construct function
         public SqlServerServiceImpl() {
-            SqlParsers = new Dictionary<string, TSqlParser> {
+            SqlParsers = new Dictionary<String, TSqlParser> {
                 {SQL80, new TSql80Parser(false)},
                 {SQL90, new TSql90Parser(false)},
                 {SQL100, new TSql100Parser(false)},
@@ -62,7 +62,7 @@ namespace SqlserverProtoServer {
         }
 
         // parse sqls
-        private StatementList ParseStatementList(string version, string text) {
+        private StatementList ParseStatementList(String version, String text) {
             // get parser
             var parser = GetParser(version);
 
@@ -96,12 +96,12 @@ namespace SqlserverProtoServer {
         }
 
         // Audit implement
-        public override Task<AuditOutput> Audit(AuditInput request, ServerCallContext context) {
-            var output = new AuditOutput();
+        public override Task<AdviseOutput> Advise(AdviseInput request, ServerCallContext context) {
+            var output = new AdviseOutput();
             var version = request.Version;
             var sqls = request.Sqls;
             var ruleNames = request.RuleNames;
-            var ruleValidatorContext = new RuleValidatorContext();
+            var ruleValidatorContext = new RuleValidatorContext(request.SqlserverMeta);
 
             foreach (var sql in sqls) {
                 var statementList = ParseStatementList(version, sql);
@@ -114,8 +114,10 @@ namespace SqlserverProtoServer {
                         ruleValidator.Check(ruleValidatorContext, statement);
                     }
 
-                    output.AuditResults.Add(ruleValidatorContext.AuditResultContext.GetAuditResult());
-                    ruleValidatorContext.AuditResultContext.ResetAuditResult();
+                    ruleValidatorContext.UpdateContext(statement);
+
+                    output.AdviseResults.Add(ruleValidatorContext.AdviseResultContext.GetAdviseResult());
+                    ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
                 }
             }
 

@@ -15,6 +15,17 @@ func GetClient() *Client {
 	return GrpcClient
 }
 
+func GetSqlserverMeta(user, password, host, port, dbName, schemaName string) *SqlserverProto.SqlserverMeta {
+	return &SqlserverProto.SqlserverMeta{
+		User: user,
+		Password: password,
+		Host: host,
+		Port: port,
+		CurrentDatabase: dbName,
+		CurrentSchema: schemaName,
+	}
+}
+
 type Client struct {
 	version string
 	conn    *grpc.ClientConn
@@ -49,7 +60,7 @@ func (c *Client) SplitSql(sql string) ([]string, error) {
 	return out.GetSqls(), errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 }
 
-func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule) error {
+func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta *SqlserverProto.SqlserverMeta) error {
 	sqls := []string{}
 	ruleNames := []string{}
 	for _, commitSql := range commitSqls {
@@ -59,20 +70,21 @@ func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule) error
 	for _, rule := range rules {
 		ruleNames = append(ruleNames, rule.Name)
 	}
-	out, err := c.client.Audit(context.Background(), &SqlserverProto.AuditInput{
+	out, err := c.client.Advise(context.Background(), &SqlserverProto.AdviseInput{
 		Version:   c.version,
 		Sqls:      sqls,
 		RuleNames: ruleNames,
+		SqlserverMeta: meta,
 	})
-	results := out.GetAuditResults()
+	results := out.GetAdviseResults()
 	if len(results) != len(commitSqls) {
 		return errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("don't match sql advise result"))
 	}
 
 	for n, result := range results {
 		commitSql := commitSqls[n]
-		commitSql.InspectLevel = result.AuditLevel
-		commitSql.InspectResult = result.AuditResultMessage
+		commitSql.InspectLevel = result.AdviseLevel
+		commitSql.InspectResult = result.AdviseResultMessage
 		commitSql.InspectStatus = model.TASK_ACTION_DONE
 	}
 	return errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)

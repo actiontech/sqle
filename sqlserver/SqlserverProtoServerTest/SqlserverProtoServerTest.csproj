@@ -14,7 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SqlserverProtoServer\SqlserverProtoServer.csproj" />
     <ProjectReference Include="..\SqlserverProto\SqlserverProto.csproj" />
+    <ProjectReference Include="..\SqlserverProtoServer\SqlserverProtoServer.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="SqlserverServiceImplTest.cs" />
   </ItemGroup>
 </Project>
