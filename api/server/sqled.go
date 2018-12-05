@@ -164,7 +164,24 @@ func (s *Sqled) inspect(task *model.Task) error {
 			return err
 		}
 	}
-	return st.UpdateNormalRate(task)
+	err = st.UpdateNormalRate(task)
+	if err != nil {
+		entry.Errorf("update normal rate to storage failed, error: %v", err)
+		return err
+	}
+
+	i = inspector.NewInspector(entry, task)
+	rollbackSqls, err := i.GenerateAllRollbackSql()
+	if err != nil {
+		return err
+	}
+
+	err = st.UpdateRollbackSql(task, rollbackSqls)
+	if err != nil {
+		entry.Errorf("save rollback sql to storage failed, error: %v", err)
+		return err
+	}
+	return nil
 }
 
 func (s *Sqled) commit(task *model.Task) error {
@@ -172,19 +189,8 @@ func (s *Sqled) commit(task *model.Task) error {
 
 	st := model.GetStorage()
 
-	i := inspector.NewInspector(entry, task)
-	rollbackSqls, err := i.GenerateAllRollbackSql()
-	if err != nil {
-		return err
-	}
-	err = st.UpdateRollbackSql(task, rollbackSqls)
-	if err != nil {
-		entry.Errorf("save rollback sql to storage failed, error: %v", err)
-		return err
-	}
-
 	entry.Info("start commit")
-	i = inspector.NewInspector(entry, task)
+	i := inspector.NewInspector(entry, task)
 	for _, commitSql := range task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
@@ -205,7 +211,7 @@ func (s *Sqled) commit(task *model.Task) error {
 			return err
 		}
 	}
-	err = i.Do()
+	err := i.Do()
 	if err != nil {
 		entry.Error("commit sql failed")
 	} else {
