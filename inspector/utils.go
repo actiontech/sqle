@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/parser"
 	"regexp"
 	"sqle/model"
+	"strconv"
 	"strings"
 )
 
@@ -312,4 +313,11 @@ func replaceTableName(query, schema, table string) string {
 	re := regexp.MustCompile(fmt.Sprintf("%s\\.%s|`%s`\\.`%s`|`%s`\\.%s|%s\\.`%s`",
 		schema, table, schema, table, schema, table, schema, table))
 	return re.ReplaceAllString(query, fmt.Sprintf("`%s`", table))
+}
+
+func getLimitCount(limit *ast.Limit, _default int64) (int64, error) {
+	if limit == nil {
+		return _default, nil
+	}
+	return strconv.ParseInt(exprFormat(limit.Count), 0, 64)
 }

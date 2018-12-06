@@ -227,7 +227,6 @@ func (s *Sqled) rollback(task *model.Task) error {
 	st := model.GetStorage()
 	i := inspector.NewInspector(entry, task)
 
-	// TODO: 1. using transaction for dml;
 	for _, rollbackSql := range task.RollbackSqls {
 		currentSql := rollbackSql
 		if currentSql.Content == "" {

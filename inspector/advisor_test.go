@@ -134,7 +134,6 @@ func DefaultMysqlInspect() *Inspect {
 			"exist_db.exist_tb_3": getTestCreateTableStmt3(),
 		},
 		alterTableStmts: map[string][]*ast.AlterTableStmt{},
-		rollbackSqls:    []string{},
 	}
 }
 
@@ -635,26 +634,6 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 	)
 }
 
-//func TestNewInspector(t *testing.T) {
-//	inst := &model.Instance{
-//		DbType:   model.DB_TYPE_MYSQL,
-//		Host:     "10.186.18.118",
-//		Port:     "23306",
-//		User:     "root",
-//		Password: "asd2010",
-//	}
-//	conn, err := executor.NewExecutor(log.NewEntry(), inst, "sqle")
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	defer conn.Db.Close()
-//	result, err := conn.ShowTableSizeMB("sqle", "tb_has_pk")
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	fmt.Println(result)
-//}
-
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
 		log:     log.NewEntry(),
@@ -697,7 +676,6 @@ func DefaultMycatInspect() *Inspect {
 			}},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
-		rollbackSqls:     []string{},
 	}
 }
 

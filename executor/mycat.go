@@ -64,6 +64,10 @@ func (mc *MycatConn) Exec(query string) (driver.Result, error) {
 	return mc.Conn.Exec(query)
 }
 
+func (mc *MycatConn) Transact(qs ...string) error {
+	return mc.Conn.Transact(qs...)
+}
+
 func (mc *MycatConn) ExecDDL(query, schema, table string) error {
 	as, ok := mc.config.AlgorithmSchemas[schema]
 	if !ok {
