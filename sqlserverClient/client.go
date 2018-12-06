@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"sqle/errors"
+	"sqle/log"
 	"sqle/model"
 	"sqle/sqlserver/SqlserverProto"
 )
@@ -17,12 +18,12 @@ func GetClient() *Client {
 
 func GetSqlserverMeta(user, password, host, port, dbName, schemaName string) *SqlserverProto.SqlserverMeta {
 	return &SqlserverProto.SqlserverMeta{
-		User: user,
-		Password: password,
-		Host: host,
-		Port: port,
+		User:            user,
+		Password:        password,
+		Host:            host,
+		Port:            port,
 		CurrentDatabase: dbName,
-		CurrentSchema: schemaName,
+		CurrentSchema:   schemaName,
 	}
 }
 
@@ -33,11 +34,14 @@ type Client struct {
 }
 
 func InitClient(ip, port string) error {
+	log.Logger().Info("connecting to SQLServer parser server")
 	c := &Client{}
 	err := c.Conn(ip, port)
 	if err != nil {
+		log.Logger().Warnf("connect to SQLServer parser server failed, error: %v", err)
 		return err
 	}
+	log.Logger().Info("connected to SQLServer parser server")
 	GrpcClient = c
 	return nil
 }
@@ -71,9 +75,9 @@ func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta 
 		ruleNames = append(ruleNames, rule.Name)
 	}
 	out, err := c.client.Advise(context.Background(), &SqlserverProto.AdviseInput{
-		Version:   c.version,
-		Sqls:      sqls,
-		RuleNames: ruleNames,
+		Version:       c.version,
+		Sqls:          sqls,
+		RuleNames:     ruleNames,
 		SqlserverMeta: meta,
 	})
 	results := out.GetAdviseResults()

@@ -30,15 +30,19 @@ type Model struct {
 }
 
 func NewStorage(user, password, host, port, schema string, debug bool) (*Storage, error) {
+	log.Logger().Infof("connecting to storage, host: %s, port: %s, user: %s, schema: %s",
+		host, port, user, schema)
 	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user, password, host, port, schema))
 	if err != nil {
+		log.Logger().Errorf("connect to storage failed, error: %v", err)
 		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	if debug {
 		db.SetLogger(log.Logger().WithField("type", "sql"))
 		db.LogMode(true)
 	}
+	log.Logger().Info("connected to storage")
 	return &Storage{db: db}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
