@@ -13,5 +13,6 @@
     <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="14.0.3811.1" />
     <PackageReference Include="CommandLineParser" Version="2.3.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.5.1" />
+    <PackageReference Include="ini-parser" Version="2.5.2" />
   </ItemGroup>
 </Project>
