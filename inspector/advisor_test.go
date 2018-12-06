@@ -634,28 +634,6 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 	)
 }
 
-//func TestNewInspector(t *testing.T) {
-//	inst := &model.Instance{
-//		DbType:   model.DB_TYPE_MYSQL,
-//		Host:     "10.186.18.118",
-//		Port:     "23306",
-//		User:     "root",
-//		Password: "asd2010",
-//	}
-//	sql := "UPDATE `sqle`.`tb2` SET v2 = 'v2' WHERE id = '5';UPDATE `sqle`.`tb2` SET v2 = 'v2' WHERE id = '6';UPDATE `sqle`.`tb2` SET v2 = 'v2' WHERE id = '7';"
-//	conn, err := executor.NewExecutor(log.NewEntry(), inst, "sqle")
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	defer conn.Db.Close()
-//	result, err := conn.Db.Exec(sql)
-//	if err != nil {
-//		t.Error(err)
-//		return
-//	}
-//	fmt.Println(result.RowsAffected())
-//}
-
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
 		log:     log.NewEntry(),
