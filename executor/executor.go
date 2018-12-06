@@ -18,6 +18,7 @@ type Db interface {
 	Close()
 	Ping() error
 	Exec(query string) (driver.Result, error)
+	Transact(qs ...string) error
 	ExecDDL(query, schema, table string) error
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	Logger() *logrus.Entry
@@ -72,13 +73,51 @@ func (c *BaseConn) Ping() error {
 func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	result, err := c.DB.DB().Exec(query)
 	if err != nil {
-		c.Logger().Errorf("exec sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
+		c.Logger().Errorf("exec sql failed; host: %s, port: %s, user: %s, query: %s, error: %s",
 			c.host, c.port, c.user, query, err.Error())
 	} else {
-		c.Logger().Infof("exec sql success; host: %s, port: %s, user: %s, query: %s\n",
+		c.Logger().Infof("exec sql success; host: %s, port: %s, user: %s, query: %s",
 			c.host, c.port, c.user, query)
 	}
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+}
+
+func (c *BaseConn) Transact(qs ...string) error {
+	var err error
+	var tx *sql.Tx
+	c.Logger().Infof("doing sql transact, host: %s, port: %s, user: %s", c.host, c.port, c.user)
+	tx, err = c.DB.DB().Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			c.Logger().Error("rollback sql transact")
+			panic(p)
+		}
+		if err != nil {
+			tx.Rollback()
+			c.Logger().Error("rollback sql transact")
+			return
+		}
+		err = tx.Commit()
+		if err != nil {
+			c.Logger().Error("transact commit failed")
+		} else {
+			c.Logger().Info("done sql transact")
+		}
+	}()
+	for _, query := range qs {
+		_, err = tx.Exec(query)
+		if err != nil {
+			c.Logger().Errorf("exec sql failed, error: %s, query: %s", err, query)
+			return err
+		} else {
+			c.Logger().Infof("exec sql success, query: %s", query)
+		}
+	}
+	return nil
 }
 
 func (c *BaseConn) ExecDDL(query, schema, table string) error {

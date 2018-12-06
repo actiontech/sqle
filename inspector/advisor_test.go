@@ -134,7 +134,6 @@ func DefaultMysqlInspect() *Inspect {
 			"exist_db.exist_tb_3": getTestCreateTableStmt3(),
 		},
 		alterTableStmts: map[string][]*ast.AlterTableStmt{},
-		rollbackSqls:    []string{},
 	}
 }
 
@@ -643,16 +642,18 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 //		User:     "root",
 //		Password: "asd2010",
 //	}
+//	sql := "UPDATE `sqle`.`tb2` SET v2 = 'v2' WHERE id = '5';UPDATE `sqle`.`tb2` SET v2 = 'v2' WHERE id = '6';UPDATE `sqle`.`tb2` SET v2 = 'v2' WHERE id = '7';"
 //	conn, err := executor.NewExecutor(log.NewEntry(), inst, "sqle")
 //	if err != nil {
 //		t.Error(err)
 //	}
 //	defer conn.Db.Close()
-//	result, err := conn.ShowTableSizeMB("sqle", "tb_has_pk")
+//	result, err := conn.Db.Exec(sql)
 //	if err != nil {
 //		t.Error(err)
+//		return
 //	}
-//	fmt.Println(result)
+//	fmt.Println(result.RowsAffected())
 //}
 
 func DefaultMycatInspect() *Inspect {
@@ -697,7 +698,6 @@ func DefaultMycatInspect() *Inspect {
 			}},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
-		rollbackSqls:     []string{},
 	}
 }
 

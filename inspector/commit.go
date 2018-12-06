@@ -2,7 +2,7 @@ package inspector
 
 import (
 	"database/sql/driver"
-	"fmt"
+	"github.com/labstack/gommon/log"
 	"github.com/pingcap/tidb/ast"
 	"sqle/model"
 )
@@ -71,29 +71,46 @@ func (i *Inspect) commitDDL(sql *model.Sql) error {
 }
 
 func (i *Inspect) commitDML(sql *model.Sql) error {
+	var err error
+	var result driver.Result
+	var rowAffect int64
+	var qs []string
+
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
 	}
-	var result driver.Result
-	var a int64
 
 	sql.StartBinlogFile, sql.StartBinlogPos, err = conn.FetchMasterBinlogPos()
 	if err != nil {
 		goto ERROR
 	}
-	result, err = conn.Db.Exec(sql.Content)
-	if err != nil {
-		goto ERROR
-	}
-	a, err = result.RowsAffected()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("row_affect: ", a)
+
+	qs = make([]string, 0, len(sql.Stmts))
+	for _, stmt := range sql.Stmts {
+		qs = append(qs, stmt.Text())
 	}
 
-	sql.RowAffects, _ = result.RowsAffected()
+	if len(qs) > 1 && i.Task.Instance.DbType != model.DB_TYPE_MYCAT {
+		err = conn.Db.Transact(qs...)
+		if err != nil {
+			goto ERROR
+		}
+	} else {
+		for _, query := range qs {
+			result, err = conn.Db.Exec(query)
+			if err != nil {
+				goto ERROR
+			}
+			rowAffect, err = result.RowsAffected()
+			if err != nil {
+				log.Warnf("get rows affect failed, error: %s", err)
+			} else {
+				sql.RowAffects += rowAffect
+			}
+		}
+	}
+
 	sql.ExecStatus = model.TASK_ACTION_DONE
 	sql.ExecResult = "ok"
 	// if sql has commit success, ignore error for check status.

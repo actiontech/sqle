@@ -57,7 +57,6 @@ type Inspect struct {
 
 	// save alter table parse object from input sql;
 	alterTableStmts map[string] /*schema.table*/ []*ast.AlterTableStmt
-	rollbackSqls    []string
 }
 
 type TableInfo struct {
@@ -77,7 +76,6 @@ func NewInspect(entry *logrus.Entry, task *model.Task) *Inspect {
 		allTable:         map[string]map[string]*TableInfo{},
 		createTableStmts: map[string]*ast.CreateTableStmt{},
 		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
-		rollbackSqls:     []string{},
 	}
 }
 

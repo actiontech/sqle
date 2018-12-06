@@ -5,16 +5,24 @@ import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	_model "github.com/pingcap/tidb/model"
+	"sqle/errors"
 	"sqle/model"
+	"strconv"
 	"strings"
 )
 
 func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	defer i.closeDbConn()
 	i.Logger().Info("start generate rollback sql")
+
+	rollbackSqls := []string{}
 	for _, commitSql := range i.Task.CommitSqls {
 		err := i.Add(&commitSql.Sql, func(sql *model.Sql) error {
-			return i.GenerateRollbackSql(sql)
+			rollbackSql, err := i.GenerateRollbackSql(sql)
+			if rollbackSql != "" {
+				rollbackSqls = append(rollbackSqls, rollbackSql)
+			}
+			return err
 		})
 		if err != nil {
 			i.Logger().Error("add rollback sql failed")
@@ -26,18 +34,18 @@ func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 		return nil, err
 	}
 	i.Logger().Info("generate rollback sql finish")
-	return i.GetAllRollbackSql(), nil
+	return i.GetAllRollbackSql(rollbackSqls), nil
 }
 
-func (i *Inspect) GetAllRollbackSql() []*model.RollbackSql {
+func (i *Inspect) GetAllRollbackSql(sqls []string) []*model.RollbackSql {
 	rollbackSqls := []*model.RollbackSql{}
 	// Reverse order
 	var number uint = 1
-	for n := len(i.rollbackSqls) - 1; n >= 0; n-- {
+	for n := len(sqls) - 1; n >= 0; n-- {
 		rollbackSqls = append(rollbackSqls, &model.RollbackSql{
 			Sql: model.Sql{
 				Number:  number,
-				Content: i.rollbackSqls[n],
+				Content: sqls[n],
 			},
 		})
 		number += 1
@@ -45,7 +53,7 @@ func (i *Inspect) GetAllRollbackSql() []*model.RollbackSql {
 	return rollbackSqls
 }
 
-func (i *Inspect) GenerateRollbackSql(sql *model.Sql) error {
+func (i *Inspect) GenerateRollbackSql(sql *model.Sql) (string, error) {
 	node := sql.Stmts[0]
 	switch node.(type) {
 	case ast.DDLNode:
@@ -53,50 +61,42 @@ func (i *Inspect) GenerateRollbackSql(sql *model.Sql) error {
 	case ast.DMLNode:
 		return i.GenerateDMLStmtRollbackSql(node)
 	}
-	return nil
+	return "", nil
 }
 
-func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.StmtNode) error {
-	var err error
+func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.StmtNode) (rollbackSql string, err error) {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
-		err = i.generateAlterTableRollbackSql(stmt)
+		rollbackSql, err = i.generateAlterTableRollbackSql(stmt)
 	case *ast.CreateTableStmt:
-		err = i.generateCreateTableRollbackSql(stmt)
+		rollbackSql, err = i.generateCreateTableRollbackSql(stmt)
 	case *ast.CreateDatabaseStmt:
-		err = i.generateCreateSchemaRollbackSql(stmt)
+		rollbackSql, err = i.generateCreateSchemaRollbackSql(stmt)
 	case *ast.DropTableStmt:
-		err = i.generateDropTableRollbackSql(stmt)
+		rollbackSql, err = i.generateDropTableRollbackSql(stmt)
 	}
-	if err != nil {
-		return err
-	}
-	return nil
+	return rollbackSql, err
 }
 
-func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.StmtNode) error {
-	var err error
+func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.StmtNode) (rollbackSql string, err error) {
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
-		err = i.generateInsertRollbackSql(stmt)
+		rollbackSql, err = i.generateInsertRollbackSql(stmt)
 	case *ast.DeleteStmt:
-		err = i.generateDeleteRollbackSql(stmt)
+		rollbackSql, err = i.generateDeleteRollbackSql(stmt)
 	case *ast.UpdateStmt:
-		err = i.generateUpdateRollbackSql(stmt)
+		rollbackSql, err = i.generateUpdateRollbackSql(stmt)
 	}
-	if err != nil {
-		return err
-	}
-	return nil
+	return
 }
 
-func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error {
+func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, error) {
 	schemaName := i.getSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
 	createTableStmt, exist, err := i.getCreateTableStmt(fmt.Sprintf("%s.%s", schemaName, tableName))
 	if err != nil || !exist {
-		return err
+		return "", err
 	}
 	rollbackStmt := &ast.AlterTableStmt{
 		Table: newTableName(schemaName, tableName),
@@ -264,124 +264,124 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) error 
 	}
 
 	rollbackSql := alterTableStmtFormat(rollbackStmt)
-	if rollbackSql != "" {
-		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
-	}
-	return nil
+	return rollbackSql, nil
 }
 
-func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) error {
+func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, error) {
 	schemaName := stmt.Name
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if schemaExist && stmt.IfNotExists {
-		return err
+		return "", err
 	}
-	i.rollbackSqls = append(i.rollbackSqls, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", schemaName))
-	return nil
+	rollbackSql := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", schemaName)
+	return rollbackSql, nil
 }
 
-func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) error {
+func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, error) {
 	schemaName := i.getSchemaName(stmt.Table)
 	tableName := i.getTableName(stmt.Table)
 
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// if schema not exist, create table will be failed. don't rollback
 	if !schemaExist {
-		return nil
+		return "", nil
 	}
 
 	tableExist, err := i.isTableExist(tableName)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if tableExist && stmt.IfNotExists {
-		return nil
+		return "", nil
 	}
-	i.rollbackSqls = append(i.rollbackSqls,
-		fmt.Sprintf("DROP TABLE IF EXISTS %s", i.getTableNameWithQuote(stmt.Table)))
-	return nil
+	rollbackSql := fmt.Sprintf("DROP TABLE IF EXISTS %s", i.getTableNameWithQuote(stmt.Table))
+	return rollbackSql, nil
 }
 
-func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) error {
+func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, error) {
+	rollbackSql := ""
 	for _, table := range stmt.Tables {
 		tableName := i.getTableName(table)
 		stmt, tableExist, err := i.getCreateTableStmt(tableName)
 		if err != nil {
-			return err
+			return "", err
 		}
 		// if table not exist, don't rollback
 		if !tableExist {
-			return nil
+			return "", nil
 		}
-		i.rollbackSqls = append(i.rollbackSqls, stmt.Text())
+		rollbackSql += stmt.Text() + ";\n"
 	}
-	return nil
+	return rollbackSql, nil
 }
 
-func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
-	i.rollbackSqls = append(i.rollbackSqls,
-		fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)))
-	return nil
+func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, error) {
+	return fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)), nil
 }
 
-func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) error {
+func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
 	if err != nil {
-		return err
+		return "", err
 	}
 	// if table not exist, don't rollback
 	if !tableExist {
-		return nil
+		return "", nil
 	}
+	rollbackSql := ""
 	for _, constraint := range createTableStmt.Constraints {
 		if constraint.Name == indexName {
+			sql := ""
 			switch constraint.Tp {
 			case ast.ConstraintIndex:
-				sql := fmt.Sprintf("CREATE INDEX `%s` ON %s",
+				sql = fmt.Sprintf("CREATE INDEX `%s` ON %s",
 					indexName, i.getTableNameWithQuote(stmt.Table))
-				if constraint.Option != nil {
-					sql = fmt.Sprintf("%s %s", sql, indexOptionFormat(constraint.Option))
-				}
-				i.rollbackSqls = append(i.rollbackSqls, sql)
 			case ast.ConstraintUniq:
-
+				sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON %s",
+					indexName, i.getTableNameWithQuote(stmt.Table))
+			default:
+				return "", nil
 			}
+			if constraint.Option != nil {
+				sql = fmt.Sprintf("%s %s", sql, indexOptionFormat(constraint.Option))
+			}
+			rollbackSql = sql
 		}
 	}
-	return nil
+	return rollbackSql, nil
 }
 
-func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
+func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error) {
 	table := getTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(table) != 1 {
-		return nil
+		return "", nil
 	}
 	tableName := i.getTableName(table[0])
 
 	if stmt.OnDuplicate != nil {
-		return nil
+		return "", nil
 	}
 
 	createTableStmt, exist, err := i.getCreateTableStmt(tableName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// if table not exist, insert will failed.
 	if !exist {
-		return nil
+		return "", nil
 	}
 	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
 	if !hasPk {
-		return nil
+		return "", nil
 	}
 
 	rollbackSql := ""
@@ -389,6 +389,9 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 	// match "insert into table_name (column_name,...) value (v1,...)"
 	// match "insert into table_name value (v1,...)"
 	if stmt.Lists != nil {
+		if int64(len(stmt.Lists)) > GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS) {
+			return "", nil
+		}
 		columnsName := []string{}
 		if stmt.Columns != nil {
 			for _, col := range stmt.Columns {
@@ -403,7 +406,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 			where := []string{}
 			// mysql will throw error: 1136 (21S01): Column count doesn't match value count
 			if len(columnsName) != len(value) {
-				return nil
+				return "", nil
 			}
 			for n, name := range columnsName {
 				_, isPk := pkColumnsName[name]
@@ -412,17 +415,19 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 				}
 			}
 			if len(where) != len(pkColumnsName) {
-				return nil
+				return "", nil
 			}
 			rollbackSql += fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
 				i.getTableNameWithQuote(table[0]), strings.Join(where, ", "))
 		}
-		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
-		return nil
+		return rollbackSql, nil
 	}
 
 	// match "insert into table_name set col_name = value1, ..."
 	if stmt.Setlist != nil {
+		if 1 > GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS) {
+			return "", nil
+		}
 		where := []string{}
 		for _, setExpr := range stmt.Setlist {
 			name := setExpr.Column.Name.String()
@@ -432,31 +437,46 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) error {
 			}
 		}
 		if len(where) != len(pkColumnsName) {
-			return nil
+			return "", nil
 		}
-		i.rollbackSqls = append(i.rollbackSqls, fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
-			i.getTableNameWithQuote(table[0]), strings.Join(where, " AND ")))
+		rollbackSql = fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
+			i.getTableNameWithQuote(table[0]), strings.Join(where, " AND "))
 	}
-	return nil
+	return rollbackSql, nil
 }
 
-func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
+func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error) {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
-		return nil
+		return "", nil
 	}
+	var err error
 	tables := getTables(stmt.TableRefs.TableRefs)
 	table := tables[0]
 	createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(table))
 	if err != nil || !exist {
-		return err
+		return "", err
 	}
 	_, hasPk := getPrimaryKey(createTableStmt)
 	if !hasPk {
-		return nil
+		return "", nil
 	}
 
-	records, err := i.getRecords(table, stmt.Where, stmt.Order, stmt.Limit)
+	var max = GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS)
+	limit, err := getLimitCount(stmt.Limit, max+1)
+	if err != nil {
+		return "", err
+	}
+	if limit > max {
+		count, err := i.getRecordCount(table, stmt.Where, stmt.Order, limit)
+		if err != nil {
+			return "", err
+		}
+		if count > max {
+			return "", nil
+		}
+	}
+	records, err := i.getRecords(table, stmt.Where, stmt.Order, limit)
 
 	values := []string{}
 
@@ -466,7 +486,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 	}
 	for _, record := range records {
 		if len(record) != len(columnsName) {
-			return nil
+			return "", nil
 		}
 		vs := []string{}
 		for _, name := range columnsName {
@@ -484,29 +504,40 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) error {
 			i.getTableNameWithQuote(table), strings.Join(columnsName, "`, `"),
 			strings.Join(values, ", "))
 	}
-	if rollbackSql != "" {
-		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
-	}
-	return nil
+	return rollbackSql, nil
 }
 
-func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
+func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error) {
 	tables := getTables(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tables) != 1 {
-		return nil
+		return "", nil
 	}
 	table := tables[0]
 	createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(table))
 	if err != nil || !exist {
-		return err
+		return "", err
 	}
 	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
 	if !hasPk {
-		return nil
+		return "", nil
 	}
 
-	records, err := i.getRecords(table, stmt.Where, stmt.Order, stmt.Limit)
+	var max = GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS)
+	limit, err := getLimitCount(stmt.Limit, max+1)
+	if err != nil {
+		return "", err
+	}
+	if limit > max {
+		count, err := i.getRecordCount(table, stmt.Where, stmt.Order, limit)
+		if err != nil {
+			return "", err
+		}
+		if count > max {
+			return "", nil
+		}
+	}
+	records, err := i.getRecords(table, stmt.Where, stmt.Order, limit)
 
 	columnsName := []string{}
 	rollbackSql := ""
@@ -515,7 +546,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 	}
 	for _, record := range records {
 		if len(record) != len(columnsName) {
-			return nil
+			return "", nil
 		}
 		where := []string{}
 		value := []string{}
@@ -555,19 +586,53 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) error {
 		rollbackSql += fmt.Sprintf("UPDATE %s SET %s WHERE %s;", i.getTableNameWithQuote(table),
 			strings.Join(value, ", "), strings.Join(where, " AND "))
 	}
-	if rollbackSql != "" {
-		i.rollbackSqls = append(i.rollbackSqls, rollbackSql)
-	}
-	return nil
+	return rollbackSql, nil
 }
 
 func (i *Inspect) getRecords(tableName *ast.TableName, where ast.ExprNode,
-	order *ast.OrderByClause, limit *ast.Limit) ([]map[string]sql.NullString, error) {
+	order *ast.OrderByClause, limit int64) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
 	}
-	recordSql := fmt.Sprintf("SELECT * FROM %s", i.getTableNameWithQuote(tableName))
+	sql := i.generateGetRecordsSql("*", tableName, where, order, limit)
+	return conn.Db.Query(sql)
+}
+
+func (i *Inspect) getRecordCount(tableName *ast.TableName, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) (int64, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return 0, err
+	}
+	sql := i.generateGetRecordsSql("count(*) as count", tableName, where, order, limit)
+
+	var count int64
+	var ok bool
+	records, err := conn.Db.Query(sql)
+	if err != nil {
+		return 0, err
+	}
+	if len(records) != 1 {
+		goto ERROR
+	}
+	_, ok = records[0]["count"]
+	if !ok {
+		goto ERROR
+	}
+	count, err = strconv.ParseInt(records[0]["count"].String, 10, 64)
+	if err != nil {
+		goto ERROR
+	}
+	return count, nil
+
+ERROR:
+	return 0, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("do not match records for select count(*)"))
+}
+
+func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) string {
+	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, i.getTableNameWithQuote(tableName))
 	if where != nil {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(where))
 	}
@@ -580,12 +645,9 @@ func (i *Inspect) getRecords(tableName *ast.TableName, where ast.ExprNode,
 			}
 		}
 	}
-	if limit != nil {
-		recordSql = fmt.Sprintf("%s LIMIT %s", recordSql, exprFormat(limit.Count))
-	} else {
-		count := GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS)
-		recordSql = fmt.Sprintf("%s LIMIT %d", recordSql, count)
+	if limit > 0 {
+		recordSql = fmt.Sprintf("%s LIMIT %d", recordSql, limit)
 	}
 	recordSql += ";"
-	return conn.Db.Query(recordSql)
+	return recordSql
 }
