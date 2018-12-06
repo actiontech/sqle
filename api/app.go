@@ -1,9 +1,9 @@
 package api
 
 import (
-	"fmt"
 	"sqle/api/controller"
 
+	"fmt"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/swaggo/echo-swagger"
@@ -63,6 +63,8 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.GET("/configs", controller.GetAllConfig)
 	e.PATCH("/configs", controller.UpdateConfigs)
 
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", port)))
+	address := fmt.Sprintf(":%v", port)
+	log.Logger().Infof("starting http server on %s", address)
+	log.Logger().Fatal(e.Start(address))
 	close(exitChan)
 }

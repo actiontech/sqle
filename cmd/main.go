@@ -39,14 +39,14 @@ func main() {
 			}
 		},
 	}
-	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 5799, "http server port")
+	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 10000, "http server port")
 	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql-user", "", "", "mysql user")
 	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql-password", "", "", "mysql password")
 	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
 	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
 	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "", "", "config file path")
-	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "config file path")
+	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
 	rootCmd.PersistentFlags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
 	rootCmd.Execute()
@@ -65,7 +65,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		mysqlHost = conf.GetString("server", "mysql_host", "")
 		mysqlPort = conf.GetString("server", "mysql_port", "")
 		mysqlSchema = conf.GetString("server", "mysql_schema", "")
-		port = conf.GetInt("server", "port", 12160)
+		port = conf.GetInt("server", "port", 10000)
 		autoMigrateTable = conf.GetBool("server", "auto_migrate_table", false)
 		debug = conf.GetBool("server", "debug", false)
 		logPath = conf.GetString("server", "log_path", "./logs")
@@ -74,6 +74,8 @@ func run(cmd *cobra.Command, _ []string) error {
 	// init logger
 	log.InitLogger(logPath)
 	defer log.ExitLogger()
+
+	log.Logger().Info("starting sqled server")
 
 	if pidFile != "" {
 		f, err := os.Create(pidFile)
@@ -97,10 +99,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	model.InitStorage(s)
-	err = sqlserverClient.InitClient("127.0.0.1", "10086")
-	if err != nil {
-		return err
-	}
+	_ = sqlserverClient.InitClient("127.0.0.1", "10086")
 
 	if autoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
@@ -132,5 +131,6 @@ func run(cmd *cobra.Command, _ []string) error {
 		//os.HaltIfShutdown(stage)
 		//log.UserInfo(stage, "Exit by signal %v", sig)
 	}
+	log.Logger().Info("stop sqled server")
 	return nil
 }
