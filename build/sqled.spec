@@ -107,6 +107,11 @@ log_path=./logs
 #
 auto_migrate_table=true
 debug=false
+
+# SQLServer parser server config
+[ms_parser_server]
+host=
+port=
 EOF
 
 #chown
