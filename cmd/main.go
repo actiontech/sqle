@@ -26,6 +26,8 @@ var pidFile string
 var debug bool
 var autoMigrateTable bool
 var logPath = "./logs"
+var sqlServerParserServerHost string
+var sqlServerParserServerPort string
 
 func main() {
 	var rootCmd = &cobra.Command{
@@ -40,8 +42,8 @@ func main() {
 		},
 	}
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 10000, "http server port")
-	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql-user", "", "", "mysql user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql-password", "", "", "mysql password")
+	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql-user", "", "sqle", "mysql user")
+	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql-password", "", "sqle", "mysql password")
 	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
 	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
 	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
@@ -60,15 +62,17 @@ func run(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("load config path: %s failed", configPath)
 		}
-		mysqlUser = conf.GetString("server", "mysql_user", "")
-		mysqlPass = conf.GetString("server", "mysql_password", "")
-		mysqlHost = conf.GetString("server", "mysql_host", "")
-		mysqlPort = conf.GetString("server", "mysql_port", "")
+		mysqlUser = conf.GetString("server", "mysql_user", "sqle")
+		mysqlPass = conf.GetString("server", "mysql_password", "sqle")
+		mysqlHost = conf.GetString("server", "mysql_host", "localhost")
+		mysqlPort = conf.GetString("server", "mysql_port", "3306")
 		mysqlSchema = conf.GetString("server", "mysql_schema", "")
 		port = conf.GetInt("server", "port", 10000)
 		autoMigrateTable = conf.GetBool("server", "auto_migrate_table", false)
 		debug = conf.GetBool("server", "debug", false)
 		logPath = conf.GetString("server", "log_path", "./logs")
+		sqlServerParserServerHost = conf.GetString("ms_parser_server", "host", "localhost")
+		sqlServerParserServerPort = conf.GetString("ms_parser_server", "port", "10001")
 	}
 
 	// init logger
@@ -99,7 +103,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	model.InitStorage(s)
-	_ = sqlserverClient.InitClient("127.0.0.1", "10086")
+	_ = sqlserverClient.InitClient(sqlServerParserServerHost, sqlServerParserServerPort)
 
 	if autoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
