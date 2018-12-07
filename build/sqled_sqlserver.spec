@@ -1,5 +1,5 @@
-Summary: Actiontech Sqle
-Name: sqle
+Summary: Actiontech Sqle_sqlserver
+Name: sqle_sqlserver
 Version: 9.9.9.9
 %if %{?_with_qa:1}%{!?_with_qa:0}
 Release: qa
@@ -12,14 +12,14 @@ Group: Actiontech
 Prefix: /usr/local/sqle
 
 %description
-Acitontech Sqle
+Acitontech Sqle_sqlserver
 
 %define debug_package %{nil}
 %define _source_filedigest_algorithm md5
 %define _binary_filedigest_algorithm md5
 %define _source_payload w0.gzdio
 %define _binary_payload w0.gzdio
-
+%define _dotnet_target %{getenv:DOTNET_TARGET}
 ##########
 
 %prep
@@ -28,18 +28,17 @@ Acitontech Sqle
 ##########
 
 %build
-echo "build sqle..."
-export GOPATH=%{_builddir}/%{buildsubdir}
+echo "build sqle_sqlserver..."
 cd %{_builddir}/%{buildsubdir}/src/sqle
-make build
+make build_sqlserver
 
 ##########
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
-cp %{_builddir}/%{buildsubdir}/src/sqle/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
+mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/libs
 cp -R %{_builddir}/%{buildsubdir}/src/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
+cp -R %{_builddir}/%{buildsubdir}/src/sqle/sqlserver/SqlserverProtoServer/bin/Release/netcoreapp2.1/%{_dotnet_target}/* $RPM_BUILD_ROOT/usr/local/sqle/libs
 
 ##########
 
@@ -77,41 +76,28 @@ fi
 #service
 grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
-    sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
+    sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqle_sqlserver.pid|g" \
     -e "s|User=|User=actiontech-sqle|g" \
-    -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/sqled.cnf --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
+    -e "s|ExecStart=|ExecStart=/usr/bin/dotnet $RPM_INSTALL_PREFIX\/libs\/publish\/SqlserverProtoServer.dll --config $RPM_INSTALL_PREFIX\/etc\/sqle_sqlserver.cnf --pidfile=$RPM_INSTALL_PREFIX\/sqle_sqlserver.pid|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
-    $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
+    $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqle_sqlserver.service
     systemctl daemon-reload
-    systemctl enable sqled.service
-#
-#else
-#    sed -e "s|PROJECT_PATH=|PROJECT_PATH=$RPM_INSTALL_PREFIX|g" \
-#    $RPM_INSTALL_PREFIX/scripts/sqled.initd > /etc/init.d/sqled
-#    chmod 755 /etc/init.d/sqled
-#    chkconfig --add sqled
+    systemctl enable sqle_sqlserver.service
+
+else
+    sed -e "s|PROJECT_PATH=|PROJECT_PATH=$RPM_INSTALL_PREFIX|g" \
+    $RPM_INSTALL_PREFIX/scripts/sqled.initd > /etc/init.d/sqle_sqlserver
+    chmod 755 /etc/init.d/sqle_sqlserver
+    chkconfig --add sqle_sqlserver
 fi
 
 mkdir -p $RPM_INSTALL_PREFIX/logs
 mkdir -p $RPM_INSTALL_PREFIX/etc
 
-cat > $RPM_INSTALL_PREFIX/etc/sqled.cnf.template<<EOF
+cat > $RPM_INSTALL_PREFIX/etc/sqle_sqlserver.cnf.template<<EOF
 [server]
-port=
-mysql_host=
-mysql_port=
-mysql_user=
-mysql_password=
-mysql_schema=
+port=10001
 log_path=./logs
-#
-auto_migrate_table=true
-debug=false
-
-# SQLServer parser server config
-[ms_parser_server]
-host=
-port=
 EOF
 
 #chown
@@ -120,7 +106,6 @@ chown -R actiontech-sqle: $RPM_INSTALL_PREFIX
 #chmod
 find $RPM_INSTALL_PREFIX -type d -exec chmod 0750 {} \;
 find $RPM_INSTALL_PREFIX -type f -exec chmod 0640 {} \;
-chmod 0750 $RPM_INSTALL_PREFIX/bin/*
 chmod 0770 $RPM_INSTALL_PREFIX/etc
 
 ##########
@@ -130,9 +115,9 @@ chmod 0770 $RPM_INSTALL_PREFIX/etc
 if [ "$1" = "0" ]; then
     grep systemd /proc/1/comm 1>/dev/null 2>&1
     if [ $? -eq 0 ]; then
-        systemctl stop sqled.service || true
+        systemctl stop sqle_sqlserver.service || true
     else
-        service sqled stop || true
+        service sqle_sqlserver stop || true
     fi
 fi
 
@@ -143,13 +128,13 @@ fi
 if [ "$1" = "0" ]; then
     grep systemd /proc/1/comm 1>/dev/null 2>&1
     if [ $? -eq 0 ]; then
-        systemctl disable sqled.service || true
-        rm -f /lib/systemd/system/sqled.service || true
+        systemctl disable sqle_sqlserver.service || true
+        rm -f /lib/systemd/system/sqle_sqlserver.service || true
         systemctl daemon-reload
-        systemctl reset-failed sqled.service || true
+        systemctl reset-failed sqle_sqlserver.service || true
     else
-        chkconfig --del sqled || true
-        rm -f /etc/init.d/sqled || true
+        chkconfig --del sqle_sqlserver || true
+        rm -f /etc/init.d/sqle_sqlserver || true
     fi
 fi
 
@@ -158,7 +143,5 @@ fi
 
 %files
 %defattr(-,root,root)
-/usr/local/sqle/bin/sqled
-/usr/local/sqle/scripts/sqled.systemd
-/usr/local/sqle/scripts/sqled.initd
-/usr/local/sqle/scripts/pt-online-schema-change.template
+/usr/local/sqle/libs
+/usr/local/sqle/scripts
