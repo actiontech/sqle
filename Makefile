@@ -11,7 +11,7 @@ RPM_BUILD_BIN = $(shell type -p rpmbuild 2>/dev/null)
 COMPILE_FLAG  =
 DOCKER        = $(shell which docker)
 DOCKER_IMAGE  = docker-registry:5000/actiontech/universe-compiler-go1.10
-DOTNET_DOCKER_IMAGE = docker-registry:5000/actiontech/universe-compiler-dotnetcore2.2
+DOTNET_DOCKER_IMAGE = docker-registry:5000/actiontech/universe-compiler-dotnetcore2.1
 DOCKER_REGISTRY ?=10.186.18.20
 DOTNET_TARGET = centos.7-x64
 
