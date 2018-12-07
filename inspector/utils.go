@@ -50,7 +50,7 @@ func (rs *InspectResults) message() string {
 func (rs *InspectResults) add(rule model.Rule, args ...interface{}) {
 	rs.results = append(rs.results, &InspectResult{
 		Level:   rule.Level,
-		Message: fmt.Sprintf(DefaultRulesMap[rule.Name].Message, args...),
+		Message: fmt.Sprintf(RuleHandlerMap[rule.Name].Message, args...),
 	})
 }
 

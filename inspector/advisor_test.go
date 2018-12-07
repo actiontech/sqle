@@ -66,22 +66,22 @@ v2 varchar(255)
 
 type testResult struct {
 	Results *InspectResults
-	rules   map[string]model.Rule
+	rules   map[string]RuleHandler
 }
 
 func newTestResult() *testResult {
 	return &testResult{
 		Results: newInspectResults(),
-		rules:   DefaultRulesMap,
+		rules:   RuleHandlerMap,
 	}
 }
 
 func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult {
-	rule, ok := t.rules[ruleName]
+	handler, ok := t.rules[ruleName]
 	if !ok {
 		return t
 	}
-	t.Results.add(rule, args...)
+	t.Results.add(handler.Rule, args...)
 	return t
 }
 
@@ -139,11 +139,11 @@ func DefaultMysqlInspect() *Inspect {
 
 func TestInspectResults(t *testing.T) {
 	results := newInspectResults()
-	results.add(DefaultRulesMap[DDL_CREATE_TABLE_NOT_EXIST])
+	results.add(RuleHandlerMap[DDL_CREATE_TABLE_NOT_EXIST].Rule)
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.message())
 
-	results.add(DefaultRulesMap[TABLE_NOT_EXIST], "not_exist_tb")
+	results.add(RuleHandlerMap[TABLE_NOT_EXIST].Rule, "not_exist_tb")
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错

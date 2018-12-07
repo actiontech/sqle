@@ -34,7 +34,6 @@ func NewInspector(entry *logrus.Entry, task *model.Task) Inspector {
 type Inspect struct {
 	Results     *InspectResults
 	currentRule model.Rule
-	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
 	Task        *model.Task
 	log         *logrus.Entry
 	dbConn      *executor.Executor
