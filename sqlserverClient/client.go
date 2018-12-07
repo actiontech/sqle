@@ -8,6 +8,7 @@ import (
 	"sqle/log"
 	"sqle/model"
 	"sqle/sqlserver/SqlserverProto"
+	"time"
 )
 
 var GrpcClient *Client
@@ -47,7 +48,9 @@ func InitClient(ip, port string) error {
 }
 
 func (c *Client) Conn(ip, port string) error {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", ip, port), grpc.WithInsecure())
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, fmt.Sprintf("%s:%s", ip, port), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 	}
