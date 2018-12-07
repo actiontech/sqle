@@ -53,6 +53,7 @@ docker_test: pull_image
 
 upload:
 	curl -T $(shell pwd)/${PROJECT_NAME}.x86_64.rpm -u admin:ftpadmin ftp://release-ftpd/actiontech-${PROJECT_NAME}/qa/${VERSION}/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm
+	curl -T $(shell pwd)/${SUB_PROJECT_NAME}.x86_64.rpm -u admin:ftpadmin ftp://release-ftpd/actiontech-${PROJECT_NAME}/qa/${VERSION}/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm
 
 parser:
 	cd $(shell pwd)/vendor/github.com/pingcap/tidb && make parser && cd -

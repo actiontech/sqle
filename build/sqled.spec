@@ -84,12 +84,12 @@ if [ $? -eq 0 ]; then
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
     systemctl daemon-reload
     systemctl enable sqled.service
-
-else
-    sed -e "s|PROJECT_PATH=|PROJECT_PATH=$RPM_INSTALL_PREFIX|g" \
-    $RPM_INSTALL_PREFIX/scripts/sqled.initd > /etc/init.d/sqled
-    chmod 755 /etc/init.d/sqled
-    chkconfig --add sqled
+#
+#else
+#    sed -e "s|PROJECT_PATH=|PROJECT_PATH=$RPM_INSTALL_PREFIX|g" \
+#    $RPM_INSTALL_PREFIX/scripts/sqled.initd > /etc/init.d/sqled
+#    chmod 755 /etc/init.d/sqled
+#    chkconfig --add sqled
 fi
 
 mkdir -p $RPM_INSTALL_PREFIX/logs
