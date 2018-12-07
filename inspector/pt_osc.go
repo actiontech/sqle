@@ -58,8 +58,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.StmtNode) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	tableName := i.getTableName(stmt.Table)
-	tableSize, err := i.getTableSize(tableName)
+	tableSize, err := i.getTableSize(stmt.Table)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +67,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.StmtNode) (string, error) {
 		return "", err
 	}
 
-	createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+	createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
 	if !exist || err != nil {
 		return "", err
 	}

@@ -322,14 +322,19 @@ func checkMergeAlterTable(i *Inspect, node ast.StmtNode) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
-		tableName := i.getTableName(stmt.Table)
-		_, ok := i.alterTableStmts[tableName]
-		if ok {
-			i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
-			i.alterTableStmts[tableName] = append(i.alterTableStmts[tableName], stmt)
-		} else {
-			i.alterTableStmts[tableName] = []*ast.AlterTableStmt{stmt}
+		info, exist := i.getTableInfo(stmt.Table)
+		if exist {
+			if info.alterTableStmts != nil && len(info.alterTableStmts) > 0 {
+				i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+			}
 		}
+		//_, ok := i.alterTableStmts[tableName]
+		//if ok {
+		//	i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+		//	i.alterTableStmts[tableName] = append(i.alterTableStmts[tableName], stmt)
+		//} else {
+		//	i.alterTableStmts[tableName] = []*ast.AlterTableStmt{stmt}
+		//}
 	}
 
 	return nil
@@ -411,7 +416,7 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.StmtNode) error {
 		}
 
 		// collect columns type
-		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -443,7 +448,7 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.StmtNode) error {
 			}
 		}
 	case *ast.CreateIndexStmt:
-		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
 		if err != nil || !exist {
 			return err
 		}
@@ -597,7 +602,7 @@ func checkIndex(i *Inspect, node ast.StmtNode) error {
 				}
 			}
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -615,7 +620,7 @@ func checkIndex(i *Inspect, node ast.StmtNode) error {
 		if compositeIndexMax < len(stmt.IndexColNames) {
 			compositeIndexMax = len(stmt.IndexColNames)
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -666,9 +671,9 @@ func checkObjectExist(i *Inspect, node ast.StmtNode) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check schema
-		schema := i.getSchemaName(stmt.Table)
+		schemaName := i.getSchemaName(stmt.Table)
 		tableName := i.getTableName(stmt.Table)
-		exist, err := i.isSchemaExist(schema)
+		exist, err := i.isSchemaExist(schemaName)
 		if err != nil {
 			return err
 		}
@@ -678,7 +683,7 @@ func checkObjectExist(i *Inspect, node ast.StmtNode) error {
 
 		} else {
 			// check table if schema exist
-			exist, err = i.isTableExist(tableName)
+			exist, err = i.isTableExist(stmt.Table)
 			if err != nil {
 				return err
 			}
@@ -700,7 +705,7 @@ func checkObjectExist(i *Inspect, node ast.StmtNode) error {
 }
 
 func checkObjectNotExist(i *Inspect, node ast.StmtNode) error {
-	var tablesName = []string{}
+	var tables = []*ast.TableName{}
 	var schemasName = []string{}
 
 	switch stmt := node.(type) {
@@ -712,35 +717,35 @@ func checkObjectNotExist(i *Inspect, node ast.StmtNode) error {
 
 	case *ast.AlterTableStmt:
 		schemasName = append(schemasName, i.getSchemaName(stmt.Table))
-		tablesName = append(tablesName, i.getTableName(stmt.Table))
+		tables = append(tables, stmt.Table)
 
 	case *ast.SelectStmt:
 		for _, table := range getTables(stmt.From.TableRefs) {
 			schemasName = append(schemasName, i.getSchemaName(table))
-			tablesName = append(tablesName, i.getTableName(table))
+			tables = append(tables, table)
 		}
 	case *ast.InsertStmt:
 		for _, table := range getTables(stmt.Table.TableRefs) {
 			schemasName = append(schemasName, i.getSchemaName(table))
-			tablesName = append(tablesName, i.getTableName(table))
+			tables = append(tables, table)
 		}
 
 	case *ast.DeleteStmt:
 		if stmt.Tables != nil && stmt.Tables.Tables != nil {
 			for _, table := range stmt.Tables.Tables {
 				schemasName = append(schemasName, i.getSchemaName(table))
-				tablesName = append(tablesName, i.getTableName(table))
+				tables = append(tables, table)
 			}
 		}
 		for _, table := range getTables(stmt.TableRefs.TableRefs) {
 			schemasName = append(schemasName, i.getSchemaName(table))
-			tablesName = append(tablesName, i.getTableName(table))
+			tables = append(tables, table)
 		}
 
 	case *ast.UpdateStmt:
 		for _, table := range getTables(stmt.TableRefs.TableRefs) {
 			schemasName = append(schemasName, i.getSchemaName(table))
-			tablesName = append(tablesName, i.getTableName(table))
+			tables = append(tables, table)
 		}
 	}
 
@@ -759,13 +764,13 @@ func checkObjectNotExist(i *Inspect, node ast.StmtNode) error {
 	}
 
 	notExistTables := []string{}
-	for _, table := range tablesName {
+	for _, table := range tables {
 		exist, err := i.isTableExist(table)
 		if err != nil {
 			return err
 		}
 		if !exist {
-			notExistTables = append(notExistTables, table)
+			notExistTables = append(notExistTables, i.getTableName(table))
 		}
 	}
 	if len(notExistTables) > 0 {

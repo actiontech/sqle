@@ -43,7 +43,7 @@ func (i *Inspect) RollbackAll(sql *model.RollbackSql) error {
 }
 
 func (i *Inspect) Commit(sql *model.Sql) error {
-	if i.isDMLStmt {
+	if i.Ctx.isDMLStmt {
 		return i.commitDML(sql)
 	} else {
 		return i.commitDDL(sql)
@@ -58,7 +58,6 @@ func (i *Inspect) commitDDL(sql *model.Sql) error {
 	if i.Task.Instance.DbType == model.DB_TYPE_MYCAT {
 		return i.commitMycatDDL(sql)
 	}
-	//sql := i.GetCommitSql()
 	_, err = conn.Db.Exec(sql.Content)
 	if err != nil {
 		sql.ExecStatus = model.TASK_ACTION_ERROR

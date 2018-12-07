@@ -109,31 +109,30 @@ func DefaultMysqlInspect() *Inspect {
 			CommitSqls:   []*model.CommitSql{},
 			RollbackSqls: []*model.RollbackSql{},
 		},
-		SqlArray:      []*model.Sql{},
-		currentSchema: "exist_db",
-		allSchema:     map[string]struct{}{"exist_db": struct{}{}},
-		schemaHasLoad: true,
-		allTable: map[string]map[string]*TableInfo{
-			"exist_db": map[string]*TableInfo{
-				"exist_tb_1": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-				"exist_tb_2": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-				"exist_tb_3": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-			}},
-		createTableStmts: map[string]*ast.CreateTableStmt{
-			"exist_db.exist_tb_1": getTestCreateTableStmt1(),
-			"exist_db.exist_tb_2": getTestCreateTableStmt2(),
-			"exist_db.exist_tb_3": getTestCreateTableStmt3(),
+		SqlArray: []*model.Sql{},
+		Ctx: &Context{
+			currentSchema: "exist_db",
+			allSchema:     map[string]struct{}{"exist_db": struct{}{}},
+			schemaHasLoad: true,
+			allTable: map[string]map[string]*TableInfo{
+				"exist_db": map[string]*TableInfo{
+					"exist_tb_1": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt1(),
+					},
+					"exist_tb_2": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt2(),
+					},
+					"exist_tb_3": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt3(),
+					},
+				}},
 		},
-		alterTableStmts: map[string][]*ast.AlterTableStmt{},
 	}
 }
 
@@ -659,23 +658,25 @@ func DefaultMycatInspect() *Inspect {
 			CommitSqls:   []*model.CommitSql{},
 			RollbackSqls: []*model.RollbackSql{},
 		},
-		SqlArray:      []*model.Sql{},
-		currentSchema: "multidb",
-		allSchema:     map[string]struct{}{"multidb": struct{}{}},
-		schemaHasLoad: true,
-		allTable: map[string]map[string]*TableInfo{
-			"multidb": map[string]*TableInfo{
-				"exist_tb_1": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-				"exist_tb_2": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-			}},
-		createTableStmts: map[string]*ast.CreateTableStmt{},
-		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
+		SqlArray: []*model.Sql{},
+		Ctx: &Context{
+			currentSchema: "multidb",
+			allSchema:     map[string]struct{}{"multidb": struct{}{}},
+			schemaHasLoad: true,
+			allTable: map[string]map[string]*TableInfo{
+				"multidb": map[string]*TableInfo{
+					"exist_tb_1": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt1(),
+					},
+					"exist_tb_2": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt2(),
+					},
+				}},
+		},
 	}
 }
 
