@@ -66,22 +66,22 @@ v2 varchar(255)
 
 type testResult struct {
 	Results *InspectResults
-	rules   map[string]model.Rule
+	rules   map[string]RuleHandler
 }
 
 func newTestResult() *testResult {
 	return &testResult{
 		Results: newInspectResults(),
-		rules:   DefaultRulesMap,
+		rules:   RuleHandlerMap,
 	}
 }
 
 func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult {
-	rule, ok := t.rules[ruleName]
+	handler, ok := t.rules[ruleName]
 	if !ok {
 		return t
 	}
-	t.Results.add(rule, args...)
+	t.Results.add(handler.Rule, args...)
 	return t
 }
 
@@ -109,41 +109,40 @@ func DefaultMysqlInspect() *Inspect {
 			CommitSqls:   []*model.CommitSql{},
 			RollbackSqls: []*model.RollbackSql{},
 		},
-		SqlArray:      []*model.Sql{},
-		currentSchema: "exist_db",
-		allSchema:     map[string]struct{}{"exist_db": struct{}{}},
-		schemaHasLoad: true,
-		allTable: map[string]map[string]*TableInfo{
-			"exist_db": map[string]*TableInfo{
-				"exist_tb_1": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-				"exist_tb_2": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-				"exist_tb_3": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-			}},
-		createTableStmts: map[string]*ast.CreateTableStmt{
-			"exist_db.exist_tb_1": getTestCreateTableStmt1(),
-			"exist_db.exist_tb_2": getTestCreateTableStmt2(),
-			"exist_db.exist_tb_3": getTestCreateTableStmt3(),
+		SqlArray: []*model.Sql{},
+		Ctx: &Context{
+			currentSchema: "exist_db",
+			allSchema:     map[string]struct{}{"exist_db": struct{}{}},
+			schemaHasLoad: true,
+			allTable: map[string]map[string]*TableInfo{
+				"exist_db": map[string]*TableInfo{
+					"exist_tb_1": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt1(),
+					},
+					"exist_tb_2": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt2(),
+					},
+					"exist_tb_3": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt3(),
+					},
+				}},
 		},
-		alterTableStmts: map[string][]*ast.AlterTableStmt{},
 	}
 }
 
 func TestInspectResults(t *testing.T) {
 	results := newInspectResults()
-	results.add(DefaultRulesMap[DDL_CREATE_TABLE_NOT_EXIST])
+	results.add(RuleHandlerMap[DDL_CREATE_TABLE_NOT_EXIST].Rule)
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.message())
 
-	results.add(DefaultRulesMap[TABLE_NOT_EXIST], "not_exist_tb")
+	results.add(RuleHandlerMap[TABLE_NOT_EXIST].Rule, "not_exist_tb")
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
@@ -659,23 +658,25 @@ func DefaultMycatInspect() *Inspect {
 			CommitSqls:   []*model.CommitSql{},
 			RollbackSqls: []*model.RollbackSql{},
 		},
-		SqlArray:      []*model.Sql{},
-		currentSchema: "multidb",
-		allSchema:     map[string]struct{}{"multidb": struct{}{}},
-		schemaHasLoad: true,
-		allTable: map[string]map[string]*TableInfo{
-			"multidb": map[string]*TableInfo{
-				"exist_tb_1": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-				"exist_tb_2": &TableInfo{
-					sizeLoad: true,
-					Size:     1,
-				},
-			}},
-		createTableStmts: map[string]*ast.CreateTableStmt{},
-		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
+		SqlArray: []*model.Sql{},
+		Ctx: &Context{
+			currentSchema: "multidb",
+			allSchema:     map[string]struct{}{"multidb": struct{}{}},
+			schemaHasLoad: true,
+			allTable: map[string]map[string]*TableInfo{
+				"multidb": map[string]*TableInfo{
+					"exist_tb_1": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt1(),
+					},
+					"exist_tb_2": &TableInfo{
+						sizeLoad:        true,
+						Size:            1,
+						CreateTableStmt: getTestCreateTableStmt2(),
+					},
+				}},
+		},
 	}
 }
 

@@ -94,7 +94,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 	schemaName := i.getSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
-	createTableStmt, exist, err := i.getCreateTableStmt(fmt.Sprintf("%s.%s", schemaName, tableName))
+	createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
 	if err != nil || !exist {
 		return "", err
 	}
@@ -281,10 +281,7 @@ func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) 
 }
 
 func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, error) {
-	schemaName := i.getSchemaName(stmt.Table)
-	tableName := i.getTableName(stmt.Table)
-
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.isSchemaExist(i.getSchemaName(stmt.Table))
 	if err != nil {
 		return "", err
 	}
@@ -293,7 +290,7 @@ func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (str
 		return "", nil
 	}
 
-	tableExist, err := i.isTableExist(tableName)
+	tableExist, err := i.isTableExist(stmt.Table)
 	if err != nil {
 		return "", err
 	}
@@ -308,8 +305,7 @@ func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (str
 func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, error) {
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
-		tableName := i.getTableName(table)
-		stmt, tableExist, err := i.getCreateTableStmt(tableName)
+		stmt, tableExist, err := i.getCreateTableStmt(table)
 		if err != nil {
 			return "", err
 		}
@@ -328,7 +324,7 @@ func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (str
 
 func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, error) {
 	indexName := stmt.IndexName
-	createTableStmt, tableExist, err := i.getCreateTableStmt(i.getTableName(stmt.Table))
+	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
 	if err != nil {
 		return "", err
 	}
@@ -360,18 +356,16 @@ func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) (strin
 }
 
 func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error) {
-	table := getTables(stmt.Table.TableRefs)
+	tables := getTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
-	if len(table) != 1 {
+	if len(tables) != 1 {
 		return "", nil
 	}
-	tableName := i.getTableName(table[0])
-
 	if stmt.OnDuplicate != nil {
 		return "", nil
 	}
-
-	createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+	table := tables[0]
+	createTableStmt, exist, err := i.getCreateTableStmt(table)
 	if err != nil {
 		return "", err
 	}
@@ -418,7 +412,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 				return "", nil
 			}
 			rollbackSql += fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
-				i.getTableNameWithQuote(table[0]), strings.Join(where, ", "))
+				i.getTableNameWithQuote(table), strings.Join(where, ", "))
 		}
 		return rollbackSql, nil
 	}
@@ -440,7 +434,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 			return "", nil
 		}
 		rollbackSql = fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
-			i.getTableNameWithQuote(table[0]), strings.Join(where, " AND "))
+			i.getTableNameWithQuote(table), strings.Join(where, " AND "))
 	}
 	return rollbackSql, nil
 }
@@ -453,7 +447,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error
 	var err error
 	tables := getTables(stmt.TableRefs.TableRefs)
 	table := tables[0]
-	createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(table))
+	createTableStmt, exist, err := i.getCreateTableStmt(table)
 	if err != nil || !exist {
 		return "", err
 	}
@@ -514,7 +508,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error
 		return "", nil
 	}
 	table := tables[0]
-	createTableStmt, exist, err := i.getCreateTableStmt(i.getTableName(table))
+	createTableStmt, exist, err := i.getCreateTableStmt(table)
 	if err != nil || !exist {
 		return "", err
 	}

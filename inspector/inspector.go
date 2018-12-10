@@ -32,17 +32,19 @@ func NewInspector(entry *logrus.Entry, task *model.Task) Inspector {
 }
 
 type Inspect struct {
+	Ctx         *Context
 	Results     *InspectResults
 	currentRule model.Rule
-	RulesFunc   map[string]func(stmt ast.StmtNode, rule string) error
 	Task        *model.Task
 	log         *logrus.Entry
 	dbConn      *executor.Executor
 	isConnected bool
 
-	index     int
 	SqlArray  []*model.Sql
 	SqlAction []func(sql *model.Sql) error
+}
+
+type Context struct {
 	// currentSchema will change after sql "use database"
 	currentSchema string
 	allSchema     map[string] /*schema*/ struct{}
@@ -50,32 +52,33 @@ type Inspect struct {
 	allTable      map[string] /*schema*/ map[string] /*table*/ *TableInfo
 	isDDLStmt     bool
 	isDMLStmt     bool
-
-	// save create table parser object from db by query "show create table tb_1";
-	// using in inspect and generate rollback sql
-	createTableStmts map[string] /*schema.table*/ *ast.CreateTableStmt
-
-	// save alter table parse object from input sql;
-	alterTableStmts map[string] /*schema.table*/ []*ast.AlterTableStmt
 }
 
 type TableInfo struct {
-	Size            float64
-	sizeLoad        bool
-	CreateTableStmt *ast.AlterTableStmt
+	Size     float64
+	sizeLoad bool
+
+	// save create table parser object from db by query "show create table tb_1";
+	// using in inspect and generate rollback sql
+	CreateTableStmt *ast.CreateTableStmt
+
+	// save alter table parse object from input sql;
+	alterTableStmts []*ast.AlterTableStmt
 }
 
 func NewInspect(entry *logrus.Entry, task *model.Task) *Inspect {
+	ctx := &Context{
+		currentSchema: task.Schema,
+		allSchema:     map[string]struct{}{},
+		allTable:      map[string]map[string]*TableInfo{},
+	}
 	return &Inspect{
-		Results:          newInspectResults(),
-		Task:             task,
-		log:              entry,
-		currentSchema:    task.Schema,
-		SqlArray:         []*model.Sql{},
-		allSchema:        map[string]struct{}{},
-		allTable:         map[string]map[string]*TableInfo{},
-		createTableStmts: map[string]*ast.CreateTableStmt{},
-		alterTableStmts:  map[string][]*ast.AlterTableStmt{},
+		Ctx:       ctx,
+		Results:   newInspectResults(),
+		Task:      task,
+		log:       entry,
+		SqlArray:  []*model.Sql{},
+		SqlAction: []func(sql *model.Sql) error{},
 	}
 }
 
@@ -88,17 +91,17 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 	for _, node := range nodes {
 		switch node.(type) {
 		case ast.DDLNode:
-			if i.isDMLStmt {
+			if i.Ctx.isDMLStmt {
 				i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
 				return SQL_STMT_CONFLICT_ERROR
 			}
-			i.isDDLStmt = true
+			i.Ctx.isDDLStmt = true
 		case ast.DMLNode:
-			if i.isDDLStmt {
+			if i.Ctx.isDDLStmt {
 				i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
 				return SQL_STMT_CONFLICT_ERROR
 			}
-			i.isDMLStmt = true
+			i.Ctx.isDMLStmt = true
 		}
 	}
 	sql.Stmts = nodes
@@ -150,7 +153,7 @@ func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := executor.NewExecutor(i.log, i.Task.Instance, i.currentSchema)
+	conn, err := executor.NewExecutor(i.log, i.Task.Instance, i.Ctx.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -167,17 +170,14 @@ func (i *Inspect) closeDbConn() {
 
 func (i *Inspect) getSchemaName(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
-		return i.currentSchema
+		return i.Ctx.currentSchema
 	} else {
 		return stmt.Schema.String()
 	}
 }
 
-func (i *Inspect) isSchemaExist(schema string) (bool, error) {
-	if schema == "" {
-		schema = i.currentSchema
-	}
-	if !i.schemaHasLoad {
+func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
+	if !i.Ctx.schemaHasLoad {
 		conn, err := i.getDbConn()
 		if err != nil {
 			return false, err
@@ -187,21 +187,16 @@ func (i *Inspect) isSchemaExist(schema string) (bool, error) {
 			return false, err
 		}
 		for _, schema := range schemas {
-			i.allSchema[schema] = struct{}{}
+			i.Ctx.allSchema[schema] = struct{}{}
 		}
-		i.schemaHasLoad = true
+		i.Ctx.schemaHasLoad = true
 	}
-	_, ok := i.allSchema[schema]
+	_, ok := i.Ctx.allSchema[schemaName]
 	return ok, nil
 }
 
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
-	var schema string
-	if stmt.Schema.String() == "" {
-		schema = i.currentSchema
-	} else {
-		schema = stmt.Schema.String()
-	}
+	schema := i.getSchemaName(stmt)
 	if schema == "" {
 		return fmt.Sprintf("%s", stmt.Name)
 	}
@@ -213,51 +208,50 @@ func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
 	return fmt.Sprintf("`%s`", name)
 }
 
-func (i *Inspect) isTableExist(tableName string) (bool, error) {
-	var schema = i.currentSchema
-	var table = tableName
-	if strings.Contains(tableName, ".") {
-		splitStrings := strings.SplitN(tableName, ".", 2)
-		schema = splitStrings[0]
-		table = splitStrings[1]
+func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
+	schemaName := i.getSchemaName(stmt)
+	schemaExist, err := i.isSchemaExist(schemaName)
+	if err != nil {
+		return schemaExist, err
+	}
+	if !schemaExist {
+		return false, nil
 	}
 
-	_, hasLoad := i.allTable[schema]
+	table := stmt.Name.String()
+	_, hasLoad := i.Ctx.allTable[schemaName]
 	if !hasLoad {
-		schemaExist, err := i.isSchemaExist(schema)
-		if err != nil {
-			return schemaExist, err
-		}
-		if !schemaExist {
-			return false, nil
-		}
 		conn, err := i.getDbConn()
 		if err != nil {
 			return false, err
 		}
-		tables, err := conn.ShowSchemaTables(schema)
+		tables, err := conn.ShowSchemaTables(schemaName)
 		if err != nil {
 			return false, err
 		}
-		i.allTable[schema] = make(map[string]*TableInfo, len(tables))
+		i.Ctx.allTable[schemaName] = make(map[string]*TableInfo, len(tables))
 		for _, table := range tables {
-			i.allTable[schema][table] = &TableInfo{}
+			i.Ctx.allTable[schemaName][table] = &TableInfo{}
 		}
 	}
-	_, exist := i.allTable[schema][table]
+	_, exist := i.Ctx.allTable[schemaName][table]
 	return exist, nil
 }
 
-func (i *Inspect) getTableSize(tableName string) (float64, error) {
-	var schema = i.currentSchema
-	var table = tableName
-	if strings.Contains(tableName, ".") {
-		splitStrings := strings.SplitN(tableName, ".", 2)
-		schema = splitStrings[0]
-		table = splitStrings[1]
+func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
+	schema := i.getSchemaName(stmt)
+	table := stmt.Name.String()
+	if _, schemaExist := i.Ctx.allTable[schema]; schemaExist {
+		if info, tableExist := i.Ctx.allTable[schema][table]; tableExist {
+			return info, true
+		}
 	}
-	info := i.allTable[schema][table]
-	if info == nil {
+	return nil, false
+}
+
+func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
+	info, exist := i.getTableInfo(stmt)
+	if !exist {
 		return 0, nil
 	}
 	if !info.sizeLoad {
@@ -265,7 +259,7 @@ func (i *Inspect) getTableSize(tableName string) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		size, err := conn.ShowTableSizeMB(schema, table)
+		size, err := conn.ShowTableSizeMB(i.getSchemaName(stmt), stmt.Name.String())
 		if err != nil {
 			return 0, err
 		}
@@ -275,8 +269,8 @@ func (i *Inspect) getTableSize(tableName string) (float64, error) {
 }
 
 // getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
-func (i *Inspect) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bool, error) {
-	exist, err := i.isTableExist(tableName)
+func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
+	exist, err := i.isTableExist(stmt)
 	if err != nil {
 		return nil, exist, err
 	}
@@ -284,10 +278,9 @@ func (i *Inspect) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bo
 		return nil, exist, nil
 	}
 
-	// check local memory first, for uint test
-	createStmt, ok := i.createTableStmts[tableName]
-	if ok {
-		return createStmt, exist, nil
+	info, _ := i.getTableInfo(stmt)
+	if info.CreateTableStmt != nil {
+		return info.CreateTableStmt, exist, nil
 	}
 
 	// create from connection
@@ -295,7 +288,7 @@ func (i *Inspect) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bo
 	if err != nil {
 		return nil, exist, err
 	}
-	sql, err := conn.ShowCreateTable(tableName)
+	sql, err := conn.ShowCreateTable(i.getTableName(stmt))
 	if err != nil {
 		return nil, exist, err
 	}
@@ -304,12 +297,13 @@ func (i *Inspect) getCreateTableStmt(tableName string) (*ast.CreateTableStmt, bo
 		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
 		return nil, exist, err
 	}
-	createStmt, ok = t.(*ast.CreateTableStmt)
+	createStmt, ok := t.(*ast.CreateTableStmt)
 	if !ok {
 		i.Logger().Error("parse sql from show create failed, not createTableStmt")
 		return nil, exist, fmt.Errorf("stmt not support")
 	}
-	i.createTableStmts[tableName] = createStmt
+	info.CreateTableStmt = createStmt
+	//i.createTableStmts[tableName] = createStmt
 	return createStmt, exist, nil
 }
 
@@ -317,16 +311,40 @@ func (i *Inspect) updateSchemaCtx(node ast.StmtNode) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
-		i.currentSchema = s.DBName
+		i.Ctx.currentSchema = s.DBName
 	case *ast.CreateDatabaseStmt:
-		i.allSchema[s.Name] = struct{}{}
+		i.Ctx.allSchema[s.Name] = struct{}{}
 	case *ast.CreateTableStmt:
-		i.createTableStmts[i.getTableName(s.Table)] = s
+		schemaName := i.getSchemaName(s.Table)
+		schemaExist, _ := i.isSchemaExist(schemaName)
+		if !schemaExist {
+			return
+		}
+		tableExist, _ := i.isTableExist(s.Table)
+		if !tableExist {
+			i.Ctx.allTable[schemaName][s.Table.Name.String()] = &TableInfo{
+				CreateTableStmt: s,
+			}
+		}
 	case *ast.DropDatabaseStmt:
-		delete(i.allSchema, s.Name)
+		delete(i.Ctx.allSchema, s.Name)
 	case *ast.DropTableStmt:
 		for _, table := range s.Tables {
-			delete(i.alterTableStmts, i.getTableName(table))
+			exist, _ := i.isTableExist(table)
+			if exist {
+				delete(i.Ctx.allTable[i.getSchemaName(table)], table.Name.String())
+			}
+		}
+	case *ast.AlterTableStmt:
+		info, exist := i.getTableInfo(s.Table)
+		if exist {
+			if info.alterTableStmts != nil {
+				info.alterTableStmts = append(info.alterTableStmts, s)
+			} else {
+				info.alterTableStmts = []*ast.AlterTableStmt{
+					s,
+				}
+			}
 		}
 	default:
 	}
