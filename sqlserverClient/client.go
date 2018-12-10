@@ -60,11 +60,14 @@ func (c *Client) Conn(ip, port string) error {
 }
 
 func (c *Client) SplitSql(sql string) ([]string, error) {
+	/*
 	out, err := c.client.GetSplitSqls(context.Background(), &SqlserverProto.SplitSqlsInput{
 		Sqls:    sql,
 		Version: c.version,
 	})
 	return out.GetSqls(), errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
+	*/
+	return []string{}, nil
 }
 
 func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta *SqlserverProto.SqlserverMeta) error {
