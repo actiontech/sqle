@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"github.com/pingcap/tidb/ast"
 	"github.com/sirupsen/logrus"
 	"sqle/model"
 	"sqle/sqlserverClient"
@@ -16,8 +17,8 @@ func NeSqlserverInspect(entry *logrus.Entry, task *model.Task, rules map[string]
 	}
 }
 
-func (i *SqlserverInspect) SplitSql(sql string) ([]string, error) {
-	sqls, err := sqlserverClient.GetClient().SplitSql(sql)
+func (i *SqlserverInspect) ParseSql(sql string) ([]ast.Node, error) {
+	sqls, err := sqlserverClient.GetClient().ParseSql(sql)
 	if err != nil {
 		i.Logger().Errorf("parser t-sql from ms grpc server failed, error: %v", err)
 	}
@@ -25,18 +26,24 @@ func (i *SqlserverInspect) SplitSql(sql string) ([]string, error) {
 }
 
 func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
-	i.SqlArray = append(i.SqlArray, sql)
-	i.SqlAction = append(i.SqlAction, action)
-	return nil
-}
-
-func (i *SqlserverInspect) Do() error {
-	for n, sql := range i.SqlArray {
-		err := i.SqlAction[n](sql)
-		if err != nil {
-			return err
+	nodes, err := i.ParseSql(sql.Content)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
+		switch stmt := node.(type) {
+		case sqlserverClient.SqlServerNode:
+			if stmt.IsDDLStmt() {
+				i.Ctx.counterDDL += 1
+			} else if stmt.IsDMLStmt() {
+				i.Ctx.counterDML += 1
+			}
 		}
 	}
+
+	sql.Stmts = nodes
+	i.SqlArray = append(i.SqlArray, sql)
+	i.SqlAction = append(i.SqlAction, action)
 	return nil
 }
 

@@ -43,10 +43,10 @@ func (i *Inspect) RollbackAll(sql *model.RollbackSql) error {
 }
 
 func (i *Inspect) Commit(sql *model.Sql) error {
-	if i.Ctx.isDMLStmt {
-		return i.commitDML(sql)
-	} else {
+	if i.Ctx.counterDDL > 0 {
 		return i.commitDDL(sql)
+	} else {
+		return i.commitDML(sql)
 	}
 }
 

@@ -19,7 +19,7 @@ type Inspector interface {
 	Advise(rules []model.Rule) error
 	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
 	Commit(sql *model.Sql) error
-	SplitSql(sql string) ([]string, error)
+	ParseSql(sql string) ([]ast.Node, error)
 	Logger() *logrus.Entry
 }
 
@@ -56,8 +56,8 @@ type Context struct {
 	allSchema     map[string] /*schema*/ struct{}
 	schemaHasLoad bool
 	allTable      map[string] /*schema*/ map[string] /*table*/ *TableInfo
-	isDDLStmt     bool
-	isDMLStmt     bool
+	counterDDL    uint
+	counterDML    uint
 }
 
 type TableInfo struct {
@@ -107,25 +107,16 @@ func NewInspect(entry *logrus.Entry, task *model.Task, rules map[string]model.Ru
 }
 
 func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
-	nodes, err := parseSql(i.Task.Instance.DbType, sql.Content)
+	nodes, err := i.ParseSql(sql.Content)
 	if err != nil {
-		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql.Content)
 		return err
 	}
 	for _, node := range nodes {
 		switch node.(type) {
 		case ast.DDLNode:
-			if i.Ctx.isDMLStmt {
-				i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
-				return SQL_STMT_CONFLICT_ERROR
-			}
-			i.Ctx.isDDLStmt = true
+			i.Ctx.counterDDL += 1
 		case ast.DMLNode:
-			if i.Ctx.isDDLStmt {
-				i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
-				return SQL_STMT_CONFLICT_ERROR
-			}
-			i.Ctx.isDMLStmt = true
+			i.Ctx.counterDML += 1
 		}
 	}
 	sql.Stmts = nodes
@@ -135,6 +126,10 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 }
 
 func (i *Inspect) Do() error {
+	if i.Ctx.counterDML > 0 && i.Ctx.counterDDL > 0 {
+		i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
+		return SQL_STMT_CONFLICT_ERROR
+	}
 	for n, sql := range i.SqlArray {
 		err := i.SqlAction[n](sql)
 		if err != nil {
@@ -148,17 +143,18 @@ func (i *Inspect) Do() error {
 	return nil
 }
 
-func (i *Inspect) SplitSql(sql string) ([]string, error) {
+func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
 	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql)
 		return nil, err
 	}
-	sqlArray := make([]string, len(stmts))
-	for n, stmt := range stmts {
-		sqlArray[n] = stmt.Text()
+	nodes := make([]ast.Node, 0, len(stmts))
+	for _, stmt := range stmts {
+		node := stmt.(ast.Node)
+		nodes = append(nodes, node)
 	}
-	return sqlArray, nil
+	return nodes, nil
 }
 
 func (i *Inspect) Logger() *logrus.Entry {
@@ -331,7 +327,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	return createStmt, exist, nil
 }
 
-func (i *Inspect) updateSchemaCtx(node ast.StmtNode) {
+func (i *Inspect) updateSchemaCtx(node ast.Node) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
