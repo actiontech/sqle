@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/sirupsen/logrus"
 	"sqle/executor"
-	"sqle/inspector"
 	"sqle/log"
 	"sqle/model"
 	"sync"
@@ -23,14 +22,12 @@ func (s *Sqled) statusLoop() {
 	tick := time.Tick(1 * time.Hour)
 	entry := log.NewEntry().WithField("type", "cron")
 	s.UpdateAllInstanceStatus(entry)
-	s.UpdateInspectorConfigs(entry)
 	for {
 		select {
 		case <-s.exit:
 			return
 		case <-tick:
 			s.UpdateAllInstanceStatus(entry)
-			s.UpdateInspectorConfigs(entry)
 		}
 	}
 }
@@ -106,17 +103,4 @@ func (s *Sqled) DeleteInstanceStatus(instance *model.Instance) {
 	s.Lock()
 	delete(s.instancesStatus, instance.ID)
 	s.Unlock()
-}
-
-func (s *Sqled) UpdateInspectorConfigs(entry *logrus.Entry) error {
-	st := model.GetStorage()
-	configs, err := st.GetAllConfig()
-	if err != nil {
-		entry.Error("get config from storage failed")
-		return err
-	}
-	for _, config := range configs {
-		inspector.UpdateConfig(config.Name, config.Value)
-	}
-	return nil
 }

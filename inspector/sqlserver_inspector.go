@@ -10,9 +10,9 @@ type SqlserverInspect struct {
 	*Inspect
 }
 
-func NeSqlserverInspect(entry *logrus.Entry, task *model.Task) Inspector {
+func NeSqlserverInspect(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) Inspector {
 	return &SqlserverInspect{
-		Inspect: NewInspect(entry, task),
+		Inspect: NewInspect(entry, task, rules),
 	}
 }
 

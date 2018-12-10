@@ -32,6 +32,12 @@ const (
 	DML_MYCAT_MUST_USING_SHARDING_CLOUNM = "dml_mycat_must_using_sharding_column"
 )
 
+// inspector config code
+const (
+	CONFIG_DML_ROLLBACK_MAX_ROWS = "dml_rollback_max_rows"
+	CONFIG_DDL_OSC_MIN_SIZE      = "ddl_osc_min_size"
+)
+
 type RuleHandler struct {
 	Rule    model.Rule
 	Message string
@@ -44,6 +50,25 @@ var (
 )
 
 var RuleHandlers = []RuleHandler{
+	// config
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  CONFIG_DML_ROLLBACK_MAX_ROWS,
+			Desc:  "在 DML 语句中预计影响行数超过指定值则不回滚",
+			Value: "1000",
+		},
+		Func: nil,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  CONFIG_DDL_OSC_MIN_SIZE,
+			Desc:  "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
+			Value: "16",
+		},
+		Func: nil,
+	},
+
+	// rule
 	RuleHandler{
 		Rule: model.Rule{
 			Name:  SCHEMA_NOT_EXIST,

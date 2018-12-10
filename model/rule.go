@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"sqle/errors"
+	"strconv"
 )
 
 const (
@@ -28,14 +29,34 @@ type RuleTemplate struct {
 }
 
 type Rule struct {
-	Name    string `json:"name" gorm:"primary_key"`
-	Desc    string `json:"desc"`
-	Value   string `json:"value"`
-	Level   string `json:"level" example:"error"` // notice, warn, error
+	Name  string `json:"name" gorm:"primary_key"`
+	Desc  string `json:"desc"`
+	Value string `json:"value"`
+	Level string `json:"level" example:"error"` // notice, warn, error
 }
 
 func (r Rule) TableName() string {
 	return "rules"
+}
+
+func (r *Rule) GetValue() string {
+	if r == nil {
+		return ""
+	}
+	return r.Value
+}
+
+func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
+	value := r.GetValue()
+	i, err := strconv.ParseInt(value, 10, 64)
+	if err == nil {
+		return i
+	}
+	i, err = strconv.ParseInt(defaultRule.GetValue(), 10, 64)
+	if err == nil {
+		return i
+	}
+	return 0
 }
 
 // RuleTemplateDetail use for http request and swagger docs;
@@ -120,4 +141,10 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 		Joins("inner join rule_template_rule on rule_template_rule.rule_name = rules.name").
 		Where("rule_template_rule.rule_template_id in (?)", templateIds).Scan(&rules).Error
 	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) UpdateRuleValueByName(name, value string) error {
+	err := s.db.Table("rules").Where("name = ?", name).
+		Update(map[string]string{"value": value}).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

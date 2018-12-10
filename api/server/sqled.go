@@ -153,7 +153,8 @@ func (s *Sqled) inspect(task *model.Task) error {
 		entry.Logger.Errorf("get instance rule from storage failed, error: %v", err)
 		return err
 	}
-	i := inspector.NewInspector(entry, task)
+	ruleMap := model.GetRuleMapFromAllArray(rules)
+	i := inspector.NewInspector(entry, task, ruleMap)
 	err = i.Advise(rules)
 	if err != nil {
 		return err
@@ -170,7 +171,7 @@ func (s *Sqled) inspect(task *model.Task) error {
 		return err
 	}
 
-	i = inspector.NewInspector(entry, task)
+	i = inspector.NewInspector(entry, task, ruleMap)
 	rollbackSqls, err := i.GenerateAllRollbackSql()
 	if err != nil {
 		return err
@@ -190,7 +191,7 @@ func (s *Sqled) commit(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, task)
+	i := inspector.NewInspector(entry, task, nil)
 	for _, commitSql := range task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
@@ -225,7 +226,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 	entry.Info("start rollback sql")
 
 	st := model.GetStorage()
-	i := inspector.NewInspector(entry, task)
+	i := inspector.NewInspector(entry, task, nil)
 
 	for _, rollbackSql := range task.RollbackSqls {
 		currentSql := rollbackSql

@@ -217,3 +217,41 @@ func GetRules(c echo.Context) error {
 		Data:    rules,
 	})
 }
+
+type UpdateRuleReq struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type UpdateAllRuleReq struct {
+	Configs []UpdateRuleReq `json:"rule_list"`
+}
+
+// @Summary 修改配置
+// @Description update rules
+// @Accept json
+// @Produce json
+// @Param instance body controller.UpdateAllRuleReq true "update rule"
+// @Success 200 {object} controller.BaseRes
+// @router /rules [patch]
+func UpdateRules(c echo.Context) error {
+	s := model.GetStorage()
+	reqs := new(UpdateAllRuleReq)
+	if err := c.Bind(reqs); err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	rules, err := s.GetAllRule()
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	ruleMap := model.GetRuleMapFromAllArray(rules)
+	for _, req := range reqs.Configs {
+		if _, ok := ruleMap[req.Name]; ok {
+			err := s.UpdateRuleValueByName(req.Name, req.Value)
+			if err != nil {
+				return c.JSON(http.StatusOK, NewBaseReq(err))
+			}
+		}
+	}
+	return c.JSON(200, NewBaseReq(nil))
+}
