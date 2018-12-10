@@ -89,10 +89,43 @@ namespace SqlserverProtoServer {
                 for (int index = statement.FirstTokenIndex; index <= statement.LastTokenIndex; index++) {
                     sql += statement.ScriptTokenStream[index].Text;
                 }
-                output.Sqls.Add(sql);
+
+                var splitSql = new Sql();
+                splitSql.Sql_ = sql;
+                splitSql.IsDDL = IsDDL(statement);
+                splitSql.IsDML = IsDML(statement);
+                output.SplitSqls.Add(splitSql);
             }
 
             return Task.FromResult(output);
+        }
+
+        public bool IsDDL(TSqlStatement statement) {
+            if (statement is CreateDatabaseStatement) {
+                return true;
+            } else if (statement is CreateTableStatement) {
+                return true;
+            } else if (statement is AlterTableStatement) {
+                return true;
+            } else if (statement is CreateIndexStatement) {
+                return true;
+            } else if (statement is DropIndexStatement) {
+                return true;
+            } else if (statement is DropTableStatement) {
+                return true;
+            }
+            return false;
+        }
+
+        public bool IsDML(TSqlStatement statement) {
+            if (statement is InsertStatement) {
+                return true;
+            } else if (statement is UpdateStatement) {
+                return true;
+            } else if (statement is DeleteStatement) {
+                return true;
+            }
+            return false;
         }
 
         // Audit implement
