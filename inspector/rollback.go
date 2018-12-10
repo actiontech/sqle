@@ -79,6 +79,9 @@ func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.StmtNode) (rollbackSql str
 }
 
 func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.StmtNode) (rollbackSql string, err error) {
+	if i.config.DMLRollbackMaxRows < 0 {
+		return "", nil
+	}
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		rollbackSql, err = i.generateInsertRollbackSql(stmt)
@@ -383,7 +386,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 	// match "insert into table_name (column_name,...) value (v1,...)"
 	// match "insert into table_name value (v1,...)"
 	if stmt.Lists != nil {
-		if int64(len(stmt.Lists)) > GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS) {
+		if int64(len(stmt.Lists)) > i.config.DMLRollbackMaxRows {
 			return "", nil
 		}
 		columnsName := []string{}
@@ -419,7 +422,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 
 	// match "insert into table_name set col_name = value1, ..."
 	if stmt.Setlist != nil {
-		if 1 > GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS) {
+		if 1 > i.config.DMLRollbackMaxRows {
 			return "", nil
 		}
 		where := []string{}
@@ -456,7 +459,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error
 		return "", nil
 	}
 
-	var max = GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS)
+	var max = i.config.DMLRollbackMaxRows
 	limit, err := getLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return "", err
@@ -517,7 +520,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error
 		return "", nil
 	}
 
-	var max = GetConfigInt(CONFIG_DML_ROLLBACK_MAX_ROWS)
+	var max = i.config.DMLRollbackMaxRows
 	limit, err := getLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return "", err

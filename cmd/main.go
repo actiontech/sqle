@@ -115,9 +115,6 @@ func run(cmd *cobra.Command, _ []string) error {
 		if err := s.CreateDefaultTemplate(inspector.DefaultRules); err != nil {
 			return err
 		}
-		if err := s.CreateConfigsIfNotExist(inspector.GetAllConfig()); err != nil {
-			return err
-		}
 	}
 
 	exitChan := make(chan struct{}, 0)

@@ -54,6 +54,11 @@ func (i *Inspect) generateOSCCommandLine(node ast.StmtNode) (string, error) {
 	if i.Task.Instance.DbType != model.DB_TYPE_MYSQL {
 		return "", nil
 	}
+
+	if i.config.DDLOSCMinSize < 0 {
+		return "", nil
+	}
+
 	stmt, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return "", nil
@@ -63,7 +68,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.StmtNode) (string, error) {
 		return "", err
 	}
 
-	if int64(tableSize) < GetConfigInt(CONFIG_DDL_OSC_SIZE_LIMIT) {
+	if int64(tableSize) < i.config.DDLOSCMinSize {
 		return "", err
 	}
 

@@ -57,7 +57,7 @@ func CreateTask(c echo.Context) error {
 		Instance:   inst,
 		CommitSqls: []*model.CommitSql{},
 	}
-	sqlArray, err := inspector.NewInspector(log.NewEntry(), task).SplitSql(req.Sql)
+	sqlArray, err := inspector.NewInspector(log.NewEntry(), task, nil).SplitSql(req.Sql)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -105,7 +105,7 @@ func UploadSqlFile(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, err)
 	}
-	sqlArray, err := inspector.NewInspector(log.NewEntry(), task).SplitSql(string(sql))
+	sqlArray, err := inspector.NewInspector(log.NewEntry(), task, nil).SplitSql(string(sql))
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}

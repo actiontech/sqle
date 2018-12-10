@@ -23,16 +23,17 @@ type Inspector interface {
 	Logger() *logrus.Entry
 }
 
-func NewInspector(entry *logrus.Entry, task *model.Task) Inspector {
+func NewInspector(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) Inspector {
 	if task.Instance.DbType == model.DB_TYPE_SQLSERVER {
-		return NeSqlserverInspect(entry, task)
+		return NeSqlserverInspect(entry, task, rules)
 	} else {
-		return NewInspect(entry, task)
+		return NewInspect(entry, task, rules)
 	}
 }
 
 type Inspect struct {
 	Ctx         *Context
+	config      *Config
 	Results     *InspectResults
 	currentRule model.Rule
 	Task        *model.Task
@@ -42,6 +43,11 @@ type Inspect struct {
 
 	SqlArray  []*model.Sql
 	SqlAction []func(sql *model.Sql) error
+}
+
+type Config struct {
+	DMLRollbackMaxRows int64
+	DDLOSCMinSize      int64
 }
 
 type Context struct {
@@ -66,14 +72,32 @@ type TableInfo struct {
 	alterTableStmts []*ast.AlterTableStmt
 }
 
-func NewInspect(entry *logrus.Entry, task *model.Task) *Inspect {
+func NewInspect(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) *Inspect {
 	ctx := &Context{
 		currentSchema: task.Schema,
 		allSchema:     map[string]struct{}{},
 		allTable:      map[string]map[string]*TableInfo{},
 	}
+	// load config
+	config := &Config{}
+	if rules != nil {
+		if r, ok := rules[CONFIG_DML_ROLLBACK_MAX_ROWS]; ok {
+			defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
+			config.DMLRollbackMaxRows = r.GetValueInt(&defaultRule)
+		} else {
+			config.DMLRollbackMaxRows = -1
+		}
+
+		if r, ok := rules[CONFIG_DDL_OSC_MIN_SIZE]; ok {
+			defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
+			config.DDLOSCMinSize = r.GetValueInt(&defaultRule)
+		} else {
+			config.DDLOSCMinSize = -1
+		}
+	}
 	return &Inspect{
 		Ctx:       ctx,
+		config:    config,
 		Results:   newInspectResults(),
 		Task:      task,
 		log:       entry,

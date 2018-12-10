@@ -47,6 +47,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.PUT("/rule_templates/:template_id/", controller.UpdateRuleTemplate)
 
 	e.GET("/rules", controller.GetRules)
+	e.PATCH("/rules", controller.UpdateRules)
 
 	e.GET("/tasks", controller.GetTasks)
 	e.POST("/tasks", controller.CreateTask)
@@ -59,9 +60,6 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
-
-	e.GET("/configs", controller.GetAllConfig)
-	e.PATCH("/configs", controller.UpdateConfigs)
 
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)

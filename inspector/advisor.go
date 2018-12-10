@@ -28,6 +28,8 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 			currentSql.InspectStatus = model.TASK_ACTION_DONE
 			currentSql.InspectLevel = i.Results.level()
 			currentSql.InspectResult = i.Results.message()
+			// clean up results
+			i.Results = newInspectResults()
 
 			// print osc
 			oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
@@ -42,8 +44,6 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 					currentSql.InspectResult, oscCommandLine)
 			}
 
-			// clean up results
-			i.Results = newInspectResults()
 			return nil
 		})
 		if err != nil {

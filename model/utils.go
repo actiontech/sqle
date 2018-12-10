@@ -51,7 +51,7 @@ type Storage struct {
 }
 
 func (s *Storage) AutoMigrate() error {
-	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}, &Config{}).Error
+	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
@@ -86,23 +86,6 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 			return err
 		}
 		return s.UpdateTemplateRules(t, rules...)
-	}
-	return nil
-}
-
-func (s *Storage) CreateConfigsIfNotExist(configs []Config) error {
-	for _, config := range configs {
-		exist, err := s.Exist(&config)
-		if err != nil {
-			return err
-		}
-		if exist {
-			continue
-		}
-		err = s.Save(config)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }

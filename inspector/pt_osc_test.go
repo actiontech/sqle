@@ -50,14 +50,13 @@ func TestPTOSC(t *testing.T) {
 }
 
 func runOSCCase(t *testing.T, desc string, sql, expect string) {
-	UpdateConfig(CONFIG_DDL_OSC_SIZE_LIMIT, "0")
 	i := DefaultMysqlInspect()
+	i.config.DDLOSCMinSize = 0
 	stmt, err := parseOneSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-
 	actual, err := i.generateOSCCommandLine(stmt)
 	if err != nil {
 		t.Error(err)

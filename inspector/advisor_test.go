@@ -133,6 +133,10 @@ func DefaultMysqlInspect() *Inspect {
 					},
 				}},
 		},
+		config: &Config{
+			DDLOSCMinSize:      16,
+			DMLRollbackMaxRows: 1000,
+		},
 	}
 }
 
@@ -676,6 +680,10 @@ func DefaultMycatInspect() *Inspect {
 						CreateTableStmt: getTestCreateTableStmt2(),
 					},
 				}},
+		},
+		config: &Config{
+			DDLOSCMinSize:      16,
+			DMLRollbackMaxRows: 1000,
 		},
 	}
 }
