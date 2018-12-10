@@ -13,8 +13,14 @@ message SplitSqlsInput {
     string Sqls = 2;
 }
 
+message Sql {
+    string Sql = 1;
+    bool IsDDL = 2;
+    bool IsDML = 3;
+}
+
 message SplitSqlsOutput {
-    repeated string Sqls = 1;
+    repeated Sql SplitSqls = 1;
 }
 
 message SqlserverMeta {
@@ -49,5 +55,5 @@ message GetRollbackSqlsInput {
 }
 
 message GetRollbackSqlsOutput {
-    repeated string RollbackSqls = 1;
+    repeated Sql RollbackSqls = 1;
 }
