@@ -137,20 +137,24 @@ namespace SqlserverProtoServer {
             var ruleValidatorContext = new RuleValidatorContext(request.SqlserverMeta);
 
             foreach (var sql in sqls) {
-                var statementList = ParseStatementList(version, sql);
-                foreach (var statement in statementList.Statements) {
-                    foreach (var ruleName in ruleNames) {
-                        var ruleValidator = DefaultRules.RuleValidators[ruleName];
-                        if (ruleValidator == null) {
-                            continue;
+                try {
+                    var statementList = ParseStatementList(version, sql);
+                    foreach (var statement in statementList.Statements) {
+                        foreach (var ruleName in ruleNames) {
+                            if (!DefaultRules.RuleValidators.ContainsKey(ruleName)) {
+                                continue;
+                            }
+                            var ruleValidator = DefaultRules.RuleValidators[ruleName];
+                            ruleValidator.Check(ruleValidatorContext, statement);
                         }
-                        ruleValidator.Check(ruleValidatorContext, statement);
-                    }
 
-                    ruleValidatorContext.UpdateContext(statement);
+                        ruleValidatorContext.UpdateContext(statement);
+                    }
+                    output.Results[sql] = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
+                    ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
+                } catch(Exception e) {
+                    Console.WriteLine("{0}", e.StackTrace);
                 }
-                output.Results[sql] = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
-                ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
             }
 
             return Task.FromResult(output);
