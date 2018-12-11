@@ -89,13 +89,16 @@ func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta 
 		RuleNames:     ruleNames,
 		SqlserverMeta: meta,
 	})
-	results := out.GetAdviseResults()
+	results := out.GetResults()
 	if len(results) != len(commitSqls) {
 		return errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("don't match sql advise result"))
 	}
 
-	for n, result := range results {
-		commitSql := commitSqls[n]
+	for _, commitSql := range commitSqls {
+		result, ok := results[commitSql.Content]
+		if !ok {
+			continue
+		}
 		commitSql.InspectLevel = result.AdviseLevel
 		commitSql.InspectResult = result.AdviseResultMessage
 		commitSql.InspectStatus = model.TASK_ACTION_DONE
