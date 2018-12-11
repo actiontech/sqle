@@ -60,7 +60,6 @@ func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 		p := parser.New()
 		stmts, err := p.Parse(sql, "", "")
 		if err != nil {
-			fmt.Printf("parse error: %v\nsql: %v", err, sql)
 			return nil, err
 		}
 		return stmts, nil
@@ -291,7 +290,7 @@ func hasUniqIndex(stmt *ast.CreateTableStmt) bool {
 	return false
 }
 
-func ReplaceTableName(node ast.StmtNode) string {
+func ReplaceTableName(node ast.Node) string {
 	var schema string
 	var table string
 	query := node.Text()

@@ -33,20 +33,22 @@ namespace SqlserverProto {
             "Cg9DdXJyZW50RGF0YWJhc2UYBSABKAkSFQoNQ3VycmVudFNjaGVtYRgGIAEo",
             "CSJ1CgtBZHZpc2VJbnB1dBIPCgdWZXJzaW9uGAEgASgJEgwKBFNxbHMYAiAD",
             "KAkSEQoJUnVsZU5hbWVzGAMgAygJEjQKDVNxbHNlcnZlck1ldGEYBCABKAsy",
-            "HS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2ZXJNZXRhIkMKDEFkdmlzZU91dHB1",
-            "dBIzCg1BZHZpc2VSZXN1bHRzGAEgAygLMhwuU3Fsc2VydmVyUHJvdG8uQWR2",
-            "aXNlUmVzdWx0IkAKDEFkdmlzZVJlc3VsdBITCgtBZHZpc2VMZXZlbBgBIAEo",
-            "CRIbChNBZHZpc2VSZXN1bHRNZXNzYWdlGAIgASgJImsKFEdldFJvbGxiYWNr",
-            "U3Fsc0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAMoCRI0Cg1T",
-            "cWxzZXJ2ZXJNZXRhGAMgASgLMh0uU3Fsc2VydmVyUHJvdG8uU3Fsc2VydmVy",
-            "TWV0YSJCChVHZXRSb2xsYmFja1NxbHNPdXRwdXQSKQoMUm9sbGJhY2tTcWxz",
-            "GAEgAygLMhMuU3Fsc2VydmVyUHJvdG8uU3FsMo4CChBTcWxzZXJ2ZXJTZXJ2",
-            "aWNlElEKDEdldFNwbGl0U3FscxIeLlNxbHNlcnZlclByb3RvLlNwbGl0U3Fs",
-            "c0lucHV0Gh8uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxzT3V0cHV0IgASRQoG",
-            "QWR2aXNlEhsuU3Fsc2VydmVyUHJvdG8uQWR2aXNlSW5wdXQaHC5TcWxzZXJ2",
-            "ZXJQcm90by5BZHZpc2VPdXRwdXQiABJgCg9HZXRSb2xsYmFja1NxbHMSJC5T",
-            "cWxzZXJ2ZXJQcm90by5HZXRSb2xsYmFja1NxbHNJbnB1dBolLlNxbHNlcnZl",
-            "clByb3RvLkdldFJvbGxiYWNrU3Fsc091dHB1dCIAYgZwcm90bzM="));
+            "HS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2ZXJNZXRhIpgBCgxBZHZpc2VPdXRw",
+            "dXQSOgoHUmVzdWx0cxgBIAMoCzIpLlNxbHNlcnZlclByb3RvLkFkdmlzZU91",
+            "dHB1dC5SZXN1bHRzRW50cnkaTAoMUmVzdWx0c0VudHJ5EgsKA2tleRgBIAEo",
+            "CRIrCgV2YWx1ZRgCIAEoCzIcLlNxbHNlcnZlclByb3RvLkFkdmlzZVJlc3Vs",
+            "dDoCOAEiQAoMQWR2aXNlUmVzdWx0EhMKC0FkdmlzZUxldmVsGAEgASgJEhsK",
+            "E0FkdmlzZVJlc3VsdE1lc3NhZ2UYAiABKAkiawoUR2V0Um9sbGJhY2tTcWxz",
+            "SW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIgAygJEjQKDVNxbHNl",
+            "cnZlck1ldGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2ZXJNZXRh",
+            "IkIKFUdldFJvbGxiYWNrU3Fsc091dHB1dBIpCgxSb2xsYmFja1NxbHMYASAD",
+            "KAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwyjgIKEFNxbHNlcnZlclNlcnZpY2US",
+            "UQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxzSW5w",
+            "dXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQiABJFCgZBZHZp",
+            "c2USGy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJbnB1dBocLlNxbHNlcnZlclBy",
+            "b3RvLkFkdmlzZU91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3FscxIkLlNxbHNl",
+            "cnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJv",
+            "dG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -55,7 +57,7 @@ namespace SqlserverProto {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsOutput), global::SqlserverProto.SplitSqlsOutput.Parser, new[]{ "SplitSqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SqlserverMeta), global::SqlserverProto.SqlserverMeta.Parser, new[]{ "User", "Password", "Host", "Port", "CurrentDatabase", "CurrentSchema" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "AdviseResults" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results" }, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null)
@@ -1025,7 +1027,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public AdviseOutput(AdviseOutput other) : this() {
-      adviseResults_ = other.adviseResults_.Clone();
+      results_ = other.results_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1034,14 +1036,14 @@ namespace SqlserverProto {
       return new AdviseOutput(this);
     }
 
-    /// <summary>Field number for the "AdviseResults" field.</summary>
-    public const int AdviseResultsFieldNumber = 1;
-    private static readonly pb::FieldCodec<global::SqlserverProto.AdviseResult> _repeated_adviseResults_codec
-        = pb::FieldCodec.ForMessage(10, global::SqlserverProto.AdviseResult.Parser);
-    private readonly pbc::RepeatedField<global::SqlserverProto.AdviseResult> adviseResults_ = new pbc::RepeatedField<global::SqlserverProto.AdviseResult>();
+    /// <summary>Field number for the "Results" field.</summary>
+    public const int ResultsFieldNumber = 1;
+    private static readonly pbc::MapField<string, global::SqlserverProto.AdviseResult>.Codec _map_results_codec
+        = new pbc::MapField<string, global::SqlserverProto.AdviseResult>.Codec(pb::FieldCodec.ForString(10), pb::FieldCodec.ForMessage(18, global::SqlserverProto.AdviseResult.Parser), 10);
+    private readonly pbc::MapField<string, global::SqlserverProto.AdviseResult> results_ = new pbc::MapField<string, global::SqlserverProto.AdviseResult>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::RepeatedField<global::SqlserverProto.AdviseResult> AdviseResults {
-      get { return adviseResults_; }
+    public pbc::MapField<string, global::SqlserverProto.AdviseResult> Results {
+      get { return results_; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1057,14 +1059,14 @@ namespace SqlserverProto {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if(!adviseResults_.Equals(other.adviseResults_)) return false;
+      if (!Results.Equals(other.Results)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override int GetHashCode() {
       int hash = 1;
-      hash ^= adviseResults_.GetHashCode();
+      hash ^= Results.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1078,7 +1080,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
-      adviseResults_.WriteTo(output, _repeated_adviseResults_codec);
+      results_.WriteTo(output, _map_results_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1087,7 +1089,7 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
-      size += adviseResults_.CalculateSize(_repeated_adviseResults_codec);
+      size += results_.CalculateSize(_map_results_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -1099,7 +1101,7 @@ namespace SqlserverProto {
       if (other == null) {
         return;
       }
-      adviseResults_.Add(other.adviseResults_);
+      results_.Add(other.results_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -1112,7 +1114,7 @@ namespace SqlserverProto {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            adviseResults_.AddEntriesFrom(input, _repeated_adviseResults_codec);
+            results_.AddEntriesFrom(input, _map_results_codec);
             break;
           }
         }

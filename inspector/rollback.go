@@ -64,7 +64,7 @@ func (i *Inspect) GenerateRollbackSql(sql *model.Sql) (string, error) {
 	return "", nil
 }
 
-func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.StmtNode) (rollbackSql string, err error) {
+func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql string, err error) {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		rollbackSql, err = i.generateAlterTableRollbackSql(stmt)
@@ -78,7 +78,7 @@ func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.StmtNode) (rollbackSql str
 	return rollbackSql, err
 }
 
-func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.StmtNode) (rollbackSql string, err error) {
+func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql string, err error) {
 	if i.config.DMLRollbackMaxRows < 0 {
 		return "", nil
 	}

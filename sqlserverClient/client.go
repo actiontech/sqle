@@ -3,6 +3,7 @@ package sqlserverClient
 import (
 	"context"
 	"fmt"
+	"github.com/pingcap/tidb/ast"
 	"google.golang.org/grpc"
 	"sqle/errors"
 	"sqle/log"
@@ -35,7 +36,7 @@ type Client struct {
 }
 
 func InitClient(ip, port string) error {
-	log.Logger().Info("connecting to SQLServer parser server")
+	log.Logger().Infof("connecting to SQLServer parser server %s:%s", ip, port)
 	c := &Client{}
 	err := c.Conn(ip, port)
 	if err != nil {
@@ -59,15 +60,17 @@ func (c *Client) Conn(ip, port string) error {
 	return nil
 }
 
-func (c *Client) SplitSql(sql string) ([]string, error) {
-	/*
+func (c *Client) ParseSql(sql string) ([]ast.Node, error) {
 	out, err := c.client.GetSplitSqls(context.Background(), &SqlserverProto.SplitSqlsInput{
 		Sqls:    sql,
 		Version: c.version,
 	})
-	return out.GetSqls(), errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
-	*/
-	return []string{}, nil
+	sqls := out.GetSplitSqls()
+	stmts := make([]ast.Node, 0, len(sqls))
+	for _, s := range sqls {
+		stmts = append(stmts, NewSqlServerStmt(s.Sql, s.IsDDL, s.IsDML))
+	}
+	return stmts, errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 }
 
 func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta *SqlserverProto.SqlserverMeta) error {
@@ -86,13 +89,16 @@ func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta 
 		RuleNames:     ruleNames,
 		SqlserverMeta: meta,
 	})
-	results := out.GetAdviseResults()
+	results := out.GetResults()
 	if len(results) != len(commitSqls) {
 		return errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("don't match sql advise result"))
 	}
 
-	for n, result := range results {
-		commitSql := commitSqls[n]
+	for _, commitSql := range commitSqls {
+		result, ok := results[commitSql.Content]
+		if !ok {
+			continue
+		}
 		commitSql.InspectLevel = result.AdviseLevel
 		commitSql.InspectResult = result.AdviseResultMessage
 		commitSql.InspectStatus = model.TASK_ACTION_DONE

@@ -41,7 +41,7 @@ const (
 type RuleHandler struct {
 	Rule    model.Rule
 	Message string
-	Func    func(*Inspect, ast.StmtNode) error
+	Func    func(*Inspect, ast.Node) error
 }
 
 var (
@@ -258,7 +258,7 @@ func init() {
 	}
 }
 
-func checkSelectAll(i *Inspect, node ast.StmtNode) error {
+func checkSelectAll(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// check select all column
@@ -273,7 +273,7 @@ func checkSelectAll(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkSelectWhere(i *Inspect, node ast.StmtNode) error {
+func checkSelectWhere(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// where condition
@@ -284,7 +284,7 @@ func checkSelectWhere(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkPrimaryKey(i *Inspect, node ast.StmtNode) error {
+func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	var hasPk = false
 	var pkIsAutoIncrementBigIntUnsigned = false
 
@@ -343,7 +343,7 @@ func checkPrimaryKey(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkMergeAlterTable(i *Inspect, node ast.StmtNode) error {
+func checkMergeAlterTable(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
@@ -365,7 +365,7 @@ func checkMergeAlterTable(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkEngineAndCharacterSet(i *Inspect, node ast.StmtNode) error {
+func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 	var engine string
 	var characterSet string
 	switch stmt := node.(type) {
@@ -388,7 +388,7 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.StmtNode) error {
+func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
 	indexColumns := map[string]struct{}{}
 	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
@@ -499,7 +499,7 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkNewObjectName(i *Inspect, node ast.StmtNode) error {
+func checkNewObjectName(i *Inspect, node ast.Node) error {
 	names := []string{}
 	invalidNames := []string{}
 
@@ -571,7 +571,7 @@ func checkNewObjectName(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkForeignKey(i *Inspect, node ast.StmtNode) error {
+func checkForeignKey(i *Inspect, node ast.Node) error {
 	hasFk := false
 
 	switch stmt := node.(type) {
@@ -598,7 +598,7 @@ func checkForeignKey(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkIndex(i *Inspect, node ast.StmtNode) error {
+func checkIndex(i *Inspect, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
 
@@ -669,7 +669,7 @@ func checkIndex(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkStringType(i *Inspect, node ast.StmtNode) error {
+func checkStringType(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
@@ -692,7 +692,7 @@ func checkStringType(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkObjectExist(i *Inspect, node ast.StmtNode) error {
+func checkObjectExist(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check schema
@@ -729,7 +729,7 @@ func checkObjectExist(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkObjectNotExist(i *Inspect, node ast.StmtNode) error {
+func checkObjectNotExist(i *Inspect, node ast.Node) error {
 	var tables = []*ast.TableName{}
 	var schemasName = []string{}
 
@@ -804,7 +804,7 @@ func checkObjectNotExist(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkIfNotExist(i *Inspect, node ast.StmtNode) error {
+func checkIfNotExist(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
@@ -815,7 +815,7 @@ func checkIfNotExist(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func disableDropStmt(i *Inspect, node ast.StmtNode) error {
+func disableDropStmt(i *Inspect, node ast.Node) error {
 	// specific check
 	switch node.(type) {
 	case *ast.DropDatabaseStmt:
@@ -826,7 +826,7 @@ func disableDropStmt(i *Inspect, node ast.StmtNode) error {
 	return nil
 }
 
-func checkMycatShardingColumn(i *Inspect, node ast.StmtNode) error {
+func checkMycatShardingColumn(i *Inspect, node ast.Node) error {
 	if i.Task.Instance.DbType != model.DB_TYPE_MYCAT {
 		return nil
 	}
