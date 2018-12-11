@@ -206,6 +206,15 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
+			Name:  DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
+			Desc:  "禁止将blob类型的列加入索引",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止将blob类型的列加入索引",
+		Func:    disableAddIndexForColumnsTypeBlob,
+	},
+	RuleHandler{
+		Rule: model.Rule{
 			Name:  DML_CHECK_INVALID_WHERE_CONDITION,
 			Desc:  "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
 			Level: model.RULE_LEVEL_ERROR,

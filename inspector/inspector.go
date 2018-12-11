@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"github.com/pingcap/tidb/ast"
 	"github.com/sirupsen/logrus"
+	"sqle/errors"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
-)
-
-var (
-	SQL_STMT_CONFLICT_ERROR = fmt.Errorf("不能同时提交 DDL 和 DML 语句")
 )
 
 type Inspector interface {
@@ -31,6 +28,11 @@ func NewInspector(entry *logrus.Entry, task *model.Task, rules map[string]model.
 	}
 }
 
+type Config struct {
+	DMLRollbackMaxRows int64
+	DDLOSCMinSize      int64
+}
+
 type Inspect struct {
 	Ctx         *Context
 	config      *Config
@@ -45,39 +47,9 @@ type Inspect struct {
 	SqlAction []func(sql *model.Sql) error
 }
 
-type Config struct {
-	DMLRollbackMaxRows int64
-	DDLOSCMinSize      int64
-}
-
-type Context struct {
-	// currentSchema will change after sql "use database"
-	currentSchema string
-	allSchema     map[string] /*schema*/ struct{}
-	schemaHasLoad bool
-	allTable      map[string] /*schema*/ map[string] /*table*/ *TableInfo
-	counterDDL    uint
-	counterDML    uint
-}
-
-type TableInfo struct {
-	Size     float64
-	sizeLoad bool
-
-	// save create table parser object from db by query "show create table tb_1";
-	// using in inspect and generate rollback sql
-	CreateTableStmt *ast.CreateTableStmt
-
-	// save alter table parse object from input sql;
-	alterTableStmts []*ast.AlterTableStmt
-}
-
 func NewInspect(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) *Inspect {
-	ctx := &Context{
-		currentSchema: task.Schema,
-		allSchema:     map[string]struct{}{},
-		allTable:      map[string]map[string]*TableInfo{},
-	}
+	ctx := NewContext(task.Schema)
+
 	// load config
 	config := &Config{}
 	if rules != nil {
@@ -114,9 +86,9 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 	for _, node := range nodes {
 		switch node.(type) {
 		case ast.DDLNode:
-			i.Ctx.counterDDL += 1
+			i.Ctx.AddDDL()
 		case ast.DMLNode:
-			i.Ctx.counterDML += 1
+			i.Ctx.AddDML()
 		}
 	}
 	sql.Stmts = nodes
@@ -126,9 +98,9 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 }
 
 func (i *Inspect) Do() error {
-	if i.Ctx.counterDML > 0 && i.Ctx.counterDDL > 0 {
-		i.Logger().Error(SQL_STMT_CONFLICT_ERROR)
-		return SQL_STMT_CONFLICT_ERROR
+	if i.Ctx.GetDMLCounter() > 0 && i.Ctx.GetDDLCounter() > 0 {
+		i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
+		return errors.SQL_STMT_CONFLICT_ERROR
 	}
 	for n, sql := range i.SqlArray {
 		err := i.SqlAction[n](sql)
@@ -137,7 +109,7 @@ func (i *Inspect) Do() error {
 		}
 		// update schema info
 		for _, node := range sql.Stmts {
-			i.updateSchemaCtx(node)
+			i.updateContext(node)
 		}
 	}
 	return nil
@@ -197,7 +169,7 @@ func (i *Inspect) getSchemaName(stmt *ast.TableName) string {
 }
 
 func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
-	if !i.Ctx.schemaHasLoad {
+	if !i.Ctx.HasLoadSchema() {
 		conn, err := i.getDbConn()
 		if err != nil {
 			return false, err
@@ -206,13 +178,9 @@ func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		for _, schema := range schemas {
-			i.Ctx.allSchema[schema] = struct{}{}
-		}
-		i.Ctx.schemaHasLoad = true
+		i.Ctx.LoadSchemas(schemas)
 	}
-	_, ok := i.Ctx.allSchema[schemaName]
-	return ok, nil
+	return i.Ctx.HasSchema(schemaName), nil
 }
 
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
@@ -237,10 +205,7 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 	if !schemaExist {
 		return false, nil
 	}
-
-	table := stmt.Name.String()
-	_, hasLoad := i.Ctx.allTable[schemaName]
-	if !hasLoad {
+	if !i.Ctx.HasLoadSchemaTables(schemaName) {
 		conn, err := i.getDbConn()
 		if err != nil {
 			return false, err
@@ -249,24 +214,16 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		i.Ctx.allTable[schemaName] = make(map[string]*TableInfo, len(tables))
-		for _, table := range tables {
-			i.Ctx.allTable[schemaName][table] = &TableInfo{}
-		}
+		i.Ctx.LoadSchemaTables(schemaName, tables)
 	}
-	_, exist := i.Ctx.allTable[schemaName][table]
+	_, exist := i.Ctx.GetTableInfo(schemaName, stmt.Name.String())
 	return exist, nil
 }
 
 func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 	schema := i.getSchemaName(stmt)
 	table := stmt.Name.String()
-	if _, schemaExist := i.Ctx.allTable[schema]; schemaExist {
-		if info, tableExist := i.Ctx.allTable[schema][table]; tableExist {
-			return info, true
-		}
-	}
-	return nil, false
+	return i.Ctx.GetTableInfo(schema, table)
 }
 
 func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
@@ -323,48 +280,31 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return nil, exist, fmt.Errorf("stmt not support")
 	}
 	info.CreateTableStmt = createStmt
-	//i.createTableStmts[tableName] = createStmt
 	return createStmt, exist, nil
 }
 
-func (i *Inspect) updateSchemaCtx(node ast.Node) {
+func (i *Inspect) updateContext(node ast.Node) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
-		i.Ctx.currentSchema = s.DBName
+		i.Ctx.UseSchema(s.DBName)
 	case *ast.CreateDatabaseStmt:
-		i.Ctx.allSchema[s.Name] = struct{}{}
+		i.Ctx.CreateNewSchema(s.Name)
 	case *ast.CreateTableStmt:
-		schemaName := i.getSchemaName(s.Table)
-		schemaExist, _ := i.isSchemaExist(schemaName)
-		if !schemaExist {
-			return
-		}
-		tableExist, _ := i.isTableExist(s.Table)
-		if !tableExist {
-			i.Ctx.allTable[schemaName][s.Table.Name.String()] = &TableInfo{
+		i.Ctx.CreateNewTable(i.getSchemaName(s.Table), s.Table.Name.String(),
+			&TableInfo{
 				CreateTableStmt: s,
-			}
-		}
+			})
 	case *ast.DropDatabaseStmt:
-		delete(i.Ctx.allSchema, s.Name)
+		i.Ctx.DeleteSchema(s.Name)
 	case *ast.DropTableStmt:
 		for _, table := range s.Tables {
-			exist, _ := i.isTableExist(table)
-			if exist {
-				delete(i.Ctx.allTable[i.getSchemaName(table)], table.Name.String())
-			}
+			i.Ctx.DeleteTable(i.getSchemaName(table), table.Name.String())
 		}
 	case *ast.AlterTableStmt:
 		info, exist := i.getTableInfo(s.Table)
 		if exist {
-			if info.alterTableStmts != nil {
-				info.alterTableStmts = append(info.alterTableStmts, s)
-			} else {
-				info.alterTableStmts = []*ast.AlterTableStmt{
-					s,
-				}
-			}
+			info.alterTableStmts = append(info.alterTableStmts, s)
 		}
 	default:
 	}
