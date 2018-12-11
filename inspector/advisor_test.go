@@ -111,9 +111,10 @@ func DefaultMysqlInspect() *Inspect {
 		},
 		SqlArray: []*model.Sql{},
 		Ctx: &Context{
-			currentSchema: "exist_db",
-			allSchema:     map[string]struct{}{"exist_db": struct{}{}},
-			schemaHasLoad: true,
+			currentSchema:   "exist_db",
+			originalSchemas: map[string]struct{}{"exist_db": struct{}{}},
+			schemaHasLoad:   true,
+			virtualSchemas:  map[string]struct{}{},
 			allTable: map[string]map[string]*TableInfo{
 				"exist_db": map[string]*TableInfo{
 					"exist_tb_1": &TableInfo{
@@ -664,9 +665,10 @@ func DefaultMycatInspect() *Inspect {
 		},
 		SqlArray: []*model.Sql{},
 		Ctx: &Context{
-			currentSchema: "multidb",
-			allSchema:     map[string]struct{}{"multidb": struct{}{}},
-			schemaHasLoad: true,
+			currentSchema:   "multidb",
+			originalSchemas: map[string]struct{}{"multidb": struct{}{}},
+			schemaHasLoad:   true,
+			virtualSchemas:  map[string]struct{}{},
 			allTable: map[string]map[string]*TableInfo{
 				"multidb": map[string]*TableInfo{
 					"exist_tb_1": &TableInfo{
