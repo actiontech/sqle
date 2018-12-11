@@ -40,7 +40,7 @@ message AdviseInput {
 }
 
 message AdviseOutput {
-    repeated AdviseResult AdviseResults = 1;
+    map<string, AdviseResult> Results = 1;
 }
 
 message AdviseResult {

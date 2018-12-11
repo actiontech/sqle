@@ -128,7 +128,7 @@ namespace SqlserverProtoServer {
             return false;
         }
 
-        // Audit implement
+        // Advise implement
         public override Task<AdviseOutput> Advise(AdviseInput request, ServerCallContext context) {
             var output = new AdviseOutput();
             var version = request.Version;
@@ -148,10 +148,9 @@ namespace SqlserverProtoServer {
                     }
 
                     ruleValidatorContext.UpdateContext(statement);
-
-                    output.AdviseResults.Add(ruleValidatorContext.AdviseResultContext.GetAdviseResult());
-                    ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
                 }
+                output.Results[sql] = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
+                ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
             }
 
             return Task.FromResult(output);
