@@ -283,7 +283,7 @@ namespace SqlserverProtoServer {
     /// <summary>
     /// Rule validator context represens context of sqls.
     /// </summary>
-    public class RuleValidatorContext {
+    public class SqlserverContext {
         public SqlserverMeta SqlserverMeta;
 
         public Dictionary<String/*database*/, bool> AllDatabases;
@@ -455,7 +455,7 @@ namespace SqlserverProtoServer {
             return SqlserverMeta.CurrentSchema;
         }
 
-        public RuleValidatorContext(SqlserverMeta sqlserverMeta) {
+        public SqlserverContext(SqlserverMeta sqlserverMeta) {
             this.SqlserverMeta = sqlserverMeta;
             AllDatabases = new Dictionary<String, bool>();
             AllSchemas = new Dictionary<string, bool>();
@@ -634,17 +634,17 @@ namespace SqlserverProtoServer {
         }
 
         // if check failed, it will throw exception
-        public abstract void Check(RuleValidatorContext context, TSqlStatement statement);
+        public abstract void Check(SqlserverContext context, TSqlStatement statement);
 
-        public bool DatabaseExists(RuleValidatorContext context, String databaseName) {
+        public bool DatabaseExists(SqlserverContext context, String databaseName) {
             return context.DatabaseExists(databaseName);
         }
 
-        public bool SchemaExists(RuleValidatorContext context, String schema) {
+        public bool SchemaExists(SqlserverContext context, String schema) {
             return context.SchemaExists(schema);
         }
 
-        public bool TableExists(RuleValidatorContext context, String schema, String table) {
+        public bool TableExists(SqlserverContext context, String schema, String table) {
             return context.TableExists(schema, table);
         }
 
@@ -655,7 +655,7 @@ namespace SqlserverProtoServer {
             Level = level;
         }
 
-        public List<String> AddDatabaseName(List<String> databaseNames, RuleValidatorContext context, SchemaObjectName schemaObjectName) {
+        public List<String> AddDatabaseName(List<String> databaseNames, SqlserverContext context, SchemaObjectName schemaObjectName) {
             var databaseIndentifier = schemaObjectName.DatabaseIdentifier;
             if (databaseIndentifier != null && databaseIndentifier.Value != "" && !databaseNames.Contains(databaseIndentifier.Value)) {
                 databaseNames.Add(databaseIndentifier.Value);
@@ -732,7 +732,7 @@ namespace SqlserverProtoServer {
             return schemaObjectNames;
         }
 
-        public void GetDatabaseAndSchemaAndTableNames(List<SchemaObjectName> schemaObjectNames, RuleValidatorContext context, List<String> databaseNames, List<String> schemaNames, List<String> tableNames) {
+        public void GetDatabaseAndSchemaAndTableNames(List<SchemaObjectName> schemaObjectNames, SqlserverContext context, List<String> databaseNames, List<String> schemaNames, List<String> tableNames) {
             foreach (var schemaObject in schemaObjectNames) {
                 databaseNames = AddDatabaseName(databaseNames, context, schemaObject);
                 schemaNames = AddSchemaName(schemaNames, schemaObject);
@@ -743,7 +743,7 @@ namespace SqlserverProtoServer {
 
     // FakeRuleValidator implements rule validator which do nothing.
     public class FakerRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) { }
+        public override void Check(SqlserverContext context, TSqlStatement statement) { }
 
         public FakerRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }

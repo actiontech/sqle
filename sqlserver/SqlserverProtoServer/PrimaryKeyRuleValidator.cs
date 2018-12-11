@@ -3,7 +3,7 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlserverProtoServer {
     public class PrimaryKeyShouldExistRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             if (statement is CreateTableStatement) {
                 bool hasPrimaryKey = false;
                 CreateTableStatement createTableStatement = statement as CreateTableStatement;
@@ -49,7 +49,7 @@ namespace SqlserverProtoServer {
     }
 
     public class PrimaryKeyAutoIncrementRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             CreateTableStatement createTableStatement = statement as CreateTableStatement;
             TableDefinition tableDefinition = createTableStatement.Definition;
             bool isPrimaryKeyAutoIncrement = false;

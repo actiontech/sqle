@@ -12,7 +12,7 @@ namespace SqlserverProtoServer {
             }
             return false;
         }
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             bool hasForeignKey = false;
             switch (statement) {
                 case CreateTableStatement createTableStatement:

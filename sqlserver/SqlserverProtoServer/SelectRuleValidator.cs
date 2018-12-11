@@ -48,7 +48,7 @@ namespace SqlserverProtoServer {
             return false;
         }
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             if (statement is SelectStatement) {
                 var select = statement as SelectStatement;
                 var querySpec = select.QueryExpression as QuerySpecification;
@@ -63,7 +63,7 @@ namespace SqlserverProtoServer {
 
 
     public class SelectAllRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             if (statement is SelectStatement) {
                 var select = statement as SelectStatement;
                 var querySpec = select.QueryExpression as QuerySpecification;

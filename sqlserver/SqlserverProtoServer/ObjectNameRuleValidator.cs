@@ -36,7 +36,7 @@ namespace SqlserverProtoServer {
             return names;
         }
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             switch (statement) {
                 case CreateDatabaseStatement createDatabaseStatement:
                     Names.Add(createDatabaseStatement.DatabaseName.Value);
@@ -97,7 +97,7 @@ namespace SqlserverProtoServer {
     }
 
     public class ObjectNameMaxLengthRuleValidator : ObjectNameRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             foreach (var name in Names) {
@@ -116,7 +116,7 @@ namespace SqlserverProtoServer {
     }
 
     public class ObjectNameShouldNotContainsKeywordRuleValidator : ObjectNameRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             var invalidNames = new List<String>();

@@ -6,7 +6,7 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 namespace SqlserverProtoServer {
     public class NumberOfCompsiteIndexColumnsShouldNotExceedMaxRuleValidator : RuleValidator {
         public const int COMPOSITE_INDEX_MAX = 5;
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             int compositeIndexMax = 0;
             switch (statement) {
                 case CreateTableStatement createTableStatement:
@@ -59,7 +59,7 @@ namespace SqlserverProtoServer {
             return indexCounter;
         }
 
-        public int GetNumberOfIndexesOnTable(RuleValidatorContext context, String tableName) {
+        public int GetNumberOfIndexesOnTable(SqlserverContext context, String tableName) {
             int indexNumber = 0;
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -79,7 +79,7 @@ namespace SqlserverProtoServer {
         }
         
         public const int INDEX_MAX_NUMBER = 5;
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             int indexCounter = 0;
             String tableName = "";
 
@@ -183,7 +183,7 @@ namespace SqlserverProtoServer {
             return false;
         }
 
-        public Dictionary<String, bool> GetIndexColumnsOnTable(RuleValidatorContext context, String tableName) {
+        public Dictionary<String, bool> GetIndexColumnsOnTable(SqlserverContext context, String tableName) {
             Dictionary<String, bool> indexedColumns = new Dictionary<string, bool>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -202,7 +202,7 @@ namespace SqlserverProtoServer {
             return indexedColumns;
         }
 
-        public Dictionary<String, String> GetColumnAndTypeOnTable(RuleValidatorContext context, String tableName) {
+        public Dictionary<String, String> GetColumnAndTypeOnTable(SqlserverContext context, String tableName) {
             Dictionary<String, String> columnTypes = new Dictionary<String, String>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -221,7 +221,7 @@ namespace SqlserverProtoServer {
             return columnTypes;
         }
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             bool indexDataTypeIsBlob = false;
             TableDefinition tableDefinition;
             switch (statement) {

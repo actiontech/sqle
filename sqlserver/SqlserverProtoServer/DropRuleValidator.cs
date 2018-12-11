@@ -3,7 +3,7 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlserverProtoServer {
     public class DisableDropRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             if(statement is DropDatabaseStatement) {
                 context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
             }

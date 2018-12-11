@@ -34,7 +34,7 @@ namespace SqlserverProtoServer {
             return false;
         }
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             switch (statement) {
                 case CreateTableStatement createTableStatement:
                     TableDefinition tableDefinition = createTableStatement.Definition;
@@ -90,7 +90,7 @@ namespace SqlserverProtoServer {
             return false;
         }
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             switch (statement) {
                 case CreateTableStatement createTableStatement:
                     TableDefinition tableDefinition = createTableStatement.Definition;

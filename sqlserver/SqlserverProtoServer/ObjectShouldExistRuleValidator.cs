@@ -8,7 +8,7 @@ namespace SqlserverProtoServer {
         public List<String> Schemas;
         public List<String> TableNames;
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             List<SchemaObjectName> schemaObjectNames = new List<SchemaObjectName>();
             switch (statement) {
                 // USE database
@@ -94,7 +94,7 @@ namespace SqlserverProtoServer {
     }
 
     public class DatabaseShouldExistRuleValidator : ObjectShouldExistRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             List<String> notExistDatabaseNames = new List<String>();
@@ -126,7 +126,7 @@ namespace SqlserverProtoServer {
     }
 
     public class TableShouldExistRuleValidator : ObjectShouldExistRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             List<String> notExistTableNames = new List<String>();
