@@ -57,15 +57,15 @@ func CreateTask(c echo.Context) error {
 		Instance:   inst,
 		CommitSqls: []*model.CommitSql{},
 	}
-	sqlArray, err := inspector.NewInspector(log.NewEntry(), task, nil).SplitSql(req.Sql)
+	nodes, err := inspector.NewInspector(log.NewEntry(), task, nil).ParseSql(req.Sql)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
-	for n, sql := range sqlArray {
+	for n, node := range nodes {
 		task.CommitSqls = append(task.CommitSqls, &model.CommitSql{
 			Sql: model.Sql{
 				Number:  uint(n + 1),
-				Content: sql,
+				Content: node.Text(),
 			},
 		})
 	}
@@ -105,16 +105,16 @@ func UploadSqlFile(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, err)
 	}
-	sqlArray, err := inspector.NewInspector(log.NewEntry(), task, nil).SplitSql(string(sql))
+	nodes, err := inspector.NewInspector(log.NewEntry(), task, nil).ParseSql(string(sql))
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
-	commitSqls := make([]*model.CommitSql, 0, len(sqlArray))
-	for n, sql := range sqlArray {
+	commitSqls := make([]*model.CommitSql, 0, len(nodes))
+	for n, node := range nodes {
 		commitSqls = append(commitSqls, &model.CommitSql{
 			Sql: model.Sql{
 				Number:  uint(n + 1),
-				Content: sql,
+				Content: node.Text(),
 			},
 		})
 	}
