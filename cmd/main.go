@@ -26,8 +26,8 @@ var pidFile string
 var debug bool
 var autoMigrateTable bool
 var logPath = "./logs"
-var sqlServerParserServerHost string
-var sqlServerParserServerPort string
+var sqlServerParserServerHost = "127.0.0.1"
+var sqlServerParserServerPort = "10001"
 
 func main() {
 	var rootCmd = &cobra.Command{

@@ -204,7 +204,7 @@ func ShowDatabases(entry *logrus.Entry, instance *model.Instance) ([]string, err
 		return nil, err
 	}
 	defer conn.Db.Close()
-	return conn.ShowDatabases()
+	return conn.ShowDatabases(instance.DbType)
 }
 
 func OpenDbWithTask(entry *logrus.Entry, task *model.Task) (*Executor, error) {
@@ -239,8 +239,14 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 	}
 }
 
-func (c *Executor) ShowDatabases() ([]string, error) {
-	result, err := c.Db.Query("show databases")
+func (c *Executor) ShowDatabases(dbType string) ([]string, error) {
+	var query string
+	if dbType == model.DB_TYPE_SQLSERVER {
+		query = "select name from sys.databases where name not in ('master','tempdb','model','msdb')"
+	} else {
+		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
+	}
+	result, err := c.Db.Query(query)
 	if err != nil {
 		return nil, err
 	}

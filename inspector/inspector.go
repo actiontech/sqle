@@ -202,7 +202,7 @@ func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		schemas, err := conn.ShowDatabases()
+		schemas, err := conn.ShowDatabases(i.Task.Instance.DbType)
 		if err != nil {
 			return false, err
 		}
