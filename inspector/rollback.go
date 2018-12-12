@@ -380,8 +380,8 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 	if !exist {
 		return "", nil
 	}
-	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
-	if !hasPk {
+	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
+	if err != nil || !hasPk {
 		return "", nil
 	}
 
@@ -458,8 +458,8 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error
 	if err != nil || !exist {
 		return "", err
 	}
-	_, hasPk := getPrimaryKey(createTableStmt)
-	if !hasPk {
+	_, hasPk, err := i.getPrimaryKey(createTableStmt)
+	if err != nil || !hasPk {
 		return "", nil
 	}
 
@@ -519,8 +519,8 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error
 	if err != nil || !exist {
 		return "", err
 	}
-	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
-	if !hasPk {
+	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
+	if err != nil || !hasPk {
 		return "", nil
 	}
 
@@ -633,7 +633,7 @@ ERROR:
 
 func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) string {
-	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, i.getTableNameWithQuote(tableName))
+	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, getTableNameWithQuote(tableName))
 	if where != nil {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(where))
 	}
