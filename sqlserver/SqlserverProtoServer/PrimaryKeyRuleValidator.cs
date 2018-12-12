@@ -50,6 +50,9 @@ namespace SqlserverProtoServer {
 
     public class PrimaryKeyAutoIncrementRuleValidator : RuleValidator {
         public override void Check(SqlserverContext context, TSqlStatement statement) {
+            if (!(statement is CreateTableStatement)) {
+                return;
+            }
             CreateTableStatement createTableStatement = statement as CreateTableStatement;
             TableDefinition tableDefinition = createTableStatement.Definition;
             bool isPrimaryKeyAutoIncrement = false;
