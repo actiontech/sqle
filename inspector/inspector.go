@@ -265,7 +265,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	if err != nil {
 		return nil, exist, err
 	}
-	sql, err := conn.ShowCreateTable(i.getTableName(stmt))
+	sql, err := conn.ShowCreateTable(getTableNameWithQuote(stmt))
 	if err != nil {
 		return nil, exist, err
 	}
@@ -308,4 +308,32 @@ func (i *Inspect) updateContext(node ast.Node) {
 		}
 	default:
 	}
+}
+
+func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
+	var pkColumnsName = map[string]struct{}{}
+	schemaName := i.getSchemaName(stmt.Table)
+	tableName := stmt.Table.Name.String()
+
+	pkColumnsName, hasPk := getPrimaryKey(stmt)
+	if !hasPk {
+		return pkColumnsName, hasPk, nil
+	}
+	// for mycat, while schema is a sharding schema, primary key is not a unique column
+	// the primary key add the sharding column looks like a primary key
+	if i.Task.Instance.DbType == model.DB_TYPE_MYCAT {
+		mycatConfig := i.Task.Instance.MycatConfig
+		ok, err := mycatConfig.IsShardingSchema(schemaName)
+		if err != nil {
+			return pkColumnsName, hasPk, err
+		}
+		if ok {
+			shardingColumn, err := mycatConfig.GetShardingColumn(schemaName, tableName)
+			if err != nil {
+				return pkColumnsName, false, err
+			}
+			pkColumnsName[shardingColumn] = struct{}{}
+		}
+	}
+	return pkColumnsName, hasPk, nil
 }
