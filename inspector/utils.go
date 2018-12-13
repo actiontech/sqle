@@ -320,3 +320,18 @@ func getLimitCount(limit *ast.Limit, _default int64) (int64, error) {
 	}
 	return strconv.ParseInt(exprFormat(limit.Count), 0, 64)
 }
+
+func getDuplicate(c []string) []string {
+	d := []string{}
+	for i, v1 := range c {
+		for j, v2 := range c {
+			if i >= j {
+				continue
+			}
+			if v1 == v2 {
+				d = append(d, v1)
+			}
+		}
+	}
+	return d
+}
