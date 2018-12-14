@@ -74,6 +74,10 @@ func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql string,
 		rollbackSql, err = i.generateCreateSchemaRollbackSql(stmt)
 	case *ast.DropTableStmt:
 		rollbackSql, err = i.generateDropTableRollbackSql(stmt)
+	case *ast.CreateIndexStmt:
+		rollbackSql, err = i.generateCreateIndexRollbackSql(stmt)
+	case *ast.DropIndexStmt:
+		rollbackSql, err = i.generateDropIndexRollbackSql(stmt)
 	}
 	return rollbackSql, err
 }
@@ -276,7 +280,7 @@ func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) 
 	if err != nil {
 		return "", err
 	}
-	if schemaExist && stmt.IfNotExists {
+	if schemaExist {
 		return "", err
 	}
 	rollbackSql := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", schemaName)
@@ -298,7 +302,7 @@ func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (str
 		return "", err
 	}
 
-	if tableExist && stmt.IfNotExists {
+	if tableExist {
 		return "", nil
 	}
 	rollbackSql := fmt.Sprintf("DROP TABLE IF EXISTS %s", i.getTableNameWithQuote(stmt.Table))
@@ -312,9 +316,9 @@ func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string,
 		if err != nil {
 			return "", err
 		}
-		// if table not exist, don't rollback
+		// if table not exist, can not rollback it.
 		if !tableExist {
-			return "", nil
+			continue
 		}
 		rollbackSql += stmt.Text() + ";\n"
 	}
@@ -325,7 +329,7 @@ func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (str
 	return fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)), nil
 }
 
-func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, error) {
+func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
 	if err != nil {
@@ -376,8 +380,8 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 	if !exist {
 		return "", nil
 	}
-	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
-	if !hasPk {
+	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
+	if err != nil || !hasPk {
 		return "", nil
 	}
 
@@ -454,8 +458,8 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error
 	if err != nil || !exist {
 		return "", err
 	}
-	_, hasPk := getPrimaryKey(createTableStmt)
-	if !hasPk {
+	_, hasPk, err := i.getPrimaryKey(createTableStmt)
+	if err != nil || !hasPk {
 		return "", nil
 	}
 
@@ -515,8 +519,8 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error
 	if err != nil || !exist {
 		return "", err
 	}
-	pkColumnsName, hasPk := getPrimaryKey(createTableStmt)
-	if !hasPk {
+	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
+	if err != nil || !hasPk {
 		return "", nil
 	}
 
@@ -629,7 +633,7 @@ ERROR:
 
 func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) string {
-	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, i.getTableNameWithQuote(tableName))
+	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, getTableNameWithQuote(tableName))
 	if where != nil {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(where))
 	}

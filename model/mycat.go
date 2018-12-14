@@ -36,6 +36,31 @@ type DataHost struct {
 	Password string `json:"password"`
 }
 
+func (m *MycatConfig) IsShardingSchema(schemaName string) (bool, error) {
+	if m.AlgorithmSchemas != nil {
+		if schema, ok := m.AlgorithmSchemas[schemaName]; ok {
+			if schema.AlgorithmTables != nil {
+				return true, nil
+			} else {
+				return false, nil
+			}
+		}
+	}
+	return false, fmt.Errorf("schema %s not found in mycat config", schemaName)
+}
+
+func (m *MycatConfig) GetShardingColumn(schemaName, tableName string) (string, error) {
+	ok, err := m.IsShardingSchema(schemaName)
+	if err != nil || !ok {
+		return "", err
+	}
+	table, ok := m.AlgorithmSchemas[schemaName].AlgorithmTables[tableName]
+	if !ok {
+		return "", fmt.Errorf("table %s not found in mycat config", tableName)
+	}
+	return table.ShardingColumn, nil
+}
+
 func LoadMycatServerFromXML(serverText, schemasText, rulesText []byte) (*Instance, error) {
 	var err error
 	serverXML := &ServerXML{}

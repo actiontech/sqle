@@ -1,5 +1,7 @@
 package errors
 
+import "fmt"
+
 type ErrorCode int
 
 const (
@@ -20,6 +22,10 @@ const (
 
 	TASK_RUNNING     ErrorCode = 1001
 	TASK_ACTION_DONE ErrorCode = 1002
+)
+
+var (
+	SQL_STMT_CONFLICT_ERROR = New(-1, fmt.Errorf("不能同时提交 DDL 和 DML 语句"))
 )
 
 type CodeError struct {
