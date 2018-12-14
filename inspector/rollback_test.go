@@ -93,44 +93,44 @@ ALTER COLUMN v2 DROP DEFAULT;`,
 
 	runrollbackCase(t, "alter column add index need drop(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-ADD INDEX v1(v1);`,
+ADD INDEX idx_2(v1);`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"DROP INDEX `v1`;",
+			"DROP INDEX `idx_2`;",
 	)
 
 	runrollbackCase(t, "alter column add index need drop(2)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-ADD KEY v1(v1);`,
+ADD KEY idx_2(v1);`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"DROP INDEX `v1`;",
+			"DROP INDEX `idx_2`;",
 	)
 
 	runrollbackCase(t, "alter column drop index need add(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-DROP INDEX v1;`,
+DROP INDEX idx_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"ADD INDEX `v1` (`v1`);",
+			"ADD INDEX `idx_1` (`v1`);",
 	)
 
 	runrollbackCase(t, "alter column drop index need add(2)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-DROP INDEX v2;`,
+DROP INDEX uniq_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"ADD UNIQUE INDEX `v2` (`v1`,`v2`);",
+			"ADD UNIQUE INDEX `uniq_1` (`v1`,`v2`);",
 	)
 
 	runrollbackCase(t, "alter column add unique index need drop", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-ADD UNIQUE INDEX v2(v1,v2);`,
+ADD UNIQUE INDEX uniq_2(v1,v2);`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"DROP INDEX `v2`;",
+			"DROP INDEX `uniq_2`;",
 	)
 
 	runrollbackCase(t, "alter column drop unique index need add(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-DROP INDEX v2;`,
+DROP INDEX uniq_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"ADD UNIQUE INDEX `v2` (`v1`,`v2`);",
+			"ADD UNIQUE INDEX `uniq_1` (`v1`,`v2`);",
 	)
 
 	runrollbackCase(t, "alter column add primary key need drop", DefaultMysqlInspect(),

@@ -47,10 +47,10 @@ func (rs *InspectResults) message() string {
 	return strings.Join(messages, "\n")
 }
 
-func (rs *InspectResults) add(rule model.Rule, args ...interface{}) {
+func (rs *InspectResults) add(level, message string, args ...interface{}) {
 	rs.results = append(rs.results, &InspectResult{
-		Level:   rule.Level,
-		Message: fmt.Sprintf(RuleHandlerMap[rule.Name].Message, args...),
+		Level:   level,
+		Message: fmt.Sprintf(message, args...),
 	})
 }
 
@@ -334,4 +334,18 @@ func getDuplicate(c []string) []string {
 		}
 	}
 	return d
+}
+
+func removeDuplicate(c []string) []string {
+	var tmpMap = map[string]struct{}{}
+	var result = []string{}
+	for _, v := range c {
+		beforeLen := len(tmpMap)
+		tmpMap[v] = struct{}{}
+		AfterLen := len(tmpMap)
+		if beforeLen != AfterLen {
+			result = append(result, v)
+		}
+	}
+	return result
 }

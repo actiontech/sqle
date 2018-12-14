@@ -13,6 +13,12 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+			for _, node := range sql.Stmts {
+				err := i.CheckInvalid(node, i.Results)
+				if err != nil {
+					return err
+				}
+			}
 			for _, rule := range rules {
 				i.currentRule = rule
 				if handler, ok := RuleHandlerMap[rule.Name]; ok {
@@ -62,39 +68,81 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 	return err
 }
 
-func (i *Inspect) CheckInvalid() {
+var (
+	SCHEMA_NOT_EXIST_MSG        = "schema %s 不存在"
+	SCHEMA_EXIST_MSG            = "schema %s 已存在"
+	TABLE_NOT_EXIST_MSG         = "表 %s 不存在"
+	TABLE_EXIST_MSG             = "表 %s 已存在"
+	COLUMN_NOT_EXIST_MSG        = "字段 %s 不存在"
+	COLUMN_EXIST_MSG            = "字段 %s 已存在"
+	INDEX_NOT_EXIST_MSG         = "索引 %s 不存在"
+	INDEX_EXIST_MSG             = "索引 %s 已存在"
+	DUPLICATE_COLUMN_ERROR_MSG  = "字段名 %s 重复"
+	DUPLICATE_INDEX_ERROR_MSG   = "索引名 %s 重复"
+	PRIMARY_KEY_MULTI_ERROR_MSG = "主键只能设置一个"
+	KEY_COLUMN_NOT_EXIST_MSG    = "索引字段 %s 不存在"
+	PRIMARY_KEY_EXIST_MSG       = "已经存在主键，不能再添加"
+	PRIMARY_KEY_NOT_EXIST_MSG   = "当前没有主键，不能执行删除"
+)
 
+func (i *Inspect) CheckInvalid(node ast.Node, results *InspectResults) error {
+	var err error
+	switch stmt := node.(type) {
+	case *ast.UseStmt:
+		err = i.checkInvalidUse(stmt, results)
+	case *ast.CreateTableStmt:
+		err = i.checkInvalidCreateTable(stmt, results)
+	case *ast.AlterTableStmt:
+		err = i.checkInvalidAlterTable(stmt, results)
+	case *ast.DropTableStmt:
+		err = i.checkInvalidDropTable(stmt, results)
+	case *ast.CreateDatabaseStmt:
+		err = i.checkInvalidCreateDatabase(stmt, results)
+	case *ast.DropDatabaseStmt:
+		err = i.checkInvalidDropDatabase(stmt, results)
+	case *ast.CreateIndexStmt:
+		err = i.checkInvalidCreateIndex(stmt, results)
+	case *ast.DropIndexStmt:
+		err = i.checkInvalidDropIndex(stmt, results)
+	}
+	return err
 }
 
-func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
+func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *InspectResults) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
 	if !schemaExist {
-		// add result, database not exist
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
 	} else {
 		tableExist, err := i.isTableExist(stmt.Table)
 		if err != nil {
 			return err
 		}
-		if tableExist {
-			// add result, table is exist
+		if tableExist && !stmt.IfNotExists {
+			results.add(model.RULE_LEVEL_ERROR, TABLE_EXIST_MSG,
+				i.getTableName(stmt.Table))
 		}
-		referTableExist, err := i.isTableExist(stmt.ReferTable)
-		if err != nil {
-			return err
-		}
-		if referTableExist {
-			// add result, table is exist
+		if stmt.ReferTable != nil {
+			referTableExist, err := i.isTableExist(stmt.ReferTable)
+			if err != nil {
+				return err
+			}
+			if !referTableExist {
+				results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+					i.getTableName(stmt.ReferTable))
+			}
 		}
 	}
 	colsName := []string{}
 	colsNameMap := map[string]struct{}{}
 	pkCounter := 0
 	for _, col := range stmt.Cols {
-		colsName = append(colsName, col.Name.Name.L)
+		colName := col.Name.Name.L
+		colsName = append(colsName, colName)
+		colsNameMap[colName] = struct{}{}
 		if HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 			pkCounter += 1
 		}
@@ -115,15 +163,18 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 		}
 	}
 	if d := getDuplicate(colsName); len(d) > 0 {
-		// add result, duplicate column
+		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG,
+			strings.Join(d, ","))
 	}
 
 	if d := getDuplicate(indexsName); len(d) > 0 {
-		// add result, duplicate column name
+		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_ERROR_MSG,
+			strings.Join(d, ","))
 	}
 
 	if pkCounter > 1 {
 		// add result, multiple primary key
+		results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG)
 	}
 	notExistKeyColumns := []string{}
 	for _, colName := range keyColsName {
@@ -133,31 +184,32 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 	}
 	if len(notExistKeyColumns) > 0 {
 		// add result, key column doesn't exist in table
+		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(notExistKeyColumns), ","))
 	}
 	return nil
 }
 
-func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
+func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *InspectResults) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
 	if !schemaExist {
-		// add result, database not exist
-	} else {
-		tableExist, err := i.isTableExist(stmt.Table)
-		if err != nil {
-			return err
-		}
-		if !tableExist {
-			// add result, table not exist
-		}
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		return nil
 	}
-	createTableStmt, _, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
 	if err != nil {
 		return err
 	}
+	if !tableExist {
+		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			i.getTableName(stmt.Table))
+		return nil
+	}
+
 	hasPk := false
 	colNameMap := map[string]struct{}{}
 	indexNameMap := map[string]struct{}{}
@@ -178,89 +230,267 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 		}
 	}
 
-	columnNeedNotExist := []string{}
-	columnNeedExist := []string{}
+	columnsNeedNotExist := []string{}
+	columnsNeedExist := []string{}
+
+	// check drop column
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
+		oldColName := spec.OldColumnName.Name.L
+		if _, ok := colNameMap[oldColName]; !ok {
+			columnsNeedExist = append(columnsNeedExist, oldColName)
+		} else {
+			delete(colNameMap, oldColName)
+		}
+	}
+
+	// check change column
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableChangeColumn) {
+		oldColName := spec.OldColumnName.Name.L
+		if _, ok := colNameMap[oldColName]; !ok {
+			columnsNeedExist = append(columnsNeedExist, oldColName)
+		} else {
+			delete(colNameMap, oldColName)
+		}
+		for _, col := range spec.NewColumns {
+			newColName := col.Name.Name.L
+			if newColName == oldColName {
+				continue
+			}
+			if _, ok := colNameMap[newColName]; ok {
+				columnsNeedNotExist = append(columnsNeedNotExist, newColName)
+			}
+		}
+	}
+
+	// check add column
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		for _, col := range spec.NewColumns {
 			colName := col.Name.Name.L
 			if _, ok := colNameMap[colName]; ok {
-				columnNeedNotExist = append(columnNeedNotExist, colName)
+				columnsNeedNotExist = append(columnsNeedNotExist, colName)
+			} else {
+				colNameMap[colName] = struct{}{}
 			}
 		}
 	}
 
+	// check alter column
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAlterColumn) {
 		for _, col := range spec.NewColumns {
 			colName := col.Name.Name.L
 			if _, ok := colNameMap[colName]; !ok {
-				columnNeedExist = append(columnNeedExist, colName)
+				columnsNeedExist = append(columnsNeedExist, colName)
 			}
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableChangeColumn) {
-		oldColumnName := spec.OldColumnName.Name.L
-		if _, ok := colNameMap[oldColumnName]; !ok {
-			columnNeedExist = append(columnNeedExist, oldColumnName)
-		}
-		for _, col := range spec.NewColumns {
-			newColName := col.Name.Name.L
-			if newColName == oldColumnName {
-				continue
-			}
-			if _, ok := colNameMap[newColName]; ok {
-				columnNeedNotExist = append(columnNeedNotExist, newColName)
-			}
-		}
-	}
-
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
-		oldColName := spec.OldColumnName.Name.L
-		if _, ok := colNameMap[oldColName]; !ok {
-			columnNeedExist = append(columnNeedExist, oldColName)
-		}
-	}
-
-	indexNeedNotExist := []string{}
-	indexNeedExist := []string{}
+	indexesNeedNotExist := []string{}
+	indexesNeedExist := []string{}
 
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
-		// add primary key
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
-				// add result, pk has exist
+				// primary key has exist, can not add primary key
+				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
 			indexName := strings.ToLower(spec.Constraint.Name)
 			if _, ok := indexNameMap[indexName]; ok {
-				indexNeedNotExist = append(indexNeedNotExist, indexName)
+				indexesNeedNotExist = append(indexesNeedNotExist, indexName)
 			}
 		}
 	}
 
 	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
-		// add result, pk not exist
+		// primary key not exist, can not drop primary key
+		results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_NOT_EXIST_MSG)
 	}
 
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
 		indexName := strings.ToLower(spec.Name)
 		if _, ok := indexNameMap[indexName]; !ok {
-			indexNeedExist = append(indexNeedExist, indexName)
+			indexesNeedExist = append(indexesNeedExist, indexName)
 		}
 	}
 
-	if len(columnNeedExist) > 0 {
-		// add result columns not exist
+	if len(columnsNeedExist) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(columnsNeedExist), ","))
 	}
-	if len(columnNeedNotExist) > 0 {
-		// add result columns has exist
+	if len(columnsNeedNotExist) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+			strings.Join(removeDuplicate(columnsNeedNotExist), ","))
 	}
-	if len(indexNeedExist) > 0 {
-		// add result index not exist
+	if len(indexesNeedExist) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(indexesNeedExist), ","))
 	}
-	if len(indexNeedNotExist) > 0 {
+	if len(indexesNeedNotExist) > 0 {
 		// add result index has exist
+		results.add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG,
+			strings.Join(removeDuplicate(indexesNeedNotExist), ","))
+	}
+	return nil
+}
+
+func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt, results *InspectResults) error {
+	if stmt.IfExists {
+		return nil
+	}
+	schemasNeedExist := []string{}
+	tablesNeedExist := []string{}
+	for _, table := range stmt.Tables {
+		schemaName := i.getSchemaName(table)
+		schemaExist, err := i.isSchemaExist(schemaName)
+		if err != nil {
+			return err
+		}
+		if !schemaExist {
+			schemasNeedExist = append(schemasNeedExist, schemaName)
+		} else {
+			tableExist, err := i.isTableExist(table)
+			if err != nil {
+				return err
+			}
+			if !tableExist {
+				tablesNeedExist = append(tablesNeedExist, i.getTableName(table))
+			}
+		}
+	}
+	if len(schemasNeedExist) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(schemasNeedExist), ","))
+	}
+	if len(tablesNeedExist) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(tablesNeedExist), ","))
+	}
+	return nil
+}
+
+func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt, results *InspectResults) error {
+	schemaExist, err := i.isSchemaExist(stmt.DBName)
+	if err != nil {
+		return err
+	}
+	if !schemaExist {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, stmt.DBName)
+	}
+	return nil
+}
+
+func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt,
+	results *InspectResults) error {
+	if stmt.IfNotExists {
+		return nil
+	}
+	schemaName := stmt.Name
+	schemaExist, err := i.isSchemaExist(schemaName)
+	if err != nil {
+		return err
+	}
+	if schemaExist {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_EXIST_MSG, schemaName)
+	}
+	return nil
+}
+
+func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt,
+	results *InspectResults) error {
+	if stmt.IfExists {
+		return nil
+	}
+	schemaName := stmt.Name
+	schemaExist, err := i.isSchemaExist(schemaName)
+	if err != nil {
+		return err
+	}
+	if !schemaExist {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+	}
+	return nil
+}
+
+func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
+	results *InspectResults) error {
+	schemaName := i.getSchemaName(stmt.Table)
+	schemaExist, err := i.isSchemaExist(schemaName)
+	if err != nil {
+		return err
+	}
+	if !schemaExist {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		return nil
+	}
+	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
+	if err != nil {
+		return err
+	}
+	if !tableExist {
+		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			i.getTableName(stmt.Table))
+		return nil
+	}
+	colNameMap := map[string]struct{}{}
+	indexNameMap := map[string]struct{}{}
+	for _, col := range createTableStmt.Cols {
+		colNameMap[col.Name.Name.L] = struct{}{}
+	}
+	for _, constraint := range createTableStmt.Constraints {
+		if constraint.Name != "" {
+			indexNameMap[constraint.Name] = struct{}{}
+		}
+	}
+	if _, ok := indexNameMap[stmt.IndexName]; ok {
+		results.add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG, stmt.IndexName)
+	}
+	keyColNeedExist := []string{}
+	for _, col := range stmt.IndexColNames {
+		colName := col.Column.Name.L
+		if _, ok := colNameMap[col.Column.Name.L]; !ok {
+			keyColNeedExist = append(keyColNeedExist, colName)
+		}
+	}
+	if len(keyColNeedExist) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			removeDuplicate(keyColNeedExist))
+	}
+	return nil
+}
+
+func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
+	results *InspectResults) error {
+	schemaName := i.getSchemaName(stmt.Table)
+	schemaExist, err := i.isSchemaExist(schemaName)
+	if err != nil {
+		return err
+	}
+	if !schemaExist {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		return nil
+	}
+	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
+	if err != nil {
+		return err
+	}
+	if !tableExist {
+		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			i.getTableName(stmt.Table))
+		return nil
+	}
+	colNameMap := map[string]struct{}{}
+	indexNameMap := map[string]struct{}{}
+	for _, col := range createTableStmt.Cols {
+		colNameMap[col.Name.Name.L] = struct{}{}
+	}
+	for _, constraint := range createTableStmt.Constraints {
+		if constraint.Name != "" {
+			indexNameMap[constraint.Name] = struct{}{}
+		}
+	}
+	if _, ok := indexNameMap[stmt.IndexName]; !ok {
+		results.add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG, stmt.IndexName)
 	}
 	return nil
 }

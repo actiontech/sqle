@@ -9,10 +9,10 @@ import (
 
 // inspector rule code
 const (
-	SCHEMA_NOT_EXIST                     = "schema_not_exist"
-	SCHEMA_EXIST                         = "schema_exist"
-	TABLE_NOT_EXIST                      = "table_not_exist"
-	TABLE_EXIST                          = "table_exist"
+	//SCHEMA_NOT_EXIST                     = "schema_not_exist"
+	//SCHEMA_EXIST                         = "schema_exist"
+	//TABLE_NOT_EXIST                      = "table_not_exist"
+	//TABLE_EXIST                          = "table_exist"
 	DDL_CREATE_TABLE_NOT_EXIST           = "ddl_create_table_not_exist"
 	DDL_CHECK_OBJECT_NAME_LENGTH         = "ddl_check_object_name_length"
 	DDL_CHECK_PRIMARY_KEY_EXIST          = "ddl_check_primary_key_exist"
@@ -69,42 +69,42 @@ var RuleHandlers = []RuleHandler{
 	},
 
 	// rule
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  SCHEMA_NOT_EXIST,
-			Desc:  "操作数据库时，数据库必须存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "schema %s 不存在",
-		Func:    checkObjectNotExist,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  SCHEMA_EXIST,
-			Desc:  "创建数据库时，数据库不能存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "schema %s 已存在",
-		Func:    checkObjectExist,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  TABLE_NOT_EXIST,
-			Desc:  "操作表时，表必须存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "表 %s 不存在",
-		Func:    checkObjectNotExist,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  TABLE_EXIST,
-			Desc:  "创建表时，表不能存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "表 %s 已存在",
-		Func:    checkObjectExist,
-	},
+	//RuleHandler{
+	//	Rule: model.Rule{
+	//		Name:  SCHEMA_NOT_EXIST,
+	//		Desc:  "操作数据库时，数据库必须存在",
+	//		Level: model.RULE_LEVEL_ERROR,
+	//	},
+	//	Message: "schema %s 不存在",
+	//	Func:    checkObjectNotExist,
+	//},
+	//RuleHandler{
+	//	Rule: model.Rule{
+	//		Name:  SCHEMA_EXIST,
+	//		Desc:  "创建数据库时，数据库不能存在",
+	//		Level: model.RULE_LEVEL_ERROR,
+	//	},
+	//	Message: "schema %s 已存在",
+	//	Func:    checkObjectExist,
+	//},
+	//RuleHandler{
+	//	Rule: model.Rule{
+	//		Name:  TABLE_NOT_EXIST,
+	//		Desc:  "操作表时，表必须存在",
+	//		Level: model.RULE_LEVEL_ERROR,
+	//	},
+	//	Message: "表 %s 不存在",
+	//	Func:    checkObjectNotExist,
+	//},
+	//RuleHandler{
+	//	Rule: model.Rule{
+	//		Name:  TABLE_EXIST,
+	//		Desc:  "创建表时，表不能存在",
+	//		Level: model.RULE_LEVEL_ERROR,
+	//	},
+	//	Message: "表 %s 已存在",
+	//	Func:    checkObjectExist,
+	//},
 	RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CREATE_TABLE_NOT_EXIST,
@@ -299,6 +299,9 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		if stmt.ReferTable != nil {
+			return nil
+		}
 		// check primary key
 		// TODO: tidb parser not support keyword for SERIAL; it is a alias for "BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
 		/*
@@ -379,6 +382,9 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 	var characterSet string
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		if stmt.ReferTable != nil {
+			return nil
+		}
 		for _, op := range stmt.Options {
 			switch op.Tp {
 			case ast.TableOptionEngine:
@@ -683,14 +689,14 @@ func checkStringType(i *Inspect, node ast.Node) error {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
 		for _, col := range stmt.Cols {
-			if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
+			if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
 				i.addResult(DDL_CHECK_TYPE_CHAR_LENGTH)
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, col := range spec.NewColumns {
-				if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
+				if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
 					i.addResult(DDL_CHECK_TYPE_CHAR_LENGTH)
 				}
 			}
@@ -701,117 +707,117 @@ func checkStringType(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkObjectExist(i *Inspect, node ast.Node) error {
-	switch stmt := node.(type) {
-	case *ast.CreateTableStmt:
-		// check schema
-		schemaName := i.getSchemaName(stmt.Table)
-		tableName := i.getTableName(stmt.Table)
-		exist, err := i.isSchemaExist(schemaName)
-		if err != nil {
-			return err
-		}
-		if !exist {
-			// if schema not exist, table must not exist
-			return nil
-
-		} else {
-			// check table if schema exist
-			exist, err = i.isTableExist(stmt.Table)
-			if err != nil {
-				return err
-			}
-			if exist {
-				i.addResult(TABLE_EXIST, tableName)
-			}
-		}
-	case *ast.CreateDatabaseStmt:
-		schemaName := stmt.Name
-		exist, err := i.isSchemaExist(schemaName)
-		if err != nil {
-			return err
-		}
-		if exist {
-			i.addResult(SCHEMA_EXIST, schemaName)
-		}
-	}
-	return nil
-}
-
-func checkObjectNotExist(i *Inspect, node ast.Node) error {
-	var tables = []*ast.TableName{}
-	var schemasName = []string{}
-
-	switch stmt := node.(type) {
-	case *ast.UseStmt:
-		schemasName = append(schemasName, stmt.DBName)
-
-	case *ast.CreateTableStmt:
-		schemasName = append(schemasName, i.getSchemaName(stmt.Table))
-
-	case *ast.AlterTableStmt:
-		schemasName = append(schemasName, i.getSchemaName(stmt.Table))
-		tables = append(tables, stmt.Table)
-
-	case *ast.SelectStmt:
-		for _, table := range getTables(stmt.From.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-	case *ast.InsertStmt:
-		for _, table := range getTables(stmt.Table.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-
-	case *ast.DeleteStmt:
-		if stmt.Tables != nil && stmt.Tables.Tables != nil {
-			for _, table := range stmt.Tables.Tables {
-				schemasName = append(schemasName, i.getSchemaName(table))
-				tables = append(tables, table)
-			}
-		}
-		for _, table := range getTables(stmt.TableRefs.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-
-	case *ast.UpdateStmt:
-		for _, table := range getTables(stmt.TableRefs.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-	}
-
-	notExistSchemas := []string{}
-	for _, schema := range schemasName {
-		exist, err := i.isSchemaExist(schema)
-		if err != nil {
-			return err
-		}
-		if !exist {
-			notExistSchemas = append(notExistSchemas, schema)
-		}
-	}
-	if len(notExistSchemas) > 0 {
-		i.addResult(SCHEMA_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
-	}
-
-	notExistTables := []string{}
-	for _, table := range tables {
-		exist, err := i.isTableExist(table)
-		if err != nil {
-			return err
-		}
-		if !exist {
-			notExistTables = append(notExistTables, i.getTableName(table))
-		}
-	}
-	if len(notExistTables) > 0 {
-		i.addResult(TABLE_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistTables), ", "))
-	}
-	return nil
-}
+//func checkObjectExist(i *Inspect, node ast.Node) error {
+//	switch stmt := node.(type) {
+//	case *ast.CreateTableStmt:
+//		// check schema
+//		schemaName := i.getSchemaName(stmt.Table)
+//		tableName := i.getTableName(stmt.Table)
+//		exist, err := i.isSchemaExist(schemaName)
+//		if err != nil {
+//			return err
+//		}
+//		if !exist {
+//			// if schema not exist, table must not exist
+//			return nil
+//
+//		} else {
+//			// check table if schema exist
+//			exist, err = i.isTableExist(stmt.Table)
+//			if err != nil {
+//				return err
+//			}
+//			if exist {
+//				i.addResult(TABLE_EXIST, tableName)
+//			}
+//		}
+//	case *ast.CreateDatabaseStmt:
+//		schemaName := stmt.Name
+//		exist, err := i.isSchemaExist(schemaName)
+//		if err != nil {
+//			return err
+//		}
+//		if exist {
+//			i.addResult(SCHEMA_EXIST, schemaName)
+//		}
+//	}
+//	return nil
+//}
+//
+//func checkObjectNotExist(i *Inspect, node ast.Node) error {
+//	var tables = []*ast.TableName{}
+//	var schemasName = []string{}
+//
+//	switch stmt := node.(type) {
+//	case *ast.UseStmt:
+//		schemasName = append(schemasName, stmt.DBName)
+//
+//	case *ast.CreateTableStmt:
+//		schemasName = append(schemasName, i.getSchemaName(stmt.Table))
+//
+//	case *ast.AlterTableStmt:
+//		schemasName = append(schemasName, i.getSchemaName(stmt.Table))
+//		tables = append(tables, stmt.Table)
+//
+//	case *ast.SelectStmt:
+//		for _, table := range getTables(stmt.From.TableRefs) {
+//			schemasName = append(schemasName, i.getSchemaName(table))
+//			tables = append(tables, table)
+//		}
+//	case *ast.InsertStmt:
+//		for _, table := range getTables(stmt.Table.TableRefs) {
+//			schemasName = append(schemasName, i.getSchemaName(table))
+//			tables = append(tables, table)
+//		}
+//
+//	case *ast.DeleteStmt:
+//		if stmt.Tables != nil && stmt.Tables.Tables != nil {
+//			for _, table := range stmt.Tables.Tables {
+//				schemasName = append(schemasName, i.getSchemaName(table))
+//				tables = append(tables, table)
+//			}
+//		}
+//		for _, table := range getTables(stmt.TableRefs.TableRefs) {
+//			schemasName = append(schemasName, i.getSchemaName(table))
+//			tables = append(tables, table)
+//		}
+//
+//	case *ast.UpdateStmt:
+//		for _, table := range getTables(stmt.TableRefs.TableRefs) {
+//			schemasName = append(schemasName, i.getSchemaName(table))
+//			tables = append(tables, table)
+//		}
+//	}
+//
+//	notExistSchemas := []string{}
+//	for _, schema := range schemasName {
+//		exist, err := i.isSchemaExist(schema)
+//		if err != nil {
+//			return err
+//		}
+//		if !exist {
+//			notExistSchemas = append(notExistSchemas, schema)
+//		}
+//	}
+//	if len(notExistSchemas) > 0 {
+//		i.addResult(SCHEMA_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
+//	}
+//
+//	notExistTables := []string{}
+//	for _, table := range tables {
+//		exist, err := i.isTableExist(table)
+//		if err != nil {
+//			return err
+//		}
+//		if !exist {
+//			notExistTables = append(notExistTables, i.getTableName(table))
+//		}
+//	}
+//	if len(notExistTables) > 0 {
+//		i.addResult(TABLE_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistTables), ", "))
+//	}
+//	return nil
+//}
 
 func checkIfNotExist(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {

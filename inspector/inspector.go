@@ -138,7 +138,9 @@ func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 	if ruleName != i.currentRule.Name {
 		return
 	}
-	i.Results.add(i.currentRule, args...)
+	level := i.currentRule.Level
+	message := RuleHandlerMap[ruleName].Message
+	i.Results.add(level, message, args...)
 }
 
 func (i *Inspect) getDbConn() (*executor.Executor, error) {

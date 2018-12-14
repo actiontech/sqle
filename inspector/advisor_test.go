@@ -17,8 +17,8 @@ id int(10) unsigned NOT NULL AUTO_INCREMENT,
 v1 varchar(255) DEFAULT NULL,
 v2 varchar(255),
 PRIMARY KEY (id) USING BTREE,
-KEY v1 (v1),
-UNIQUE KEY v2 (v1,v2)
+KEY idx_1 (v1),
+UNIQUE KEY uniq_1 (v1,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
@@ -76,13 +76,19 @@ func newTestResult() *testResult {
 	}
 }
 
+func (t *testResult) add(level, message string, args ...interface{}) *testResult {
+	t.Results.add(level, message, args...)
+	return t
+}
+
 func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult {
 	handler, ok := t.rules[ruleName]
 	if !ok {
 		return t
 	}
-	t.Results.add(handler.Rule, args...)
-	return t
+	level := handler.Rule.Level
+	message := handler.Message
+	return t.add(level, message, args...)
 }
 
 func (t *testResult) level() string {
@@ -143,11 +149,12 @@ func DefaultMysqlInspect() *Inspect {
 
 func TestInspectResults(t *testing.T) {
 	results := newInspectResults()
-	results.add(RuleHandlerMap[DDL_CREATE_TABLE_NOT_EXIST].Rule)
+	handler := RuleHandlerMap[DDL_CREATE_TABLE_NOT_EXIST]
+	results.add(handler.Rule.Level, handler.Message)
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.message())
 
-	results.add(RuleHandlerMap[TABLE_NOT_EXIST].Rule, "not_exist_tb")
+	results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "not_exist_tb")
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
@@ -231,26 +238,47 @@ func TestInspector_Advise_Select(t *testing.T) {
 	)
 }
 
-func TestInspector_Advise_ObjectNotExist(t *testing.T) {
+func TestInspector_Advise_CheckInvalidUse(t *testing.T) {
 	runInspectCase(t, "use_database: database not exist", DefaultMysqlInspect(),
 		"use no_exist_db",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "no_exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "no_exist_db"),
 	)
 
-	runInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
-		`
-ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
-`,
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-	runInspectCase(t, "alter_table: table not exist", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL;
-`,
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
+	//runInspectCase(t, "select_from: schema not exist", DefaultMysqlInspect(),
+	//	"select id from not_exist_db.exist_tb_1 where id =1;",
+	//	newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
+	//		addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
+	//)
+	//runInspectCase(t, "select_from: table not exist", DefaultMysqlInspect(),
+	//	"select id from exist_db.exist_tb_1, exist_db.not_exist_tb_1 where id =1",
+	//	newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
+	//)
+	//
+	//runInspectCase(t, "delete: schema not exist", DefaultMysqlInspect(),
+	//	"delete from not_exist_db.exist_tb_1 where id =1;",
+	//	newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
+	//		addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
+	//)
+	//
+	//runInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
+	//	"delete from exist_db.not_exist_tb_1 where id =1;",
+	//	newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
+	//)
+	//
+	//runInspectCase(t, "update: schema not exist", DefaultMysqlInspect(),
+	//	"update not_exist_db.exist_tb_1 set v1='1' where id =1;",
+	//	newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
+	//		addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
+	//)
+	//
+	//runInspectCase(t, "update: table not exist", DefaultMysqlInspect(),
+	//	"update exist_db.not_exist_tb_1 set v1='1' where id =1;",
+	//	newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
+	//)
+}
 
+func TestInspector_Advise_CheckInvalidCreateTable(t *testing.T) {
 	runInspectCase(t, "create_table: schema not exist", DefaultMysqlInspect(),
 		`
 CREATE TABLE if not exists not_exist_db.not_exist_tb_1 (
@@ -260,44 +288,11 @@ v2 varchar(255) DEFAULT NULL,
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `,
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
 	)
 
-	runInspectCase(t, "select_from: schema not exist", DefaultMysqlInspect(),
-		"select id from not_exist_db.exist_tb_1 where id =1;",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-	runInspectCase(t, "select_from: table not exist", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1, exist_db.not_exist_tb_1 where id =1",
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
-
-	runInspectCase(t, "delete: schema not exist", DefaultMysqlInspect(),
-		"delete from not_exist_db.exist_tb_1 where id =1;",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-
-	runInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
-		"delete from exist_db.not_exist_tb_1 where id =1;",
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
-
-	runInspectCase(t, "update: schema not exist", DefaultMysqlInspect(),
-		"update not_exist_db.exist_tb_1 set v1='1' where id =1;",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-
-	runInspectCase(t, "update: table not exist", DefaultMysqlInspect(),
-		"update exist_db.not_exist_tb_1 set v1='1' where id =1;",
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
-}
-
-func TestInspector_Advise_ObjectExist(t *testing.T) {
-	runInspectCase(t, "create_table: table exist", DefaultMysqlInspect(),
+	runInspectCase(t, "create_table: table is exist(1)", DefaultMysqlInspect(),
 		`
 CREATE TABLE if not exists exist_db.exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -306,16 +301,228 @@ v2 varchar(255) DEFAULT NULL,
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `,
-		newTestResult().addResult(TABLE_EXIST, "exist_db.exist_tb_1"),
+		newTestResult(),
+	)
+	delete(RuleHandlerMap, DDL_CREATE_TABLE_NOT_EXIST)
+	runInspectCase(t, "create_table: table is exist(2)", DefaultMysqlInspect(),
+		`
+CREATE TABLE exist_db.exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			TABLE_EXIST_MSG, "exist_db.exist_tb_1"),
 	)
 
-	runInspectCase(t, "create_database: schema exist", DefaultMysqlInspect(),
+	runInspectCase(t, "create_table: refer table not exist", DefaultMysqlInspect(),
 		`
-CREATE DATABASE exist_db;
+CREATE TABLE exist_db.not_exist_tb_1 like exist_db.not_exist_tb_2
 `,
-		newTestResult().addResult(SCHEMA_EXIST, "exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb_2"),
+	)
+
+	runInspectCase(t, "create_table: multi pk(1)", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT KEY,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG))
+
+	runInspectCase(t, "create_table: multi pk(2)", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id),
+PRIMARY KEY (v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG))
+
+	runInspectCase(t, "create_table: duplicate column", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v1 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG,
+			"v1"))
+
+	runInspectCase(t, "create_table: duplicate index", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id),
+INDEX idx_1 (v1),
+INDEX idx_1 (v2)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_ERROR_MSG,
+			"idx_1"))
+
+	runInspectCase(t, "create_table: key column not exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) DEFAULT NULL,
+v2 varchar(255) DEFAULT NULL,
+PRIMARY KEY (id),
+INDEX idx_1 (v3),
+INDEX idx_2 (v4,v5)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			"v3,v4,v5"))
+}
+
+func TestInspector_Advise_CheckInvalidAlterTable(t *testing.T) {
+	runInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+			"not_exist_db"),
+	)
+
+	runInspectCase(t, "alter_table: table not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			"exist_db.not_exist_tb_1"),
+	)
+
+	runInspectCase(t, "alter_table: add a exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add column v1 varchar(255) NOT NULL;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+			"v1"),
+	)
+
+	runInspectCase(t, "alter_table: drop a not exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 drop column v5;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			"v5"),
+	)
+
+	runInspectCase(t, "alter_table: add a exist index", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index idx_1 (v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG,
+			"idx_1"),
+	)
+
+	runInspectCase(t, "alter_table: drop a not exist index", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
+			"idx_2"),
+	)
+	runInspectCase(t, "alter_table: alter a not exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			"v5"),
+	)
+
+	runInspectCase(t, "alter_table: change a not exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			"v5"),
+	)
+
+	runInspectCase(t, "alter_table: change column to a exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+			"v1"),
 	)
 }
+
+func TestInspector_Advise_CheckInvalidDrop(t *testing.T) {
+	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
+	runInspectCase(t, "drop_database: schema not exist(1)", DefaultMysqlInspect(),
+		`
+DROP DATABASE if exists not_exist_db;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_database: schema not exist(2)", DefaultMysqlInspect(),
+		`
+DROP DATABASE not_exist_db;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "drop_table: schema not exist(1)", DefaultMysqlInspect(),
+		`
+DROP TABLE if exists not_exist_db.not_exist_tb_1;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_table: schema not exist(2)", DefaultMysqlInspect(),
+		`
+DROP TABLE not_exist_db.not_exist_tb_1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "drop_table: table not exist", DefaultMysqlInspect(),
+		`
+DROP TABLE exist_db.not_exist_tb_1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb_1"),
+	)
+}
+
+//func TestInspector_Advise_ObjectExist(t *testing.T) {
+//	runInspectCase(t, "create_table: table exist", DefaultMysqlInspect(),
+//		`
+//CREATE TABLE if not exists exist_db.exist_tb_1 (
+//id bigint unsigned NOT NULL AUTO_INCREMENT,
+//v1 varchar(255) DEFAULT NULL,
+//v2 varchar(255) DEFAULT NULL,
+//PRIMARY KEY (id)
+//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+//`,
+//		newTestResult().addResult(TABLE_EXIST, "exist_db.exist_tb_1"),
+//	)
+//
+//	runInspectCase(t, "create_database: schema exist", DefaultMysqlInspect(),
+//		`
+//CREATE DATABASE exist_db;
+//`,
+//		newTestResult().addResult(SCHEMA_EXIST, "exist_db"),
+//	)
+//}
 
 func TestInspector_Inspect_CreateTableStmt(t *testing.T) {
 	runInspectCase(t, "create_table: ok", DefaultMysqlInspect(),
@@ -365,7 +572,7 @@ ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
 	runInspectCase(t, "alter_table: alter table need merge", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
-ALTER TABLE exist_db.exist_tb_1 add primary key (id);
+ALTER TABLE exist_db.exist_tb_1 add column v6 varchar(255) NOT NULL;
 `,
 		newTestResult(),
 		newTestResult().addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE),
