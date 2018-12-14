@@ -286,6 +286,7 @@ namespace SqlserverProtoServer {
     public class SqlserverContext {
         public SqlserverMeta SqlserverMeta;
 
+        // advise context
         public Dictionary<String/*database*/, bool> AllDatabases;
         public Dictionary<String/*schema*/, bool> AllSchemas;
         public Dictionary<String/*schema.table*/, bool> AllTables;
@@ -311,6 +312,11 @@ namespace SqlserverProtoServer {
         public bool IsDML;
 
         public AdviseResultContext AdviseResultContext;
+
+        // rollback context
+        public Dictionary<String/*database.schema.table*/, Dictionary<String/*column*/, String/*column definition*/>> TableColumnDefinitions;
+        public Dictionary<String/*database.schema.table*/, Dictionary<String/*constraint*/, String/*constraint definition*/>> TableConstraintDefinitions;
+        public Dictionary<String/*database.schema.table*/, Dictionary<String/*index*/, String/*index definition*/>> TableIndexDefinitions;
 
         public String GetConnectionString() {
             return String.Format(
@@ -455,6 +461,324 @@ namespace SqlserverProtoServer {
             return SqlserverMeta.CurrentSchema;
         }
 
+        public void ResetTableColumnDefinitions(String databaseName, String schemaName, String tableName) {
+            var columnDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (TableColumnDefinitions.ContainsKey(columnDefinitionKey)) {
+                TableColumnDefinitions.Remove(columnDefinitionKey);
+            }
+        }
+
+        public void SetTableColumnDefinitions(TableDefinition definition, String databaseName, String schemaName, String tableName) {
+            var columnDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            foreach (var columnDefinition in definition.ColumnDefinitions) {
+                var columnName = columnDefinition.ColumnIdentifier.Value;
+                var columnString = "";
+                for (int index = columnDefinition.FirstTokenIndex; index <= columnDefinition.LastTokenIndex; index++) {
+                    columnString += columnDefinition.ScriptTokenStream[index].Text;
+                }
+
+                if (!TableColumnDefinitions.ContainsKey(columnDefinitionKey)) {
+                    TableColumnDefinitions[columnDefinitionKey] = new Dictionary<String, String>();
+                }
+                TableColumnDefinitions[columnDefinitionKey][columnName] = columnString;
+            }
+        }
+
+        public Dictionary<String, String> GetTableColumnDefinitions(String databaseName, String schemaName, String tableName) {
+            var columnDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (TableColumnDefinitions.ContainsKey(columnDefinitionKey)) {
+                return TableColumnDefinitions[columnDefinitionKey];
+            }
+
+            if (!TableExists(schemaName, tableName)) {
+                return new Dictionary<String, String>();
+            }
+
+            var result = new Dictionary<String, String>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand(String.Format("SELECT " +
+                                                                  "c.name AS Column_name, " +
+                                                                  "tp.name AS Type_name, " +
+                                                                  "c.is_computed AS Is_computed, " +
+                                                                  "OBJECT_DEFINITION(c.object_id, c.column_id) AS Column_definition, " +
+                                                                  "c.system_type_id AS System_type_id," +
+                                                                  "c.user_type_id AS User_type_id, " +
+                                                                  "SCHEMA_NAME(tp.schema_id) AS Schema_name, " +
+                                                                  "c.max_length AS Max_length, " +
+                                                                  "c.precision AS Precesion, " +
+                                                                  "c.scale AS Scale, " +
+                                                                  "c.collation_name AS Collation_name, " +
+                                                                  "c.is_nullable AS Is_nullable," +
+                                                                  "OBJECT_NAME(c.default_object_id) AS Default_constraint_name, " +
+                                                                  "OBJECT_DEFINITION(c.default_object_id) AS Default_definition, " +
+                                                                  "cc.name AS Check_constraint_name, " +
+                                                                  "cc.definition AS Check_definition, " +
+                                                                  "c.is_identity AS Is_identity, " +
+                                                                  "CAST(IDENTITYPROPERTY(c.object_id, 'SeedValue') AS VARCHAR(5)) AS Identity_base, " +
+                                                                  "CAST(IDENTITYPROPERTY(c.object_id, 'IncrementValue') AS VARCHAR(5)) AS Identity_incr " +
+                                                                  "FROM sys.columns c JOIN sys.types tp ON c.user_type_id=tp.user_type_id LEFT JOIN sys.check_constraints cc ON c.object_id=cc.parent_object_id AND cc.parent_column_id=c.column_id " +
+                                                                  "WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName), connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        var sqlLine = "";
+                        var colName = (String)reader["Column_name"];
+                        sqlLine += reader["Column_name"];
+
+                        bool isComputed = (bool)reader["Is_computed"];
+                        if (isComputed) {
+                            var columnDefinition = (String)reader["Column_definition"];
+                            sqlLine += String.Format(" AS {0}", columnDefinition);
+                        } else {
+                            var systemTypeID = (Byte)reader["System_type_id"];
+                            var userTypeID = (Int32)reader["User_type_id"];
+                            var typeName = ((String)reader["Type_name"]).ToUpper();
+                            if (systemTypeID != userTypeID) {
+                                var schema = (String)reader["Schema_name"];
+                                sqlLine += String.Format(" {0}.{1}", schema, typeName);
+                            } else {
+                                sqlLine += String.Format(" {0}", typeName.ToUpper());
+                            }
+
+                            if (typeName == "VARCHAR" || typeName == "CHAR" || typeName == "VARBINARY" || typeName == "BINARY") {
+                                var maxLen = (Int16)reader["Max_length"];
+                                sqlLine += String.Format("({0})", maxLen == -1 ? "MAX" : maxLen.ToString());
+                            }
+                            if (typeName == "NVARCHAR" || typeName == "NCHAR") {
+                                var maxLen = (Int16)reader["Max_length"];
+                                sqlLine += String.Format("({0})", maxLen == -1 ? "MAX" : (maxLen / 2).ToString());
+                            }
+                            if (typeName == "DATETIME2" || typeName == "TIME2" || typeName == "DATETIMEOFFSET") {
+                                var scale = (Int32)reader["Scale"];
+                                sqlLine += String.Format("({0})", scale);
+                            }
+                            if (typeName == "DECIMAL") {
+                                var precesion = (Int32)reader["Precesion"];
+                                var scale = (Int32)reader["Scale"];
+                                sqlLine += String.Format("({0},{1})", precesion, scale);
+                            }
+
+                            var collationName = reader["Collation_name"];
+                            if (systemTypeID == userTypeID && collationName.ToString() != "") {
+                                sqlLine += String.Format(" COLLATE {0}", collationName.ToString());
+                            }
+
+                            var isNullable = (bool)reader["Is_nullable"];
+                            if (!isNullable) {
+                                sqlLine += " NOT NULL";
+                            }
+
+                            var defaultConstraintName = reader["Default_constraint_name"];
+                            var defaultDefinition = reader["Default_definition"];
+                            if (defaultConstraintName.ToString() != "" && defaultDefinition.ToString() != "") {
+                                sqlLine += String.Format(" CONSTRAINT {0} DEFAULT {1}", defaultConstraintName, defaultDefinition);
+                            }
+
+                            var checkConstraintName = reader["Check_constraint_name"];
+                            var checkDefinition = reader["Check_definition"];
+                            if (checkConstraintName.ToString() != "" && checkDefinition.ToString() != "") {
+                                sqlLine += String.Format(" CONSTRAINT {0} CHECK {1}", checkConstraintName, checkDefinition);
+                            }
+
+                            var isIdentity = (bool)reader["Is_identity"];
+                            if (isIdentity) {
+                                var identityBase = reader["Identity_base"];
+                                var identityIncr = reader["Identity_incr"];
+                                sqlLine += String.Format(" IDENTITY({0}, {1})", identityBase, identityIncr);
+                            }
+                        }
+
+                        result[colName] = sqlLine;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+
+            TableColumnDefinitions[columnDefinitionKey] = result;
+            return result;
+        }
+       
+        public void ResetTableConstraintDefinitions(String databaseName, String schemaName, String tableName) {
+            var constraintDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (TableConstraintDefinitions.ContainsKey(constraintDefinitionKey)) {
+                TableConstraintDefinitions.Remove(constraintDefinitionKey);
+            }
+        }
+
+        public void SetTableConstraintDefinitions(TableDefinition definition, String databaseName, String schemaName, String tableName) {
+            var constraintDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            foreach (var tableConstraint in definition.TableConstraints) {
+                var constraintName = tableConstraint.ConstraintIdentifier.Value;
+                var constraintString = "";
+                for (int index = tableConstraint.FirstTokenIndex; index <= tableConstraint.LastTokenIndex; index++) {
+                    constraintString += tableConstraint.ScriptTokenStream[index].Text;
+                }
+
+                if (!TableConstraintDefinitions.ContainsKey(constraintDefinitionKey)) {
+                    TableConstraintDefinitions[constraintDefinitionKey] = new Dictionary<String, String>();
+                }
+                TableConstraintDefinitions[constraintDefinitionKey][constraintName] = constraintString;
+            }
+        }
+
+        public Dictionary<String, String> GetTableConstraintDefinitions(String databaseName, String schemaName, String tableName) {
+            var constraintDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (TableConstraintDefinitions.ContainsKey(constraintDefinitionKey)) {
+                return TableConstraintDefinitions[constraintDefinitionKey];
+            }
+
+            if (!TableExists(schemaName, tableName)) {
+                return new Dictionary<String, String>();
+            }
+
+            var result = new Dictionary<String, String>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand(String.Format("SELECT " +
+                                                                  "kc.name AS Key_name, " +
+                                                                  "ic.index_id AS Index_id, " +
+                                                                  "c.name AS Column_name, " +
+                                                                  "kc.type AS Type, " +
+                                                                  "ic.is_descending_key AS Is_descending_key " +
+                                                                  "FROM sys.key_constraints kc JOIN sys.index_columns ic ON kc.parent_object_id=ic.object_id AND kc.unique_index_id=ic.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                                                  "WHERE kc.parent_object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND (kc.type='PK' OR kc.type='UQ')", databaseName, schemaName, tableName), connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    var primaryKeyCols = new Dictionary<String, List<String>>();
+                    var uniqueKeyCols = new Dictionary<String, List<String>>();
+                    var ifClusteredCols = new Dictionary<String, bool>();
+                    while (reader.Read()) {
+                        var keyName = (String)reader["Key_name"];
+                        var indexID = (Int32)reader["Index_id"];
+                        var colName = (String)reader["Column_name"];
+                        if (indexID == 1) {
+                            ifClusteredCols[keyName] = true;
+                        } else {
+                            ifClusteredCols[keyName] = false;
+                        }
+                        var isDescendingKey = (bool)reader["Is_descending_key"];
+                        var col = isDescendingKey ? colName + " DESC" : colName;
+
+
+                        var type = (String)reader["Type"];
+                        if (type == "PK") {
+                            if (!primaryKeyCols.ContainsKey(keyName)) {
+                                primaryKeyCols[keyName] = new List<string>();
+                            }
+                            primaryKeyCols[keyName].Add(col);
+                        }
+                        if (type == "UQ") {
+                            if (!uniqueKeyCols.ContainsKey(keyName)) {
+                                uniqueKeyCols[keyName] = new List<string>();
+                            }
+                            uniqueKeyCols[keyName].Add(col);
+                        }
+                    }
+
+                    foreach (var primaryKeyColsPair in primaryKeyCols) {
+                        var keyName = primaryKeyColsPair.Key;
+                        var cols = primaryKeyColsPair.Value;
+                        var primaryKeyConstraint = String.Format("CONSTRAINT {0} PRIMARY KEY {1} ({2})", keyName, ifClusteredCols[keyName] ? "CLUSTERED" : "NONCLUSTERED", String.Join(',', cols));
+                        result[keyName] = primaryKeyConstraint;
+                    }
+
+                    foreach (var uniqueKeyColsPair in uniqueKeyCols) {
+                        var keyName = uniqueKeyColsPair.Key;
+                        var cols = uniqueKeyColsPair.Value;
+                        var uniqueKeyConstraint = String.Format("CONSTRAINT {0} UNIQUE {1} ({2})", keyName, ifClusteredCols[keyName] ? "CLUSTERED" : "NONCLUSTERED", String.Join(',', cols));
+                        result[keyName] = uniqueKeyConstraint;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+
+            TableConstraintDefinitions[constraintDefinitionKey] = result;
+            return result;
+        }
+
+        public void ResetTableIndexDefinitions(String databaseName, String schemaName, String tableName) {
+            var indexDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (TableIndexDefinitions.ContainsKey(indexDefinitionKey)) {
+                TableIndexDefinitions.Remove(indexDefinitionKey);
+            }
+        }
+
+        public void SetTableIndexDefinitions(TableDefinition definition, String databaseName, String schemaName, String tableName) {
+            var indexDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            foreach (var index in definition.Indexes) {
+                var indexName = index.Name.Value;
+                var indexString = "";
+                for (int i = index.FirstTokenIndex; i <= index.LastTokenIndex; i++) {
+                    indexString += index.ScriptTokenStream[i];
+                }
+
+                if (!TableIndexDefinitions.ContainsKey(indexName)) {
+                    TableIndexDefinitions[indexName] = new Dictionary<String, String>();
+                }
+                TableIndexDefinitions[indexDefinitionKey][indexName] = indexString;
+            }
+        }
+
+        public Dictionary<String, String> GetTableIndexDefinitions(String databaseName, String schemaName, String tableName) {
+            var indexDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (TableIndexDefinitions.ContainsKey(indexDefinitionKey)) {
+                return TableIndexDefinitions[indexDefinitionKey];
+            }
+
+            if (!TableExists(schemaName, tableName)) {
+                return new Dictionary<String, String>();
+            }
+
+            var result = new Dictionary<String, String>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand(String.Format("SELECT " +
+                                                                  "ix.name AS Index_name, " +
+                                                                  "ix.type_desc AS Type_desc, " +
+                                                                  "c.name AS Column_name, " +
+                                                                  "ic.is_descending_key AS Is_descending_key " +
+                                                                  "FROM sys.indexes ix JOIN sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                                                  "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key !=1 AND ix.is_unique_constraint !=1 AND ix.auto_created != 1", databaseName, schemaName, tableName), connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    var indexCols = new Dictionary<String, List<String>>();
+                    var indexTypeDesc = new Dictionary<String, String>();
+                    while (reader.Read()) {
+                        var indexName = (String)reader["Index_name"];
+
+                        var typeDesc = (String)reader["Type_desc"];
+                        indexTypeDesc[indexName] = typeDesc;
+
+                        var colName = (String)reader["Column_name"];
+                        var isDescendingKey = (bool)reader["Is_descending_key"];
+                        var col = isDescendingKey ? colName + " DESC" : colName;
+                        if (!indexCols.ContainsKey(indexName)) {
+                            indexCols[indexName] = new List<string>();
+                        }
+                        indexCols[indexName].Add(col);
+                    }
+
+                    foreach (var indexColsPair in indexCols) {
+                        var indexName = indexColsPair.Key;
+                        var cols = indexColsPair.Value;
+                        var indexDefinition = String.Format("INDEX {0} {1} ({2})", indexName, indexTypeDesc[indexName], String.Join(',', cols));
+                        result[indexName] = indexDefinition;
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+
+            TableIndexDefinitions[indexDefinitionKey] = result;
+            return result;
+        }
+
         public SqlserverContext(SqlserverMeta sqlserverMeta) {
             this.SqlserverMeta = sqlserverMeta;
             AllDatabases = new Dictionary<String, bool>();
@@ -531,8 +855,27 @@ namespace SqlserverProtoServer {
             return allTables.ContainsKey(id);
         }
 
-        public void UpdateContext(TSqlStatement sqlStatement) {
-            String schemaName = "";
+        public void GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(SchemaObjectName schemaObjectName, out String databaseName, out String schemaName, out String tableName) {
+            var databaseIdentifier = schemaObjectName.DatabaseIdentifier;
+            if (databaseIdentifier != null) {
+                databaseName = databaseIdentifier.Value;
+            } else {
+                databaseName = GetCurrentDatabase();
+            }
+
+            var schemaIdentifier = schemaObjectName.SchemaIdentifier;
+            if (schemaIdentifier != null) {
+                schemaName = schemaIdentifier.Value;
+            } else {
+                schemaName = GetCurrentSchema();
+            }
+
+            tableName = schemaObjectName.BaseIdentifier.Value;
+            return;
+        }
+
+        public void UpdateContext(TSqlStatement sqlStatement/*, bool needUpdateDefinition*/) {
+            String databaseName, schemaName, tableName;
             switch (sqlStatement) {
                 case UseStatement useStatement:
                     SqlserverMeta.CurrentDatabase = useStatement.DatabaseName.Value;
@@ -555,16 +898,17 @@ namespace SqlserverProtoServer {
                     break;
 
                 case CreateTableStatement createTableStatement:
-                    if (createTableStatement.SchemaObjectName.SchemaIdentifier != null) {
-                        schemaName = createTableStatement.SchemaObjectName.SchemaIdentifier.Value;
-                    } else {
-                        schemaName = GetCurrentSchema();
-                    }
+                    GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(createTableStatement.SchemaObjectName, out databaseName, out schemaName, out tableName);
                     DDLAction addTableAction = new DDLAction {
-                        ID = String.Format("{0}.{1}", schemaName, createTableStatement.SchemaObjectName.BaseIdentifier.Value),
+                        ID = String.Format("{0}.{1}", schemaName, tableName),
                         Action = DDLAction.ADD_TABLE,
                     };
                     DDLActions.Add(addTableAction);
+
+                    SetTableColumnDefinitions(createTableStatement.Definition, databaseName, schemaName, tableName);
+                    SetTableConstraintDefinitions(createTableStatement.Definition, databaseName, schemaName, tableName);
+                    SetTableIndexDefinitions(createTableStatement.Definition, databaseName, schemaName, tableName);
+
                     break;
 
                 case DropDatabaseStatement dropDatabaseStatement:
@@ -587,16 +931,16 @@ namespace SqlserverProtoServer {
 
                 case DropTableStatement dropTableStatement:
                     foreach (var schemaObject in dropTableStatement.Objects) {
-                        if (schemaObject.SchemaIdentifier != null) {
-                            schemaName = schemaObject.SchemaIdentifier.Value;
-                        } else {
-                            schemaName = GetCurrentSchema();
-                        }
+                        GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(schemaObject, out databaseName, out schemaName, out tableName);
                         DDLAction dropTableAction = new DDLAction {
-                            ID = String.Format("{0}.{1}", schemaName, schemaObject.BaseIdentifier.Value),
+                            ID = String.Format("{0}.{1}", schemaName, tableName),
                             Action = DDLAction.ADD_TABLE,
                         };
                         DDLActions.Add(dropTableAction);
+
+                        ResetTableColumnDefinitions(databaseName, schemaName, tableName);
+                        ResetTableConstraintDefinitions(databaseName, schemaName, tableName);
+                        ResetTableIndexDefinitions(databaseName, schemaName, tableName);
                     }
                     break;
             }
