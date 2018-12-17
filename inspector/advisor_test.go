@@ -437,6 +437,15 @@ ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
 			"idx_2"),
 	)
+
+	runInspectCase(t, "alter_table: add index bug key column not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index idx_2 (v3);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			"v3"),
+	)
+
 	runInspectCase(t, "alter_table: alter a not exist column", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
@@ -462,8 +471,36 @@ ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255);
 	)
 }
 
+func TestInspector_Advise_CheckInvalidCreateDatabase(t *testing.T) {
+	runInspectCase(t, "create_database: schema exist(1)", DefaultMysqlInspect(),
+		`
+CREATE DATABASE if not exists exist_db;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "create_database: schema exist(2)", DefaultMysqlInspect(),
+		`
+CREATE DATABASE exist_db;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_EXIST_MSG, "exist_db"),
+	)
+}
+
+func TestInspector_Advise_CheckInvalidCreateIndex(t *testing.T) {
+
+}
+
 func TestInspector_Advise_CheckInvalidDrop(t *testing.T) {
 	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
+	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
+	runInspectCase(t, "drop_database: ok", DefaultMysqlInspect(),
+		`
+DROP DATABASE if exists exist_db;
+`,
+		newTestResult(),
+	)
+
 	runInspectCase(t, "drop_database: schema not exist(1)", DefaultMysqlInspect(),
 		`
 DROP DATABASE if exists not_exist_db;
@@ -477,6 +514,13 @@ DROP DATABASE not_exist_db;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
 			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "drop_table: ok", DefaultMysqlInspect(),
+		`
+DROP TABLE exist_db.exist_tb_1;
+`,
+		newTestResult(),
 	)
 
 	runInspectCase(t, "drop_table: schema not exist(1)", DefaultMysqlInspect(),
@@ -500,6 +544,20 @@ DROP TABLE exist_db.not_exist_tb_1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
 			TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb_1"),
+	)
+
+	runInspectCase(t, "drop_index: ok", DefaultMysqlInspect(),
+		`
+DROP INDEX idx_1 ON exist_db.exist_tb_1;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_index: index not exist", DefaultMysqlInspect(),
+		`
+DROP INDEX idx_2 ON exist_db.exist_tb_1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG, "idx_2"),
 	)
 }
 
