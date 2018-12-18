@@ -28,6 +28,10 @@ namespace SqlserverProtoServer {
                     isDDL = true;
                     return GenerateAlterTableRollbackSql(context, alterTableStatement);
 
+                case ExecuteStatement executeStatement:
+                    isDDL = true;
+                    return GenerateRenameRollbackSql(context, executeStatement);
+
                 case CreateIndexStatement createIndexStatement:
                     isDDL = true;
                     return GenerateCreateIndexRollbackSql(context, createIndexStatement);
@@ -117,9 +121,10 @@ namespace SqlserverProtoServer {
         }
 
         public String GenerateAlterTableRollbackSql(SqlserverContext context, AlterTableStatement statement) {
-            Console.WriteLine("{0}", statement);
             String databaseName, schemaName, tableName;
             context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(statement.SchemaObjectName, out databaseName, out schemaName, out tableName);
+            var key = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            var rollbackPrefix = String.Format("ALTER TABLE {0}.{1}.{2}", databaseName, schemaName, tableName);
             var rollbackActions = new List<String>();
             switch (statement) {
                 case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
@@ -130,36 +135,117 @@ namespace SqlserverProtoServer {
                         addConstraints.Add(tableConstraint.ConstraintIdentifier.Value);
                     }
                     if (addConstraints.Count > 0) {
-                        rollbackActions.Add("DROP CONSTRAINT " + String.Join(',', addConstraints));
+                        rollbackActions.Add(String.Format("{0} DROP CONSTRAINT {1}", rollbackPrefix, String.Join(',', addConstraints)));
                     }
 
-                    var addColumns= new List<String>();
+                    var addColumns = new List<String>();
                     foreach (var columnDefinition in tableDefinition.ColumnDefinitions) {
                         addColumns.Add(columnDefinition.ColumnIdentifier.Value);
                     }
                     if (addColumns.Count > 0) {
-                        rollbackActions.Add("DROP COLUMN " + String.Join(',', addColumns));
+                        rollbackActions.Add(String.Format("{0} DROP COLUMN {1}", rollbackPrefix, String.Join(',', addColumns)));
                     }
-
-                    Console.WriteLine("{0}", String.Join(';', rollbackActions));
                     break;
 
                 case AlterTableDropTableElementStatement alterTableDropTableElementStatement:
-                    var dropColumns = new List<String>();
-                    var dropConstraints = new List<String>();
                     var alterTableDropTableElements = alterTableDropTableElementStatement.AlterTableDropTableElements;
+                    var lastType = TableElementType.NotSpecified;
+                    var dropColumnDefinitions = new List<String>();
+                    var dropConstaintDefinitions = new List<String>();
                     foreach (var elem in alterTableDropTableElements) {
-                        if (elem.TableElementType == TableElementType.Column) {
-                            dropColumns.Add(elem.Name.Value);
+                        var elemName = elem.Name.Value;
+                        var elemType = elem.TableElementType;
+                        // in "ALTER TABLE dbo.test DROP CONSTRAINT my_constraint, my_pk_constraint, COLUMN column_b",
+                        // my_pk_constraint's type will be NotSpecified
+                        if (elemType == TableElementType.NotSpecified) {
+                            elemType = lastType;
                         }
-                        if (elem.TableElementType == TableElementType.Constraint) {
-                            dropConstraints.Add(elem.Name.Value);
+
+                        if (elemType == TableElementType.Column) {
+                            foreach (var tableColumnDefinitionPair in context.GetTableColumnDefinitions(databaseName, schemaName, tableName)) {
+                                if (tableColumnDefinitionPair.Key == elemName) {
+                                    dropColumnDefinitions.Add(tableColumnDefinitionPair.Value);
+                                }
+                            }
+                            lastType = TableElementType.Column;
+                        }
+
+                        if (elemType == TableElementType.Constraint) {
+                            foreach (var tableConstraintDefinitionPair in context.GetTableConstraintDefinitions(databaseName, schemaName, tableName)) {
+                                if (tableConstraintDefinitionPair.Key == elemName) {
+                                    dropConstaintDefinitions.Add(tableConstraintDefinitionPair.Value);
+                                }
+                            }
+                            lastType = TableElementType.Constraint;
                         }
                     }
 
+                    if (dropColumnDefinitions.Count > 0) {
+                        rollbackActions.Add(String.Format("{0} ADD {1}", rollbackPrefix, String.Join(',', dropColumnDefinitions)));
+                    }
+                    if (dropConstaintDefinitions.Count > 0) {
+                        rollbackActions.Add(String.Format("{0} ADD {1}", rollbackPrefix, String.Join(',', dropConstaintDefinitions)));
+                    }
+                    break;
+
+                case AlterTableAlterColumnStatement alterTableAlterColumnStatement:
+                    var alterColumn = alterTableAlterColumnStatement.ColumnIdentifier.Value;
+                    foreach (var tableColumnDefinitionPair in context.GetTableColumnDefinitions(databaseName, schemaName, tableName)) {
+                        if (tableColumnDefinitionPair.Key == alterColumn) {
+                            rollbackActions.Add(String.Format("{0} ALTER COLUMN {1}", rollbackPrefix, tableColumnDefinitionPair.Value));
+                        }
+                    }
                     break;
             }
-            return "";
+            return String.Join(';', rollbackActions);
+        }
+
+        public String GenerateRenameRollbackSql(SqlserverContext context, ExecuteStatement statement) {
+            var rollbackSql = "";
+            var entity = statement.ExecuteSpecification.ExecutableEntity;
+            if (entity is ExecutableProcedureReference) {
+                var procedure = entity as ExecutableProcedureReference;
+                if (procedure.ProcedureReference is ProcedureReferenceName) {
+                    var procedureName = procedure.ProcedureReference as ProcedureReferenceName;
+                    var baseName = procedureName.ProcedureReference.Name.BaseIdentifier.Value;
+                    if (baseName.ToLower() == "sp_rename") {
+                        // EXEC sp_rename N'dbo.test.IX_index0', N'IX_index1', N'INDEX' => EXEC sp_renam N'dbo.test.IX_index1', N'IX_index0', N'INDEX' 
+                        if (procedure.Parameters.Count >= 2) {
+                            var objName = procedure.Parameters[0].ParameterValue as StringLiteral;
+                            var newName = procedure.Parameters[1].ParameterValue as StringLiteral;
+
+                            var rollbackNewName = "";
+                            var objNameArray = objName.Value.Split(".");
+                            if (newName.IsNational) {
+                                rollbackNewName = String.Format("N'{0}'", objNameArray[objNameArray.Length - 1]);
+                            } else {
+                                rollbackNewName = String.Format("'{0}'", objNameArray[objNameArray.Length - 1]);
+                            }
+
+                            var rollbackObjName = "";
+                            objNameArray[objNameArray.Length - 1] = newName.Value;
+                            if (objName.IsNational) {
+                                rollbackObjName = String.Format("N'{0}'", String.Join('.', objNameArray));
+                            } else {
+                                rollbackObjName = String.Format("'{0}'", String.Join('.', objNameArray));
+                            }
+
+
+                            rollbackSql = String.Format("EXEC sp_rename {0}, {1}", rollbackObjName, rollbackNewName);
+                            for (int i = 2; i < procedure.Parameters.Count; i++) {
+                                var param = procedure.Parameters[i].ParameterValue as StringLiteral;
+                                if (param.IsNational) {
+                                    rollbackSql += String.Format(", N'{0}'", param.Value);
+                                } else {
+                                    rollbackSql += String.Format(", '{0}'", param.Value);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return rollbackSql;
         }
 
         public String GetCreateIndexSql(SqlserverContext context, String indexName, String databaseName, String schemaName, String tableName) {
@@ -226,7 +312,7 @@ namespace SqlserverProtoServer {
 
                     var rollbackIndexSql = GetCreateIndexSql(context, indexName, databaseName, schemaName, tableName);
                     if (rollbackIndexSql != "") {
-                        rollbackSql += String.Format("{0};", GetCreateIndexSql(context, indexName, databaseName, schemaName, tableName));
+                        rollbackSql += String.Format("{0};", rollbackIndexSql);
                     }
                 }
             }

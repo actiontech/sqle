@@ -378,14 +378,15 @@ namespace SqlserverProtoServer {
 
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'", connection);
+                SqlCommand command = new SqlCommand("SELECT TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'", connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
+                        String database = reader["TABLE_CATALOG"] as String;
                         String schema = reader["TABLE_SCHEMA"] as String;
                         String table = reader["TABLE_NAME"] as String;
-                        AllTables[String.Format("{0}.{1}", schema, table)] = true;
+                        AllTables[String.Format("{0}.{1}.{2}", database, schema, table)] = true;
                     }
                     tableHasLoad = true;
                 } finally {
@@ -418,7 +419,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        SqlserverMeta.CurrentDatabase = reader["Schema_name"] as String;
+                        SqlserverMeta.CurrentSchema = reader["Schema_name"] as String;
                     }
                 } finally {
                     reader.Close();
@@ -490,7 +491,7 @@ namespace SqlserverProtoServer {
                 return TableColumnDefinitions[columnDefinitionKey];
             }
 
-            if (!TableExists(schemaName, tableName)) {
+            if (!TableExists(databaseName, schemaName, tableName)) {
                 return new Dictionary<String, String>();
             }
 
@@ -630,7 +631,7 @@ namespace SqlserverProtoServer {
                 return TableConstraintDefinitions[constraintDefinitionKey];
             }
 
-            if (!TableExists(schemaName, tableName)) {
+            if (!TableExists(databaseName, schemaName, tableName)) {
                 return new Dictionary<String, String>();
             }
 
@@ -730,7 +731,7 @@ namespace SqlserverProtoServer {
                 return TableIndexDefinitions[indexDefinitionKey];
             }
 
-            if (!TableExists(schemaName, tableName)) {
+            if (!TableExists(databaseName, schemaName, tableName)) {
                 return new Dictionary<String, String>();
             }
 
@@ -792,6 +793,9 @@ namespace SqlserverProtoServer {
             databaseHasLoad = false;
             IsDDL = false;
             IsDML = false;
+            TableColumnDefinitions = new Dictionary<String, Dictionary<String, String>>();
+            TableConstraintDefinitions = new Dictionary<String, Dictionary<String, String>>();
+            TableIndexDefinitions = new Dictionary<String, Dictionary<String, String>>();
         }
 
         public bool DatabaseExists(String databaseName) {
@@ -832,22 +836,29 @@ namespace SqlserverProtoServer {
             return allschemas.ContainsKey(schema);
         }
 
-        public bool TableExists(String schema, String tableName) {
+        public bool TableExists(String databaseName, String schema, String tableName) {
             if (schema == "") {
                 schema = GetCurrentSchema();
             }
-            String id = String.Format("{0}.{1}", schema, tableName);
-            bool notBeDroped = true;
+            String id = String.Format("{0}.{1}.{2}", databaseName, schema, tableName);
+            bool databaseBeDropped = false;
+            bool tableBeDropped = false;
             foreach (var action in DDLActions) {
-                if (action.ID == id && action.Action == DDLAction.ADD_TABLE) {
-                    notBeDroped = true;
+                if (action.ID == id && action.Action == DDLAction.REMOVE_DATABASE) {
+                    databaseBeDropped = true;
+                }
+                if (action.ID == id && action.Action == DDLAction.ADD_DATABASE) {
+                    databaseBeDropped = false;
                 }
                 if (action.ID == id && action.Action == DDLAction.REMOVE_TABLE) {
-                    notBeDroped = false;
+                    tableBeDropped = true;
+                }
+                if (action.ID == id && action.Action == DDLAction.ADD_TABLE) {
+                    tableBeDropped = false;
                 }
             }
 
-            if (!notBeDroped) {
+            if (databaseBeDropped && tableBeDropped) {
                 return false;
             }
 
@@ -900,7 +911,7 @@ namespace SqlserverProtoServer {
                 case CreateTableStatement createTableStatement:
                     GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(createTableStatement.SchemaObjectName, out databaseName, out schemaName, out tableName);
                     DDLAction addTableAction = new DDLAction {
-                        ID = String.Format("{0}.{1}", schemaName, tableName),
+                        ID = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName),
                         Action = DDLAction.ADD_TABLE,
                     };
                     DDLActions.Add(addTableAction);
@@ -918,7 +929,38 @@ namespace SqlserverProtoServer {
                             Action = DDLAction.REMOVE_DATABASE,
                         };
                         DDLActions.Add(removeDatabaseAction);
+
+                        var newTableColumnDefinitions = new Dictionary<String, Dictionary<String, String>>();
+                        foreach (var tableColumnDefinitionPair in TableColumnDefinitions) {
+                            var tableIdentifier = tableColumnDefinitionPair.Key.Split(".");
+                            if (tableIdentifier.Length == 3 && tableIdentifier[0] == database.Value) {
+                                continue;
+                            }
+                            newTableColumnDefinitions[tableColumnDefinitionPair.Key] = tableColumnDefinitionPair.Value;
+                        }
+                        TableColumnDefinitions = newTableColumnDefinitions;
+
+                        var newTableConstraintDefinitions = new Dictionary<String, Dictionary<String, String>>();
+                        foreach (var tableConstraintDefinitionPair in TableConstraintDefinitions) {
+                            var tableIdentifier = tableConstraintDefinitionPair.Key.Split(".");
+                            if (tableIdentifier.Length == 3 && tableIdentifier[0] == database.Value) {
+                                continue;
+                            }
+                            newTableConstraintDefinitions[tableConstraintDefinitionPair.Key] = tableConstraintDefinitionPair.Value;
+                        }
+                        TableConstraintDefinitions = newTableConstraintDefinitions;
+
+                        var newTableIndexDefinitions = new Dictionary<String, Dictionary<String, String>>();
+                        foreach (var tableIndexDefinitionPair in TableIndexDefinitions) {
+                            var tableIdentifier = tableIndexDefinitionPair.Key.Split(".");
+                            if (tableIdentifier.Length == 3 && tableIdentifier[0] == database.Value) {
+                                continue;
+                            }
+                            newTableIndexDefinitions[tableIndexDefinitionPair.Key] = tableIndexDefinitionPair.Value;
+                        }
+                        TableIndexDefinitions = newTableIndexDefinitions;
                     }
+
                     break;
 
                 case DropSchemaStatement dropSchemaStatement:
@@ -933,8 +975,8 @@ namespace SqlserverProtoServer {
                     foreach (var schemaObject in dropTableStatement.Objects) {
                         GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(schemaObject, out databaseName, out schemaName, out tableName);
                         DDLAction dropTableAction = new DDLAction {
-                            ID = String.Format("{0}.{1}", schemaName, tableName),
-                            Action = DDLAction.ADD_TABLE,
+                            ID = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName),
+                            Action = DDLAction.REMOVE_TABLE,
                         };
                         DDLActions.Add(dropTableAction);
 
@@ -988,8 +1030,8 @@ namespace SqlserverProtoServer {
             return context.SchemaExists(schema);
         }
 
-        public bool TableExists(SqlserverContext context, String schema, String table) {
-            return context.TableExists(schema, table);
+        public bool TableExists(SqlserverContext context, String databaseName, String schema, String table) {
+            return context.TableExists(databaseName, schema, table);
         }
 
         protected RuleValidator(String name, String desc, String msg, RULE_LEVEL level) {
@@ -1018,17 +1060,28 @@ namespace SqlserverProtoServer {
             return schemaNames;
         }
 
-        public List<string> AddTableName(List<String> tableNames, SchemaObjectName schemaObjectName) {
+        public List<string> AddTableName(List<String> tableNames, SqlserverContext context, SchemaObjectName schemaObjectName) {
+            var databaseIdentifier = schemaObjectName.DatabaseIdentifier;
             var schemaIdentifier = schemaObjectName.SchemaIdentifier;
             var baseIndentifier = schemaObjectName.BaseIdentifier;
+            var databaseName = "";
+            var schemaName = "";
             var tableName = "";
-            if (schemaIdentifier != null) {
-                tableName = String.Format("{0}.{1}", schemaIdentifier.Value, baseIndentifier.Value);
+            if (databaseIdentifier != null) {
+                databaseName = databaseIdentifier.Value;
             } else {
-                tableName = baseIndentifier.Value;
+                databaseName = context.GetCurrentDatabase();
             }
-            if (!tableNames.Contains(tableName)) {
-                tableNames.Add(tableName);
+            if (schemaIdentifier != null) {
+                schemaName = schemaIdentifier.Value;
+            } else {
+                schemaName = context.GetCurrentSchema();
+            }
+            tableName = baseIndentifier.Value;
+
+            var key = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (!tableNames.Contains(key)) {
+                tableNames.Add(key);
             }
             return tableNames;
         }
@@ -1080,7 +1133,7 @@ namespace SqlserverProtoServer {
             foreach (var schemaObject in schemaObjectNames) {
                 databaseNames = AddDatabaseName(databaseNames, context, schemaObject);
                 schemaNames = AddSchemaName(schemaNames, schemaObject);
-                tableNames = AddTableName(tableNames, schemaObject);
+                tableNames = AddTableName(tableNames, context, schemaObject);
             }
         }
     }

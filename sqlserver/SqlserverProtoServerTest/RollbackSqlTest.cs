@@ -20,7 +20,7 @@ namespace SqlServerProtoServerTest {
             return statementList;
         }
 
-        public void rollbackCreateDatabase() {
+        private void rollbackCreateDatabase() {
             var text = "CREATE DATABASE db1";
             var statementList = ParseStatementList(text);
             var context = new SqlserverContext(new SqlserverMeta() {
@@ -39,7 +39,7 @@ namespace SqlServerProtoServerTest {
             }
         }
 
-        public void rollbackCreateTable() {
+        private void rollbackCreateTable() {
             var text = "CREATE TABLE table1(a INT)";
             var statementList = ParseStatementList(text);
             var context = new SqlserverContext(new SqlserverMeta() {
@@ -58,7 +58,7 @@ namespace SqlServerProtoServerTest {
             }
         }
 
-        public void rollbackAlterTable() {
+        private void rollbackAlterTable() {
             var context = new SqlserverContext(new SqlserverMeta() {
                 Host = "10.186.62.15",
                 Port = "1433",
@@ -66,36 +66,31 @@ namespace SqlServerProtoServerTest {
                 Password = "123456aB"
             });
             foreach (var text in new String[]{
-                /*
-                "ALTER TABLE dbo.doc_exf ADD AddDate smalldatetime NULL CONSTRAINT AddDateDflt DEFAULT GETDATE() WITH VALUES;",
-                "ALTER TABLE dbo.doc_exe ADD column_b INT IDENTITY CONSTRAINT column_b_pk PRIMARY KEY, " +
-                    "column_c INT NULL CONSTRAINT column_c_fk REFERENCES doc_exe(column_a), " +
+                "CREATE TABLE dbo.test(column_b INT, column_c INT, column_d INT, CONSTRAINT my_constraint UNIQUE (column_c), CONSTRAINT my_pk_constraint UNIQUE (column_d));",
+
+                "ALTER TABLE dbo.test ADD AddDate smalldatetime NULL CONSTRAINT AddDateDflt DEFAULT GETDATE() WITH VALUES;",
+                "ALTER TABLE dbo.test ADD column_b INT IDENTITY CONSTRAINT column_b_pk PRIMARY KEY, " +
+                    "column_c INT NULL CONSTRAINT column_c_fk REFERENCES test1(column_a), " +
                     "column_d VARCHAR(16) NULL CONSTRAINT column_d_chk CHECK (column_d LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]' OR column_d LIKE '([0-9][0-9][0-9]) [0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]'), " +
                     "column_e DECIMAL(3,3) CONSTRAINT column_e_default DEFAULT .081;",
-                "ALTER TABLE dbo.doc_exb DROP COLUMN column_c, column_d;",
+                "ALTER TABLE dbo.test DROP COLUMN column_c, column_d;",
 
-                "ALTER TABLE dbo.doc_exd WITH NOCHECK ADD CONSTRAINT exd_check CHECK (column_a > 1);",
-                "ALTER TABLE dbo.doc_exc DROP CONSTRAINT my_constraint, my_pk_constraint, COLUMN column_b;",
-                */
+                "ALTER TABLE dbo.test WITH NOCHECK ADD CONSTRAINT exd_check CHECK (column_a > 1);",
+                "ALTER TABLE dbo.test DROP CONSTRAINT my_constraint, my_pk_constraint, COLUMN column_b;",
 
-                "ALTER TABLE dbo.doc_exy ALTER COLUMN column_a DECIMAL(5,2);",
-                "ALTER TABLE T3 ALTER COLUMN C2 varchar(50) ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK1], ENCRYPTION_TYPE=Randomized, ALGORITHM='AEAD_AES_256_CBC_HMAC_SHA_256') NULL;",
+                "ALTER TABLE dbo.test ALTER COLUMN column_b DECIMAL(5,2);",
+                "ALTER TABLE test ALTER COLUMN column_d varchar(50) ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK1], ENCRYPTION_TYPE=Randomized, ALGORITHM='AEAD_AES_256_CBC_HMAC_SHA_256') NULL;",
 
-                "ALTER TABLE T1 REBUILD WITH (DATA_COMPRESSION=PAGE);",
-                "ALTER TABLE PartitionTable1 REBUILD PARTITION = 1 WITH (DATA_COMPRESSION=NONE);",
-                "ALTER TABLE PartitionTable SWITCH PARTITION 2 TO NonPartitionTable ;",
-
-                "ALTER TABLE dbo.T1 SET (LOCK_ESCALATION = AUTO);",
-                "ALTER TABLE Person.Person ENABLE CHANGE_TRACKING;",
-
-                "ALTER TABLE dbo.cnst_example NOCHECK CONSTRAINT salary_cap;",
-                "ALTER TABLE dbo.cnst_example CHECK CONSTRAINT salary_cap;",
-
-                "ALTER TABLE dbo.trig_example DISABLE TRIGGER trig1;",
-                "ALTER TABLE dbo.trig_example ENABLE TRIGGER trig1 ;",
-
-                // unsupport System-versioned
-                "ALTER TABLE InsurancePolicy ADD PERIOD FOR SYSTEM_TIME (SysStartTime, SysEndTime), SysStartTime datetime2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL DEFAULT SYSUTCDATETIME(), SysEndTime datetime2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL DEFAULT CONVERT(DATETIME2, '9999-12-31 23:59:59.99999999');"
+                // rename table schem.table
+                "EXEC sp_rename 'dbo.test', 'test1';",
+                // rename column table.column|schema.table.column
+                "EXEC sp_rename 'dbo.test.column_b', 'column_b1', 'COLUMN';",
+                // rename index table.index|schema.table.index
+                "EXEC sp_rename N'dbo.test.IX_index', N'IX_index1', N'INDEX';",
+                // rename constraint schema.constraint
+                "EXEC sp_rename 'dbo.constraint1', 'constraint2';",
+                // rename user data type
+                "EXEC sp_rename N'Phone', N'Telephone', N'USERDATATYPE';",
             }) {
                 var statementList = ParseStatementList(text);
                 foreach (var statement in statementList.Statements) {
@@ -103,12 +98,13 @@ namespace SqlServerProtoServerTest {
                     var isDML = false;
                     Console.WriteLine("{0}", text);
                     new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
+                    context.UpdateContext(statement);
                     Console.WriteLine("=====================================================");
                 }
             }
         }
 
-        public void rollbackCreateIndex() {
+        private void rollbackCreateIndex() {
             var text = "CREATE UNIQUE INDEX IX2 ON table1 (col1, col2) WITH (DROP_EXISTING=ON)";
             var statementList = ParseStatementList(text);
             var context = new SqlserverContext(new SqlserverMeta() {
@@ -127,7 +123,7 @@ namespace SqlServerProtoServerTest {
             }
         }
 
-        public void rollbackDropIndex() {
+        private void rollbackDropIndex() {
             var text = "DROP INDEX IX1 ON tbl6";
             var statementList = ParseStatementList(text);
             var context = new SqlserverContext(new SqlserverMeta() {
@@ -146,7 +142,7 @@ namespace SqlServerProtoServerTest {
             }
         }
 
-        public void rollbackDropTable() {
+        private void rollbackDropTable() {
             //var text = "DROP TABLE dbo.WorkOut";
             var text = "DROP TABLE dbo.tbl7";
             var statementList = ParseStatementList(text);
@@ -180,6 +176,7 @@ namespace SqlServerProtoServerTest {
 
         [Fact]
         public void RollbackDMLSqlTest() {
+            /*
             var text = "CREATE TABLE tbl1(col1 INT NOT NULL UNIQUE, col2 INT NOT NULL)";
             var statementList = ParseStatementList(text);
             foreach (var statement in statementList.Statements) {
@@ -197,6 +194,7 @@ namespace SqlServerProtoServerTest {
                     Console.WriteLine();
                 }
             }
+            */
         }
     }
 }

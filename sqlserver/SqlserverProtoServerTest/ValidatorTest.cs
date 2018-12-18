@@ -39,7 +39,7 @@ namespace SqlServerProtoServerTest {
             return null;
         }
 
-        public void MyAssert(String ruleName, String text, String expectLevel, String expectMsg) {
+        private void MyAssert(String ruleName, String text, String expectLevel, String expectMsg) {
             AdviseResult adviseResult = validate(ruleName, text);
             //Console.WriteLine("{0}, {1}", adviseResult.AdviseLevel, adviseResult.AdviseResultMessage);
             Assert.Equal(expectLevel, adviseResult.AdviseLevel);
