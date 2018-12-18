@@ -244,6 +244,9 @@ func scanWhereStmtColumn(where ast.ExprNode, fn func(expr *ast.ColumnNameExpr) b
 
 func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
+	if specs == nil {
+		return s
+	}
 	for _, spec := range specs {
 		for _, tp := range ts {
 			if spec.Tp == tp {

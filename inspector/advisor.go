@@ -104,6 +104,12 @@ func (i *Inspect) CheckInvalid(node ast.Node, results *InspectResults) error {
 		err = i.checkInvalidCreateIndex(stmt, results)
 	case *ast.DropIndexStmt:
 		err = i.checkInvalidDropIndex(stmt, results)
+	case *ast.InsertStmt:
+		err = i.checkInvalidInsert(stmt, results)
+	case *ast.UpdateStmt:
+		err = i.checkInvalidUpdate(stmt, results)
+	case *ast.DeleteStmt:
+		err = i.checkInvalidDelete(stmt, results)
 	}
 	return err
 }
@@ -589,10 +595,38 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 	if stmt.MultipleTable {
 		return nil
 	}
-
 	return nil
 }
 
 func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResults) error {
+	tables := getTables(stmt.TableRefs.TableRefs)
+	needExistsSchemasName := []string{}
+	needExistsTablesName := []string{}
+	for _, table := range tables {
+		schemaName := i.getSchemaName(table)
+		schemaExist, err := i.isSchemaExist(schemaName)
+		if err != nil {
+			return err
+		}
+		if !schemaExist {
+			needExistsSchemasName = append(needExistsSchemasName, schemaName)
+		} else {
+			tableExist, err := i.isTableExist(table)
+			if err != nil {
+				return err
+			}
+			if !tableExist {
+				needExistsTablesName = append(needExistsTablesName, i.getTableName(table))
+			}
+		}
+	}
+	if len(needExistsSchemasName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(needExistsSchemasName), ","))
+	}
+	if len(needExistsTablesName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(needExistsTablesName), ","))
+	}
 	return nil
 }

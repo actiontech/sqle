@@ -40,12 +40,12 @@ func TestAlterTableRollbackSql(t *testing.T) {
 		`ALTER TABLE exist_db.exist_tb_1
 DROP COLUMN v1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"ADD COLUMN `v1` varchar(255) DEFAULT NULL;",
+			"ADD COLUMN `v1` varchar(255) NOT NULL DEFAULT \"v1\" COMMENT \"unit test\";",
 	)
 
 	runrollbackCase(t, "add column need drop", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-ADD COLUMN v3 varchar(255) DEFAULT NULL;`,
+ADD COLUMN v3 varchar(255) DEFAULT NULL COMMENT "unit test";`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"DROP COLUMN `v3`;",
 	)
@@ -59,23 +59,23 @@ RENAME AS exist_tb_2;`,
 
 	runrollbackCase(t, "change column need change column", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
-CHANGE COLUMN v1 v3 varchar(30) NOT NULL;`,
+CHANGE COLUMN v1 v3 varchar(30) NOT NULL COMMENT "unit test";`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"CHANGE COLUMN `v3` `v1` varchar(255) DEFAULT NULL;",
+			"CHANGE COLUMN `v3` `v1` varchar(255) NOT NULL DEFAULT \"v1\" COMMENT \"unit test\";",
 	)
 
 	runrollbackCase(t, "alter column need alter column(1_1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ALTER COLUMN v1 DROP DEFAULT;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"ALTER COLUMN `v1` SET DEFAULT NULL;",
+			"ALTER COLUMN `v1` SET DEFAULT \"v1\";",
 	)
 
 	runrollbackCase(t, "alter column need alter column(1_2)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ALTER COLUMN v1 SET DEFAULT "test";`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
-			"ALTER COLUMN `v1` SET DEFAULT NULL;",
+			"ALTER COLUMN `v1` SET DEFAULT \"v1\";",
 	)
 
 	runrollbackCase(t, "alter column need alter column(2_1)", DefaultMysqlInspect(),

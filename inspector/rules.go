@@ -9,10 +9,6 @@ import (
 
 // inspector rule code
 const (
-	//SCHEMA_NOT_EXIST                     = "schema_not_exist"
-	//SCHEMA_EXIST                         = "schema_exist"
-	//TABLE_NOT_EXIST                      = "table_not_exist"
-	//TABLE_EXIST                          = "table_exist"
 	DDL_CREATE_TABLE_NOT_EXIST           = "ddl_create_table_not_exist"
 	DDL_CHECK_OBJECT_NAME_LENGTH         = "ddl_check_object_name_length"
 	DDL_CHECK_PRIMARY_KEY_EXIST          = "ddl_check_primary_key_exist"
@@ -30,6 +26,11 @@ const (
 	DML_CHECK_INVALID_WHERE_CONDITION    = "ddl_check_invalid_where_condition"
 	DML_DISABE_SELECT_ALL_COLUMN         = "dml_disable_select_all_column"
 	DML_MYCAT_MUST_USING_SHARDING_CLOUNM = "dml_mycat_must_using_sharding_column"
+	DDL_CHECK_TABLE_WITHOUT_COMMENT      = "ddl_check_table_without_comment"
+	DDL_CHECK_COLUMN_WITHOUT_COMMENT     = "ddl_check_column_without_comment"
+	DDL_CHECK_INDEX_PREFIX               = "ddl_check_index_prefix"
+	DDL_CHECK_UNIQUE_INDEX_PRIFIX        = "ddl_check_unique_index_prefix"
+	DDL_CHECK_COLUMN_WITHOUT_NOT_NULL    = "ddl_check_column_without_not_null"
 )
 
 // inspector config code
@@ -257,6 +258,51 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "mycat dml 必须使用分片字段",
 		Func:    checkMycatShardingColumn,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_TABLE_WITHOUT_COMMENT,
+			Desc:  "表建议添加注释",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "表建议添加注释",
+		Func:    checkTableWithoutComment,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_WITHOUT_COMMENT,
+			Desc:  "列建议添加注释",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "列建议添加注释",
+		Func:    checkColumnWithoutComment,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_INDEX_PREFIX,
+			Desc:  "普通索引必须要以\"idx_\"为前缀",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "普通索引必须要以\"idx_\"为前缀",
+		Func:    checkIndexPrefix,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_UNIQUE_INDEX_PRIFIX,
+			Desc:  "Unique索引必须要以\"uniq_\"为前缀",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "Unique索引必须要以\"uniq_\"为前缀",
+		Func:    checkUniqIndexPrefix,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_WITHOUT_NOT_NULL,
+			Desc:  "每个列都必须使用 NOT NULL",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "每个列都必须使用 NOT NULL",
+		Func:    checkColumnWithoutNotNull,
 	},
 }
 
@@ -930,6 +976,167 @@ func checkMycatShardingColumn(i *Inspect, node ast.Node) error {
 	}
 	if !hasShardingColumn {
 		i.addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM)
+	}
+	return nil
+}
+
+func checkTableWithoutComment(i *Inspect, node ast.Node) error {
+	var tableHasComment bool
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		// if has refer table, sql is create table ... like ...
+		if stmt.ReferTable != nil {
+			return nil
+		}
+		if stmt.Options != nil {
+			for _, option := range stmt.Options {
+				if option.Tp == ast.TableOptionComment {
+					tableHasComment = true
+					break
+				}
+			}
+		}
+		if !tableHasComment {
+			i.addResult(DDL_CHECK_TABLE_WITHOUT_COMMENT)
+		}
+	}
+	return nil
+}
+
+func checkColumnWithoutComment(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			columnHasComment := false
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionComment {
+					columnHasComment = true
+				}
+			}
+			if !columnHasComment {
+				i.addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+			for _, col := range spec.NewColumns {
+				columnHasComment := false
+				for _, op := range col.Options {
+					if op.Tp == ast.ColumnOptionComment {
+						columnHasComment = true
+					}
+				}
+				if !columnHasComment {
+					i.addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT)
+					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkIndexPrefix(i *Inspect, node ast.Node) error {
+	indexesName := []string{}
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintIndex:
+				indexesName = append(indexesName, constraint.Name)
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintIndex:
+				indexesName = append(indexesName, spec.Constraint.Name)
+			}
+		}
+	default:
+		return nil
+	}
+	for _, name := range indexesName {
+		if !strings.HasPrefix(name, "idx_") {
+			i.addResult(DDL_CHECK_INDEX_PREFIX)
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkUniqIndexPrefix(i *Inspect, node ast.Node) error {
+	uniqueIndexesName := []string{}
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintUniq:
+				uniqueIndexesName = append(uniqueIndexesName, constraint.Name)
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintUniq:
+				uniqueIndexesName = append(uniqueIndexesName, spec.Constraint.Name)
+			}
+		}
+	default:
+		return nil
+	}
+	for _, name := range uniqueIndexesName {
+		if !strings.HasPrefix(name, "uniq_") {
+			i.addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX)
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkColumnWithoutNotNull(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			columnHasNotNull := false
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionNotNull {
+					columnHasNotNull = true
+				}
+			}
+			if !columnHasNotNull {
+				i.addResult(DDL_CHECK_COLUMN_WITHOUT_NOT_NULL)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+			for _, col := range spec.NewColumns {
+				columnHasNotNull := false
+				for _, op := range col.Options {
+					if op.Tp == ast.ColumnOptionNotNull {
+						columnHasNotNull = true
+					}
+				}
+				if !columnHasNotNull {
+					i.addResult(DDL_CHECK_COLUMN_WITHOUT_NOT_NULL)
+					return nil
+				}
+			}
+		}
 	}
 	return nil
 }
