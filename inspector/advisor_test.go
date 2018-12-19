@@ -283,8 +283,8 @@ func TestCheckInvalidCreateTable(t *testing.T) {
 		`
 CREATE TABLE if not exists not_exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -296,8 +296,8 @@ PRIMARY KEY (id)
 		`
 CREATE TABLE if not exists exist_db.exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -308,8 +308,8 @@ PRIMARY KEY (id)
 		`
 CREATE TABLE exist_db.exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -329,8 +329,8 @@ CREATE TABLE exist_db.not_exist_tb_1 like exist_db.not_exist_tb_2;
 		`
 CREATE TABLE if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT KEY COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -340,8 +340,8 @@ PRIMARY KEY (id)
 		`
 CREATE TABLE if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 PRIMARY KEY (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -352,8 +352,8 @@ PRIMARY KEY (v1)
 		`
 CREATE TABLE if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -364,8 +364,8 @@ PRIMARY KEY (id)
 		`
 CREATE TABLE if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_1 (v1),
 INDEX idx_1 (v2)
@@ -378,8 +378,8 @@ INDEX idx_1 (v2)
 		`
 CREATE TABLE if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_1 (v3),
 INDEX idx_2 (v4,v5)
@@ -392,7 +392,7 @@ INDEX idx_2 (v4,v5)
 func TestCheckInvalidAlterTable(t *testing.T) {
 	runInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`
-ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL COMMENT "unit test";
+ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
 			"not_exist_db"),
@@ -400,7 +400,7 @@ ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL COMMENT 
 
 	runInspectCase(t, "alter_table: table not exist", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL COMMENT "unit test";
+ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
 			"exist_db.not_exist_tb_1"),
@@ -408,7 +408,7 @@ ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL COMMENT 
 
 	runInspectCase(t, "alter_table: add a exist column", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 add column v1 varchar(255) NOT NULL COMMENT "unit test";
+ALTER TABLE exist_db.exist_tb_1 add column v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
 			"v1"),
@@ -456,7 +456,7 @@ ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
 
 	runInspectCase(t, "alter_table: change a not exist column", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL COMMENT "unit test";
+ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
 			"v5"),
@@ -464,7 +464,7 @@ ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL COMMEN
 
 	runInspectCase(t, "alter_table: change column to a exist column", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL COMMENT "unit test";
+ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
 			"v1"),
@@ -587,8 +587,8 @@ func TestCreateTableStmt(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -599,8 +599,8 @@ PRIMARY KEY (id)
 		`
 CREATE TABLE exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -610,8 +610,8 @@ PRIMARY KEY (id)
 	runInspectCase(t, "create_table: using keyword", DefaultMysqlInspect(),
 		"CREATE TABLE if not exists exist_db.`select` ("+
 			"id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT \"unit test\","+
-			"v1 varchar(255) NOT NULL COMMENT \"unit test\","+
-			"`create` varchar(255) NOT NULL COMMENT \"unit test\","+
+			"v1 varchar(255) NOT NULL DEFAULT \"unit test\" COMMENT \"unit test\","+
+			"`create` varchar(255) NOT NULL DEFAULT \"unit test\" COMMENT \"unit test\","+
 			"PRIMARY KEY (id),"+
 			"INDEX `show` (v1)"+
 			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT=\"unit test\";",
@@ -623,15 +623,15 @@ PRIMARY KEY (id)
 func TestAlterTableStmt(t *testing.T) {
 	runInspectCase(t, "alter_table: ok", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL COMMENT "unit test";
+ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult(),
 	)
 
 	runInspectCase(t, "alter_table: alter table need merge", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL COMMENT "unit test";
-ALTER TABLE exist_db.exist_tb_1 add column v6 varchar(255) NOT NULL COMMENT "unit test";
+ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+ALTER TABLE exist_db.exist_tb_1 add column v6 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult(),
 		newTestResult().addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE),
@@ -646,8 +646,8 @@ func TestCheckObjectNameLength(t *testing.T) {
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.%s (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length64),
 		newTestResult(),
@@ -657,8 +657,8 @@ PRIMARY KEY (id)
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.%s (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
@@ -668,8 +668,8 @@ PRIMARY KEY (id)
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-%s varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+%s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
@@ -679,8 +679,8 @@ PRIMARY KEY (id)
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_%s (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
@@ -695,13 +695,13 @@ ALTER TABLE exist_db.exist_tb_1 RENAME %s;`, length65),
 
 	runInspectCase(t, "alter_table:add column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255) NOT NULL COMMENT "unit test";`, length65),
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
 	runInspectCase(t, "alter_table:change column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255) NOT NULL COMMENT "unit test";`, length65),
+ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
@@ -723,8 +723,8 @@ func TestCheckPrimaryKey(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test"
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
@@ -734,8 +734,8 @@ v2 varchar(255) NOT NULL COMMENT "unit test"
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test"
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().addResult(DDL_CHECK_PRIMARY_KEY_EXIST),
@@ -744,9 +744,9 @@ v2 varchar(255) NOT NULL COMMENT "unit test"
 	runInspectCase(t, "create_table: primary key not auto increment", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+id bigint unsigned NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -757,8 +757,8 @@ PRIMARY KEY (id)
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -771,8 +771,8 @@ func TestCheckStringType(t *testing.T) {
 		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-	v1 char(20) NOT NULL COMMENT "unit test",
-	v2 varchar(255) NOT NULL COMMENT "unit test",
+	v1 char(20) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
@@ -783,8 +783,8 @@ func TestCheckStringType(t *testing.T) {
 		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-	v1 char(21) NOT NULL COMMENT "unit test",
-	v2 varchar(255) NOT NULL COMMENT "unit test",
+	v1 char(21) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
@@ -797,8 +797,8 @@ func TestCheckIndex(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_1 (id),
 INDEX idx_2 (id),
@@ -814,8 +814,8 @@ INDEX idx_5 (id)
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_1 (id),
 INDEX idx_2 (id),
@@ -832,10 +832,10 @@ INDEX idx_6 (id)
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
-v3 varchar(255) NOT NULL COMMENT "unit test",
-v4 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v4 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_1 (id,v1,v2,v3,v4)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -847,11 +847,11 @@ INDEX idx_1 (id,v1,v2,v3,v4)
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
-v3 varchar(255) NOT NULL COMMENT "unit test",
-v4 varchar(255) NOT NULL COMMENT "unit test",
-v5 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v4 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_1 (id,v1,v2,v3,v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -865,9 +865,9 @@ func TestCheckIndexColumnType(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
-b1 blob NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+b1 blob COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -879,9 +879,9 @@ INDEX idx_b1 (b1)
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
-b1 blob NOT NULL UNIQUE KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -894,8 +894,8 @@ func TestCheckForeignKey(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -909,8 +909,8 @@ func TestCheckTableComment(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `,
@@ -923,8 +923,8 @@ func TestCheckColumnComment(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) NOT NULL COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -933,21 +933,21 @@ PRIMARY KEY (id)
 
 	runInspectCase(t, "alter_table: column without comment(1)", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL;
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL DEFAULT "unit test";
 `,
 		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
 	)
 
 	runInspectCase(t, "alter_table: column without comment(2)", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL;
+ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL DEFAULT "unit test" ;
 `,
 		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
 	)
 }
 
-func TestCheckColumnNotNull(t *testing.T) {
-	runInspectCase(t, "create_table: column without not null", DefaultMysqlInspect(),
+func TestCheckColumnDefault(t *testing.T) {
+	runInspectCase(t, "create_table: column without default", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -955,21 +955,20 @@ v1 varchar(255) COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_NOT_NULL),
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
 	)
+}
 
-	runInspectCase(t, "alter_table: column without not null(1)", DefaultMysqlInspect(),
+func TestCheckColumnTimestampDefault(t *testing.T){
+	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) COMMENT "unit test";
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 timestamp COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_NOT_NULL),
-	)
-
-	runInspectCase(t, "alter_table: column without not null(2)", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) COMMENT "unit test";
-`,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_NOT_NULL),
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
 	)
 }
 

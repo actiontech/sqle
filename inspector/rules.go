@@ -9,28 +9,33 @@ import (
 
 // inspector rule code
 const (
-	DDL_CREATE_TABLE_NOT_EXIST           = "ddl_create_table_not_exist"
-	DDL_CHECK_OBJECT_NAME_LENGTH         = "ddl_check_object_name_length"
-	DDL_CHECK_PRIMARY_KEY_EXIST          = "ddl_check_primary_key_exist"
-	DDL_CHECK_PRIMARY_KEY_TYPE           = "ddl_check_primary_key_type"
-	DDL_DISABLE_VARCHAR_MAX              = "ddl_disable_varchar_max"
-	DDL_CHECK_TYPE_CHAR_LENGTH           = "ddl_check_type_char_length"
-	DDL_DISABLE_FOREIGN_KEY              = "ddl_disable_foreign_key"
-	DDL_CHECK_INDEX_COUNT                = "ddl_check_index_count"
-	DDL_CHECK_COMPOSITE_INDEX_MAX        = "ddl_check_composite_index_max"
-	DDL_DISABLE_USING_KEYWORD            = "ddl_disable_using_keyword"
-	DDL_TABLE_USING_INNODB_UTF8MB4       = "ddl_create_table_using_innodb"
-	DDL_DISABLE_INDEX_DATA_TYPE_BLOB     = "ddl_disable_index_column_blob"
-	DDL_CHECK_ALTER_TABLE_NEED_MERGE     = "ddl_check_alter_table_need_merge"
-	DDL_DISABLE_DROP_STATEMENT           = "ddl_disable_drop_statement"
-	DML_CHECK_INVALID_WHERE_CONDITION    = "ddl_check_invalid_where_condition"
-	DML_DISABE_SELECT_ALL_COLUMN         = "dml_disable_select_all_column"
-	DML_MYCAT_MUST_USING_SHARDING_CLOUNM = "dml_mycat_must_using_sharding_column"
-	DDL_CHECK_TABLE_WITHOUT_COMMENT      = "ddl_check_table_without_comment"
-	DDL_CHECK_COLUMN_WITHOUT_COMMENT     = "ddl_check_column_without_comment"
-	DDL_CHECK_INDEX_PREFIX               = "ddl_check_index_prefix"
-	DDL_CHECK_UNIQUE_INDEX_PRIFIX        = "ddl_check_unique_index_prefix"
-	DDL_CHECK_COLUMN_WITHOUT_NOT_NULL    = "ddl_check_column_without_not_null"
+	DDL_CREATE_TABLE_NOT_EXIST                 = "ddl_create_table_not_exist"
+	DDL_CHECK_OBJECT_NAME_LENGTH               = "ddl_check_object_name_length"
+	DDL_CHECK_PRIMARY_KEY_EXIST                = "ddl_check_primary_key_exist"
+	DDL_CHECK_PRIMARY_KEY_TYPE                 = "ddl_check_primary_key_type"
+	DDL_DISABLE_VARCHAR_MAX                    = "ddl_disable_varchar_max"
+	DDL_CHECK_TYPE_CHAR_LENGTH                 = "ddl_check_type_char_length"
+	DDL_DISABLE_FOREIGN_KEY                    = "ddl_disable_foreign_key"
+	DDL_CHECK_INDEX_COUNT                      = "ddl_check_index_count"
+	DDL_CHECK_COMPOSITE_INDEX_MAX              = "ddl_check_composite_index_max"
+	DDL_DISABLE_USING_KEYWORD                  = "ddl_disable_using_keyword"
+	DDL_TABLE_USING_INNODB_UTF8MB4             = "ddl_create_table_using_innodb"
+	DDL_DISABLE_INDEX_DATA_TYPE_BLOB           = "ddl_disable_index_column_blob"
+	DDL_CHECK_ALTER_TABLE_NEED_MERGE           = "ddl_check_alter_table_need_merge"
+	DDL_DISABLE_DROP_STATEMENT                 = "ddl_disable_drop_statement"
+	DML_CHECK_INVALID_WHERE_CONDITION          = "ddl_check_invalid_where_condition"
+	DML_DISABE_SELECT_ALL_COLUMN               = "dml_disable_select_all_column"
+	DML_MYCAT_MUST_USING_SHARDING_CLOUNM       = "dml_mycat_must_using_sharding_column"
+	DDL_CHECK_TABLE_WITHOUT_COMMENT            = "ddl_check_table_without_comment"
+	DDL_CHECK_COLUMN_WITHOUT_COMMENT           = "ddl_check_column_without_comment"
+	DDL_CHECK_INDEX_PREFIX                     = "ddl_check_index_prefix"
+	DDL_CHECK_UNIQUE_INDEX_PRIFIX              = "ddl_check_unique_index_prefix"
+	DDL_CHECK_COLUMN_WITHOUT_DEFAULT           = "ddl_check_column_without_default"
+	DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT = "ddl_check_column_timestamp_without_default"
+	DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL        = "ddl_check_column_blob_with_not_null"
+	DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL  = "ddl_check_column_blob_default_is_not_null"
+	DML_CHECK_WITH_LIMIT                       = "dml_check_with_limit"
+	DML_CHECK_WITH_ORDER_BY                    = "dml_check_with_order_by"
 )
 
 // inspector config code
@@ -289,20 +294,65 @@ var RuleHandlers = []RuleHandler{
 	RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_UNIQUE_INDEX_PRIFIX,
-			Desc:  "Unique索引必须要以\"uniq_\"为前缀",
+			Desc:  "unique索引必须要以\"uniq_\"为前缀",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "Unique索引必须要以\"uniq_\"为前缀",
+		Message: "unique索引必须要以\"uniq_\"为前缀",
 		Func:    checkUniqIndexPrefix,
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_COLUMN_WITHOUT_NOT_NULL,
-			Desc:  "每个列都必须使用 NOT NULL",
+			Name:  DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
+			Desc:  "除了自增列及大字段列之外，每个列都必须添加默认值",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "每个列都必须使用 NOT NULL",
-		Func:    checkColumnWithoutNotNull,
+		Message: "除了自增列及大字段列之外，每个列都必须添加默认值",
+		Func:    checkColumnWithoutDefault,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
+			Desc:  "timestamp 类型的列必须添加默认值",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "timestamp 类型的列必须添加默认值",
+		Func:    checkColumnTimestampWithoutDefault,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
+			Desc:  "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+		Func:    checkColumnBlobNotNull,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
+			Desc:  "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+		Func:    checkColumnBlobDefaultNull,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WITH_LIMIT,
+			Desc:  "delete/update 语句不能有limit条件",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "delete/update 语句不能有limit条件",
+		Func:    checkDMLWithLimit,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WITH_ORDER_BY,
+			Desc:  "delete/update 语句不能有order by",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "delete/update 语句不能有order by",
+		Func:    checkDMLWithOrderBy,
 	},
 }
 
@@ -411,13 +461,6 @@ func checkMergeAlterTable(i *Inspect, node ast.Node) error {
 				i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
 			}
 		}
-		//_, ok := i.alterTableStmts[tableName]
-		//if ok {
-		//	i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
-		//	i.alterTableStmts[tableName] = append(i.alterTableStmts[tableName], stmt)
-		//} else {
-		//	i.alterTableStmts[tableName] = []*ast.AlterTableStmt{stmt}
-		//}
 	}
 
 	return nil
@@ -1101,21 +1144,38 @@ func checkUniqIndexPrefix(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnWithoutNotNull(i *Inspect, node ast.Node) error {
+func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
 			return nil
 		}
 		for _, col := range stmt.Cols {
-			columnHasNotNull := false
+			if col == nil {
+				continue
+			}
+			isAutoIncrementColumn := false
+			isBlobColumn := false
+			columnHasDefault := false
 			for _, option := range col.Options {
-				if option.Tp == ast.ColumnOptionNotNull {
-					columnHasNotNull = true
+				if option.Tp == ast.ColumnOptionAutoIncrement {
+					isAutoIncrementColumn = true
+				}
+
+				switch col.Tp.Tp {
+				case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob:
+					isBlobColumn = true
+				}
+
+				if option.Tp == ast.ColumnOptionDefaultValue {
+					columnHasDefault = true
 				}
 			}
-			if !columnHasNotNull {
-				i.addResult(DDL_CHECK_COLUMN_WITHOUT_NOT_NULL)
+			if isAutoIncrementColumn || isBlobColumn {
+				continue
+			}
+			if !columnHasDefault {
+				i.addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
 				return nil
 			}
 		}
@@ -1125,17 +1185,175 @@ func checkColumnWithoutNotNull(i *Inspect, node ast.Node) error {
 		}
 		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
 			for _, col := range spec.NewColumns {
-				columnHasNotNull := false
+				columnHasDefault := false
 				for _, op := range col.Options {
-					if op.Tp == ast.ColumnOptionNotNull {
-						columnHasNotNull = true
+					if op.Tp == ast.ColumnOptionDefaultValue {
+						columnHasDefault = true
 					}
 				}
-				if !columnHasNotNull {
-					i.addResult(DDL_CHECK_COLUMN_WITHOUT_NOT_NULL)
+				if !columnHasDefault {
+					i.addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
 					return nil
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func checkColumnTimestampWithoutDefault(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			columnHasDefault := false
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionDefaultValue {
+					columnHasDefault = true
+				}
+			}
+			if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
+				i.addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+			for _, col := range spec.NewColumns {
+				columnHasDefault := false
+				for _, op := range col.Options {
+					if op.Tp == ast.ColumnOptionDefaultValue {
+						columnHasDefault = true
+					}
+				}
+				if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
+					i.addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT)
+					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkColumnBlobNotNull(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Tp == nil {
+				continue
+			}
+			switch col.Tp.Tp {
+			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+				for _, opt := range col.Options {
+					if opt.Tp == ast.ColumnOptionNotNull {
+						i.addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL)
+						return nil
+					}
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
+			ast.AlterTableModifyColumn) {
+			for _, col := range spec.NewColumns {
+				if col.Tp == nil {
+					continue
+				}
+				switch col.Tp.Tp {
+				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+					for _, opt := range col.Options {
+						if opt.Tp == ast.ColumnOptionNotNull {
+							i.addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL)
+							return nil
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkColumnBlobDefaultNull(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Tp == nil {
+				continue
+			}
+			switch col.Tp.Tp {
+			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+				for _, opt := range col.Options {
+					if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
+						i.addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL)
+						return nil
+					}
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn, ast.AlterTableAlterColumn,
+			ast.AlterTableChangeColumn, ast.AlterTableAddColumns) {
+			for _, col := range spec.NewColumns {
+				if col.Tp == nil {
+					continue
+				}
+				switch col.Tp.Tp {
+				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+					for _, opt := range col.Options {
+						if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
+							i.addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL)
+							return nil
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkDMLWithLimit(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.UpdateStmt:
+		if stmt.Limit != nil {
+			i.addResult(DML_CHECK_WITH_LIMIT)
+		}
+	case *ast.DeleteStmt:
+		if stmt.Limit != nil {
+			i.addResult(DML_CHECK_WITH_LIMIT)
+		}
+	}
+	return nil
+}
+
+func checkDMLWithOrderBy(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.UpdateStmt:
+		if stmt.Order != nil {
+			i.addResult(DML_CHECK_WITH_ORDER_BY)
+		}
+	case *ast.DeleteStmt:
+		if stmt.Order != nil {
+			i.addResult(DML_CHECK_WITH_ORDER_BY)
 		}
 	}
 	return nil
