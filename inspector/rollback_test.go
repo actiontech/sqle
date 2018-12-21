@@ -64,6 +64,13 @@ CHANGE COLUMN v1 v3 varchar(30) NOT NULL COMMENT "unit test";`,
 			"CHANGE COLUMN `v3` `v1` varchar(255) NOT NULL DEFAULT \"v1\" COMMENT \"unit test\";",
 	)
 
+	runrollbackCase(t, "modify column need modify column", DefaultMysqlInspect(),
+		`ALTER TABLE exist_db.exist_tb_1
+MODIFY COLUMN v1 varchar(30) NOT NULL COMMENT "unit test";`,
+		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
+			"MODIFY COLUMN `v1` varchar(255) NOT NULL DEFAULT \"v1\" COMMENT \"unit test\";",
+	)
+
 	runrollbackCase(t, "alter column need alter column(1_1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ALTER COLUMN v1 DROP DEFAULT;`,
