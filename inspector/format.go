@@ -45,6 +45,10 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 			return fmt.Sprintf("CHANGE COLUMN `%s` %s",
 				stmt.OldColumnName.Name.String(), columnDefFormat(stmt.NewColumns[0]))
 		}
+	case ast.AlterTableModifyColumn:
+		if stmt.NewColumns != nil {
+			return fmt.Sprintf("MODIFY COLUMN %s", columnDefFormat(stmt.NewColumns[0]))
+		}
 	case ast.AlterTableAlterColumn:
 		if stmt.NewColumns != nil {
 			col := stmt.NewColumns[0]
