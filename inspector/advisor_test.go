@@ -488,7 +488,19 @@ CREATE DATABASE exist_db;
 }
 
 func TestCheckInvalidCreateIndex(t *testing.T) {
+	runInspectCase(t, "create_index: index exist", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_1 ON exist_db.exist_tb_1(v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG, "idx_1"),
+	)
 
+	runInspectCase(t, "create_index: key column not exist", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_2 ON exist_db.exist_tb_1(v3);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG, "v3"),
+	)
 }
 
 func TestCheckInvalidDrop(t *testing.T) {
@@ -561,26 +573,21 @@ DROP INDEX idx_2 ON exist_db.exist_tb_1;
 	)
 }
 
-//func TestInspector_Advise_ObjectExist(t *testing.T) {
-//	runInspectCase(t, "create_table: table exist", DefaultMysqlInspect(),
-//		`
-//CREATE TABLE if not exists exist_db.exist_tb_1 (
-//id bigint unsigned NOT NULL AUTO_INCREMENT,
-//v1 varchar(255) DEFAULT NULL,
-//v2 varchar(255) DEFAULT NULL,
-//PRIMARY KEY (id)
-//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
-//`,
-//		newTestResult().addResult(TABLE_EXIST, "exist_db.exist_tb_1"),
-//	)
-//
-//	runInspectCase(t, "create_database: schema exist", DefaultMysqlInspect(),
-//		`
-//CREATE DATABASE exist_db;
-//`,
-//		newTestResult().addResult(SCHEMA_EXIST, "exist_db"),
-//	)
-//}
+func TestCheckInvalidInsert(t *testing.T) {
+	runInspectCase(t, "insert: schema not exist", DefaultMysqlInspect(),
+		`
+insert into not_exist_db.not_exist_tb values (1,"1","1");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "insert: table not exist", DefaultMysqlInspect(),
+		`
+insert into exist_db.not_exist_tb values (1,"1","1");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+}
 
 func TestCreateTableStmt(t *testing.T) {
 	runInspectCase(t, "create_table: ok", DefaultMysqlInspect(),
@@ -957,9 +964,17 @@ PRIMARY KEY (id)
 `,
 		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
 	)
+
+	runInspectCase(t, "alter_table: column without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
+	)
 }
 
-func TestCheckColumnTimestampDefault(t *testing.T){
+func TestCheckColumnTimestampDefault(t *testing.T) {
+	delete(RuleHandlerMap, DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
 	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
@@ -968,7 +983,54 @@ v1 timestamp COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
+		newTestResult().addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT),
+	)
+
+	runInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT),
+	)
+}
+
+func TestCheckColumnBlobNotNull(t *testing.T) {
+	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 blob NOT NULL COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL),
+	)
+
+	runInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob NOT NULL COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL),
+	)
+}
+
+func TestCheckColumnBlobDefaultNull(t *testing.T) {
+	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 blob DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL),
+	)
+
+	runInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL),
 	)
 }
 
