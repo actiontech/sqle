@@ -179,7 +179,6 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 	}
 
 	if pkCounter > 1 {
-		// add result, multiple primary key
 		results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG)
 	}
 	notExistKeyColsName := []string{}
@@ -189,7 +188,6 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 		}
 	}
 	if len(notExistKeyColsName) > 0 {
-		// add result, key column doesn't exist in table
 		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(notExistKeyColsName), ","))
 	}
@@ -470,7 +468,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 	}
 	if len(keyColNeedExist) > 0 {
 		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
-			removeDuplicate(keyColNeedExist))
+			strings.Join(removeDuplicate(keyColNeedExist), ","))
 	}
 	return nil
 }
