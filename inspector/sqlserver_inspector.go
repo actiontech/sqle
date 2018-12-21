@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"sqle/model"
 	"sqle/sqlserverClient"
+	"sqle/sqlserver/SqlserverProto"
 )
 
 type SqlserverInspect struct {
@@ -61,6 +62,12 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 
 func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	i.Logger().Info("start generate rollback sql")
-	i.Logger().Info("generate rollback sql finish")
-	return []*model.RollbackSql{}, nil
+	var meta = sqlserverClient.GetSqlserverMeta(i.Task.Instance.User, i.Task.Instance.Password, i.Task.Instance.Host, i.Task.Instance.Port, i.Task.Schema, "")
+	rollbackSqls, err := sqlserverClient.GetClient().GenerateAllRollbackSql(i.Task.CommitSqls, &SqlserverProto.Config{DMLRollbackMaxRows: i.config.DMLRollbackMaxRows}, meta)
+	if err != nil {
+		i.Logger().Errorf("generage t-sql rollback sqls error: %v", err)
+	} else {
+		i.Logger().Info("generate rollback sql finish")
+	}
+	return i.Inspect.GetAllRollbackSql(rollbackSqls), err
 }

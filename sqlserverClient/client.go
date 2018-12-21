@@ -105,3 +105,25 @@ func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta 
 	}
 	return errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 }
+
+func (c *Client) GenerateAllRollbackSql(commitSqls []*model.CommitSql, config *SqlserverProto.Config, meta *SqlserverProto.SqlserverMeta) ([]string, error) {
+	sqls := []string{}
+	for _, commitSql := range commitSqls {
+		sqls = append(sqls, commitSql.Content)
+	}
+	out, err := c.client.GetRollbackSqls(context.Background(), &SqlserverProto.GetRollbackSqlsInput{
+		Version: c.version,
+		Sqls: sqls,
+		SqlserverMeta: meta,
+		RollbackConfig: config,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	rollbackSqls := []string{}
+	for _, v := range out.GetRollbackSqls() {
+		rollbackSqls = append(rollbackSqls, v.Sql)
+	}
+ 	return rollbackSqls, err
+}

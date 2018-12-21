@@ -38,17 +38,19 @@ namespace SqlserverProto {
             "dHB1dC5SZXN1bHRzRW50cnkaTAoMUmVzdWx0c0VudHJ5EgsKA2tleRgBIAEo",
             "CRIrCgV2YWx1ZRgCIAEoCzIcLlNxbHNlcnZlclByb3RvLkFkdmlzZVJlc3Vs",
             "dDoCOAEiQAoMQWR2aXNlUmVzdWx0EhMKC0FkdmlzZUxldmVsGAEgASgJEhsK",
-            "E0FkdmlzZVJlc3VsdE1lc3NhZ2UYAiABKAkiawoUR2V0Um9sbGJhY2tTcWxz",
-            "SW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIgAygJEjQKDVNxbHNl",
-            "cnZlck1ldGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2ZXJNZXRh",
-            "IkIKFUdldFJvbGxiYWNrU3Fsc091dHB1dBIpCgxSb2xsYmFja1NxbHMYASAD",
-            "KAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwyjgIKEFNxbHNlcnZlclNlcnZpY2US",
-            "UQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxzSW5w",
-            "dXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQiABJFCgZBZHZp",
-            "c2USGy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJbnB1dBocLlNxbHNlcnZlclBy",
-            "b3RvLkFkdmlzZU91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3FscxIkLlNxbHNl",
-            "cnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJv",
-            "dG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
+            "E0FkdmlzZVJlc3VsdE1lc3NhZ2UYAiABKAkiJAoGQ29uZmlnEhoKEkRNTFJv",
+            "bGxiYWNrTWF4Um93cxgBIAEoAyKbAQoUR2V0Um9sbGJhY2tTcWxzSW5wdXQS",
+            "DwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIgAygJEjQKDVNxbHNlcnZlck1l",
+            "dGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2ZXJNZXRhEi4KDlJv",
+            "bGxiYWNrQ29uZmlnGAQgASgLMhYuU3Fsc2VydmVyUHJvdG8uQ29uZmlnIkIK",
+            "FUdldFJvbGxiYWNrU3Fsc091dHB1dBIpCgxSb2xsYmFja1NxbHMYASADKAsy",
+            "Ey5TcWxzZXJ2ZXJQcm90by5TcWwyjgIKEFNxbHNlcnZlclNlcnZpY2USUQoM",
+            "R2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxzSW5wdXQa",
+            "Hy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQiABJFCgZBZHZpc2US",
+            "Gy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJbnB1dBocLlNxbHNlcnZlclByb3Rv",
+            "LkFkdmlzZU91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3FscxIkLlNxbHNlcnZl",
+            "clByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJvdG8u",
+            "R2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -59,7 +61,8 @@ namespace SqlserverProto {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results" }, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Config), global::SqlserverProto.Config.Parser, new[]{ "DMLRollbackMaxRows" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta", "RollbackConfig" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null)
           }));
     }
@@ -1280,6 +1283,135 @@ namespace SqlserverProto {
 
   }
 
+  public sealed partial class Config : pb::IMessage<Config> {
+    private static readonly pb::MessageParser<Config> _parser = new pb::MessageParser<Config>(() => new Config());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<Config> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[7]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public Config() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public Config(Config other) : this() {
+      dMLRollbackMaxRows_ = other.dMLRollbackMaxRows_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public Config Clone() {
+      return new Config(this);
+    }
+
+    /// <summary>Field number for the "DMLRollbackMaxRows" field.</summary>
+    public const int DMLRollbackMaxRowsFieldNumber = 1;
+    private long dMLRollbackMaxRows_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public long DMLRollbackMaxRows {
+      get { return dMLRollbackMaxRows_; }
+      set {
+        dMLRollbackMaxRows_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as Config);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(Config other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (DMLRollbackMaxRows != other.DMLRollbackMaxRows) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (DMLRollbackMaxRows != 0L) hash ^= DMLRollbackMaxRows.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      if (DMLRollbackMaxRows != 0L) {
+        output.WriteRawTag(8);
+        output.WriteInt64(DMLRollbackMaxRows);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (DMLRollbackMaxRows != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(DMLRollbackMaxRows);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(Config other) {
+      if (other == null) {
+        return;
+      }
+      if (other.DMLRollbackMaxRows != 0L) {
+        DMLRollbackMaxRows = other.DMLRollbackMaxRows;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            DMLRollbackMaxRows = input.ReadInt64();
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
   public sealed partial class GetRollbackSqlsInput : pb::IMessage<GetRollbackSqlsInput> {
     private static readonly pb::MessageParser<GetRollbackSqlsInput> _parser = new pb::MessageParser<GetRollbackSqlsInput>(() => new GetRollbackSqlsInput());
     private pb::UnknownFieldSet _unknownFields;
@@ -1288,7 +1420,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[7]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[8]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1308,6 +1440,7 @@ namespace SqlserverProto {
       version_ = other.version_;
       sqls_ = other.sqls_.Clone();
       sqlserverMeta_ = other.sqlserverMeta_ != null ? other.sqlserverMeta_.Clone() : null;
+      rollbackConfig_ = other.rollbackConfig_ != null ? other.rollbackConfig_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1348,6 +1481,17 @@ namespace SqlserverProto {
       }
     }
 
+    /// <summary>Field number for the "RollbackConfig" field.</summary>
+    public const int RollbackConfigFieldNumber = 4;
+    private global::SqlserverProto.Config rollbackConfig_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public global::SqlserverProto.Config RollbackConfig {
+      get { return rollbackConfig_; }
+      set {
+        rollbackConfig_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as GetRollbackSqlsInput);
@@ -1364,6 +1508,7 @@ namespace SqlserverProto {
       if (Version != other.Version) return false;
       if(!sqls_.Equals(other.sqls_)) return false;
       if (!object.Equals(SqlserverMeta, other.SqlserverMeta)) return false;
+      if (!object.Equals(RollbackConfig, other.RollbackConfig)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1373,6 +1518,7 @@ namespace SqlserverProto {
       if (Version.Length != 0) hash ^= Version.GetHashCode();
       hash ^= sqls_.GetHashCode();
       if (sqlserverMeta_ != null) hash ^= SqlserverMeta.GetHashCode();
+      if (rollbackConfig_ != null) hash ^= RollbackConfig.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1395,6 +1541,10 @@ namespace SqlserverProto {
         output.WriteRawTag(26);
         output.WriteMessage(SqlserverMeta);
       }
+      if (rollbackConfig_ != null) {
+        output.WriteRawTag(34);
+        output.WriteMessage(RollbackConfig);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1409,6 +1559,9 @@ namespace SqlserverProto {
       size += sqls_.CalculateSize(_repeated_sqls_codec);
       if (sqlserverMeta_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(SqlserverMeta);
+      }
+      if (rollbackConfig_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(RollbackConfig);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1430,6 +1583,12 @@ namespace SqlserverProto {
           sqlserverMeta_ = new global::SqlserverProto.SqlserverMeta();
         }
         SqlserverMeta.MergeFrom(other.SqlserverMeta);
+      }
+      if (other.rollbackConfig_ != null) {
+        if (rollbackConfig_ == null) {
+          rollbackConfig_ = new global::SqlserverProto.Config();
+        }
+        RollbackConfig.MergeFrom(other.RollbackConfig);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1457,6 +1616,13 @@ namespace SqlserverProto {
             input.ReadMessage(sqlserverMeta_);
             break;
           }
+          case 34: {
+            if (rollbackConfig_ == null) {
+              rollbackConfig_ = new global::SqlserverProto.Config();
+            }
+            input.ReadMessage(rollbackConfig_);
+            break;
+          }
         }
       }
     }
@@ -1471,7 +1637,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[8]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[9]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

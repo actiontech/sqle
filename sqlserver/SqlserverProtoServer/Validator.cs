@@ -285,6 +285,7 @@ namespace SqlserverProtoServer {
     /// </summary>
     public class SqlserverContext {
         public SqlserverMeta SqlserverMeta;
+        public Config Config;
 
         // advise context
         public Dictionary<String/*database*/, bool> AllDatabases;
@@ -462,6 +463,91 @@ namespace SqlserverProtoServer {
             return SqlserverMeta.CurrentSchema;
         }
 
+        public List<String> GetPrimaryKeys(String databaseName, String schemaName, String tableName) {
+            var ret = new List<String>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand(String.Format("SELECT " +
+                                                                  "c.name AS Primary_key " +
+                                                                  "FROM sys.indexes ix JOIN sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                                                  "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key = 1", databaseName, schemaName, tableName), connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        ret.Add((String)reader["Primary_key"]);
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+            return ret;
+        }
+
+        public List<String> GetColumns(String databaseName, String schemaName, String tableName) {
+            var ret = new List<String>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand(String.Format("SELECT " +
+                                                                  "c.name AS Column_name " +
+                                                                  "FROM sys.columns c WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName), connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        ret.Add((String)reader["Column_name"]);
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+            return ret;
+        }
+
+        public List<Dictionary<String, String>> GetRecords(String databaseName, String schemaName, String tableName, String where) {
+            var ret = new List<Dictionary<String, String>>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                String query = String.Format("SELECT * FROM {0}.{1}.{2} {3}", databaseName, schemaName, tableName, where);
+                Console.WriteLine("query:{0}", query);
+                SqlCommand command = new SqlCommand(query, connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        var row = new Dictionary<String, String>();
+                        for (int index = 0; index < reader.FieldCount; index++) {
+                            row[reader.GetName(index)] = reader.GetValue(index).ToString();
+                        }
+                        ret.Add(row);
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+            return ret;
+        }
+
+        public int GetRecordsCount(String databaseName, String schemaName, String tableName, String where) {
+            var ret = 0;
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                String query = String.Format("SELECT COUNT(*) AS counter FROM {0}.{1}.{2} {3}", databaseName, schemaName, tableName, where);
+                Console.WriteLine("query:{0}", query);
+                SqlCommand command = new SqlCommand(String.Format("SELECT COUNT(*) AS counter FROM {0}.{1}.{2} {3}", databaseName, schemaName, tableName, where), connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        ret = (int)reader["counter"];
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+            return ret;
+        }
+
         public void ResetTableColumnDefinitions(String databaseName, String schemaName, String tableName) {
             var columnDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
             if (TableColumnDefinitions.ContainsKey(columnDefinitionKey)) {
@@ -601,7 +687,7 @@ namespace SqlserverProtoServer {
             TableColumnDefinitions[columnDefinitionKey] = result;
             return result;
         }
-       
+
         public void ResetTableConstraintDefinitions(String databaseName, String schemaName, String tableName) {
             var constraintDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
             if (TableConstraintDefinitions.ContainsKey(constraintDefinitionKey)) {
@@ -780,6 +866,10 @@ namespace SqlserverProtoServer {
             return result;
         }
 
+        public SqlserverContext(SqlserverMeta sqlserverMeta, Config config): this(sqlserverMeta) {
+            this.Config = config;
+        }
+
         public SqlserverContext(SqlserverMeta sqlserverMeta) {
             this.SqlserverMeta = sqlserverMeta;
             AllDatabases = new Dictionary<String, bool>();
@@ -800,7 +890,7 @@ namespace SqlserverProtoServer {
 
         public bool DatabaseExists(String databaseName) {
             bool notBeDroped = true;
-            foreach(var action in DDLActions) {
+            foreach (var action in DDLActions) {
                 if (action.ID == databaseName && action.Action == DDLAction.ADD_DATABASE) {
                     notBeDroped = true;
                 }
@@ -867,6 +957,13 @@ namespace SqlserverProtoServer {
         }
 
         public void GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(SchemaObjectName schemaObjectName, out String databaseName, out String schemaName, out String tableName) {
+            if (schemaObjectName == null) {
+                databaseName = GetCurrentDatabase();
+                schemaName = GetCurrentSchema();
+                tableName = "";
+                return;
+            }
+
             var databaseIdentifier = schemaObjectName.DatabaseIdentifier;
             if (databaseIdentifier != null) {
                 databaseName = databaseIdentifier.Value;
@@ -960,7 +1057,6 @@ namespace SqlserverProtoServer {
                         }
                         TableIndexDefinitions = newTableIndexDefinitions;
                     }
-
                     break;
 
                 case DropSchemaStatement dropSchemaStatement:
@@ -983,6 +1079,80 @@ namespace SqlserverProtoServer {
                         ResetTableColumnDefinitions(databaseName, schemaName, tableName);
                         ResetTableConstraintDefinitions(databaseName, schemaName, tableName);
                         ResetTableIndexDefinitions(databaseName, schemaName, tableName);
+                    }
+                    break;
+
+                case ExecuteStatement executeStatement:
+                    var entity = executeStatement.ExecuteSpecification.ExecutableEntity;
+                    if (entity is ExecutableProcedureReference) {
+                        var procedure = entity as ExecutableProcedureReference;
+                        if (procedure.ProcedureReference is ProcedureReferenceName) {
+                            var procedureName = procedure.ProcedureReference as ProcedureReferenceName;
+                            var baseName = procedureName.ProcedureReference.Name.BaseIdentifier.Value;
+                            if (baseName.ToLower() == "sp_rename") {
+                                GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(null, out databaseName, out schemaName, out tableName);
+                                if (procedure.Parameters.Count > 2) {
+                                    // rename column
+                                    var type = procedure.Parameters[2].ParameterValue as StringLiteral;
+                                    if (type.Value.ToUpper() == "COLUMN") {
+                                        var oldColumnName = "";
+                                        var objNameArray = (procedure.Parameters[0].ParameterValue as StringLiteral).Value.Split(".");
+                                        if (objNameArray.Length == 2) {
+                                            tableName = objNameArray[0];
+                                            oldColumnName = objNameArray[1];
+                                        }
+                                        if (objNameArray.Length == 3) {
+                                            schemaName = objNameArray[0];
+                                            tableName = objNameArray[1];
+                                            oldColumnName = objNameArray[2];
+                                        }
+                                        var newColumnName = (procedure.Parameters[1].ParameterValue as StringLiteral).Value.Split(".")[0];
+
+                                        var tableColumnDefinitions = GetTableColumnDefinitions(databaseName, schemaName, tableName);
+                                        if (tableColumnDefinitions.Count == 0) {
+                                            break;
+                                        }
+                                        var newColumnDefinitions = new Dictionary<String, String>();
+                                        foreach (var columnDefinitionPair in tableColumnDefinitions) {
+                                            if (columnDefinitionPair.Key == newColumnName) {
+                                                newColumnDefinitions[newColumnName] = columnDefinitionPair.Value;
+                                            } else {
+                                                newColumnDefinitions[columnDefinitionPair.Key] = columnDefinitionPair.Value;
+                                            }
+                                        }
+                                        TableColumnDefinitions[String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName)] = newColumnDefinitions;
+                                    }
+                                } else if (procedure.Parameters.Count == 2){
+                                    // rename table
+                                    var objNameArray = (procedure.Parameters[0].ParameterValue as StringLiteral).Value.Split(".");
+                                    if (objNameArray.Length == 2) {
+                                        schemaName = objNameArray[0];
+                                        tableName = objNameArray[1];
+                                        var newTableName = (procedure.Parameters[1].ParameterValue as StringLiteral).Value.Split(".")[0];
+                                        String key = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+                                        String newKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, newTableName);
+
+                                        var tableColumnDefinitions = GetTableColumnDefinitions(databaseName, schemaName, tableName);
+                                        if (tableColumnDefinitions.Count > 0) {
+                                            TableColumnDefinitions.Remove(key);
+                                            TableColumnDefinitions[newKey] = tableColumnDefinitions;
+                                        }
+
+                                        var tableIndexDefinitions = GetTableIndexDefinitions(databaseName, schemaName, tableName);
+                                        if (tableIndexDefinitions.Count > 0) {
+                                            TableIndexDefinitions.Remove(key);
+                                            TableIndexDefinitions[newKey] = tableIndexDefinitions;
+                                        }
+
+                                        var tableConstaintDefinitions = GetTableConstraintDefinitions(databaseName, schemaName, tableName);
+                                        if (tableConstaintDefinitions.Count > 0) {
+                                            TableConstraintDefinitions.Remove(key);
+                                            TableConstraintDefinitions[newKey] = tableConstaintDefinitions;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     break;
             }

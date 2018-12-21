@@ -84,13 +84,7 @@ namespace SqlServerProtoServerTest {
                 // rename table schem.table
                 "EXEC sp_rename 'dbo.test', 'test1';",
                 // rename column table.column|schema.table.column
-                "EXEC sp_rename 'dbo.test.column_b', 'column_b1', 'COLUMN';",
-                // rename index table.index|schema.table.index
-                "EXEC sp_rename N'dbo.test.IX_index', N'IX_index1', N'INDEX';",
-                // rename constraint schema.constraint
-                "EXEC sp_rename 'dbo.constraint1', 'constraint2';",
-                // rename user data type
-                "EXEC sp_rename N'Phone', N'Telephone', N'USERDATATYPE';",
+                "EXEC sp_rename 'dbo.test.column_b', 'column_b1', 'COLUMN';"
             }) {
                 var statementList = ParseStatementList(text);
                 foreach (var statement in statementList.Statements) {
@@ -171,30 +165,88 @@ namespace SqlServerProtoServerTest {
             //rollbackCreateIndex();
             //rollbackDropIndex();
             //rollbackDropTable();
-            rollbackAlterTable();
+            //rollbackAlterTable();
+        }
+
+        private void rollbackInsert() {
+            var context = new SqlserverContext(new SqlserverMeta() {
+                Host = "10.186.62.15",
+                Port = "1433",
+                User = "sa",
+                Password = "123456aB"
+            }, new Config() {
+                DMLRollbackMaxRows = 10000
+            });
+            foreach (var text in new String[]{
+                "INSERT INTO tbl1(col1, col2) VALUES (1, 2), (3, 4);",
+                "INSERT INTO tbl1 VALUES (5, 6, 7);"
+            }) {
+                var statementList = ParseStatementList(text);
+                foreach (var statement in statementList.Statements) {
+                    var isDDL = false;
+                    var isDML = false;
+                    var rollbackSql = new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
+                    Assert.True(isDDL == false);
+                    Assert.True(isDML == true);
+                }
+            }
+        }
+
+        private void rollbackDelete() {
+            var context = new SqlserverContext(new SqlserverMeta() {
+                Host = "10.186.62.15",
+                Port = "1433",
+                User = "sa",
+                Password = "123456aB"
+            }, new Config() {
+                DMLRollbackMaxRows = 10000
+            });
+            foreach (var text in new String[]{
+                "DELETE FROM tbl1 WHERE col1 = 2 AND col2 = 3;",
+                "DELETE FROM tbl1;",
+                "DELETE TOP(1) FROM tbl1;"
+            }) {
+                var statementList = ParseStatementList(text);
+                foreach (var statement in statementList.Statements) {
+                    var isDDL = false;
+                    var isDML = false;
+                    var rollbackSql = new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
+                    Assert.True(isDDL == false);
+                    Assert.True(isDML == true);
+                    Console.WriteLine("{0}", rollbackSql);
+                }
+            }
+        }
+
+        private void rollbackUpdate() {
+            var context = new SqlserverContext(new SqlserverMeta() {
+                Host = "10.186.62.15",
+                Port = "1433",
+                User = "sa",
+                Password = "123456aB"
+            }, new Config() {
+                DMLRollbackMaxRows = 10000
+            });
+            foreach (var text in new String[]{
+                "UPDATE tbl3 SET col1=\"dddd\", col2=2 WHERE col1='aa';",
+            }) {
+                var statementList = ParseStatementList(text);
+                foreach (var statement in statementList.Statements) {
+                    var isDDL = false;
+                    var isDML = false;
+                    var rollbackSql = new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
+                    Assert.True(isDDL == false);
+                    Assert.True(isDML == true);
+                    Console.WriteLine("{0}", rollbackSql);
+                }
+            }
         }
 
         [Fact]
         public void RollbackDMLSqlTest() {
-            /*
-            var text = "CREATE TABLE tbl1(col1 INT NOT NULL UNIQUE, col2 INT NOT NULL)";
-            var statementList = ParseStatementList(text);
-            foreach (var statement in statementList.Statements) {
-                var createTableStatement = statement as CreateTableStatement;
-                foreach (var columnDefinition in createTableStatement.Definition.ColumnDefinitions) {
-                    for (int i = columnDefinition.FirstTokenIndex; i <= columnDefinition.LastTokenIndex; i++) {
-                        Console.Write(columnDefinition.ScriptTokenStream[i].Text);
-                    }
-                    Console.WriteLine();
-                }
-                foreach (var indexDefinition in createTableStatement.Definition.Indexes) {
-                    for (int i = indexDefinition.FirstTokenIndex; i <= indexDefinition.LastTokenIndex; i++) {
-                        Console.Write(indexDefinition.ScriptTokenStream[i].Text);
-                    }
-                    Console.WriteLine();
-                }
-            }
-            */
+            //rollbackInsert();
+            //rollbackDelete();
+            rollbackUpdate();
         }
     }
 }

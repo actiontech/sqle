@@ -165,7 +165,7 @@ namespace SqlserverProtoServer {
             var output = new GetRollbackSqlsOutput();
             var version = request.Version;
             var sqls = request.Sqls;
-            var rollbackSqlContext = new SqlserverContext(request.SqlserverMeta);
+            var rollbackSqlContext = new SqlserverContext(request.SqlserverMeta, request.RollbackConfig);
 
             foreach (var sql in sqls) {
                 var statementList = ParseStatementList(version, sql);
@@ -184,7 +184,5 @@ namespace SqlserverProtoServer {
 
             return Task.FromResult(output);
         }
-
-
     }
 }
