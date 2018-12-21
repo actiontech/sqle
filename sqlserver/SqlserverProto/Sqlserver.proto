@@ -48,10 +48,15 @@ message AdviseResult {
     string AdviseResultMessage = 2;
 }
 
+message Config {
+    int64 DMLRollbackMaxRows = 1;
+}
+
 message GetRollbackSqlsInput {
     string Version = 1;
     repeated string Sqls = 2;
     SqlserverMeta SqlserverMeta = 3;
+    Config RollbackConfig = 4;
 }
 
 message GetRollbackSqlsOutput {

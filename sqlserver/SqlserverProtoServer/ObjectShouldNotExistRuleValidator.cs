@@ -7,11 +7,11 @@ namespace SqlserverProtoServer {
         public List<String> DatabaseNames;
         public List<String> TableNames;
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             switch (statement) {
                 case CreateTableStatement createTableStatement:
                     DatabaseNames = AddDatabaseName(DatabaseNames, context, createTableStatement.SchemaObjectName);
-                    TableNames = AddTableName(TableNames, createTableStatement.SchemaObjectName);
+                    TableNames = AddTableName(TableNames, context, createTableStatement.SchemaObjectName);
                     break;
 
                 case CreateDatabaseStatement createDatabaseStatement:
@@ -32,7 +32,7 @@ namespace SqlserverProtoServer {
     }
 
     public class DatabaseShouldNotExistRuleValidator : ObjectShouldNotExistRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             foreach(var databaseName in DatabaseNames) {
@@ -49,11 +49,15 @@ namespace SqlserverProtoServer {
     }
 
     public class TableShouldNotExistRuleValidator : ObjectShouldNotExistRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             foreach(var tableName in TableNames) {
-                var exist = TableExists(context, "", tableName);
+                var tableIdentifier = tableName.Split(".");
+                if (tableIdentifier.Length != 3) {
+                    continue;
+                }
+                var exist = TableExists(context, tableIdentifier[0], tableIdentifier[1], tableIdentifier[2]);
                 if (exist) {
                     context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage(tableName));
                 }

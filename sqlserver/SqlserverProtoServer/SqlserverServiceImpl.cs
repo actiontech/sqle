@@ -134,7 +134,7 @@ namespace SqlserverProtoServer {
             var version = request.Version;
             var sqls = request.Sqls;
             var ruleNames = request.RuleNames;
-            var ruleValidatorContext = new RuleValidatorContext(request.SqlserverMeta);
+            var ruleValidatorContext = new SqlserverContext(request.SqlserverMeta);
 
             foreach (var sql in sqls) {
                 try {
@@ -152,7 +152,7 @@ namespace SqlserverProtoServer {
                     }
                     output.Results[sql] = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
                     ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
-                } catch(Exception e) {
+                } catch (Exception e) {
                     Console.WriteLine("{0}", e.StackTrace);
                 }
             }
@@ -162,7 +162,27 @@ namespace SqlserverProtoServer {
 
         // GetRollbackSqls implement
         public override Task<GetRollbackSqlsOutput> GetRollbackSqls(GetRollbackSqlsInput request, ServerCallContext context) {
-            return base.GetRollbackSqls(request, context);
+            var output = new GetRollbackSqlsOutput();
+            var version = request.Version;
+            var sqls = request.Sqls;
+            var rollbackSqlContext = new SqlserverContext(request.SqlserverMeta, request.RollbackConfig);
+
+            foreach (var sql in sqls) {
+                var statementList = ParseStatementList(version, sql);
+                foreach (var statement in statementList.Statements) {
+                    var rollbackSql = new Sql();
+                    bool isDDL = false;
+                    bool isDML = false;
+                    rollbackSql.Sql_ = new RollbackSql().GetRollbackSql(rollbackSqlContext, statement, out isDDL, out isDML);
+                    rollbackSql.IsDDL = isDDL;
+                    rollbackSql.IsDML = isDML;
+                    output.RollbackSqls.Add(rollbackSql);
+
+                    rollbackSqlContext.UpdateContext(statement);
+                }
+            }
+
+            return Task.FromResult(output);
         }
     }
 }

@@ -22,7 +22,7 @@ namespace SqlServerProtoServerTest {
 
         public AdviseResult validate(String ruleName, String text) {
             var validator = DefaultRules.RuleValidators[ruleName];
-            var ruleValidatorContext = new RuleValidatorContext(new SqlserverMeta() {
+            var ruleValidatorContext = new SqlserverContext(new SqlserverMeta() {
                 Host = "10.186.62.15",
                 Port = "1433",
                 User = "sa",
@@ -39,7 +39,7 @@ namespace SqlServerProtoServerTest {
             return null;
         }
 
-        public void MyAssert(String ruleName, String text, String expectLevel, String expectMsg) {
+        private void MyAssert(String ruleName, String text, String expectLevel, String expectMsg) {
             AdviseResult adviseResult = validate(ruleName, text);
             //Console.WriteLine("{0}, {1}", adviseResult.AdviseLevel, adviseResult.AdviseResultMessage);
             Assert.Equal(expectLevel, adviseResult.AdviseLevel);
@@ -584,7 +584,7 @@ namespace SqlServerProtoServerTest {
             /*DDL_CHECK_ALTER_TABLE_NEED_MERGE*/
             {
                 try {
-                    var ruleValidatorContext = new RuleValidatorContext(new SqlserverMeta() {
+                    var ruleValidatorContext = new SqlserverContext(new SqlserverMeta() {
                         Host = "10.186.62.15",
                         Port = "1433",
                         User = "sa",

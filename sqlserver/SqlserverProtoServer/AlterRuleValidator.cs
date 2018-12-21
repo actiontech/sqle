@@ -4,7 +4,7 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlserverProtoServer {
     public class MergeAlterTableRuleValidator : RuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             if (statement is AlterTableStatement) {
                 AlterTableStatement alterTableStatement = statement as AlterTableStatement;
                 String tableName = alterTableStatement.SchemaObjectName.BaseIdentifier.Value;

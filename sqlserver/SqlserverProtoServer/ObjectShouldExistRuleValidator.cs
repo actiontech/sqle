@@ -8,7 +8,7 @@ namespace SqlserverProtoServer {
         public List<String> Schemas;
         public List<String> TableNames;
 
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             List<SchemaObjectName> schemaObjectNames = new List<SchemaObjectName>();
             switch (statement) {
                 // USE database
@@ -20,14 +20,14 @@ namespace SqlserverProtoServer {
                 case CreateTableStatement createTableStatement:
                     DatabaseNames = AddDatabaseName(DatabaseNames, context, createTableStatement.SchemaObjectName);
                     Schemas = AddSchemaName(Schemas, createTableStatement.SchemaObjectName);
-                    TableNames = AddTableName(TableNames, createTableStatement.SchemaObjectName);
+                    TableNames = AddTableName(TableNames, context, createTableStatement.SchemaObjectName);
                     break;
 
                 // ALTER TABLE database.schema.table ALTER COLUMN col1 INT NOT NULL
                 case AlterTableStatement alertTableStatemet:
                     DatabaseNames = AddDatabaseName(DatabaseNames, context, alertTableStatemet.SchemaObjectName);
                     Schemas = AddSchemaName(Schemas, alertTableStatemet.SchemaObjectName);
-                    TableNames = AddTableName(TableNames, alertTableStatemet.SchemaObjectName);
+                    TableNames = AddTableName(TableNames, context, alertTableStatemet.SchemaObjectName);
                     break;
 
                 case SelectStatement selectStatement:
@@ -94,7 +94,7 @@ namespace SqlserverProtoServer {
     }
 
     public class DatabaseShouldExistRuleValidator : ObjectShouldExistRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             List<String> notExistDatabaseNames = new List<String>();
@@ -126,18 +126,16 @@ namespace SqlserverProtoServer {
     }
 
     public class TableShouldExistRuleValidator : ObjectShouldExistRuleValidator {
-        public override void Check(RuleValidatorContext context, TSqlStatement statement) {
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             List<String> notExistTableNames = new List<String>();
             foreach (var tableName in TableNames) {
-                var exist = false;
-                var schemaDotTable = tableName.Split('.');
-                if (schemaDotTable.Length == 2) {
-                    exist = TableExists(context, schemaDotTable[0], schemaDotTable[1]);
-                } else {
-                    exist = TableExists(context, "", schemaDotTable[0]);
+                var tableIdentifier = tableName.Split('.');
+                if (tableIdentifier.Length != 3) {
+                    continue;
                 }
+                var exist = TableExists(context, tableIdentifier[0], tableIdentifier[1], tableIdentifier[2]);
                 if (!exist) {
                     notExistTableNames.Add(tableName);
                 }
