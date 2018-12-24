@@ -13,13 +13,13 @@ import (
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_1 (
-id int(10) unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255),
+id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "v1" COMMENT "unit test",
+v2 varchar(255) COMMENT "unit test",
 PRIMARY KEY (id) USING BTREE,
-KEY v1 (v1),
-UNIQUE KEY v2 (v1,v2)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+KEY idx_1 (v1),
+UNIQUE KEY uniq_1 (v1,v2)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
 	if err != nil {
@@ -32,13 +32,13 @@ UNIQUE KEY v2 (v1,v2)
 func getTestCreateTableStmt2() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_2 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255),
-user_id bigint unsigned NOT NULL,
-UNIQUE KEY (id),
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL COMMENT "unit test",
+v2 varchar(255) COMMENT "unit test",
+user_id bigint unsigned NOT NULL COMMENT "unit test",
+UNIQUE KEY uniq_1(id),
 CONSTRAINT pk_test_1 FOREIGN KEY (user_id) REFERENCES exist_db.exist_tb_1 (id) ON DELETE NO ACTION
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
 	if err != nil {
@@ -51,10 +51,10 @@ CONSTRAINT pk_test_1 FOREIGN KEY (user_id) REFERENCES exist_db.exist_tb_1 (id) O
 func getTestCreateTableStmt3() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_3 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL COMMENT "unit test",
+v2 varchar(255) COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="uint test";
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
 	if err != nil {
@@ -76,13 +76,19 @@ func newTestResult() *testResult {
 	}
 }
 
+func (t *testResult) add(level, message string, args ...interface{}) *testResult {
+	t.Results.add(level, message, args...)
+	return t
+}
+
 func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult {
 	handler, ok := t.rules[ruleName]
 	if !ok {
 		return t
 	}
-	t.Results.add(handler.Rule, args...)
-	return t
+	level := handler.Rule.Level
+	message := handler.Message
+	return t.add(level, message, args...)
 }
 
 func (t *testResult) level() string {
@@ -143,11 +149,12 @@ func DefaultMysqlInspect() *Inspect {
 
 func TestInspectResults(t *testing.T) {
 	results := newInspectResults()
-	results.add(RuleHandlerMap[DDL_CREATE_TABLE_NOT_EXIST].Rule)
+	handler := RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST]
+	results.add(handler.Rule.Level, handler.Message)
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.message())
 
-	results.add(RuleHandlerMap[TABLE_NOT_EXIST].Rule, "not_exist_tb")
+	results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "not_exist_tb")
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
@@ -188,7 +195,7 @@ func runInspectCase(t *testing.T, desc string, i *Inspect, sql string, results .
 	}
 }
 
-func TestInspector_Inspect_Message(t *testing.T) {
+func TestMessage(t *testing.T) {
 	runInspectCase(t, "check inspect message", DefaultMysqlInspect(),
 		"use no_exist_db",
 		&testResult{
@@ -202,222 +209,523 @@ func TestInspector_Inspect_Message(t *testing.T) {
 	)
 }
 
-func TestInspector_Inspect_UseDatabaseStmt(t *testing.T) {
-	runInspectCase(t, "use_database: ok", DefaultMysqlInspect(),
-		"use exist_db",
-		newTestResult(),
+func TestCheckInvalidUse(t *testing.T) {
+	runInspectCase(t, "use_database: database not exist", DefaultMysqlInspect(),
+		"use no_exist_db",
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "no_exist_db"),
 	)
 }
 
-func TestInspector_Advise_Select(t *testing.T) {
-	runInspectCase(t, "select_from: ok", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where id =1;",
+func TestCheckInvalidCreateTable(t *testing.T) {
+	runInspectCase(t, "create_table: schema not exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists not_exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "create_table: table is exist(1)", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST)
+	runInspectCase(t, "create_table: table is exist(2)", DefaultMysqlInspect(),
+		`
+CREATE TABLE exist_db.exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			TABLE_EXIST_MSG, "exist_db.exist_tb_1"),
+	)
+
+	runInspectCase(t, "create_table: refer table not exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE exist_db.not_exist_tb_1 like exist_db.not_exist_tb_2;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb_2"),
+	)
+
+	runInspectCase(t, "create_table: multi pk(1)", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG))
+
+	runInspectCase(t, "create_table: multi pk(2)", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+PRIMARY KEY (v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG))
+
+	runInspectCase(t, "create_table: duplicate column", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG,
+			"v1"))
+
+	runInspectCase(t, "create_table: duplicate index", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v1),
+INDEX idx_1 (v2)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_ERROR_MSG,
+			"idx_1"))
+
+	runInspectCase(t, "create_table: key column not exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v3),
+INDEX idx_2 (v4,v5)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			"v3,v4,v5"))
+}
+
+func TestCheckInvalidAlterTable(t *testing.T) {
+	runInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+			"not_exist_db"),
+	)
+
+	runInspectCase(t, "alter_table: table not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			"exist_db.not_exist_tb_1"),
+	)
+
+	runInspectCase(t, "alter_table: add a exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add column v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+			"v1"),
+	)
+
+	runInspectCase(t, "alter_table: drop a not exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 drop column v5;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			"v5"),
+	)
+
+	runInspectCase(t, "alter_table: add a exist index", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index idx_1 (v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG,
+			"idx_1"),
+	)
+
+	runInspectCase(t, "alter_table: drop a not exist index", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
+			"idx_2"),
+	)
+
+	runInspectCase(t, "alter_table: add index bug key column not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index idx_2 (v3);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			"v3"),
+	)
+
+	runInspectCase(t, "alter_table: alter a not exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			"v5"),
+	)
+
+	runInspectCase(t, "alter_table: change a not exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			"v5"),
+	)
+
+	runInspectCase(t, "alter_table: change column to a exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+			"v1"),
+	)
+}
+
+func TestCheckInvalidCreateDatabase(t *testing.T) {
+	runInspectCase(t, "create_database: schema exist(1)", DefaultMysqlInspect(),
+		`
+CREATE DATABASE if not exists exist_db;
+`,
 		newTestResult(),
 	)
 
+	runInspectCase(t, "create_database: schema exist(2)", DefaultMysqlInspect(),
+		`
+CREATE DATABASE exist_db;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_EXIST_MSG, "exist_db"),
+	)
+}
+
+func TestCheckInvalidCreateIndex(t *testing.T) {
+	runInspectCase(t, "create_index: schema not exist", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_1 ON not_exist_db.not_exist_tb(v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "create_index: table not exist", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_1 ON exist_db.not_exist_tb(v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+
+	runInspectCase(t, "create_index: index exist", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_1 ON exist_db.exist_tb_1(v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG, "idx_1"),
+	)
+
+	runInspectCase(t, "create_index: key column not exist", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_2 ON exist_db.exist_tb_1(v3);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG, "v3"),
+	)
+}
+
+func TestCheckInvalidDrop(t *testing.T) {
+	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
+	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
+	runInspectCase(t, "drop_database: ok", DefaultMysqlInspect(),
+		`
+DROP DATABASE if exists exist_db;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_database: schema not exist(1)", DefaultMysqlInspect(),
+		`
+DROP DATABASE if exists not_exist_db;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_database: schema not exist(2)", DefaultMysqlInspect(),
+		`
+DROP DATABASE not_exist_db;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "drop_table: ok", DefaultMysqlInspect(),
+		`
+DROP TABLE exist_db.exist_tb_1;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_table: schema not exist(1)", DefaultMysqlInspect(),
+		`
+DROP TABLE if exists not_exist_db.not_exist_tb_1;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_table: schema not exist(2)", DefaultMysqlInspect(),
+		`
+DROP TABLE not_exist_db.not_exist_tb_1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "drop_table: table not exist", DefaultMysqlInspect(),
+		`
+DROP TABLE exist_db.not_exist_tb_1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb_1"),
+	)
+
+	runInspectCase(t, "drop_index: ok", DefaultMysqlInspect(),
+		`
+DROP INDEX idx_1 ON exist_db.exist_tb_1;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "drop_index: index not exist", DefaultMysqlInspect(),
+		`
+DROP INDEX idx_2 ON exist_db.exist_tb_1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG, "idx_2"),
+	)
+}
+
+func TestCheckInvalidInsert(t *testing.T) {
+	runInspectCase(t, "insert: schema not exist", DefaultMysqlInspect(),
+		`
+insert into not_exist_db.not_exist_tb values (1,"1","1");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "insert: table not exist", DefaultMysqlInspect(),
+		`
+insert into exist_db.not_exist_tb values (1,"1","1");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+
+	runInspectCase(t, "insert: column not exist(1)", DefaultMysqlInspect(),
+		`
+insert into exist_db.exist_tb_1 (id,v1,v3) values (1,"1","1");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+	)
+
+	runInspectCase(t, "insert: column not exist(2)", DefaultMysqlInspect(),
+		`
+insert into exist_db.exist_tb_1 set id=1,v1="1",v3="1";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+	)
+
+	runInspectCase(t, "insert: column is duplicate(1)", DefaultMysqlInspect(),
+		`
+insert into exist_db.exist_tb_1 (id,v1,v1) values (1,"1","1");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v1"),
+	)
+
+	runInspectCase(t, "insert: column is duplicate(2)", DefaultMysqlInspect(),
+		`
+insert into exist_db.exist_tb_1 set id=1,v1="1",v1="1";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v1"),
+	)
+
+	runInspectCase(t, "insert: do not match values and columns", DefaultMysqlInspect(),
+		`
+insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, NOT_MATCH_VALUES_AND_COLUMNS),
+	)
+}
+
+func TestCheckInvalidUpdate(t *testing.T) {
+	runInspectCase(t, "update: schema not exist", DefaultMysqlInspect(),
+		`
+update not_exist_db.not_exist_tb set v1="2" where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "update: table not exist", DefaultMysqlInspect(),
+		`
+update exist_db.not_exist_tb set v1="2" where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+	runInspectCase(t, "update: column not exist", DefaultMysqlInspect(),
+		`
+update exist_db.exist_tb_1 set v3="2" where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+	)
+	runInspectCase(t, "update: column is duplicate", DefaultMysqlInspect(),
+		`
+update exist_db.exist_tb_1 set v1="2",v1="1" where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v1"),
+	)
+}
+
+func TestCheckInvalidDelete(t *testing.T) {
+	runInspectCase(t, "delete: schema not exist", DefaultMysqlInspect(),
+		`
+delete from not_exist_db.not_exist_tb where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
+		`
+delete from exist_db.not_exist_tb where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+}
+
+func TestCheckSelectAll(t *testing.T) {
 	runInspectCase(t, "select_from: all columns", DefaultMysqlInspect(),
 		"select * from exist_db.exist_tb_1 where id =1;",
 		newTestResult().addResult(DML_DISABE_SELECT_ALL_COLUMN),
 	)
+}
 
+func TestCheckWhereInvalid(t *testing.T) {
 	runInspectCase(t, "select_from: no where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1;",
-		newTestResult().addResult(DML_CHECK_INVALID_WHERE_CONDITION),
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
 	)
 
 	runInspectCase(t, "select_from: no where condition(2)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
-		newTestResult().addResult(DML_CHECK_INVALID_WHERE_CONDITION),
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
 	)
 }
 
-func TestInspector_Advise_ObjectNotExist(t *testing.T) {
-	runInspectCase(t, "use_database: database not exist", DefaultMysqlInspect(),
-		"use no_exist_db",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "no_exist_db"),
-	)
-
-	runInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
-		`
-ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
-`,
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-	runInspectCase(t, "alter_table: table not exist", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL;
-`,
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
-
-	runInspectCase(t, "create_table: schema not exist", DefaultMysqlInspect(),
-		`
-CREATE TABLE if not exists not_exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
-`,
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db"),
-	)
-
-	runInspectCase(t, "select_from: schema not exist", DefaultMysqlInspect(),
-		"select id from not_exist_db.exist_tb_1 where id =1;",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-	runInspectCase(t, "select_from: table not exist", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1, exist_db.not_exist_tb_1 where id =1",
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
-
-	runInspectCase(t, "delete: schema not exist", DefaultMysqlInspect(),
-		"delete from not_exist_db.exist_tb_1 where id =1;",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-
-	runInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
-		"delete from exist_db.not_exist_tb_1 where id =1;",
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
-
-	runInspectCase(t, "update: schema not exist", DefaultMysqlInspect(),
-		"update not_exist_db.exist_tb_1 set v1='1' where id =1;",
-		newTestResult().addResult(SCHEMA_NOT_EXIST, "not_exist_db").
-			addResult(TABLE_NOT_EXIST, "not_exist_db.exist_tb_1"),
-	)
-
-	runInspectCase(t, "update: table not exist", DefaultMysqlInspect(),
-		"update exist_db.not_exist_tb_1 set v1='1' where id =1;",
-		newTestResult().addResult(TABLE_NOT_EXIST, "exist_db.not_exist_tb_1"),
-	)
-}
-
-func TestInspector_Advise_ObjectExist(t *testing.T) {
-	runInspectCase(t, "create_table: table exist", DefaultMysqlInspect(),
-		`
-CREATE TABLE if not exists exist_db.exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
-`,
-		newTestResult().addResult(TABLE_EXIST, "exist_db.exist_tb_1"),
-	)
-
-	runInspectCase(t, "create_database: schema exist", DefaultMysqlInspect(),
-		`
-CREATE DATABASE exist_db;
-`,
-		newTestResult().addResult(SCHEMA_EXIST, "exist_db"),
-	)
-}
-
-func TestInspector_Inspect_CreateTableStmt(t *testing.T) {
-	runInspectCase(t, "create_table: ok", DefaultMysqlInspect(),
-		`
-CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
-`,
-		newTestResult(),
-	)
-
+func TestCheckCreateTableWithoutIfNotExists(t *testing.T) {
 	runInspectCase(t, "create_table: need \"if not exists\"", DefaultMysqlInspect(),
 		`
 CREATE TABLE exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CREATE_TABLE_NOT_EXIST),
-	)
-
-	runInspectCase(t, "create_table: using keyword", DefaultMysqlInspect(),
-		"CREATE TABLE if not exists exist_db.`select` ("+
-			"id bigint unsigned NOT NULL AUTO_INCREMENT,"+
-			"v1 varchar(255) DEFAULT NULL,"+
-			"v2 varchar(255) DEFAULT NULL,"+
-			"PRIMARY KEY (id),"+
-			"INDEX `create` (v1)"+
-			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;",
-		newTestResult().addResult(DDL_DISABLE_USING_KEYWORD, "select, create"),
+		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST),
 	)
 }
 
-func TestInspector_InspectAlterTableStmt(t *testing.T) {
-	runInspectCase(t, "alter_table: ok", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
-`,
-		newTestResult(),
+func TestCheckObjectNameUsingKeyword(t *testing.T) {
+	runInspectCase(t, "create_table: using keyword", DefaultMysqlInspect(),
+		"CREATE TABLE if not exists exist_db.`select` ("+
+			"id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT \"unit test\","+
+			"v1 varchar(255) NOT NULL DEFAULT \"unit test\" COMMENT \"unit test\","+
+			"`create` varchar(255) NOT NULL DEFAULT \"unit test\" COMMENT \"unit test\","+
+			"PRIMARY KEY (id),"+
+			"INDEX `show` (v1)"+
+			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT=\"unit test\";",
+		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_USING_KEYWORD, "select, create, show").
+			addResult(DDL_CHECK_INDEX_PREFIX),
 	)
 
+}
+
+func TestAlterTableMerge(t *testing.T) {
 	runInspectCase(t, "alter_table: alter table need merge", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL;
-ALTER TABLE exist_db.exist_tb_1 add primary key (id);
+ALTER TABLE exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+ALTER TABLE exist_db.exist_tb_1 add column v6 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult(),
 		newTestResult().addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE),
 	)
 }
 
-func TestInspector_InspectCheck_Object_Name_Length(t *testing.T) {
+func TestCheckObjectNameLength(t *testing.T) {
 	length64 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcd"
 	length65 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcde"
 
 	runInspectCase(t, "create_table: table length <= 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.%s (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;`, length64),
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length64),
 		newTestResult(),
 	)
 
 	runInspectCase(t, "create_table: table length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.%s (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;`, length65),
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
 	runInspectCase(t, "create_table: columns length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-%s varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+%s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;`, length65),
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
 	runInspectCase(t, "create_table: index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX %s (v1)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;`, length65),
+INDEX idx_%s (v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
@@ -427,39 +735,39 @@ ALTER TABLE exist_db.exist_tb_1 RENAME %s;`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
-	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+	runInspectCase(t, "alter_table:add column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255);`, length65),
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
-	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+	runInspectCase(t, "alter_table:change column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255);`, length65),
+ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
-	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+	runInspectCase(t, "alter_table: add index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 ADD index %s (v1);`, length65),
+ALTER TABLE exist_db.exist_tb_1 ADD index idx_%s (v1);`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 
-	runInspectCase(t, "alter_table: column length > 64", DefaultMysqlInspect(),
+	runInspectCase(t, "alter_table:rename index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 RENAME index v1_d TO %s;`, length65),
+ALTER TABLE exist_db.exist_tb_1 RENAME index v1_d TO idx_%s;`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 }
 
-func TestInspector_Inspect_Check_Primary_Key(t *testing.T) {
+func TestCheckPrimaryKey(t *testing.T) {
 	runInspectCase(t, "create_table: primary key exist", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
 	)
@@ -467,48 +775,70 @@ v2 varchar(255) DEFAULT NULL
 	runInspectCase(t, "create_table: primary key not exist", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PRIMARY_KEY_EXIST),
+		newTestResult().addResult(DDL_CHECK_PK_NOT_EXIST),
 	)
 
-	runInspectCase(t, "create_table: primary key not auto increment", DefaultMysqlInspect(),
+	runInspectCase(t, "create_table: primary key not auto increment(1)", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+id bigint unsigned NOT NULL KEY DEFAULT "unit test" COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PRIMARY_KEY_TYPE),
+		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT),
 	)
 
-	runInspectCase(t, "create_table: primary key not bigint unsigned", DefaultMysqlInspect(),
+	runInspectCase(t, "create_table: primary key not auto increment(2)", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PRIMARY_KEY_TYPE),
+		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT),
+	)
+
+	runInspectCase(t, "create_table: primary key not bigint unsigned(1)", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint NOT NULL AUTO_INCREMENT KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
+	)
+
+	runInspectCase(t, "create_table: primary key not bigint unsigned(2)", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
 	)
 }
 
-func TestInspector_Inspect_Check_String_Type(t *testing.T) {
+func TestCheckColumnCharLength(t *testing.T) {
 	runInspectCase(t, "create_table: check char(20)", DefaultMysqlInspect(),
 		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-	id bigint unsigned NOT NULL AUTO_INCREMENT,
-	v1 char(20) DEFAULT NULL,
-	v2 varchar(255) DEFAULT NULL,
+	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	v1 char(20) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	PRIMARY KEY (id)
-	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
 		newTestResult(),
 	)
@@ -516,30 +846,30 @@ func TestInspector_Inspect_Check_String_Type(t *testing.T) {
 	runInspectCase(t, "create_table: check char(21)", DefaultMysqlInspect(),
 		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-	id bigint unsigned NOT NULL AUTO_INCREMENT,
-	v1 char(21) DEFAULT NULL,
-	v2 varchar(255) DEFAULT NULL,
+	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	v1 char(21) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	PRIMARY KEY (id)
-	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
-		newTestResult().addResult(DDL_CHECK_TYPE_CHAR_LENGTH),
+		newTestResult().addResult(DDL_CHECK_COLUMN_CHAR_LENGTH),
 	)
 }
 
-func TestInspector_Inspect_Check_Index(t *testing.T) {
+func TestCheckIndexCount(t *testing.T) {
 	runInspectCase(t, "create_table: index <= 5", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX index_1 (id),
-INDEX index_2 (id),
-INDEX index_3 (id),
-INDEX index_4 (id),
-INDEX index_5 (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+INDEX idx_1 (id),
+INDEX idx_2 (id),
+INDEX idx_3 (id),
+INDEX idx_4 (id),
+INDEX idx_5 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
 	)
@@ -547,32 +877,34 @@ INDEX index_5 (id)
 	runInspectCase(t, "create_table: index > 5", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX index_1 (id),
-INDEX index_2 (id),
-INDEX index_3 (id),
-INDEX index_4 (id),
-INDEX index_5 (id),
-INDEX index_6 (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+INDEX idx_1 (id),
+INDEX idx_2 (id),
+INDEX idx_3 (id),
+INDEX idx_4 (id),
+INDEX idx_5 (id),
+INDEX idx_6 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().addResult(DDL_CHECK_INDEX_COUNT),
 	)
+}
 
+func TestCheckCompositeIndexMax(t *testing.T) {
 	runInspectCase(t, "create_table: composite index columns <= 5", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-v3 varchar(255) DEFAULT NULL,
-v4 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v4 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX index_1 (id,v1,v2,v3,v4)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+INDEX idx_1 (id,v1,v2,v3,v4)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
 	)
@@ -580,61 +912,284 @@ INDEX index_1 (id,v1,v2,v3,v4)
 	runInspectCase(t, "create_table: composite index columns > 5", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-v3 varchar(255) DEFAULT NULL,
-v4 varchar(255) DEFAULT NULL,
-v5 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v4 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX index_1 (id,v1,v2,v3,v4,v5)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+INDEX idx_1 (id,v1,v2,v3,v4,v5)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().addResult(DDL_CHECK_COMPOSITE_INDEX_MAX),
 	)
 }
 
-func TestInspector_Inspect_Check_Index_Column_Type(t *testing.T) {
+func TestCheckTableWithoutInnodbUtf8mb4(t *testing.T) {
+	runInspectCase(t, "create_table: table engine not innodb", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4),
+	)
+
+	runInspectCase(t, "create_table: table charset not utf8mb4", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4),
+	)
+}
+
+func TestCheckIndexColumnWithBlob(t *testing.T) {
 	runInspectCase(t, "create_table: disable index column blob (1)", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-b1 blob,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+b1 blob COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX index_b1 (b1)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+INDEX idx_b1 (b1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_DISABLE_INDEX_DATA_TYPE_BLOB),
+		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
 	)
 
 	runInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
-b1 blob UNIQUE KEY,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_DISABLE_INDEX_DATA_TYPE_BLOB),
+		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
 	)
 }
 
-func TestInspector_Inspect_Check_Foreign_Key(t *testing.T) {
+func TestDisableForeignKey(t *testing.T) {
 	runInspectCase(t, "create_table: has foreign key", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT,
-v1 varchar(255) DEFAULT NULL,
-v2 varchar(255) DEFAULT NULL,
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 FOREIGN KEY (id) REFERENCES exist_tb_1(id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_DISABLE_FK),
+	)
+}
+
+func TestCheckTableComment(t *testing.T) {
+	runInspectCase(t, "create_table: table without comment", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `,
-		newTestResult().addResult(DDL_DISABLE_FOREIGN_KEY),
+		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_COMMENT),
+	)
+}
+
+func TestCheckColumnComment(t *testing.T) {
+	runInspectCase(t, "create_table: column without comment", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT,
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
+	)
+
+	runInspectCase(t, "alter_table: column without comment(1)", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL DEFAULT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
+	)
+
+	runInspectCase(t, "alter_table: column without comment(2)", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL DEFAULT "unit test" ;
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
+	)
+}
+
+func TestCheckIndexPrefix(t *testing.T) {
+	runInspectCase(t, "create_table: index prefix not idx_", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX index_1 (v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
+	)
+
+	runInspectCase(t, "alter_table: index prefix not idx_", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD INDEX index_1(v1);
+`,
+		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
+	)
+}
+
+func TestCheckUniqueIndexPrefix(t *testing.T) {
+	runInspectCase(t, "create_table: unique index prefix not uniq_", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+UNIQUE INDEX index_1 (v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
+	)
+
+	runInspectCase(t, "alter_table: unique index prefix not uniq_", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD UNIQUE INDEX index_1(v1);
+`,
+		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
+	)
+}
+
+func TestCheckColumnDefault(t *testing.T) {
+	runInspectCase(t, "create_table: column without default", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
+	)
+
+	runInspectCase(t, "alter_table: column without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
+	)
+}
+
+func TestCheckColumnTimestampDefault(t *testing.T) {
+	delete(RuleHandlerMap, DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
+	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 timestamp COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT),
+	)
+
+	runInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT),
+	)
+}
+
+func TestCheckColumnBlobNotNull(t *testing.T) {
+	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 blob NOT NULL COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL),
+	)
+
+	runInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob NOT NULL COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL),
+	)
+}
+
+func TestCheckColumnBlobDefaultNull(t *testing.T) {
+	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 blob DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL),
+	)
+
+	runInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL),
+	)
+}
+
+func TestCheckDMLWithLimit(t *testing.T) {
+	runInspectCase(t, "update: with limit", DefaultMysqlInspect(),
+		`
+UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 limit 1;
+`,
+		newTestResult().addResult(DML_CHECK_WITH_LIMIT),
+	)
+
+	runInspectCase(t, "delete: with limit", DefaultMysqlInspect(),
+		`
+UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 limit 1;
+`,
+		newTestResult().addResult(DML_CHECK_WITH_LIMIT),
+	)
+}
+
+func TestCheckDMLWithOrderBy(t *testing.T) {
+	runInspectCase(t, "update: with order by", DefaultMysqlInspect(),
+		`
+UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by v1;
+`,
+		newTestResult().addResult(DML_CHECK_WITH_ORDER_BY),
+	)
+
+	runInspectCase(t, "delete: with limit", DefaultMysqlInspect(),
+		`
+UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by v1;
+`,
+		newTestResult().addResult(DML_CHECK_WITH_ORDER_BY),
 	)
 }
 
@@ -650,10 +1205,10 @@ func DefaultMycatInspect() *Inspect {
 						"multidb": &model.AlgorithmSchema{
 							AlgorithmTables: map[string]*model.AlgorithmTable{
 								"exist_tb_1": &model.AlgorithmTable{
-									ShardingColumn: "sharding_id",
+									ShardingColumn: "v1",
 								},
 								"exist_tb_2": &model.AlgorithmTable{
-									ShardingColumn: "sharding_id",
+									ShardingColumn: "v1",
 								},
 							},
 						},
@@ -690,27 +1245,27 @@ func DefaultMycatInspect() *Inspect {
 	}
 }
 
-func TestInspector_Inspect_Mycat(t *testing.T) {
+func TestMycat(t *testing.T) {
 	runInspectCase(t, "insert: mycat dml must using sharding_id", DefaultMycatInspect(),
 		`
+insert into exist_tb_1 set id=1,v2="1";
+insert into exist_tb_2 (id,v2) values(1,"1");
 insert into exist_tb_1 set id=1,v1="1";
-insert into exist_tb_2 (id,v1) values(1,"1");
-insert into exist_tb_1 set id=1,sharding_id="1",v1="1";
-insert into exist_tb_2 (id,sharding_id,v1) value (1,"1","1");
+insert into exist_tb_2 (id,v1) value (1,"1");
 `,
-		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
-		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
+		newTestResult().addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM),
+		newTestResult().addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM),
 		newTestResult(),
 		newTestResult(),
 	)
 
 	runInspectCase(t, "update: mycat dml must using sharding_id", DefaultMycatInspect(),
 		`
-update exist_tb_1 set v1="1" where id=1;
-update exist_tb_1 set v1="1" where sharding_id=1;
-update exist_tb_2 set v1="1" where sharding_id=1 and id=1;
+update exist_tb_1 set v2="1" where id=1;
+update exist_tb_1 set v2="1" where v1="1";
+update exist_tb_2 set v2="1" where v1="1" and id=1;
 `,
-		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
+		newTestResult().addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM),
 		newTestResult(),
 		newTestResult(),
 	)
@@ -718,10 +1273,10 @@ update exist_tb_2 set v1="1" where sharding_id=1 and id=1;
 	runInspectCase(t, "delete: mycat dml must using sharding_id", DefaultMycatInspect(),
 		`
 delete from exist_tb_1 where id=1;
-delete from exist_tb_1 where sharding_id=1;
-delete from exist_tb_1 where sharding_id=1 and id=1;
+delete from exist_tb_1 where v1="1";
+delete from exist_tb_1 where v1="1" and id=1;
 `,
-		newTestResult().addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM),
+		newTestResult().addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM),
 		newTestResult(),
 		newTestResult(),
 	)

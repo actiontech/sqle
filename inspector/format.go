@@ -14,7 +14,10 @@ func alterTableStmtFormat(stmt *ast.AlterTableStmt) string {
 	}
 	ops := make([]string, 0, len(stmt.Specs))
 	for _, spec := range stmt.Specs {
-		ops = append(ops, alterTableSpecFormat(spec))
+		op := alterTableSpecFormat(spec)
+		if op != "" {
+			ops = append(ops, op)
+		}
 	}
 	return fmt.Sprintf("ALTER TABLE %s\n%s;", getTableNameWithQuote(stmt.Table), strings.Join(ops, ",\n"))
 }
@@ -41,6 +44,10 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 		if stmt.NewColumns != nil {
 			return fmt.Sprintf("CHANGE COLUMN `%s` %s",
 				stmt.OldColumnName.Name.String(), columnDefFormat(stmt.NewColumns[0]))
+		}
+	case ast.AlterTableModifyColumn:
+		if stmt.NewColumns != nil {
+			return fmt.Sprintf("MODIFY COLUMN %s", columnDefFormat(stmt.NewColumns[0]))
 		}
 	case ast.AlterTableAlterColumn:
 		if stmt.NewColumns != nil {
@@ -116,7 +123,7 @@ func columnDefFormat(col *ast.ColumnDef) string {
 			}
 			ops = append(ops, v)
 		case ast.ColumnOptionComment:
-			ops = append(ops, fmt.Sprintf("COMMENT '%s'", exprFormat(op.Expr)))
+			ops = append(ops, fmt.Sprintf("COMMENT %s", exprFormat(op.Expr)))
 		default:
 			if v, ok := ColumnOptionMap[op.Tp]; ok {
 				ops = append(ops, v)

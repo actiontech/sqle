@@ -157,6 +157,22 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			}
 		}
 	}
+
+	// modify column need modify
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn) {
+		if spec.NewColumns == nil {
+			continue
+		}
+		for _, col := range createTableStmt.Cols {
+			if col.Name.String() == spec.NewColumns[0].Name.String() {
+				rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+					Tp:         ast.AlterTableModifyColumn,
+					NewColumns: []*ast.ColumnDef{col},
+				})
+			}
+		}
+	}
+
 	/*
 		+----------------------------------- alter column -----------------------------------+
 		v1 varchar(20) NOT NULL  DEFAULT "test",
@@ -419,7 +435,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 				return "", nil
 			}
 			rollbackSql += fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
-				i.getTableNameWithQuote(table), strings.Join(where, ", "))
+				i.getTableNameWithQuote(table), strings.Join(where, " AND "))
 		}
 		return rollbackSql, nil
 	}

@@ -47,10 +47,10 @@ func (rs *InspectResults) message() string {
 	return strings.Join(messages, "\n")
 }
 
-func (rs *InspectResults) add(rule model.Rule, args ...interface{}) {
+func (rs *InspectResults) add(level, message string, args ...interface{}) {
 	rs.results = append(rs.results, &InspectResult{
-		Level:   rule.Level,
-		Message: fmt.Sprintf(RuleHandlerMap[rule.Name].Message, args...),
+		Level:   level,
+		Message: fmt.Sprintf(message, args...),
 	})
 }
 
@@ -244,6 +244,9 @@ func scanWhereStmtColumn(where ast.ExprNode, fn func(expr *ast.ColumnNameExpr) b
 
 func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
+	if specs == nil {
+		return s
+	}
 	for _, spec := range specs {
 		for _, tp := range ts {
 			if spec.Tp == tp {
@@ -319,4 +322,33 @@ func getLimitCount(limit *ast.Limit, _default int64) (int64, error) {
 		return _default, nil
 	}
 	return strconv.ParseInt(exprFormat(limit.Count), 0, 64)
+}
+
+func getDuplicate(c []string) []string {
+	d := []string{}
+	for i, v1 := range c {
+		for j, v2 := range c {
+			if i >= j {
+				continue
+			}
+			if v1 == v2 {
+				d = append(d, v1)
+			}
+		}
+	}
+	return d
+}
+
+func removeDuplicate(c []string) []string {
+	var tmpMap = map[string]struct{}{}
+	var result = []string{}
+	for _, v := range c {
+		beforeLen := len(tmpMap)
+		tmpMap[v] = struct{}{}
+		AfterLen := len(tmpMap)
+		if beforeLen != AfterLen {
+			result = append(result, v)
+		}
+	}
+	return result
 }

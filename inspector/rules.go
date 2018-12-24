@@ -9,27 +9,34 @@ import (
 
 // inspector rule code
 const (
-	SCHEMA_NOT_EXIST                     = "schema_not_exist"
-	SCHEMA_EXIST                         = "schema_exist"
-	TABLE_NOT_EXIST                      = "table_not_exist"
-	TABLE_EXIST                          = "table_exist"
-	DDL_CREATE_TABLE_NOT_EXIST           = "ddl_create_table_not_exist"
-	DDL_CHECK_OBJECT_NAME_LENGTH         = "ddl_check_object_name_length"
-	DDL_CHECK_PRIMARY_KEY_EXIST          = "ddl_check_primary_key_exist"
-	DDL_CHECK_PRIMARY_KEY_TYPE           = "ddl_check_primary_key_type"
-	DDL_DISABLE_VARCHAR_MAX              = "ddl_disable_varchar_max"
-	DDL_CHECK_TYPE_CHAR_LENGTH           = "ddl_check_type_char_length"
-	DDL_DISABLE_FOREIGN_KEY              = "ddl_disable_foreign_key"
-	DDL_CHECK_INDEX_COUNT                = "ddl_check_index_count"
-	DDL_CHECK_COMPOSITE_INDEX_MAX        = "ddl_check_composite_index_max"
-	DDL_DISABLE_USING_KEYWORD            = "ddl_disable_using_keyword"
-	DDL_TABLE_USING_INNODB_UTF8MB4       = "ddl_create_table_using_innodb"
-	DDL_DISABLE_INDEX_DATA_TYPE_BLOB     = "ddl_disable_index_column_blob"
-	DDL_CHECK_ALTER_TABLE_NEED_MERGE     = "ddl_check_alter_table_need_merge"
-	DDL_DISABLE_DROP_STATEMENT           = "ddl_disable_drop_statement"
-	DML_CHECK_INVALID_WHERE_CONDITION    = "ddl_check_invalid_where_condition"
-	DML_DISABE_SELECT_ALL_COLUMN         = "dml_disable_select_all_column"
-	DML_MYCAT_MUST_USING_SHARDING_CLOUNM = "dml_mycat_must_using_sharding_column"
+	DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST       = "ddl_check_table_without_if_not_exists"
+	DDL_CHECK_OBJECT_NAME_LENGTH               = "ddl_check_object_name_length"
+	DDL_CHECK_OBJECT_NAME_USING_KEYWORD        = "ddl_check_object_name_using_keyword"
+	DDL_CHECK_PK_NOT_EXIST                     = "ddl_check_pk_not_exist"
+	DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED       = "ddl_check_pk_without_bigint_unsigned"
+	DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT        = "ddl_check_pk_without_auto_increment"
+	DDL_CHECK_COLUMN_VARCHAR_MAX               = "ddl_check_column_varchar_max"
+	DDL_CHECK_COLUMN_CHAR_LENGTH               = "ddl_check_column_char_length"
+	DDL_DISABLE_FK                             = "ddl_disable_fk"
+	DDL_CHECK_INDEX_COUNT                      = "ddl_check_index_count"
+	DDL_CHECK_COMPOSITE_INDEX_MAX              = "ddl_check_composite_index_max"
+	DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4     = "ddl_check_table_without_innodb_utf8mb4"
+	DDL_CHECK_INDEX_COLUMN_WITH_BLOB           = "ddl_check_index_column_with_blob"
+	DDL_CHECK_ALTER_TABLE_NEED_MERGE           = "ddl_check_alter_table_need_merge"
+	DDL_DISABLE_DROP_STATEMENT                 = "ddl_disable_drop_statement"
+	DML_CHECK_WHERE_IS_INVALID                 = "all_check_where_is_invalid"
+	DML_DISABE_SELECT_ALL_COLUMN               = "dml_disable_select_all_column"
+	DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM    = "dml_check_mycat_without_sharding_column"
+	DDL_CHECK_TABLE_WITHOUT_COMMENT            = "ddl_check_table_without_comment"
+	DDL_CHECK_COLUMN_WITHOUT_COMMENT           = "ddl_check_column_without_comment"
+	DDL_CHECK_INDEX_PREFIX                     = "ddl_check_index_prefix"
+	DDL_CHECK_UNIQUE_INDEX_PRIFIX              = "ddl_check_unique_index_prefix"
+	DDL_CHECK_COLUMN_WITHOUT_DEFAULT           = "ddl_check_column_without_default"
+	DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT = "ddl_check_column_timestamp_without_default"
+	DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL        = "ddl_check_column_blob_with_not_null"
+	DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL  = "ddl_check_column_blob_default_is_not_null"
+	DML_CHECK_WITH_LIMIT                       = "dml_check_with_limit"
+	DML_CHECK_WITH_ORDER_BY                    = "dml_check_with_order_by"
 )
 
 // inspector config code
@@ -71,43 +78,7 @@ var RuleHandlers = []RuleHandler{
 	// rule
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  SCHEMA_NOT_EXIST,
-			Desc:  "操作数据库时，数据库必须存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "schema %s 不存在",
-		Func:    checkObjectNotExist,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  SCHEMA_EXIST,
-			Desc:  "创建数据库时，数据库不能存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "schema %s 已存在",
-		Func:    checkObjectExist,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  TABLE_NOT_EXIST,
-			Desc:  "操作表时，表必须存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "表 %s 不存在",
-		Func:    checkObjectNotExist,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  TABLE_EXIST,
-			Desc:  "创建表时，表不能存在",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "表 %s 已存在",
-		Func:    checkObjectExist,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  DDL_CREATE_TABLE_NOT_EXIST,
+			Name:  DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST,
 			Desc:  "新建表必须加入if not exists create，保证重复执行不报错",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -125,7 +96,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_PRIMARY_KEY_EXIST,
+			Name:  DDL_CHECK_PK_NOT_EXIST,
 			Desc:  "表必须有主键",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -134,16 +105,25 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_PRIMARY_KEY_TYPE,
-			Desc:  "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
+			Name:  DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
+			Desc:  "主键建议使用自增",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
+		Message: "主键建议使用自增",
 		Func:    checkPrimaryKey,
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_VARCHAR_MAX,
+			Name:  DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED,
+			Desc:  "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+		Func:    checkPrimaryKey,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_VARCHAR_MAX,
 			Desc:  "禁止使用 varchar(max)",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -152,7 +132,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_TYPE_CHAR_LENGTH,
+			Name:  DDL_CHECK_COLUMN_CHAR_LENGTH,
 			Desc:  "char长度大于20时，必须使用varchar类型",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -161,7 +141,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_FOREIGN_KEY,
+			Name:  DDL_DISABLE_FK,
 			Desc:  "禁止使用外键",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -188,7 +168,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_USING_KEYWORD,
+			Name:  DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
 			Desc:  "数据库对象命名禁止使用关键字",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -197,7 +177,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_TABLE_USING_INNODB_UTF8MB4,
+			Name:  DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4,
 			Desc:  "建议使用Innodb引擎,utf8mb4字符集",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
@@ -206,7 +186,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
+			Name:  DDL_CHECK_INDEX_COLUMN_WITH_BLOB,
 			Desc:  "禁止将blob类型的列加入索引",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -215,7 +195,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DML_CHECK_INVALID_WHERE_CONDITION,
+			Name:  DML_CHECK_WHERE_IS_INVALID,
 			Desc:  "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -251,12 +231,102 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DML_MYCAT_MUST_USING_SHARDING_CLOUNM,
+			Name:  DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM,
 			Desc:  "mycat dml 必须使用分片字段",
 			Level: model.RULE_LEVEL_ERROR,
 		},
 		Message: "mycat dml 必须使用分片字段",
 		Func:    checkMycatShardingColumn,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_TABLE_WITHOUT_COMMENT,
+			Desc:  "表建议添加注释",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "表建议添加注释",
+		Func:    checkTableWithoutComment,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_WITHOUT_COMMENT,
+			Desc:  "列建议添加注释",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "列建议添加注释",
+		Func:    checkColumnWithoutComment,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_INDEX_PREFIX,
+			Desc:  "普通索引必须要以\"idx_\"为前缀",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "普通索引必须要以\"idx_\"为前缀",
+		Func:    checkIndexPrefix,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_UNIQUE_INDEX_PRIFIX,
+			Desc:  "unique索引必须要以\"uniq_\"为前缀",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "unique索引必须要以\"uniq_\"为前缀",
+		Func:    checkUniqIndexPrefix,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
+			Desc:  "除了自增列及大字段列之外，每个列都必须添加默认值",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "除了自增列及大字段列之外，每个列都必须添加默认值",
+		Func:    checkColumnWithoutDefault,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
+			Desc:  "timestamp 类型的列必须添加默认值",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "timestamp 类型的列必须添加默认值",
+		Func:    checkColumnTimestampWithoutDefault,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
+			Desc:  "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+		Func:    checkColumnBlobNotNull,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
+			Desc:  "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+		Func:    checkColumnBlobDefaultNull,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WITH_LIMIT,
+			Desc:  "delete/update 语句不能有limit条件",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "delete/update 语句不能有limit条件",
+		Func:    checkDMLWithLimit,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WITH_ORDER_BY,
+			Desc:  "delete/update 语句不能有order by",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "delete/update 语句不能有order by",
+		Func:    checkDMLWithOrderBy,
 	},
 }
 
@@ -287,7 +357,7 @@ func checkSelectWhere(i *Inspect, node ast.Node) error {
 	case *ast.SelectStmt:
 		// where condition
 		if stmt.Where == nil || !whereStmtHasOneColumn(stmt.Where) {
-			i.addResult(DML_CHECK_INVALID_WHERE_CONDITION)
+			i.addResult(DML_CHECK_WHERE_IS_INVALID)
 		}
 	}
 	return nil
@@ -295,10 +365,14 @@ func checkSelectWhere(i *Inspect, node ast.Node) error {
 
 func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	var hasPk = false
-	var pkIsAutoIncrementBigIntUnsigned = false
+	var pkIsAutoIncrement = false
+	var pkIsBigIntUnsigned = false
 
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		if stmt.ReferTable != nil {
+			return nil
+		}
 		// check primary key
 		// TODO: tidb parser not support keyword for SERIAL; it is a alias for "BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
 		/*
@@ -310,9 +384,11 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 		for _, col := range stmt.Cols {
 			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 				hasPk = true
-				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-					IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-					pkIsAutoIncrementBigIntUnsigned = true
+				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
+					pkIsBigIntUnsigned = true
+				}
+				if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+					pkIsAutoIncrement = true
 				}
 			}
 		}
@@ -330,9 +406,11 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 					columnName := constraint.Keys[0].Column.Name.String()
 					for _, col := range stmt.Cols {
 						if col.Name.Name.String() == columnName {
-							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-								IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrementBigIntUnsigned = true
+							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
+								pkIsBigIntUnsigned = true
+							}
+							if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+								pkIsAutoIncrement = true
 							}
 						}
 					}
@@ -344,10 +422,13 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	}
 
 	if !hasPk {
-		i.addResult(DDL_CHECK_PRIMARY_KEY_EXIST)
+		i.addResult(DDL_CHECK_PK_NOT_EXIST)
 	}
-	if hasPk && !pkIsAutoIncrementBigIntUnsigned {
-		i.addResult(DDL_CHECK_PRIMARY_KEY_TYPE)
+	if hasPk && !pkIsAutoIncrement {
+		i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
+	}
+	if hasPk && !pkIsBigIntUnsigned {
+		i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
 	}
 	return nil
 }
@@ -362,13 +443,6 @@ func checkMergeAlterTable(i *Inspect, node ast.Node) error {
 				i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
 			}
 		}
-		//_, ok := i.alterTableStmts[tableName]
-		//if ok {
-		//	i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
-		//	i.alterTableStmts[tableName] = append(i.alterTableStmts[tableName], stmt)
-		//} else {
-		//	i.alterTableStmts[tableName] = []*ast.AlterTableStmt{stmt}
-		//}
 	}
 
 	return nil
@@ -379,6 +453,9 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 	var characterSet string
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		if stmt.ReferTable != nil {
+			return nil
+		}
 		for _, op := range stmt.Options {
 			switch op.Tp {
 			case ast.TableOptionEngine:
@@ -393,7 +470,7 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 	if strings.ToLower(engine) == "innodb" && strings.ToLower(characterSet) == "utf8mb4" {
 		return nil
 	}
-	i.addResult(DDL_TABLE_USING_INNODB_UTF8MB4)
+	i.addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
 	return nil
 }
 
@@ -503,7 +580,7 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if indexDataTypeIsBlob {
-		i.addResult(DDL_DISABLE_INDEX_DATA_TYPE_BLOB)
+		i.addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB)
 	}
 	return nil
 }
@@ -575,7 +652,8 @@ func checkNewObjectName(i *Inspect, node ast.Node) error {
 		}
 	}
 	if len(invalidNames) > 0 {
-		i.addResult(DDL_DISABLE_USING_KEYWORD, strings.Join(RemoveArrayRepeat(invalidNames), ", "))
+		i.addResult(DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
+			strings.Join(RemoveArrayRepeat(invalidNames), ", "))
 	}
 	return nil
 }
@@ -602,7 +680,7 @@ func checkForeignKey(i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if hasFk {
-		i.addResult(DDL_DISABLE_FOREIGN_KEY)
+		i.addResult(DDL_DISABLE_FK)
 	}
 	return nil
 }
@@ -683,15 +761,15 @@ func checkStringType(i *Inspect, node ast.Node) error {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
 		for _, col := range stmt.Cols {
-			if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-				i.addResult(DDL_CHECK_TYPE_CHAR_LENGTH)
+			if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
+				i.addResult(DDL_CHECK_COLUMN_CHAR_LENGTH)
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, col := range spec.NewColumns {
-				if col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-					i.addResult(DDL_CHECK_TYPE_CHAR_LENGTH)
+				if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
+					i.addResult(DDL_CHECK_COLUMN_CHAR_LENGTH)
 				}
 			}
 		}
@@ -701,124 +779,12 @@ func checkStringType(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkObjectExist(i *Inspect, node ast.Node) error {
-	switch stmt := node.(type) {
-	case *ast.CreateTableStmt:
-		// check schema
-		schemaName := i.getSchemaName(stmt.Table)
-		tableName := i.getTableName(stmt.Table)
-		exist, err := i.isSchemaExist(schemaName)
-		if err != nil {
-			return err
-		}
-		if !exist {
-			// if schema not exist, table must not exist
-			return nil
-
-		} else {
-			// check table if schema exist
-			exist, err = i.isTableExist(stmt.Table)
-			if err != nil {
-				return err
-			}
-			if exist {
-				i.addResult(TABLE_EXIST, tableName)
-			}
-		}
-	case *ast.CreateDatabaseStmt:
-		schemaName := stmt.Name
-		exist, err := i.isSchemaExist(schemaName)
-		if err != nil {
-			return err
-		}
-		if exist {
-			i.addResult(SCHEMA_EXIST, schemaName)
-		}
-	}
-	return nil
-}
-
-func checkObjectNotExist(i *Inspect, node ast.Node) error {
-	var tables = []*ast.TableName{}
-	var schemasName = []string{}
-
-	switch stmt := node.(type) {
-	case *ast.UseStmt:
-		schemasName = append(schemasName, stmt.DBName)
-
-	case *ast.CreateTableStmt:
-		schemasName = append(schemasName, i.getSchemaName(stmt.Table))
-
-	case *ast.AlterTableStmt:
-		schemasName = append(schemasName, i.getSchemaName(stmt.Table))
-		tables = append(tables, stmt.Table)
-
-	case *ast.SelectStmt:
-		for _, table := range getTables(stmt.From.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-	case *ast.InsertStmt:
-		for _, table := range getTables(stmt.Table.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-
-	case *ast.DeleteStmt:
-		if stmt.Tables != nil && stmt.Tables.Tables != nil {
-			for _, table := range stmt.Tables.Tables {
-				schemasName = append(schemasName, i.getSchemaName(table))
-				tables = append(tables, table)
-			}
-		}
-		for _, table := range getTables(stmt.TableRefs.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-
-	case *ast.UpdateStmt:
-		for _, table := range getTables(stmt.TableRefs.TableRefs) {
-			schemasName = append(schemasName, i.getSchemaName(table))
-			tables = append(tables, table)
-		}
-	}
-
-	notExistSchemas := []string{}
-	for _, schema := range schemasName {
-		exist, err := i.isSchemaExist(schema)
-		if err != nil {
-			return err
-		}
-		if !exist {
-			notExistSchemas = append(notExistSchemas, schema)
-		}
-	}
-	if len(notExistSchemas) > 0 {
-		i.addResult(SCHEMA_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistSchemas), ", "))
-	}
-
-	notExistTables := []string{}
-	for _, table := range tables {
-		exist, err := i.isTableExist(table)
-		if err != nil {
-			return err
-		}
-		if !exist {
-			notExistTables = append(notExistTables, i.getTableName(table))
-		}
-	}
-	if len(notExistTables) > 0 {
-		i.addResult(TABLE_NOT_EXIST, strings.Join(RemoveArrayRepeat(notExistTables), ", "))
-	}
-	return nil
-}
-
 func checkIfNotExist(i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
 		if !stmt.IfNotExists {
-			i.addResult(DDL_CREATE_TABLE_NOT_EXIST)
+			i.addResult(DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST)
 		}
 	}
 	return nil
@@ -923,7 +889,343 @@ func checkMycatShardingColumn(i *Inspect, node ast.Node) error {
 		hasShardingColumn = whereStmtHasSpecificColumn(stmt.Where, shardingCoulmn)
 	}
 	if !hasShardingColumn {
-		i.addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM)
+		i.addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM)
+	}
+	return nil
+}
+
+func checkTableWithoutComment(i *Inspect, node ast.Node) error {
+	var tableHasComment bool
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		// if has refer table, sql is create table ... like ...
+		if stmt.ReferTable != nil {
+			return nil
+		}
+		if stmt.Options != nil {
+			for _, option := range stmt.Options {
+				if option.Tp == ast.TableOptionComment {
+					tableHasComment = true
+					break
+				}
+			}
+		}
+		if !tableHasComment {
+			i.addResult(DDL_CHECK_TABLE_WITHOUT_COMMENT)
+		}
+	}
+	return nil
+}
+
+func checkColumnWithoutComment(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			columnHasComment := false
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionComment {
+					columnHasComment = true
+				}
+			}
+			if !columnHasComment {
+				i.addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+			for _, col := range spec.NewColumns {
+				columnHasComment := false
+				for _, op := range col.Options {
+					if op.Tp == ast.ColumnOptionComment {
+						columnHasComment = true
+					}
+				}
+				if !columnHasComment {
+					i.addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT)
+					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkIndexPrefix(i *Inspect, node ast.Node) error {
+	indexesName := []string{}
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintIndex:
+				indexesName = append(indexesName, constraint.Name)
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintIndex:
+				indexesName = append(indexesName, spec.Constraint.Name)
+			}
+		}
+	default:
+		return nil
+	}
+	for _, name := range indexesName {
+		if !strings.HasPrefix(name, "idx_") {
+			i.addResult(DDL_CHECK_INDEX_PREFIX)
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkUniqIndexPrefix(i *Inspect, node ast.Node) error {
+	uniqueIndexesName := []string{}
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintUniq:
+				uniqueIndexesName = append(uniqueIndexesName, constraint.Name)
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintUniq:
+				uniqueIndexesName = append(uniqueIndexesName, spec.Constraint.Name)
+			}
+		}
+	default:
+		return nil
+	}
+	for _, name := range uniqueIndexesName {
+		if !strings.HasPrefix(name, "uniq_") {
+			i.addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX)
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col == nil {
+				continue
+			}
+			isAutoIncrementColumn := false
+			isBlobColumn := false
+			columnHasDefault := false
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionAutoIncrement {
+					isAutoIncrementColumn = true
+				}
+
+				switch col.Tp.Tp {
+				case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob:
+					isBlobColumn = true
+				}
+
+				if option.Tp == ast.ColumnOptionDefaultValue {
+					columnHasDefault = true
+				}
+			}
+			if isAutoIncrementColumn || isBlobColumn {
+				continue
+			}
+			if !columnHasDefault {
+				i.addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+			for _, col := range spec.NewColumns {
+				columnHasDefault := false
+				for _, op := range col.Options {
+					if op.Tp == ast.ColumnOptionDefaultValue {
+						columnHasDefault = true
+					}
+				}
+				if !columnHasDefault {
+					i.addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
+					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkColumnTimestampWithoutDefault(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			columnHasDefault := false
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionDefaultValue {
+					columnHasDefault = true
+				}
+			}
+			if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
+				i.addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+			for _, col := range spec.NewColumns {
+				columnHasDefault := false
+				for _, op := range col.Options {
+					if op.Tp == ast.ColumnOptionDefaultValue {
+						columnHasDefault = true
+					}
+				}
+				if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
+					i.addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT)
+					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkColumnBlobNotNull(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Tp == nil {
+				continue
+			}
+			switch col.Tp.Tp {
+			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+				for _, opt := range col.Options {
+					if opt.Tp == ast.ColumnOptionNotNull {
+						i.addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL)
+						return nil
+					}
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
+			ast.AlterTableModifyColumn) {
+			for _, col := range spec.NewColumns {
+				if col.Tp == nil {
+					continue
+				}
+				switch col.Tp.Tp {
+				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+					for _, opt := range col.Options {
+						if opt.Tp == ast.ColumnOptionNotNull {
+							i.addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL)
+							return nil
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkColumnBlobDefaultNull(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Tp == nil {
+				continue
+			}
+			switch col.Tp.Tp {
+			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+				for _, opt := range col.Options {
+					if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
+						i.addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL)
+						return nil
+					}
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn, ast.AlterTableAlterColumn,
+			ast.AlterTableChangeColumn, ast.AlterTableAddColumns) {
+			for _, col := range spec.NewColumns {
+				if col.Tp == nil {
+					continue
+				}
+				switch col.Tp.Tp {
+				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+					for _, opt := range col.Options {
+						if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
+							i.addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL)
+							return nil
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkDMLWithLimit(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.UpdateStmt:
+		if stmt.Limit != nil {
+			i.addResult(DML_CHECK_WITH_LIMIT)
+		}
+	case *ast.DeleteStmt:
+		if stmt.Limit != nil {
+			i.addResult(DML_CHECK_WITH_LIMIT)
+		}
+	}
+	return nil
+}
+
+func checkDMLWithOrderBy(i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.UpdateStmt:
+		if stmt.Order != nil {
+			i.addResult(DML_CHECK_WITH_ORDER_BY)
+		}
+	case *ast.DeleteStmt:
+		if stmt.Order != nil {
+			i.addResult(DML_CHECK_WITH_ORDER_BY)
+		}
 	}
 	return nil
 }
