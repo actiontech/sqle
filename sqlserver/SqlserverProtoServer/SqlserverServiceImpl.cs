@@ -5,6 +5,7 @@ using System.IO;
 using Grpc.Core;
 using SqlserverProto;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class SqlServerServiceImpl : SqlserverService.SqlserverServiceBase {
@@ -135,6 +136,7 @@ namespace SqlserverProtoServer {
             var sqls = request.Sqls;
             var ruleNames = request.RuleNames;
             var ruleValidatorContext = new SqlserverContext(request.SqlserverMeta);
+            var logger = LogManager.GetCurrentClassLogger();
 
             foreach (var sql in sqls) {
                 try {
@@ -148,12 +150,12 @@ namespace SqlserverProtoServer {
                             ruleValidator.Check(ruleValidatorContext, statement);
                         }
 
-                        ruleValidatorContext.UpdateContext(statement);
+                        ruleValidatorContext.UpdateContext(logger, statement);
                     }
                     output.Results[sql] = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
                     ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
                 } catch (Exception e) {
-                    Console.WriteLine("{0}", e.StackTrace);
+                    logger.Fatal("Advise exception stacktrace:{0}", e.StackTrace);
                 }
             }
 
@@ -166,6 +168,7 @@ namespace SqlserverProtoServer {
             var version = request.Version;
             var sqls = request.Sqls;
             var rollbackSqlContext = new SqlserverContext(request.SqlserverMeta, request.RollbackConfig);
+            var logger = LogManager.GetCurrentClassLogger();
 
             foreach (var sql in sqls) {
                 var statementList = ParseStatementList(version, sql);
@@ -178,7 +181,7 @@ namespace SqlserverProtoServer {
                     rollbackSql.IsDML = isDML;
                     output.RollbackSqls.Add(rollbackSql);
 
-                    rollbackSqlContext.UpdateContext(statement);
+                    rollbackSqlContext.UpdateContext(logger, statement);
                 }
             }
 

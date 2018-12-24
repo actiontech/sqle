@@ -3,9 +3,12 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 using System.Data.SqlClient;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class RollbackSql {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public String GetRollbackSql(SqlserverContext context, TSqlStatement statement, out bool isDDL, out bool isDML) {
             isDDL = false;
             isDML = false;
@@ -71,21 +74,21 @@ namespace SqlserverProtoServer {
             var sqlLines = new List<String>();
 
             // columns
-            var columnNameToDefinition = context.GetTableColumnDefinitions(databaseName, schemaName, tableName);
+            var columnNameToDefinition = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
             foreach (var columnsPair in columnNameToDefinition) {
                 String columnDefinition = columnsPair.Value;
                 sqlLines.Add(columnDefinition);
             }
 
             // primary key & unique contraint
-            var constraintNameToDefinition = context.GetTableConstraintDefinitions(databaseName, schemaName, tableName);
+            var constraintNameToDefinition = context.GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName);
             foreach (var constraintPair in constraintNameToDefinition) {
                 String constraintDefinition = constraintPair.Value;
                 sqlLines.Add(constraintDefinition);
             }
 
             // index
-            var indexNameToDefinition = context.GetTableIndexDefinitions(databaseName, schemaName, tableName);
+            var indexNameToDefinition = context.GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
             foreach (var indexPair in indexNameToDefinition) {
                 String indexDefinition = indexPair.Value;
                 sqlLines.Add(indexDefinition);
@@ -160,7 +163,7 @@ namespace SqlserverProtoServer {
                         }
 
                         if (elemType == TableElementType.Column) {
-                            foreach (var tableColumnDefinitionPair in context.GetTableColumnDefinitions(databaseName, schemaName, tableName)) {
+                            foreach (var tableColumnDefinitionPair in context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName)) {
                                 if (tableColumnDefinitionPair.Key == elemName) {
                                     dropColumnDefinitions.Add(tableColumnDefinitionPair.Value);
                                 }
@@ -169,7 +172,7 @@ namespace SqlserverProtoServer {
                         }
 
                         if (elemType == TableElementType.Constraint) {
-                            foreach (var tableConstraintDefinitionPair in context.GetTableConstraintDefinitions(databaseName, schemaName, tableName)) {
+                            foreach (var tableConstraintDefinitionPair in context.GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName)) {
                                 if (tableConstraintDefinitionPair.Key == elemName) {
                                     dropConstaintDefinitions.Add(tableConstraintDefinitionPair.Value);
                                 }
@@ -188,7 +191,7 @@ namespace SqlserverProtoServer {
 
                 case AlterTableAlterColumnStatement alterTableAlterColumnStatement:
                     var alterColumn = alterTableAlterColumnStatement.ColumnIdentifier.Value;
-                    foreach (var tableColumnDefinitionPair in context.GetTableColumnDefinitions(databaseName, schemaName, tableName)) {
+                    foreach (var tableColumnDefinitionPair in context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName)) {
                         if (tableColumnDefinitionPair.Key == alterColumn) {
                             rollbackActions.Add(String.Format("{0} ALTER COLUMN {1}", rollbackPrefix, tableColumnDefinitionPair.Value));
                         }

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class StringTypeShouldNotExceedMaxLengthRuleValidator : RuleValidator {
         public const int CHAR_MAX_LENGTH = 20;
+        protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool isCharLengthExceedMaxLengthInDefinitions(IList<ColumnDefinition> columnDefinitions) {
             foreach (var columnDefinition in columnDefinitions) {
@@ -40,6 +42,7 @@ namespace SqlserverProtoServer {
                     TableDefinition tableDefinition = createTableStatement.Definition;
                     if (isCharLengthExceedMaxLengthInDefinitions(tableDefinition.ColumnDefinitions)) {
                         context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                        logger.Debug("string type exceed max length:{0}", CHAR_MAX_LENGTH);
                         return;
                     }
                     break;
@@ -47,6 +50,7 @@ namespace SqlserverProtoServer {
                 case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
                     if (isCharLengthExceedMaxLengthInDefinitions(alterTableAddTableElementStatement.Definition.ColumnDefinitions)) {
                         context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                        logger.Debug("string type exceed max length:{0}", CHAR_MAX_LENGTH);
                         return;
                     }
                     break;
@@ -54,6 +58,7 @@ namespace SqlserverProtoServer {
                 case AlterTableAlterColumnStatement alterTableAlterColumnStatement:
                     if (isCharLengthExceedMaxLengthInDefinitionsInDataType(alterTableAlterColumnStatement.DataType)) {
                         context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                        logger.Debug("string type exceed max length:{0}", CHAR_MAX_LENGTH);
                         return;
                     }
                     break;
@@ -64,6 +69,8 @@ namespace SqlserverProtoServer {
     }
 
     public class StringTypeShouldNoVarcharMaxRuleValidator : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public bool isVarcharMaxInDefinitions(IList<ColumnDefinition> columnDefinitions) {
             foreach (var columnDefinition in columnDefinitions) {
                 if (isVarcharMaxInDataType(columnDefinition.DataType)) {
@@ -96,6 +103,7 @@ namespace SqlserverProtoServer {
                     TableDefinition tableDefinition = createTableStatement.Definition;
                     if (isVarcharMaxInDefinitions(tableDefinition.ColumnDefinitions)) {
                         context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                        logger.Debug("There exists VARCHAR(MAX)");
                         return;
                     }
                     break;
@@ -103,6 +111,7 @@ namespace SqlserverProtoServer {
                 case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
                     if (isVarcharMaxInDefinitions(alterTableAddTableElementStatement.Definition.ColumnDefinitions)) {
                         context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                        logger.Debug("There exists VARCHAR(MAX)");
                         return;
                     }
                     break;
@@ -110,6 +119,7 @@ namespace SqlserverProtoServer {
                 case AlterTableAlterColumnStatement alterTableAlterColumnStatement:
                     if (isVarcharMaxInDataType(alterTableAlterColumnStatement.DataType)) {
                         context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                        logger.Debug("There exists VARCHAR(MAX)");
                         return;
                     }
                     break;
