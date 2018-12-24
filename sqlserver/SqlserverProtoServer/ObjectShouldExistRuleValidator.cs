@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class ObjectShouldExistRuleValidator : RuleValidator {
@@ -20,7 +21,6 @@ namespace SqlserverProtoServer {
                 case CreateTableStatement createTableStatement:
                     DatabaseNames = AddDatabaseName(DatabaseNames, context, createTableStatement.SchemaObjectName);
                     Schemas = AddSchemaName(Schemas, createTableStatement.SchemaObjectName);
-                    TableNames = AddTableName(TableNames, context, createTableStatement.SchemaObjectName);
                     break;
 
                 // ALTER TABLE database.schema.table ALTER COLUMN col1 INT NOT NULL
@@ -94,13 +94,16 @@ namespace SqlserverProtoServer {
     }
 
     public class DatabaseShouldExistRuleValidator : ObjectShouldExistRuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             List<String> notExistDatabaseNames = new List<String>();
             foreach (var databaseName in DatabaseNames) {
-                var databaseExisted = DatabaseExists(context, databaseName);
+                var databaseExisted = DatabaseExists(logger, context, databaseName);
                 if (!databaseExisted) {
+                    logger.Debug("database {0} should exist", databaseName);
                     notExistDatabaseNames.Add(databaseName);
                 }
             }
@@ -110,8 +113,9 @@ namespace SqlserverProtoServer {
 
             List<String> notExistSchemas = new List<String>();
             foreach (var schema in Schemas) {
-                var schemaExited = SchemaExists(context, schema);
+                var schemaExited = SchemaExists(logger, context, schema);
                 if (!schemaExited) {
+                    logger.Debug("schema {0} should exist", schema);
                     notExistSchemas.Add(schema);
                 }
             }
@@ -126,6 +130,8 @@ namespace SqlserverProtoServer {
     }
 
     public class TableShouldExistRuleValidator : ObjectShouldExistRuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
@@ -135,8 +141,9 @@ namespace SqlserverProtoServer {
                 if (tableIdentifier.Length != 3) {
                     continue;
                 }
-                var exist = TableExists(context, tableIdentifier[0], tableIdentifier[1], tableIdentifier[2]);
+                var exist = TableExists(logger, context, tableIdentifier[0], tableIdentifier[1], tableIdentifier[2]);
                 if (!exist) {
+                    logger.Debug("table {0} should exist", tableIdentifier[2]);
                     notExistTableNames.Add(tableName);
                 }
             }

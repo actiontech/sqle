@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class NumberOfCompsiteIndexColumnsShouldNotExceedMaxRuleValidator : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public const int COMPOSITE_INDEX_MAX = 5;
+
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             int compositeIndexMax = 0;
             switch (statement) {
@@ -22,6 +26,7 @@ namespace SqlserverProtoServer {
                     break;
             }
             if (compositeIndexMax > COMPOSITE_INDEX_MAX) {
+                logger.Debug("composite index exceed max {0}", COMPOSITE_INDEX_MAX);
                 context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
             }
         }
@@ -30,6 +35,8 @@ namespace SqlserverProtoServer {
     }
 
     public class NumberOfIndexesShouldNotExceedMaxRuleValidator : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public int GetIndexCounterFromTableDefinition(TableDefinition tableDefinition) {
             int indexCounter = tableDefinition.Indexes.Count;
             indexCounter += GetIndexCounterFromColumnDefinitions(tableDefinition.ColumnDefinitions);
@@ -102,6 +109,7 @@ namespace SqlserverProtoServer {
             }
 
             if (indexCounter > INDEX_MAX_NUMBER) {
+                logger.Debug("number of {0}'s indexes exceed max {1}", tableName, INDEX_MAX_NUMBER);
                 context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
             }
         }
@@ -110,6 +118,8 @@ namespace SqlserverProtoServer {
     }
 
     public class DisableAddIndexForColumnsTypeBlob : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public bool IsBlobTypeString(String type, IList<Literal> parameters) {
             switch (type.ToLower()) {
                 case "image":
@@ -263,6 +273,7 @@ namespace SqlserverProtoServer {
                     break;
             }
             if (indexDataTypeIsBlob) {
+                logger.Debug("There is index for blob type column");
                 context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
             }
         }

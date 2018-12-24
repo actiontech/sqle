@@ -1,8 +1,11 @@
 ﻿using System;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class PrimaryKeyShouldExistRuleValidator : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             if (statement is CreateTableStatement) {
                 bool hasPrimaryKey = false;
@@ -40,6 +43,7 @@ namespace SqlserverProtoServer {
                 }
 
                 if (!hasPrimaryKey) {
+                    logger.Debug("create table {0} has no primary key", createTableStatement.SchemaObjectName.BaseIdentifier.Value);
                     context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
                 }
             }
@@ -49,6 +53,8 @@ namespace SqlserverProtoServer {
     }
 
     public class PrimaryKeyAutoIncrementRuleValidator : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             if (!(statement is CreateTableStatement)) {
                 return;

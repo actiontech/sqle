@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class ObjectNameRuleValidator : RuleValidator {
         public List<String> Names;
-
-
+        
         public List<String> GetNamesFromConstraints(List<String> names, IList<ConstraintDefinition> constraints) {
             foreach (var constraint in constraints) {
                 if (constraint.ConstraintIdentifier != null) {
@@ -97,11 +97,14 @@ namespace SqlserverProtoServer {
     }
 
     public class ObjectNameMaxLengthRuleValidator : ObjectNameRuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             foreach (var name in Names) {
                 if (name.Length > 64) {
+                    logger.Debug("object name {0} is longer than 64 Bytes", name);
                     context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
                     break;
                 }
@@ -116,12 +119,15 @@ namespace SqlserverProtoServer {
     }
 
     public class ObjectNameShouldNotContainsKeywordRuleValidator : ObjectNameRuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             base.Check(context, statement);
 
             var invalidNames = new List<String>();
             foreach (var name in Names) {
-                if (IsReserverdKeyword(name)) {
+                if (IsReserveredKeyword(name)) {
+                    logger.Debug("object name {0} is reservered keyword", name);
                     invalidNames.Add(name);
                 }
             }
@@ -137,7 +143,7 @@ namespace SqlserverProtoServer {
 
         }
 
-        public bool IsReserverdKeyword(String name) {
+        public bool IsReserveredKeyword(String name) {
             return Keywords.Contains(name.ToUpper()) ? true : false;
         }
 

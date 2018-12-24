@@ -9,6 +9,7 @@ using IniParser;
 using IniParser.Model;
 using System.Diagnostics;
 using System;
+using NLog;
 
 namespace SqlserverProtoServer {
     public class Options {
@@ -48,15 +49,23 @@ namespace SqlserverProtoServer {
 
                   });
 
-            var hostBuilder = new HostBuilder().ConfigureServices((hostContext, services) => {
-                Server server = new Server {
-                    Services = { SqlserverService.BindService(new SqlServerServiceImpl()) },
-                    Ports = { new ServerPort("localhost", Port, ServerCredentials.Insecure) }
-                };
+            var config = new NLog.Config.LoggingConfiguration();
+            var logfile = new NLog.Targets.FileTarget("logfile") { FileName = "sqle_sqlserver.log" };
+            var logconsole = new NLog.Targets.ConsoleTarget("logconsole");
+            config.AddRule(LogLevel.Trace, LogLevel.Fatal, logconsole);
+            config.AddRule(LogLevel.Info, LogLevel.Fatal, logfile);
+            LogManager.Configuration = config;
 
-                services.AddSingleton<Server>(server);
-                services.AddSingleton<IHostedService, GrpcHostedService>();
-            });
+            var hostBuilder = new HostBuilder().
+                ConfigureServices((hostContext, services) => {
+                    Server server = new Server {
+                        Services = { SqlserverService.BindService(new SqlServerServiceImpl()) },
+                        Ports = { new ServerPort("localhost", Port, ServerCredentials.Insecure) }
+                    };
+
+                    services.AddSingleton<Server>(server);
+                    services.AddSingleton<IHostedService, GrpcHostedService>();
+                });
             await hostBuilder.RunConsoleAsync();
         }
     }
