@@ -9,6 +9,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mssql"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/sirupsen/logrus"
+	"net/url"
 	"sqle/errors"
 	"sqle/model"
 	"strconv"
@@ -40,8 +41,15 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 		db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 			instance.User, instance.Password, instance.Host, instance.Port, schema))
 	case model.DB_TYPE_SQLSERVER:
-		db, err = gorm.Open("mssql", fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s",
-			instance.User, instance.Password, instance.Host, instance.Port, schema))
+		query := url.Values{}
+		query.Add("database", schema)
+		source := &url.URL{
+			Scheme:   "sqlserver",
+			User:     url.UserPassword(instance.User, instance.Password),
+			Host:     fmt.Sprintf("%s:%s", instance.Host, instance.Port),
+			RawQuery: query.Encode(),
+		}
+		db, err = gorm.Open("mssql", source.String())
 
 	default:
 		err := fmt.Errorf("db type is not support")
