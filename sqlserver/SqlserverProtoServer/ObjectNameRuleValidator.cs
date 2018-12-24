@@ -6,7 +6,7 @@ using NLog;
 namespace SqlserverProtoServer {
     public class ObjectNameRuleValidator : RuleValidator {
         public List<String> Names;
-        
+
         public List<String> GetNamesFromConstraints(List<String> names, IList<ConstraintDefinition> constraints) {
             foreach (var constraint in constraints) {
                 if (constraint.ConstraintIdentifier != null) {
@@ -47,14 +47,9 @@ namespace SqlserverProtoServer {
                     Names = GetNamesFromTableDefinition(Names, createTableStatement.Definition);
                     break;
 
-                case AlterTableStatement alterTableStatement:
-                    switch (alterTableStatement) {
-                        // add column (with or without constraint)
-                        case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
-                            Names = GetNamesFromTableDefinition(Names, alterTableAddTableElementStatement.Definition);
-                            break;
-                    }
-
+                case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
+                    // add column (with or without constraint)
+                    Names = GetNamesFromTableDefinition(Names, alterTableAddTableElementStatement.Definition);
                     break;
 
                 // sp_rename [ @objname = ] 'object_name' , [ @newname = ] 'new_name' [ , [@objtype = ] 'object_type' ]
