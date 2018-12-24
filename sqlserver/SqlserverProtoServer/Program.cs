@@ -50,9 +50,20 @@ namespace SqlserverProtoServer {
                   });
 
             var config = new NLog.Config.LoggingConfiguration();
-            var logfile = new NLog.Targets.FileTarget("logfile") { FileName = "sqle_sqlserver.log" };
+            var logfile = new NLog.Targets.FileTarget("logfile") {
+                // log file name
+                FileName = "sqle_sqlserver.log",
+                // name of the file to be used for an archive
+                ArchiveFileName = "log.{###}.txt",
+                // way file archives are numbered
+                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.Rolling,
+                // max number of archive files
+                MaxArchiveFiles = 100,
+                // size in bytes above which log files will be automatically archived.
+                ArchiveAboveSize = 500 * 1024 * 1024,
+            };
             var logconsole = new NLog.Targets.ConsoleTarget("logconsole");
-            config.AddRule(LogLevel.Trace, LogLevel.Fatal, logconsole);
+            config.AddRuleForAllLevels(logconsole);
             config.AddRule(LogLevel.Info, LogLevel.Fatal, logfile);
             LogManager.Configuration = config;
 

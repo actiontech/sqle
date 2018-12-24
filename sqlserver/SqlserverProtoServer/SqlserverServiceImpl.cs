@@ -72,7 +72,11 @@ namespace SqlserverProtoServer {
             IList<ParseError> errorList;
             var statementList = parser.ParseStatementList(reader, out errorList);
             if (errorList.Count > 0) {
-                throw new ArgumentException(String.Format("parse sql {0} error: {1}", text, errorList.ToString()));
+                var errMsgList = new List<String>();
+                foreach (var parseErr in errorList) {
+                    errMsgList.Add(parseErr.Message);
+                }
+                throw new ArgumentException(String.Format("parse sql `{0}` error: {1}", text, String.Join("; ",errMsgList)));
             }
 
             return statementList;
@@ -83,19 +87,27 @@ namespace SqlserverProtoServer {
             var output = new SplitSqlsOutput();
             var version = request.Version;
             var sqls = request.Sqls;
-            var statementList = ParseStatementList(version, sqls);
+            var logger = LogManager.GetCurrentClassLogger();
 
-            foreach (var statement in statementList.Statements) {
-                var sql = "";
-                for (int index = statement.FirstTokenIndex; index <= statement.LastTokenIndex; index++) {
-                    sql += statement.ScriptTokenStream[index].Text;
+            try {
+                var statementList = ParseStatementList(version, sqls);
+
+                foreach (var statement in statementList.Statements) {
+                    var sql = "";
+                    for (int index = statement.FirstTokenIndex; index <= statement.LastTokenIndex; index++) {
+                        sql += statement.ScriptTokenStream[index].Text;
+                    }
+
+                    var splitSql = new Sql();
+                    splitSql.Sql_ = sql;
+                    splitSql.IsDDL = IsDDL(statement);
+                    splitSql.IsDML = IsDML(statement);
+                    output.SplitSqls.Add(splitSql);
                 }
-
-                var splitSql = new Sql();
-                splitSql.Sql_ = sql;
-                splitSql.IsDDL = IsDDL(statement);
-                splitSql.IsDML = IsDML(statement);
-                output.SplitSqls.Add(splitSql);
+            } catch (Exception e) {
+                logger.Fatal("GetSplitSqls exception stackstrace:{0}", e.StackTrace);
+                logger.Fatal("GetSplitSqls exception message:{0}", e.Message);
+                throw new RpcException(new Status(StatusCode.Internal, e.Message));
             }
 
             return Task.FromResult(output);
@@ -156,6 +168,8 @@ namespace SqlserverProtoServer {
                     ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
                 } catch (Exception e) {
                     logger.Fatal("Advise exception stacktrace:{0}", e.StackTrace);
+                    logger.Fatal("Advise exception message:{0}", e.Message);
+                    throw new RpcException(new Status(StatusCode.Internal, e.Message));
                 }
             }
 
@@ -171,18 +185,25 @@ namespace SqlserverProtoServer {
             var logger = LogManager.GetCurrentClassLogger();
 
             foreach (var sql in sqls) {
-                var statementList = ParseStatementList(version, sql);
-                foreach (var statement in statementList.Statements) {
-                    var rollbackSql = new Sql();
-                    bool isDDL = false;
-                    bool isDML = false;
-                    rollbackSql.Sql_ = new RollbackSql().GetRollbackSql(rollbackSqlContext, statement, out isDDL, out isDML);
-                    rollbackSql.IsDDL = isDDL;
-                    rollbackSql.IsDML = isDML;
-                    output.RollbackSqls.Add(rollbackSql);
+                try {
+                    var statementList = ParseStatementList(version, sql);
+                    foreach (var statement in statementList.Statements) {
+                        var rollbackSql = new Sql();
+                        bool isDDL = false;
+                        bool isDML = false;
+                        rollbackSql.Sql_ = new RollbackSql().GetRollbackSql(rollbackSqlContext, statement, out isDDL, out isDML);
+                        rollbackSql.IsDDL = isDDL;
+                        rollbackSql.IsDML = isDML;
+                        output.RollbackSqls.Add(rollbackSql);
 
-                    rollbackSqlContext.UpdateContext(logger, statement);
+                        rollbackSqlContext.UpdateContext(logger, statement);
+                    }
+                } catch (Exception e) {
+                    logger.Fatal("GetRollbackSqls exception stackstrace:{0}", e.StackTrace, e.Message);
+                    logger.Fatal("GetRollbackSqls exception message:{0}", e.Message);
+                    throw new RpcException(new Status(StatusCode.Internal, e.Message));
                 }
+
             }
 
             return Task.FromResult(output);
