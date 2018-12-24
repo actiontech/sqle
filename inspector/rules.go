@@ -9,23 +9,24 @@ import (
 
 // inspector rule code
 const (
-	DDL_CREATE_TABLE_NOT_EXIST                 = "ddl_create_table_not_exist"
+	DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST       = "ddl_check_table_without_if_not_exists"
 	DDL_CHECK_OBJECT_NAME_LENGTH               = "ddl_check_object_name_length"
-	DDL_CHECK_PRIMARY_KEY_EXIST                = "ddl_check_primary_key_exist"
-	DDL_CHECK_PRIMARY_KEY_TYPE                 = "ddl_check_primary_key_type"
-	DDL_DISABLE_VARCHAR_MAX                    = "ddl_disable_varchar_max"
-	DDL_CHECK_TYPE_CHAR_LENGTH                 = "ddl_check_type_char_length"
-	DDL_DISABLE_FOREIGN_KEY                    = "ddl_disable_foreign_key"
+	DDL_CHECK_OBJECT_NAME_USING_KEYWORD        = "ddl_check_object_name_using_keyword"
+	DDL_CHECK_PK_NOT_EXIST                     = "ddl_check_pk_not_exist"
+	DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED       = "ddl_check_pk_without_bigint_unsigned"
+	DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT        = "ddl_check_pk_without_auto_increment"
+	DDL_CHECK_COLUMN_VARCHAR_MAX               = "ddl_check_column_varchar_max"
+	DDL_CHECK_COLUMN_CHAR_LENGTH               = "ddl_check_column_char_length"
+	DDL_DISABLE_FK                             = "ddl_disable_fk"
 	DDL_CHECK_INDEX_COUNT                      = "ddl_check_index_count"
 	DDL_CHECK_COMPOSITE_INDEX_MAX              = "ddl_check_composite_index_max"
-	DDL_DISABLE_USING_KEYWORD                  = "ddl_disable_using_keyword"
-	DDL_TABLE_USING_INNODB_UTF8MB4             = "ddl_create_table_using_innodb"
-	DDL_DISABLE_INDEX_DATA_TYPE_BLOB           = "ddl_disable_index_column_blob"
+	DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4     = "ddl_check_table_without_innodb_utf8mb4"
+	DDL_CHECK_INDEX_COLUMN_WITH_BLOB           = "ddl_check_index_column_with_blob"
 	DDL_CHECK_ALTER_TABLE_NEED_MERGE           = "ddl_check_alter_table_need_merge"
 	DDL_DISABLE_DROP_STATEMENT                 = "ddl_disable_drop_statement"
-	DML_CHECK_INVALID_WHERE_CONDITION          = "ddl_check_invalid_where_condition"
+	DML_CHECK_WHERE_IS_INVALID                 = "all_check_where_is_invalid"
 	DML_DISABE_SELECT_ALL_COLUMN               = "dml_disable_select_all_column"
-	DML_MYCAT_MUST_USING_SHARDING_CLOUNM       = "dml_mycat_must_using_sharding_column"
+	DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM    = "dml_check_mycat_without_sharding_column"
 	DDL_CHECK_TABLE_WITHOUT_COMMENT            = "ddl_check_table_without_comment"
 	DDL_CHECK_COLUMN_WITHOUT_COMMENT           = "ddl_check_column_without_comment"
 	DDL_CHECK_INDEX_PREFIX                     = "ddl_check_index_prefix"
@@ -75,45 +76,9 @@ var RuleHandlers = []RuleHandler{
 	},
 
 	// rule
-	//RuleHandler{
-	//	Rule: model.Rule{
-	//		Name:  SCHEMA_NOT_EXIST,
-	//		Desc:  "操作数据库时，数据库必须存在",
-	//		Level: model.RULE_LEVEL_ERROR,
-	//	},
-	//	Message: "schema %s 不存在",
-	//	Func:    checkObjectNotExist,
-	//},
-	//RuleHandler{
-	//	Rule: model.Rule{
-	//		Name:  SCHEMA_EXIST,
-	//		Desc:  "创建数据库时，数据库不能存在",
-	//		Level: model.RULE_LEVEL_ERROR,
-	//	},
-	//	Message: "schema %s 已存在",
-	//	Func:    checkObjectExist,
-	//},
-	//RuleHandler{
-	//	Rule: model.Rule{
-	//		Name:  TABLE_NOT_EXIST,
-	//		Desc:  "操作表时，表必须存在",
-	//		Level: model.RULE_LEVEL_ERROR,
-	//	},
-	//	Message: "表 %s 不存在",
-	//	Func:    checkObjectNotExist,
-	//},
-	//RuleHandler{
-	//	Rule: model.Rule{
-	//		Name:  TABLE_EXIST,
-	//		Desc:  "创建表时，表不能存在",
-	//		Level: model.RULE_LEVEL_ERROR,
-	//	},
-	//	Message: "表 %s 已存在",
-	//	Func:    checkObjectExist,
-	//},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CREATE_TABLE_NOT_EXIST,
+			Name:  DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST,
 			Desc:  "新建表必须加入if not exists create，保证重复执行不报错",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -131,7 +96,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_PRIMARY_KEY_EXIST,
+			Name:  DDL_CHECK_PK_NOT_EXIST,
 			Desc:  "表必须有主键",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -140,16 +105,25 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_PRIMARY_KEY_TYPE,
-			Desc:  "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
+			Name:  DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
+			Desc:  "主键建议使用自增",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "主键建议使用自增，且为bigint无符号类型，即bigint unsigned",
+		Message: "主键建议使用自增",
 		Func:    checkPrimaryKey,
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_VARCHAR_MAX,
+			Name:  DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED,
+			Desc:  "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+		Func:    checkPrimaryKey,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_VARCHAR_MAX,
 			Desc:  "禁止使用 varchar(max)",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -158,7 +132,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_TYPE_CHAR_LENGTH,
+			Name:  DDL_CHECK_COLUMN_CHAR_LENGTH,
 			Desc:  "char长度大于20时，必须使用varchar类型",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -167,7 +141,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_FOREIGN_KEY,
+			Name:  DDL_DISABLE_FK,
 			Desc:  "禁止使用外键",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -194,7 +168,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_USING_KEYWORD,
+			Name:  DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
 			Desc:  "数据库对象命名禁止使用关键字",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -203,7 +177,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_TABLE_USING_INNODB_UTF8MB4,
+			Name:  DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4,
 			Desc:  "建议使用Innodb引擎,utf8mb4字符集",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
@@ -212,7 +186,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
+			Name:  DDL_CHECK_INDEX_COLUMN_WITH_BLOB,
 			Desc:  "禁止将blob类型的列加入索引",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -221,7 +195,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DML_CHECK_INVALID_WHERE_CONDITION,
+			Name:  DML_CHECK_WHERE_IS_INVALID,
 			Desc:  "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -257,7 +231,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
-			Name:  DML_MYCAT_MUST_USING_SHARDING_CLOUNM,
+			Name:  DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM,
 			Desc:  "mycat dml 必须使用分片字段",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -383,7 +357,7 @@ func checkSelectWhere(i *Inspect, node ast.Node) error {
 	case *ast.SelectStmt:
 		// where condition
 		if stmt.Where == nil || !whereStmtHasOneColumn(stmt.Where) {
-			i.addResult(DML_CHECK_INVALID_WHERE_CONDITION)
+			i.addResult(DML_CHECK_WHERE_IS_INVALID)
 		}
 	}
 	return nil
@@ -391,7 +365,8 @@ func checkSelectWhere(i *Inspect, node ast.Node) error {
 
 func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	var hasPk = false
-	var pkIsAutoIncrementBigIntUnsigned = false
+	var pkIsAutoIncrement = false
+	var pkIsBigIntUnsigned = false
 
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -409,9 +384,11 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 		for _, col := range stmt.Cols {
 			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 				hasPk = true
-				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-					IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-					pkIsAutoIncrementBigIntUnsigned = true
+				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
+					pkIsBigIntUnsigned = true
+				}
+				if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+					pkIsAutoIncrement = true
 				}
 			}
 		}
@@ -429,9 +406,11 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 					columnName := constraint.Keys[0].Column.Name.String()
 					for _, col := range stmt.Cols {
 						if col.Name.Name.String() == columnName {
-							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) &&
-								IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrementBigIntUnsigned = true
+							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
+								pkIsBigIntUnsigned = true
+							}
+							if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+								pkIsAutoIncrement = true
 							}
 						}
 					}
@@ -443,10 +422,13 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	}
 
 	if !hasPk {
-		i.addResult(DDL_CHECK_PRIMARY_KEY_EXIST)
+		i.addResult(DDL_CHECK_PK_NOT_EXIST)
 	}
-	if hasPk && !pkIsAutoIncrementBigIntUnsigned {
-		i.addResult(DDL_CHECK_PRIMARY_KEY_TYPE)
+	if hasPk && !pkIsAutoIncrement {
+		i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
+	}
+	if hasPk && !pkIsBigIntUnsigned {
+		i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
 	}
 	return nil
 }
@@ -488,7 +470,7 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 	if strings.ToLower(engine) == "innodb" && strings.ToLower(characterSet) == "utf8mb4" {
 		return nil
 	}
-	i.addResult(DDL_TABLE_USING_INNODB_UTF8MB4)
+	i.addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
 	return nil
 }
 
@@ -598,7 +580,7 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if indexDataTypeIsBlob {
-		i.addResult(DDL_DISABLE_INDEX_DATA_TYPE_BLOB)
+		i.addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB)
 	}
 	return nil
 }
@@ -670,7 +652,8 @@ func checkNewObjectName(i *Inspect, node ast.Node) error {
 		}
 	}
 	if len(invalidNames) > 0 {
-		i.addResult(DDL_DISABLE_USING_KEYWORD, strings.Join(RemoveArrayRepeat(invalidNames), ", "))
+		i.addResult(DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
+			strings.Join(RemoveArrayRepeat(invalidNames), ", "))
 	}
 	return nil
 }
@@ -697,7 +680,7 @@ func checkForeignKey(i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if hasFk {
-		i.addResult(DDL_DISABLE_FOREIGN_KEY)
+		i.addResult(DDL_DISABLE_FK)
 	}
 	return nil
 }
@@ -779,14 +762,14 @@ func checkStringType(i *Inspect, node ast.Node) error {
 		// if char length >20 using varchar.
 		for _, col := range stmt.Cols {
 			if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-				i.addResult(DDL_CHECK_TYPE_CHAR_LENGTH)
+				i.addResult(DDL_CHECK_COLUMN_CHAR_LENGTH)
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, col := range spec.NewColumns {
 				if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-					i.addResult(DDL_CHECK_TYPE_CHAR_LENGTH)
+					i.addResult(DDL_CHECK_COLUMN_CHAR_LENGTH)
 				}
 			}
 		}
@@ -913,7 +896,7 @@ func checkIfNotExist(i *Inspect, node ast.Node) error {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
 		if !stmt.IfNotExists {
-			i.addResult(DDL_CREATE_TABLE_NOT_EXIST)
+			i.addResult(DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST)
 		}
 	}
 	return nil
@@ -1018,7 +1001,7 @@ func checkMycatShardingColumn(i *Inspect, node ast.Node) error {
 		hasShardingColumn = whereStmtHasSpecificColumn(stmt.Where, shardingCoulmn)
 	}
 	if !hasShardingColumn {
-		i.addResult(DML_MYCAT_MUST_USING_SHARDING_CLOUNM)
+		i.addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM)
 	}
 	return nil
 }

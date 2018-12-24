@@ -69,20 +69,21 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 }
 
 var (
-	SCHEMA_NOT_EXIST_MSG        = "schema %s 不存在"
-	SCHEMA_EXIST_MSG            = "schema %s 已存在"
-	TABLE_NOT_EXIST_MSG         = "表 %s 不存在"
-	TABLE_EXIST_MSG             = "表 %s 已存在"
-	COLUMN_NOT_EXIST_MSG        = "字段 %s 不存在"
-	COLUMN_EXIST_MSG            = "字段 %s 已存在"
-	INDEX_NOT_EXIST_MSG         = "索引 %s 不存在"
-	INDEX_EXIST_MSG             = "索引 %s 已存在"
-	DUPLICATE_COLUMN_ERROR_MSG  = "字段名 %s 重复"
-	DUPLICATE_INDEX_ERROR_MSG   = "索引名 %s 重复"
-	PRIMARY_KEY_MULTI_ERROR_MSG = "主键只能设置一个"
-	KEY_COLUMN_NOT_EXIST_MSG    = "索引字段 %s 不存在"
-	PRIMARY_KEY_EXIST_MSG       = "已经存在主键，不能再添加"
-	PRIMARY_KEY_NOT_EXIST_MSG   = "当前没有主键，不能执行删除"
+	SCHEMA_NOT_EXIST_MSG         = "schema %s 不存在"
+	SCHEMA_EXIST_MSG             = "schema %s 已存在"
+	TABLE_NOT_EXIST_MSG          = "表 %s 不存在"
+	TABLE_EXIST_MSG              = "表 %s 已存在"
+	COLUMN_NOT_EXIST_MSG         = "字段 %s 不存在"
+	COLUMN_EXIST_MSG             = "字段 %s 已存在"
+	INDEX_NOT_EXIST_MSG          = "索引 %s 不存在"
+	INDEX_EXIST_MSG              = "索引 %s 已存在"
+	DUPLICATE_COLUMN_ERROR_MSG   = "字段名 %s 重复"
+	DUPLICATE_INDEX_ERROR_MSG    = "索引名 %s 重复"
+	PRIMARY_KEY_MULTI_ERROR_MSG  = "主键只能设置一个"
+	KEY_COLUMN_NOT_EXIST_MSG     = "索引字段 %s 不存在"
+	PRIMARY_KEY_EXIST_MSG        = "已经存在主键，不能再添加"
+	PRIMARY_KEY_NOT_EXIST_MSG    = "当前没有主键，不能执行删除"
+	NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配"
 )
 
 func (i *Inspect) CheckInvalid(node ast.Node, results *InspectResults) error {
@@ -530,21 +531,32 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 			i.getTableName(table))
 		return nil
 	}
+
 	colNameMap := map[string]struct{}{}
 	for _, col := range createTableStmt.Cols {
 		colNameMap[col.Name.Name.L] = struct{}{}
 	}
+
 	insertColsName := []string{}
-	needExistColsName := []string{}
-	if stmt.Lists != nil {
+	if stmt.Columns != nil {
 		for _, col := range stmt.Columns {
 			insertColsName = append(insertColsName, col.Name.L)
 		}
+
 	} else if stmt.Setlist != nil {
 		for _, set := range stmt.Setlist {
 			insertColsName = append(insertColsName, set.Column.Name.L)
 		}
+	} else {
+		for _, col := range createTableStmt.Cols {
+			insertColsName = append(insertColsName, col.Name.Name.L)
+		}
 	}
+	if d := getDuplicate(insertColsName); len(d) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, strings.Join(d, ","))
+	}
+
+	needExistColsName := []string{}
 	for _, colName := range insertColsName {
 		if _, ok := colNameMap[colName]; !ok {
 			needExistColsName = append(needExistColsName, colName)
@@ -554,8 +566,13 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistColsName), ","))
 	}
-	if d := getDuplicate(insertColsName); len(d) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, strings.Join(d, ","))
+
+	if stmt.Lists != nil {
+		for _, list := range stmt.Lists {
+			if len(list) != len(insertColsName) {
+				results.add(model.RULE_LEVEL_ERROR, NOT_MATCH_VALUES_AND_COLUMNS)
+			}
+		}
 	}
 	return nil
 }
@@ -590,8 +607,39 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsTablesName), ","))
 	}
+
+	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
+		return nil
+	}
 	if stmt.MultipleTable {
 		return nil
+	}
+	table := tables[0]
+	createTableStmt, exist, err := i.getCreateTableStmt(table)
+	if err != nil || !exist {
+		return err
+	}
+	colNameMap := map[string]struct{}{}
+	for _, col := range createTableStmt.Cols {
+		colNameMap[col.Name.Name.L] = struct{}{}
+	}
+	updateColsName := []string{}
+	for _, list := range stmt.List {
+		updateColsName = append(updateColsName, list.Column.Name.L)
+	}
+	if d := getDuplicate(updateColsName); len(d) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, strings.Join(d, ","))
+	}
+
+	needExistColsName := []string{}
+	for _, colName := range updateColsName {
+		if _, ok := colNameMap[colName]; !ok {
+			needExistColsName = append(needExistColsName, colName)
+		}
+	}
+	if len(needExistColsName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(needExistColsName), ","))
 	}
 	return nil
 }
