@@ -97,7 +97,6 @@ mkdir -p $RPM_INSTALL_PREFIX/etc
 cat > $RPM_INSTALL_PREFIX/etc/sqle_sqlserver.cnf.template<<EOF
 [server]
 port=10001
-log_path=./logs
 EOF
 
 #chown
