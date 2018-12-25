@@ -91,7 +91,6 @@ else
     chkconfig --add sqle_sqlserver
 fi
 
-mkdir -p $RPM_INSTALL_PREFIX/logs
 mkdir -p $RPM_INSTALL_PREFIX/etc
 
 cat > $RPM_INSTALL_PREFIX/etc/sqle_sqlserver.cnf.template<<EOF
