@@ -43,7 +43,7 @@ clean:
 
 docker_rpm: pull_image
 	$(DOCKER) run -v $(shell pwd):/universe/src/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild -bb --with qa /universe/src/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${PROJECT_NAME}.x86_64.rpm
-	$(DOCKER) run -v $(shell pwd):/universe/src/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (DOTNET_TARGET=${DOTNET_TARGET} rpmbuild -bb --with qa /universe/src/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.x86_64.rpm
+	$(DOCKER) run -v $(shell pwd):/universe/src/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' -bb --with qa /universe/src/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.x86_64.rpm
 
 docker_test: pull_image
 	CTN_NAME="universe_docker_test_$$RANDOM" && \
