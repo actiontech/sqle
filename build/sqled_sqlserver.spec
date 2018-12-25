@@ -19,7 +19,8 @@ Acitontech Sqle_sqlserver
 %define _binary_filedigest_algorithm md5
 %define _source_payload w0.gzdio
 %define _binary_payload w0.gzdio
-%define _dotnet_target %{getenv:DOTNET_TARGET}
+%{!?_dotnet_target: %define _dotnet_target centos.7-x64}
+%{!?_git_version: %define _git_version master}
 ##########
 
 %prep
@@ -39,6 +40,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/libs
 cp -R %{_builddir}/%{buildsubdir}/src/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
 cp -R %{_builddir}/%{buildsubdir}/src/sqle/sqlserver/SqlserverProtoServer/bin/Release/netcoreapp2.1/%{_dotnet_target}/* $RPM_BUILD_ROOT/usr/local/sqle/libs
+echo "%{_git_version}" > $RPM_BUILD_ROOT/usr/local/sqle/VERSION
 
 ##########
 
@@ -143,3 +145,4 @@ fi
 %defattr(-,root,root)
 /usr/local/sqle/libs
 /usr/local/sqle/scripts
+/usr/local/sqle/VERSION
