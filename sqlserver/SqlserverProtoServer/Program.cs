@@ -52,7 +52,7 @@ namespace SqlserverProtoServer {
             var config = new NLog.Config.LoggingConfiguration();
             var logfile = new NLog.Targets.FileTarget("logfile") {
                 // log file name
-                FileName = "sqle_sqlserver.log",
+                FileName = "${basedir}/logs/sqle_sqlserver.log",
                 // name of the file to be used for an archive
                 ArchiveFileName = "log.{###}.txt",
                 // way file archives are numbered
@@ -64,7 +64,7 @@ namespace SqlserverProtoServer {
             };
             var logconsole = new NLog.Targets.ConsoleTarget("logconsole");
             config.AddRuleForAllLevels(logconsole);
-            config.AddRule(LogLevel.Info, LogLevel.Fatal, logfile);
+            config.AddRuleForAllLevels(logfile);
             LogManager.Configuration = config;
 
             var hostBuilder = new HostBuilder().
