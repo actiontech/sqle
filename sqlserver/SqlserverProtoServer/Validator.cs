@@ -805,8 +805,8 @@ namespace SqlserverProtoServer {
                     indexString += index.ScriptTokenStream[i];
                 }
 
-                if (!TableIndexDefinitions.ContainsKey(indexName)) {
-                    TableIndexDefinitions[indexName] = new Dictionary<String, String>();
+                if (!TableIndexDefinitions.ContainsKey(indexDefinitionKey)) {
+                    TableIndexDefinitions[indexDefinitionKey] = new Dictionary<String, String>();
                 }
                 TableIndexDefinitions[indexDefinitionKey][indexName] = indexString;
             }
