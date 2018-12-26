@@ -15,10 +15,6 @@ namespace SqlserverProtoServer {
 
             switch (statement) {
                 // ddl
-                case CreateDatabaseStatement createDatabaseStatement:
-                    isDDL = true;
-                    return GenerateCreateDatabaseRollbackSql(context, createDatabaseStatement);
-
                 case CreateTableStatement createTableStatement:
                     isDDL = true;
                     return GenerateCreateTableRollbackSql(context, createTableStatement);
@@ -58,10 +54,6 @@ namespace SqlserverProtoServer {
             }
 
             return "";
-        }
-
-        public String GenerateCreateDatabaseRollbackSql(SqlserverContext context, CreateDatabaseStatement statement) {
-            return String.Format("DROP DATABASE {0};", statement.DatabaseName.Value);
         }
 
         public String GenerateCreateTableRollbackSql(SqlserverContext context, CreateTableStatement statement) {

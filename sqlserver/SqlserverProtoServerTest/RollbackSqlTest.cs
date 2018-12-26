@@ -5,6 +5,7 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 using System.Collections.Generic;
 using System.IO;
 using SqlserverProto;
+using NLog;
 
 namespace SqlServerProtoServerTest {
     public class RollbackSqlTest {
@@ -18,25 +19,6 @@ namespace SqlServerProtoServerTest {
             }
 
             return statementList;
-        }
-
-        private void rollbackCreateDatabase() {
-            var text = "CREATE DATABASE db1";
-            var statementList = ParseStatementList(text);
-            var context = new SqlserverContext(new SqlserverMeta() {
-                Host = "10.186.62.15",
-                Port = "1433",
-                User = "sa",
-                Password = "123456aB"
-            });
-            foreach (var statement in statementList.Statements) {
-                var isDDL = false;
-                var isDML = false;
-                var rollbackSql = new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
-                Assert.True(isDDL == true);
-                Assert.True(isDML == false);
-                Assert.Equal("DROP DATABASE db1;", rollbackSql);
-            }
         }
 
         private void rollbackCreateTable() {
@@ -65,6 +47,7 @@ namespace SqlServerProtoServerTest {
                 User = "sa",
                 Password = "123456aB"
             });
+            var logger = LogManager.GetCurrentClassLogger();
             foreach (var text in new String[]{
                 "CREATE TABLE dbo.test(column_b INT, column_c INT, column_d INT, CONSTRAINT my_constraint UNIQUE (column_c), CONSTRAINT my_pk_constraint UNIQUE (column_d));",
 
@@ -92,7 +75,7 @@ namespace SqlServerProtoServerTest {
                     var isDML = false;
                     Console.WriteLine("{0}", text);
                     new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
-                    context.UpdateContext(statement);
+                    context.UpdateContext(logger, statement);
                     Console.WriteLine("=====================================================");
                 }
             }
@@ -159,8 +142,6 @@ namespace SqlServerProtoServerTest {
 
         [Fact]
         public void RollbackDDLSqlTest() {
-            // create database db1;
-            //rollbackCreateDatabase();
             //rollbackCreateTable();
             //rollbackCreateIndex();
             //rollbackDropIndex();
