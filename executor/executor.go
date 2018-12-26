@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"sqle/errors"
 	"sqle/model"
 	"strconv"
+	"time"
 )
 
 type Db interface {
@@ -26,11 +28,13 @@ type Db interface {
 }
 
 type BaseConn struct {
-	log  *logrus.Entry
-	host string
-	port string
-	user string
-	*gorm.DB
+	log         *logrus.Entry
+	host        string
+	port        string
+	user        string
+	db          *sql.DB
+	conn        *sql.Conn
+	pingTimeout time.Duration
 }
 
 func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*BaseConn, error) {
@@ -61,25 +65,34 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 		entry.Error(err)
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
+	conn, err := db.DB().Conn(context.Background())
+	if err != nil {
+		return nil, err
+	}
 	return &BaseConn{
-		log:  entry,
-		host: instance.Host,
-		port: instance.Port,
-		user: instance.User,
-		DB:   db,
+		log:         entry,
+		host:        instance.Host,
+		port:        instance.Port,
+		user:        instance.User,
+		db:          db.DB(),
+		conn:        conn,
+		pingTimeout: 5 * time.Second,
 	}, nil
 }
 
 func (c *BaseConn) Close() {
-	c.DB.Close()
+	c.conn.Close()
+	c.db.Close()
 }
 
 func (c *BaseConn) Ping() error {
-	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, c.DB.DB().Ping())
+	ctx, cancel := context.WithTimeout(context.Background(), c.pingTimeout)
+	defer cancel()
+	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, c.conn.PingContext(ctx))
 }
 
 func (c *BaseConn) Exec(query string) (driver.Result, error) {
-	result, err := c.DB.DB().Exec(query)
+	result, err := c.conn.ExecContext(context.Background(), query)
 	if err != nil {
 		c.Logger().Errorf("exec sql failed; host: %s, port: %s, user: %s, query: %s, error: %s",
 			c.host, c.port, c.user, query, err.Error())
@@ -94,7 +107,7 @@ func (c *BaseConn) Transact(qs ...string) error {
 	var err error
 	var tx *sql.Tx
 	c.Logger().Infof("doing sql transact, host: %s, port: %s, user: %s", c.host, c.port, c.user)
-	tx, err = c.DB.DB().Begin()
+	tx, err = c.conn.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -134,7 +147,7 @@ func (c *BaseConn) ExecDDL(query, schema, table string) error {
 }
 
 func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
-	rows, err := c.DB.DB().Query(query, args...)
+	rows, err := c.conn.QueryContext(context.Background(), query, args...)
 	if err != nil {
 		c.Logger().Errorf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
 			c.host, c.port, c.user, query, err.Error())
