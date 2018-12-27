@@ -154,7 +154,8 @@ func (s *Sqled) inspect(task *model.Task) error {
 		return err
 	}
 	ruleMap := model.GetRuleMapFromAllArray(rules)
-	i := inspector.NewInspector(entry, task, ruleMap)
+	ctx := inspector.NewContext()
+	i := inspector.NewInspector(entry, ctx, task, ruleMap)
 	err = i.Advise(rules)
 	if err != nil {
 		return err
@@ -171,7 +172,8 @@ func (s *Sqled) inspect(task *model.Task) error {
 		return err
 	}
 
-	i = inspector.NewInspector(entry, task, ruleMap)
+	ctx = inspector.NewContext()
+	i = inspector.NewInspector(entry, ctx, task, ruleMap)
 	rollbackSqls, err := i.GenerateAllRollbackSql()
 	if err != nil {
 		return err
@@ -191,7 +193,7 @@ func (s *Sqled) commit(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, task, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(), task, nil)
 	for _, commitSql := range task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
@@ -226,7 +228,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 	entry.Info("start rollback sql")
 
 	st := model.GetStorage()
-	i := inspector.NewInspector(entry, task, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(), task, nil)
 
 	for _, rollbackSql := range task.RollbackSqls {
 		currentSql := rollbackSql

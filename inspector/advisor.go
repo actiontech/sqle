@@ -253,8 +253,6 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 		oldColName := spec.OldColumnName.Name.L
 		if _, ok := colNameMap[oldColName]; !ok {
 			needExistsColsName = append(needExistsColsName, oldColName)
-		} else {
-			delete(colNameMap, oldColName)
 		}
 		for _, col := range spec.NewColumns {
 			newColName := col.Name.Name.L
@@ -263,6 +261,11 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 			}
 			if _, ok := colNameMap[newColName]; ok {
 				needNotExistsColsName = append(needNotExistsColsName, newColName)
+			} else {
+				if newColName != oldColName {
+					delete(colNameMap, oldColName)
+					colNameMap[newColName] = struct{}{}
+				}
 			}
 		}
 	}
@@ -293,27 +296,6 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 	needExistsIndexesName := []string{}
 	needExistsKeyColsName := []string{}
 
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
-		switch spec.Constraint.Tp {
-		case ast.ConstraintPrimaryKey:
-			if hasPk {
-				// primary key has exist, can not add primary key
-				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
-			}
-		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
-			indexName := strings.ToLower(spec.Constraint.Name)
-			if _, ok := indexNameMap[indexName]; ok {
-				needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
-			}
-			for _, col := range spec.Constraint.Keys {
-				colName := col.Column.Name.L
-				if _, ok := colNameMap[colName]; !ok {
-					needExistsKeyColsName = append(needExistsKeyColsName, colName)
-				}
-			}
-		}
-	}
-
 	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
 		// primary key not exist, can not drop primary key
 		results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_NOT_EXIST_MSG)
@@ -323,6 +305,48 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 		indexName := strings.ToLower(spec.Name)
 		if _, ok := indexNameMap[indexName]; !ok {
 			needExistsIndexesName = append(needExistsIndexesName, indexName)
+		}
+	}
+
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
+		oldIndexName := spec.FromKey.String()
+		newIndexName := spec.ToKey.String()
+		_, oldIndexExist := indexNameMap[oldIndexName]
+		if !oldIndexExist {
+			needExistsIndexesName = append(needExistsIndexesName, oldIndexName)
+		}
+		_, newIndexExist := indexNameMap[newIndexName]
+		if newIndexExist {
+			needNotExistsIndexesName = append(needNotExistsIndexesName)
+		}
+		if oldIndexExist && !newIndexExist {
+			delete(indexNameMap, oldIndexName)
+			indexNameMap[newIndexName] = struct{}{}
+		}
+	}
+
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		switch spec.Constraint.Tp {
+		case ast.ConstraintPrimaryKey:
+			if hasPk {
+				// primary key has exist, can not add primary key
+				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
+			} else {
+				hasPk = true
+			}
+		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
+			indexName := strings.ToLower(spec.Constraint.Name)
+			if _, ok := indexNameMap[indexName]; ok {
+				needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
+			} else {
+				indexNameMap[indexName] = struct{}{}
+			}
+			for _, col := range spec.Constraint.Keys {
+				colName := col.Column.Name.L
+				if _, ok := colNameMap[colName]; !ok {
+					needExistsKeyColsName = append(needExistsKeyColsName, colName)
+				}
+			}
 		}
 	}
 

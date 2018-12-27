@@ -20,11 +20,11 @@ type Inspector interface {
 	Logger() *logrus.Entry
 }
 
-func NewInspector(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) Inspector {
+func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task, rules map[string]model.Rule) Inspector {
 	if task.Instance.DbType == model.DB_TYPE_SQLSERVER {
-		return NeSqlserverInspect(entry, task, rules)
+		return NeSqlserverInspect(entry, ctx, task, rules)
 	} else {
-		return NewInspect(entry, task, rules)
+		return NewInspect(entry, ctx, task, rules)
 	}
 }
 
@@ -47,8 +47,8 @@ type Inspect struct {
 	SqlAction []func(sql *model.Sql) error
 }
 
-func NewInspect(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) *Inspect {
-	ctx := NewContext(task.Schema)
+func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, rules map[string]model.Rule) *Inspect {
+	ctx.UseSchema(task.Schema)
 
 	// load config
 	config := &Config{}
@@ -283,33 +283,6 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	}
 	info.CreateTableStmt = createStmt
 	return createStmt, exist, nil
-}
-
-func (i *Inspect) updateContext(node ast.Node) {
-	switch s := node.(type) {
-	case *ast.UseStmt:
-		// change current schema
-		i.Ctx.UseSchema(s.DBName)
-	case *ast.CreateDatabaseStmt:
-		i.Ctx.CreateNewSchema(s.Name)
-	case *ast.CreateTableStmt:
-		i.Ctx.CreateNewTable(i.getSchemaName(s.Table), s.Table.Name.String(),
-			&TableInfo{
-				CreateTableStmt: s,
-			})
-	case *ast.DropDatabaseStmt:
-		i.Ctx.DeleteSchema(s.Name)
-	case *ast.DropTableStmt:
-		for _, table := range s.Tables {
-			i.Ctx.DeleteTable(i.getSchemaName(table), table.Name.String())
-		}
-	case *ast.AlterTableStmt:
-		info, exist := i.getTableInfo(s.Table)
-		if exist {
-			info.alterTableStmts = append(info.alterTableStmts, s)
-		}
-	default:
-	}
 }
 
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {

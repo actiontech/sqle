@@ -393,6 +393,13 @@ ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
 			"v5"),
 	)
 
+	runInspectCase(t, "alter_table: change a exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 change column v1 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult(),
+	)
+
 	runInspectCase(t, "alter_table: change a not exist column", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
@@ -755,7 +762,7 @@ ALTER TABLE exist_db.exist_tb_1 ADD index idx_%s (v1);`, length65),
 
 	runInspectCase(t, "alter_table:rename index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 RENAME index v1_d TO idx_%s;`, length65),
+ALTER TABLE exist_db.exist_tb_1 RENAME index idx_1 TO idx_%s;`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 }

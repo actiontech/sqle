@@ -1,6 +1,8 @@
 package inspector
 
-import "github.com/pingcap/tidb/ast"
+import (
+	"github.com/pingcap/tidb/ast"
+)
 
 type TableInfo struct {
 	Size     float64
@@ -35,9 +37,8 @@ type Context struct {
 	counterDML uint
 }
 
-func NewContext(currentSchema string) *Context {
+func NewContext() *Context {
 	return &Context{
-		currentSchema:   currentSchema,
 		originalSchemas: map[string]struct{}{},
 		allTable:        map[string]map[string]*TableInfo{},
 		virtualSchemas:  map[string]struct{}{},
@@ -131,9 +132,7 @@ func (c *Context) GetTableInfo(schema, table string) (info *TableInfo, exist boo
 }
 
 func (c *Context) UseSchema(schema string) {
-	if c.HasSchema(schema) {
-		c.currentSchema = schema
-	}
+	c.currentSchema = schema
 }
 
 func (c *Context) AddDDL() {
@@ -150,4 +149,42 @@ func (c *Context) AddDML() {
 
 func (c *Context) GetDMLCounter() uint {
 	return c.counterDML
+}
+
+func (i *Inspect) updateContext(node ast.Node) {
+	switch s := node.(type) {
+	case *ast.UseStmt:
+		// change current schema
+		if i.Ctx.HasSchema(s.DBName) {
+			i.Ctx.UseSchema(s.DBName)
+		}
+	case *ast.CreateDatabaseStmt:
+		i.Ctx.CreateNewSchema(s.Name)
+	case *ast.CreateTableStmt:
+		i.Ctx.CreateNewTable(i.getSchemaName(s.Table), s.Table.Name.L,
+			&TableInfo{
+				Size:            0, // table is empty after create
+				sizeLoad:        true,
+				CreateTableStmt: s,
+			})
+	case *ast.DropDatabaseStmt:
+		i.Ctx.DeleteSchema(s.Name)
+	case *ast.DropTableStmt:
+		for _, table := range s.Tables {
+			i.Ctx.DeleteTable(i.getSchemaName(table), table.Name.L)
+		}
+	case *ast.AlterTableStmt:
+		info, exist := i.getTableInfo(s.Table)
+		if exist {
+			info.CreateTableStmt, _ = mergeAlterToTable(info.CreateTableStmt, s)
+			info.alterTableStmts = append(info.alterTableStmts, s)
+			// rename table
+			if s.Table.Name.L != info.CreateTableStmt.Table.Name.L {
+				schemaName := i.getSchemaName(s.Table)
+				i.Ctx.DeleteTable(schemaName, s.Table.Name.L)
+				i.Ctx.CreateNewTable(schemaName, info.CreateTableStmt.Table.Name.L, info)
+			}
+		}
+	default:
+	}
 }

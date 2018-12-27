@@ -4,17 +4,17 @@ import (
 	"github.com/pingcap/tidb/ast"
 	"github.com/sirupsen/logrus"
 	"sqle/model"
-	"sqle/sqlserverClient"
 	"sqle/sqlserver/SqlserverProto"
+	"sqle/sqlserverClient"
 )
 
 type SqlserverInspect struct {
 	*Inspect
 }
 
-func NeSqlserverInspect(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) Inspector {
+func NeSqlserverInspect(entry *logrus.Entry, ctx *Context, task *model.Task, rules map[string]model.Rule) Inspector {
 	return &SqlserverInspect{
-		Inspect: NewInspect(entry, task, rules),
+		Inspect: NewInspect(entry, ctx, task, rules),
 	}
 }
 
