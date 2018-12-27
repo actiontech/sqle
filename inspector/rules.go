@@ -887,6 +887,8 @@ func checkMycatShardingColumn(i *Inspect, node ast.Node) error {
 		}
 		shardingCoulmn := at.ShardingColumn
 		hasShardingColumn = whereStmtHasSpecificColumn(stmt.Where, shardingCoulmn)
+	default:
+		return nil
 	}
 	if !hasShardingColumn {
 		i.addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM)
