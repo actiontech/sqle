@@ -1246,6 +1246,11 @@ func DefaultMycatInspect() *Inspect {
 }
 
 func TestMycat(t *testing.T) {
+	runInspectCase(t, "ok", DefaultMycatInspect(),
+		`use multidb`,
+		newTestResult(),
+	)
+
 	runInspectCase(t, "insert: mycat dml must using sharding_id", DefaultMycatInspect(),
 		`
 insert into exist_tb_1 set id=1,v2="1";
