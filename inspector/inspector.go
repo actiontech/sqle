@@ -171,7 +171,7 @@ func (i *Inspect) getSchemaName(stmt *ast.TableName) string {
 }
 
 func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
-	if !i.Ctx.HasLoadSchema() {
+	if !i.Ctx.HasLoadSchemas() {
 		conn, err := i.getDbConn()
 		if err != nil {
 			return false, err
@@ -207,7 +207,7 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 	if !schemaExist {
 		return false, nil
 	}
-	if !i.Ctx.HasLoadSchemaTables(schemaName) {
+	if !i.Ctx.HasLoadTables(schemaName) {
 		conn, err := i.getDbConn()
 		if err != nil {
 			return false, err
@@ -216,16 +216,15 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		i.Ctx.LoadSchemaTables(schemaName, tables)
+		i.Ctx.LoadTables(schemaName, tables)
 	}
-	_, exist := i.Ctx.GetTableInfo(schemaName, stmt.Name.String())
-	return exist, nil
+	return i.Ctx.HasTable(schemaName, stmt.Name.String()), nil
 }
 
 func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 	schema := i.getSchemaName(stmt)
 	table := stmt.Name.String()
-	return i.Ctx.GetTableInfo(schema, table)
+	return i.Ctx.GetTable(schema, table)
 }
 
 func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {

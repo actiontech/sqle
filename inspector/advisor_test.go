@@ -117,28 +117,29 @@ func DefaultMysqlInspect() *Inspect {
 		},
 		SqlArray: []*model.Sql{},
 		Ctx: &Context{
-			currentSchema:   "exist_db",
-			originalSchemas: map[string]struct{}{"exist_db": struct{}{}},
-			schemaHasLoad:   true,
-			virtualSchemas:  map[string]struct{}{},
-			allTable: map[string]map[string]*TableInfo{
-				"exist_db": map[string]*TableInfo{
-					"exist_tb_1": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt1(),
+			currentSchema: "exist_db",
+			schemaHasLoad: true,
+			schemas: map[string]*SchemaInfo{
+				"exist_db": &SchemaInfo{
+					Tables: map[string]*TableInfo{
+						"exist_tb_1": &TableInfo{
+							sizeLoad:        true,
+							Size:            1,
+							CreateTableStmt: getTestCreateTableStmt1(),
+						},
+						"exist_tb_2": &TableInfo{
+							sizeLoad:        true,
+							Size:            1,
+							CreateTableStmt: getTestCreateTableStmt2(),
+						},
+						"exist_tb_3": &TableInfo{
+							sizeLoad:        true,
+							Size:            1,
+							CreateTableStmt: getTestCreateTableStmt3(),
+						},
 					},
-					"exist_tb_2": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt2(),
-					},
-					"exist_tb_3": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt3(),
-					},
-				}},
+				},
+			},
 		},
 		config: &Config{
 			DDLOSCMinSize:      16,
@@ -1227,23 +1228,24 @@ func DefaultMycatInspect() *Inspect {
 		},
 		SqlArray: []*model.Sql{},
 		Ctx: &Context{
-			currentSchema:   "multidb",
-			originalSchemas: map[string]struct{}{"multidb": struct{}{}},
-			schemaHasLoad:   true,
-			virtualSchemas:  map[string]struct{}{},
-			allTable: map[string]map[string]*TableInfo{
-				"multidb": map[string]*TableInfo{
-					"exist_tb_1": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt1(),
+			currentSchema: "multidb",
+			schemaHasLoad: true,
+			schemas: map[string]*SchemaInfo{
+				"multidb": &SchemaInfo{
+					Tables: map[string]*TableInfo{
+						"exist_tb_1": &TableInfo{
+							sizeLoad:        true,
+							Size:            1,
+							CreateTableStmt: getTestCreateTableStmt1(),
+						},
+						"exist_tb_2": &TableInfo{
+							sizeLoad:        true,
+							Size:            1,
+							CreateTableStmt: getTestCreateTableStmt2(),
+						},
 					},
-					"exist_tb_2": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt2(),
-					},
-				}},
+				},
+			},
 		},
 		config: &Config{
 			DDLOSCMinSize:      16,

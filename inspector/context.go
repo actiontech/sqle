@@ -16,119 +16,135 @@ type TableInfo struct {
 	alterTableStmts []*ast.AlterTableStmt
 }
 
+type SchemaInfo struct {
+	Tables map[string]*TableInfo
+}
+
 type Context struct {
 	// currentSchema will change after sql "use database"
 	currentSchema string
 
-	// originalSchemas save schemas info collected from db server
-	originalSchemas map[string]struct{}
+	schemas map[string]*SchemaInfo
 	// if schemas info has collected, set true
 	schemaHasLoad bool
 
-	// virtualSchemas save schema if create database ...
-	virtualSchemas map[string] /*schema*/ struct{}
-
-	// allTable save schema's tables info collected from db server
-	// do not check every time from db server
-	// if create a new schema, set schema's tables is null
-	// if delete table, delete it.
-	allTable   map[string] /*schema*/ map[string] /*table*/ *TableInfo
 	counterDDL uint
 	counterDML uint
 }
 
 func NewContext() *Context {
-	return &Context{
-		originalSchemas: map[string]struct{}{},
-		allTable:        map[string]map[string]*TableInfo{},
-		virtualSchemas:  map[string]struct{}{},
+	ctx := &Context{
+		schemas: map[string]*SchemaInfo{},
 	}
+	//if parent == nil {
+	//	return ctx
+	//}
+	//ctx.schemas = parent.schemas
+	return ctx
 }
 
-func (c *Context) HasLoadSchema() bool {
+func (c *Context) HasLoadSchemas() bool {
 	return c.schemaHasLoad
 }
 
-func (c *Context) HasSchema(name string) (has bool) {
-	if c.HasLoadSchema() {
-		_, has = c.originalSchemas[name]
-	}
-	if !has {
-		_, has = c.virtualSchemas[name]
-	}
-	return
+func (c *Context) SetSchemasLoad() {
+	c.schemaHasLoad = true
 }
 
 func (c *Context) LoadSchemas(schemas []string) {
-	if !c.schemaHasLoad {
-		for _, schema := range schemas {
-			c.originalSchemas[schema] = struct{}{}
-		}
-		c.schemaHasLoad = true
+	if c.HasLoadSchemas() {
+		return
 	}
+	for _, schema := range schemas {
+		c.schemas[schema] = nil
+	}
+	c.SetSchemasLoad()
 }
 
-func (c *Context) CreateNewSchema(name string) {
+func (c *Context) GetSchema(schemaName string) (*SchemaInfo, bool) {
+	schema, has := c.schemas[schemaName]
+	return schema, has
+}
+
+func (c *Context) HasSchema(schemaName string) (has bool) {
+	_, has = c.GetSchema(schemaName)
+	return
+}
+
+func (c *Context) AddSchema(name string) {
 	if c.HasSchema(name) {
 		return
 	}
-	c.virtualSchemas[name] = struct{}{}
-	c.allTable[name] = map[string]*TableInfo{}
+	c.schemas[name] = nil
 }
 
-func (c *Context) DeleteSchema(name string) {
-	if !c.HasSchema(name) {
-		return
+func (c *Context) DelSchema(name string) {
+	delete(c.schemas, name)
+}
+
+func (c *Context) HasLoadTables(schemaName string) (hasLoad bool) {
+	if schema, ok := c.GetSchema(schemaName); ok {
+		if schema == nil {
+			hasLoad = false
+		} else {
+			hasLoad = true
+		}
 	}
-	delete(c.virtualSchemas, name)
-	delete(c.originalSchemas, name)
-	delete(c.allTable, name)
-}
-
-func (c *Context) HasLoadSchemaTables(schema string) (has bool) {
-	_, has = c.allTable[schema]
 	return
 }
 
-func (c *Context) LoadSchemaTables(schema string, tables []string) {
-	if !c.HasSchema(schema) {
+func (c *Context) LoadTables(schemaName string, tablesName []string) {
+	if !c.HasSchema(schemaName) {
 		return
 	}
-	if c.HasLoadSchemaTables(schema) {
+	if c.HasLoadTables(schemaName) {
 		return
 	}
-	c.allTable[schema] = map[string]*TableInfo{}
-	for _, table := range tables {
-		c.allTable[schema][table] = &TableInfo{
+	schema := &SchemaInfo{
+		Tables: map[string]*TableInfo{},
+	}
+	for _, name := range tablesName {
+		schema.Tables[name] = &TableInfo{
 			alterTableStmts: []*ast.AlterTableStmt{},
 		}
 	}
+	c.schemas[schemaName] = schema
 }
 
-func (c *Context) CreateNewTable(schema, table string, info *TableInfo) {
-	if !c.HasSchema(schema) {
-		return
+func (c *Context) GetTable(schemaName, tableName string) (*TableInfo, bool) {
+	schema, SchemaExist := c.GetSchema(schemaName)
+	if !SchemaExist {
+		return nil, false
 	}
-	_, exist := c.GetTableInfo(schema, table)
-	if exist {
-		return
+	if !c.HasLoadTables(schemaName) {
+		return nil, false
 	}
-	c.allTable[schema][table] = info
+	table, tableExist := schema.Tables[tableName]
+	return table, tableExist
 }
 
-func (c *Context) DeleteTable(schema, table string) {
-	if c.HasSchema(schema) {
-		delete(c.allTable[schema], table)
-	}
-}
-
-func (c *Context) GetTableInfo(schema, table string) (info *TableInfo, exist bool) {
-	if c.HasSchema(schema) {
-		info, exist = c.allTable[schema][table]
-	} else {
-		info, exist = nil, false
-	}
+func (c *Context) HasTable(schemaName, tableName string) (has bool) {
+	_, has = c.GetTable(schemaName, tableName)
 	return
+}
+
+func (c *Context) AddTable(schemaName, tableName string, table *TableInfo) {
+	schema, exist := c.GetSchema(schemaName)
+	if !exist {
+		return
+	}
+	if !c.HasLoadTables(schemaName) {
+		return
+	}
+	schema.Tables[tableName] = table
+}
+
+func (c *Context) DelTable(schemaName, tableName string) {
+	schema, exist := c.GetSchema(schemaName)
+	if !exist {
+		return
+	}
+	delete(schema.Tables, tableName)
 }
 
 func (c *Context) UseSchema(schema string) {
@@ -152,27 +168,44 @@ func (c *Context) GetDMLCounter() uint {
 }
 
 func (i *Inspect) updateContext(node ast.Node) {
+	ctx := i.Ctx
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
-		if i.Ctx.HasSchema(s.DBName) {
-			i.Ctx.UseSchema(s.DBName)
+		if ctx.HasSchema(s.DBName) {
+			ctx.UseSchema(s.DBName)
 		}
 	case *ast.CreateDatabaseStmt:
-		i.Ctx.CreateNewSchema(s.Name)
+		if ctx.HasLoadSchemas() {
+			ctx.AddSchema(s.Name)
+		}
 	case *ast.CreateTableStmt:
-		i.Ctx.CreateNewTable(i.getSchemaName(s.Table), s.Table.Name.L,
+		schemaName := i.getSchemaName(s.Table)
+		tableName := s.Table.Name.L
+		if ctx.HasTable(schemaName, tableName) {
+			return
+		}
+		ctx.AddTable(schemaName, tableName,
 			&TableInfo{
 				Size:            0, // table is empty after create
 				sizeLoad:        true,
 				CreateTableStmt: s,
 			})
 	case *ast.DropDatabaseStmt:
-		i.Ctx.DeleteSchema(s.Name)
-	case *ast.DropTableStmt:
-		for _, table := range s.Tables {
-			i.Ctx.DeleteTable(i.getSchemaName(table), table.Name.L)
+		if ctx.HasLoadSchemas() {
+			ctx.DelSchema(s.Name)
 		}
+	case *ast.DropTableStmt:
+		if ctx.HasLoadSchemas() {
+			for _, table := range s.Tables {
+				schemaName := i.getSchemaName(table)
+				tableName := table.Name.L
+				if ctx.HasTable(schemaName, tableName) {
+					ctx.DelTable(schemaName, tableName)
+				}
+			}
+		}
+
 	case *ast.AlterTableStmt:
 		info, exist := i.getTableInfo(s.Table)
 		if exist {
@@ -181,8 +214,8 @@ func (i *Inspect) updateContext(node ast.Node) {
 			// rename table
 			if s.Table.Name.L != info.CreateTableStmt.Table.Name.L {
 				schemaName := i.getSchemaName(s.Table)
-				i.Ctx.DeleteTable(schemaName, s.Table.Name.L)
-				i.Ctx.CreateNewTable(schemaName, info.CreateTableStmt.Table.Name.L, info)
+				i.Ctx.DelTable(schemaName, s.Table.Name.L)
+				i.Ctx.AddTable(schemaName, info.CreateTableStmt.Table.Name.L, info)
 			}
 		}
 	default:
