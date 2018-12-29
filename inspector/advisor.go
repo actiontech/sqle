@@ -10,26 +10,36 @@ import (
 func (i *Inspect) Advise(rules []model.Rule) error {
 	defer i.closeDbConn()
 	i.Logger().Info("start advise sql")
+
+	err := i.relateAdvise(i.RelateTasks)
+	if err != nil {
+		return err
+	}
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
-			for _, node := range sql.Stmts {
-				err := i.CheckInvalid(node, i.Results)
-				if err != nil {
-					return err
-				}
+			if len(sql.Stmts) <= 0 {
+				return nil
 			}
-			for _, rule := range rules {
-				i.currentRule = rule
-				if handler, ok := RuleHandlerMap[rule.Name]; ok {
-					if handler.Func == nil {
+			node := sql.Stmts[0]
+			results, err := i.CheckInvalid(node)
+			if err != nil {
+				return err
+			}
+			if results.level() == model.RULE_LEVEL_ERROR {
+				i.HasInvalidSql = true
+			}
+			i.Results = results
+			if rules != nil {
+				for _, rule := range rules {
+					i.currentRule = rule
+					handler, ok := RuleHandlerMap[rule.Name]
+					if !ok || handler.Func == nil {
 						continue
 					}
-					for _, node := range sql.Stmts {
-						err := handler.Func(i, node)
-						if err != nil {
-							return err
-						}
+					err := handler.Func(i, node)
+					if err != nil {
+						return err
 					}
 				}
 			}
@@ -59,13 +69,32 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 			return err
 		}
 	}
-	err := i.Do()
+	err = i.Do()
 	if err != nil {
 		i.Logger().Error("advise sql failed")
 	} else {
 		i.Logger().Info("advise sql finish")
 	}
 	return err
+}
+
+func (i *Inspect) relateAdvise(relateTasks []model.Task) error {
+	if relateTasks == nil || len(relateTasks) == 0 {
+		return nil
+	}
+	currentCtx := NewContext(i.Context())
+	for _, task := range relateTasks {
+		ri := NewInspector(i.Logger(), currentCtx, &task, nil, nil)
+		err := ri.Advise(nil)
+		if err != nil {
+			return err
+		}
+		if ri.SqlInvalid() {
+			return i.relateAdvise(relateTasks[1:])
+		}
+	}
+	i.Ctx = currentCtx
+	return nil
 }
 
 var (
@@ -86,7 +115,8 @@ var (
 	NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配"
 )
 
-func (i *Inspect) CheckInvalid(node ast.Node, results *InspectResults) error {
+func (i *Inspect) CheckInvalid(node ast.Node) (*InspectResults, error) {
+	results := newInspectResults()
 	var err error
 	switch stmt := node.(type) {
 	case *ast.UseStmt:
@@ -112,7 +142,7 @@ func (i *Inspect) CheckInvalid(node ast.Node, results *InspectResults) error {
 	case *ast.DeleteStmt:
 		err = i.checkInvalidDelete(stmt, results)
 	}
-	return err
+	return results, err
 }
 
 func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *InspectResults) error {

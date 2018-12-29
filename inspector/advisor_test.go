@@ -123,19 +123,19 @@ func DefaultMysqlInspect() *Inspect {
 				"exist_db": &SchemaInfo{
 					Tables: map[string]*TableInfo{
 						"exist_tb_1": &TableInfo{
-							sizeLoad:        true,
-							Size:            1,
-							CreateTableStmt: getTestCreateTableStmt1(),
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt1(),
 						},
 						"exist_tb_2": &TableInfo{
-							sizeLoad:        true,
-							Size:            1,
-							CreateTableStmt: getTestCreateTableStmt2(),
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt2(),
 						},
 						"exist_tb_3": &TableInfo{
-							sizeLoad:        true,
-							Size:            1,
-							CreateTableStmt: getTestCreateTableStmt3(),
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt3(),
 						},
 					},
 				},
@@ -1234,14 +1234,14 @@ func DefaultMycatInspect() *Inspect {
 				"multidb": &SchemaInfo{
 					Tables: map[string]*TableInfo{
 						"exist_tb_1": &TableInfo{
-							sizeLoad:        true,
-							Size:            1,
-							CreateTableStmt: getTestCreateTableStmt1(),
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt1(),
 						},
 						"exist_tb_2": &TableInfo{
-							sizeLoad:        true,
-							Size:            1,
-							CreateTableStmt: getTestCreateTableStmt2(),
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt2(),
 						},
 					},
 				},

@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/tidb/ast"
-	"math"
 	"sqle/errors"
 )
 
 // task action
 const (
-	TASK_ACTION_INSPECT = iota
+	TASK_ACTION_INSPECT = iota + 1
 	TASK_ACTION_COMMIT
 	TASK_ACTION_ROLLBACK
 )
@@ -20,6 +19,9 @@ const (
 	TASK_ACTION_DOING = "doing"
 	TASK_ACTION_DONE  = "finish"
 	TASK_ACTION_ERROR = "failed"
+	SQL_TYPE_DML      = "dml"
+	SQL_TYPE_DDL      = "ddl"
+	SQL_TYPE_MULTI    = "dml&ddl"
 )
 
 var ActionMap = map[int]string{
@@ -71,6 +73,8 @@ type Task struct {
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
 	InstanceId   uint           `json:"instance_id"`
 	NormalRate   float64        `json:"normal_rate"`
+	SqlType      string         `json:"-"`
+	Action       uint           `json:"-"`
 	CommitSqls   []*CommitSql   `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSqls []*RollbackSql `json:"-" gorm:"foreignkey:TaskId"`
 }
@@ -183,8 +187,8 @@ func (s *Storage) GetTasks() ([]Task, error) {
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateTaskById(taskId string, attrs ...interface{}) error {
-	err := s.db.Table("tasks").Where("id = ?", taskId).Update(attrs...).Error
+func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
+	err := s.db.Table("tasks").Where("id = ?", task.ID).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
@@ -196,28 +200,6 @@ func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
 func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) error {
 	err := s.db.Model(task).Association("RollbackSqls").Replace(rollbackSql).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
-func (s *Storage) UpdateNormalRate(task *Task) error {
-	if len(task.CommitSqls) == 0 {
-		return nil
-	}
-	var normalCount float64
-	var sum float64
-	for _, sql := range task.CommitSqls {
-		sum += 1
-		if sql.InspectLevel == RULE_LEVEL_NORMAL {
-			normalCount += 1
-		}
-	}
-	rate := round(normalCount/sum, 4)
-	task.NormalRate = rate
-	return s.UpdateTaskById(fmt.Sprintf("%v", task.ID), map[string]interface{}{"normal_rate": rate})
-}
-
-func round(f float64, n int) float64 {
-	p := math.Pow10(n)
-	return math.Trunc(f*p+0.5) / p
 }
 
 func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {
@@ -254,4 +236,16 @@ func (s *Storage) UpdateRollbackSqlStatus(sql *Sql, status, result string) error
 		attr["exec_result"] = result
 	}
 	return s.UpdateRollbackSqlById(fmt.Sprintf("%v", sql.ID), attr)
+}
+
+func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
+	tasks := []Task{}
+	err := s.db.Where(Task{
+		InstanceId: task.InstanceId,
+		Schema:     task.Schema,
+		NormalRate: 1,
+		SqlType:    SQL_TYPE_DDL,
+		Action:     TASK_ACTION_INSPECT,
+	}).Preload("Instance").Preload("CommitSqls").Find(&tasks).Error
+	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

@@ -99,3 +99,66 @@ alter table exist_tb_1 drop index idx_1;
 		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG, "idx_1"),
 	)
 }
+
+func TestParentContext(t *testing.T) {
+	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	inspect1 := DefaultMysqlInspect()
+	runInspectCase(t, "ddl 1: create table, ok", inspect1,
+		`
+use exist_db;
+create table if not exists not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+		newTestResult(),
+	)
+
+	inspect2 := DefaultMysqlInspect()
+	inspect2.Ctx = NewContext(inspect1.Ctx)
+	runInspectCase(t, "ddl 2: drop column, ok", inspect2,
+		`
+alter table not_exist_tb_1 drop column v1;
+`,
+		newTestResult(),
+	)
+
+	inspect3 := DefaultMysqlInspect()
+	inspect3.Ctx = NewContext(inspect2.Ctx)
+	runInspectCase(t, "ddl 3: drop column, column not exist", inspect3,
+		`
+alter table not_exist_tb_1 drop column v1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v1"),
+	)
+
+	inspect4 := DefaultMysqlInspect()
+	inspect4.Ctx = NewContext(inspect2.Ctx)
+	runInspectCase(t, "ddl 4: add column, ok", inspect4,
+		`
+alter table not_exist_tb_1 add column v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult(),
+	)
+
+	inspect5 := DefaultMysqlInspect()
+	inspect5.Ctx = NewContext(inspect4.Ctx)
+	runInspectCase(t, "dml 1: insert, column not exist", inspect5,
+		`
+insert into not_exist_tb_1 (id,v1,v2) values (1,"1","1");
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v1"),
+	)
+
+	inspect6 := DefaultMysqlInspect()
+	inspect6.Ctx = NewContext(inspect4.Ctx)
+	runInspectCase(t, "dml 2: insert, ok", inspect6,
+		`
+insert into not_exist_tb_1 (id,v2,v3) values (1,"1","1");
+`,
+		newTestResult(),
+	)
+}

@@ -8,12 +8,15 @@ type TableInfo struct {
 	Size     float64
 	sizeLoad bool
 
-	// save create table parser object from db by query "show create table tb_1";
+	// OriginalTable save parser object from db by query "show create table ...";
 	// using in inspect and generate rollback sql
-	CreateTableStmt *ast.CreateTableStmt
+	OriginalTable *ast.CreateTableStmt
+
+	//
+	MergedTable   *ast.CreateTableStmt
 
 	// save alter table parse object from input sql;
-	alterTableStmts []*ast.AlterTableStmt
+	AlterTables []*ast.AlterTableStmt
 }
 
 type SchemaInfo struct {
@@ -27,19 +30,35 @@ type Context struct {
 	schemas map[string]*SchemaInfo
 	// if schemas info has collected, set true
 	schemaHasLoad bool
-
-	counterDDL uint
-	counterDML uint
 }
 
-func NewContext() *Context {
+func NewContext(parent *Context) *Context {
 	ctx := &Context{
 		schemas: map[string]*SchemaInfo{},
 	}
-	//if parent == nil {
-	//	return ctx
-	//}
-	//ctx.schemas = parent.schemas
+	if parent == nil {
+		return ctx
+	}
+	ctx.schemaHasLoad = parent.schemaHasLoad
+	ctx.currentSchema = parent.currentSchema
+	for schemaName, schema := range parent.schemas {
+		newSchema := &SchemaInfo{
+			Tables: map[string]*TableInfo{},
+		}
+		if schema == nil || schema.Tables == nil {
+			continue
+		}
+		for tableName, table := range schema.Tables {
+			newSchema.Tables[tableName] = &TableInfo{
+				Size:          table.Size,
+				sizeLoad:      table.sizeLoad,
+				OriginalTable: table.OriginalTable,
+				MergedTable:   table.MergedTable,
+				AlterTables:   table.AlterTables,
+			}
+		}
+		ctx.schemas[schemaName] = newSchema
+	}
 	return ctx
 }
 
@@ -56,7 +75,7 @@ func (c *Context) LoadSchemas(schemas []string) {
 		return
 	}
 	for _, schema := range schemas {
-		c.schemas[schema] = nil
+		c.schemas[schema] = &SchemaInfo{}
 	}
 	c.SetSchemasLoad()
 }
@@ -75,7 +94,7 @@ func (c *Context) AddSchema(name string) {
 	if c.HasSchema(name) {
 		return
 	}
-	c.schemas[name] = nil
+	c.schemas[name] = &SchemaInfo{}
 }
 
 func (c *Context) DelSchema(name string) {
@@ -84,7 +103,7 @@ func (c *Context) DelSchema(name string) {
 
 func (c *Context) HasLoadTables(schemaName string) (hasLoad bool) {
 	if schema, ok := c.GetSchema(schemaName); ok {
-		if schema == nil {
+		if schema.Tables == nil {
 			hasLoad = false
 		} else {
 			hasLoad = true
@@ -94,21 +113,19 @@ func (c *Context) HasLoadTables(schemaName string) (hasLoad bool) {
 }
 
 func (c *Context) LoadTables(schemaName string, tablesName []string) {
-	if !c.HasSchema(schemaName) {
+	schema, ok := c.GetSchema(schemaName)
+	if !ok {
 		return
 	}
 	if c.HasLoadTables(schemaName) {
 		return
 	}
-	schema := &SchemaInfo{
-		Tables: map[string]*TableInfo{},
-	}
+	schema.Tables = map[string]*TableInfo{}
 	for _, name := range tablesName {
 		schema.Tables[name] = &TableInfo{
-			alterTableStmts: []*ast.AlterTableStmt{},
+			AlterTables: []*ast.AlterTableStmt{},
 		}
 	}
-	c.schemas[schemaName] = schema
 }
 
 func (c *Context) GetTable(schemaName, tableName string) (*TableInfo, bool) {
@@ -151,22 +168,6 @@ func (c *Context) UseSchema(schema string) {
 	c.currentSchema = schema
 }
 
-func (c *Context) AddDDL() {
-	c.counterDDL += 1
-}
-
-func (c *Context) GetDDLCounter() uint {
-	return c.counterDDL
-}
-
-func (c *Context) AddDML() {
-	c.counterDML += 1
-}
-
-func (c *Context) GetDMLCounter() uint {
-	return c.counterDML
-}
-
 func (i *Inspect) updateContext(node ast.Node) {
 	ctx := i.Ctx
 	switch s := node.(type) {
@@ -187,9 +188,10 @@ func (i *Inspect) updateContext(node ast.Node) {
 		}
 		ctx.AddTable(schemaName, tableName,
 			&TableInfo{
-				Size:            0, // table is empty after create
-				sizeLoad:        true,
-				CreateTableStmt: s,
+				Size:          0, // table is empty after create
+				sizeLoad:      true,
+				OriginalTable: s,
+				AlterTables:   []*ast.AlterTableStmt{},
 			})
 	case *ast.DropDatabaseStmt:
 		if ctx.HasLoadSchemas() {
@@ -209,13 +211,23 @@ func (i *Inspect) updateContext(node ast.Node) {
 	case *ast.AlterTableStmt:
 		info, exist := i.getTableInfo(s.Table)
 		if exist {
-			info.CreateTableStmt, _ = mergeAlterToTable(info.CreateTableStmt, s)
-			info.alterTableStmts = append(info.alterTableStmts, s)
+			var oldTable *ast.CreateTableStmt
+			var err error
+			if info.MergedTable != nil {
+				oldTable = info.MergedTable
+			} else if info.OriginalTable != nil {
+				oldTable, err = i.parseCreateTableStmt(info.OriginalTable.Text())
+				if err != nil {
+					return
+				}
+			}
+			info.MergedTable, _ = mergeAlterToTable(oldTable, s)
+			info.AlterTables = append(info.AlterTables, s)
 			// rename table
-			if s.Table.Name.L != info.CreateTableStmt.Table.Name.L {
+			if s.Table.Name.L != info.MergedTable.Table.Name.L {
 				schemaName := i.getSchemaName(s.Table)
 				i.Ctx.DelTable(schemaName, s.Table.Name.L)
-				i.Ctx.AddTable(schemaName, info.CreateTableStmt.Table.Name.L, info)
+				i.Ctx.AddTable(schemaName, info.MergedTable.Table.Name.L, info)
 			}
 		}
 	default:

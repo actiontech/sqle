@@ -43,7 +43,7 @@ func (i *Inspect) RollbackAll(sql *model.RollbackSql) error {
 }
 
 func (i *Inspect) Commit(sql *model.Sql) error {
-	if i.Ctx.counterDDL > 0 {
+	if i.SqlType() == model.SQL_TYPE_DDL {
 		return i.commitDDL(sql)
 	} else {
 		return i.commitDML(sql)

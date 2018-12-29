@@ -11,6 +11,9 @@ import (
 )
 
 type Inspector interface {
+	Context() *Context
+	SqlType() string
+	SqlInvalid() bool
 	Add(sql *model.Sql, action func(sql *model.Sql) error) error
 	Do() error
 	Advise(rules []model.Rule) error
@@ -20,11 +23,12 @@ type Inspector interface {
 	Logger() *logrus.Entry
 }
 
-func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task, rules map[string]model.Rule) Inspector {
+func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
+	rules map[string]model.Rule) Inspector {
 	if task.Instance.DbType == model.DB_TYPE_SQLSERVER {
-		return NeSqlserverInspect(entry, ctx, task, rules)
+		return NeSqlserverInspect(entry, ctx, task, relateTasks, rules)
 	} else {
-		return NewInspect(entry, ctx, task, rules)
+		return NewInspect(entry, ctx, task, relateTasks, rules)
 	}
 }
 
@@ -34,20 +38,24 @@ type Config struct {
 }
 
 type Inspect struct {
-	Ctx         *Context
-	config      *Config
-	Results     *InspectResults
-	currentRule model.Rule
-	Task        *model.Task
-	log         *logrus.Entry
-	dbConn      *executor.Executor
-	isConnected bool
-
-	SqlArray  []*model.Sql
-	SqlAction []func(sql *model.Sql) error
+	Ctx           *Context
+	config        *Config
+	Results       *InspectResults
+	HasInvalidSql bool
+	currentRule   model.Rule
+	Task          *model.Task
+	RelateTasks   []model.Task
+	log           *logrus.Entry
+	dbConn        *executor.Executor
+	isConnected   bool
+	counterDDL    uint
+	counterDML    uint
+	SqlArray      []*model.Sql
+	SqlAction     []func(sql *model.Sql) error
 }
 
-func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, rules map[string]model.Rule) *Inspect {
+func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
+	rules map[string]model.Rule) *Inspect {
 	ctx.UseSchema(task.Schema)
 
 	// load config
@@ -68,14 +76,34 @@ func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, rules map[s
 		}
 	}
 	return &Inspect{
-		Ctx:       ctx,
-		config:    config,
-		Results:   newInspectResults(),
-		Task:      task,
-		log:       entry,
-		SqlArray:  []*model.Sql{},
-		SqlAction: []func(sql *model.Sql) error{},
+		Ctx:         ctx,
+		config:      config,
+		Results:     newInspectResults(),
+		Task:        task,
+		RelateTasks: relateTasks,
+		log:         entry,
+		SqlArray:    []*model.Sql{},
+		SqlAction:   []func(sql *model.Sql) error{},
 	}
+}
+
+func (i *Inspect) Context() *Context {
+	return i.Ctx
+}
+
+func (i *Inspect) SqlType() string {
+	if i.counterDML > 0 && i.counterDDL > 0 {
+		return model.SQL_TYPE_MULTI
+	}
+	if i.counterDML > 0 {
+		return model.SQL_TYPE_DML
+	} else {
+		return model.SQL_TYPE_DDL
+	}
+}
+
+func (i *Inspect) SqlInvalid() bool {
+	return i.HasInvalidSql
 }
 
 func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
@@ -86,9 +114,9 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 	for _, node := range nodes {
 		switch node.(type) {
 		case ast.DDLNode:
-			i.Ctx.AddDDL()
+			i.counterDDL += 1
 		case ast.DMLNode:
-			i.Ctx.AddDML()
+			i.counterDML += 1
 		}
 	}
 	sql.Stmts = nodes
@@ -98,7 +126,7 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 }
 
 func (i *Inspect) Do() error {
-	if i.Ctx.GetDMLCounter() > 0 && i.Ctx.GetDDLCounter() > 0 {
+	if i.SqlType() == model.SQL_TYPE_MULTI {
 		i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 		return errors.SQL_STMT_CONFLICT_ERROR
 	}
@@ -246,6 +274,20 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 	return info.Size, nil
 }
 
+func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
+	t, err := parseOneSql(i.Task.Instance.DbType, sql)
+	if err != nil {
+		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
+		return nil, err
+	}
+	createStmt, ok := t.(*ast.CreateTableStmt)
+	if !ok {
+		i.Logger().Error("parse sql from show create failed, not createTableStmt")
+		return nil, fmt.Errorf("stmt not support")
+	}
+	return createStmt, nil
+}
+
 // getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
 func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
 	exist, err := i.isTableExist(stmt)
@@ -257,8 +299,11 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	}
 
 	info, _ := i.getTableInfo(stmt)
-	if info.CreateTableStmt != nil {
-		return info.CreateTableStmt, exist, nil
+	if info.MergedTable != nil {
+		return info.MergedTable, exist, nil
+	}
+	if info.OriginalTable != nil {
+		return info.OriginalTable, exist, nil
 	}
 
 	// create from connection
@@ -266,21 +311,15 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	if err != nil {
 		return nil, exist, err
 	}
-	sql, err := conn.ShowCreateTable(getTableNameWithQuote(stmt))
+	createTableSql, err := conn.ShowCreateTable(getTableNameWithQuote(stmt))
 	if err != nil {
 		return nil, exist, err
 	}
-	t, err := parseOneSql(i.Task.Instance.DbType, sql)
+	createStmt, err := i.parseCreateTableStmt(createTableSql)
 	if err != nil {
-		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
 		return nil, exist, err
 	}
-	createStmt, ok := t.(*ast.CreateTableStmt)
-	if !ok {
-		i.Logger().Error("parse sql from show create failed, not createTableStmt")
-		return nil, exist, fmt.Errorf("stmt not support")
-	}
-	info.CreateTableStmt = createStmt
+	info.OriginalTable = createStmt
 	return createStmt, exist, nil
 }
 
