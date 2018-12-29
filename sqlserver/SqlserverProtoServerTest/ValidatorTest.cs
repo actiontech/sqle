@@ -5,6 +5,7 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 using System.Collections.Generic;
 using System.IO;
 using SqlserverProto;
+using NLog;
 
 namespace SqlServerProtoServerTest {
     public class RuleVaidatorTest {
@@ -20,6 +21,503 @@ namespace SqlServerProtoServerTest {
             return statementList;
         }
 
+        private void IsInvalidUse() {
+            // database not exist
+            StatementList statementList = ParseStatementList("USE database1");
+            var context = new SqlserverContext(new SqlserverMeta());
+            context.IsTest = true;
+            context.ExpectDatabaseExist = false;
+            foreach (var statment in statementList.Statements) {
+                var invalid = new BaseRuleValidator("").IsInvalidUse(LogManager.GetCurrentClassLogger(), context, statment as UseStatement);
+                Assert.True(invalid == true);
+            }
+            Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+            Assert.Equal("[error]database database1 不存在", context.AdviseResultContext.GetMessage());
+        }
+
+        private void IsInvalidCreateTable() {
+            {
+                StatementList statementList = ParseStatementList("CREATE TABLE database1.schema1.tbl1 (" +
+                                                                 "col1 INT PRIMARY KEY," +
+                                                                 "col1 INT," +
+                                                                 "col2 INT," +
+                                                                 "INDEX IX1 (col1)," +
+                                                                 "INDEX IX1 (col3)," +
+                                                                 "CONSTRAINT PK_Constaint PRIMARY KEY (col1)," +
+                                                                 "CONSTRAINT UN_1 UNIQUE (col1)," +
+                                                                 "CONSTRAINT UN_1 UNIQUE (col4)" +
+                                                                 ");");
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseExist = false;
+                context.ExpectSchemaExist = false;
+                context.ExpectTableExist = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "tbl1";
+
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidCreateTableStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateTableStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 tbl1 已存在\n[error]字段名 col1 重复\n[error]索引名 IX1 重复\n[error]索引字段 col3 不存在\n[error]约束名 UN_1 重复\n[error]约束字段 col4 不存在\n[error]主键只能设置一个", context.AdviseResultContext.GetMessage());
+            }
+        }
+
+        private void IsInvalidAlterTable() {
+            {
+                StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD col1 INT NOT NULL");
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseExist = false;
+                context.ExpectSchemaExist = false;
+                context.ExpectTableExist = false;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+            }
+
+            {
+                // init data
+                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                                                                     "col1 INT NOT NULL, " +
+                                                                     "col2 INT NOT NULL, " +
+                                                                     "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
+                                                                     "CONSTRAINT UN_1 UNIQUE (col2)," +
+                                                                     "INDEX IX_1 (col2))");
+                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+
+                // add column
+                {
+                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD col1 INT NOT NULL");
+                    foreach (var statment in statementList.Statements) {
+                        var invalid = new BaseRuleValidator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        Assert.True(invalid == true);
+                    }
+                    Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                    Assert.Equal("[error]字段 col1 已存在", context.AdviseResultContext.GetMessage());
+                    context.AdviseResultContext.ResetAdviseResult();
+                }
+
+                // add index
+                {
+                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD INDEX IX_1 (col3)");
+                    foreach (var statment in statementList.Statements) {
+                        var invalid = new BaseRuleValidator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        Assert.True(invalid == true);
+                    }
+                    Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                    Assert.Equal("[error]字段 col3 不存在\n[error]索引 IX_1 已存在", context.AdviseResultContext.GetMessage());
+                    context.AdviseResultContext.ResetAdviseResult();
+                }
+
+                // add constraint
+                {
+                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT UN_1 UNIQUE (col3)");
+                    foreach (var statment in statementList.Statements) {
+                        var invalid = new BaseRuleValidator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        Assert.True(invalid == true);
+                    }
+                    Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                    Assert.Equal("[error]字段 col3 不存在\n[error]约束 UN_1 已存在", context.AdviseResultContext.GetMessage());
+                    context.AdviseResultContext.ResetAdviseResult();
+                }
+
+                // add primary key constraint
+                {
+                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT PK_1 PRIMARY KEY (col3)");
+                    foreach (var statment in statementList.Statements) {
+                        var invalid = new BaseRuleValidator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        Assert.True(invalid == true);
+                    }
+                    Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                    Assert.Equal("[error]已经存在主键，不能再添加\n[error]字段 col3 不存在\n[error]约束 PK_1 已存在", context.AdviseResultContext.GetMessage());
+                    context.AdviseResultContext.ResetAdviseResult();
+                }
+            }
+        }
+
+        private void IsInvalidDropTable() {
+            StatementList statementList = ParseStatementList("DROP TABLE database1.schema1.table1;");
+            var context = new SqlserverContext(new SqlserverMeta());
+            context.IsTest = true;
+            context.ExpectDatabaseExist = false;
+            context.ExpectSchemaExist = false;
+            context.ExpectTableExist = false;
+            context.ExpectDatabaseName = "database1";
+            context.ExpectSchemaName = "schema1";
+            context.ExpectTableName = "table1";
+            foreach (var statment in statementList.Statements) {
+                var invalid = new BaseRuleValidator("").IsInvalidDropTableStatement(LogManager.GetCurrentClassLogger(), context, statment as DropTableStatement);
+                Assert.True(invalid == true);
+            }
+            Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+            Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+        }
+
+        private void IsInvalidCreateDatabase() {
+            // database not exist
+            StatementList statementList = ParseStatementList("CREATE DATABASE database1");
+            var context = new SqlserverContext(new SqlserverMeta());
+            context.IsTest = true;
+            context.ExpectDatabaseExist = true;
+            foreach (var statment in statementList.Statements) {
+                var invalid = new BaseRuleValidator("").IsInvalidCreateDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateDatabaseStatement);
+                Assert.True(invalid == true);
+            }
+            Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+            Assert.Equal("[error]database database1 已存在", context.AdviseResultContext.GetMessage());
+        }
+
+        private void IsInvalidDropDatabase() {
+            // database exist
+            StatementList statementList = ParseStatementList("DROP DATABASE database1");
+            var context = new SqlserverContext(new SqlserverMeta());
+            context.IsTest = true;
+            context.ExpectDatabaseExist = false;
+            foreach (var statment in statementList.Statements) {
+                var invalid = new BaseRuleValidator("").IsInvalidDropDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as DropDatabaseStatement);
+                Assert.True(invalid == true);
+            }
+            Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+            Assert.Equal("[error]database database1 不存在", context.AdviseResultContext.GetMessage());
+        }
+
+        private void IsInvalidCreateIndex() { 
+            {
+                StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col1);");
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseExist = false;
+                context.ExpectSchemaExist = false;
+                context.ExpectTableExist = false;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+            }
+
+            {
+                // init data
+                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                                                                     "col1 INT NOT NULL, " +
+                                                                     "col2 INT NOT NULL, " +
+                                                                     "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
+                                                                     "CONSTRAINT UN_1 UNIQUE (col2)," +
+                                                                     "INDEX IX_1 (col2))");
+                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+
+                {
+                    StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col3);");
+                    foreach (var statment in statementList.Statements) {
+                        var invalid = new BaseRuleValidator("").IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
+                        Assert.True(invalid == true);
+                    }
+                    Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                    Assert.Equal("[error]索引 IX_1 已存在\n[error]字段 col3 不存在", context.AdviseResultContext.GetMessage());
+                }
+            }
+        }
+
+        private void IsInvalidDropIndex() {
+            // init data
+            StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                                                                 "col1 INT NOT NULL, " +
+                                                                 "col2 INT NOT NULL, " +
+                                                                 "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
+                                                                 "CONSTRAINT UN_1 UNIQUE (col2)," +
+                                                                 "INDEX IX_1 (col2))");
+            CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+            var context = new SqlserverContext(new SqlserverMeta());
+            context.IsTest = true;
+            context.ExpectDatabaseExist = true;
+            context.ExpectSchemaExist = true;
+            context.ExpectTableExist = true;
+            context.ExpectDatabaseName = "database1";
+            context.ExpectSchemaName = "schema1";
+            context.ExpectTableName = "table1";
+            context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+
+            {
+                StatementList statementList = ParseStatementList("DROP INDEX IX_2 ON schema1.table1;");
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidDropIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as DropIndexStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]索引 IX_2 不存在", context.AdviseResultContext.GetMessage());
+            }
+        }
+
+        private void IsInvalidInsert() {
+            {
+                StatementList statementList = ParseStatementList("INSERT INTO databse1.schema1.table1 VALUES(1);");
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+
+
+                context.ExpectDatabaseExist = false;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]database database1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+
+
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = false;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]schema schema1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = false;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+            }
+
+            {
+                // init data
+                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                                                                     "col1 INT NOT NULL, " +
+                                                                     "col2 INT NOT NULL, " +
+                                                                     "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
+                                                                     "CONSTRAINT UN_1 UNIQUE (col2)," +
+                                                                     "INDEX IX_1 (col2))");
+                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+
+                {
+                    StatementList statementList = ParseStatementList("INSERT INTO database1.schema1.table1(col1, col2, col2, col3) VALUES(2, 3);");
+                    foreach (var statment in statementList.Statements) {
+                        var invalid = new BaseRuleValidator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                        Assert.True(invalid == true);
+                    }
+                    Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                    Assert.Equal("[error]字段 col3 不存在\n[error]字段名 col2 重复\n[error]指定的值列数与字段列数不匹配", context.AdviseResultContext.GetMessage());
+                }
+            }
+        }
+
+        private void IsInvalidUpdate() {
+            {
+                StatementList statementList = ParseStatementList("UPDATE databse1.schema1.table1 SET col1=1;");
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+
+
+                context.ExpectDatabaseExist = false;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]database database1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+
+
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = false;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]schema schema1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = false;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+            }
+
+            {
+                // init data
+                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                                                                     "col1 INT NOT NULL, " +
+                                                                     "col2 INT NOT NULL, " +
+                                                                     "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
+                                                                     "CONSTRAINT UN_1 UNIQUE (col2)," +
+                                                                     "INDEX IX_1 (col2))");
+                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+
+                {
+                    StatementList statementList = ParseStatementList("UPDATE database1.schema1.table1 SET col1=1, col1=2, col2=2, col3=3;");
+                    foreach (var statment in statementList.Statements) {
+                        var invalid = new BaseRuleValidator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                        Assert.True(invalid == true);
+                    }
+                    Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                    Assert.Equal("[error]字段 col3 不存在\n[error]字段名 col1 重复", context.AdviseResultContext.GetMessage());
+                }
+            }
+        }
+
+        private void IsInvalidDelete() {
+            {
+                StatementList statementList = ParseStatementList("DELETE FROM databse1.schema1.table1;");
+                var context = new SqlserverContext(new SqlserverMeta());
+                context.IsTest = true;
+                context.ExpectDatabaseName = "database1";
+                context.ExpectSchemaName = "schema1";
+                context.ExpectTableName = "table1";
+
+
+                context.ExpectDatabaseExist = false;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]database database1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+
+
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = false;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]schema schema1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = false;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+            }
+        }
+
+        private void IsInvalidSelect() {
+            // init data
+            StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                                                                 "col1 INT NOT NULL, " +
+                                                                 "col2 INT NOT NULL, " +
+                                                                 "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
+                                                                 "CONSTRAINT UN_1 UNIQUE (col2)," +
+                                                                 "INDEX IX_1 (col2))");
+            CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+            var context = new SqlserverContext(new SqlserverMeta());
+            context.IsTest = true;
+            context.ExpectDatabaseExist = true;
+            context.ExpectSchemaExist = true;
+            context.ExpectTableExist = false;
+            context.ExpectDatabaseName = "database1";
+            context.ExpectSchemaName = "schema1";
+            context.ExpectTableName = "table1";
+            context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+
+            {
+                StatementList statementList = ParseStatementList("SELECT col1 FROM database1.schema1.table1;");
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator("").IsInvalidSelectStatement(LogManager.GetCurrentClassLogger(), context, statment as SelectStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+            }
+        }
+
+        [Fact]
+        public void BaseValidatorTest() {
+            IsInvalidUse();
+            IsInvalidCreateTable();
+            IsInvalidAlterTable();
+            IsInvalidDropTable();
+            IsInvalidCreateDatabase();
+            IsInvalidDropDatabase();
+            IsInvalidCreateIndex();
+            IsInvalidDropIndex();
+            IsInvalidInsert();
+            IsInvalidUpdate();
+            IsInvalidDelete();
+            IsInvalidSelect();
+        }
+
+        /*
         public AdviseResult validate(String ruleName, String text) {
             var validator = DefaultRules.RuleValidators[ruleName];
             var ruleValidatorContext = new SqlserverContext(new SqlserverMeta() {
@@ -48,7 +546,7 @@ namespace SqlServerProtoServerTest {
 
         [Fact]
         public void RuleValidatorTest() {
-            /*SCHEMA_NOT_EXIST*/
+            //SCHEMA_NOT_EXIST
             {
                 try {
                     foreach (var text in new String[]{
@@ -107,7 +605,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*SCHEMA_EXIST*/
+            //SCHEMA_EXIST
             {
                 try {
                     foreach (var text in new String[]{
@@ -133,7 +631,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*TABLE_NOT_EXIST*/
+            //TABLE_NOT_EXIST
             {
                 try {
                     foreach (var text in new String[]{
@@ -194,14 +692,14 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /* FakerRuleValidator
-             * DDL_CREATE_TABLE_NOT_EXIST
-             * DDL_TABLE_USING_INNODB_UTF8MB4
-            */
+             //FakerRuleValidator
+             //DDL_CREATE_TABLE_NOT_EXIST
+             //DDL_TABLE_USING_INNODB_UTF8MB4
+
             {
             }
 
-            /*DDL_CHECK_OBJECT_NAME_LENGTH*/
+            //DDL_CHECK_OBJECT_NAME_LENGTH
             {
                 try {
                     foreach (var text in new String[]{
@@ -248,7 +746,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_CHECK_PRIMARY_KEY_EXIST*/
+            //DDL_CHECK_PRIMARY_KEY_EXIST
             {
                 try {
                     foreach (var text in new String[]{
@@ -282,7 +780,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_CHECK_PRIMARY_KEY_TYPE*/
+            //DDL_CHECK_PRIMARY_KEY_TYPE
             {
                 try {
                     foreach (var text in new String[]{
@@ -322,7 +820,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_DISABLE_VARCHAR_MAX*/
+            //DDL_DISABLE_VARCHAR_MAX
             {
                 try {
                     foreach (var text in new String[]{
@@ -344,7 +842,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_CHECK_TYPE_CHAR_LENGTH*/
+            //DDL_CHECK_TYPE_CHAR_LENGTH
             {
                 try {
                     foreach (var text in new String[]{
@@ -385,7 +883,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_DISABLE_FOREIGN_KEY*/
+            //DDL_DISABLE_FOREIGN_KEY
             {
                 try {
                     foreach (var text in new String[] {
@@ -407,7 +905,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_CHECK_INDEX_COUNT*/
+            //DDL_CHECK_INDEX_COUNT
             {
                 try {
                     foreach (var text in new String[] {
@@ -444,10 +942,9 @@ namespace SqlServerProtoServerTest {
                         ")",
 
                         // There must a table1 table in sql server when executing those samples
-                        /*
-                        "ALTER TABLE table1 ADD col10 VARCHAR(20) NULL CONSTRAINT constraint1 UNIQUE",
-                        "CREATE INDEX IX_index1 ON table1(col1)"
-                        */
+                        //"ALTER TABLE table1 ADD col10 VARCHAR(20) NULL CONSTRAINT constraint1 UNIQUE",
+                        //"CREATE INDEX IX_index1 ON table1(col1)"
+
 
                     }) {
                         MyAssert(DefaultRules.DDL_CHECK_INDEX_COUNT,
@@ -460,7 +957,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_CHECK_COMPOSITE_INDEX_MAX*/
+            //DDL_CHECK_COMPOSITE_INDEX_MAX
             {
                 try {
                     foreach (var text in new String[] {
@@ -503,7 +1000,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_DISABLE_INDEX_DATA_TYPE_BLOB*/
+            //DDL_DISABLE_INDEX_DATA_TYPE_BLOB
             {
                 try {
                     foreach (var text in new String[] {
@@ -526,14 +1023,14 @@ namespace SqlServerProtoServerTest {
                         "ALTER TABLE table1 ADD col1 VARBINARY(MAX)",
 
                         // There must a table1 table in sql server when executing those two samples
-                        /*
-                        "ALTER TABLE table2 ALTER COLUMN col2 IMAGE",
-                        "ALTER TABLE table2 ALTER COLUMN col2 XML",
-                        "ALTER TABLE table2 ALTER COLUMN col2 TEXT",
-                        "ALTER TABLE table2 ALTER COLUMN col2 VARBINARY(MAX)",
 
-                        "CREATE INDEX IX_index1 ON table1(col1)"
-                        */
+                        //"ALTER TABLE table2 ALTER COLUMN col2 IMAGE",
+                        //"ALTER TABLE table2 ALTER COLUMN col2 XML",
+                        //"ALTER TABLE table2 ALTER COLUMN col2 TEXT",
+                        //"ALTER TABLE table2 ALTER COLUMN col2 VARBINARY(MAX)",
+
+                        //"CREATE INDEX IX_index1 ON table1(col1)"
+
                     }) {
                         MyAssert(DefaultRules.DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
                             text,
@@ -561,15 +1058,15 @@ namespace SqlServerProtoServerTest {
                         "ALTER TABLE table1 ADD col1 XML CONSTRAINT constraint1 UNIQUE",
                         "ALTER TABLE table1 ADD col1 TEXT CONSTRAINT constraint1 UNIQUE",
                         "ALTER TABLE table1 ADD col1 VARBINARY(MAX) CONSTRAINT constraint1 UNIQUE",
-                        /*
-                        // There must a table1 table in sql server when executing those two samples
-                        "ALTER TABLE table1 ALTER COLUMN col1 IMAGE",
-                        "ALTER TABLE table1 ALTER COLUMN col1 XML",
-                        "ALTER TABLE table1 ALTER COLUMN col1 TEXT",
-                        "ALTER TABLE table1 ALTER COLUMN col1 VARBINARY(MAX)",
 
-                        "CREATE INDEX IX_index1 ON table4(col1)"
-                        */
+                        // There must a table1 table in sql server when executing those two samples
+                        //"ALTER TABLE table1 ALTER COLUMN col1 IMAGE",
+                        //"ALTER TABLE table1 ALTER COLUMN col1 XML",
+                        //"ALTER TABLE table1 ALTER COLUMN col1 TEXT",
+                        //"ALTER TABLE table1 ALTER COLUMN col1 VARBINARY(MAX)",
+
+                        //"CREATE INDEX IX_index1 ON table4(col1)"
+
                     }) {
                         MyAssert(DefaultRules.DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
                             text,
@@ -581,7 +1078,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DDL_CHECK_ALTER_TABLE_NEED_MERGE*/
+            //DDL_CHECK_ALTER_TABLE_NEED_MERGE
             {
                 try {
                     var ruleValidatorContext = new SqlserverContext(new SqlserverMeta() {
@@ -602,7 +1099,7 @@ namespace SqlServerProtoServerTest {
                         var statementList = ParseStatementList(sql);
                         foreach (var statement in statementList.Statements) {
                             ruleValidator.Check(ruleValidatorContext, statement);
-                            ruleValidatorContext.UpdateContext(statement);
+                           // ruleValidatorContext.UpdateContext(statement);
                         }
 
                         var result = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
@@ -622,7 +1119,7 @@ namespace SqlServerProtoServerTest {
             }
 
 
-            /*DDL_DISABLE_DROP_STATEMENT*/
+            //DDL_DISABLE_DROP_STATEMENT
             {
                 try {
                     foreach (var text in new String[] {
@@ -641,7 +1138,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DML_CHECK_INVALID_WHERE_CONDITION*/
+            //DML_CHECK_INVALID_WHERE_CONDITION
             {
                 try {
                     foreach (var text in new String[] {
@@ -685,7 +1182,7 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
-            /*DML_DISABE_SELECT_ALL_COLUMN*/
+            //DML_DISABE_SELECT_ALL_COLUMN
             {
                 try {
                     foreach (var text in new String[] {
@@ -718,5 +1215,6 @@ namespace SqlServerProtoServerTest {
                 }
             }
         }
+        */
     }
 }

@@ -24,6 +24,27 @@ namespace SqlserverProtoServer {
     }
 
     public static class DefaultRules {
+        // error message
+        public static String DATABASE_NOT_EXIST_MSG = "database {0} 不存在";
+        public static String DATABASE_EXIST_MSG = "database {0} 已存在";
+        public static String SCHEMA_NOT_EXIST_MSG = "schema {0} 不存在";
+        public static String TABLE_NOT_EXIST_MSG = "表 {0} 不存在";
+        public static String TABLE_EXIST_MSG = "表 {0} 已存在";
+        public static String COLUMN_NOT_EXIST_MSG = "字段 {0} 不存在";
+        public static String COLUMN_EXIST_MSG = "字段 {0} 已存在";
+        public static String INDEX_NOT_EXIST_MSG = "索引 {0} 不存在";
+        public static String INDEX_EXIST_MSG = "索引 {0} 已存在";
+        public static String CONSTRAINT_NOT_EXIST_MSG = "约束 {0} 不存在";
+        public static String CONSTRAINT_EXIST_MSG = "约束 {0} 已存在";
+        public static String DUPLICATE_COLUMN_ERROR_MSG = "字段名 {0} 重复";
+        public static String DUPLICATE_INDEX_ERROR_MSG = "索引名 {0} 重复";
+        public static String DUPLICATE_CONSTAINT_ERROR_MSG = "约束名 {0} 重复";
+        public static String PRIMARY_KEY_MULTI_ERROR_MSG = "主键只能设置一个";
+        public static String PRIMARY_KEY_EXIST_MSG = "已经存在主键，不能再添加";
+        public static String KEY_COLUMN_NOT_EXIST_MSG = "索引字段 {0} 不存在";
+        public static String CONSTRAINT_COLUMN_NOT_EXIST_MSG = "约束字段 {0} 不存在";
+        public static String NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配";
+
         // rule names
         // This SCHEMA is DATABASE which comes from MySQL
         public const String SCHEMA_NOT_EXIST = "schema_not_exist";
@@ -291,7 +312,8 @@ namespace SqlserverProtoServer {
         // advise context
         public Dictionary<String/*database*/, bool> AllDatabases;
         public Dictionary<String/*schema*/, bool> AllSchemas;
-        public Dictionary<String/*schema.table*/, bool> AllTables;
+        public Dictionary<String/*database.schema.table*/, bool> AllTables;
+        public Dictionary<String/*database.schema.table*/, List<String>> PrimaryKeys;
         public bool databaseHasLoad;
         public bool schemaHasLoad;
         public bool tableHasLoad;
@@ -319,6 +341,17 @@ namespace SqlserverProtoServer {
         public Dictionary<String/*database.schema.table*/, Dictionary<String/*column*/, String/*column definition*/>> TableColumnDefinitions;
         public Dictionary<String/*database.schema.table*/, Dictionary<String/*constraint*/, String/*constraint definition*/>> TableConstraintDefinitions;
         public Dictionary<String/*database.schema.table*/, Dictionary<String/*index*/, String/*index definition*/>> TableIndexDefinitions;
+
+        // test items
+        public bool IsTest;
+        public bool ExpectDatabaseExist;
+        public bool ExpectSchemaExist;
+        public bool ExpectTableExist;
+        public String ExpectCurrentDatabase;
+        public String ExpectCurrentSchema;
+        public String ExpectDatabaseName;
+        public String ExpectSchemaName;
+        public String ExpectTableName;
 
         public String GetConnectionString() {
             return String.Format(
@@ -445,6 +478,9 @@ namespace SqlserverProtoServer {
         }
 
         public String GetCurrentDatabase() {
+            if (IsTest) {
+                return ExpectCurrentDatabase;
+            }
             if (SqlserverMeta.CurrentDatabase != "") {
                 return SqlserverMeta.CurrentDatabase;
             }
@@ -455,6 +491,9 @@ namespace SqlserverProtoServer {
         }
 
         public String GetCurrentSchema() {
+            if (IsTest) {
+                return ExpectCurrentSchema;
+            }
             if (SqlserverMeta.CurrentSchema != "") {
                 return SqlserverMeta.CurrentSchema;
             }
@@ -465,6 +504,11 @@ namespace SqlserverProtoServer {
         }
 
         public List<String> GetPrimaryKeys(String databaseName, String schemaName, String tableName) {
+            var key = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (PrimaryKeys.ContainsKey(key)) {
+                return PrimaryKeys[key];
+            }
+
             var ret = new List<String>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -482,6 +526,7 @@ namespace SqlserverProtoServer {
                     reader.Close();
                 }
             }
+            PrimaryKeys[key] = ret;
             return ret;
         }
 
@@ -876,6 +921,7 @@ namespace SqlserverProtoServer {
             AllDatabases = new Dictionary<String, bool>();
             AllSchemas = new Dictionary<string, bool>();
             AllTables = new Dictionary<String, bool>();
+            PrimaryKeys = new Dictionary<string, List<string>>();
             DDLActions = new List<DDLAction>();
             AlterTableStmts = new Dictionary<string, List<AlterTableStatement>>();
             AdviseResultContext = new AdviseResultContext();
@@ -890,6 +936,9 @@ namespace SqlserverProtoServer {
         }
 
         public bool DatabaseExists(Logger logger, String databaseName) {
+            if (IsTest) {
+                return ExpectDatabaseExist;
+            }
             bool notBeDroped = true;
             foreach (var action in DDLActions) {
                 if (action.ID == databaseName && action.Action == DDLAction.ADD_DATABASE) {
@@ -913,6 +962,9 @@ namespace SqlserverProtoServer {
         }
 
         public bool SchemaExists(Logger logger, String schema) {
+            if (IsTest) {
+                return ExpectSchemaExist;
+            }
             bool notBeDroped = true;
             foreach (var action in DDLActions) {
                 if (action.ID == schema && action.Action == DDLAction.ADD_SCHEMA) {
@@ -936,6 +988,9 @@ namespace SqlserverProtoServer {
         }
 
         public bool TableExists(Logger logger, String databaseName, String schema, String tableName) {
+            if (IsTest) {
+                return ExpectTableExist;
+            }
             if (schema == "") {
                 schema = GetCurrentSchema();
             }
@@ -972,6 +1027,13 @@ namespace SqlserverProtoServer {
         }
 
         public void GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(SchemaObjectName schemaObjectName, out String databaseName, out String schemaName, out String tableName) {
+            if (IsTest) {
+                databaseName = ExpectDatabaseName;
+                schemaName = ExpectSchemaName;
+                tableName = ExpectTableName;
+                return;
+            }
+
             if (schemaObjectName == null) {
                 databaseName = GetCurrentDatabase();
                 schemaName = GetCurrentSchema();
@@ -1032,6 +1094,31 @@ namespace SqlserverProtoServer {
                     SetTableConstraintDefinitions(createTableStatement.Definition, databaseName, schemaName, tableName);
                     SetTableIndexDefinitions(createTableStatement.Definition, databaseName, schemaName, tableName);
 
+                    var primaryKeys = new List<String>();
+                    foreach (var columnDefinition in createTableStatement.Definition.ColumnDefinitions) {
+                        foreach (var columnConstraint in columnDefinition.Constraints) {
+                            if (columnConstraint is UniqueConstraintDefinition) {
+                                if ((columnConstraint as UniqueConstraintDefinition).IsPrimaryKey) {
+                                    primaryKeys.Add(columnDefinition.ColumnIdentifier.Value);
+                                }
+                            }
+                        }
+                    }
+                    foreach (var tableConstraint in createTableStatement.Definition.TableConstraints) {
+                        if (tableConstraint is UniqueConstraintDefinition) {
+                            var uniqueConstraint = tableConstraint as UniqueConstraintDefinition;
+                            if (uniqueConstraint.IsPrimaryKey) {
+                                foreach (var column in uniqueConstraint.Columns) {
+                                    foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
+                                        primaryKeys.Add(identifier.Value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    PrimaryKeys[String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName)] = primaryKeys;
+
                     break;
 
                 case DropDatabaseStatement dropDatabaseStatement:
@@ -1071,6 +1158,16 @@ namespace SqlserverProtoServer {
                             newTableIndexDefinitions[tableIndexDefinitionPair.Key] = tableIndexDefinitionPair.Value;
                         }
                         TableIndexDefinitions = newTableIndexDefinitions;
+
+                        var newPrimaryKeys = new Dictionary<String, List<String>>();
+                        foreach (var primaryKeyPair in PrimaryKeys) {
+                            var tableIdentifier = primaryKeyPair.Key.Split(".");
+                            if (tableIdentifier.Length == 3 && tableIdentifier[0] == database.Value) {
+                                continue;
+                            }
+                            newPrimaryKeys[primaryKeyPair.Key] = primaryKeyPair.Value;
+                        }
+                        PrimaryKeys = newPrimaryKeys;
                     }
                     break;
 
@@ -1085,8 +1182,9 @@ namespace SqlserverProtoServer {
                 case DropTableStatement dropTableStatement:
                     foreach (var schemaObject in dropTableStatement.Objects) {
                         GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(schemaObject, out databaseName, out schemaName, out tableName);
+                        var key = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
                         DDLAction dropTableAction = new DDLAction {
-                            ID = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName),
+                            ID = key,
                             Action = DDLAction.REMOVE_TABLE,
                         };
                         DDLActions.Add(dropTableAction);
@@ -1094,6 +1192,10 @@ namespace SqlserverProtoServer {
                         ResetTableColumnDefinitions(databaseName, schemaName, tableName);
                         ResetTableConstraintDefinitions(databaseName, schemaName, tableName);
                         ResetTableIndexDefinitions(databaseName, schemaName, tableName);
+
+                        if (PrimaryKeys.ContainsKey(key)) {
+                            PrimaryKeys.Remove(key);
+                        }
                     }
                     break;
 
@@ -1123,6 +1225,7 @@ namespace SqlserverProtoServer {
                                         }
                                         var newColumnName = (procedure.Parameters[1].ParameterValue as StringLiteral).Value.Split(".")[0];
 
+                                        // update tableDefinition
                                         var tableColumnDefinitions = GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
                                         if (tableColumnDefinitions.Count == 0) {
                                             break;
@@ -1135,7 +1238,22 @@ namespace SqlserverProtoServer {
                                                 newColumnDefinitions[columnDefinitionPair.Key] = columnDefinitionPair.Value;
                                             }
                                         }
-                                        TableColumnDefinitions[String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName)] = newColumnDefinitions;
+                                        var key = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+                                        TableColumnDefinitions[key] = newColumnDefinitions;
+
+                                        // update Primarykeys
+                                        if (PrimaryKeys.ContainsKey(key)) {
+                                            var primaryColumns = PrimaryKeys[key];
+                                            var newPrimaryColumns = new List<String>();
+                                            foreach (var primaryColumn in primaryColumns) {
+                                                if (primaryColumn == oldColumnName) {
+                                                    newPrimaryColumns.Add(newColumnName);
+                                                } else {
+                                                    newPrimaryColumns.Add(primaryColumn);
+                                                }
+                                            }
+                                            PrimaryKeys[key] = newPrimaryColumns;
+                                        }
                                     }
                                 } else if (procedure.Parameters.Count == 2){
                                     // rename table
@@ -1163,6 +1281,12 @@ namespace SqlserverProtoServer {
                                         if (tableConstaintDefinitions.Count > 0) {
                                             TableConstraintDefinitions.Remove(key);
                                             TableConstraintDefinitions[newKey] = tableConstaintDefinitions;
+                                        }
+
+                                        if (PrimaryKeys.ContainsKey(key)) {
+                                            var primaryColumns = PrimaryKeys[key];
+                                            PrimaryKeys.Remove(key);
+                                            PrimaryKeys[newKey] = primaryColumns;
                                         }
                                     }
                                 }
@@ -1225,6 +1349,8 @@ namespace SqlserverProtoServer {
             Message = msg;
             Level = level;
         }
+
+        protected RuleValidator() {}
 
         public List<String> AddDatabaseName(List<String> databaseNames, SqlserverContext context, SchemaObjectName schemaObjectName) {
             var databaseIndentifier = schemaObjectName.DatabaseIdentifier;
