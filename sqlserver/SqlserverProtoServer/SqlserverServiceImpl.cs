@@ -154,6 +154,8 @@ namespace SqlserverProtoServer {
                 try {
                     var statementList = ParseStatementList(version, sql);
                     foreach (var statement in statementList.Statements) {
+
+
                         foreach (var ruleName in ruleNames) {
                             if (!DefaultRules.RuleValidators.ContainsKey(ruleName)) {
                                 continue;

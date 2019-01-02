@@ -46,76 +46,23 @@ namespace SqlserverProtoServer {
         public static String NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配";
 
         // rule names
-        // This SCHEMA is DATABASE which comes from MySQL
-        public const String SCHEMA_NOT_EXIST = "schema_not_exist";
-        public const String SCHEMA_EXIST = "schema_exist";
-        public const String TABLE_NOT_EXIST = "table_not_exist";
-        public const String TABLE_EXIST = "table_exist";
-        public const String DDL_CREATE_TABLE_NOT_EXIST = "ddl_create_table_not_exist";
         public const String DDL_CHECK_OBJECT_NAME_LENGTH = "ddl_check_object_name_length";
-        public const String DDL_CHECK_PRIMARY_KEY_EXIST = "ddl_check_primary_key_exist";
-        public const String DDL_CHECK_PRIMARY_KEY_TYPE = "ddl_check_primary_key_type";
-        public const String DDL_DISABLE_VARCHAR_MAX = "ddl_disable_varchar_max";
-        public const String DDL_CHECK_TYPE_CHAR_LENGTH = "ddl_check_type_char_length";
-        public const String DDL_DISABLE_FOREIGN_KEY = "ddl_disable_foreign_key";
+        public const String DDL_CHECK_PK_NOT_EXIST = "ddl_check_pk_not_exist";
+        public const String DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT = "ddl_check_pk_without_auto_increment";
+        public const String DDL_CHECK_COLUMN_VARCHAR_MAX = "ddl_check_column_varchar_max";
+        public const String DDL_CHECK_COLUMN_CHAR_LENGTH = "ddl_check_column_char_length";
+        public const String DDL_DISABLE_FK = "ddl_disable_fk";
         public const String DDL_CHECK_INDEX_COUNT = "ddl_check_index_count";
         public const String DDL_CHECK_COMPOSITE_INDEX_MAX = "ddl_check_composite_index_max";
-        public const String DDL_DISABLE_USING_KEYWORD = "ddl_disable_using_keyword";
-        private const string DDL_TABLE_USING_INNODB_UTF8MB4 = "ddl_create_table_using_innodb";
-        public const String DDL_DISABLE_INDEX_DATA_TYPE_BLOB = "ddl_disable_index_column_blob";
+        public const String DDL_CHECK_OBJECT_NAME_USING_KEYWORD = "ddl_check_object_name_using_keyword";
+        public const String DDL_CHECK_INDEX_COLUMN_WITH_BLOB = "ddl_check_index_column_with_blob";
         public const String DDL_CHECK_ALTER_TABLE_NEED_MERGE = "ddl_check_alter_table_need_merge";
         public const String DDL_DISABLE_DROP_STATEMENT = "ddl_disable_drop_statement";
-        public const String DML_CHECK_INVALID_WHERE_CONDITION = "ddl_check_invalid_where_condition";
+        public const String ALL_CHECK_WHERE_IS_INVALID = "all_check_where_is_invalid";
         public const String DML_DISABE_SELECT_ALL_COLUMN = "dml_disable_select_all_column";
 
         // rules
         public static Dictionary<String, RuleValidator> RuleValidators = new Dictionary<String, RuleValidator> {
-            {
-                SCHEMA_NOT_EXIST,
-                new DatabaseShouldExistRuleValidator(
-                    SCHEMA_NOT_EXIST,
-                    "操作数据库时，数据库必须存在",
-                    "database或者schema {0} 不存在",
-                    RULE_LEVEL.ERROR
-                )
-            },
-            {
-                SCHEMA_EXIST,
-                new DatabaseShouldNotExistRuleValidator(
-                    SCHEMA_EXIST,
-                    "创建数据库时，数据库不能存在",
-                    "database {0} 已存在",
-                    RULE_LEVEL.ERROR
-                )
-            },
-            {
-                TABLE_NOT_EXIST,
-                new TableShouldExistRuleValidator(
-                    TABLE_NOT_EXIST,
-                    "操作表时，表必须存在",
-                    "表 {0} 不存在",
-                    RULE_LEVEL.ERROR
-                )
-            },
-            {
-                TABLE_EXIST,
-                new TableShouldNotExistRuleValidator(
-                    TABLE_EXIST,
-                    "创建表时，表不能存在",
-                    "表 {0} 已存在",
-                    RULE_LEVEL.ERROR
-                )
-            },
-            {
-                // There is no CREATE TABLE IF NOT EXISTS statement
-                DDL_CREATE_TABLE_NOT_EXIST,
-                new FakerRuleValidator(
-                    DDL_CREATE_TABLE_NOT_EXIST,
-                    "新建表必须加入if not exists create，保证重复执行不报错",
-                    "新建表必须加入if not exists create，保证重复执行不报错",
-                    RULE_LEVEL.ERROR
-                )
-            },
             {
                 DDL_CHECK_OBJECT_NAME_LENGTH,
                 new ObjectNameMaxLengthRuleValidator(
@@ -126,45 +73,45 @@ namespace SqlserverProtoServer {
                 )
             },
             {
-                DDL_CHECK_PRIMARY_KEY_EXIST,
+                DDL_CHECK_PK_NOT_EXIST,
                 new PrimaryKeyShouldExistRuleValidator(
-                    DDL_CHECK_PRIMARY_KEY_EXIST,
+                    DDL_CHECK_PK_NOT_EXIST,
                     "表必须有主键",
                     "表必须有主键",
                     RULE_LEVEL.ERROR
                 )
             },
             {
-                DDL_CHECK_PRIMARY_KEY_TYPE,
+                DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
                 new PrimaryKeyAutoIncrementRuleValidator(
-                    DDL_CHECK_PRIMARY_KEY_TYPE,
+                    DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
                     "主键建议使用自增",
                     "主键建议使用自增",
                     RULE_LEVEL.ERROR
                 )
             },
             {
-                DDL_DISABLE_VARCHAR_MAX,
+                DDL_CHECK_COLUMN_VARCHAR_MAX,
                 new StringTypeShouldNoVarcharMaxRuleValidator(
-                    DDL_DISABLE_VARCHAR_MAX,
+                    DDL_CHECK_COLUMN_VARCHAR_MAX,
                     "禁止使用 varchar(max)",
                     "禁止使用 varchar(max)",
                     RULE_LEVEL.ERROR
                 )
             },
             {
-                DDL_CHECK_TYPE_CHAR_LENGTH,
+                DDL_CHECK_COLUMN_CHAR_LENGTH,
                 new StringTypeShouldNotExceedMaxLengthRuleValidator(
-                    DDL_CHECK_TYPE_CHAR_LENGTH,
+                    DDL_CHECK_COLUMN_CHAR_LENGTH,
                     "char长度大于20时，必须使用varchar类型",
                     "char长度大于20时，必须使用varchar类型",
                     RULE_LEVEL.ERROR
                 )
             },
             {
-                DDL_DISABLE_FOREIGN_KEY,
+                DDL_DISABLE_FK,
                 new ForeignKeyRuleValidator(
-                    DDL_DISABLE_FOREIGN_KEY,
+                    DDL_DISABLE_FK,
                     "禁止使用外键",
                     "禁止使用外键",
                     RULE_LEVEL.ERROR
@@ -189,29 +136,18 @@ namespace SqlserverProtoServer {
                 )
             },
             {
-                DDL_DISABLE_USING_KEYWORD,
-                new ObjectNameRuleValidator(
-                    DDL_DISABLE_USING_KEYWORD,
+                DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
+                new ObjectNameShouldNotContainsKeywordRuleValidator(
+                    DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
                     "数据库对象命名禁止使用关键字",
                     "数据库对象命名禁止使用关键字 %s",
                     RULE_LEVEL.ERROR
                 )
             },
-
-              {
-               DDL_TABLE_USING_INNODB_UTF8MB4,
-               new FakerRuleValidator(
-                   DDL_TABLE_USING_INNODB_UTF8MB4,
-                   "建议使用Innodb引擎,utf8mb4字符集",
-                   "建议使用Innodb引擎,utf8mb4字符集",
-                   RULE_LEVEL.NOTICE
-               )
-              },
-
             {
-                DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
+                DDL_CHECK_INDEX_COLUMN_WITH_BLOB,
                 new DisableAddIndexForColumnsTypeBlob(
-                    DDL_DISABLE_INDEX_DATA_TYPE_BLOB,
+                    DDL_CHECK_INDEX_COLUMN_WITH_BLOB,
                     "禁止将blob类型的列加入索引",
                     "禁止将blob类型的列加入索引",
                     RULE_LEVEL.ERROR
@@ -236,9 +172,9 @@ namespace SqlserverProtoServer {
                 )
             },
             {
-                DML_CHECK_INVALID_WHERE_CONDITION,
+                ALL_CHECK_WHERE_IS_INVALID,
                 new SelectWhereRuleValidator(
-                    DML_CHECK_INVALID_WHERE_CONDITION,
+                    ALL_CHECK_WHERE_IS_INVALID,
                     "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
                     "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
                     RULE_LEVEL.ERROR)

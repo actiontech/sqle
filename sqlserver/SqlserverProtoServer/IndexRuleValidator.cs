@@ -35,6 +35,9 @@ namespace SqlserverProtoServer {
     }
 
     public class NumberOfIndexesShouldNotExceedMaxRuleValidator : RuleValidator {
+        public bool IsTest;
+        public int ExpectIndexNumber;
+
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public int GetIndexCounterFromTableDefinition(TableDefinition tableDefinition) {
@@ -67,6 +70,10 @@ namespace SqlserverProtoServer {
         }
 
         public int GetNumberOfIndexesOnTable(SqlserverContext context, String tableName) {
+            if (IsTest) {
+                return ExpectIndexNumber;
+            }
+
             int indexNumber = 0;
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -118,6 +125,10 @@ namespace SqlserverProtoServer {
     }
 
     public class DisableAddIndexForColumnsTypeBlob : RuleValidator {
+        public bool IsTest;
+        public Dictionary<String, String> ExpectColumnAndType;
+        public Dictionary<String, bool> ExpectIndexColumns;
+
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool IsBlobTypeString(String type, IList<Literal> parameters) {
@@ -192,8 +203,12 @@ namespace SqlserverProtoServer {
             }
             return false;
         }
-
+        
         public Dictionary<String, bool> GetIndexColumnsOnTable(SqlserverContext context, String tableName) {
+            if (IsTest) {
+                return ExpectIndexColumns;
+            }
+
             Dictionary<String, bool> indexedColumns = new Dictionary<string, bool>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -213,6 +228,10 @@ namespace SqlserverProtoServer {
         }
 
         public Dictionary<String, String> GetColumnAndTypeOnTable(SqlserverContext context, String tableName) {
+            if (IsTest) {
+                return ExpectColumnAndType;
+            }
+
             Dictionary<String, String> columnTypes = new Dictionary<String, String>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -258,7 +277,6 @@ namespace SqlserverProtoServer {
                         }
                     }
                     break;
-
 
                 case CreateIndexStatement createIndexStatement:
                     Dictionary<String, String> columnTypes = GetColumnAndTypeOnTable(context, createIndexStatement.OnName.BaseIdentifier.Value);
