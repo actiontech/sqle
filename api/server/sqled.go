@@ -167,17 +167,20 @@ func (s *Sqled) inspect(task *model.Task) error {
 	if err != nil {
 		return err
 	}
-
+	firstSqlInvalid := i.SqlInvalid()
 	// if sql type is DML and sql invalid, try to advise with other DDL.
 	if i.SqlType() == model.SQL_TYPE_DML && i.SqlInvalid() {
 		relateTasks, err := st.GetRelatedDDLTask(task)
 		if err != nil {
 			return err
 		}
-		i = inspector.NewInspector(entry, ctx, task, relateTasks, ruleMap)
-		err = i.Advise(rules)
-		if err != nil {
-			return err
+		if len(relateTasks) > 0 {
+			entry.Warnf("dml sql invalid, retry advise with relate ddl")
+			i = inspector.NewInspector(entry, ctx, task, relateTasks, ruleMap)
+			err = i.Advise(rules)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -202,6 +205,12 @@ func (s *Sqled) inspect(task *model.Task) error {
 	if err != nil {
 		entry.Errorf("update task to storage failed, error: %v", err)
 		return err
+	}
+
+	// generate rollback after advise
+	if firstSqlInvalid {
+		entry.Warnf("sql invalid, ignore generate rollback")
+		return nil
 	}
 	ctx = inspector.NewContext(nil)
 	i = inspector.NewInspector(entry, ctx, task, nil, ruleMap)

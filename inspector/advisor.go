@@ -11,7 +11,17 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 	defer i.closeDbConn()
 	i.Logger().Info("start advise sql")
 
-	err := i.relateAdvise(i.RelateTasks)
+	err := i.advise(rules)
+	if err != nil {
+		i.Logger().Error("advise sql failed")
+	} else {
+		i.Logger().Info("advise sql finish")
+	}
+	return err
+}
+
+func (i *Inspect) advise(rules []model.Rule) error {
+	err := i.adviseRelateTask(i.RelateTasks)
 	if err != nil {
 		return err
 	}
@@ -69,28 +79,22 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 			return err
 		}
 	}
-	err = i.Do()
-	if err != nil {
-		i.Logger().Error("advise sql failed")
-	} else {
-		i.Logger().Info("advise sql finish")
-	}
-	return err
+	return i.Do()
 }
 
-func (i *Inspect) relateAdvise(relateTasks []model.Task) error {
+func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
 	if relateTasks == nil || len(relateTasks) == 0 {
 		return nil
 	}
 	currentCtx := NewContext(i.Context())
 	for _, task := range relateTasks {
-		ri := NewInspector(i.Logger(), currentCtx, &task, nil, nil)
-		err := ri.Advise(nil)
+		ri := NewInspect(i.Logger(), currentCtx, &task, nil, nil)
+		err := ri.advise(nil)
 		if err != nil {
 			return err
 		}
 		if ri.SqlInvalid() {
-			return i.relateAdvise(relateTasks[1:])
+			return i.adviseRelateTask(relateTasks[1:])
 		}
 	}
 	i.Ctx = currentCtx
