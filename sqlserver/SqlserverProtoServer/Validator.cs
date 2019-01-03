@@ -60,6 +60,13 @@ namespace SqlserverProtoServer {
         public const String DDL_DISABLE_DROP_STATEMENT = "ddl_disable_drop_statement";
         public const String ALL_CHECK_WHERE_IS_INVALID = "all_check_where_is_invalid";
         public const String DML_DISABE_SELECT_ALL_COLUMN = "dml_disable_select_all_column";
+        public const String DDL_CHECK_INDEX_PREFIX = "ddl_check_index_prefix";
+        public const String DDL_CHECK_UNIQUE_INDEX_PREFIX = "ddl_check_unique_index_prefix";
+        public const String DDL_CHECK_COLUMN_WITHOUT_DEFAULT = "ddl_check_column_without_default";
+        public const String DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT = "ddl_check_column_timestamp_without_default";
+        public const String DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL = "ddl_check_column_blob_with_not_null";
+        public const String DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL = "ddl_check_column_blob_default_is_not_null";
+        public const String DML_CHECK_WITH_LIMIT = "dml_check_with_limit";
 
         // rules
         public static Dictionary<String, RuleValidator> RuleValidators = new Dictionary<String, RuleValidator> {
@@ -186,6 +193,69 @@ namespace SqlserverProtoServer {
                     "不建议使用select *",
                     "不建议使用select *",
                     RULE_LEVEL.NOTICE
+                )
+            },
+            {
+                DDL_CHECK_INDEX_PREFIX,
+                new CheckNormalIndexPrefix(
+                    DDL_CHECK_INDEX_PREFIX,
+                    "普通索引必须要以 \"idx_\" 为前缀",
+                    "普通索引必须要以 \"idx_\" 为前缀",
+                    RULE_LEVEL.ERROR
+                )
+            },
+            {
+                DDL_CHECK_UNIQUE_INDEX_PREFIX,
+                new CheckUniqueIndexPrefix(
+                    DDL_CHECK_UNIQUE_INDEX_PREFIX,
+                    "unique索引必须要以 \"uniq_\" 为前缀",
+                    "unique索引必须要以 \"uniq_\" 为前缀",
+                    RULE_LEVEL.ERROR
+                )
+            },
+            {
+                DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
+                new CheckColumnWithoutDefault(
+                    DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
+                    "除了自增列及大字段列之外，每个列都必须添加默认值",
+                    "除了自增列及大字段列之外，每个列都必须添加默认值",
+                    RULE_LEVEL.ERROR
+                )
+            },
+            {
+                DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
+                new CheckColumnTimestampWithoutDefaut(
+                    DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
+                    "timestamp 类型的列必须添加默认值",
+                    "timestamp 类型的列必须添加默认值",
+                    RULE_LEVEL.ERROR
+                )
+            },
+            {
+                DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
+                new CheckColumnBlobNotNull(
+                    DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
+                    "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+                    "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+                    RULE_LEVEL.ERROR
+                )
+            },
+            {
+                DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
+                new CheckColumnBlobDefaultNotNull(
+                    DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
+                    "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+                    "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+                    RULE_LEVEL.ERROR
+                )
+            },
+            {
+                DML_CHECK_WITH_LIMIT,
+                new TopConditionRuleValidator(
+                    DML_CHECK_WITH_LIMIT,
+                    "delete/update 语句不能有limit/top条件",
+                    "delete/update 语句不能有limit/top条件",
+                    RULE_LEVEL.ERROR
                 )
             }
         };
@@ -1382,6 +1452,34 @@ namespace SqlserverProtoServer {
                 schemaNames = AddSchemaName(schemaNames, schemaObject);
                 tableNames = AddTableName(tableNames, context, schemaObject);
             }
+        }
+
+        public bool IsBlobType(DataTypeReference dataTypeReference) {
+            switch (dataTypeReference) {
+                case SqlDataTypeReference sqlDataTypeReference:
+                    return IsBlobTypeString(sqlDataTypeReference.Name.BaseIdentifier.Value, sqlDataTypeReference.Parameters);
+
+                case XmlDataTypeReference xmlDataTypeReference:
+                    return IsBlobTypeString(xmlDataTypeReference.Name.BaseIdentifier.Value, null);
+            }
+            return false;
+        }
+
+        public bool IsBlobTypeString(String type, IList<Literal> parameters) {
+            switch (type.ToLower()) {
+                case "image":
+                case "text":
+                case "xml":
+                    return true;
+                case "varbinary":
+                    foreach (var param in parameters) {
+                        if (param.Value.ToLower() == "max") {
+                            return true;
+                        }
+                    }
+                    break;
+            }
+            return false;
         }
     }
 

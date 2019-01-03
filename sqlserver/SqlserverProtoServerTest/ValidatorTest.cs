@@ -199,7 +199,7 @@ namespace SqlServerProtoServerTest {
             Assert.Equal("[error]database database1 不存在", context.AdviseResultContext.GetMessage());
         }
 
-        private void IsInvalidCreateIndex() { 
+        private void IsInvalidCreateIndex() {
             {
                 StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col1);");
                 var context = new SqlserverContext(new SqlserverMeta());
@@ -519,7 +519,7 @@ namespace SqlServerProtoServerTest {
 
         private void MyAssert(String ruleName, String text, String expectRuleLevel, String expectErrMsg) {
             var statementList = ParseStatementList(text);
-            foreach(var statment in statementList.Statements) {
+            foreach (var statment in statementList.Statements) {
                 var context = new SqlserverContext(new SqlserverMeta());
                 var validator = DefaultRules.RuleValidators[ruleName];
                 validator.Check(context, statment);
@@ -925,7 +925,7 @@ namespace SqlServerProtoServerTest {
                             ruleValidator.Check(ruleValidatorContext, statement);
                             ruleValidatorContext.UpdateContext(LogManager.GetCurrentClassLogger(), statement);
                         }
-                        
+
                         var result = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
                         if (sqlIndex == 0) {
                             Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL), result.AdviseLevel);
@@ -1039,6 +1039,157 @@ namespace SqlServerProtoServerTest {
                 }
             }
 
+            //DDL_CHECK_INDEX_PREFIX
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "CREATE TABLE table1(col1 INT, INDEX index1(col1));",
+                        "CREATE INDEX index1 ON table1(col1);"
+                    }) {
+                        MyAssert(DefaultRules.DDL_CHECK_INDEX_PREFIX,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]普通索引必须要以 \"idx_\" 为前缀");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
+
+            //DDL_CHECK_UNIQUE_INDEX_PREFIX
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "CREATE TABLE table1(col1 INT, CONSTRAINT constraint1 UNIQUE(col1));",
+                        "CREATE TABLE table1(col1 INT, INDEX index1 UNIQUE(col1));",
+                        "CREATE UNIQUE INDEX index1 ON table1(col1);",
+                        "ALTER TABLE table1 ADD CONSTRAINT constraint1 UNIQUE (col1);"
+                    }) {
+                        MyAssert(DefaultRules.DDL_CHECK_UNIQUE_INDEX_PREFIX,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]unique索引必须要以 \"uniq_\" 为前缀");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
+
+            //DDL_CHECK_COLUMN_WITHOUT_DEFAULT
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "CREATE TABLE table1(col1 INT, col2 INT DEFAULT 0);",
+                        "ALTER TABLE table1 ADD col1 VARCHAR(20) DEFAULT 0, col2 INT;",
+                    }) {
+                        MyAssert(DefaultRules.DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]除了自增列及大字段列之外，每个列都必须添加默认值");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
+
+            //DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "CREATE TABLE table1(col1 DATE)",
+                        "CREATE TABLE table1(col1 DATETIME)",
+                        "CREATE TABLE table1(col1 DATETIME2)",
+                        "CREATE TABLE table1(col1 DATETIMEOFFSET)",
+                        "CREATE TABLE table1(col1 SMALLDATETIME)",
+                        "CREATE TABLE table1(col1 TIME)",
+
+                        "ALTER TABLE table1 ADD col1 DATE",
+                        "ALTER TABLE table1 ADD col1 DATETIME",
+                        "ALTER TABLE table1 ADD col1 DATETIME2",
+                        "ALTER TABLE table1 ADD col1 DATETIMEOFFSET",
+                        "ALTER TABLE table1 ADD col1 SMALLDATETIME",
+                        "ALTER TABLE table1 ADD col1 TIME",
+                    }) {
+                        MyAssert(DefaultRules.DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]timestamp 类型的列必须添加默认值");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
+
+            //DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "CREATE TABLE table1(col1 TEXT NOT NULL)",
+
+                        "ALTER TABLE table1 ADD col1 TEXT NOT NULL",
+                    }) {
+                        MyAssert(DefaultRules.DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
+
+            //DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "CREATE TABLE table1(col1 TEXT NOT NULL)",
+
+                        "ALTER TABLE table1 ADD col1 TEXT NOT NULL",
+                    }) {
+                        MyAssert(DefaultRules.DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
+
+            //DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "CREATE TABLE table1(col1 TEXT DEFAULT '123')",
+
+                        "ALTER TABLE table1 ADD col1 TEXT DEFAULT '123'"
+                    }) {
+                        MyAssert(DefaultRules.DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
+
+            //DML_CHECK_WITH_LIMIT
+            {
+                try {
+                    foreach (var text in new String[]{
+                        "DELETE TOP(100) FROM table1;",
+                        "UPDATE TOP(100) table1 SET col1=1;"
+                    }) {
+                        MyAssert(DefaultRules.DML_CHECK_WITH_LIMIT,
+                            text,
+                            RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
+                            "[error]delete/update 语句不能有limit/top条件");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine("exception:{0}", e.Message);
+                }
+            }
         }
     }
 }

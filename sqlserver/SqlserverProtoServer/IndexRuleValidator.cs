@@ -91,7 +91,7 @@ namespace SqlserverProtoServer {
             }
             return indexNumber;
         }
-        
+
         public const int INDEX_MAX_NUMBER = 5;
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             int indexCounter = 0;
@@ -130,34 +130,6 @@ namespace SqlserverProtoServer {
         public Dictionary<String, bool> ExpectIndexColumns;
 
         protected Logger logger = LogManager.GetCurrentClassLogger();
-
-        public bool IsBlobTypeString(String type, IList<Literal> parameters) {
-            switch (type.ToLower()) {
-                case "image":
-                case "text":
-                case "xml":
-                    return true;
-                case "varbinary":
-                    foreach (var param in parameters) {
-                        if (param.Value.ToLower() == "max") {
-                            return true;
-                        }
-                    }
-                    break;
-            }
-            return false;
-        }
-
-        public bool IsBlobType(DataTypeReference dataTypeReference) {
-            switch (dataTypeReference) {
-                case SqlDataTypeReference sqlDataTypeReference:
-                    return IsBlobTypeString(sqlDataTypeReference.Name.BaseIdentifier.Value, sqlDataTypeReference.Parameters);
-
-                case XmlDataTypeReference xmlDataTypeReference:
-                    return IsBlobTypeString(xmlDataTypeReference.Name.BaseIdentifier.Value, null);
-            }
-            return false;
-        }
 
         public bool hasIndexForColumnsTypeBlobInTableDefinition(TableDefinition tableDefinition) {
             // unique index
@@ -203,7 +175,7 @@ namespace SqlserverProtoServer {
             }
             return false;
         }
-        
+
         public Dictionary<String, bool> GetIndexColumnsOnTable(SqlserverContext context, String tableName) {
             if (IsTest) {
                 return ExpectIndexColumns;
@@ -297,5 +269,85 @@ namespace SqlserverProtoServer {
         }
 
         public DisableAddIndexForColumnsTypeBlob(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+    }
+
+    public class CheckNormalIndexPrefix : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
+            var indexes = new List<String>();
+            switch (statement) {
+                case CreateTableStatement createTableStatement:
+                    foreach (var index in createTableStatement.Definition.Indexes) {
+                        if (!index.Unique) {
+                            indexes.Add(index.Name.Value);
+                        }
+                    }
+                    break;
+
+                case CreateIndexStatement createIndexStatement:
+                    if (!createIndexStatement.Unique) {
+                        indexes.Add(createIndexStatement.Name.Value);
+                    }
+                    break;
+            }
+
+            foreach (var index in indexes) {
+                if (!index.StartsWith("idx_")) {
+                    logger.Debug("index {0} should start with idx_", index);
+                    context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                    return;
+                }
+            }
+        }
+
+        public CheckNormalIndexPrefix(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
+    }
+
+    public class CheckUniqueIndexPrefix : RuleValidator {
+        protected Logger logger = LogManager.GetCurrentClassLogger();
+
+        public override void Check(SqlserverContext context, TSqlStatement statement) {
+            var indexes = new List<String>();
+            switch (statement) {
+                case CreateTableStatement createTableStatement:
+                    foreach (var constaint in createTableStatement.Definition.TableConstraints) {
+                        if (constaint is UniqueConstraintDefinition) {
+                            indexes.Add(constaint.ConstraintIdentifier.Value);
+                        }
+                    }
+
+                    foreach (var index in createTableStatement.Definition.Indexes) {
+                        if (index.Unique) {
+                            indexes.Add(index.Name.Value);
+                        }
+                    }
+                    break;
+
+                case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
+                    foreach (var constraint in alterTableAddTableElementStatement.Definition.TableConstraints) {
+                        if (constraint is UniqueConstraintDefinition) {
+                            indexes.Add(constraint.ConstraintIdentifier.Value);
+                        }
+                    }
+                    break;
+
+                case CreateIndexStatement createIndexStatement:
+                    if (createIndexStatement.Unique) {
+                        indexes.Add(createIndexStatement.Name.Value);
+                    }
+                    break;
+            }
+
+            foreach (var index in indexes) {
+                if (!index.StartsWith("uniq_")) {
+                    logger.Debug("index {0} should start with uniq_", index);
+                    context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
+                    return;
+                }
+            }
+        }
+
+        public CheckUniqueIndexPrefix(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 }
