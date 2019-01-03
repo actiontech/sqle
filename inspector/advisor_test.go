@@ -637,6 +637,11 @@ func TestCheckSelectAll(t *testing.T) {
 }
 
 func TestCheckWhereInvalid(t *testing.T) {
+	runInspectCase(t, "select_from: has where condition", DefaultMysqlInspect(),
+		"select id from exist_db.exist_tb_1 where id > 1;",
+		newTestResult(),
+	)
+
 	runInspectCase(t, "select_from: no where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1;",
 		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
@@ -646,6 +651,30 @@ func TestCheckWhereInvalid(t *testing.T) {
 		"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
 		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
 	)
+
+	runInspectCase(t, "update: has where condition", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1='v1' where id = 1;",
+		newTestResult())
+
+	runInspectCase(t, "update: no where condition(1)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1='v1';",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+
+	runInspectCase(t, "update: no where condition(2)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1='v1' where 1=1 and 2=2;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+
+	runInspectCase(t, "delete: has where condition", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1 where id = 1;",
+		newTestResult())
+
+	runInspectCase(t, "delete: no where condition(1)", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+
+	runInspectCase(t, "delete: no where condition(2)", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1 where 1=1 and 2=2;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
 }
 
 func TestCheckCreateTableWithoutIfNotExists(t *testing.T) {

@@ -353,12 +353,19 @@ func checkSelectAll(i *Inspect, node ast.Node) error {
 }
 
 func checkSelectWhere(i *Inspect, node ast.Node) error {
+	var where ast.ExprNode
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
-		// where condition
-		if stmt.Where == nil || !whereStmtHasOneColumn(stmt.Where) {
-			i.addResult(DML_CHECK_WHERE_IS_INVALID)
-		}
+		where = stmt.Where
+	case *ast.UpdateStmt:
+		where = stmt.Where
+	case *ast.DeleteStmt:
+		where = stmt.Where
+	default:
+		return nil
+	}
+	if where == nil || !whereStmtHasOneColumn(where) {
+		i.addResult(DML_CHECK_WHERE_IS_INVALID)
 	}
 	return nil
 }
