@@ -4,17 +4,18 @@ import (
 	"github.com/pingcap/tidb/ast"
 	"github.com/sirupsen/logrus"
 	"sqle/model"
-	"sqle/sqlserverClient"
 	"sqle/sqlserver/SqlserverProto"
+	"sqle/sqlserverClient"
 )
 
 type SqlserverInspect struct {
 	*Inspect
 }
 
-func NeSqlserverInspect(entry *logrus.Entry, task *model.Task, rules map[string]model.Rule) Inspector {
+func NeSqlserverInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
+	rules map[string]model.Rule) Inspector {
 	return &SqlserverInspect{
-		Inspect: NewInspect(entry, task, rules),
+		Inspect: NewInspect(entry, ctx, task, relateTasks, rules),
 	}
 }
 
@@ -35,9 +36,9 @@ func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error
 		switch stmt := node.(type) {
 		case sqlserverClient.SqlServerNode:
 			if stmt.IsDDLStmt() {
-				i.Ctx.counterDDL += 1
+				i.counterDDL += 1
 			} else if stmt.IsDMLStmt() {
-				i.Ctx.counterDML += 1
+				i.counterDML += 1
 			}
 		}
 	}

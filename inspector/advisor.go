@@ -10,26 +10,46 @@ import (
 func (i *Inspect) Advise(rules []model.Rule) error {
 	defer i.closeDbConn()
 	i.Logger().Info("start advise sql")
+
+	err := i.advise(rules)
+	if err != nil {
+		i.Logger().Error("advise sql failed")
+	} else {
+		i.Logger().Info("advise sql finish")
+	}
+	return err
+}
+
+func (i *Inspect) advise(rules []model.Rule) error {
+	err := i.adviseRelateTask(i.RelateTasks)
+	if err != nil {
+		return err
+	}
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
-			for _, node := range sql.Stmts {
-				err := i.CheckInvalid(node, i.Results)
-				if err != nil {
-					return err
-				}
+			if len(sql.Stmts) <= 0 {
+				return nil
 			}
-			for _, rule := range rules {
-				i.currentRule = rule
-				if handler, ok := RuleHandlerMap[rule.Name]; ok {
-					if handler.Func == nil {
+			node := sql.Stmts[0]
+			results, err := i.CheckInvalid(node)
+			if err != nil {
+				return err
+			}
+			if results.level() == model.RULE_LEVEL_ERROR {
+				i.HasInvalidSql = true
+			}
+			i.Results = results
+			if rules != nil {
+				for _, rule := range rules {
+					i.currentRule = rule
+					handler, ok := RuleHandlerMap[rule.Name]
+					if !ok || handler.Func == nil {
 						continue
 					}
-					for _, node := range sql.Stmts {
-						err := handler.Func(i, node)
-						if err != nil {
-							return err
-						}
+					err := handler.Func(i, node)
+					if err != nil {
+						return err
 					}
 				}
 			}
@@ -59,13 +79,26 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 			return err
 		}
 	}
-	err := i.Do()
-	if err != nil {
-		i.Logger().Error("advise sql failed")
-	} else {
-		i.Logger().Info("advise sql finish")
+	return i.Do()
+}
+
+func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
+	if relateTasks == nil || len(relateTasks) == 0 {
+		return nil
 	}
-	return err
+	currentCtx := NewContext(i.Context())
+	for _, task := range relateTasks {
+		ri := NewInspect(i.Logger(), currentCtx, &task, nil, nil)
+		err := ri.advise(nil)
+		if err != nil {
+			return err
+		}
+		if ri.SqlInvalid() {
+			return i.adviseRelateTask(relateTasks[1:])
+		}
+	}
+	i.Ctx = currentCtx
+	return nil
 }
 
 var (
@@ -86,7 +119,8 @@ var (
 	NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配"
 )
 
-func (i *Inspect) CheckInvalid(node ast.Node, results *InspectResults) error {
+func (i *Inspect) CheckInvalid(node ast.Node) (*InspectResults, error) {
+	results := newInspectResults()
 	var err error
 	switch stmt := node.(type) {
 	case *ast.UseStmt:
@@ -112,7 +146,7 @@ func (i *Inspect) CheckInvalid(node ast.Node, results *InspectResults) error {
 	case *ast.DeleteStmt:
 		err = i.checkInvalidDelete(stmt, results)
 	}
-	return err
+	return results, err
 }
 
 func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *InspectResults) error {
@@ -253,8 +287,6 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 		oldColName := spec.OldColumnName.Name.L
 		if _, ok := colNameMap[oldColName]; !ok {
 			needExistsColsName = append(needExistsColsName, oldColName)
-		} else {
-			delete(colNameMap, oldColName)
 		}
 		for _, col := range spec.NewColumns {
 			newColName := col.Name.Name.L
@@ -263,6 +295,11 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 			}
 			if _, ok := colNameMap[newColName]; ok {
 				needNotExistsColsName = append(needNotExistsColsName, newColName)
+			} else {
+				if newColName != oldColName {
+					delete(colNameMap, oldColName)
+					colNameMap[newColName] = struct{}{}
+				}
 			}
 		}
 	}
@@ -293,27 +330,6 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 	needExistsIndexesName := []string{}
 	needExistsKeyColsName := []string{}
 
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
-		switch spec.Constraint.Tp {
-		case ast.ConstraintPrimaryKey:
-			if hasPk {
-				// primary key has exist, can not add primary key
-				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
-			}
-		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
-			indexName := strings.ToLower(spec.Constraint.Name)
-			if _, ok := indexNameMap[indexName]; ok {
-				needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
-			}
-			for _, col := range spec.Constraint.Keys {
-				colName := col.Column.Name.L
-				if _, ok := colNameMap[colName]; !ok {
-					needExistsKeyColsName = append(needExistsKeyColsName, colName)
-				}
-			}
-		}
-	}
-
 	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
 		// primary key not exist, can not drop primary key
 		results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_NOT_EXIST_MSG)
@@ -323,6 +339,48 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 		indexName := strings.ToLower(spec.Name)
 		if _, ok := indexNameMap[indexName]; !ok {
 			needExistsIndexesName = append(needExistsIndexesName, indexName)
+		}
+	}
+
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
+		oldIndexName := spec.FromKey.String()
+		newIndexName := spec.ToKey.String()
+		_, oldIndexExist := indexNameMap[oldIndexName]
+		if !oldIndexExist {
+			needExistsIndexesName = append(needExistsIndexesName, oldIndexName)
+		}
+		_, newIndexExist := indexNameMap[newIndexName]
+		if newIndexExist {
+			needNotExistsIndexesName = append(needNotExistsIndexesName)
+		}
+		if oldIndexExist && !newIndexExist {
+			delete(indexNameMap, oldIndexName)
+			indexNameMap[newIndexName] = struct{}{}
+		}
+	}
+
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		switch spec.Constraint.Tp {
+		case ast.ConstraintPrimaryKey:
+			if hasPk {
+				// primary key has exist, can not add primary key
+				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
+			} else {
+				hasPk = true
+			}
+		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
+			indexName := strings.ToLower(spec.Constraint.Name)
+			if _, ok := indexNameMap[indexName]; ok {
+				needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
+			} else {
+				indexNameMap[indexName] = struct{}{}
+			}
+			for _, col := range spec.Constraint.Keys {
+				colName := col.Column.Name.L
+				if _, ok := colNameMap[colName]; !ok {
+					needExistsKeyColsName = append(needExistsKeyColsName, colName)
+				}
+			}
 		}
 	}
 

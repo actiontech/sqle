@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"math"
 	"sqle/errors"
 	"sqle/inspector"
 	"sqle/log"
@@ -77,6 +78,12 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		goto Error
 	}
 
+	if int(task.Action) < action.Typ {
+		err := model.GetStorage().UpdateTask(task, map[string]interface{}{"action": action.Typ})
+		if err != nil {
+			goto Error
+		}
+	}
 	action.Task = task
 	s.queue <- action
 	return action, nil
@@ -154,24 +161,59 @@ func (s *Sqled) inspect(task *model.Task) error {
 		return err
 	}
 	ruleMap := model.GetRuleMapFromAllArray(rules)
-	i := inspector.NewInspector(entry, task, ruleMap)
+	ctx := inspector.NewContext(nil)
+	i := inspector.NewInspector(entry, ctx, task, nil, ruleMap)
 	err = i.Advise(rules)
 	if err != nil {
 		return err
 	}
+	firstSqlInvalid := i.SqlInvalid()
+	// if sql type is DML and sql invalid, try to advise with other DDL.
+	if i.SqlType() == model.SQL_TYPE_DML && i.SqlInvalid() {
+		relateTasks, err := st.GetRelatedDDLTask(task)
+		if err != nil {
+			return err
+		}
+		if len(relateTasks) > 0 {
+			entry.Warnf("dml sql invalid, retry advise with relate ddl")
+			i = inspector.NewInspector(entry, ctx, task, relateTasks, ruleMap)
+			err = i.Advise(rules)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var normalCount float64
 	for _, sql := range task.CommitSqls {
+		if sql.InspectLevel == model.RULE_LEVEL_NORMAL {
+			normalCount += 1
+		}
 		if err := st.Save(&sql); err != nil {
 			entry.Errorf("save commit sql to storage failed, error: %v", err)
 			return err
 		}
 	}
-	err = st.UpdateNormalRate(task)
+	if len(task.CommitSqls) != 0 {
+		task.NormalRate = round(normalCount/float64(len(task.CommitSqls)), 4)
+	}
+
+	err = st.UpdateTask(task, map[string]interface{}{
+		"sql_type":    i.SqlType(),
+		"normal_rate": task.NormalRate,
+	})
 	if err != nil {
-		entry.Errorf("update normal rate to storage failed, error: %v", err)
+		entry.Errorf("update task to storage failed, error: %v", err)
 		return err
 	}
 
-	i = inspector.NewInspector(entry, task, ruleMap)
+	// generate rollback after advise
+	if firstSqlInvalid {
+		entry.Warnf("sql invalid, ignore generate rollback")
+		return nil
+	}
+	ctx = inspector.NewContext(nil)
+	i = inspector.NewInspector(entry, ctx, task, nil, ruleMap)
 	rollbackSqls, err := i.GenerateAllRollbackSql()
 	if err != nil {
 		return err
@@ -191,7 +233,7 @@ func (s *Sqled) commit(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, task, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
 	for _, commitSql := range task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
@@ -226,7 +268,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 	entry.Info("start rollback sql")
 
 	st := model.GetStorage()
-	i := inspector.NewInspector(entry, task, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
 
 	for _, rollbackSql := range task.RollbackSqls {
 		currentSql := rollbackSql
@@ -258,4 +300,9 @@ func (s *Sqled) rollback(task *model.Task) error {
 		entry.Info("rollback sql finish")
 	}
 	return err
+}
+
+func round(f float64, n int) float64 {
+	p := math.Pow10(n)
+	return math.Trunc(f*p+0.5) / p
 }

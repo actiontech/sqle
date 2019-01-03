@@ -439,12 +439,11 @@ func checkMergeAlterTable(i *Inspect, node ast.Node) error {
 		// merge alter table
 		info, exist := i.getTableInfo(stmt.Table)
 		if exist {
-			if info.alterTableStmts != nil && len(info.alterTableStmts) > 0 {
+			if info.AlterTables != nil && len(info.AlterTables) > 0 {
 				i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
 			}
 		}
 	}
-
 	return nil
 }
 

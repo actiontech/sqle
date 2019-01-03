@@ -117,28 +117,29 @@ func DefaultMysqlInspect() *Inspect {
 		},
 		SqlArray: []*model.Sql{},
 		Ctx: &Context{
-			currentSchema:   "exist_db",
-			originalSchemas: map[string]struct{}{"exist_db": struct{}{}},
-			schemaHasLoad:   true,
-			virtualSchemas:  map[string]struct{}{},
-			allTable: map[string]map[string]*TableInfo{
-				"exist_db": map[string]*TableInfo{
-					"exist_tb_1": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt1(),
+			currentSchema: "exist_db",
+			schemaHasLoad: true,
+			schemas: map[string]*SchemaInfo{
+				"exist_db": &SchemaInfo{
+					Tables: map[string]*TableInfo{
+						"exist_tb_1": &TableInfo{
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt1(),
+						},
+						"exist_tb_2": &TableInfo{
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt2(),
+						},
+						"exist_tb_3": &TableInfo{
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt3(),
+						},
 					},
-					"exist_tb_2": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt2(),
-					},
-					"exist_tb_3": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt3(),
-					},
-				}},
+				},
+			},
 		},
 		config: &Config{
 			DDLOSCMinSize:      16,
@@ -391,6 +392,13 @@ ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
 			"v5"),
+	)
+
+	runInspectCase(t, "alter_table: change a exist column", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 change column v1 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+`,
+		newTestResult(),
 	)
 
 	runInspectCase(t, "alter_table: change a not exist column", DefaultMysqlInspect(),
@@ -755,7 +763,7 @@ ALTER TABLE exist_db.exist_tb_1 ADD index idx_%s (v1);`, length65),
 
 	runInspectCase(t, "alter_table:rename index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
-ALTER TABLE exist_db.exist_tb_1 RENAME index v1_d TO idx_%s;`, length65),
+ALTER TABLE exist_db.exist_tb_1 RENAME index idx_1 TO idx_%s;`, length65),
 		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
 	)
 }
@@ -1220,23 +1228,24 @@ func DefaultMycatInspect() *Inspect {
 		},
 		SqlArray: []*model.Sql{},
 		Ctx: &Context{
-			currentSchema:   "multidb",
-			originalSchemas: map[string]struct{}{"multidb": struct{}{}},
-			schemaHasLoad:   true,
-			virtualSchemas:  map[string]struct{}{},
-			allTable: map[string]map[string]*TableInfo{
-				"multidb": map[string]*TableInfo{
-					"exist_tb_1": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt1(),
+			currentSchema: "multidb",
+			schemaHasLoad: true,
+			schemas: map[string]*SchemaInfo{
+				"multidb": &SchemaInfo{
+					Tables: map[string]*TableInfo{
+						"exist_tb_1": &TableInfo{
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt1(),
+						},
+						"exist_tb_2": &TableInfo{
+							sizeLoad:      true,
+							Size:          1,
+							OriginalTable: getTestCreateTableStmt2(),
+						},
 					},
-					"exist_tb_2": &TableInfo{
-						sizeLoad:        true,
-						Size:            1,
-						CreateTableStmt: getTestCreateTableStmt2(),
-					},
-				}},
+				},
+			},
 		},
 		config: &Config{
 			DDLOSCMinSize:      16,

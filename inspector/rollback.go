@@ -221,29 +221,6 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			}
 		}
 	}
-	// add constraint (index key, primary key ...) need drop
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
-		switch spec.Constraint.Tp {
-		case ast.ConstraintIndex, ast.ConstraintUniq:
-			// add index without index name, index name will be created by db
-			if spec.Constraint.Name == "" {
-				continue
-			}
-			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
-				Tp:   ast.AlterTableDropIndex,
-				Name: spec.Constraint.Name,
-			})
-		case ast.ConstraintPrimaryKey:
-			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
-				Tp: ast.AlterTableDropPrimaryKey,
-			})
-		case ast.ConstraintForeignKey:
-			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
-				Tp:   ast.AlterTableDropForeignKey,
-				Name: spec.Constraint.Name,
-			})
-		}
-	}
 	// drop index need add
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
 		for _, constraint := range createTableStmt.Constraints {
@@ -284,6 +261,30 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
 		spec.FromKey, spec.ToKey = spec.ToKey, spec.FromKey
 		rollbackStmt.Specs = append(rollbackStmt.Specs, spec)
+	}
+
+	// add constraint (index key, primary key ...) need drop
+	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		switch spec.Constraint.Tp {
+		case ast.ConstraintIndex, ast.ConstraintUniq:
+			// add index without index name, index name will be created by db
+			if spec.Constraint.Name == "" {
+				continue
+			}
+			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+				Tp:   ast.AlterTableDropIndex,
+				Name: spec.Constraint.Name,
+			})
+		case ast.ConstraintPrimaryKey:
+			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+				Tp: ast.AlterTableDropPrimaryKey,
+			})
+		case ast.ConstraintForeignKey:
+			rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
+				Tp:   ast.AlterTableDropForeignKey,
+				Name: spec.Constraint.Name,
+			})
+		}
 	}
 
 	rollbackSql := alterTableStmtFormat(rollbackStmt)
