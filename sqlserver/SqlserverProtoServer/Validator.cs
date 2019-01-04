@@ -358,6 +358,9 @@ namespace SqlserverProtoServer {
         public String ExpectDatabaseName;
         public String ExpectSchemaName;
         public String ExpectTableName;
+        public List<String> ExpectColumns;
+        public List<Dictionary<String, String>> ExpectRecords;
+        public int ExpectRecordsCount;
 
         public String GetConnectionString() {
             return String.Format(
@@ -537,6 +540,9 @@ namespace SqlserverProtoServer {
         }
 
         public List<String> GetColumns(String databaseName, String schemaName, String tableName) {
+            if (IsTest) {
+                return ExpectColumns;
+            }
             var ret = new List<String>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -557,6 +563,10 @@ namespace SqlserverProtoServer {
         }
 
         public List<Dictionary<String, String>> GetRecords(String databaseName, String schemaName, String tableName, String where) {
+            if (IsTest) {
+                return ExpectRecords;
+            }
+
             var ret = new List<Dictionary<String, String>>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -581,6 +591,10 @@ namespace SqlserverProtoServer {
         }
 
         public int GetRecordsCount(String databaseName, String schemaName, String tableName, String where) {
+            if (IsTest) {
+                return ExpectRecordsCount;
+            }
+
             var ret = 0;
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -853,7 +867,7 @@ namespace SqlserverProtoServer {
                 var indexName = index.Name.Value;
                 var indexString = "";
                 for (int i = index.FirstTokenIndex; i <= index.LastTokenIndex; i++) {
-                    indexString += index.ScriptTokenStream[i];
+                    indexString += index.ScriptTokenStream[i].Text;
                 }
 
                 if (!TableIndexDefinitions.ContainsKey(indexDefinitionKey)) {

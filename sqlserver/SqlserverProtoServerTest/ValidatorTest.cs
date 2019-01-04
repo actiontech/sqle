@@ -92,7 +92,6 @@ namespace SqlServerProtoServerTest {
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
                                                                      "CONSTRAINT UN_1 UNIQUE (col2)," +
                                                                      "INDEX IX_1 (col2))");
-                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseExist = true;
