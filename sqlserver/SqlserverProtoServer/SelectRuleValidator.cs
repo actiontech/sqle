@@ -52,13 +52,27 @@ namespace SqlserverProtoServer {
         }
 
         public override void Check(SqlserverContext context, TSqlStatement statement) {
-            if (statement is SelectStatement) {
-                var select = statement as SelectStatement;
-                var querySpec = select.QueryExpression as QuerySpecification;
-                if (querySpec.WhereClause == null || !WhereClauseHasColumn(querySpec.WhereClause.SearchCondition)) {
-                    logger.Debug("There is no effective where clause");
-                    context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
-                }
+            WhereClause whereClause = null;
+            switch (statement) {
+                case SelectStatement selectStatement:
+                    whereClause = (selectStatement.QueryExpression as QuerySpecification).WhereClause;
+                    break;
+
+                case UpdateStatement updateStatement:
+                    whereClause = updateStatement.UpdateSpecification.WhereClause;
+                    break;
+
+                case DeleteStatement deleteStatement:
+                    whereClause = deleteStatement.DeleteSpecification.WhereClause;
+                    break;
+
+                default:
+                    return;
+            }
+
+            if (whereClause == null || !WhereClauseHasColumn(whereClause.SearchCondition)) {
+                logger.Debug("There is no effective where clause");
+                context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
             }
         }
 

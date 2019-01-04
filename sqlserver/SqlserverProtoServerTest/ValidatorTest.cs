@@ -970,7 +970,17 @@ namespace SqlServerProtoServerTest {
                         "SELECT col1 FROM table1",
                         "SELECT col1 FROM table1 WHERE 1=1",
                         "SELECT col1 FROM table1 WHERE 'a' IN ('a', 'b', 'c')",
-                        "SELECT col1 FROM table1 WHERE NULL IS NULL"
+                        "SELECT col1 FROM table1 WHERE NULL IS NULL",
+
+                        "UPDATE table1 SET col1=1",
+                        "UPDATE table1 SET col1=1 WHERE 1=1",
+                        "UPDATE table1 SET col1=1 WHERE 'a' IN ('a', 'b', 'c')",
+                        "UPDATE table1 SET col1=1 WHERE NULL IS NULL",
+
+                        "DELETE FROM table1",
+                        "DELETE FROM table1 WHERE 1=1",
+                        "DELETE FROM table1 WHERE 'a' IN ('a', 'b', 'c')",
+                        "DELETE FROM table1 WHERE NULL IS NULL"
 
                     }) {
                         MyAssert(DefaultRules.ALL_CHECK_WHERE_IS_INVALID,
