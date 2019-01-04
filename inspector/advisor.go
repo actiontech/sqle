@@ -38,6 +38,7 @@ func (i *Inspect) advise(rules []model.Rule) error {
 			}
 			if results.level() == model.RULE_LEVEL_ERROR {
 				i.HasInvalidSql = true
+				i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
 			}
 			i.Results = results
 			if rules != nil {
@@ -86,6 +87,11 @@ func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
 	if relateTasks == nil || len(relateTasks) == 0 {
 		return nil
 	}
+	taskIdList := []string{}
+	for _, task := range relateTasks {
+		taskIdList = append(taskIdList, fmt.Sprintf("%d", task.ID))
+	}
+	i.Logger().Infof("relate advise tasks: %s", strings.Join(taskIdList, ", "))
 	currentCtx := NewContext(i.Context())
 	for _, task := range relateTasks {
 		ri := NewInspect(i.Logger(), currentCtx, &task, nil, nil)
@@ -94,9 +100,13 @@ func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
 			return err
 		}
 		if ri.SqlInvalid() {
+			i.Logger().Warnf("relate tasks failed, because task %d invalid in tasks", task.ID)
 			return i.adviseRelateTask(relateTasks[1:])
 		}
 	}
+
+	i.Logger().Infof("relate tasks success")
+
 	i.Ctx = currentCtx
 	return nil
 }
