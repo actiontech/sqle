@@ -15,10 +15,6 @@ namespace SqlserverProtoServer {
 
             switch (statement) {
                 // ddl
-                case CreateDatabaseStatement createDatabaseStatement:
-                    isDDL = true;
-                    return GenerateCreateDatabaseRollbackSql(context, createDatabaseStatement);
-
                 case CreateTableStatement createTableStatement:
                     isDDL = true;
                     return GenerateCreateTableRollbackSql(context, createTableStatement);
@@ -60,17 +56,12 @@ namespace SqlserverProtoServer {
             return "";
         }
 
-        public String GenerateCreateDatabaseRollbackSql(SqlserverContext context, CreateDatabaseStatement statement) {
-            return String.Format("DROP DATABASE {0};", statement.DatabaseName.Value);
-        }
-
         public String GenerateCreateTableRollbackSql(SqlserverContext context, CreateTableStatement statement) {
             context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(statement.SchemaObjectName, out String databaseName, out String schemaName, out String tableName);
             return String.Format("DROP TABLE {0}.{1}.{2};", databaseName, schemaName, tableName);
         }
 
         public String GetCreateTableSql(SqlserverContext context, String databaseName, String schemaName, String tableName) {
-            String connectionString = context.GetConnectionString();
             var sqlLines = new List<String>();
 
             // columns
@@ -319,7 +310,7 @@ namespace SqlserverProtoServer {
         }
 
         public String GenerateInsertRollbackSql(SqlserverContext context, InsertStatement statement) {
-            var rollbackSql = "";
+            var rollbackSqls = new List<String>();
             var insertSpecification = statement.InsertSpecification;
             if (insertSpecification.InsertSource is ValuesInsertSource) {
                 var tableReference = insertSpecification.Target as NamedTableReference;
@@ -375,11 +366,11 @@ namespace SqlserverProtoServer {
                     if (whereCondition.Count != primaryKeys.Count) {
                         return "";
                     }
-                    rollbackSql += String.Format("DELETE FROM {0}.{1}.{2} WHERE {3};\n", databaseName, schemaName, tableName, String.Join(" AND ", whereCondition));
+                    rollbackSqls.Add(String.Format("DELETE FROM {0}.{1}.{2} WHERE {3};", databaseName, schemaName, tableName, String.Join(" AND ", whereCondition)));
                 }
             }
 
-            return rollbackSql;
+            return String.Join('\n', rollbackSqls);
         }
 
         public String GenerateDeleteRollbackSql(SqlserverContext context, DeleteStatement statement) {
