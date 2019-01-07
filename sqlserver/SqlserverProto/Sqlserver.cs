@@ -31,26 +31,29 @@ namespace SqlserverProto {
             "ZXJQcm90by5TcWwiewoNU3Fsc2VydmVyTWV0YRIMCgRVc2VyGAEgASgJEhAK",
             "CFBhc3N3b3JkGAIgASgJEgwKBEhvc3QYAyABKAkSDAoEUG9ydBgEIAEoCRIX",
             "Cg9DdXJyZW50RGF0YWJhc2UYBSABKAkSFQoNQ3VycmVudFNjaGVtYRgGIAEo",
-            "CSJ1CgtBZHZpc2VJbnB1dBIPCgdWZXJzaW9uGAEgASgJEgwKBFNxbHMYAiAD",
-            "KAkSEQoJUnVsZU5hbWVzGAMgAygJEjQKDVNxbHNlcnZlck1ldGEYBCABKAsy",
-            "HS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2ZXJNZXRhIpgBCgxBZHZpc2VPdXRw",
-            "dXQSOgoHUmVzdWx0cxgBIAMoCzIpLlNxbHNlcnZlclByb3RvLkFkdmlzZU91",
-            "dHB1dC5SZXN1bHRzRW50cnkaTAoMUmVzdWx0c0VudHJ5EgsKA2tleRgBIAEo",
-            "CRIrCgV2YWx1ZRgCIAEoCzIcLlNxbHNlcnZlclByb3RvLkFkdmlzZVJlc3Vs",
-            "dDoCOAEiQAoMQWR2aXNlUmVzdWx0EhMKC0FkdmlzZUxldmVsGAEgASgJEhsK",
-            "E0FkdmlzZVJlc3VsdE1lc3NhZ2UYAiABKAkiJAoGQ29uZmlnEhoKEkRNTFJv",
-            "bGxiYWNrTWF4Um93cxgBIAEoAyKbAQoUR2V0Um9sbGJhY2tTcWxzSW5wdXQS",
-            "DwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIgAygJEjQKDVNxbHNlcnZlck1l",
-            "dGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2ZXJNZXRhEi4KDlJv",
-            "bGxiYWNrQ29uZmlnGAQgASgLMhYuU3Fsc2VydmVyUHJvdG8uQ29uZmlnIkIK",
-            "FUdldFJvbGxiYWNrU3Fsc091dHB1dBIpCgxSb2xsYmFja1NxbHMYASADKAsy",
-            "Ey5TcWxzZXJ2ZXJQcm90by5TcWwyjgIKEFNxbHNlcnZlclNlcnZpY2USUQoM",
-            "R2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxzSW5wdXQa",
-            "Hy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQiABJFCgZBZHZpc2US",
-            "Gy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJbnB1dBocLlNxbHNlcnZlclByb3Rv",
-            "LkFkdmlzZU91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3FscxIkLlNxbHNlcnZl",
-            "clByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fsc2VydmVyUHJvdG8u",
-            "R2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
+            "CSKpAQoLQWR2aXNlSW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIg",
+            "AygJEhEKCVJ1bGVOYW1lcxgDIAMoCRI0Cg1TcWxzZXJ2ZXJNZXRhGAQgASgL",
+            "Mh0uU3Fsc2VydmVyUHJvdG8uU3Fsc2VydmVyTWV0YRIyCg5ERExDb250ZXh0",
+            "U3FscxgFIAMoCzIaLlNxbHNlcnZlclByb3RvLkRETENvbnRleHQiGgoKRERM",
+            "Q29udGV4dBIMCgRTcWxzGAEgAygJIrUBCgxBZHZpc2VPdXRwdXQSOgoHUmVz",
+            "dWx0cxgBIAMoCzIpLlNxbHNlcnZlclByb3RvLkFkdmlzZU91dHB1dC5SZXN1",
+            "bHRzRW50cnkSGwoTQmFzZVZhbGlkYXRvckZhaWxlZBgCIAEoCBpMCgxSZXN1",
+            "bHRzRW50cnkSCwoDa2V5GAEgASgJEisKBXZhbHVlGAIgASgLMhwuU3Fsc2Vy",
+            "dmVyUHJvdG8uQWR2aXNlUmVzdWx0OgI4ASJACgxBZHZpc2VSZXN1bHQSEwoL",
+            "QWR2aXNlTGV2ZWwYASABKAkSGwoTQWR2aXNlUmVzdWx0TWVzc2FnZRgCIAEo",
+            "CSIkCgZDb25maWcSGgoSRE1MUm9sbGJhY2tNYXhSb3dzGAEgASgDIpsBChRH",
+            "ZXRSb2xsYmFja1NxbHNJbnB1dBIPCgdWZXJzaW9uGAEgASgJEgwKBFNxbHMY",
+            "AiADKAkSNAoNU3Fsc2VydmVyTWV0YRgDIAEoCzIdLlNxbHNlcnZlclByb3Rv",
+            "LlNxbHNlcnZlck1ldGESLgoOUm9sbGJhY2tDb25maWcYBCABKAsyFi5TcWxz",
+            "ZXJ2ZXJQcm90by5Db25maWciQgoVR2V0Um9sbGJhY2tTcWxzT3V0cHV0EikK",
+            "DFJvbGxiYWNrU3FscxgBIAMoCzITLlNxbHNlcnZlclByb3RvLlNxbDKOAgoQ",
+            "U3Fsc2VydmVyU2VydmljZRJRCgxHZXRTcGxpdFNxbHMSHi5TcWxzZXJ2ZXJQ",
+            "cm90by5TcGxpdFNxbHNJbnB1dBofLlNxbHNlcnZlclByb3RvLlNwbGl0U3Fs",
+            "c091dHB1dCIAEkUKBkFkdmlzZRIbLlNxbHNlcnZlclByb3RvLkFkdmlzZUlu",
+            "cHV0GhwuU3Fsc2VydmVyUHJvdG8uQWR2aXNlT3V0cHV0IgASYAoPR2V0Um9s",
+            "bGJhY2tTcWxzEiQuU3Fsc2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzSW5w",
+            "dXQaJS5TcWxzZXJ2ZXJQcm90by5HZXRSb2xsYmFja1NxbHNPdXRwdXQiAGIG",
+            "cHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -58,8 +61,9 @@ namespace SqlserverProto {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Sql), global::SqlserverProto.Sql.Parser, new[]{ "Sql_", "IsDDL", "IsDML" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsOutput), global::SqlserverProto.SplitSqlsOutput.Parser, new[]{ "SplitSqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SqlserverMeta), global::SqlserverProto.SqlserverMeta.Parser, new[]{ "User", "Password", "Host", "Port", "CurrentDatabase", "CurrentSchema" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results" }, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta", "DDLContextSqls" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.DDLContext), global::SqlserverProto.DDLContext.Parser, new[]{ "Sqls" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results", "BaseValidatorFailed" }, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Config), global::SqlserverProto.Config.Parser, new[]{ "DMLRollbackMaxRows" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta", "RollbackConfig" }, null, null, null),
@@ -831,6 +835,7 @@ namespace SqlserverProto {
       sqls_ = other.sqls_.Clone();
       ruleNames_ = other.ruleNames_.Clone();
       sqlserverMeta_ = other.sqlserverMeta_ != null ? other.sqlserverMeta_.Clone() : null;
+      dDLContextSqls_ = other.dDLContextSqls_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -881,6 +886,16 @@ namespace SqlserverProto {
       }
     }
 
+    /// <summary>Field number for the "DDLContextSqls" field.</summary>
+    public const int DDLContextSqlsFieldNumber = 5;
+    private static readonly pb::FieldCodec<global::SqlserverProto.DDLContext> _repeated_dDLContextSqls_codec
+        = pb::FieldCodec.ForMessage(42, global::SqlserverProto.DDLContext.Parser);
+    private readonly pbc::RepeatedField<global::SqlserverProto.DDLContext> dDLContextSqls_ = new pbc::RepeatedField<global::SqlserverProto.DDLContext>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public pbc::RepeatedField<global::SqlserverProto.DDLContext> DDLContextSqls {
+      get { return dDLContextSqls_; }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as AdviseInput);
@@ -898,6 +913,7 @@ namespace SqlserverProto {
       if(!sqls_.Equals(other.sqls_)) return false;
       if(!ruleNames_.Equals(other.ruleNames_)) return false;
       if (!object.Equals(SqlserverMeta, other.SqlserverMeta)) return false;
+      if(!dDLContextSqls_.Equals(other.dDLContextSqls_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -908,6 +924,7 @@ namespace SqlserverProto {
       hash ^= sqls_.GetHashCode();
       hash ^= ruleNames_.GetHashCode();
       if (sqlserverMeta_ != null) hash ^= SqlserverMeta.GetHashCode();
+      hash ^= dDLContextSqls_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -931,6 +948,7 @@ namespace SqlserverProto {
         output.WriteRawTag(34);
         output.WriteMessage(SqlserverMeta);
       }
+      dDLContextSqls_.WriteTo(output, _repeated_dDLContextSqls_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -947,6 +965,7 @@ namespace SqlserverProto {
       if (sqlserverMeta_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(SqlserverMeta);
       }
+      size += dDLContextSqls_.CalculateSize(_repeated_dDLContextSqls_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -969,6 +988,7 @@ namespace SqlserverProto {
         }
         SqlserverMeta.MergeFrom(other.SqlserverMeta);
       }
+      dDLContextSqls_.Add(other.dDLContextSqls_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -999,6 +1019,131 @@ namespace SqlserverProto {
             input.ReadMessage(sqlserverMeta_);
             break;
           }
+          case 42: {
+            dDLContextSqls_.AddEntriesFrom(input, _repeated_dDLContextSqls_codec);
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
+  public sealed partial class DDLContext : pb::IMessage<DDLContext> {
+    private static readonly pb::MessageParser<DDLContext> _parser = new pb::MessageParser<DDLContext>(() => new DDLContext());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<DDLContext> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[5]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public DDLContext() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public DDLContext(DDLContext other) : this() {
+      sqls_ = other.sqls_.Clone();
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public DDLContext Clone() {
+      return new DDLContext(this);
+    }
+
+    /// <summary>Field number for the "Sqls" field.</summary>
+    public const int SqlsFieldNumber = 1;
+    private static readonly pb::FieldCodec<string> _repeated_sqls_codec
+        = pb::FieldCodec.ForString(10);
+    private readonly pbc::RepeatedField<string> sqls_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public pbc::RepeatedField<string> Sqls {
+      get { return sqls_; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as DDLContext);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(DDLContext other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if(!sqls_.Equals(other.sqls_)) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      hash ^= sqls_.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      sqls_.WriteTo(output, _repeated_sqls_codec);
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      size += sqls_.CalculateSize(_repeated_sqls_codec);
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(DDLContext other) {
+      if (other == null) {
+        return;
+      }
+      sqls_.Add(other.sqls_);
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            sqls_.AddEntriesFrom(input, _repeated_sqls_codec);
+            break;
+          }
         }
       }
     }
@@ -1013,7 +1158,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[5]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1031,6 +1176,7 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public AdviseOutput(AdviseOutput other) : this() {
       results_ = other.results_.Clone();
+      baseValidatorFailed_ = other.baseValidatorFailed_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1049,6 +1195,17 @@ namespace SqlserverProto {
       get { return results_; }
     }
 
+    /// <summary>Field number for the "BaseValidatorFailed" field.</summary>
+    public const int BaseValidatorFailedFieldNumber = 2;
+    private bool baseValidatorFailed_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool BaseValidatorFailed {
+      get { return baseValidatorFailed_; }
+      set {
+        baseValidatorFailed_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as AdviseOutput);
@@ -1063,6 +1220,7 @@ namespace SqlserverProto {
         return true;
       }
       if (!Results.Equals(other.Results)) return false;
+      if (BaseValidatorFailed != other.BaseValidatorFailed) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1070,6 +1228,7 @@ namespace SqlserverProto {
     public override int GetHashCode() {
       int hash = 1;
       hash ^= Results.GetHashCode();
+      if (BaseValidatorFailed != false) hash ^= BaseValidatorFailed.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1084,6 +1243,10 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
       results_.WriteTo(output, _map_results_codec);
+      if (BaseValidatorFailed != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(BaseValidatorFailed);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1093,6 +1256,9 @@ namespace SqlserverProto {
     public int CalculateSize() {
       int size = 0;
       size += results_.CalculateSize(_map_results_codec);
+      if (BaseValidatorFailed != false) {
+        size += 1 + 1;
+      }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -1105,6 +1271,9 @@ namespace SqlserverProto {
         return;
       }
       results_.Add(other.results_);
+      if (other.BaseValidatorFailed != false) {
+        BaseValidatorFailed = other.BaseValidatorFailed;
+      }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -1118,6 +1287,10 @@ namespace SqlserverProto {
             break;
           case 10: {
             results_.AddEntriesFrom(input, _map_results_codec);
+            break;
+          }
+          case 16: {
+            BaseValidatorFailed = input.ReadBool();
             break;
           }
         }
@@ -1134,7 +1307,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[6]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[7]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1291,7 +1464,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[7]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[8]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1420,7 +1593,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[8]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[9]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1637,7 +1810,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[9]; }
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[10]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
