@@ -89,6 +89,10 @@ func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta 
 		RuleNames:     ruleNames,
 		SqlserverMeta: meta,
 	})
+	if err != nil {
+		return errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
+	}
+
 	results := out.GetResults()
 	if len(results) != len(commitSqls) {
 		return errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("don't match sql advise result"))
@@ -103,7 +107,7 @@ func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta 
 		commitSql.InspectResult = result.AdviseResultMessage
 		commitSql.InspectStatus = model.TASK_ACTION_DONE
 	}
-	return errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
+	return nil
 }
 
 func (c *Client) GenerateAllRollbackSql(commitSqls []*model.CommitSql, config *SqlserverProto.Config, meta *SqlserverProto.SqlserverMeta) ([]string, error) {

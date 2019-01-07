@@ -8,6 +8,10 @@ namespace SqlserverProtoServer {
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool HasDefaultValueForNoneColumnBlob(IList<ColumnDefinition> columnDefinitions) {
+            if (columnDefinitions == null) {
+                return true;
+            }
+
             foreach (var columnDefinition in columnDefinitions) {
                 if (IsBlobType(columnDefinition.DataType) || columnDefinition.IdentityOptions != null) {
                     continue;
@@ -45,6 +49,10 @@ namespace SqlserverProtoServer {
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool HasDefaultValueForColumnTimestamp(IList<ColumnDefinition> columnDefinitions) {
+            if (columnDefinitions == null) {
+                return true;
+            }
+
             var timeTypes = new List<String>() {
                 "DATE", "DATETIME", "DATETIME2", "DATETIMEOFFSET", "SMALLDATETIME", "TIME",
             };
@@ -83,6 +91,10 @@ namespace SqlserverProtoServer {
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool NullableForColumnBlob(IList<ColumnDefinition> columnDefinitions) {
+            if (columnDefinitions == null) {
+                return true;
+            }
+
             var nullable = true;
             foreach (var columnDefinition in columnDefinitions) {
                 if (IsBlobType(columnDefinition.DataType)) {
@@ -124,6 +136,10 @@ namespace SqlserverProtoServer {
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool DefaultIsNullForColumnBlob(IList<ColumnDefinition> columnDefinitions) {
+            if (columnDefinitions == null) {
+                return true;
+            }
+
             var defaultIsNull = true;
             foreach (var columnDefinition in columnDefinitions) {
                 if (IsBlobType(columnDefinition.DataType) && columnDefinition.DefaultConstraint != null) {
