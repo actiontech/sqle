@@ -181,7 +181,7 @@ namespace SqlserverProtoServer {
                             if (!DefaultRules.RuleValidators.ContainsKey(ruleName)) {
                                 continue;
                             }
-                            var ruleValidator = DefaultRules.RuleValidators[ruleName];
+                            var ruleValidator = new RuleValidatorDecorator(ruleName);
                             ruleValidator.Check(ruleValidatorContext, statement);
 
                             if (ruleValidatorContext.AdviseResultContext.GetBaseRuleStatus() == AdviseResultContext.BASE_RULE_FAILED) {
