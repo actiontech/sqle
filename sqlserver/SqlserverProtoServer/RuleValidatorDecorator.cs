@@ -4,7 +4,7 @@ using NLog;
 using System.Collections.Generic;
 
 namespace SqlserverProtoServer {
-    public class BaseRuleValidator : RuleValidator {
+    public class RuleValidatorDecorator : RuleValidator {
         protected RuleValidator Validator;
 
         public override void Check(SqlserverContext context, TSqlStatement statement) {
@@ -822,7 +822,7 @@ namespace SqlserverProtoServer {
             return ret;
         }
 
-        public BaseRuleValidator(String ruleName) {
+        public RuleValidatorDecorator(String ruleName) {
             if (DefaultRules.RuleValidators.ContainsKey(ruleName)) {
                 Validator = DefaultRules.RuleValidators[ruleName];
             }
