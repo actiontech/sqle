@@ -254,7 +254,7 @@ namespace SqlserverProtoServer {
                 new TopConditionRuleValidator(
                     DML_CHECK_WITH_LIMIT,
                     "delete/update 语句不能有limit/top条件",
-                    "delete/update 语句不能有limit/top条件",
+                    "delete/update 语句不能有top条件",
                     RULE_LEVEL.ERROR
                 )
             }
