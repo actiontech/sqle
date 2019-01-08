@@ -12,7 +12,6 @@ import (
 )
 
 func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
-	defer i.closeDbConn()
 	i.Logger().Info("start generate rollback sql")
 
 	rollbackSqls := []string{}
