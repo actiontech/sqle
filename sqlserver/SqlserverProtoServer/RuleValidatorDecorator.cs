@@ -118,6 +118,9 @@ namespace SqlserverProtoServer {
                 var pkCounter = 0;
                 foreach (var columnDefinition in statement.Definition.ColumnDefinitions) {
                     columnNames.Add(columnDefinition.ColumnIdentifier.Value);
+                    if (columnDefinition.Constraints == null) {
+                        continue;
+                    }
                     foreach (var columnConstraint in columnDefinition.Constraints) {
                         if (columnConstraint is UniqueConstraintDefinition) {
                             var uniqueConstraintDefinition = columnConstraint as UniqueConstraintDefinition;
@@ -138,12 +141,14 @@ namespace SqlserverProtoServer {
                 // no duplicate index
                 var indexNames = new List<String>();
                 var indexColumnNames = new List<String>();
-                foreach (var indexDefinition in statement.Definition.Indexes) {
-                    indexNames.Add(indexDefinition.Name.Value);
-                    foreach (var column in indexDefinition.Columns) {
-                        ColumnReferenceExpression columnReferenceExpression = column.Column;
-                        foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
-                            indexColumnNames.Add(identifier.Value);
+                if (statement.Definition.Indexes != null) {
+                    foreach (var indexDefinition in statement.Definition.Indexes) {
+                        indexNames.Add(indexDefinition.Name.Value);
+                        foreach (var column in indexDefinition.Columns) {
+                            ColumnReferenceExpression columnReferenceExpression = column.Column;
+                            foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                                indexColumnNames.Add(identifier.Value);
+                            }
                         }
                     }
                 }
@@ -171,17 +176,19 @@ namespace SqlserverProtoServer {
                 // no duplicate constaint
                 var constraintNames = new List<String>();
                 var constraintColumnNames = new List<String>();
-                foreach (var constaintDefinition in statement.Definition.TableConstraints) {
-                    constraintNames.Add(constaintDefinition.ConstraintIdentifier.Value);
-                    if (constaintDefinition is UniqueConstraintDefinition) {
-                        var uniqueConstaintDefinition = constaintDefinition as UniqueConstraintDefinition;
-                        if (uniqueConstaintDefinition.IsPrimaryKey) {
-                            pkCounter += 1;
-                        }
-                        foreach (var column in uniqueConstaintDefinition.Columns) {
-                            ColumnReferenceExpression columnReferenceExpression = column.Column;
-                            foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
-                                constraintColumnNames.Add(identifier.Value);
+                if (statement.Definition.TableConstraints != null) {
+                    foreach (var constaintDefinition in statement.Definition.TableConstraints) {
+                        constraintNames.Add(constaintDefinition.ConstraintIdentifier.Value);
+                        if (constaintDefinition is UniqueConstraintDefinition) {
+                            var uniqueConstaintDefinition = constaintDefinition as UniqueConstraintDefinition;
+                            if (uniqueConstaintDefinition.IsPrimaryKey) {
+                                pkCounter += 1;
+                            }
+                            foreach (var column in uniqueConstaintDefinition.Columns) {
+                                ColumnReferenceExpression columnReferenceExpression = column.Column;
+                                foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                                    constraintColumnNames.Add(identifier.Value);
+                                }
                             }
                         }
                     }

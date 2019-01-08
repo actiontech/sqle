@@ -775,6 +775,9 @@ namespace SqlserverProtoServer {
         }
 
         public void SetTableConstraintDefinitions(TableDefinition definition, String databaseName, String schemaName, String tableName) {
+            if (definition == null || definition.TableConstraints == null) {
+                return;
+            }
             var constraintDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
             foreach (var tableConstraint in definition.TableConstraints) {
                 var constraintName = tableConstraint.ConstraintIdentifier.Value;
@@ -875,6 +878,10 @@ namespace SqlserverProtoServer {
         }
 
         public void SetTableIndexDefinitions(TableDefinition definition, String databaseName, String schemaName, String tableName) {
+            if (definition == null || definition.Indexes == null) {
+                return;
+            }
+
             var indexDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
             foreach (var index in definition.Indexes) {
                 var indexName = index.Name.Value;
@@ -1129,6 +1136,9 @@ namespace SqlserverProtoServer {
 
                     var primaryKeys = new List<String>();
                     foreach (var columnDefinition in createTableStatement.Definition.ColumnDefinitions) {
+                        if (columnDefinition.Constraints == null) {
+                            continue;
+                        }
                         foreach (var columnConstraint in columnDefinition.Constraints) {
                             if (columnConstraint is UniqueConstraintDefinition) {
                                 if ((columnConstraint as UniqueConstraintDefinition).IsPrimaryKey) {
@@ -1137,13 +1147,15 @@ namespace SqlserverProtoServer {
                             }
                         }
                     }
-                    foreach (var tableConstraint in createTableStatement.Definition.TableConstraints) {
-                        if (tableConstraint is UniqueConstraintDefinition) {
-                            var uniqueConstraint = tableConstraint as UniqueConstraintDefinition;
-                            if (uniqueConstraint.IsPrimaryKey) {
-                                foreach (var column in uniqueConstraint.Columns) {
-                                    foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
-                                        primaryKeys.Add(identifier.Value);
+                    if (createTableStatement.Definition.TableConstraints != null) {
+                        foreach (var tableConstraint in createTableStatement.Definition.TableConstraints) {
+                            if (tableConstraint is UniqueConstraintDefinition) {
+                                var uniqueConstraint = tableConstraint as UniqueConstraintDefinition;
+                                if (uniqueConstraint.IsPrimaryKey) {
+                                    foreach (var column in uniqueConstraint.Columns) {
+                                        foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
+                                            primaryKeys.Add(identifier.Value);
+                                        }
                                     }
                                 }
                             }

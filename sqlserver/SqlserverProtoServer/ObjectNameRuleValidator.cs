@@ -8,6 +8,10 @@ namespace SqlserverProtoServer {
         public List<String> Names;
 
         public List<String> GetNamesFromConstraints(List<String> names, IList<ConstraintDefinition> constraints) {
+            if (names == null || constraints == null) {
+                return names;
+            }
+
             foreach (var constraint in constraints) {
                 if (constraint.ConstraintIdentifier != null) {
                     names.Add(constraint.ConstraintIdentifier.Value);
@@ -26,8 +30,10 @@ namespace SqlserverProtoServer {
 
             // index names
             var indexes = tableDefinition.Indexes;
-            foreach (var index in indexes) {
-                names.Add(index.Name.Value);
+            if (indexes != null) {
+                foreach (var index in indexes) {
+                    names.Add(index.Name.Value);
+                }
             }
 
             // constraint

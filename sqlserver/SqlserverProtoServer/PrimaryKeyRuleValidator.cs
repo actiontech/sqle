@@ -33,11 +33,13 @@ namespace SqlserverProtoServer {
                         col2 INT NOT NULL,
                         CONSTRAINT PK_constraint PRIMARY KEY CLUSTERED(col1, col2) WITH (IGNORE_DUP_KEY = OFF))
                 */
-                foreach (var tableConstraint in tableDefinition.TableConstraints) {
-                    if (tableConstraint is UniqueConstraintDefinition) {
-                        UniqueConstraintDefinition uniqueConstraintDefinition = tableConstraint as UniqueConstraintDefinition;
-                        if (uniqueConstraintDefinition.IsPrimaryKey) {
-                            hasPrimaryKey = true;
+                if (tableDefinition.TableConstraints != null) {
+                    foreach (var tableConstraint in tableDefinition.TableConstraints) {
+                        if (tableConstraint is UniqueConstraintDefinition) {
+                            UniqueConstraintDefinition uniqueConstraintDefinition = tableConstraint as UniqueConstraintDefinition;
+                            if (uniqueConstraintDefinition.IsPrimaryKey) {
+                                hasPrimaryKey = true;
+                            }
                         }
                     }
                 }
@@ -69,6 +71,10 @@ namespace SqlserverProtoServer {
                 */
             foreach (var columnDefinition in tableDefinition.ColumnDefinitions) {
                 bool isPrimaryColumn = false;
+                if (columnDefinition.Constraints == null) {
+                    continue;
+                }
+
                 foreach (var constraint in columnDefinition.Constraints) {
                     if (constraint is UniqueConstraintDefinition) {
                         UniqueConstraintDefinition uniqueConstraintDefinition = constraint as UniqueConstraintDefinition;
