@@ -8,7 +8,6 @@ import (
 )
 
 func (i *Inspect) CommitAll() error {
-	defer i.closeDbConn()
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {

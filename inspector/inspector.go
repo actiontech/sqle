@@ -126,6 +126,8 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 }
 
 func (i *Inspect) Do() error {
+	defer i.closeDbConn()
+
 	if i.SqlType() == model.SQL_TYPE_MULTI {
 		i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 		return errors.SQL_STMT_CONFLICT_ERROR

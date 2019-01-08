@@ -8,7 +8,6 @@ import (
 )
 
 func (i *Inspect) Advise(rules []model.Rule) error {
-	defer i.closeDbConn()
 	i.Logger().Info("start advise sql")
 
 	err := i.advise(rules)
