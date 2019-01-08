@@ -150,11 +150,13 @@ namespace SqlserverProtoServer {
             var contextSqls = request.DDLContextSqls;
             var contextStart = 0;
             var logger = LogManager.GetCurrentClassLogger();
+            logger.Info("advise sqls:{0}\nrules:{1}\n", String.Join("\n", sqls), String.Join("\n", ruleNames));
 
         Try:
             var ruleValidatorContext = new SqlserverContext(request.SqlserverMeta);
             try {
                 for (var index = contextStart; index < contextSqls.Count; index++) {
+                    logger.Info("context {0} sqls: {1}\n", index, String.Join("\n", contextSqls[index].Sqls));
                     foreach (var sql in contextSqls[index].Sqls) {
                         var statementList = ParseStatementList(version, sql);
                         foreach (var statement in statementList.Statements) {
@@ -216,6 +218,7 @@ namespace SqlserverProtoServer {
             var sqls = request.Sqls;
             var rollbackSqlContext = new SqlserverContext(request.SqlserverMeta, request.RollbackConfig);
             var logger = LogManager.GetCurrentClassLogger();
+            logger.Info("getrollback sqls:{0}\n", String.Join("\n", sqls));
 
             foreach (var sql in sqls) {
                 try {

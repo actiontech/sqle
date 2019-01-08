@@ -127,6 +127,7 @@ namespace SqlserverProtoServer {
                         }
                     }
                 }
+                logger.Info("create table columns:{0}", String.Join(",", columnNames));
                 var duplicatedColumns = GetDuplicatedNames(columnNames);
                 if (duplicatedColumns.Count > 0) {
                     logger.Info("table {0} has duplicated columns: {1}", tableName, String.Join(",", duplicatedColumns));
@@ -146,6 +147,7 @@ namespace SqlserverProtoServer {
                         }
                     }
                 }
+                logger.Info("create table indexes:{0}", String.Join(",", indexNames));
                 var duplicatedIndexes = GetDuplicatedNames(indexNames);
                 if (duplicatedIndexes.Count > 0) {
                     logger.Info("table {0} has duplicated index: {1}", tableName, String.Join(",", duplicatedIndexes));
@@ -184,6 +186,7 @@ namespace SqlserverProtoServer {
                         }
                     }
                 }
+                logger.Info("create table constraints:{0}, constraint columns:{1}", String.Join(",", constraintNames), String.Join(",", constraintColumnNames));
                 var duplicatedConstaints = GetDuplicatedNames(constraintNames);
                 if (duplicatedConstaints.Count > 0) {
                     logger.Info("table {0} has duplicated constaint: {1}", tableName, String.Join(",", duplicatedConstaints));
@@ -263,6 +266,7 @@ namespace SqlserverProtoServer {
                     if (definition.ColumnDefinitions.Count > 0) {
                         foreach (var columnDefinition in definition.ColumnDefinitions) {
                             var addColumnName = columnDefinition.ColumnIdentifier.Value;
+                            logger.Info("addColumnName:{0}", addColumnName);
                             if (addColumnDefinitions.ContainsKey(addColumnName)) {
                                 needNotExistsColumnName.Add(addColumnName);
                             }
@@ -273,12 +277,14 @@ namespace SqlserverProtoServer {
                         var addIndexDefinitions = context.GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
                         foreach (var index in definition.Indexes) {
                             var addIndexName = index.Name.Value;
+                            logger.Info("addIndexName:{0}", addIndexName);
                             if (addIndexDefinitions.ContainsKey(addIndexName)) {
                                 needNotExistsIndexName.Add(addIndexName);
                             }
 
                             foreach (var column in index.Columns) {
                                 foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
+                                    logger.Info("index column:{0}", identifier.Value);
                                     if (!addColumnDefinitions.ContainsKey(identifier.Value)) {
                                         needExistsColumnName.Add(identifier.Value);
                                     }
@@ -291,6 +297,7 @@ namespace SqlserverProtoServer {
                         var constraintDefinitions = context.GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName);
                         foreach (var tableConstaint in definition.TableConstraints) {
                             var constaintName = tableConstaint.ConstraintIdentifier.Value;
+                            logger.Info("constraint name:{0}", constaintName);
                             if (constraintDefinitions.ContainsKey(constaintName)) {
                                 needNotExistsConstaintName.Add(constaintName);
                             }
@@ -303,6 +310,7 @@ namespace SqlserverProtoServer {
 
                                 foreach (var column in uniqueConstaint.Columns) {
                                     foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
+                                        logger.Info("constraint column:{0}", identifier.Value);
                                         if (!addColumnDefinitions.ContainsKey(identifier.Value)) {
                                             needExistsColumnName.Add(identifier.Value);
                                         }
@@ -326,6 +334,7 @@ namespace SqlserverProtoServer {
                 case AlterTableAlterColumnStatement alterColumnStatement:
                     var columnName = alterColumnStatement.ColumnIdentifier.Value;
                     var alterColumnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
+                    logger.Info("alert column:{0}", columnName);
                     if (!alterColumnDefinitions.ContainsKey(columnName)) {
                         needNotExistsColumnName.Add(columnName);
                     }
@@ -334,6 +343,7 @@ namespace SqlserverProtoServer {
 
                 case AlterTableAlterIndexStatement alterIndexStatement:
                     var indexName = alterIndexStatement.IndexIdentifier.Value;
+                    logger.Info("alert index:{0}", indexName);
                     var alterIndexDefinitions = context.GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
                     if (!alterIndexDefinitions.ContainsKey(indexName)) {
                         needExistsIndexName.Add(indexName);
@@ -346,14 +356,17 @@ namespace SqlserverProtoServer {
                         if (!dropTableElement.IsIfExists) {
                             switch (dropTableElement.TableElementType) {
                                 case TableElementType.Column:
+                                    logger.Info("drop column:{0}", dropTableElement.Name.Value);
                                     needExistsColumnName.Add(dropTableElement.Name.Value);
                                     break;
 
                                 case TableElementType.Constraint:
+                                    logger.Info("drop constraint:{0}", dropTableElement.Name.Value);
                                     needExistsConstraintName.Add(dropTableElement.Name.Value);
                                     break;
 
                                 case TableElementType.Index:
+                                    logger.Info("drop index:{0}", dropTableElement.Name.Value);
                                     needExistsIndexName.Add(dropTableElement.Name.Value);
                                     break;
                             }
@@ -516,11 +529,13 @@ namespace SqlserverProtoServer {
                 isInvalid = true;
                 logger.Info("index {0} should exist", statement.Name.Value);
             }
+            logger.Info("create index:{0}", statement.Name.Value);
 
             var columnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
             var needExistsColumns = new List<String>();
             foreach (var column in statement.Columns) {
                 foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
+                    logger.Info("create index column:{0}", identifier.Value);
                     if (!columnDefinitions.ContainsKey(identifier.Value)) {
                         needExistsColumns.Add(identifier.Value);
                     }
@@ -545,6 +560,7 @@ namespace SqlserverProtoServer {
             foreach (var dropIndexClauseBase in statement.DropIndexClauses) {
                 if (dropIndexClauseBase is DropIndexClause) {
                     var dropIndexCaluse = dropIndexClauseBase as DropIndexClause;
+                    logger.Info("drop index:{0}", dropIndexCaluse.Index.Value);
                     var schemaObject = dropIndexCaluse.Object;
                     context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(schemaObject, out String databaseName, out String schemaName, out String tableName);
                     // database should exist
@@ -627,6 +643,7 @@ namespace SqlserverProtoServer {
                             }
                         }
                     }
+                    logger.Info("insert columns:{0}", String.Join(",", insertColumns));
 
                     if (needExistsColumns.Count > 0) {
                         context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.COLUMN_NOT_EXIST_MSG, String.Join(",", needExistsColumns)));
@@ -693,6 +710,7 @@ namespace SqlserverProtoServer {
                         }
                     }
                 }
+                logger.Info("update columns:{0}", String.Join(",", updateColumns));
 
                 if (needExistsColumns.Count > 0) {
                     context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.COLUMN_NOT_EXIST_MSG, String.Join(",", needExistsColumns)));
