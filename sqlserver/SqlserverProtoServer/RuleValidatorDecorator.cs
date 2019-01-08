@@ -643,6 +643,11 @@ namespace SqlserverProtoServer {
                             }
                         }
                     }
+                    if (insertColumns.Count == 0) {
+                        foreach (var columnDefinition in columnDefinitions) {
+                            insertColumns.Add(columnDefinition.Key);
+                        }
+                    }
                     logger.Info("insert columns:{0}", String.Join(",", insertColumns));
 
                     if (needExistsColumns.Count > 0) {
@@ -661,10 +666,12 @@ namespace SqlserverProtoServer {
                     if (statement.InsertSpecification.InsertSource is ValuesInsertSource) {
                         var valuesInsertSource = statement.InsertSpecification.InsertSource as ValuesInsertSource;
                         foreach (var rowValue in valuesInsertSource.RowValues) {
-                            context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, DefaultRules.NOT_MATCH_VALUES_AND_COLUMNS);
-                            logger.Info("column not match values for {0}", tableName);
-                            isInvalid = true;
-                            break;
+                            if (rowValue.ColumnValues.Count != insertColumns.Count) {
+                                context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, DefaultRules.NOT_MATCH_VALUES_AND_COLUMNS);
+                                logger.Info("column not match values for {0}", tableName);
+                                isInvalid = true;
+                                break;
+                            }
                         }
                     }
                 }

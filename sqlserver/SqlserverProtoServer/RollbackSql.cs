@@ -88,7 +88,7 @@ namespace SqlserverProtoServer {
             if (sqlLines.Count > 0) {
                 return String.Format("CREATE TABLE {0}.{1}.{2} ({3});", databaseName, schemaName, tableName, String.Join(',', sqlLines));
             }
-
+            logger.Info("table {0}.{1}.{2} definition not found", databaseName, schemaName, tableName);
             return "";
         }
 
