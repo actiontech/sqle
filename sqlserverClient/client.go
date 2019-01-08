@@ -73,21 +73,35 @@ func (c *Client) ParseSql(sql string) ([]ast.Node, error) {
 	return stmts, errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 }
 
-func (c *Client) Advise(commitSqls []*model.CommitSql, rules []model.Rule, meta *SqlserverProto.SqlserverMeta) error {
+func (c *Client) Advise(relatedTasks []model.Task, commitSqls []*model.CommitSql, rules []model.Rule, meta *SqlserverProto.SqlserverMeta) error {
 	sqls := []string{}
-	ruleNames := []string{}
 	for _, commitSql := range commitSqls {
 		sqls = append(sqls, commitSql.Content)
 	}
 
+	ruleNames := []string{}
 	for _, rule := range rules {
 		ruleNames = append(ruleNames, rule.Name)
 	}
+
+	ddlContextSqls := []*SqlserverProto.DDLContext{}
+	for _, task := range relatedTasks {
+		sqls := []string{}
+		for _, commitSql := range task.CommitSqls {
+			sqls = append(sqls, commitSql.Content)
+		}
+		ddlContextSql := &SqlserverProto.DDLContext{
+			Sqls: sqls,
+		}
+		ddlContextSqls = append(ddlContextSqls, ddlContextSql)
+	}
+
 	out, err := c.client.Advise(context.Background(), &SqlserverProto.AdviseInput{
-		Version:       c.version,
-		Sqls:          sqls,
-		RuleNames:     ruleNames,
-		SqlserverMeta: meta,
+		Version:        c.version,
+		Sqls:           sqls,
+		RuleNames:      ruleNames,
+		SqlserverMeta:  meta,
+		DDLContextSqls: ddlContextSqls,
 	})
 	if err != nil {
 		return errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)

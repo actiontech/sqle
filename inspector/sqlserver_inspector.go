@@ -52,7 +52,7 @@ func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error
 func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	i.Logger().Info("start advise sql")
 	var meta = sqlserverClient.GetSqlserverMeta(i.Task.Instance.User, i.Task.Instance.Password, i.Task.Instance.Host, i.Task.Instance.Port, i.Task.Schema, "")
-	err := sqlserverClient.GetClient().Advise(i.Task.CommitSqls, rules, meta)
+	err := sqlserverClient.GetClient().Advise(i.RelateTasks, i.Task.CommitSqls, rules, meta)
 	if err != nil {
 		i.Logger().Errorf("advise t-sql from ms grpc server failed, error: %v", err)
 	} else {

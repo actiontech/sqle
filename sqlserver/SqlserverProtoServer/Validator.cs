@@ -254,7 +254,7 @@ namespace SqlserverProtoServer {
                 new TopConditionRuleValidator(
                     DML_CHECK_WITH_LIMIT,
                     "delete/update 语句不能有limit/top条件",
-                    "delete/update 语句不能有limit/top条件",
+                    "delete/update 语句不能有top条件",
                     RULE_LEVEL.ERROR
                 )
             }
@@ -267,10 +267,14 @@ namespace SqlserverProtoServer {
     public class AdviseResultContext {
         public RULE_LEVEL Level;
         public String Message;
+        public bool BaseRuleFailed;
+        public static bool BASE_RULE_OK = true;
+        public static bool BASE_RULE_FAILED = false;
 
         public AdviseResultContext() {
             Level = RULE_LEVEL.NORMAL;
             Message = "";
+            BaseRuleFailed = BASE_RULE_OK;
         }
 
         public void AddAdviseResult(RULE_LEVEL level, String message) {
@@ -289,6 +293,15 @@ namespace SqlserverProtoServer {
         public void ResetAdviseResult() {
             Level = RULE_LEVEL.NORMAL;
             Message = "";
+            BaseRuleFailed = BASE_RULE_OK;
+        }
+
+        public void SetBaseRuleStatus(bool failed) {
+            BaseRuleFailed = failed;
+        }
+
+        public bool GetBaseRuleStatus() {
+            return BaseRuleFailed;
         }
 
         public AdviseResult GetAdviseResult() {
@@ -1495,12 +1508,5 @@ namespace SqlserverProtoServer {
             }
             return false;
         }
-    }
-
-    // FakeRuleValidator implements rule validator which do nothing.
-    public class FakerRuleValidator : RuleValidator {
-        public override void Check(SqlserverContext context, TSqlStatement statement) { }
-
-        public FakerRuleValidator(String name, String desc, String msg, RULE_LEVEL level) : base(name, desc, msg, level) { }
     }
 }

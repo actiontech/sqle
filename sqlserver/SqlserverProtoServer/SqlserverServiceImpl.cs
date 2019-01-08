@@ -147,21 +147,44 @@ namespace SqlserverProtoServer {
             var version = request.Version;
             var sqls = request.Sqls;
             var ruleNames = request.RuleNames;
-            var ruleValidatorContext = new SqlserverContext(request.SqlserverMeta);
+            var contextSqls = request.DDLContextSqls;
+            var contextStart = 0;
             var logger = LogManager.GetCurrentClassLogger();
 
+        Try:
+            var ruleValidatorContext = new SqlserverContext(request.SqlserverMeta);
+            try {
+                for (var index = contextStart; index < contextSqls.Count; index++) {
+                    foreach (var sql in contextSqls[index].Sqls) {
+                        var statementList = ParseStatementList(version, sql);
+                        foreach (var statement in statementList.Statements) {
+                            ruleValidatorContext.UpdateContext(logger, statement);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.Fatal("Advise context exception stacktrace:{0}", e.StackTrace);
+                logger.Fatal("Advise context message:{0}", e.Message);
+                throw new RpcException(new Status(StatusCode.Internal, "parse context error:" + e.Message));
+            }
+            contextStart++;
+
+
+            var baseValidatorStatus = AdviseResultContext.BASE_RULE_OK;
             foreach (var sql in sqls) {
                 try {
                     var statementList = ParseStatementList(version, sql);
                     foreach (var statement in statementList.Statements) {
-
-
                         foreach (var ruleName in ruleNames) {
                             if (!DefaultRules.RuleValidators.ContainsKey(ruleName)) {
                                 continue;
                             }
                             var ruleValidator = DefaultRules.RuleValidators[ruleName];
                             ruleValidator.Check(ruleValidatorContext, statement);
+
+                            if (ruleValidatorContext.AdviseResultContext.GetBaseRuleStatus() == AdviseResultContext.BASE_RULE_FAILED) {
+                                baseValidatorStatus = AdviseResultContext.BASE_RULE_FAILED;
+                            }
                         }
 
                         ruleValidatorContext.UpdateContext(logger, statement);
@@ -173,6 +196,14 @@ namespace SqlserverProtoServer {
                     logger.Fatal("Advise exception message:{0}", e.Message);
                     throw new RpcException(new Status(StatusCode.Internal, e.Message));
                 }
+            }
+
+            if (baseValidatorStatus == AdviseResultContext.BASE_RULE_FAILED && contextStart < contextSqls.Count) {
+                goto Try;
+            }
+
+            if (baseValidatorStatus == AdviseResultContext.BASE_RULE_FAILED) {
+                output.BaseValidatorFailed = true;
             }
 
             return Task.FromResult(output);

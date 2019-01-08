@@ -61,6 +61,7 @@ namespace SqlserverProtoServer {
             }
 
             if (isInvalid) {
+                context.AdviseResultContext.SetBaseRuleStatus(AdviseResultContext.BASE_RULE_FAILED);
                 return;
             }
 

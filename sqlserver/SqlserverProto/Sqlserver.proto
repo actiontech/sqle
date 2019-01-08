@@ -37,10 +37,16 @@ message AdviseInput {
     repeated string Sqls = 2;
     repeated string RuleNames = 3;
     SqlserverMeta SqlserverMeta = 4;
+    repeated DDLContext DDLContextSqls = 5;
+}
+
+message DDLContext {
+    repeated string Sqls = 1;
 }
 
 message AdviseOutput {
     map<string, AdviseResult> Results = 1;
+    bool BaseValidatorFailed = 2;
 }
 
 message AdviseResult {
