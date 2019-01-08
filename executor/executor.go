@@ -6,9 +6,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mssql"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"sqle/errors"
@@ -16,6 +15,8 @@ import (
 	"strconv"
 	"time"
 )
+
+const DAIL_TIMEOUT = 5 * time.Second
 
 type Db interface {
 	Close()
@@ -28,32 +29,32 @@ type Db interface {
 }
 
 type BaseConn struct {
-	log         *logrus.Entry
-	host        string
-	port        string
-	user        string
-	db          *sql.DB
-	conn        *sql.Conn
-	pingTimeout time.Duration
+	log  *logrus.Entry
+	host string
+	port string
+	user string
+	db   *sql.DB
+	conn *sql.Conn
 }
 
 func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*BaseConn, error) {
-	var db *gorm.DB
+	var db *sql.DB
 	var err error
 	switch instance.DbType {
 	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
-		db, err = gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
-			instance.User, instance.Password, instance.Host, instance.Port, schema))
+		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
+			instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
 	case model.DB_TYPE_SQLSERVER:
 		query := url.Values{}
 		query.Add("database", schema)
+		query.Add("dial timeout", fmt.Sprintf("%.0f", DAIL_TIMEOUT.Seconds()))
 		source := &url.URL{
 			Scheme:   "sqlserver",
 			User:     url.UserPassword(instance.User, instance.Password),
 			Host:     fmt.Sprintf("%s:%s", instance.Host, instance.Port),
 			RawQuery: query.Encode(),
 		}
-		db, err = gorm.Open("mssql", source.String())
+		db, err = sql.Open("mssql", source.String())
 
 	default:
 		err := fmt.Errorf("db type is not support")
@@ -61,22 +62,27 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	if err != nil {
-		err = fmt.Errorf("connect to %s:%s failed, %s", instance.Host, instance.Port, err)
 		entry.Error(err)
 		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
-	conn, err := db.DB().Conn(context.Background())
+
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+
+	entry.Infof("connecting to %s %s:%s", instance.DbType, instance.Host, instance.Port)
+	conn, err := db.Conn(context.Background())
 	if err != nil {
+		entry.Error(err)
 		return nil, err
 	}
+	entry.Infof("connected to %s %s:%s", instance.DbType, instance.Host, instance.Port)
 	return &BaseConn{
-		log:         entry,
-		host:        instance.Host,
-		port:        instance.Port,
-		user:        instance.User,
-		db:          db.DB(),
-		conn:        conn,
-		pingTimeout: 5 * time.Second,
+		log:  entry,
+		host: instance.Host,
+		port: instance.Port,
+		user: instance.User,
+		db:   db,
+		conn: conn,
 	}, nil
 }
 
@@ -86,9 +92,16 @@ func (c *BaseConn) Close() {
 }
 
 func (c *BaseConn) Ping() error {
-	ctx, cancel := context.WithTimeout(context.Background(), c.pingTimeout)
+	c.Logger().Infof("ping %s:%s", c.host, c.port)
+	ctx, cancel := context.WithTimeout(context.Background(), DAIL_TIMEOUT)
 	defer cancel()
-	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, c.conn.PingContext(ctx))
+	err := c.conn.PingContext(ctx)
+	if err != nil {
+		c.Logger().Infof("ping %s:%s failed, %s", c.host, c.port, err)
+	} else {
+		c.Logger().Infof("ping %s:%s success", c.host, c.port)
+	}
+	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
 func (c *BaseConn) Exec(query string) (driver.Result, error) {
