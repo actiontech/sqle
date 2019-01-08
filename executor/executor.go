@@ -190,11 +190,14 @@ func (c *BaseConn) Logger() *logrus.Entry {
 }
 
 type Executor struct {
-	Db Db
+	dbType string
+	Db     Db
 }
 
 func NewExecutor(entry *logrus.Entry, instance *model.Instance, schema string) (*Executor, error) {
-	var executor = &Executor{}
+	var executor = &Executor{
+		dbType: instance.DbType,
+	}
 	var conn Db
 	var err error
 	switch instance.DbType {
@@ -225,7 +228,7 @@ func ShowDatabases(entry *logrus.Entry, instance *model.Instance) ([]string, err
 		return nil, err
 	}
 	defer conn.Db.Close()
-	return conn.ShowDatabases(instance.DbType)
+	return conn.ShowDatabases()
 }
 
 func OpenDbWithTask(entry *logrus.Entry, task *model.Task) (*Executor, error) {
@@ -260,9 +263,9 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 	}
 }
 
-func (c *Executor) ShowDatabases(dbType string) ([]string, error) {
+func (c *Executor) ShowDatabases() ([]string, error) {
 	var query string
-	if dbType == model.DB_TYPE_SQLSERVER {
+	if c.dbType == model.DB_TYPE_SQLSERVER {
 		query = "select name from sys.databases where name not in ('master','tempdb','model','msdb')"
 	} else {
 		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
@@ -330,6 +333,9 @@ func (c *Executor) Explain(query string) (ExecutionPlanJson, error) {
 }
 
 func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
+	if c.dbType == model.DB_TYPE_SQLSERVER {
+		return []map[string]sql.NullString{}, nil
+	}
 	result, err := c.Db.Query(fmt.Sprintf("show master status"))
 	if err != nil {
 		return nil, err
@@ -344,6 +350,9 @@ func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
 }
 
 func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
+	if c.dbType == model.DB_TYPE_SQLSERVER {
+		return "", 0, nil
+	}
 	result, err := c.ShowMasterStatus()
 	if err != nil {
 		return "", 0, err
@@ -361,6 +370,9 @@ func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 }
 
 func (c *Executor) ShowTableSizeMB(schema, table string) (float64, error) {
+	if c.dbType == model.DB_TYPE_SQLSERVER {
+		return 0, nil
+	}
 	sql := fmt.Sprintf(`select (DATA_LENGTH + INDEX_LENGTH)/1024/1024 as Size from information_schema.tables 
 where table_schema = '%s' and table_name = '%s'`, schema, table)
 	result, err := c.Db.Query(sql)
