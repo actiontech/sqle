@@ -23,10 +23,6 @@ namespace SqlserverProtoServer {
             bool hasForeignKey = false;
             switch (statement) {
                 case CreateTableStatement createTableStatement:
-                    if (createTableStatement.Definition.ColumnDefinitions == null) {
-                        break;
-                    }
-
                     if (hasForeignKeyConstraint(createTableStatement.Definition.TableConstraints)) {
                         logger.Debug("There exists foreign key constraint in create table statement");
                         hasForeignKey = true;
