@@ -335,7 +335,7 @@ namespace SqlserverProtoServer {
         public Dictionary<String/*database.schema.table*/, List<String>> PrimaryKeys;
         public bool databaseHasLoad;
         public bool schemaHasLoad;
-        public bool tableHasLoad;
+        public Dictionary<String/*database*/, bool> tableHasLoad;
 
         public class DDLAction {
             public const String ADD_DATABASE = "add_database";
@@ -428,14 +428,14 @@ namespace SqlserverProtoServer {
             }
         }
 
-        public void LoadTablesFromDB() {
-            if (tableHasLoad) {
+        public void LoadTablesFromDB(String databaseName) {
+            if (tableHasLoad.ContainsKey(databaseName)) {
                 return;
             }
 
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand("SELECT TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'", connection);
+                SqlCommand command = new SqlCommand(String.Format("SELECT TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME FROM {0}.INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'", databaseName), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -445,7 +445,7 @@ namespace SqlserverProtoServer {
                         String table = reader["TABLE_NAME"] as String;
                         AllTables[String.Format("{0}.{1}.{2}", database, schema, table)] = true;
                     }
-                    tableHasLoad = true;
+                    tableHasLoad[databaseName] = true;
                 } finally {
                     reader.Close();
                 }
@@ -494,8 +494,8 @@ namespace SqlserverProtoServer {
             return AllSchemas;
         }
 
-        public Dictionary<String, bool> GetAllTables() {
-            LoadTablesFromDB();
+        public Dictionary<String, bool> GetAllTables(String databaseName) {
+            LoadTablesFromDB(databaseName);
             return AllTables;
         }
 
@@ -536,7 +536,7 @@ namespace SqlserverProtoServer {
             using (SqlConnection connection = new SqlConnection(connectionString)) {
                 SqlCommand command = new SqlCommand(String.Format("SELECT " +
                                                                   "c.name AS Primary_key " +
-                                                                  "FROM sys.indexes ix JOIN sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                                                  "FROM {0}.sys.indexes ix JOIN {0}.sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
                                                                   "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key = 1", databaseName, schemaName, tableName), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -561,7 +561,7 @@ namespace SqlserverProtoServer {
             using (SqlConnection connection = new SqlConnection(connectionString)) {
                 SqlCommand command = new SqlCommand(String.Format("SELECT " +
                                                                   "c.name AS Column_name " +
-                                                                  "FROM sys.columns c WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName), connection);
+                                                                  "FROM {0}.sys.columns c WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -683,7 +683,7 @@ namespace SqlserverProtoServer {
                                                                   "c.is_identity AS Is_identity, " +
                                                                   "CAST(IDENTITYPROPERTY(c.object_id, 'SeedValue') AS VARCHAR(5)) AS Identity_base, " +
                                                                   "CAST(IDENTITYPROPERTY(c.object_id, 'IncrementValue') AS VARCHAR(5)) AS Identity_incr " +
-                                                                  "FROM sys.columns c JOIN sys.types tp ON c.user_type_id=tp.user_type_id LEFT JOIN sys.check_constraints cc ON c.object_id=cc.parent_object_id AND cc.parent_column_id=c.column_id " +
+                                                                  "FROM {0}.sys.columns c JOIN {0}.sys.types tp ON c.user_type_id=tp.user_type_id LEFT JOIN {0}.sys.check_constraints cc ON c.object_id=cc.parent_object_id AND cc.parent_column_id=c.column_id " +
                                                                   "WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -755,7 +755,6 @@ namespace SqlserverProtoServer {
                                 sqlLine += String.Format(" IDENTITY({0}, {1})", identityBase, identityIncr);
                             }
                         }
-
                         result[colName] = sqlLine;
                     }
                 } finally {
@@ -815,7 +814,7 @@ namespace SqlserverProtoServer {
                                                                   "c.name AS Column_name, " +
                                                                   "kc.type AS Type, " +
                                                                   "ic.is_descending_key AS Is_descending_key " +
-                                                                  "FROM sys.key_constraints kc JOIN sys.index_columns ic ON kc.parent_object_id=ic.object_id AND kc.unique_index_id=ic.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                                                  "FROM {0}.sys.key_constraints kc JOIN {0}.sys.index_columns ic ON kc.parent_object_id=ic.object_id AND kc.unique_index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
                                                                   "WHERE kc.parent_object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND (kc.type='PK' OR kc.type='UQ')", databaseName, schemaName, tableName), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -918,7 +917,7 @@ namespace SqlserverProtoServer {
                                                                   "ix.type_desc AS Type_desc, " +
                                                                   "c.name AS Column_name, " +
                                                                   "ic.is_descending_key AS Is_descending_key " +
-                                                                  "FROM sys.indexes ix JOIN sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                                                  "FROM {0}.sys.indexes ix JOIN {0}.sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
                                                                   "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key !=1 AND ix.is_unique_constraint !=1 AND ix.auto_created != 1", databaseName, schemaName, tableName), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -955,7 +954,7 @@ namespace SqlserverProtoServer {
             return result;
         }
 
-        public SqlserverContext(SqlserverMeta sqlserverMeta, Config config): this(sqlserverMeta) {
+        public SqlserverContext(SqlserverMeta sqlserverMeta, Config config) : this(sqlserverMeta) {
             this.Config = config;
         }
 
@@ -968,7 +967,7 @@ namespace SqlserverProtoServer {
             DDLActions = new List<DDLAction>();
             AlterTableStmts = new Dictionary<string, List<AlterTableStatement>>();
             AdviseResultContext = new AdviseResultContext();
-            tableHasLoad = false;
+            tableHasLoad = new Dictionary<String, bool>();
             schemaHasLoad = false;
             databaseHasLoad = false;
             IsDDL = false;
@@ -1064,7 +1063,7 @@ namespace SqlserverProtoServer {
                 return false;
             }
 
-            var allTables = GetAllTables();
+            var allTables = GetAllTables(databaseName);
             logger.Info("current tables:{0}", String.Join(",", allTables.Keys));
             return allTables.ContainsKey(id);
         }
@@ -1303,7 +1302,7 @@ namespace SqlserverProtoServer {
                                             PrimaryKeys[key] = newPrimaryColumns;
                                         }
                                     }
-                                } else if (procedure.Parameters.Count == 2){
+                                } else if (procedure.Parameters.Count == 2) {
                                     // rename table
                                     var objNameArray = (procedure.Parameters[0].ParameterValue as StringLiteral).Value.Split(".");
                                     if (objNameArray.Length == 2) {
@@ -1398,7 +1397,7 @@ namespace SqlserverProtoServer {
             Level = level;
         }
 
-        protected RuleValidator() {}
+        protected RuleValidator() { }
 
         public List<String> AddDatabaseName(List<String> databaseNames, SqlserverContext context, SchemaObjectName schemaObjectName) {
             var databaseIndentifier = schemaObjectName.DatabaseIdentifier;
@@ -1512,6 +1511,7 @@ namespace SqlserverProtoServer {
                 case "image":
                 case "text":
                 case "xml":
+                case "varbinary(max)":
                     return true;
                 case "varbinary":
                     foreach (var param in parameters) {

@@ -540,7 +540,7 @@ namespace SqlserverProtoServer {
             if (indexDefinitions.ContainsKey(statement.Name.Value)) {
                 context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.INDEX_EXIST_MSG, statement.Name.Value));
                 isInvalid = true;
-                logger.Info("index {0} should exist", statement.Name.Value);
+                logger.Info("index {0} should not exist", statement.Name.Value);
             }
             logger.Info("create index:{0}", statement.Name.Value);
 
@@ -557,7 +557,7 @@ namespace SqlserverProtoServer {
             if (needExistsColumns.Count > 0) {
                 context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.COLUMN_NOT_EXIST_MSG, String.Join(",", needExistsColumns)));
                 isInvalid = true;
-                logger.Info("index {0} should exist", String.Join(",", needExistsColumns));
+                logger.Info("column {0} should exist", String.Join(",", needExistsColumns));
             }
 
             return isInvalid;

@@ -83,15 +83,23 @@ namespace SqlserverProtoServer {
             return indexCounter;
         }
 
-        public int GetNumberOfIndexesOnTable(SqlserverContext context, String tableName) {
+        public int GetNumberOfIndexesOnTable(SqlserverContext context, SchemaObjectName schemaObjectName) {
             if (IsTest) {
                 return ExpectIndexNumber;
+            }
+
+            String tableName = schemaObjectName.BaseIdentifier.Value;
+            String databaseName;
+            if (schemaObjectName.DatabaseIdentifier != null) {
+                databaseName = schemaObjectName.DatabaseIdentifier.Value;
+            } else {
+                databaseName = context.GetCurrentDatabase();
             }
 
             int indexNumber = 0;
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                String queryString = String.Format("SELECT COUNT(*) AS Index_number FROM sys.indexes WHERE object_id=OBJECT_ID('{0}')", tableName);
+                String queryString = String.Format("SELECT COUNT(*) AS Index_number FROM {0}.sys.indexes WHERE object_id=OBJECT_ID('{1}')", databaseName, tableName);
                 SqlCommand command = new SqlCommand(queryString, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -109,7 +117,6 @@ namespace SqlserverProtoServer {
         public const int INDEX_MAX_NUMBER = 5;
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             int indexCounter = 0;
-            String tableName = "";
 
             switch (statement) {
                 case CreateTableStatement createTableStatement:
@@ -117,20 +124,18 @@ namespace SqlserverProtoServer {
                     break;
 
                 case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
-                    tableName = alterTableAddTableElementStatement.SchemaObjectName.BaseIdentifier.Value;
-                    indexCounter = GetNumberOfIndexesOnTable(context, tableName);
+                    indexCounter = GetNumberOfIndexesOnTable(context, alterTableAddTableElementStatement.SchemaObjectName);
                     indexCounter += GetIndexCounterFromColumnDefinitions(alterTableAddTableElementStatement.Definition.ColumnDefinitions);
                     break;
 
                 case CreateIndexStatement createIndexStatement:
-                    tableName = createIndexStatement.OnName.BaseIdentifier.Value;
-                    indexCounter = GetNumberOfIndexesOnTable(context, tableName);
+                    indexCounter = GetNumberOfIndexesOnTable(context, createIndexStatement.OnName);
                     indexCounter++;
                     break;
             }
 
             if (indexCounter > INDEX_MAX_NUMBER) {
-                logger.Debug("number of {0}'s indexes exceed max {1}", tableName, INDEX_MAX_NUMBER);
+                logger.Debug("indexes exceed max {1}", INDEX_MAX_NUMBER);
                 context.AdviseResultContext.AddAdviseResult(GetLevel(), GetMessage());
             }
         }
@@ -207,15 +212,23 @@ namespace SqlserverProtoServer {
             return false;
         }
 
-        public Dictionary<String, bool> GetIndexColumnsOnTable(SqlserverContext context, String tableName) {
+        public Dictionary<String, bool> GetIndexColumnsOnTable(SqlserverContext context, SchemaObjectName schemaObjectName) {
             if (IsTest) {
                 return ExpectIndexColumns;
+            }
+
+            String tableName = schemaObjectName.BaseIdentifier.Value;
+            String databaseName;
+            if (schemaObjectName.DatabaseIdentifier != null) {
+                databaseName = schemaObjectName.DatabaseIdentifier.Value;
+            } else {
+                databaseName = context.GetCurrentDatabase();
             }
 
             Dictionary<String, bool> indexedColumns = new Dictionary<string, bool>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                String queryString = String.Format("SELECT COL_NAME(object_id, column_id) AS Column_name FROM sys.index_columns WHERE object_id=OBJECT_ID('{0}')", tableName);
+                String queryString = String.Format("SELECT COL_NAME(object_id, column_id) AS Column_name FROM {0}.sys.index_columns WHERE object_id=OBJECT_ID('{1}')", databaseName, tableName);
                 SqlCommand command = new SqlCommand(queryString, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -230,21 +243,36 @@ namespace SqlserverProtoServer {
             return indexedColumns;
         }
 
-        public Dictionary<String, String> GetColumnAndTypeOnTable(SqlserverContext context, String tableName) {
+        public Dictionary<String, String> GetColumnAndTypeOnTable(SqlserverContext context, SchemaObjectName schemaObjectName) {
             if (IsTest) {
                 return ExpectColumnAndType;
+            }
+
+            String tableName = schemaObjectName.BaseIdentifier.Value;
+            String databaseName;
+            if (schemaObjectName.DatabaseIdentifier != null) {
+                databaseName = schemaObjectName.DatabaseIdentifier.Value;
+            } else {
+                databaseName = context.GetCurrentDatabase();
             }
 
             Dictionary<String, String> columnTypes = new Dictionary<String, String>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                String queryString = String.Format("SELECT COLUMN_NAME AS Column_name, DATA_TYPE AS Data_type FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{0}'", tableName);
+                String queryString = String.Format("SELECT COLUMN_NAME AS Column_name, DATA_TYPE AS Data_type, CHARACTER_MAXIMUM_LENGTH as Max_length FROM {0}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{1}'", databaseName, tableName);
                 SqlCommand command = new SqlCommand(queryString, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        columnTypes[reader["Column_name"] as String] = reader["Data_type"] as String;
+                        var columnName = reader["Column_name"] as String;
+                        var columnType = reader["Data_type"] as String;
+                        if (columnType == "varbinary") {
+                            if ((int)reader["Max_length"] == -1) {
+                                columnType += "(max)";
+                            }
+                        }
+                        columnTypes[columnName] = columnType;
                     }
                 } finally {
                     reader.Close();
@@ -274,7 +302,7 @@ namespace SqlserverProtoServer {
                 case AlterTableAlterColumnStatement alterTableAlterColumnStatement:
                     if (IsBlobType(alterTableAlterColumnStatement.DataType)) {
                         String columnName = alterTableAlterColumnStatement.ColumnIdentifier.Value;
-                        Dictionary<String, bool> indexedColumns = GetIndexColumnsOnTable(context, alterTableAlterColumnStatement.SchemaObjectName.BaseIdentifier.Value);
+                        Dictionary<String, bool> indexedColumns = GetIndexColumnsOnTable(context, alterTableAlterColumnStatement.SchemaObjectName);
                         if (indexedColumns.ContainsKey(columnName)) {
                             indexDataTypeIsBlob = true;
                         }
@@ -282,10 +310,16 @@ namespace SqlserverProtoServer {
                     break;
 
                 case CreateIndexStatement createIndexStatement:
-                    Dictionary<String, String> columnTypes = GetColumnAndTypeOnTable(context, createIndexStatement.OnName.BaseIdentifier.Value);
+                    Dictionary<String, String> columnTypes = GetColumnAndTypeOnTable(context, createIndexStatement.OnName);
+                    foreach (var columnType in columnTypes) {
+                        Console.WriteLine("key:{0}, value:{1}", columnType.Key, columnType.Value);
+                    }
                     foreach (var column in createIndexStatement.Columns) {
                         ColumnReferenceExpression columnReferenceExpression = column.Column;
                         foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                            if (!columnTypes.ContainsKey(identifier.Value)) {
+                                continue;
+                            }
                             if (columnTypes.ContainsKey(identifier.Value) && IsBlobTypeString(columnTypes[identifier.Value], null)) {
                                 indexDataTypeIsBlob = true;
                             }

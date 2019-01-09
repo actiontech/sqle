@@ -251,7 +251,7 @@ namespace SqlserverProtoServer {
             List<String> columns = new List<string>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT a.type_desc AS Index_type, a.is_unique AS Index_unique, COL_NAME(b.object_id, b.column_id) AS Col_name FROM sys.indexes a JOIN sys.index_columns b ON a.object_id=b.object_id AND a.index_id =b.index_id WHERE a.object_id=OBJECT_ID('{0}') AND a.name='{1}';", tableName, indexName), connection);
+                SqlCommand command = new SqlCommand(String.Format("SELECT a.type_desc AS Index_type, a.is_unique AS Index_unique, COL_NAME(b.object_id, b.column_id) AS Col_name FROM {0}.sys.indexes a JOIN {0}.sys.index_columns b ON a.object_id=b.object_id AND a.index_id =b.index_id WHERE a.object_id=OBJECT_ID('{1}') AND a.name='{2}';", databaseName, tableName, indexName), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
