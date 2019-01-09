@@ -311,9 +311,6 @@ namespace SqlserverProtoServer {
 
                 case CreateIndexStatement createIndexStatement:
                     Dictionary<String, String> columnTypes = GetColumnAndTypeOnTable(context, createIndexStatement.OnName);
-                    foreach (var columnType in columnTypes) {
-                        Console.WriteLine("key:{0}, value:{1}", columnType.Key, columnType.Value);
-                    }
                     foreach (var column in createIndexStatement.Columns) {
                         ColumnReferenceExpression columnReferenceExpression = column.Column;
                         foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
