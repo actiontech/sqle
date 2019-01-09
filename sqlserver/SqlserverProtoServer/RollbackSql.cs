@@ -123,11 +123,16 @@ namespace SqlserverProtoServer {
                     var tableDefinition = alterTableAddTableElementStatement.Definition;
 
                     var addConstraints = new List<String>();
-                    foreach (var tableConstraint in tableDefinition.TableConstraints) {
-                        addConstraints.Add(tableConstraint.ConstraintIdentifier.Value);
-                    }
-                    if (addConstraints.Count > 0) {
-                        rollbackActions.Add(String.Format("{0} DROP CONSTRAINT {1}", rollbackPrefix, String.Join(',', addConstraints)));
+                    if (tableDefinition.TableConstraints != null) {
+                        foreach (var tableConstraint in tableDefinition.TableConstraints) {
+                            if (tableConstraint.ConstraintIdentifier == null) {
+                                continue;
+                            }
+                            addConstraints.Add(tableConstraint.ConstraintIdentifier.Value);
+                        }
+                        if (addConstraints.Count > 0) {
+                            rollbackActions.Add(String.Format("{0} DROP CONSTRAINT {1}", rollbackPrefix, String.Join(',', addConstraints)));
+                        }
                     }
 
                     var addColumns = new List<String>();

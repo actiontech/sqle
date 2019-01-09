@@ -27,6 +27,7 @@ namespace SqlServerProtoServerTest {
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = false;
+            Console.WriteLine("IsInvalidUse");
             foreach (var statment in statementList.Statements) {
                 var invalid = new RuleValidatorDecorator("").IsInvalidUse(LogManager.GetCurrentClassLogger(), context, statment as UseStatement);
                 Assert.True(invalid == true);
@@ -55,6 +56,8 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "tbl1";
+                Console.WriteLine();
+                Console.WriteLine("IsInvalidCreateTable");
 
                 foreach (var statment in statementList.Statements) {
                     var invalid = new RuleValidatorDecorator("").IsInvalidCreateTableStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateTableStatement);
@@ -76,6 +79,9 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                Console.WriteLine();
+                Console.WriteLine("IsInvalidAlterTable");
+
                 foreach (var statment in statementList.Statements) {
                     var invalid = new RuleValidatorDecorator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                     Assert.True(invalid == true);
@@ -162,6 +168,9 @@ namespace SqlServerProtoServerTest {
             context.ExpectDatabaseName = "database1";
             context.ExpectSchemaName = "schema1";
             context.ExpectTableName = "table1";
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidDropTable");
+
             foreach (var statment in statementList.Statements) {
                 var invalid = new RuleValidatorDecorator("").IsInvalidDropTableStatement(LogManager.GetCurrentClassLogger(), context, statment as DropTableStatement);
                 Assert.True(invalid == true);
@@ -176,6 +185,9 @@ namespace SqlServerProtoServerTest {
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = true;
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidCreateDatabase");
+
             foreach (var statment in statementList.Statements) {
                 var invalid = new RuleValidatorDecorator("").IsInvalidCreateDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateDatabaseStatement);
                 Assert.True(invalid == true);
@@ -190,6 +202,9 @@ namespace SqlServerProtoServerTest {
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = false;
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidDropDatabase");
+
             foreach (var statment in statementList.Statements) {
                 var invalid = new RuleValidatorDecorator("").IsInvalidDropDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as DropDatabaseStatement);
                 Assert.True(invalid == true);
@@ -199,6 +214,9 @@ namespace SqlServerProtoServerTest {
         }
 
         private void IsInvalidCreateIndex() {
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidCreateIndex");
+
             {
                 StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col1);");
                 var context = new SqlserverContext(new SqlserverMeta());
@@ -249,6 +267,9 @@ namespace SqlServerProtoServerTest {
         }
 
         private void IsInvalidDropIndex() {
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidDropIndex");
+
             // init data
             StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
                                                                  "col1 INT NOT NULL, " +
@@ -279,6 +300,8 @@ namespace SqlServerProtoServerTest {
         }
 
         private void IsInvalidInsert() {
+            Console.WriteLine("IsInvalidInsert");
+
             {
                 StatementList statementList = ParseStatementList("INSERT INTO databse1.schema1.table1 VALUES(1);");
                 var context = new SqlserverContext(new SqlserverMeta());
@@ -353,6 +376,9 @@ namespace SqlServerProtoServerTest {
         }
 
         private void IsInvalidUpdate() {
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidUpdate");
+
             {
                 StatementList statementList = ParseStatementList("UPDATE databse1.schema1.table1 SET col1=1;");
                 var context = new SqlserverContext(new SqlserverMeta());
@@ -427,6 +453,8 @@ namespace SqlServerProtoServerTest {
         }
 
         private void IsInvalidDelete() {
+            Console.WriteLine("IsInvalidDelete");
+
             {
                 StatementList statementList = ParseStatementList("DELETE FROM databse1.schema1.table1;");
                 var context = new SqlserverContext(new SqlserverMeta());
@@ -471,6 +499,9 @@ namespace SqlServerProtoServerTest {
         }
 
         private void IsInvalidSelect() {
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidSelect");
+
             // init data
             StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
                                                                  "col1 INT NOT NULL, " +
@@ -531,6 +562,8 @@ namespace SqlServerProtoServerTest {
         public void RuleValidatorTest() {
             //DDL_CHECK_OBJECT_NAME_LENGTH
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_OBJECT_NAME_LENGTH");
                 try {
                     foreach (var text in new String[]{
                         "CREATE DATABASE database1",
@@ -543,6 +576,7 @@ namespace SqlServerProtoServerTest {
                         "EXEC sp_rename N'schema1.table1.index_old', N'index_new', N'INDEX'",
                         "CREATE UNIQUE INDEX index1 ON schema1.table1(col1)"
                     }) {
+                        Console.WriteLine("text:{0}", text);
                         MyAssert(DefaultRules.DDL_CHECK_OBJECT_NAME_LENGTH,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -563,6 +597,7 @@ namespace SqlServerProtoServerTest {
                         "CREATE UNIQUE INDEX index123456789012345678901234567890123456789012345678901234567890 ON schema1.table1(col1)"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
                         MyAssert(DefaultRules.DDL_CHECK_OBJECT_NAME_LENGTH,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -575,6 +610,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_PK_NOT_EXIST
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_PK_NOT_EXIST");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE schema1.table1(" +
@@ -586,6 +623,8 @@ namespace SqlServerProtoServerTest {
                             "CONSTRAINT PK_constraint PRIMARY KEY(col1, col2)" +
                         ")"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_PK_NOT_EXIST,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -597,6 +636,8 @@ namespace SqlServerProtoServerTest {
                             "col1 INT" +
                         ")"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_PK_NOT_EXIST,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -609,6 +650,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE schema1.table1(" +
@@ -620,6 +663,8 @@ namespace SqlServerProtoServerTest {
                             "CONSTRAINT PK_constraint PRIMARY KEY(col1, col2)" +
                         ")"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -637,6 +682,8 @@ namespace SqlServerProtoServerTest {
                             "CONSTRAINT PK_constraint PRIMARY KEY(col1, col2)" +
                         ")"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -649,6 +696,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COLUMN_VARCHAR_MAX
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COLUMN_VARCHAR_MAX");
                 try {
                     foreach (var text in new String[]{
 
@@ -659,6 +708,8 @@ namespace SqlServerProtoServerTest {
                         "ALTER TABLE schema1.table1 ALTER COLUMN col1 VARCHAR(MAX)"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_VARCHAR_MAX,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -671,6 +722,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COLUMN_CHAR_LENGTH
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COLUMN_CHAR_LENGTH");
                 try {
                     foreach (var text in new String[]{
 
@@ -681,6 +734,8 @@ namespace SqlServerProtoServerTest {
                         "ALTER TABLE schema1.table1 ALTER COLUMN col1 CHAR(60)"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_CHAR_LENGTH,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -700,6 +755,8 @@ namespace SqlServerProtoServerTest {
                         "ALTER TABLE schema1.table1 ALTER COLUMN col1 CHAR(20)"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_CHAR_LENGTH,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -712,6 +769,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_DISABLE_FK
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_DISABLE_FK");
                 try {
                     foreach (var text in new String[] {
 
@@ -719,9 +778,12 @@ namespace SqlServerProtoServerTest {
                             "col1 INT NOT NULL REFERENCES schema1.table2(col11)" +
                         ")",
 
+                        "create table marks(s_id int not null,test_no int not null,marks int not null default(0),primary key(s_id,test_no),foreign key(s_id) references student(s_id))",
+
                         "ALTER TABLE schema1.table1 ADD CONSTRAINT FK_fk1 FOREIGN KEY(col1) REFERENCES schema1.table2(col11)"
 
                     }) {
+                        Console.WriteLine("{0}", text);
                         MyAssert(DefaultRules.DDL_DISABLE_FK,
                              text,
                              RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -734,6 +796,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_INDEX_COUNT
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_INDEX_COUNT");
                 try {
                     foreach (var text in new String[] {
                         "CREATE TABLE schema1.table1(" +
@@ -746,6 +810,8 @@ namespace SqlServerProtoServerTest {
 
                         "CREATE INDEX IX_index1 ON table100(col1)"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         var statementList = ParseStatementList(text);
                         foreach (var statment in statementList.Statements) {
                             var context = new SqlserverContext(new SqlserverMeta());
@@ -776,6 +842,8 @@ namespace SqlServerProtoServerTest {
                         "CREATE INDEX IX_index1 ON table1(col1)"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         var statementList = ParseStatementList(text);
                         foreach (var statment in statementList.Statements) {
                             var context = new SqlserverContext(new SqlserverMeta());
@@ -796,6 +864,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COMPOSITE_INDEX_MAX
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COMPOSITE_INDEX_MAX");
                 try {
                     foreach (var text in new String[] {
 
@@ -807,6 +877,8 @@ namespace SqlServerProtoServerTest {
                         "CREATE INDEX IX_index1 ON table1(col1, col2)"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COMPOSITE_INDEX_MAX,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -825,6 +897,8 @@ namespace SqlServerProtoServerTest {
                         ")",
                         "CREATE INDEX IX_index1 ON table1(col1, col2, col3, col4, col5, col6)"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COMPOSITE_INDEX_MAX,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NOTICE),
@@ -837,6 +911,8 @@ namespace SqlServerProtoServerTest {
 
             // DDL_CHECK_OBJECT_NAME_USING_KEYWORD
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_OBJECT_NAME_USING_KEYWORD");
                 try {
                     foreach (var text in new String[] {
                         "CREATE DATABASE database1",
@@ -849,6 +925,8 @@ namespace SqlServerProtoServerTest {
                         "EXEC sp_rename N'schema1.table1.index_old', N'INDEX1', N'INDEX'",
                         "CREATE UNIQUE INDEX index1 ON schema1.table1(table1)"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -861,6 +939,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_INDEX_COLUMN_WITH_BLOB
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_INDEX_COLUMN_WITH_BLOB");
                 try {
                     foreach (var text in new String[] {
                         "CREATE TABLE table1(" +
@@ -886,6 +966,8 @@ namespace SqlServerProtoServerTest {
                         "CREATE INDEX IX_1 ON table1(col1)",
                         "ALTER TABLE table1 ALTER COLUMN col1 IMAGE"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         var statementList = ParseStatementList(text);
                         foreach (var statment in statementList.Statements) {
                             var context = new SqlserverContext(new SqlserverMeta());
@@ -911,6 +993,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_ALTER_TABLE_NEED_MERGE
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_ALTER_TABLE_NEED_MERGE");
                 try {
                     var ruleValidatorContext = new SqlserverContext(new SqlserverMeta());
                     var ruleValidator = DefaultRules.RuleValidators[DefaultRules.DDL_CHECK_ALTER_TABLE_NEED_MERGE];
@@ -919,6 +1003,8 @@ namespace SqlServerProtoServerTest {
                         "ALTER TABLE schema1.table1 ALTER COLUMN col1 INT",
                         "ALTER TABLE schema1.table1 ALTER COLUMN col2 INT"
                     }) {
+                        Console.WriteLine("text:{0}", sql);
+
                         var statementList = ParseStatementList(sql);
                         foreach (var statement in statementList.Statements) {
                             ruleValidator.Check(ruleValidatorContext, statement);
@@ -944,6 +1030,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_DISABLE_DROP_STATEMENT
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_DISABLE_DROP_STATEMENT");
                 try {
                     foreach (var text in new String[] {
 
@@ -951,6 +1039,8 @@ namespace SqlServerProtoServerTest {
                         "DROP TABLE schema1.table1"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_DISABLE_DROP_STATEMENT,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -963,6 +1053,8 @@ namespace SqlServerProtoServerTest {
 
             //ALL_CHECK_WHERE_IS_INVALID
             {
+                Console.WriteLine();
+                Console.WriteLine("ALL_CHECK_WHERE_IS_INVALID");
                 try {
                     foreach (var text in new String[] {
 
@@ -982,6 +1074,8 @@ namespace SqlServerProtoServerTest {
                         "DELETE FROM table1 WHERE NULL IS NULL"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.ALL_CHECK_WHERE_IS_INVALID,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1005,6 +1099,8 @@ namespace SqlServerProtoServerTest {
                         "SELECT col1 FROM table1 WHERE 1 < col1"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.ALL_CHECK_WHERE_IS_INVALID,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -1017,12 +1113,16 @@ namespace SqlServerProtoServerTest {
 
             //DML_DISABE_SELECT_ALL_COLUMN
             {
+                Console.WriteLine();
+                Console.WriteLine("DML_DISABE_SELECT_ALL_COLUMN");
                 try {
                     foreach (var text in new String[] {
 
                         "select * from table1"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DML_DISABE_SELECT_ALL_COLUMN,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NOTICE),
@@ -1038,6 +1138,8 @@ namespace SqlServerProtoServerTest {
                         "select col1 from table1"
 
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DML_DISABE_SELECT_ALL_COLUMN,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.NORMAL),
@@ -1050,11 +1152,15 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_INDEX_PREFIX
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_INDEX_PREFIX");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE table1(col1 INT, INDEX index1(col1));",
                         "CREATE INDEX index1 ON table1(col1);"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_INDEX_PREFIX,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1067,6 +1173,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_UNIQUE_INDEX_PREFIX
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_UNIQUE_INDEX_PREFIX");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE table1(col1 INT, CONSTRAINT constraint1 UNIQUE(col1));",
@@ -1074,6 +1182,8 @@ namespace SqlServerProtoServerTest {
                         "CREATE UNIQUE INDEX index1 ON table1(col1);",
                         "ALTER TABLE table1 ADD CONSTRAINT constraint1 UNIQUE (col1);"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_UNIQUE_INDEX_PREFIX,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1086,11 +1196,15 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COLUMN_WITHOUT_DEFAULT
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COLUMN_WITHOUT_DEFAULT");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE table1(col1 INT, col2 INT DEFAULT 0);",
                         "ALTER TABLE table1 ADD col1 VARCHAR(20) DEFAULT 0, col2 INT;",
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1103,6 +1217,8 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE table1(col1 DATE)",
@@ -1119,6 +1235,8 @@ namespace SqlServerProtoServerTest {
                         "ALTER TABLE table1 ADD col1 SMALLDATETIME",
                         "ALTER TABLE table1 ADD col1 TIME",
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1131,12 +1249,16 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE table1(col1 TEXT NOT NULL)",
 
                         "ALTER TABLE table1 ADD col1 TEXT NOT NULL",
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1149,12 +1271,16 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE table1(col1 TEXT NOT NULL)",
 
                         "ALTER TABLE table1 ADD col1 TEXT NOT NULL",
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1167,12 +1293,16 @@ namespace SqlServerProtoServerTest {
 
             //DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL
             {
+                Console.WriteLine();
+                Console.WriteLine("DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL");
                 try {
                     foreach (var text in new String[]{
                         "CREATE TABLE table1(col1 TEXT DEFAULT '123')",
 
                         "ALTER TABLE table1 ADD col1 TEXT DEFAULT '123'"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),
@@ -1185,11 +1315,15 @@ namespace SqlServerProtoServerTest {
 
             //DML_CHECK_WITH_LIMIT
             {
+                Console.WriteLine();
+                Console.WriteLine("DML_CHECK_WITH_LIMIT");
                 try {
                     foreach (var text in new String[]{
                         "DELETE TOP(100) FROM table1;",
                         "UPDATE TOP(100) table1 SET col1=1;"
                     }) {
+                        Console.WriteLine("text:{0}", text);
+
                         MyAssert(DefaultRules.DML_CHECK_WITH_LIMIT,
                             text,
                             RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR),

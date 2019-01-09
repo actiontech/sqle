@@ -29,6 +29,8 @@ namespace SqlServerProtoServerTest {
             context.ExpectDatabaseName = "database1";
             context.ExpectSchemaName = "schema1";
             context.ExpectTableName = "table1";
+            Console.WriteLine();
+            Console.WriteLine("rollbackCreateTable text:{0}", text);
             foreach (var statement in statementList.Statements) {
                 var isDDL = false;
                 var isDML = false;
@@ -59,6 +61,8 @@ namespace SqlServerProtoServerTest {
             }
             var text = "DROP TABLE database1.schema1.table1";
             var statementList = ParseStatementList(text);
+            Console.WriteLine();
+            Console.WriteLine("rollbackDropTable text:{0}", text);
             foreach (var statement in statementList.Statements) {
                 var isDDL = false;
                 var isDML = false;
@@ -102,47 +106,47 @@ namespace SqlServerProtoServerTest {
                 foreach (var statement in statementList.Statements) {
                     var isDDL = false;
                     var isDML = false;
-                    Console.WriteLine("index:{0}, text:{1}", index, text);
+                    Console.WriteLine();
+                    Console.WriteLine("rollbackAlterTable index:{0}, text:{1}", index, text);
                     var rollbackSql = new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
                     if (index == 1) {
-                        Console.WriteLine("rollback 1:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 1:{0}", rollbackSql);
                         Assert.Equal("ALTER TABLE database1.dbo.test DROP COLUMN AddDate", rollbackSql);
                     }
                     if (index == 2) {
-                        Console.WriteLine("rollback 2:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 2:{0}", rollbackSql);
                         Assert.Equal("ALTER TABLE database1.dbo.test DROP COLUMN column_b,column_c,column_d,column_e", rollbackSql);
                     }
                     if (index == 3) {
-                        Console.WriteLine("rollback 3:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 3:{0}", rollbackSql);
                         Assert.Equal("ALTER TABLE database1.dbo.test ADD column_c INT,column_d INT", rollbackSql);
                     }
                     if (index == 4) {
-                        Console.WriteLine("rollback 4:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 4:{0}", rollbackSql);
                         Assert.Equal("ALTER TABLE database1.dbo.test DROP CONSTRAINT exd_check", rollbackSql);
                     }
                     if (index == 5) {
-                        Console.WriteLine("rollback 5:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 5:{0}", rollbackSql);
                         Assert.Equal("ALTER TABLE database1.dbo.test ADD column_b INT;ALTER TABLE database1.dbo.test ADD CONSTRAINT my_constraint UNIQUE (column_c),CONSTRAINT my_pk_constraint UNIQUE (column_d)", rollbackSql);
                     }
                     if (index == 6) {
-                        Console.WriteLine("rollback 6:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 6:{0}", rollbackSql);
                         Assert.Equal("ALTER TABLE database1.dbo.test ALTER COLUMN column_b INT", rollbackSql);
                     }
                     if (index == 7) {
-                        Console.WriteLine("rollback 7:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 7:{0}", rollbackSql);
                         Assert.Equal("ALTER TABLE database1.dbo.test ALTER COLUMN column_d INT", rollbackSql);
                     }
                     if (index == 8) {
-                        Console.WriteLine("rollback 8:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 8:{0}", rollbackSql);
                         Assert.Equal("EXEC sp_rename 'dbo.test1', 'test'", rollbackSql);
                     }
                     if (index == 9) {
-                        Console.WriteLine("rollback 9:{0}", rollbackSql);
+                        Console.WriteLine("rollbackAlterTable rollback 9:{0}", rollbackSql);
                         Assert.Equal("EXEC sp_rename 'dbo.test.column_b1', 'column_b', 'COLUMN'", rollbackSql);
                     }
                     context.UpdateContext(logger, statement);
                     index += 1;
-                    Console.WriteLine("=====================================================");
                 }
             }
         }
@@ -155,6 +159,8 @@ namespace SqlServerProtoServerTest {
             context.ExpectDatabaseName = "database1";
             context.ExpectSchemaName = "schema1";
             context.ExpectTableName = "table1";
+            Console.WriteLine();
+            Console.WriteLine("rollbackCreateIndex text:{0}", text);
             foreach (var statement in statementList.Statements) {
                 var isDDL = false;
                 var isDML = false;
@@ -196,7 +202,8 @@ namespace SqlServerProtoServerTest {
                 "INSERT INTO tbl1(col1, col2) VALUES (1, 2), (3, 4);",
                 "INSERT INTO tbl1 VALUES (5, 6, 7);"
             }) {
-                Console.WriteLine("index:{0}, text:{1}", index, text);
+                Console.WriteLine();
+                Console.WriteLine("rollbackInsert index:{0}, text:{1}", index, text);
                 var statementList = ParseStatementList(text);
                 foreach (var statement in statementList.Statements) {
                     var isDDL = false;
@@ -205,17 +212,16 @@ namespace SqlServerProtoServerTest {
                     Assert.True(isDDL == false);
                     Assert.True(isDML == true);
                     if (index == 0) {
-                        Console.WriteLine("rollback 0: {0}", rollbackSql);
+                        Console.WriteLine("rollbackInsert rollback 0: {0}", rollbackSql);
                         Assert.Equal("DELETE FROM database1.schema1.tbl1 WHERE col1 = '1';\nDELETE FROM database1.schema1.tbl1 WHERE col1 = '3';", rollbackSql);
                         context.ExpectColumns = new List<String>() {
                             "col1", "col2", "col3"
                         };
                     }
                     if (index == 1) {
-                        Console.WriteLine("rollback 1: {0}", rollbackSql);
+                        Console.WriteLine("rollbackInsert rollback 1: {0}", rollbackSql);
                         Assert.Equal("DELETE FROM database1.schema1.tbl1 WHERE col1 = '5';", rollbackSql);
                     }
-                    Console.WriteLine("=====================================================");
                     index +=1;
                 }
             }
@@ -247,7 +253,8 @@ namespace SqlServerProtoServerTest {
                 "DELETE FROM tbl1;",
                 "DELETE TOP(1) FROM tbl1;"
             }) {
-                Console.WriteLine("index:{0}, text:{1}", index, text);
+                Console.WriteLine();
+                Console.WriteLine("rollbackDelete index:{0}, text:{1}", index, text);
                 var statementList = ParseStatementList(text);
                 foreach (var statement in statementList.Statements) {
                     var isDDL = false;
@@ -256,18 +263,17 @@ namespace SqlServerProtoServerTest {
                     Assert.True(isDDL == false);
                     Assert.True(isDML == true);
                     if (index == 0) {
-                        Console.WriteLine("rollback 0: {0}", rollbackSql);
+                        Console.WriteLine("rollbackDelete rollback 0: {0}", rollbackSql);
                         Assert.Equal("INSERT INTO database1.schema1.tbl1 (col1, col2) VALUES ('2', '3')", rollbackSql);
                     }
                     if (index == 1) {
-                        Console.WriteLine("rollback 1: {0}", rollbackSql);
+                        Console.WriteLine("rollbackDelete rollback 1: {0}", rollbackSql);
                         Assert.Equal("INSERT INTO database1.schema1.tbl1 (col1, col2) VALUES ('2', '3')", rollbackSql);
                     }
                     if (index == 2) {
-                        Console.WriteLine("rollback 2: {0}", rollbackSql);
+                        Console.WriteLine("rollbackDelete rollback 2: {0}", rollbackSql);
                         Assert.Equal("INSERT INTO database1.schema1.tbl1 (col1, col2) VALUES ('2', '3')", rollbackSql);
                     }
-                    Console.WriteLine("=====================================================");
                     index += 1;
                 }
             }
@@ -301,7 +307,8 @@ namespace SqlServerProtoServerTest {
             foreach (var text in new String[]{
                 "UPDATE tbl3 SET col1=\"dddd\", col2=2 WHERE col1='aa';",
             }) {
-                Console.WriteLine("text:{0}", text);
+                Console.WriteLine();
+                Console.WriteLine("rollbackUpdate text:{0}", text);
                 var statementList = ParseStatementList(text);
                 foreach (var statement in statementList.Statements) {
                     var isDDL = false;

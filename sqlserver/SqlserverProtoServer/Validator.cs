@@ -780,6 +780,9 @@ namespace SqlserverProtoServer {
             }
             var constraintDefinitionKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
             foreach (var tableConstraint in definition.TableConstraints) {
+                if (tableConstraint.ConstraintIdentifier == null) {
+                    continue;
+                }
                 var constraintName = tableConstraint.ConstraintIdentifier.Value;
                 var constraintString = "";
                 for (int index = tableConstraint.FirstTokenIndex; index <= tableConstraint.LastTokenIndex; index++) {

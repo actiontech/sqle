@@ -309,7 +309,7 @@ namespace SqlserverProtoServer {
             var indexes = new List<String>();
             switch (statement) {
                 case CreateTableStatement createTableStatement:
-                    if (createTableStatement.Definition.Indexes != null) {
+                    if (createTableStatement.Definition.Indexes == null) {
                         break;
                     }
 
