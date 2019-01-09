@@ -584,7 +584,6 @@ namespace SqlserverProtoServer {
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
                 String query = String.Format("SELECT * FROM {0}.{1}.{2} {3}", databaseName, schemaName, tableName, where);
-                Console.WriteLine("query:{0}", query);
                 SqlCommand command = new SqlCommand(query, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -612,7 +611,6 @@ namespace SqlserverProtoServer {
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
                 String query = String.Format("SELECT COUNT(*) AS counter FROM {0}.{1}.{2} {3}", databaseName, schemaName, tableName, where);
-                Console.WriteLine("query:{0}", query);
                 SqlCommand command = new SqlCommand(String.Format("SELECT COUNT(*) AS counter FROM {0}.{1}.{2} {3}", databaseName, schemaName, tableName, where), connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
