@@ -238,13 +238,20 @@ namespace SqlserverProtoServer {
             Dictionary<String, String> columnTypes = new Dictionary<String, String>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                String queryString = String.Format("SELECT COLUMN_NAME AS Column_name, DATA_TYPE AS Data_type FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{0}'", tableName);
+                String queryString = String.Format("SELECT COLUMN_NAME AS Column_name, DATA_TYPE AS Data_type, CHARACTER_MAXIMUM_LENGTH as Max_length FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{0}'", tableName);
                 SqlCommand command = new SqlCommand(queryString, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        columnTypes[reader["Column_name"] as String] = reader["Data_type"] as String;
+                        var columnName = reader["Column_name"] as String;
+                        var columnType = reader["Data_type"] as String;
+                        if (columnType == "varbinary") {
+                            if ((int)reader["Max_length"] == -1) {
+                                columnType += "(max)";
+                            }
+                        }
+                        columnTypes[columnName] = columnType;
                     }
                 } finally {
                     reader.Close();
@@ -286,6 +293,9 @@ namespace SqlserverProtoServer {
                     foreach (var column in createIndexStatement.Columns) {
                         ColumnReferenceExpression columnReferenceExpression = column.Column;
                         foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                            if (!columnTypes.ContainsKey(identifier.Value)) {
+                                continue;
+                            }
                             if (columnTypes.ContainsKey(identifier.Value) && IsBlobTypeString(columnTypes[identifier.Value], null)) {
                                 indexDataTypeIsBlob = true;
                             }

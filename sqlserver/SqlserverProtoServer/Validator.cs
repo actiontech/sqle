@@ -1512,6 +1512,7 @@ namespace SqlserverProtoServer {
                 case "image":
                 case "text":
                 case "xml":
+                case "varbinary(max)":
                     return true;
                 case "varbinary":
                     foreach (var param in parameters) {
