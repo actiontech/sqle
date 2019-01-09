@@ -58,7 +58,7 @@ namespace SqlserverProtoServer {
             };
             foreach (var columnDefinition in columnDefinitions) {
                 var typeName = columnDefinition.DataType.Name.BaseIdentifier.Value;
-                if (timeTypes.Contains(typeName) && columnDefinition.DefaultConstraint == null) {
+                if (timeTypes.Contains(typeName.ToUpper()) && columnDefinition.DefaultConstraint == null) {
                     logger.Debug("column {0} of time type should contain default value", columnDefinition.ColumnIdentifier.Value);
                     return false;
                 }
