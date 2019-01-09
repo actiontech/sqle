@@ -118,6 +118,9 @@ namespace SqlserverProtoServer {
                 var pkCounter = 0;
                 foreach (var columnDefinition in statement.Definition.ColumnDefinitions) {
                     columnNames.Add(columnDefinition.ColumnIdentifier.Value);
+                    if (columnDefinition.Constraints == null) {
+                        continue;
+                    }
                     foreach (var columnConstraint in columnDefinition.Constraints) {
                         if (columnConstraint is UniqueConstraintDefinition) {
                             var uniqueConstraintDefinition = columnConstraint as UniqueConstraintDefinition;
@@ -138,12 +141,14 @@ namespace SqlserverProtoServer {
                 // no duplicate index
                 var indexNames = new List<String>();
                 var indexColumnNames = new List<String>();
-                foreach (var indexDefinition in statement.Definition.Indexes) {
-                    indexNames.Add(indexDefinition.Name.Value);
-                    foreach (var column in indexDefinition.Columns) {
-                        ColumnReferenceExpression columnReferenceExpression = column.Column;
-                        foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
-                            indexColumnNames.Add(identifier.Value);
+                if (statement.Definition.Indexes != null) {
+                    foreach (var indexDefinition in statement.Definition.Indexes) {
+                        indexNames.Add(indexDefinition.Name.Value);
+                        foreach (var column in indexDefinition.Columns) {
+                            ColumnReferenceExpression columnReferenceExpression = column.Column;
+                            foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                                indexColumnNames.Add(identifier.Value);
+                            }
                         }
                     }
                 }
@@ -171,17 +176,22 @@ namespace SqlserverProtoServer {
                 // no duplicate constaint
                 var constraintNames = new List<String>();
                 var constraintColumnNames = new List<String>();
-                foreach (var constaintDefinition in statement.Definition.TableConstraints) {
-                    constraintNames.Add(constaintDefinition.ConstraintIdentifier.Value);
-                    if (constaintDefinition is UniqueConstraintDefinition) {
-                        var uniqueConstaintDefinition = constaintDefinition as UniqueConstraintDefinition;
-                        if (uniqueConstaintDefinition.IsPrimaryKey) {
-                            pkCounter += 1;
+                if (statement.Definition.TableConstraints != null) {
+                    foreach (var constraintDefinition in statement.Definition.TableConstraints) {
+                        if (constraintDefinition.ConstraintIdentifier == null) {
+                            continue;
                         }
-                        foreach (var column in uniqueConstaintDefinition.Columns) {
-                            ColumnReferenceExpression columnReferenceExpression = column.Column;
-                            foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
-                                constraintColumnNames.Add(identifier.Value);
+                        constraintNames.Add(constraintDefinition.ConstraintIdentifier.Value);
+                        if (constraintDefinition is UniqueConstraintDefinition) {
+                            var uniqueConstaintDefinition = constraintDefinition as UniqueConstraintDefinition;
+                            if (uniqueConstaintDefinition.IsPrimaryKey) {
+                                pkCounter += 1;
+                            }
+                            foreach (var column in uniqueConstaintDefinition.Columns) {
+                                ColumnReferenceExpression columnReferenceExpression = column.Column;
+                                foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                                    constraintColumnNames.Add(identifier.Value);
+                                }
                             }
                         }
                     }
@@ -296,6 +306,9 @@ namespace SqlserverProtoServer {
                     if (definition.TableConstraints.Count > 0) {
                         var constraintDefinitions = context.GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName);
                         foreach (var tableConstaint in definition.TableConstraints) {
+                            if (tableConstaint.ConstraintIdentifier == null) {
+                                continue;
+                            }
                             var constaintName = tableConstaint.ConstraintIdentifier.Value;
                             logger.Info("constraint name:{0}", constaintName);
                             if (constraintDefinitions.ContainsKey(constaintName)) {
@@ -643,6 +656,11 @@ namespace SqlserverProtoServer {
                             }
                         }
                     }
+                    if (insertColumns.Count == 0) {
+                        foreach (var columnDefinition in columnDefinitions) {
+                            insertColumns.Add(columnDefinition.Key);
+                        }
+                    }
                     logger.Info("insert columns:{0}", String.Join(",", insertColumns));
 
                     if (needExistsColumns.Count > 0) {
@@ -661,10 +679,12 @@ namespace SqlserverProtoServer {
                     if (statement.InsertSpecification.InsertSource is ValuesInsertSource) {
                         var valuesInsertSource = statement.InsertSpecification.InsertSource as ValuesInsertSource;
                         foreach (var rowValue in valuesInsertSource.RowValues) {
-                            context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, DefaultRules.NOT_MATCH_VALUES_AND_COLUMNS);
-                            logger.Info("column not match values for {0}", tableName);
-                            isInvalid = true;
-                            break;
+                            if (rowValue.ColumnValues.Count != insertColumns.Count) {
+                                context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, DefaultRules.NOT_MATCH_VALUES_AND_COLUMNS);
+                                logger.Info("column not match values for {0}", tableName);
+                                isInvalid = true;
+                                break;
+                            }
                         }
                     }
                 }

@@ -98,6 +98,9 @@ namespace SqlserverProtoServer {
             var nullable = true;
             foreach (var columnDefinition in columnDefinitions) {
                 if (IsBlobType(columnDefinition.DataType)) {
+                    if (columnDefinition.Constraints == null) {
+                        continue;
+                    }
                     foreach (var constraint in columnDefinition.Constraints) {
                         if (constraint is NullableConstraintDefinition) {
                             var nullableConstraint = constraint as NullableConstraintDefinition;

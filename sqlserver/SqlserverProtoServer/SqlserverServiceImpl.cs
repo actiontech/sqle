@@ -230,6 +230,7 @@ namespace SqlserverProtoServer {
                         rollbackSql.Sql_ = new RollbackSql().GetRollbackSql(rollbackSqlContext, statement, out isDDL, out isDML);
                         rollbackSql.IsDDL = isDDL;
                         rollbackSql.IsDML = isDML;
+                        logger.Info("sql:{0}\nrollback sql:{1}\nisDDL:{2}\nisDML:{3}", sql, rollbackSql.Sql_, isDDL, isDML);
                         output.RollbackSqls.Add(rollbackSql);
 
                         rollbackSqlContext.UpdateContext(logger, statement);

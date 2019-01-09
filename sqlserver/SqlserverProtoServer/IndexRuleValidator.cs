@@ -14,6 +14,9 @@ namespace SqlserverProtoServer {
             int compositeIndexMax = 0;
             switch (statement) {
                 case CreateTableStatement createTableStatement:
+                    if (createTableStatement.Definition.Indexes == null) {
+                        break;
+                    }
                     foreach (var index in createTableStatement.Definition.Indexes) {
                         if (index.Columns.Count > compositeIndexMax) {
                             compositeIndexMax = index.Columns.Count;
@@ -48,8 +51,15 @@ namespace SqlserverProtoServer {
         }
 
         public int GetIndexCounterFromColumnDefinitions(IList<ColumnDefinition> columnDefinitions) {
+            if (columnDefinitions == null) {
+                return 0;
+            }
+
             int indexCounter = 0;
             foreach (var columnDefinition in columnDefinitions) {
+                if (columnDefinition.Constraints == null) {
+                    continue;
+                }
                 foreach (var constraint in columnDefinition.Constraints) {
                     if (constraint is UniqueConstraintDefinition) {
                         indexCounter++;
@@ -60,6 +70,10 @@ namespace SqlserverProtoServer {
         }
 
         public int GetIndexCounterFromTableConstraints(IList<ConstraintDefinition> constraintDefinitions) {
+            if (constraintDefinitions == null) {
+                return 0;
+            }
+
             var indexCounter = 0;
             foreach (var constraint in constraintDefinitions) {
                 if (constraint is UniqueConstraintDefinition) {
@@ -132,8 +146,16 @@ namespace SqlserverProtoServer {
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool hasIndexForColumnsTypeBlobInTableDefinition(TableDefinition tableDefinition) {
+            if (tableDefinition == null) {
+                return false;
+            }
+
             // unique index
             foreach (var columnDefinition in tableDefinition.ColumnDefinitions) {
+                if (columnDefinition.Constraints == null) {
+                    continue;
+                }
+
                 foreach (var constriant in columnDefinition.Constraints) {
                     if (constriant is UniqueConstraintDefinition) {
                         if (IsBlobType(columnDefinition.DataType)) {
@@ -143,19 +165,24 @@ namespace SqlserverProtoServer {
                 }
             }
 
-            foreach (var constraint in tableDefinition.TableConstraints) {
-                if (constraint is UniqueConstraintDefinition) {
-                    UniqueConstraintDefinition uniqueConstraintDefinition = constraint as UniqueConstraintDefinition;
-                    if (hasIndexForColumnsTypeBlob(tableDefinition, uniqueConstraintDefinition.Columns)) {
-                        return true;
+
+            if (tableDefinition.TableConstraints != null) {
+                foreach (var constraint in tableDefinition.TableConstraints) {
+                    if (constraint is UniqueConstraintDefinition) {
+                        UniqueConstraintDefinition uniqueConstraintDefinition = constraint as UniqueConstraintDefinition;
+                        if (hasIndexForColumnsTypeBlob(tableDefinition, uniqueConstraintDefinition.Columns)) {
+                            return true;
+                        }
                     }
                 }
             }
 
             // indexes
-            foreach (var index in tableDefinition.Indexes) {
-                if (hasIndexForColumnsTypeBlob(tableDefinition, index.Columns)) {
-                    return true;
+            if (tableDefinition.Indexes != null) {
+                foreach (var index in tableDefinition.Indexes) {
+                    if (hasIndexForColumnsTypeBlob(tableDefinition, index.Columns)) {
+                        return true;
+                    }
                 }
             }
 
@@ -163,6 +190,10 @@ namespace SqlserverProtoServer {
         }
 
         public bool hasIndexForColumnsTypeBlob(TableDefinition tableDefinition, IList<ColumnWithSortOrder> columns) {
+            if (tableDefinition == null || columns == null) {
+                return false;
+            }
+
             foreach (var column in columns) {
                 ColumnReferenceExpression columnReferenceExpression = column.Column;
                 foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
@@ -278,6 +309,10 @@ namespace SqlserverProtoServer {
             var indexes = new List<String>();
             switch (statement) {
                 case CreateTableStatement createTableStatement:
+                    if (createTableStatement.Definition.Indexes == null) {
+                        break;
+                    }
+
                     foreach (var index in createTableStatement.Definition.Indexes) {
                         if (!index.Unique) {
                             indexes.Add(index.Name.Value);
@@ -311,25 +346,33 @@ namespace SqlserverProtoServer {
             var indexes = new List<String>();
             switch (statement) {
                 case CreateTableStatement createTableStatement:
-                    foreach (var constaint in createTableStatement.Definition.TableConstraints) {
-                        if (constaint is UniqueConstraintDefinition) {
-                            indexes.Add(constaint.ConstraintIdentifier.Value);
+                    if (createTableStatement.Definition.TableConstraints != null) {
+                        foreach (var constaint in createTableStatement.Definition.TableConstraints) {
+                            if (constaint is UniqueConstraintDefinition) {
+                                indexes.Add(constaint.ConstraintIdentifier.Value);
+                            }
                         }
                     }
 
-                    foreach (var index in createTableStatement.Definition.Indexes) {
-                        if (index.Unique) {
-                            indexes.Add(index.Name.Value);
+                    if (createTableStatement.Definition.Indexes != null) {
+                        foreach (var index in createTableStatement.Definition.Indexes) {
+                            if (index.Unique) {
+                                indexes.Add(index.Name.Value);
+                            }
                         }
                     }
+
                     break;
 
                 case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
-                    foreach (var constraint in alterTableAddTableElementStatement.Definition.TableConstraints) {
-                        if (constraint is UniqueConstraintDefinition) {
-                            indexes.Add(constraint.ConstraintIdentifier.Value);
+                    if (alterTableAddTableElementStatement.Definition.TableConstraints != null) {
+                        foreach (var constraint in alterTableAddTableElementStatement.Definition.TableConstraints) {
+                            if (constraint is UniqueConstraintDefinition) {
+                                indexes.Add(constraint.ConstraintIdentifier.Value);
+                            }
                         }
                     }
+
                     break;
 
                 case CreateIndexStatement createIndexStatement:

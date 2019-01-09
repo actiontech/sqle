@@ -8,6 +8,10 @@ namespace SqlserverProtoServer {
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool hasForeignKeyConstraint(IList<ConstraintDefinition> constraints) {
+            if (constraints == null) {
+                return false;
+            }
+
             foreach (var constrait in constraints) {
                 if (constrait is ForeignKeyConstraintDefinition) {
                     return true;
@@ -19,6 +23,12 @@ namespace SqlserverProtoServer {
             bool hasForeignKey = false;
             switch (statement) {
                 case CreateTableStatement createTableStatement:
+                    if (hasForeignKeyConstraint(createTableStatement.Definition.TableConstraints)) {
+                        logger.Debug("There exists foreign key constraint in create table statement");
+                        hasForeignKey = true;
+                        break;
+                    }
+
                     foreach (var columnDefinition in createTableStatement.Definition.ColumnDefinitions) {
                         if (hasForeignKeyConstraint(columnDefinition.Constraints)) {
                             logger.Debug("There exists foreign key constraint in create table statement");

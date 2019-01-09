@@ -88,7 +88,7 @@ namespace SqlserverProtoServer {
             if (sqlLines.Count > 0) {
                 return String.Format("CREATE TABLE {0}.{1}.{2} ({3});", databaseName, schemaName, tableName, String.Join(',', sqlLines));
             }
-
+            logger.Info("table {0}.{1}.{2} definition not found", databaseName, schemaName, tableName);
             return "";
         }
 
@@ -123,11 +123,16 @@ namespace SqlserverProtoServer {
                     var tableDefinition = alterTableAddTableElementStatement.Definition;
 
                     var addConstraints = new List<String>();
-                    foreach (var tableConstraint in tableDefinition.TableConstraints) {
-                        addConstraints.Add(tableConstraint.ConstraintIdentifier.Value);
-                    }
-                    if (addConstraints.Count > 0) {
-                        rollbackActions.Add(String.Format("{0} DROP CONSTRAINT {1}", rollbackPrefix, String.Join(',', addConstraints)));
+                    if (tableDefinition.TableConstraints != null) {
+                        foreach (var tableConstraint in tableDefinition.TableConstraints) {
+                            if (tableConstraint.ConstraintIdentifier == null) {
+                                continue;
+                            }
+                            addConstraints.Add(tableConstraint.ConstraintIdentifier.Value);
+                        }
+                        if (addConstraints.Count > 0) {
+                            rollbackActions.Add(String.Format("{0} DROP CONSTRAINT {1}", rollbackPrefix, String.Join(',', addConstraints)));
+                        }
                     }
 
                     var addColumns = new List<String>();
