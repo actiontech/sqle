@@ -73,82 +73,59 @@ namespace SqlServerProtoServerTest {
             }
         }
 
-        private void rollbackAlterTable() {
-            var context = new SqlserverContext(new SqlserverMeta());
-            context.IsTest = true;
-            context.ExpectDatabaseName = "database1";
-            context.ExpectSchemaName = "dbo";
-            context.ExpectTableName = "test";
+        private void doRollbackAlterTable(String sql, String expectRollback) {
+            var context = new SqlserverContext(new SqlserverMeta()) {
+                IsTest = true,
+                ExpectDatabaseName = "database1",
+                ExpectSchemaName = "dbo",
+                ExpectTableName = "test"
+            };
+
             var logger = LogManager.GetCurrentClassLogger();
             var index = 0;
+            Console.WriteLine();
             foreach (var text in new String[]{
                 "CREATE TABLE dbo.test(column_b INT, column_c INT, column_d INT, CONSTRAINT my_constraint UNIQUE (column_c), CONSTRAINT my_pk_constraint UNIQUE (column_d));",
-
-                "ALTER TABLE dbo.test ADD AddDate smalldatetime NULL CONSTRAINT AddDateDflt DEFAULT GETDATE() WITH VALUES;",
-                "ALTER TABLE dbo.test ADD column_b INT IDENTITY CONSTRAINT column_b_pk PRIMARY KEY, " +
-                    "column_c INT NULL CONSTRAINT column_c_fk REFERENCES test1(column_a), " +
-                    "column_d VARCHAR(16) NULL CONSTRAINT column_d_chk CHECK (column_d LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]' OR column_d LIKE '([0-9][0-9][0-9]) [0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]'), " +
-                    "column_e DECIMAL(3,3) CONSTRAINT column_e_default DEFAULT .081;",
-                "ALTER TABLE dbo.test DROP COLUMN column_c, column_d;",
-
-                "ALTER TABLE dbo.test WITH NOCHECK ADD CONSTRAINT exd_check CHECK (column_a > 1);",
-                "ALTER TABLE dbo.test DROP CONSTRAINT my_constraint, my_pk_constraint, COLUMN column_b;",
-
-                "ALTER TABLE dbo.test ALTER COLUMN column_b DECIMAL(5,2);",
-                "ALTER TABLE test ALTER COLUMN column_d varchar(50) ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK1], ENCRYPTION_TYPE=Randomized, ALGORITHM='AEAD_AES_256_CBC_HMAC_SHA_256') NULL;",
-
-                // rename table schem.table
-                "EXEC sp_rename 'dbo.test', 'test1';",
-                // rename column table.column|schema.table.column
-                "EXEC sp_rename 'dbo.test.column_b', 'column_b1', 'COLUMN';"
+                sql
             }) {
                 var statementList = ParseStatementList(text);
                 foreach (var statement in statementList.Statements) {
                     var isDDL = false;
                     var isDML = false;
-                    Console.WriteLine();
                     Console.WriteLine("rollbackAlterTable index:{0}, text:{1}", index, text);
                     var rollbackSql = new RollbackSql().GetRollbackSql(context, statement, out isDDL, out isDML);
                     if (index == 1) {
                         Console.WriteLine("rollbackAlterTable rollback 1:{0}", rollbackSql);
-                        Assert.Equal("ALTER TABLE database1.dbo.test DROP COLUMN AddDate", rollbackSql);
+                        Assert.Equal(expectRollback, rollbackSql);
                     }
-                    if (index == 2) {
-                        Console.WriteLine("rollbackAlterTable rollback 2:{0}", rollbackSql);
-                        Assert.Equal("ALTER TABLE database1.dbo.test DROP COLUMN column_b,column_c,column_d,column_e", rollbackSql);
-                    }
-                    if (index == 3) {
-                        Console.WriteLine("rollbackAlterTable rollback 3:{0}", rollbackSql);
-                        Assert.Equal("ALTER TABLE database1.dbo.test ADD column_c INT,column_d INT", rollbackSql);
-                    }
-                    if (index == 4) {
-                        Console.WriteLine("rollbackAlterTable rollback 4:{0}", rollbackSql);
-                        Assert.Equal("ALTER TABLE database1.dbo.test DROP CONSTRAINT exd_check", rollbackSql);
-                    }
-                    if (index == 5) {
-                        Console.WriteLine("rollbackAlterTable rollback 5:{0}", rollbackSql);
-                        Assert.Equal("ALTER TABLE database1.dbo.test ADD column_b INT;ALTER TABLE database1.dbo.test ADD CONSTRAINT my_constraint UNIQUE (column_c),CONSTRAINT my_pk_constraint UNIQUE (column_d)", rollbackSql);
-                    }
-                    if (index == 6) {
-                        Console.WriteLine("rollbackAlterTable rollback 6:{0}", rollbackSql);
-                        Assert.Equal("ALTER TABLE database1.dbo.test ALTER COLUMN column_b INT", rollbackSql);
-                    }
-                    if (index == 7) {
-                        Console.WriteLine("rollbackAlterTable rollback 7:{0}", rollbackSql);
-                        Assert.Equal("ALTER TABLE database1.dbo.test ALTER COLUMN column_d INT", rollbackSql);
-                    }
-                    if (index == 8) {
-                        Console.WriteLine("rollbackAlterTable rollback 8:{0}", rollbackSql);
-                        Assert.Equal("EXEC sp_rename 'dbo.test1', 'test'", rollbackSql);
-                    }
-                    if (index == 9) {
-                        Console.WriteLine("rollbackAlterTable rollback 9:{0}", rollbackSql);
-                        Assert.Equal("EXEC sp_rename 'dbo.test.column_b1', 'column_b', 'COLUMN'", rollbackSql);
-                    }
+                    index++;
                     context.UpdateContext(logger, statement);
-                    index += 1;
                 }
             }
+        }
+
+        private void rollbackAlterTable() {
+            doRollbackAlterTable("ALTER TABLE dbo.test ADD AddDate smalldatetime NULL CONSTRAINT AddDateDflt DEFAULT GETDATE() WITH VALUES;",
+                                 "ALTER TABLE database1.dbo.test DROP COLUMN AddDate");
+            doRollbackAlterTable("ALTER TABLE dbo.test ADD column_b INT IDENTITY CONSTRAINT column_b_pk PRIMARY KEY, " +
+                    "column_c INT NULL CONSTRAINT column_c_fk REFERENCES test1(column_a), " +
+                    "column_d VARCHAR(16) NULL CONSTRAINT column_d_chk CHECK (column_d LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]' OR column_d LIKE '([0-9][0-9][0-9]) [0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]'), " +
+                    "column_e DECIMAL(3,3) CONSTRAINT column_e_default DEFAULT .081;",
+                                 "ALTER TABLE database1.dbo.test DROP COLUMN column_b,column_c,column_d,column_e");
+            doRollbackAlterTable("ALTER TABLE dbo.test DROP COLUMN column_c, column_d;",
+                                 "ALTER TABLE database1.dbo.test ADD column_c INT,column_d INT");
+            doRollbackAlterTable("ALTER TABLE dbo.test WITH NOCHECK ADD CONSTRAINT exd_check CHECK (column_a > 1);",
+                                 "ALTER TABLE database1.dbo.test DROP CONSTRAINT exd_check");
+            doRollbackAlterTable("ALTER TABLE dbo.test DROP CONSTRAINT my_constraint, my_pk_constraint, COLUMN column_b;",
+                                 "ALTER TABLE database1.dbo.test ADD column_b INT;ALTER TABLE database1.dbo.test ADD CONSTRAINT my_constraint UNIQUE (column_c),CONSTRAINT my_pk_constraint UNIQUE (column_d)");
+            doRollbackAlterTable("ALTER TABLE dbo.test ALTER COLUMN column_b DECIMAL(5,2);",
+                                 "ALTER TABLE database1.dbo.test ALTER COLUMN column_b INT");
+            doRollbackAlterTable("ALTER TABLE test ALTER COLUMN column_d varchar(50) ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = [CEK1], ENCRYPTION_TYPE=Randomized, ALGORITHM='AEAD_AES_256_CBC_HMAC_SHA_256') NULL;",
+                                 "ALTER TABLE database1.dbo.test ALTER COLUMN column_d INT");
+            doRollbackAlterTable("EXEC sp_rename 'dbo.test', 'test1';",
+                                 "EXEC sp_rename 'dbo.test1', 'test'");
+            doRollbackAlterTable("EXEC sp_rename 'dbo.test.column_b', 'column_b1', 'COLUMN';",
+                                 "EXEC sp_rename 'dbo.test.column_b1', 'column_b', 'COLUMN'");
         }
 
         private void rollbackCreateIndex() {

@@ -73,29 +73,7 @@ func (c *Client) ParseSql(sql string) ([]ast.Node, error) {
 	return stmts, errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 }
 
-func (c *Client) Advise(relatedTasks []model.Task, commitSqls []*model.CommitSql, rules []model.Rule, meta *SqlserverProto.SqlserverMeta) error {
-	sqls := []string{}
-	for _, commitSql := range commitSqls {
-		sqls = append(sqls, commitSql.Content)
-	}
-
-	ruleNames := []string{}
-	for _, rule := range rules {
-		ruleNames = append(ruleNames, rule.Name)
-	}
-
-	ddlContextSqls := []*SqlserverProto.DDLContext{}
-	for _, task := range relatedTasks {
-		sqls := []string{}
-		for _, commitSql := range task.CommitSqls {
-			sqls = append(sqls, commitSql.Content)
-		}
-		ddlContextSql := &SqlserverProto.DDLContext{
-			Sqls: sqls,
-		}
-		ddlContextSqls = append(ddlContextSqls, ddlContextSql)
-	}
-
+func (c *Client) Advise(sqls []string, ruleNames []string, meta *SqlserverProto.SqlserverMeta, ddlContextSqls []*SqlserverProto.DDLContext) (*SqlserverProto.AdviseOutput, error) {
 	out, err := c.client.Advise(context.Background(), &SqlserverProto.AdviseInput{
 		Version:        c.version,
 		Sqls:           sqls,
@@ -104,24 +82,14 @@ func (c *Client) Advise(relatedTasks []model.Task, commitSqls []*model.CommitSql
 		DDLContextSqls: ddlContextSqls,
 	})
 	if err != nil {
-		return errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
+		return nil, errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 	}
 
-	results := out.GetResults()
-	if len(results) != len(commitSqls) {
-		return errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("don't match sql advise result"))
+	if len(out.GetResults()) != len(sqls) {
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("don't match sql advise result"))
 	}
 
-	for _, commitSql := range commitSqls {
-		result, ok := results[commitSql.Content]
-		if !ok {
-			continue
-		}
-		commitSql.InspectLevel = result.AdviseLevel
-		commitSql.InspectResult = result.AdviseResultMessage
-		commitSql.InspectStatus = model.TASK_ACTION_DONE
-	}
-	return nil
+	return out, nil
 }
 
 func (c *Client) GenerateAllRollbackSql(commitSqls []*model.CommitSql, config *SqlserverProto.Config, meta *SqlserverProto.SqlserverMeta) ([]string, error) {
