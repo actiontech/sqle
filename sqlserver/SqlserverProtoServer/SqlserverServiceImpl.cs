@@ -151,14 +151,14 @@ namespace SqlserverProtoServer {
             var meta = request.SqlserverMeta;
             var contextStart = 0;
             var logger = LogManager.GetCurrentClassLogger();
-            logger.Info("advise sqls:{0}\nrules:{1}\n", String.Join("\n", sqls), String.Join("\n", ruleNames));
+            logger.Info("advise sqls:{0}\nrules:{1}", String.Join("\n", sqls), String.Join("\n", ruleNames));
             logger.Info("advise host:{0}, port:{1}, user:{2}, current database:{3}", meta.Host, meta.Port, meta.User, meta.CurrentDatabase);
 
         Try:
             var ruleValidatorContext = new SqlserverContext(meta);
             try {
                 for (var index = contextStart; index < contextSqls.Count; index++) {
-                    logger.Info("context {0} sqls: {1}\n", index, String.Join("\n", contextSqls[index].Sqls));
+                    logger.Info("context {0} sqls: {1}", index, String.Join("\n", contextSqls[index].Sqls));
                     foreach (var sql in contextSqls[index].Sqls) {
                         var statementList = ParseStatementList(version, sql);
                         foreach (var statement in statementList.Statements) {
@@ -221,7 +221,7 @@ namespace SqlserverProtoServer {
             var meta = request.SqlserverMeta;
             var rollbackSqlContext = new SqlserverContext(meta, request.RollbackConfig);
             var logger = LogManager.GetCurrentClassLogger();
-            logger.Info("getrollback sqls:{0}\n", String.Join("\n", sqls));
+            logger.Info("getrollback sqls:{0}", String.Join("\n", sqls));
             logger.Info("getrollback host:{0}, port:{1}, user:{2}, current database:{3}", meta.Host, meta.Port, meta.User, meta.CurrentDatabase);
 
             foreach (var sql in sqls) {

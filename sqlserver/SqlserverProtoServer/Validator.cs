@@ -1244,6 +1244,58 @@ namespace SqlserverProtoServer {
                     }
                     break;
 
+                case AlterTableAddTableElementStatement alterTableAddTableElementStatement:
+                    GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(alterTableAddTableElementStatement.SchemaObjectName, out databaseName, out schemaName, out tableName);
+                    var tableDefinition = alterTableAddTableElementStatement.Definition;
+                    var alterTableElemKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+
+                    if (!TableColumnDefinitions.ContainsKey(alterTableElemKey)) {
+                        GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
+                    }
+                    SetTableColumnDefinitions(tableDefinition, databaseName, schemaName, tableName);
+
+                    if (!TableConstraintDefinitions.ContainsKey(alterTableElemKey)) {
+                        GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName);
+                    }
+                    SetTableConstraintDefinitions(tableDefinition, databaseName, schemaName, tableName);
+
+                    if (!TableIndexDefinitions.ContainsKey(alterTableElemKey)) {
+                        GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
+                    }
+                    SetTableIndexDefinitions(tableDefinition, databaseName, schemaName, tableName);
+
+                    break;
+
+                case AlterTableDropTableElementStatement alterTableDropTableElementStatement:
+                    GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(alterTableDropTableElementStatement.SchemaObjectName, out databaseName, out schemaName, out tableName);
+                    GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
+                    GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName);
+                    var dropTableElemKey = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+                    var lastType = TableElementType.NotSpecified;
+                    foreach (var elem in alterTableDropTableElementStatement.AlterTableDropTableElements) {
+                        var elemName = elem.Name.Value;
+                        var elemType = elem.TableElementType;
+                        if (elemType == TableElementType.NotSpecified) {
+                            elemType = lastType;
+                        }
+
+                        if (elemType == TableElementType.Column) {
+                            if (TableColumnDefinitions.ContainsKey(dropTableElemKey) && TableColumnDefinitions[dropTableElemKey].ContainsKey(elemName)) {
+                                TableColumnDefinitions[dropTableElemKey].Remove(elemName);
+                            }
+                            lastType = TableElementType.Column;
+                        }
+
+                        if (elemType == TableElementType.Constraint) {
+                            if (TableConstraintDefinitions.ContainsKey(dropTableElemKey) && TableConstraintDefinitions[dropTableElemKey].ContainsKey(elemName)) {
+                                TableConstraintDefinitions[dropTableElemKey].Remove(dropTableElemKey);
+                            }
+                            lastType = TableElementType.Constraint;
+                        }
+                    }
+
+                    break;
+
                 case ExecuteStatement executeStatement:
                     var entity = executeStatement.ExecuteSpecification.ExecutableEntity;
                     if (entity is ExecutableProcedureReference) {
