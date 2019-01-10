@@ -39,21 +39,21 @@ namespace SqlserverProto {
             "dWx0cxgBIAMoCzIpLlNxbHNlcnZlclByb3RvLkFkdmlzZU91dHB1dC5SZXN1",
             "bHRzRW50cnkSGwoTQmFzZVZhbGlkYXRvckZhaWxlZBgCIAEoCBpMCgxSZXN1",
             "bHRzRW50cnkSCwoDa2V5GAEgASgJEisKBXZhbHVlGAIgASgLMhwuU3Fsc2Vy",
-            "dmVyUHJvdG8uQWR2aXNlUmVzdWx0OgI4ASJACgxBZHZpc2VSZXN1bHQSEwoL",
+            "dmVyUHJvdG8uQWR2aXNlUmVzdWx0OgI4ASJeCgxBZHZpc2VSZXN1bHQSEwoL",
             "QWR2aXNlTGV2ZWwYASABKAkSGwoTQWR2aXNlUmVzdWx0TWVzc2FnZRgCIAEo",
-            "CSIkCgZDb25maWcSGgoSRE1MUm9sbGJhY2tNYXhSb3dzGAEgASgDIpsBChRH",
-            "ZXRSb2xsYmFja1NxbHNJbnB1dBIPCgdWZXJzaW9uGAEgASgJEgwKBFNxbHMY",
-            "AiADKAkSNAoNU3Fsc2VydmVyTWV0YRgDIAEoCzIdLlNxbHNlcnZlclByb3Rv",
-            "LlNxbHNlcnZlck1ldGESLgoOUm9sbGJhY2tDb25maWcYBCABKAsyFi5TcWxz",
-            "ZXJ2ZXJQcm90by5Db25maWciQgoVR2V0Um9sbGJhY2tTcWxzT3V0cHV0EikK",
-            "DFJvbGxiYWNrU3FscxgBIAMoCzITLlNxbHNlcnZlclByb3RvLlNxbDKOAgoQ",
-            "U3Fsc2VydmVyU2VydmljZRJRCgxHZXRTcGxpdFNxbHMSHi5TcWxzZXJ2ZXJQ",
-            "cm90by5TcGxpdFNxbHNJbnB1dBofLlNxbHNlcnZlclByb3RvLlNwbGl0U3Fs",
-            "c091dHB1dCIAEkUKBkFkdmlzZRIbLlNxbHNlcnZlclByb3RvLkFkdmlzZUlu",
-            "cHV0GhwuU3Fsc2VydmVyUHJvdG8uQWR2aXNlT3V0cHV0IgASYAoPR2V0Um9s",
-            "bGJhY2tTcWxzEiQuU3Fsc2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzSW5w",
-            "dXQaJS5TcWxzZXJ2ZXJQcm90by5HZXRSb2xsYmFja1NxbHNPdXRwdXQiAGIG",
-            "cHJvdG8z"));
+            "CRINCgVJc0RETBgDIAEoCBINCgVJc0RNTBgEIAEoCCIkCgZDb25maWcSGgoS",
+            "RE1MUm9sbGJhY2tNYXhSb3dzGAEgASgDIpsBChRHZXRSb2xsYmFja1NxbHNJ",
+            "bnB1dBIPCgdWZXJzaW9uGAEgASgJEgwKBFNxbHMYAiADKAkSNAoNU3Fsc2Vy",
+            "dmVyTWV0YRgDIAEoCzIdLlNxbHNlcnZlclByb3RvLlNxbHNlcnZlck1ldGES",
+            "LgoOUm9sbGJhY2tDb25maWcYBCABKAsyFi5TcWxzZXJ2ZXJQcm90by5Db25m",
+            "aWciQgoVR2V0Um9sbGJhY2tTcWxzT3V0cHV0EikKDFJvbGxiYWNrU3FscxgB",
+            "IAMoCzITLlNxbHNlcnZlclByb3RvLlNxbDKOAgoQU3Fsc2VydmVyU2Vydmlj",
+            "ZRJRCgxHZXRTcGxpdFNxbHMSHi5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNJ",
+            "bnB1dBofLlNxbHNlcnZlclByb3RvLlNwbGl0U3Fsc091dHB1dCIAEkUKBkFk",
+            "dmlzZRIbLlNxbHNlcnZlclByb3RvLkFkdmlzZUlucHV0GhwuU3Fsc2VydmVy",
+            "UHJvdG8uQWR2aXNlT3V0cHV0IgASYAoPR2V0Um9sbGJhY2tTcWxzEiQuU3Fs",
+            "c2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzSW5wdXQaJS5TcWxzZXJ2ZXJQ",
+            "cm90by5HZXRSb2xsYmFja1NxbHNPdXRwdXQiAGIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -64,7 +64,7 @@ namespace SqlserverProto {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta", "DDLContextSqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.DDLContext), global::SqlserverProto.DDLContext.Parser, new[]{ "Sqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results", "BaseValidatorFailed" }, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage", "IsDDL", "IsDML" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Config), global::SqlserverProto.Config.Parser, new[]{ "DMLRollbackMaxRows" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta", "RollbackConfig" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null)
@@ -1326,6 +1326,8 @@ namespace SqlserverProto {
     public AdviseResult(AdviseResult other) : this() {
       adviseLevel_ = other.adviseLevel_;
       adviseResultMessage_ = other.adviseResultMessage_;
+      isDDL_ = other.isDDL_;
+      isDML_ = other.isDML_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1356,6 +1358,28 @@ namespace SqlserverProto {
       }
     }
 
+    /// <summary>Field number for the "IsDDL" field.</summary>
+    public const int IsDDLFieldNumber = 3;
+    private bool isDDL_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool IsDDL {
+      get { return isDDL_; }
+      set {
+        isDDL_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "IsDML" field.</summary>
+    public const int IsDMLFieldNumber = 4;
+    private bool isDML_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool IsDML {
+      get { return isDML_; }
+      set {
+        isDML_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as AdviseResult);
@@ -1371,6 +1395,8 @@ namespace SqlserverProto {
       }
       if (AdviseLevel != other.AdviseLevel) return false;
       if (AdviseResultMessage != other.AdviseResultMessage) return false;
+      if (IsDDL != other.IsDDL) return false;
+      if (IsDML != other.IsDML) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1379,6 +1405,8 @@ namespace SqlserverProto {
       int hash = 1;
       if (AdviseLevel.Length != 0) hash ^= AdviseLevel.GetHashCode();
       if (AdviseResultMessage.Length != 0) hash ^= AdviseResultMessage.GetHashCode();
+      if (IsDDL != false) hash ^= IsDDL.GetHashCode();
+      if (IsDML != false) hash ^= IsDML.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1400,6 +1428,14 @@ namespace SqlserverProto {
         output.WriteRawTag(18);
         output.WriteString(AdviseResultMessage);
       }
+      if (IsDDL != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(IsDDL);
+      }
+      if (IsDML != false) {
+        output.WriteRawTag(32);
+        output.WriteBool(IsDML);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1413,6 +1449,12 @@ namespace SqlserverProto {
       }
       if (AdviseResultMessage.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(AdviseResultMessage);
+      }
+      if (IsDDL != false) {
+        size += 1 + 1;
+      }
+      if (IsDML != false) {
+        size += 1 + 1;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1431,6 +1473,12 @@ namespace SqlserverProto {
       if (other.AdviseResultMessage.Length != 0) {
         AdviseResultMessage = other.AdviseResultMessage;
       }
+      if (other.IsDDL != false) {
+        IsDDL = other.IsDDL;
+      }
+      if (other.IsDML != false) {
+        IsDML = other.IsDML;
+      }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -1448,6 +1496,14 @@ namespace SqlserverProto {
           }
           case 18: {
             AdviseResultMessage = input.ReadString();
+            break;
+          }
+          case 24: {
+            IsDDL = input.ReadBool();
+            break;
+          }
+          case 32: {
+            IsDML = input.ReadBool();
             break;
           }
         }
