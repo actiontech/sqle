@@ -42,12 +42,10 @@ namespace SqlserverProtoServer {
                 version = SQL130;
             }
 
-            var parser = SqlParsers[version];
-            if (parser == null) {
+            if (!SqlParsers.ContainsKey(version)) {
                 throw new ArgumentException(String.Format("unsupported TSqlParser version:{0}", version));
             }
-
-            return parser;
+            return SqlParsers[version];
         }
 
         // construct function
@@ -63,11 +61,13 @@ namespace SqlserverProtoServer {
         }
 
         // parse sqls
-        private StatementList ParseStatementList(String version, String text) {
+        public StatementList ParseStatementList(Logger logger, String version, String text) {
             // get parser
             var parser = GetParser(version);
 
             // parse sqls
+            var needRetry = true;
+        Try:
             var reader = new StringReader(text);
             IList<ParseError> errorList;
             var statementList = parser.ParseStatementList(reader, out errorList);
@@ -76,7 +76,26 @@ namespace SqlserverProtoServer {
                 foreach (var parseErr in errorList) {
                     errMsgList.Add(parseErr.Message);
                 }
-                throw new ArgumentException(String.Format("parse sql `{0}` error: {1}", text, String.Join("; ",errMsgList)));
+
+                // remove GO or GO; statement and retry
+                if (needRetry) {
+                    logger.Info("parse statement error:{0}\nIt will retry after remove GO or GO; statement", String.Join("; ", errMsgList));
+
+                    var sqlLines = text.Split('\n');
+                    var newSqlLines = new List<String>();
+                    foreach (var sqlLine in sqlLines) {
+                        if (sqlLine.Trim().TrimEnd(';').ToUpper() == "GO") {
+                            continue;
+                        }
+                        newSqlLines.Add(sqlLine);
+                    }
+                    text = String.Join('\n', newSqlLines);
+
+                    needRetry = false;
+                    goto Try;
+                }
+
+                throw new ArgumentException(String.Format("parse sql `{0}` error: {1}", text, String.Join("; ", errMsgList)));
             }
 
             return statementList;
@@ -90,7 +109,7 @@ namespace SqlserverProtoServer {
             var logger = LogManager.GetCurrentClassLogger();
 
             try {
-                var statementList = ParseStatementList(version, sqls);
+                var statementList = ParseStatementList(logger, version, sqls);
 
                 foreach (var statement in statementList.Statements) {
                     var sql = "";
@@ -105,8 +124,8 @@ namespace SqlserverProtoServer {
                     output.SplitSqls.Add(splitSql);
                 }
             } catch (Exception e) {
-                logger.Fatal("GetSplitSqls exception stackstrace:{0}", e.StackTrace);
                 logger.Fatal("GetSplitSqls exception message:{0}", e.Message);
+                logger.Fatal("GetSplitSqls exception stackstrace:{0}", e.StackTrace);
                 throw new RpcException(new Status(StatusCode.Internal, e.Message));
             }
 
@@ -160,15 +179,15 @@ namespace SqlserverProtoServer {
                 for (var index = contextStart; index < contextSqls.Count; index++) {
                     logger.Info("context {0} sqls: {1}", index, String.Join("\n", contextSqls[index].Sqls));
                     foreach (var sql in contextSqls[index].Sqls) {
-                        var statementList = ParseStatementList(version, sql);
+                        var statementList = ParseStatementList(logger, version, sql);
                         foreach (var statement in statementList.Statements) {
                             ruleValidatorContext.UpdateContext(logger, statement);
                         }
                     }
                 }
             } catch (Exception e) {
-                logger.Fatal("Advise context exception stacktrace:{0}", e.StackTrace);
                 logger.Fatal("Advise context message:{0}", e.Message);
+                logger.Fatal("Advise context exception stacktrace:{0}", e.StackTrace);
                 throw new RpcException(new Status(StatusCode.Internal, "parse context error:" + e.Message));
             }
             contextStart++;
@@ -177,7 +196,7 @@ namespace SqlserverProtoServer {
             var baseValidatorStatus = AdviseResultContext.BASE_RULE_OK;
             foreach (var sql in sqls) {
                 try {
-                    var statementList = ParseStatementList(version, sql);
+                    var statementList = ParseStatementList(logger, version, sql);
                     bool isDDL = false, isDML = false;
                     foreach (var statement in statementList.Statements) {
                         foreach (var ruleName in ruleNames) {
@@ -231,7 +250,7 @@ namespace SqlserverProtoServer {
 
             foreach (var sql in sqls) {
                 try {
-                    var statementList = ParseStatementList(version, sql);
+                    var statementList = ParseStatementList(logger, version, sql);
                     foreach (var statement in statementList.Statements) {
                         var rollbackSql = new Sql();
                         bool isDDL = false;
@@ -245,8 +264,8 @@ namespace SqlserverProtoServer {
                         rollbackSqlContext.UpdateContext(logger, statement);
                     }
                 } catch (Exception e) {
-                    logger.Fatal("GetRollbackSqls exception stackstrace:{0}", e.StackTrace, e.Message);
                     logger.Fatal("GetRollbackSqls exception message:{0}", e.Message);
+                    logger.Fatal("GetRollbackSqls exception stackstrace:{0}", e.StackTrace, e.Message);
                     throw new RpcException(new Status(StatusCode.Internal, e.Message));
                 }
 

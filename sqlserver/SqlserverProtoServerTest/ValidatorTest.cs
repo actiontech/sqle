@@ -8,7 +8,7 @@ using SqlserverProto;
 using NLog;
 
 namespace SqlServerProtoServerTest {
-    public class RuleVaidatorTest {
+    public class ValidatorTest {
         public StatementList ParseStatementList(string text) {
             var parser = new TSql130Parser(false);
             var reader = new StringReader(text);
@@ -19,6 +19,27 @@ namespace SqlServerProtoServerTest {
             }
 
             return statementList;
+        }
+
+        [Fact]
+        public void ParseStatementListTestWithGOTest() {
+            try {
+                StatementList statementList;
+                var sqlserverImpl = new SqlServerServiceImpl();
+                statementList = sqlserverImpl.ParseStatementList(LogManager.GetCurrentClassLogger(), "", 
+                                                                 @"CREATE TABLE table1(col1 INT)
+                                                                   GO
+                                                                   INSERT INTO table1 VALUES(1)");
+                Assert.True(statementList.Statements.Count > 0);
+                statementList = sqlserverImpl.ParseStatementList(LogManager.GetCurrentClassLogger(), "", 
+                                                                       @"CREATE TABLE table1(col1 INT);
+                                                                       GO;
+                                                                       INSERT INTO table1 VALUES(1);");
+
+            } catch (Exception e) {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
         }
 
         private void IsInvalidUse() {
