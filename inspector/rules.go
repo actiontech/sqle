@@ -481,58 +481,34 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 }
 
 func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
-	indexColumns := map[string]struct{}{}
 	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if MysqlDataTypeIsBlob(col.Tp.Tp) {
+				if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
+					indexDataTypeIsBlob = true
+					break
+				}
+				isTypeBlobCols[col.Name.Name.String()] = true
+			} else {
+				isTypeBlobCols[col.Name.Name.String()] = false
+			}
+		}
 		for _, constraint := range stmt.Constraints {
 			switch constraint.Tp {
 			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 				for _, col := range constraint.Keys {
-					indexColumns[col.Column.Name.String()] = struct{}{}
-				}
-			}
-		}
-		for _, col := range stmt.Cols {
-			if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
-					indexDataTypeIsBlob = true
-					break
-				}
-			}
-			if _, ok := indexColumns[col.Name.Name.String()]; ok {
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
-					indexDataTypeIsBlob = true
-					break
-				}
-			}
-		}
-	case *ast.AlterTableStmt:
-		// collect index column
-		for _, spec := range stmt.Specs {
-			if spec.NewColumns == nil {
-				continue
-			}
-			for _, col := range spec.NewColumns {
-				if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
-					indexColumns[col.Name.Name.String()] = struct{}{}
-				}
-			}
-			if spec.Constraint != nil {
-				switch spec.Constraint.Tp {
-				case ast.ConstraintKey, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintIndex:
-					for _, col := range spec.Constraint.Keys {
-						indexColumns[col.Column.Name.String()] = struct{}{}
+					if isTypeBlobCols[col.Column.Name.String()] {
+						indexDataTypeIsBlob = true
+						break
 					}
 				}
 			}
 		}
-		if len(indexColumns) <= 0 {
-			return nil
-		}
-
-		// collect columns type
+	case *ast.AlterTableStmt:
+		// collect columns type from original table
 		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
@@ -546,22 +522,33 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
 				}
 			}
 		}
-		for _, spec := range stmt.Specs {
-			if spec.NewColumns != nil {
-				for _, col := range spec.NewColumns {
-					if MysqlDataTypeIsBlob(col.Tp.Tp) {
-						isTypeBlobCols[col.Name.Name.String()] = true
-					} else {
-						isTypeBlobCols[col.Name.Name.String()] = false
+		// collect columns type from alter table
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
+			ast.AlterTableChangeColumn) {
+			if spec.NewColumns == nil {
+				continue
+			}
+			for _, col := range spec.NewColumns {
+				if MysqlDataTypeIsBlob(col.Tp.Tp) {
+					if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
+						indexDataTypeIsBlob = true
+						break
 					}
+					isTypeBlobCols[col.Name.Name.String()] = true
+				} else {
+					isTypeBlobCols[col.Name.Name.String()] = false
 				}
 			}
 		}
-		// check index columns string type
-		for colName, _ := range indexColumns {
-			if isTypeBlobCols[colName] {
-				indexDataTypeIsBlob = true
-				break
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniq:
+				for _, col := range spec.Constraint.Keys {
+					if isTypeBlobCols[col.Column.Name.String()] {
+						indexDataTypeIsBlob = true
+						break
+					}
+				}
 			}
 		}
 	case *ast.CreateIndexStmt:
@@ -570,7 +557,7 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
 			return err
 		}
 		for _, col := range createTableStmt.Cols {
-			if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) && MysqlDataTypeIsBlob(col.Tp.Tp) {
+			if MysqlDataTypeIsBlob(col.Tp.Tp) {
 				isTypeBlobCols[col.Name.Name.String()] = true
 			} else {
 				isTypeBlobCols[col.Name.Name.String()] = false
@@ -1036,19 +1023,28 @@ func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
 			isAutoIncrementColumn := false
 			isBlobColumn := false
 			columnHasDefault := false
-			for _, option := range col.Options {
-				if option.Tp == ast.ColumnOptionAutoIncrement {
-					isAutoIncrementColumn = true
-				}
-
-				switch col.Tp.Tp {
-				case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob:
-					isBlobColumn = true
-				}
-
-				if option.Tp == ast.ColumnOptionDefaultValue {
-					columnHasDefault = true
-				}
+			//for _, option := range col.Options {
+			//	if option.Tp == ast.ColumnOptionAutoIncrement {
+			//		isAutoIncrementColumn = true
+			//	}
+			//
+			//	switch col.Tp.Tp {
+			//	case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob:
+			//		isBlobColumn = true
+			//	}
+			//
+			//	if option.Tp == ast.ColumnOptionDefaultValue {
+			//		columnHasDefault = true
+			//	}
+			//}
+			if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement){
+				isAutoIncrementColumn = true
+			}
+			if MysqlDataTypeIsBlob(col.Tp.Tp) {
+				isBlobColumn = true
+			}
+			if HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+				columnHasDefault = true
 			}
 			if isAutoIncrementColumn || isBlobColumn {
 				continue
@@ -1062,13 +1058,25 @@ func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
+			ast.AlterTableModifyColumn) {
 			for _, col := range spec.NewColumns {
+				isAutoIncrementColumn := false
+				isBlobColumn := false
 				columnHasDefault := false
-				for _, op := range col.Options {
-					if op.Tp == ast.ColumnOptionDefaultValue {
-						columnHasDefault = true
-					}
+
+				if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement){
+					isAutoIncrementColumn = true
+				}
+				if MysqlDataTypeIsBlob(col.Tp.Tp) {
+					isBlobColumn = true
+				}
+				if HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+					columnHasDefault = true
+				}
+
+				if isAutoIncrementColumn || isBlobColumn {
+					continue
 				}
 				if !columnHasDefault {
 					i.addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
