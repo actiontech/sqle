@@ -2,6 +2,7 @@ package inspector
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"github.com/labstack/gommon/log"
 	"github.com/pingcap/tidb/ast"
 	"sqle/model"
@@ -125,24 +126,50 @@ func (i *Inspect) commitMycatDDL(sql *model.Sql) error {
 	if err != nil {
 		return err
 	}
-	var schema string
-	var table string
+	var schemaName string
+	var tableName string
 
-	switch stmt := sql.Stmts[0].(type) {
+	stmt := sql.Stmts[0]
+	query := stmt.Text()
+	switch stmt := stmt.(type) {
 	case *ast.CreateTableStmt:
-		schema = i.getSchemaName(stmt.Table)
-		table = stmt.Table.Name.String()
+		schemaName = stmt.Table.Schema.String()
+		tableName = stmt.Table.Name.String()
 	case *ast.AlterTableStmt:
-		schema = i.getSchemaName(stmt.Table)
-		table = stmt.Table.Name.String()
+		schemaName = stmt.Table.Schema.String()
+		tableName = stmt.Table.Name.String()
+	case *ast.DropTableStmt:
+		if stmt.Tables == nil || len(stmt.Tables) == 0 {
+			goto DONE
+		}
+		if len(stmt.Tables) > 1 {
+			err = fmt.Errorf("don't support multi drop table in diff schema on mycat")
+			goto DONE
+		}
+		table := stmt.Tables[0]
+		schemaName = table.Schema.String()
+		tableName = table.Name.String()
 	case *ast.CreateIndexStmt:
-		schema = i.getSchemaName(stmt.Table)
-		table = stmt.Table.Name.String()
+		schemaName = stmt.Table.Schema.String()
+		tableName = stmt.Table.Name.String()
+	case *ast.DropIndexStmt:
+		schemaName = stmt.Table.Schema.String()
+		tableName = stmt.Table.Name.String()
+	case *ast.DropDatabaseStmt:
+		err = fmt.Errorf("don't support drop database on mycat")
+		goto DONE
 	case *ast.UseStmt:
 		goto DONE
 	default:
 	}
-	err = conn.Db.ExecDDL(ReplaceTableName(sql.Stmts[0]), schema, table)
+	if schemaName != "" {
+		query = replaceTableName(query, schemaName, tableName)
+	}
+	// if no schema name in table name, use default schema name
+	if schemaName == "" {
+		schemaName = i.Ctx.currentSchema
+	}
+	err = conn.Db.ExecDDL(query, schemaName, tableName)
 
 DONE:
 	if err != nil {

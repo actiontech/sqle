@@ -301,24 +301,6 @@ func hasUniqIndex(stmt *ast.CreateTableStmt) bool {
 	return false
 }
 
-func ReplaceTableName(node ast.Node) string {
-	var schema string
-	var table string
-	query := node.Text()
-	switch stmt := node.(type) {
-	case *ast.CreateTableStmt:
-		schema = stmt.Table.Schema.String()
-		table = stmt.Table.Name.String()
-	case *ast.AlterTableStmt:
-		schema = stmt.Table.Schema.String()
-		table = stmt.Table.Name.String()
-	}
-	if schema != "" {
-		return replaceTableName(query, schema, table)
-	}
-	return query
-}
-
 func replaceTableName(query, schema, table string) string {
 	re := regexp.MustCompile(fmt.Sprintf("%s\\.%s|`%s`\\.`%s`|`%s`\\.%s|%s\\.`%s`",
 		schema, table, schema, table, schema, table, schema, table))
