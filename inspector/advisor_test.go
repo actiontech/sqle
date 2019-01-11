@@ -1115,6 +1115,13 @@ ALTER TABLE exist_db.exist_tb_1 ADD INDEX index_1(v1);
 `,
 		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
 	)
+
+	runInspectCase(t, "create_index: index prefix not idx_", DefaultMysqlInspect(),
+		`
+CREATE INDEX index_1 ON exist_db.exist_tb_1(v1);
+`,
+		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
+	)
 }
 
 func TestCheckUniqueIndexPrefix(t *testing.T) {

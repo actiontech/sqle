@@ -969,6 +969,9 @@ func checkIndexPrefix(i *Inspect, node ast.Node) error {
 				indexesName = append(indexesName, spec.Constraint.Name)
 			}
 		}
+	case *ast.CreateIndexStmt:
+		indexesName = append(indexesName, stmt.IndexName)
+
 	default:
 		return nil
 	}
@@ -1037,7 +1040,7 @@ func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
 			//		columnHasDefault = true
 			//	}
 			//}
-			if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement){
+			if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 				isAutoIncrementColumn = true
 			}
 			if MysqlDataTypeIsBlob(col.Tp.Tp) {
@@ -1065,7 +1068,7 @@ func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
 				isBlobColumn := false
 				columnHasDefault := false
 
-				if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement){
+				if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 					isAutoIncrementColumn = true
 				}
 				if MysqlDataTypeIsBlob(col.Tp.Tp) {
