@@ -1014,6 +1014,28 @@ PRIMARY KEY (id)
 `,
 		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
 	)
+
+	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	runInspectCase(t, "create_table: disable index column blob (3)", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+b1 blob COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+CREATE INDEX idx_1 ON exist_db.not_exist_tb_1(b1);
+ALTER TABLE exist_db.not_exist_tb_1 ADD INDEX idx_2(b1);
+ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit test";
+ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
+`,
+		newTestResult(),
+		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
+		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
+		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
+		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
+	)
 }
 
 func TestDisableForeignKey(t *testing.T) {
@@ -1134,6 +1156,20 @@ PRIMARY KEY (id)
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL COMMENT "unit test";
 `,
 		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
+	)
+
+	runInspectCase(t, "alter_table: auto increment column without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test";
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "alter_table: blob column without default", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob COMMENT "unit test";
+`,
+		newTestResult(),
 	)
 }
 
