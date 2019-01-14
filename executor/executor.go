@@ -73,7 +73,7 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	conn, err := db.Conn(context.Background())
 	if err != nil {
 		entry.Error(err)
-		return nil, err
+		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 	}
 	entry.Infof("connected to %s %s:%s", instance.DbType, instance.Host, instance.Port)
 	return &BaseConn{
