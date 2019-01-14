@@ -1393,6 +1393,17 @@ namespace SqlserverProtoServer {
                     break;
             }
         }
+    
+        public bool NeedRollback(int rowCount) {
+            if (Config == null) {
+                return false;
+            }
+            if (Config.DMLRollbackMaxRows < 0) {
+                return false;
+            }
+
+            return rowCount <= Config.DMLRollbackMaxRows;
+        }
     }
 
     public abstract class RuleValidator {
