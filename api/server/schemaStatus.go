@@ -47,11 +47,12 @@ func (s *Sqled) UpdateAllInstanceStatus(entry *logrus.Entry) error {
 		currentInstance := instance
 		go func() {
 			status := &InstanceStatus{
-				ID:     currentInstance.ID,
-				DbType: currentInstance.DbType,
-				Name:   currentInstance.Name,
-				Host:   currentInstance.Host,
-				Port:   currentInstance.Port,
+				ID:      currentInstance.ID,
+				DbType:  currentInstance.DbType,
+				Name:    currentInstance.Name,
+				Host:    currentInstance.Host,
+				Port:    currentInstance.Port,
+				Schemas: []string{},
 			}
 			schemas, err := executor.ShowDatabases(entry, &currentInstance)
 			if err != nil {
@@ -74,11 +75,12 @@ func (s *Sqled) UpdateAllInstanceStatus(entry *logrus.Entry) error {
 
 func (s *Sqled) UpdateAndGetInstanceStatus(entry *logrus.Entry, instance *model.Instance) (*InstanceStatus, error) {
 	status := &InstanceStatus{
-		ID:     instance.ID,
-		DbType: instance.DbType,
-		Name:   instance.Name,
-		Host:   instance.Host,
-		Port:   instance.Port,
+		ID:      instance.ID,
+		DbType:  instance.DbType,
+		Name:    instance.Name,
+		Host:    instance.Host,
+		Port:    instance.Port,
+		Schemas: []string{},
 	}
 	schemas, err := executor.ShowDatabases(entry, instance)
 	if err != nil {
