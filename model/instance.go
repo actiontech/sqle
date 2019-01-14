@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	"sqle/errors"
 	"sqle/log"
@@ -73,7 +72,6 @@ func (i *Instance) encryptPassword() error {
 		return nil
 	}
 	if i.SecretPassword == "" {
-		fmt.Println(i.Password)
 		data, err := utils.AesEncrypt(i.Password)
 		if err != nil {
 			return err
