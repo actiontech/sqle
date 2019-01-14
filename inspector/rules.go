@@ -970,8 +970,9 @@ func checkIndexPrefix(i *Inspect, node ast.Node) error {
 			}
 		}
 	case *ast.CreateIndexStmt:
-		indexesName = append(indexesName, stmt.IndexName)
-
+		if !stmt.Unique {
+			indexesName = append(indexesName, stmt.IndexName)
+		}
 	default:
 		return nil
 	}
@@ -1001,6 +1002,10 @@ func checkUniqIndexPrefix(i *Inspect, node ast.Node) error {
 				uniqueIndexesName = append(uniqueIndexesName, spec.Constraint.Name)
 			}
 		}
+	case *ast.CreateIndexStmt:
+		if stmt.Unique {
+			uniqueIndexesName = append(uniqueIndexesName, stmt.IndexName)
+		}
 	default:
 		return nil
 	}
@@ -1026,20 +1031,6 @@ func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
 			isAutoIncrementColumn := false
 			isBlobColumn := false
 			columnHasDefault := false
-			//for _, option := range col.Options {
-			//	if option.Tp == ast.ColumnOptionAutoIncrement {
-			//		isAutoIncrementColumn = true
-			//	}
-			//
-			//	switch col.Tp.Tp {
-			//	case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob:
-			//		isBlobColumn = true
-			//	}
-			//
-			//	if option.Tp == ast.ColumnOptionDefaultValue {
-			//		columnHasDefault = true
-			//	}
-			//}
 			if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 				isAutoIncrementColumn = true
 			}

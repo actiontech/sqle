@@ -1144,6 +1144,13 @@ ALTER TABLE exist_db.exist_tb_1 ADD UNIQUE INDEX index_1(v1);
 `,
 		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
 	)
+
+	runInspectCase(t, "create_index: unique index prefix not uniq_", DefaultMysqlInspect(),
+		`
+CREATE UNIQUE INDEX index_1 ON exist_db.exist_tb_1(v1);
+`,
+		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
+	)
 }
 
 func TestCheckColumnDefault(t *testing.T) {
