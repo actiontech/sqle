@@ -40,7 +40,7 @@ func (mc *MycatConn) openDataHostConn(name, schema string) (Db, error) {
 		Host:     dataHost.Host,
 		Port:     dataHost.Port,
 		User:     dataHost.User,
-		Password: dataHost.Password,
+		Password: string(dataHost.Password),
 	}, schema)
 	if err != nil {
 		mc.Logger().Error("connect mycat data host failed")

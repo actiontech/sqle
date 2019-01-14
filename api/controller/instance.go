@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"sqle/executor"
 	"sqle/log"
 	"sqle/model"
+	"sqle/utils"
 	"strings"
 )
 
@@ -69,29 +71,31 @@ func CreateInst(c echo.Context) error {
 		Desc:        *req.Desc,
 		MycatConfig: req.MycatConfig,
 	}
-	err = instance.MarshalMycatConfig()
-	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(err))
-	}
 
-	notExistTs := []string{}
+	tpls := []model.RuleTemplate{}
+	notExistTpls := []string{}
 	for _, tplName := range req.RuleTemplates {
 		t, exist, err := s.GetTemplateByName(tplName)
 		if err != nil {
 			return c.JSON(200, NewBaseReq(err))
 		}
 		if !exist {
-			notExistTs = append(notExistTs, tplName)
+			notExistTpls = append(notExistTpls, tplName)
 		}
-		instance.RuleTemplates = append(instance.RuleTemplates, t)
+		tpls = append(tpls, t)
 	}
 
-	if len(notExistTs) > 0 {
-		err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTs, ", "))
+	if len(notExistTpls) > 0 {
+		err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTpls, ", "))
 		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
 	}
 
 	err = s.Save(instance)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(err))
+	}
+
+	err = s.UpdateInstRuleTemplate(instance, tpls...)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -215,16 +219,20 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["user"] = *req.User
 	}
 	if req.Password != nil {
-		updateMap["password"] = *req.Password
+		password, err := utils.AesEncrypt(*req.Password)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(err))
+		}
+		updateMap["password"] = password
 	}
 
 	if req.MycatConfig != nil {
 		instance.MycatConfig = req.MycatConfig
-		err := instance.MarshalMycatConfig()
+		config, err := json.Marshal(req.MycatConfig)
 		if err != nil {
 			return c.JSON(200, NewBaseReq(err))
 		}
-		updateMap["mycat_config"] = instance.MycatConfigJson
+		updateMap["mycat_config"] = string(config)
 	}
 
 	if req.RuleTemplates != nil {
@@ -350,10 +358,6 @@ func PingInstance(c echo.Context) error {
 		Port:        req.Port,
 		Password:    req.Password,
 		MycatConfig: req.MycatConfig,
-	}
-	err := instance.MarshalMycatConfig()
-	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
 	if err := executor.Ping(log.NewEntry(), instance); err != nil {

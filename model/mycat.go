@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"sqle/errors"
+	"sqle/utils"
 	"strconv"
 	"strings"
 )
@@ -30,10 +31,10 @@ type DataNode struct {
 }
 
 type DataHost struct {
-	User     string `json:"user"`
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Password string `json:"password"`
+	User     string         `json:"user"`
+	Host     string         `json:"host"`
+	Port     string         `json:"port"`
+	Password utils.Password `json:"password"`
 }
 
 func (m *MycatConfig) IsShardingSchema(schemaName string) (bool, error) {

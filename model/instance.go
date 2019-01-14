@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"sqle/errors"
+	"sqle/log"
+	"sqle/utils"
 )
 
 const (
@@ -20,14 +22,66 @@ type Instance struct {
 	Host            string         `json:"host" gorm:"not null" example:"10.10.10.10"`
 	Port            string         `json:"port" gorm:"not null" example:"3306"`
 	User            string         `json:"user" gorm:"not null" example:"root"`
-	Password        string         `json:"-" gorm:"not null"`
+	Password        string         `json:"-" gorm:"-"`
+	SecretPassword  string         `json:"-" gorm:"not null;column:password"`
 	Desc            string         `json:"desc" example:"this is a instance"`
 	RuleTemplates   []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
 	MycatConfig     *MycatConfig   `json:"-" gorm:"-"`
 	MycatConfigJson string         `json:"-" gorm:"type:text;column:mycat_config"`
 }
 
-func (i *Instance) UnmarshalMycatConfig() error {
+// BeforeSave is a hook implement gorm model before exec create
+func (i *Instance) BeforeSave() error {
+	err := i.encryptPassword()
+	if err != nil {
+		return err
+	}
+	return i.marshalMycatConfig()
+}
+
+// AfterFind is a hook implement gorm model after query, ignore err if query from db
+func (i *Instance) AfterFind() error {
+	err := i.decryptPassword()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt password for instance %d failed, error: %v", i.ID, err)
+	}
+	err = i.unmarshalMycatConfig()
+	if err != nil {
+		log.NewEntry().Errorf("unmarshal mycat config for instance %d failed, error: %v", i.ID, err)
+	}
+	return nil
+}
+
+func (i *Instance) decryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.Password == "" {
+		data, err := utils.AesDecrypt(i.SecretPassword)
+		if err != nil {
+			return err
+		} else {
+			i.Password = string(data)
+		}
+	}
+	return nil
+}
+
+func (i *Instance) encryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.SecretPassword == "" {
+		data, err := utils.AesEncrypt(i.Password)
+		if err != nil {
+			return err
+		}
+		i.SecretPassword = string(data)
+	}
+	return nil
+}
+
+func (i *Instance) unmarshalMycatConfig() error {
 	if i == nil {
 		return nil
 	}
@@ -41,10 +95,17 @@ func (i *Instance) UnmarshalMycatConfig() error {
 	if err != nil {
 		return err
 	}
+	for _, dataHost := range i.MycatConfig.DataHosts {
+		password, err := utils.AesDecrypt(string(dataHost.Password))
+		if err != nil {
+			return err
+		}
+		dataHost.Password = utils.Password(password)
+	}
 	return nil
 }
 
-func (i *Instance) MarshalMycatConfig() error {
+func (i *Instance) marshalMycatConfig() error {
 	if i == nil {
 		return nil
 	}
@@ -85,7 +146,6 @@ func (s *Storage) GetInstById(id string) (*Instance, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
-	err = instance.UnmarshalMycatConfig()
 	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
@@ -95,7 +155,6 @@ func (s *Storage) GetInstByName(name string) (*Instance, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
-	err = instance.UnmarshalMycatConfig()
 	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 

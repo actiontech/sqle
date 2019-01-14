@@ -177,7 +177,6 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
-	task.Instance.UnmarshalMycatConfig()
 	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
