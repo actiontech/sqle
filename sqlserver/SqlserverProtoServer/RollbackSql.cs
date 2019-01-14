@@ -337,7 +337,7 @@ namespace SqlserverProtoServer {
                 }
 
                 var insertSource = insertSpecification.InsertSource as ValuesInsertSource;
-                if (insertSource.RowValues.Count > context.Config.DMLRollbackMaxRows) {
+                if (!context.NeedRollback(insertSource.RowValues.Count)) {
                     return "";
                 }
                 foreach (var rowValue in insertSource.RowValues) {
@@ -394,7 +394,7 @@ namespace SqlserverProtoServer {
                 }
 
                 var recordsCount = context.GetRecordsCount(databaseName, schemaName, tableName, where);
-                if (recordsCount > context.Config.DMLRollbackMaxRows) {
+                if (!context.NeedRollback(recordsCount)) {
                     return "";
                 }
                 var records = context.GetRecords(databaseName, schemaName, tableName, where);
@@ -444,9 +444,10 @@ namespace SqlserverProtoServer {
                     }
                 }
                 var recordsCount = context.GetRecordsCount(databaseName, schemaName, tableName, where);
-                if (recordsCount > context.Config.DMLRollbackMaxRows) {
+                if (!context.NeedRollback(recordsCount)) {
                     return "";
                 }
+
                 var records = context.GetRecords(databaseName, schemaName, tableName, where);
                 var columns = context.GetColumns(databaseName, schemaName, tableName);
 
