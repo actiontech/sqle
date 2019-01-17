@@ -19,6 +19,10 @@ func pKCS7Padding(cipherText []byte, blockSize int) []byte {
 
 func pKCS7UnPadding(origData []byte) []byte {
 	length := len(origData)
+	// if origData is empty, get byte by index length -1 will panic before go 11
+	if length <= 0 {
+		return origData
+	}
 	unpadding := int(origData[length-1])
 	return origData[:(length - unpadding)]
 }
