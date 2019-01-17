@@ -48,7 +48,7 @@ type Sql struct {
 type CommitSql struct {
 	Sql
 	InspectStatus string `json:"inspect_status"`
-	InspectResult string `json:"inspect_result"`
+	InspectResult string `json:"inspect_result" gorm:"type:text"`
 	// level: error, warn, notice, normal
 	InspectLevel string `json:"inspect_level"`
 }
