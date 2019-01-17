@@ -199,16 +199,17 @@ namespace SqlserverProtoServer {
                     var statementList = ParseStatementList(logger, version, sql);
                     bool isDDL = false, isDML = false;
                     foreach (var statement in statementList.Statements) {
+                        var baseRuleValidator = new BaseRuleValidator();
+                        baseRuleValidator.Check(ruleValidatorContext, statement);
+                        if (ruleValidatorContext.AdviseResultContext.GetBaseRuleStatus() == AdviseResultContext.BASE_RULE_FAILED) {
+                            baseValidatorStatus = AdviseResultContext.BASE_RULE_FAILED;
+                        }
+
                         foreach (var ruleName in ruleNames) {
                             if (!DefaultRules.RuleValidators.ContainsKey(ruleName)) {
                                 continue;
                             }
-                            var ruleValidator = new RuleValidatorDecorator(ruleName);
-                            ruleValidator.Check(ruleValidatorContext, statement);
-
-                            if (ruleValidatorContext.AdviseResultContext.GetBaseRuleStatus() == AdviseResultContext.BASE_RULE_FAILED) {
-                                baseValidatorStatus = AdviseResultContext.BASE_RULE_FAILED;
-                            }
+                            DefaultRules.RuleValidators[ruleName].Check(ruleValidatorContext, statement);
                         }
 
                         ruleValidatorContext.UpdateContext(logger, statement);
