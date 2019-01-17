@@ -4,9 +4,7 @@ using NLog;
 using System.Collections.Generic;
 
 namespace SqlserverProtoServer {
-    public class RuleValidatorDecorator : RuleValidator {
-        protected RuleValidator Validator;
-
+    public class BaseRuleValidator : RuleValidator {
         public override void Check(SqlserverContext context, TSqlStatement statement) {
             var isInvalid = false;
             var logger = LogManager.GetCurrentClassLogger();
@@ -63,11 +61,6 @@ namespace SqlserverProtoServer {
             if (isInvalid) {
                 context.AdviseResultContext.SetBaseRuleStatus(AdviseResultContext.BASE_RULE_FAILED);
                 return;
-            }
-
-            // execute decorator
-            if (Validator != null) {
-                Validator.Check(context, statement);
             }
         }
 
@@ -842,10 +835,6 @@ namespace SqlserverProtoServer {
             return ret;
         }
 
-        public RuleValidatorDecorator(String ruleName) {
-            if (DefaultRules.RuleValidators.ContainsKey(ruleName)) {
-                Validator = DefaultRules.RuleValidators[ruleName];
-            }
-        }
+        public BaseRuleValidator() {}
     }
 }

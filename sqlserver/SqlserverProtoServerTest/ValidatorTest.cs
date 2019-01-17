@@ -50,7 +50,7 @@ namespace SqlServerProtoServerTest {
             context.ExpectDatabaseExist = false;
             Console.WriteLine("IsInvalidUse");
             foreach (var statment in statementList.Statements) {
-                var invalid = new RuleValidatorDecorator("").IsInvalidUse(LogManager.GetCurrentClassLogger(), context, statment as UseStatement);
+                var invalid = new BaseRuleValidator().IsInvalidUse(LogManager.GetCurrentClassLogger(), context, statment as UseStatement);
                 Assert.True(invalid == true);
             }
             Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -81,7 +81,7 @@ namespace SqlServerProtoServerTest {
                 Console.WriteLine("IsInvalidCreateTable");
 
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidCreateTableStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateTableStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidCreateTableStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateTableStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -104,7 +104,7 @@ namespace SqlServerProtoServerTest {
                 Console.WriteLine("IsInvalidAlterTable");
 
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -133,7 +133,7 @@ namespace SqlServerProtoServerTest {
                 {
                     StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD col1 INT NOT NULL");
                     foreach (var statment in statementList.Statements) {
-                        var invalid = new RuleValidatorDecorator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -145,7 +145,7 @@ namespace SqlServerProtoServerTest {
                 {
                     StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD INDEX IX_1 (col3)");
                     foreach (var statment in statementList.Statements) {
-                        var invalid = new RuleValidatorDecorator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -157,7 +157,7 @@ namespace SqlServerProtoServerTest {
                 {
                     StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT UN_1 UNIQUE (col3)");
                     foreach (var statment in statementList.Statements) {
-                        var invalid = new RuleValidatorDecorator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -169,7 +169,7 @@ namespace SqlServerProtoServerTest {
                 {
                     StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT PK_1 PRIMARY KEY (col3)");
                     foreach (var statment in statementList.Statements) {
-                        var invalid = new RuleValidatorDecorator("").IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
+                        var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -193,7 +193,7 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidDropTable");
 
             foreach (var statment in statementList.Statements) {
-                var invalid = new RuleValidatorDecorator("").IsInvalidDropTableStatement(LogManager.GetCurrentClassLogger(), context, statment as DropTableStatement);
+                var invalid = new BaseRuleValidator().IsInvalidDropTableStatement(LogManager.GetCurrentClassLogger(), context, statment as DropTableStatement);
                 Assert.True(invalid == true);
             }
             Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -210,7 +210,7 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidCreateDatabase");
 
             foreach (var statment in statementList.Statements) {
-                var invalid = new RuleValidatorDecorator("").IsInvalidCreateDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateDatabaseStatement);
+                var invalid = new BaseRuleValidator().IsInvalidCreateDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateDatabaseStatement);
                 Assert.True(invalid == true);
             }
             Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -227,7 +227,7 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidDropDatabase");
 
             foreach (var statment in statementList.Statements) {
-                var invalid = new RuleValidatorDecorator("").IsInvalidDropDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as DropDatabaseStatement);
+                var invalid = new BaseRuleValidator().IsInvalidDropDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as DropDatabaseStatement);
                 Assert.True(invalid == true);
             }
             Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -249,7 +249,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -278,7 +278,7 @@ namespace SqlServerProtoServerTest {
                 {
                     StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col3);");
                     foreach (var statment in statementList.Statements) {
-                        var invalid = new RuleValidatorDecorator("").IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
+                        var invalid = new BaseRuleValidator().IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -312,7 +312,7 @@ namespace SqlServerProtoServerTest {
             {
                 StatementList statementList = ParseStatementList("DROP INDEX IX_2 ON schema1.table1;");
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidDropIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as DropIndexStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidDropIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as DropIndexStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -336,7 +336,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -347,7 +347,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseExist = true;
                 context.ExpectSchemaExist = false;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -357,7 +357,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = false;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -387,7 +387,7 @@ namespace SqlServerProtoServerTest {
                 {
                     StatementList statementList = ParseStatementList("INSERT INTO database1.schema1.table1(col1, col2, col2, col3) VALUES(2, 3);");
                     foreach (var statment in statementList.Statements) {
-                        var invalid = new RuleValidatorDecorator("").IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
+                        var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -413,7 +413,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -424,7 +424,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseExist = true;
                 context.ExpectSchemaExist = false;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -434,7 +434,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = false;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -464,7 +464,7 @@ namespace SqlServerProtoServerTest {
                 {
                     StatementList statementList = ParseStatementList("UPDATE database1.schema1.table1 SET col1=1, col1=2, col2=2, col3=3;");
                     foreach (var statment in statementList.Statements) {
-                        var invalid = new RuleValidatorDecorator("").IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
+                        var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -489,7 +489,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -500,7 +500,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseExist = true;
                 context.ExpectSchemaExist = false;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -510,7 +510,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = false;
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
@@ -544,7 +544,7 @@ namespace SqlServerProtoServerTest {
             {
                 StatementList statementList = ParseStatementList("SELECT col1 FROM database1.schema1.table1;");
                 foreach (var statment in statementList.Statements) {
-                    var invalid = new RuleValidatorDecorator("").IsInvalidSelectStatement(LogManager.GetCurrentClassLogger(), context, statment as SelectStatement);
+                    var invalid = new BaseRuleValidator().IsInvalidSelectStatement(LogManager.GetCurrentClassLogger(), context, statment as SelectStatement);
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
