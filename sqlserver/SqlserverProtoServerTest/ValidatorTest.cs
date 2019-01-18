@@ -77,6 +77,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "tbl1";
+                context.ExpectConstraintNames = new List<String>();
                 Console.WriteLine();
                 Console.WriteLine("IsInvalidCreateTable");
 
@@ -100,6 +101,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectConstraintNames = new List<String>();
                 Console.WriteLine();
                 Console.WriteLine("IsInvalidAlterTable");
 
@@ -127,6 +129,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectConstraintNames = new List<String>();
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
                 // add column

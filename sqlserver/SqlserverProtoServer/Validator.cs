@@ -374,6 +374,7 @@ namespace SqlserverProtoServer {
         public List<String> ExpectColumns;
         public List<Dictionary<String, String>> ExpectRecords;
         public int ExpectRecordsCount;
+        public List<String> ExpectConstraintNames;
 
         public String GetConnectionString() {
             return String.Format(
@@ -398,7 +399,8 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        AllDatabases[reader["name"] as String] = true;
+                        var name = (reader["name"] as String).ToLower();
+                        AllDatabases[name] = true;
                     }
                     databaseHasLoad = true;
                 } finally {
@@ -419,7 +421,8 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        AllSchemas[reader["name"] as String] = true;
+                        var name = (reader["name"] as String).ToLower();
+                        AllSchemas[name] = true;
                     }
                     schemaHasLoad = true;
                 } finally {
@@ -440,9 +443,9 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        String database = reader["TABLE_CATALOG"] as String;
-                        String schema = reader["TABLE_SCHEMA"] as String;
-                        String table = reader["TABLE_NAME"] as String;
+                        String database = (reader["TABLE_CATALOG"] as String).ToLower();
+                        String schema = (reader["TABLE_SCHEMA"] as String).ToLower();
+                        String table = (reader["TABLE_NAME"] as String).ToLower();
                         AllTables[String.Format("{0}.{1}.{2}", database, schema, table)] = true;
                     }
                     tableHasLoad[databaseName] = true;
@@ -460,7 +463,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        SqlserverMeta.CurrentDatabase = reader["Database_name"] as String;
+                        SqlserverMeta.CurrentDatabase = (reader["Database_name"] as String).ToLower();
                     }
                 } finally {
                     reader.Close();
@@ -476,7 +479,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        SqlserverMeta.CurrentSchema = reader["Schema_name"] as String;
+                        SqlserverMeta.CurrentSchema = (reader["Schema_name"] as String).ToLower();
                     }
                 } finally {
                     reader.Close();
@@ -952,6 +955,30 @@ namespace SqlserverProtoServer {
             return result;
         }
 
+        public List<String> GetConstraintNames(String databaseName) {
+            if (IsTest) {
+                return ExpectConstraintNames;
+            }
+
+            var result = new List<String>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                SqlCommand command = new SqlCommand(String.Format("USE {0}; SELECT OBJECT_NAME(OBJECT_ID) AS Name FROM sys.objects WHERE type_desc LIKE '%CONSTRAINT'", databaseName), connection);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    while (reader.Read()) {
+                        var constraintName = ((String)reader["Name"]).ToLower();
+                        result.Add(constraintName);
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+
+            return result;
+        }
+
         public SqlserverContext(SqlserverMeta sqlserverMeta, Config config) : this(sqlserverMeta) {
             this.Config = config;
         }
@@ -1075,27 +1102,27 @@ namespace SqlserverProtoServer {
             }
 
             if (schemaObjectName == null) {
-                databaseName = GetCurrentDatabase();
-                schemaName = GetCurrentSchema();
+                databaseName = GetCurrentDatabase().ToLower();
+                schemaName = GetCurrentSchema().ToLower();
                 tableName = "";
                 return;
             }
 
             var databaseIdentifier = schemaObjectName.DatabaseIdentifier;
             if (databaseIdentifier != null) {
-                databaseName = databaseIdentifier.Value;
+                databaseName = databaseIdentifier.Value.ToLower();
             } else {
-                databaseName = GetCurrentDatabase();
+                databaseName = GetCurrentDatabase().ToLower();
             }
 
             var schemaIdentifier = schemaObjectName.SchemaIdentifier;
             if (schemaIdentifier != null) {
-                schemaName = schemaIdentifier.Value;
+                schemaName = schemaIdentifier.Value.ToLower();
             } else {
-                schemaName = GetCurrentSchema();
+                schemaName = GetCurrentSchema().ToLower();
             }
 
-            tableName = schemaObjectName.BaseIdentifier.Value;
+            tableName = schemaObjectName.BaseIdentifier.Value.ToLower();
             return;
         }
 
