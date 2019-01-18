@@ -195,6 +195,13 @@ namespace SqlserverProtoServer {
                     logger.Info("table {0} has duplicated constaint: {1}", tableName, String.Join(",", duplicatedConstaints));
                     context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_CONSTAINT_ERROR_MSG, String.Join(",", duplicatedConstaints)));
                     isInvalid = true;
+                } else {
+                    var existedConstraints = ExistedConstraints(context, databaseName, constraintNames);
+                    if (existedConstraints.Count > 0) {
+                        logger.Info("existed constaints: {0}", String.Join(",", existedConstraints));
+                        context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_CONSTAINT_ERROR_MSG, String.Join(",", existedConstraints)));
+                        isInvalid = true;
+                    }
                 }
 
                 // constraint column should be table column
@@ -829,6 +836,21 @@ namespace SqlserverProtoServer {
             foreach (var namePair in nameMap) {
                 if (namePair.Value > 1) {
                     ret.Add(namePair.Key);
+                }
+            }
+
+            return ret;
+        }
+
+        public List<String> ExistedConstraints(SqlserverContext context, String databaseName, List<String> constraintNames) {
+            var ret = new List<String>();
+            var existConstraints = context.GetConstraintNames(databaseName);
+            foreach (var constraintName in constraintNames) {
+                foreach (var existConstraint in existConstraints) {
+                    if (constraintName == existConstraint) {
+                        ret.Add(constraintName);
+                        break;
+                    }
                 }
             }
 
