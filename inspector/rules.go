@@ -372,6 +372,7 @@ func checkSelectWhere(i *Inspect, node ast.Node) error {
 
 func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	var hasPk = false
+	var pkColumnExist = false
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
 
@@ -391,6 +392,7 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 		for _, col := range stmt.Cols {
 			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 				hasPk = true
+				pkColumnExist = true
 				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
 					pkIsBigIntUnsigned = true
 				}
@@ -413,6 +415,7 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 					columnName := constraint.Keys[0].Column.Name.String()
 					for _, col := range stmt.Cols {
 						if col.Name.Name.String() == columnName {
+							pkColumnExist = true
 							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
 								pkIsBigIntUnsigned = true
 							}
@@ -431,10 +434,10 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	if !hasPk {
 		i.addResult(DDL_CHECK_PK_NOT_EXIST)
 	}
-	if hasPk && !pkIsAutoIncrement {
+	if hasPk && pkColumnExist && !pkIsAutoIncrement {
 		i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
 	}
-	if hasPk && !pkIsBigIntUnsigned {
+	if hasPk && pkColumnExist && !pkIsBigIntUnsigned {
 		i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
 	}
 	return nil

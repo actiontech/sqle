@@ -327,6 +327,18 @@ INDEX idx_2 (v4,v5)
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
 			"v3,v4,v5"))
+
+	runInspectCase(t, "create_table: pk column not exist", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id11)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			"id11"))
 }
 
 func TestCheckInvalidAlterTable(t *testing.T) {
@@ -378,7 +390,7 @@ ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 			"idx_2"),
 	)
 
-	runInspectCase(t, "alter_table: add index bug key column not exist", DefaultMysqlInspect(),
+	runInspectCase(t, "alter_table: add index but key column not exist", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 add index idx_2 (v3);
 `,
@@ -415,6 +427,21 @@ ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAUL
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
 			"v1"),
+	)
+
+	runInspectCase(t, "alter_table: add pk but exist pk", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add primary key(v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG),
+	)
+
+	runInspectCase(t, "alter_table: add pk but key column not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_2 add primary key(id11);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			"id11"),
 	)
 }
 

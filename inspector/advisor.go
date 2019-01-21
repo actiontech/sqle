@@ -203,6 +203,9 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
 			pkCounter += 1
+			for _, col := range constraint.Keys {
+				keyColsName = append(keyColsName, col.Column.Name.L)
+			}
 		case ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintFulltext:
 			if constraint.Name != "" {
 				indexesName = append(indexesName, constraint.Name)
@@ -321,6 +324,11 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 				needNotExistsColsName = append(needNotExistsColsName, colName)
 			} else {
 				colNameMap[colName] = struct{}{}
+				if hasPk && HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+					results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
+				} else {
+					hasPk = true
+				}
 			}
 		}
 	}
@@ -376,6 +384,9 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
 			} else {
 				hasPk = true
+				for _, col := range spec.Constraint.Keys {
+					needExistsKeyColsName = append(needExistsKeyColsName, col.Column.Name.L)
+				}
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
 			indexName := strings.ToLower(spec.Constraint.Name)
