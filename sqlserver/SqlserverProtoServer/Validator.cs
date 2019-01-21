@@ -399,8 +399,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        var name = (reader["name"] as String).ToLower();
-                        AllDatabases[name] = true;
+                        AllDatabases[reader["name"] as String] = true;
                     }
                     databaseHasLoad = true;
                 } finally {
@@ -421,8 +420,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        var name = (reader["name"] as String).ToLower();
-                        AllSchemas[name] = true;
+                        AllSchemas[reader["name"] as String] = true;
                     }
                     schemaHasLoad = true;
                 } finally {
@@ -443,9 +441,9 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        String database = (reader["TABLE_CATALOG"] as String).ToLower();
-                        String schema = (reader["TABLE_SCHEMA"] as String).ToLower();
-                        String table = (reader["TABLE_NAME"] as String).ToLower();
+                        String database = reader["TABLE_CATALOG"] as String;
+                        String schema = reader["TABLE_SCHEMA"] as String;
+                        String table = reader["TABLE_NAME"] as String;
                         AllTables[String.Format("{0}.{1}.{2}", database, schema, table)] = true;
                     }
                     tableHasLoad[databaseName] = true;
@@ -463,7 +461,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        SqlserverMeta.CurrentDatabase = (reader["Database_name"] as String).ToLower();
+                        SqlserverMeta.CurrentDatabase = reader["Database_name"] as String;
                     }
                 } finally {
                     reader.Close();
@@ -479,7 +477,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        SqlserverMeta.CurrentSchema = (reader["Schema_name"] as String).ToLower();
+                        SqlserverMeta.CurrentSchema = reader["Schema_name"] as String;
                     }
                 } finally {
                     reader.Close();
@@ -968,7 +966,7 @@ namespace SqlserverProtoServer {
                 SqlDataReader reader = command.ExecuteReader();
                 try {
                     while (reader.Read()) {
-                        var constraintName = ((String)reader["Name"]).ToLower();
+                        var constraintName = ((String)reader["Name"]);
                         result.Add(constraintName);
                     }
                 } finally {
@@ -1102,27 +1100,27 @@ namespace SqlserverProtoServer {
             }
 
             if (schemaObjectName == null) {
-                databaseName = GetCurrentDatabase().ToLower();
-                schemaName = GetCurrentSchema().ToLower();
+                databaseName = GetCurrentDatabase();
+                schemaName = GetCurrentSchema();
                 tableName = "";
                 return;
             }
 
             var databaseIdentifier = schemaObjectName.DatabaseIdentifier;
             if (databaseIdentifier != null) {
-                databaseName = databaseIdentifier.Value.ToLower();
+                databaseName = databaseIdentifier.Value;
             } else {
-                databaseName = GetCurrentDatabase().ToLower();
+                databaseName = GetCurrentDatabase();
             }
 
             var schemaIdentifier = schemaObjectName.SchemaIdentifier;
             if (schemaIdentifier != null) {
-                schemaName = schemaIdentifier.Value.ToLower();
+                schemaName = schemaIdentifier.Value;
             } else {
-                schemaName = GetCurrentSchema().ToLower();
+                schemaName = GetCurrentSchema();
             }
 
-            tableName = schemaObjectName.BaseIdentifier.Value.ToLower();
+            tableName = schemaObjectName.BaseIdentifier.Value;
             return;
         }
 
