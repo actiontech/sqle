@@ -16,6 +16,7 @@ const (
 	RULE_TEMPLATE_EXIST     ErrorCode = 4002
 	INSTANCE_NOT_EXIST      ErrorCode = 4003
 	RULE_TEMPLATE_NOT_EXIST ErrorCode = 4004
+	RULE_TEMPLATE_IS_USED   ErrorCode = 4010
 	RULE_NOT_EXIST          ErrorCode = 4005
 	TASK_NOT_EXIST          ErrorCode = 4006
 	TASK_ACTION_INVALID     ErrorCode = 4009

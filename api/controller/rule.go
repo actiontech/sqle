@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sqle/errors"
 	"sqle/model"
+	"strings"
 )
 
 type CreateTplReq struct {
@@ -107,6 +108,16 @@ func DeleteRuleTemplate(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST,
 			fmt.Errorf("rule template is not exist"))))
 	}
+	instances, err := s.GetInstancesNameByTemplate(template)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(err))
+	}
+	if len(instances) > 0 {
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_IS_USED,
+			fmt.Errorf(fmt.Sprintf("rule template is used by instance %s",
+				strings.Join(instances, ","))))))
+	}
+
 	err = s.Delete(template)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
