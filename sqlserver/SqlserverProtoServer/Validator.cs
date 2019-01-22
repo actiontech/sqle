@@ -822,7 +822,7 @@ namespace SqlserverProtoServer {
                                                "kc.type AS Type, " +
                                                "ic.is_descending_key AS Is_descending_key " +
                                                "FROM {0}.sys.key_constraints kc JOIN {0}.sys.index_columns ic ON kc.parent_object_id=ic.object_id AND kc.unique_index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
-                                               "WHERE kc.parent_object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND (kc.type='PK' OR kc.type='UQ')", databaseName, schemaName, tableName)
+                                               "WHERE kc.parent_object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND (kc.type='PK' OR kc.type='UQ')", databaseName, schemaName, tableName);
                 SqlCommand command = new SqlCommand(commandStr, connection);
                 LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
 
