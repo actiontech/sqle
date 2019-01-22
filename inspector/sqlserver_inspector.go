@@ -76,6 +76,7 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	out, err := sqlserverClient.GetClient().Advise(sqls, ruleNames, meta, ddlContextSqls)
 	if err != nil {
 		i.Logger().Errorf("advise t-sql from ms grpc server failed, error: %v", err)
+		return err
 	} else {
 		i.Logger().Info("advise sql finish")
 	}
