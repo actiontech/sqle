@@ -71,7 +71,8 @@ func (i *Inspect) advise(rules []model.Rule) error {
 				currentSql.InspectResult = fmt.Sprintf("%s[osc]%s",
 					currentSql.InspectResult, oscCommandLine)
 			}
-
+			i.Logger().Infof("sql=%s, level=%s, result=%s",
+				currentSql.Content, currentSql.InspectLevel, currentSql.InspectResult)
 			return nil
 		})
 		if err != nil {
