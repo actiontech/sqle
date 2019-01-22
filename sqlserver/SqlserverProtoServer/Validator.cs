@@ -535,10 +535,12 @@ namespace SqlserverProtoServer {
             var ret = new List<String>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT " +
-                                                                  "c.name AS Primary_key " +
-                                                                  "FROM {0}.sys.indexes ix JOIN {0}.sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
-                                                                  "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key = 1", databaseName, schemaName, tableName), connection);
+                var commandStr = String.Format("SELECT " +
+                                               "c.name AS Primary_key " +
+                                               "FROM {0}.sys.indexes ix JOIN {0}.sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                               "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key = 1", databaseName, schemaName, tableName);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+                SqlCommand command = new SqlCommand(commandStr, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -560,9 +562,12 @@ namespace SqlserverProtoServer {
             var ret = new List<String>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT " +
-                                                                  "c.name AS Column_name " +
-                                                                  "FROM {0}.sys.columns c WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName), connection);
+                var commandStr = String.Format("SELECT " +
+                                               "c.name AS Column_name " +
+                                               "FROM {0}.sys.columns c WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName);
+                SqlCommand command = new SqlCommand(commandStr, connection);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -662,28 +667,31 @@ namespace SqlserverProtoServer {
             var result = new Dictionary<String, String>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT " +
-                                                                  "c.name AS Column_name, " +
-                                                                  "tp.name AS Type_name, " +
-                                                                  "c.is_computed AS Is_computed, " +
-                                                                  "OBJECT_DEFINITION(c.object_id, c.column_id) AS Column_definition, " +
-                                                                  "c.system_type_id AS System_type_id," +
-                                                                  "c.user_type_id AS User_type_id, " +
-                                                                  "SCHEMA_NAME(tp.schema_id) AS Schema_name, " +
-                                                                  "c.max_length AS Max_length, " +
-                                                                  "c.precision AS Precesion, " +
-                                                                  "c.scale AS Scale, " +
-                                                                  "c.collation_name AS Collation_name, " +
-                                                                  "c.is_nullable AS Is_nullable," +
-                                                                  "OBJECT_NAME(c.default_object_id) AS Default_constraint_name, " +
-                                                                  "OBJECT_DEFINITION(c.default_object_id) AS Default_definition, " +
-                                                                  "cc.name AS Check_constraint_name, " +
-                                                                  "cc.definition AS Check_definition, " +
-                                                                  "c.is_identity AS Is_identity, " +
-                                                                  "CAST(IDENTITYPROPERTY(c.object_id, 'SeedValue') AS VARCHAR(5)) AS Identity_base, " +
-                                                                  "CAST(IDENTITYPROPERTY(c.object_id, 'IncrementValue') AS VARCHAR(5)) AS Identity_incr " +
-                                                                  "FROM {0}.sys.columns c JOIN {0}.sys.types tp ON c.user_type_id=tp.user_type_id LEFT JOIN {0}.sys.check_constraints cc ON c.object_id=cc.parent_object_id AND cc.parent_column_id=c.column_id " +
-                                                                  "WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName), connection);
+                var commandStr = String.Format("SELECT " +
+                                               "c.name AS Column_name, " +
+                                               "tp.name AS Type_name, " +
+                                               "c.is_computed AS Is_computed, " +
+                                               "OBJECT_DEFINITION(c.object_id, c.column_id) AS Column_definition, " +
+                                               "c.system_type_id AS System_type_id," +
+                                               "c.user_type_id AS User_type_id, " +
+                                               "SCHEMA_NAME(tp.schema_id) AS Schema_name, " +
+                                               "c.max_length AS Max_length, " +
+                                               "c.precision AS Precesion, " +
+                                               "c.scale AS Scale, " +
+                                               "c.collation_name AS Collation_name, " +
+                                               "c.is_nullable AS Is_nullable," +
+                                               "OBJECT_NAME(c.default_object_id) AS Default_constraint_name, " +
+                                               "OBJECT_DEFINITION(c.default_object_id) AS Default_definition, " +
+                                               "cc.name AS Check_constraint_name, " +
+                                               "cc.definition AS Check_definition, " +
+                                               "c.is_identity AS Is_identity, " +
+                                               "CAST(IDENTITYPROPERTY(c.object_id, 'SeedValue') AS VARCHAR(5)) AS Identity_base, " +
+                                               "CAST(IDENTITYPROPERTY(c.object_id, 'IncrementValue') AS VARCHAR(5)) AS Identity_incr " +
+                                               "FROM {0}.sys.columns c JOIN {0}.sys.types tp ON c.user_type_id=tp.user_type_id LEFT JOIN {0}.sys.check_constraints cc ON c.object_id=cc.parent_object_id AND cc.parent_column_id=c.column_id " +
+                                               "WHERE c.object_id=OBJECT_ID('{0}.{1}.{2}', 'U')", databaseName, schemaName, tableName);
+                SqlCommand command = new SqlCommand(commandStr, connection);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -807,14 +815,17 @@ namespace SqlserverProtoServer {
             var result = new Dictionary<String, String>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT " +
-                                                                  "kc.name AS Key_name, " +
-                                                                  "ic.index_id AS Index_id, " +
-                                                                  "c.name AS Column_name, " +
-                                                                  "kc.type AS Type, " +
-                                                                  "ic.is_descending_key AS Is_descending_key " +
-                                                                  "FROM {0}.sys.key_constraints kc JOIN {0}.sys.index_columns ic ON kc.parent_object_id=ic.object_id AND kc.unique_index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
-                                                                  "WHERE kc.parent_object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND (kc.type='PK' OR kc.type='UQ')", databaseName, schemaName, tableName), connection);
+                var commandStr = String.Format("SELECT " +
+                                               "kc.name AS Key_name, " +
+                                               "ic.index_id AS Index_id, " +
+                                               "c.name AS Column_name, " +
+                                               "kc.type AS Type, " +
+                                               "ic.is_descending_key AS Is_descending_key " +
+                                               "FROM {0}.sys.key_constraints kc JOIN {0}.sys.index_columns ic ON kc.parent_object_id=ic.object_id AND kc.unique_index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                               "WHERE kc.parent_object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND (kc.type='PK' OR kc.type='UQ')", databaseName, schemaName, tableName)
+                SqlCommand command = new SqlCommand(commandStr, connection);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -911,13 +922,16 @@ namespace SqlserverProtoServer {
             var result = new Dictionary<String, String>();
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT " +
-                                                                  "ix.name AS Index_name, " +
-                                                                  "ix.type_desc AS Type_desc, " +
-                                                                  "c.name AS Column_name, " +
-                                                                  "ic.is_descending_key AS Is_descending_key " +
-                                                                  "FROM {0}.sys.indexes ix JOIN {0}.sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
-                                                                  "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key !=1 AND ix.is_unique_constraint !=1 AND ix.auto_created != 1", databaseName, schemaName, tableName), connection);
+                var commandStr = String.Format("SELECT " +
+                                               "ix.name AS Index_name, " +
+                                               "ix.type_desc AS Type_desc, " +
+                                               "c.name AS Column_name, " +
+                                               "ic.is_descending_key AS Is_descending_key " +
+                                               "FROM {0}.sys.indexes ix JOIN {0}.sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
+                                               "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key !=1 AND ix.is_unique_constraint !=1 AND ix.auto_created != 1", databaseName, schemaName, tableName);
+                SqlCommand command = new SqlCommand(commandStr, connection);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
