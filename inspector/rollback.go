@@ -465,6 +465,12 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, error
 func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error) {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
+		i.Logger().Infof("not support generate rollback sql with multi-delete statement")
+		return "", nil
+	}
+	// sub query statement
+	if whereStmtHasSubQuery(stmt.Where) {
+		i.Logger().Infof("not support generate rollback sql with sub query")
 		return "", nil
 	}
 	var err error
@@ -485,7 +491,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error
 		return "", err
 	}
 	if limit > max {
-		count, err := i.getRecordCount(table, stmt.Where, stmt.Order, limit)
+		count, err := i.getRecordCount(table, "", stmt.Where, stmt.Order, limit)
 		if err != nil {
 			return "", err
 		}
@@ -493,7 +499,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error
 			return "", nil
 		}
 	}
-	records, err := i.getRecords(table, stmt.Where, stmt.Order, limit)
+	records, err := i.getRecords(table, "", stmt.Where, stmt.Order, limit)
 
 	values := []string{}
 
@@ -525,12 +531,32 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, error
 }
 
 func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error) {
-	tables := getTables(stmt.TableRefs.TableRefs)
+	tableSources := getTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
-	if len(tables) != 1 {
+	if len(tableSources) != 1 {
+		i.Logger().Infof("not support generate rollback sql with multi-update statement")
 		return "", nil
 	}
-	table := tables[0]
+	// sub query statement
+	if whereStmtHasSubQuery(stmt.Where) {
+		i.Logger().Infof("not support generate rollback sql with sub query")
+		return "", nil
+	}
+	var (
+		table      *ast.TableName
+		tableAlias string
+	)
+	tableSource := tableSources[0]
+	switch source := tableSource.Source.(type) {
+	case *ast.TableName:
+		table = source
+		tableAlias = tableSource.AsName.String()
+	case *ast.SelectStmt, *ast.UnionStmt:
+		i.Logger().Infof("not support generate rollback sql with update-select statement")
+		return "", nil
+	default:
+		return "", nil
+	}
 	createTableStmt, exist, err := i.getCreateTableStmt(table)
 	if err != nil || !exist {
 		return "", err
@@ -546,7 +572,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error
 		return "", err
 	}
 	if limit > max {
-		count, err := i.getRecordCount(table, stmt.Where, stmt.Order, limit)
+		count, err := i.getRecordCount(table, tableAlias, stmt.Where, stmt.Order, limit)
 		if err != nil {
 			return "", err
 		}
@@ -554,7 +580,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error
 			return "", nil
 		}
 	}
-	records, err := i.getRecords(table, stmt.Where, stmt.Order, limit)
+	records, err := i.getRecords(table, tableAlias, stmt.Where, stmt.Order, limit)
 
 	columnsName := []string{}
 	rollbackSql := ""
@@ -606,23 +632,23 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, error
 	return rollbackSql, nil
 }
 
-func (i *Inspect) getRecords(tableName *ast.TableName, where ast.ExprNode,
+func (i *Inspect) getRecords(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
 	}
-	sql := i.generateGetRecordsSql("*", tableName, where, order, limit)
+	sql := i.generateGetRecordsSql("*", tableName, tableAlias, where, order, limit)
 	return conn.Db.Query(sql)
 }
 
-func (i *Inspect) getRecordCount(tableName *ast.TableName, where ast.ExprNode,
+func (i *Inspect) getRecordCount(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) (int64, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return 0, err
 	}
-	sql := i.generateGetRecordsSql("count(*) as count", tableName, where, order, limit)
+	sql := i.generateGetRecordsSql("count(*) as count", tableName, tableAlias, where, order, limit)
 
 	var count int64
 	var ok bool
@@ -647,9 +673,12 @@ ERROR:
 	return 0, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("do not match records for select count(*)"))
 }
 
-func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, where ast.ExprNode,
+func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) string {
 	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, getTableNameWithQuote(tableName))
+	if tableAlias != "" {
+		recordSql = fmt.Sprintf("%s AS %s", recordSql, tableAlias)
+	}
 	if where != nil {
 		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(where))
 	}
