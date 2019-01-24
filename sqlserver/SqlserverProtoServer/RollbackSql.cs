@@ -378,6 +378,45 @@ namespace SqlserverProtoServer {
             return String.Join('\n', rollbackSqls);
         }
 
+        public bool IfSubqueryExists(BooleanExpression booleanExpression) {
+            Console.WriteLine("whereClause:{0}", booleanExpression);
+
+            if (booleanExpression is BooleanComparisonExpression) {
+                var boolCompareExpression = booleanExpression as BooleanComparisonExpression;
+                if (boolCompareExpression.FirstExpression is ScalarSubquery || boolCompareExpression.SecondExpression is ScalarSubquery) {
+                    logger.Info("BooleanComparisonExpression has subquery");
+                    return true;
+                }
+            }
+
+            if (booleanExpression is BooleanNotExpression) {
+                return IfSubqueryExists((booleanExpression as BooleanNotExpression).Expression);
+            }
+
+            if (booleanExpression is ExistsPredicate) {
+                var existPredicate = booleanExpression as ExistsPredicate;
+                if (existPredicate.Subquery != null) {
+                    logger.Info("ExistsPredicate has subquery");
+                    return true;
+                }
+            }
+
+            if (booleanExpression is InPredicate) {
+                var inPreficate = booleanExpression as InPredicate;
+                if (inPreficate.Subquery != null) {
+                    logger.Info("Inpredicate has subquery");
+                    return true;
+                }
+            }
+            
+            if (booleanExpression is SubqueryComparisonPredicate) {
+                logger.Info("SubqueryComparisonPredicate has subquery");
+                return true;
+            }
+
+            return false;
+        }
+
         public String GenerateDeleteRollbackSql(SqlserverContext context, DeleteStatement statement) {
             var rollbackSql = "";
             var deleteSpecification = statement.DeleteSpecification;
@@ -388,6 +427,9 @@ namespace SqlserverProtoServer {
                 var where = "";
                 if (deleteSpecification.WhereClause != null) {
                     var whereClause = deleteSpecification.WhereClause;
+                    if (IfSubqueryExists(whereClause.SearchCondition)) {
+                        return "";
+                    }
                     for (int index = whereClause.FirstTokenIndex; index <= whereClause.LastTokenIndex; index++) {
                         where += whereClause.ScriptTokenStream[index].Text;
                     }
@@ -439,6 +481,9 @@ namespace SqlserverProtoServer {
                 var where = "";
                 if (updateSpecification.WhereClause != null) {
                     var whereClause = updateSpecification.WhereClause;
+                    if (IfSubqueryExists(whereClause.SearchCondition)) {
+                        return "";
+                    }
                     for (int index = whereClause.FirstTokenIndex; index <= whereClause.LastTokenIndex; index++) {
                         where += whereClause.ScriptTokenStream[index].Text;
                     }
