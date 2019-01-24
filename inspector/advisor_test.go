@@ -626,17 +626,116 @@ update exist_db.not_exist_tb set v1="2" where id=1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
 	)
+
 	runInspectCase(t, "update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v3="2" where id=1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
 	)
+
 	runInspectCase(t, "update: column is duplicate", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v1="2",v1="1" where id=1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v1"),
+	)
+
+	runInspectCase(t, "update with alias: ok", DefaultMysqlInspect(),
+		`
+update exist_tb_1 as t set t.v1 = "1" where t.id = 1;
+`,
+		newTestResult(),
+	)
+	runInspectCase(t, "update with alias: table not exist", DefaultMysqlInspect(),
+		`
+update exist_db.not_exist_tb as t set t.v3 = "1" where t.id = 1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+
+	runInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
+		`
+update exist_tb_1 as t set t.v3 = "1" where t.id = 1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3"),
+	)
+
+	runInspectCase(t, "update with alias: column is duplicate", DefaultMysqlInspect(),
+		`
+update exist_tb_1 as t set t.v2 = "1",t.v2="1" where t.id = 1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v2"),
+	)
+
+	runInspectCase(t, "update with alias: column is duplicate", DefaultMysqlInspect(),
+		`
+update exist_tb_1 as t set t.v2 = "1",exist_tb_1.v2="1" where t.id = 1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v2"),
+	)
+
+	runInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
+		`
+update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
+		`
+update exist_tb_1 inner join exist_tb_2 on exist_tb_1.id = exist_tb_2.id set exist_tb_1.v1 = "1" where exist_tb_1.id = 1;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "multi-update: table not exist", DefaultMysqlInspect(),
+		`
+update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+
+	runInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+		`
+update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3"),
+	)
+
+	runInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+		`
+update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_2.v3"),
+	)
+
+	runInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
+		`
+update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
+		`
+update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS, "v1"),
+	)
+
+	runInspectCase(t, "multi-update: column is duplicate", DefaultMysqlInspect(),
+		`
+update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = 1,exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "exist_tb_1.v1"),
+	)
+
+	runInspectCase(t, "multi-update: column is duplicate", DefaultMysqlInspect(),
+		`
+update exist_tb_1 t,exist_tb_2 set t.v1 = 1,exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "exist_tb_1.v1"),
 	)
 }
 

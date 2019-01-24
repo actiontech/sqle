@@ -118,6 +118,7 @@ var (
 	TABLE_EXIST_MSG              = "表 %s 已存在"
 	COLUMN_NOT_EXIST_MSG         = "字段 %s 不存在"
 	COLUMN_EXIST_MSG             = "字段 %s 已存在"
+	COLUMN_IS_AMBIGUOUS          = "字段 %s 指代不明"
 	INDEX_NOT_EXIST_MSG          = "索引 %s 不存在"
 	INDEX_EXIST_MSG              = "索引 %s 已存在"
 	DUPLICATE_COLUMN_ERROR_MSG   = "字段名 %s 重复"
@@ -657,7 +658,26 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 }
 
 func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResults) error {
-	tables := getTables(stmt.TableRefs.TableRefs)
+	tables := []*ast.TableName{}
+	tableAlias := map[string]string{}
+	isMultiUpdate := false
+	tableSources := getTableSources(stmt.TableRefs.TableRefs)
+	if len(tableSources) > 1 {
+		isMultiUpdate = true
+	}
+	for _, tableSource := range tableSources {
+		switch source := tableSource.Source.(type) {
+		case *ast.TableName:
+			table := source
+			tables = append(tables, table)
+			alias := tableSource.AsName.String()
+			if alias != "" {
+				tableAlias[alias] = table.Name.String()
+			}
+		case *ast.SelectStmt, *ast.UnionStmt:
+			continue
+		}
+	}
 	needExistsSchemasName := []string{}
 	needExistsTablesName := []string{}
 	for _, table := range tables {
@@ -690,35 +710,87 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
 		return nil
 	}
-	if stmt.MultipleTable {
-		return nil
+
+	allTableColNameMap := map[string]map[string]struct{}{}
+	for _, table := range tables {
+		tableName := table.Name.String()
+		if _, ok := allTableColNameMap[tableName]; ok {
+			continue
+		}
+		createTableStmt, exist, err := i.getCreateTableStmt(table)
+		if err != nil || !exist {
+			return err
+		}
+		colNameMap := map[string]struct{}{}
+		for _, col := range createTableStmt.Cols {
+			colNameMap[col.Name.Name.L] = struct{}{}
+		}
+		allTableColNameMap[tableName] = colNameMap
 	}
-	table := tables[0]
-	createTableStmt, exist, err := i.getCreateTableStmt(table)
-	if err != nil || !exist {
-		return err
-	}
-	colNameMap := map[string]struct{}{}
-	for _, col := range createTableStmt.Cols {
-		colNameMap[col.Name.Name.L] = struct{}{}
-	}
+
 	updateColsName := []string{}
 	for _, list := range stmt.List {
-		updateColsName = append(updateColsName, list.Column.Name.L)
+		tableName := list.Column.Table.String()
+		if name, ok := tableAlias[tableName]; ok {
+			tableName = name
+		}
+		columnName := ""
+		if !isMultiUpdate {
+			columnName = list.Column.Name.String()
+		} else if tableName != "" {
+			columnName = fmt.Sprintf("%s.%s", tableName, list.Column.Name.String())
+		} else {
+			columnName = list.Column.String()
+		}
+		updateColsName = append(updateColsName, columnName)
 	}
 	if d := getDuplicate(updateColsName); len(d) > 0 {
 		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, strings.Join(d, ","))
 	}
 
 	needExistColsName := []string{}
-	for _, colName := range updateColsName {
-		if _, ok := colNameMap[colName]; !ok {
-			needExistColsName = append(needExistColsName, colName)
+	ambiguousColsName := []string{}
+	for _, list := range stmt.List {
+		colName := list.Column.Name.String()
+
+		tableName := list.Column.Table.String()
+		if name, ok := tableAlias[tableName]; ok {
+			tableName = name
+		}
+		if tableName != "" {
+			colNameMap, ok := allTableColNameMap[tableName]
+			if !ok {
+				needExistColsName = append(needExistColsName, fmt.Sprintf("%s.%s", tableName, colName))
+			}
+			if _, ok := colNameMap[colName]; !ok {
+				needExistColsName = append(needExistColsName, fmt.Sprintf("%s.%s", tableName, colName))
+			}
+		} else {
+			colExist := false
+			for _, colNameMap := range allTableColNameMap {
+				_, ok := colNameMap[colName]
+				if ok {
+					if !colExist {
+						colExist = true
+						continue
+					} else {
+						ambiguousColsName = append(ambiguousColsName, colName)
+					}
+				}
+			}
+			if !colExist {
+				needExistColsName = append(needExistColsName, colName)
+			}
 		}
 	}
 	if len(needExistColsName) > 0 {
 		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistColsName), ","))
+	}
+
+	if len(ambiguousColsName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS,
+			strings.Join(removeDuplicate(ambiguousColsName), ","))
 	}
 	return nil
 }

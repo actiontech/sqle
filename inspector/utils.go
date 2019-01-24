@@ -212,7 +212,7 @@ func scanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode
 		case *ast.ColumnNameExpr:
 		case *ast.SubqueryExpr:
 		case *ast.BinaryOperationExpr:
-			skip = scanWhereStmt(fn, x.R, x.L)
+			skip = scanWhereStmt(fn, x.L, x.R)
 		case *ast.UnaryOperationExpr:
 			skip = scanWhereStmt(fn, x.V)
 			// boolean_primary is true|false
@@ -285,8 +285,8 @@ func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
 		case *ast.ColumnNameExpr:
 			if cn.Name.Name.L == strings.ToLower(columnName) {
 				hasSpecificColumn = true
+				return true
 			}
-			return true
 		}
 		return false
 	}, where)
