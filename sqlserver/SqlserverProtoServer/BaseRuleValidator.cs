@@ -766,8 +766,13 @@ namespace SqlserverProtoServer {
         }
 
         public bool IsInvalidDeleteStatement(Logger logger, SqlserverContext context, DeleteStatement statement) {
-            var tableReference = statement.DeleteSpecification.Target;
-            if (tableReference is NamedTableReference) {
+            TableReference tableReference = null;
+            if (statement.DeleteSpecification.FromClause != null && statement.DeleteSpecification.FromClause.TableReferences != null) {
+                tableReference = statement.DeleteSpecification.FromClause.TableReferences[0];
+            } else {
+                tableReference = statement.DeleteSpecification.Target;
+            }
+            if (tableReference != null && tableReference is NamedTableReference) {
                 var namedTableReference = tableReference as NamedTableReference;
                 var schemaObjectName = namedTableReference.SchemaObject;
                 context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(schemaObjectName, out String databaseName, out String schemaName, out String tableName);
