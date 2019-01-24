@@ -139,7 +139,9 @@ namespace SqlserverProtoServer {
                         indexNames.Add(indexDefinition.Name.Value);
                         foreach (var column in indexDefinition.Columns) {
                             ColumnReferenceExpression columnReferenceExpression = column.Column;
-                            foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                            var identifiers = columnReferenceExpression.MultiPartIdentifier.Identifiers;
+                            if (identifiers.Count > 0) {
+                                var identifier = identifiers[identifiers.Count - 1];
                                 indexColumnNames.Add(identifier.Value);
                             }
                         }
@@ -182,7 +184,9 @@ namespace SqlserverProtoServer {
                             }
                             foreach (var column in uniqueConstaintDefinition.Columns) {
                                 ColumnReferenceExpression columnReferenceExpression = column.Column;
-                                foreach (var identifier in columnReferenceExpression.MultiPartIdentifier.Identifiers) {
+                                var identifiers = columnReferenceExpression.MultiPartIdentifier.Identifiers;
+                                if (identifiers.Count > 0) {
+                                    var identifier = identifiers[identifiers.Count - 1];
                                     constraintColumnNames.Add(identifier.Value);
                                 }
                             }
@@ -293,8 +297,9 @@ namespace SqlserverProtoServer {
                             }
 
                             foreach (var column in index.Columns) {
-                                foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
-                                    logger.Info("index column:{0}", identifier.Value);
+                                var identifiers = column.Column.MultiPartIdentifier.Identifiers;
+                                if (identifiers.Count > 0) {
+                                    var identifier = identifiers[identifiers.Count - 1];
                                     if (!addColumnDefinitions.ContainsKey(identifier.Value)) {
                                         needExistsColumnName.Add(identifier.Value);
                                     }
@@ -322,8 +327,9 @@ namespace SqlserverProtoServer {
                                 }
 
                                 foreach (var column in uniqueConstaint.Columns) {
-                                    foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
-                                        logger.Info("constraint column:{0}", identifier.Value);
+                                    var identifiers = column.Column.MultiPartIdentifier.Identifiers;
+                                    if (identifiers.Count > 0) {
+                                        var identifier = identifiers[identifiers.Count - 1];
                                         if (!addColumnDefinitions.ContainsKey(identifier.Value)) {
                                             needExistsColumnName.Add(identifier.Value);
                                         }
@@ -547,8 +553,9 @@ namespace SqlserverProtoServer {
             var columnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
             var needExistsColumns = new List<String>();
             foreach (var column in statement.Columns) {
-                foreach (var identifier in column.Column.MultiPartIdentifier.Identifiers) {
-                    logger.Info("create index column:{0}", identifier.Value);
+                var identifiers = column.Column.MultiPartIdentifier.Identifiers;
+                if (identifiers.Count > 0) {
+                    var identifier = identifiers[identifiers.Count - 1];
                     if (!columnDefinitions.ContainsKey(identifier.Value)) {
                         needExistsColumns.Add(identifier.Value);
                     }
@@ -649,7 +656,9 @@ namespace SqlserverProtoServer {
                     var insertColumns = new List<String>();
 
                     foreach (var column in statement.InsertSpecification.Columns) {
-                        foreach (var identifier in column.MultiPartIdentifier.Identifiers) {
+                        var identifiers = column.MultiPartIdentifier.Identifiers;
+                        if (identifiers.Count > 0) {
+                            var identifier = identifiers[identifiers.Count - 1];
                             insertColumns.Add(identifier.Value);
                             if (!columnDefinitions.ContainsKey(identifier.Value)) {
                                 needExistsColumns.Add(identifier.Value);
@@ -695,8 +704,13 @@ namespace SqlserverProtoServer {
 
         public bool IsInvalidUpdateStatement(Logger logger, SqlserverContext context, UpdateStatement statement) {
             var isInvalid = false;
-            var tableReference = statement.UpdateSpecification.Target;
-            if (tableReference is NamedTableReference) {
+            TableReference tableReference = null;
+            if (statement.UpdateSpecification.FromClause != null && statement.UpdateSpecification.FromClause.TableReferences != null) {
+                tableReference = statement.UpdateSpecification.FromClause.TableReferences[0];
+            } else {
+                tableReference = statement.UpdateSpecification.Target;
+            }
+            if (tableReference != null && tableReference is NamedTableReference) {
                 var namedTableReference = tableReference as NamedTableReference;
                 var schemaObjectName = namedTableReference.SchemaObject;
                 context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(schemaObjectName, out String databaseName, out String schemaName, out String tableName);
@@ -722,7 +736,9 @@ namespace SqlserverProtoServer {
                 foreach (var setClause in statement.UpdateSpecification.SetClauses) {
                     if (setClause is AssignmentSetClause) {
                         var assignmentSetClause = setClause as AssignmentSetClause;
-                        foreach (var identifier in assignmentSetClause.Column.MultiPartIdentifier.Identifiers) {
+                        var identifiers = assignmentSetClause.Column.MultiPartIdentifier.Identifiers;
+                        if (identifiers.Count > 0) {
+                            var identifier = identifiers[identifiers.Count - 1];
                             updateColumns.Add(identifier.Value);
                             if (!columnDefinitions.ContainsKey(identifier.Value)) {
                                 needExistsColumns.Add(identifier.Value);
