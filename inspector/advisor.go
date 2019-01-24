@@ -387,7 +387,10 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 			} else {
 				hasPk = true
 				for _, col := range spec.Constraint.Keys {
-					needExistsKeyColsName = append(needExistsKeyColsName, col.Column.Name.L)
+					colName := col.Column.Name.L
+					if _, ok := colNameMap[colName]; !ok {
+						needExistsKeyColsName = append(needExistsKeyColsName, colName)
+					}
 				}
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:

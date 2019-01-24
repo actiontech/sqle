@@ -443,6 +443,12 @@ ALTER TABLE exist_db.exist_tb_2 add primary key(id11);
 		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
 			"id11"),
 	)
+	runInspectCase(t, "alter_table: add pk ok", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_2 add primary key(id);
+`,
+		newTestResult(),
+	)
 }
 
 func TestCheckInvalidCreateDatabase(t *testing.T) {
