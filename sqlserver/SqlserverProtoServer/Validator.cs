@@ -928,7 +928,7 @@ namespace SqlserverProtoServer {
                                                "c.name AS Column_name, " +
                                                "ic.is_descending_key AS Is_descending_key " +
                                                "FROM {0}.sys.indexes ix JOIN {0}.sys.index_columns ic ON ix.object_id=ic.object_id AND ix.index_id=ic.index_id JOIN {0}.sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id " +
-                                               "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key !=1 AND ix.is_unique_constraint !=1 AND ix.auto_created != 1", databaseName, schemaName, tableName);
+                                               "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key !=1 AND ix.is_unique_constraint !=1", databaseName, schemaName, tableName);
                 SqlCommand command = new SqlCommand(commandStr, connection);
                 LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
 
