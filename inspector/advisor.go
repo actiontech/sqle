@@ -2,9 +2,10 @@ package inspector
 
 import (
 	"fmt"
-	"github.com/pingcap/tidb/ast"
 	"sqle/model"
 	"strings"
+
+	"github.com/pingcap/tidb/ast"
 )
 
 func (i *Inspect) Advise(rules []model.Rule) error {
@@ -559,6 +560,9 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 
 func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 	results *InspectResults) error {
+	if stmt.IfExists {
+		return nil
+	}
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
@@ -577,11 +581,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 			i.getTableName(stmt.Table))
 		return nil
 	}
-	colNameMap := map[string]struct{}{}
 	indexNameMap := map[string]struct{}{}
-	for _, col := range createTableStmt.Cols {
-		colNameMap[col.Name.Name.L] = struct{}{}
-	}
 	for _, constraint := range createTableStmt.Constraints {
 		if constraint.Name != "" {
 			indexNameMap[constraint.Name] = struct{}{}
