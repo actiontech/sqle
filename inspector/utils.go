@@ -200,56 +200,53 @@ func MysqlDataTypeIsBlob(tp byte) bool {
 	}
 }
 
-func scanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode) (skip bool) {
+func scanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode) {
 	for _, expr := range exprs {
 		if expr == nil {
 			continue
 		}
+		// skip all children node
 		if fn(expr) {
-			return true
+			continue
 		}
 		switch x := expr.(type) {
 		case *ast.ColumnNameExpr:
 		case *ast.SubqueryExpr:
 		case *ast.BinaryOperationExpr:
-			skip = scanWhereStmt(fn, x.L, x.R)
+			scanWhereStmt(fn, x.L, x.R)
 		case *ast.UnaryOperationExpr:
-			skip = scanWhereStmt(fn, x.V)
+			scanWhereStmt(fn, x.V)
 			// boolean_primary is true|false
 		case *ast.IsTruthExpr:
-			skip = scanWhereStmt(fn, x.Expr)
+			scanWhereStmt(fn, x.Expr)
 			// boolean_primary is (not) null
 		case *ast.IsNullExpr:
-			skip = scanWhereStmt(fn, x.Expr)
+			scanWhereStmt(fn, x.Expr)
 			// boolean_primary comparison_operator {ALL | ANY} (subquery)
 		case *ast.CompareSubqueryExpr:
-			skip = scanWhereStmt(fn, x.L, x.R)
+			scanWhereStmt(fn, x.L, x.R)
 		case *ast.ExistsSubqueryExpr:
-			skip = scanWhereStmt(fn, x.Sel)
+			scanWhereStmt(fn, x.Sel)
 			// boolean_primary IN (expr,...)
 		case *ast.PatternInExpr:
 			es := []ast.ExprNode{}
 			es = append(es, x.Expr)
 			es = append(es, x.Sel)
 			es = append(es, x.List...)
-			skip = scanWhereStmt(fn, es...)
+			scanWhereStmt(fn, es...)
 			// boolean_primary Between expr and expr
 		case *ast.BetweenExpr:
-			skip = scanWhereStmt(fn, x.Expr, x.Left, x.Right)
+			scanWhereStmt(fn, x.Expr, x.Left, x.Right)
 			// boolean_primary (not) like expr
 		case *ast.PatternLikeExpr:
-			skip = scanWhereStmt(fn, x.Expr, x.Pattern)
+			scanWhereStmt(fn, x.Expr, x.Pattern)
 			// boolean_primary (not) regexp expr
 		case *ast.PatternRegexpExpr:
-			skip = scanWhereStmt(fn, x.Expr, x.Pattern)
+			scanWhereStmt(fn, x.Expr, x.Pattern)
 		case *ast.RowExpr:
-			skip = scanWhereStmt(fn, x.Values...)
-		}
-		if skip {
-			return skip
+			scanWhereStmt(fn, x.Values...)
 		}
 	}
-	return false
 }
 
 func whereStmtHasSubQuery(where ast.ExprNode) bool {
@@ -268,10 +265,22 @@ func whereStmtHasSubQuery(where ast.ExprNode) bool {
 func whereStmtHasOneColumn(where ast.ExprNode) bool {
 	hasColumn := false
 	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
-		switch expr.(type) {
+		switch x := expr.(type) {
 		case *ast.ColumnNameExpr:
 			hasColumn = true
 			return true
+		case *ast.BinaryOperationExpr:
+			col1, ok := x.R.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			col2, ok := x.L.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			if col1.Name.String() == col2.Name.String() {
+				return true
+			}
 		}
 		return false
 	}, where)

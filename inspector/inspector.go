@@ -313,7 +313,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	if err != nil {
 		return nil, exist, err
 	}
-	createTableSql, err := conn.ShowCreateTable(i.getTableNameWithQuote(stmt))
+	createTableSql, err := conn.ShowCreateTable(getTableNameWithQuote(stmt))
 	if err != nil {
 		return nil, exist, err
 	}

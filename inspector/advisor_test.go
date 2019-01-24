@@ -784,6 +784,16 @@ func TestCheckWhereInvalid(t *testing.T) {
 		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
 	)
 
+	runInspectCase(t, "select_from: no where condition(3)", DefaultMysqlInspect(),
+		"select id from exist_db.exist_tb_1 where id=id;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+	)
+
+	runInspectCase(t, "select_from: no where condition(4)", DefaultMysqlInspect(),
+		"select id from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+	)
+
 	runInspectCase(t, "update: has where condition", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where id = 1;",
 		newTestResult())
@@ -796,6 +806,14 @@ func TestCheckWhereInvalid(t *testing.T) {
 		"update exist_db.exist_tb_1 set v1='v1' where 1=1 and 2=2;",
 		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
 
+	runInspectCase(t, "update: no where condition(3)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1='v1' where id=id;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+
+	runInspectCase(t, "update: no where condition(4)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1='v1' where exist_tb_1.id=exist_tb_1.id;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+
 	runInspectCase(t, "delete: has where condition", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where id = 1;",
 		newTestResult())
@@ -806,6 +824,14 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 	runInspectCase(t, "delete: no where condition(2)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=1 and 2=2;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+
+	runInspectCase(t, "delete: no where condition(3)", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1 where 1=1 and id=id;",
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+
+	runInspectCase(t, "delete: no where condition(4)", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1 where 1=1 and exist_tb_1.id=exist_tb_1.id;",
 		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
 }
 
