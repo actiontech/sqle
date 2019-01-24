@@ -2,12 +2,13 @@ package inspector
 
 import (
 	"fmt"
-	"github.com/pingcap/tidb/ast"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"sqle/log"
 	"sqle/model"
 	"testing"
+
+	"github.com/pingcap/tidb/ast"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
@@ -564,6 +565,13 @@ DROP INDEX idx_1 ON exist_db.exist_tb_1;
 DROP INDEX idx_2 ON exist_db.exist_tb_1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG, "idx_2"),
+	)
+
+	runInspectCase(t, "drop_index: if exists and index not exist", DefaultMysqlInspect(),
+		`
+DROP INDEX IF EXISTS idx_2 ON exist_db.exist_tb_1;
+`,
+		newTestResult(),
 	)
 }
 
