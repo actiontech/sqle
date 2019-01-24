@@ -35,6 +35,9 @@ namespace SqlserverProtoServer {
                     }
                     break;
 
+                case ExistsPredicate existsPredicate:
+                    return true;
+
                 case BooleanTernaryExpression ternaryExpression:
                     if (ternaryExpression.FirstExpression is ColumnReferenceExpression) {
                         return true;
