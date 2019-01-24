@@ -9,6 +9,22 @@ namespace SqlserverProtoServer {
         public bool WhereClauseHasColumn(BooleanExpression booleanExpression) {
             switch (booleanExpression) {
                 case BooleanComparisonExpression comparisonExpression:
+                    if (comparisonExpression.FirstExpression is ColumnReferenceExpression && comparisonExpression.SecondExpression is ColumnReferenceExpression) {
+                        String firstColumnName = "";
+                        var firstColumn = comparisonExpression.FirstExpression as ColumnReferenceExpression;
+                        for (int index = firstColumn.FirstTokenIndex; index <= firstColumn.LastTokenIndex; index++) {
+                            firstColumnName += firstColumn.ScriptTokenStream[index].Text;
+                        }
+                        String secondColumnName = "";
+                        var secondColumn = comparisonExpression.SecondExpression as ColumnReferenceExpression;
+                        for (int index = secondColumn.FirstTokenIndex; index <= secondColumn.LastTokenIndex; index++) {
+                            secondColumnName += secondColumn.ScriptTokenStream[index].Text;
+                        }
+                        if (firstColumnName != "" && secondColumnName != "" && firstColumnName == secondColumnName) {
+                            return false;
+                        }
+                    }
+
                     if (comparisonExpression.FirstExpression is ColumnReferenceExpression || comparisonExpression.SecondExpression is ColumnReferenceExpression) {
                         return true;
                     }
