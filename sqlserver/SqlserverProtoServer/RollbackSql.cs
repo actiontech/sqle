@@ -379,8 +379,6 @@ namespace SqlserverProtoServer {
         }
 
         public bool IfSubqueryExists(BooleanExpression booleanExpression) {
-            Console.WriteLine("whereClause:{0}", booleanExpression);
-
             if (booleanExpression is BooleanComparisonExpression) {
                 var boolCompareExpression = booleanExpression as BooleanComparisonExpression;
                 if (boolCompareExpression.FirstExpression is ScalarSubquery || boolCompareExpression.SecondExpression is ScalarSubquery) {
@@ -420,9 +418,20 @@ namespace SqlserverProtoServer {
         public String GenerateDeleteRollbackSql(SqlserverContext context, DeleteStatement statement) {
             var rollbackSql = "";
             var deleteSpecification = statement.DeleteSpecification;
-            if (deleteSpecification.Target is NamedTableReference) {
-                var tableReference = deleteSpecification.Target as NamedTableReference;
-                context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(tableReference.SchemaObject, out String databaseName, out String schemaName, out String tableName);
+            TableReference tableReference = null;
+            if (deleteSpecification.FromClause != null && deleteSpecification.FromClause.TableReferences != null) {
+                Console.WriteLine("len(tableReferences):{0}", deleteSpecification.FromClause.TableReferences.Count);
+                tableReference = deleteSpecification.FromClause.TableReferences[0];
+            } else {
+                tableReference = deleteSpecification.Target;
+            }
+            if (tableReference != null && tableReference is NamedTableReference) {
+                var namedTableReference = tableReference as NamedTableReference;
+                String tableAlias = "";
+                if (namedTableReference.Alias != null) {
+                    tableAlias = namedTableReference.Alias.Value;
+                }
+                context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(namedTableReference.SchemaObject, out String databaseName, out String schemaName, out String tableName);
 
                 var where = "";
                 if (deleteSpecification.WhereClause != null) {
@@ -435,11 +444,11 @@ namespace SqlserverProtoServer {
                     }
                 }
 
-                var recordsCount = context.GetRecordsCount(databaseName, schemaName, tableName, where);
+                var recordsCount = context.GetRecordsCount(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
                 if (!context.NeedRollback(recordsCount)) {
                     return "";
                 }
-                var records = context.GetRecords(databaseName, schemaName, tableName, where);
+                var records = context.GetRecords(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
                 var columns = context.GetColumns(databaseName, schemaName, tableName);
 
                 var values = new List<String>();
@@ -469,9 +478,19 @@ namespace SqlserverProtoServer {
         public String GenerateUpdateRollbackSql(SqlserverContext context, UpdateStatement statement) {
             var rollbacksql = "";
             var updateSpecification = statement.UpdateSpecification;
-            if (updateSpecification.Target is NamedTableReference) {
-                var tableReference = updateSpecification.Target as NamedTableReference;
-                context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(tableReference.SchemaObject, out String databaseName, out String schemaName, out String tableName);
+            TableReference tableReference = null;
+            if (statement.UpdateSpecification.FromClause != null && statement.UpdateSpecification.FromClause.TableReferences != null) {
+                tableReference = statement.UpdateSpecification.FromClause.TableReferences[0];
+            } else {
+                tableReference = statement.UpdateSpecification.Target;
+            }
+            if (tableReference != null && tableReference is NamedTableReference) {
+                var namedTableReference = tableReference as NamedTableReference;
+                String tableAlias = "";
+                if (namedTableReference.Alias != null) {
+                    tableAlias = namedTableReference.Alias.Value;
+                }
+                context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(namedTableReference.SchemaObject, out String databaseName, out String schemaName, out String tableName);
 
                 var primaryKeys = context.GetPrimaryKeys(databaseName, schemaName, tableName);
                 if (primaryKeys.Count == 0) {
@@ -488,12 +507,12 @@ namespace SqlserverProtoServer {
                         where += whereClause.ScriptTokenStream[index].Text;
                     }
                 }
-                var recordsCount = context.GetRecordsCount(databaseName, schemaName, tableName, where);
+                var recordsCount = context.GetRecordsCount(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
                 if (!context.NeedRollback(recordsCount)) {
                     return "";
                 }
 
-                var records = context.GetRecords(databaseName, schemaName, tableName, where);
+                var records = context.GetRecords(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
                 var columns = context.GetColumns(databaseName, schemaName, tableName);
 
                 foreach (var record in records) {
@@ -516,12 +535,20 @@ namespace SqlserverProtoServer {
 
                         var pkValue = "";
                         foreach (var setClause in updateSpecification.SetClauses) {
-                            var updatedColumn = setClause.ScriptTokenStream[setClause.FirstTokenIndex].Text;
-                            if (updatedColumn == columnName) {
-                                colChanged = true;
-                                if (isPk) {
-                                    isPkChanged = true;
-                                    pkValue = setClause.ScriptTokenStream[setClause.LastTokenIndex].Text;
+                            if (setClause is AssignmentSetClause) {
+                                var assignmentSetClause = setClause as AssignmentSetClause;
+                                var columnIdentifiers = assignmentSetClause.Column.MultiPartIdentifier.Identifiers;
+                                if (columnIdentifiers.Count > 0) {
+                                    var updatedColumnName = columnIdentifiers[columnIdentifiers.Count - 1].Value;
+                                    if (updatedColumnName == columnName) {
+                                        colChanged = true;
+                                        if (isPk) {
+                                            isPkChanged = true;
+                                            for (int index = assignmentSetClause.NewValue.FirstTokenIndex; index <= assignmentSetClause.NewValue.LastTokenIndex; index++) {
+                                                pkValue += assignmentSetClause.NewValue.ScriptTokenStream[index].Text;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
