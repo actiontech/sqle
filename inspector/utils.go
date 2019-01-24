@@ -113,6 +113,30 @@ func getTables(stmt *ast.Join) []*ast.TableName {
 	return tables
 }
 
+func getTableSources(stmt *ast.Join) []*ast.TableSource {
+	sources := []*ast.TableSource{}
+	if stmt == nil {
+		return sources
+	}
+	if n := stmt.Left; n != nil {
+		switch t := n.(type) {
+		case *ast.TableSource:
+			sources = append(sources, t)
+		case *ast.Join:
+			sources = append(sources, getTableSources(t)...)
+		}
+	}
+	if n := stmt.Right; n != nil {
+		switch t := n.(type) {
+		case *ast.TableSource:
+			sources = append(sources, t)
+		case *ast.Join:
+			sources = append(sources, getTableSources(t)...)
+		}
+	}
+	return sources
+}
+
 func getTableNameWithQuote(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
 		return fmt.Sprintf("`%s`", stmt.Name)
@@ -176,70 +200,97 @@ func MysqlDataTypeIsBlob(tp byte) bool {
 	}
 }
 
+func scanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode) (skip bool) {
+	for _, expr := range exprs {
+		if expr == nil {
+			continue
+		}
+		if fn(expr) {
+			return true
+		}
+		switch x := expr.(type) {
+		case *ast.ColumnNameExpr:
+		case *ast.SubqueryExpr:
+		case *ast.BinaryOperationExpr:
+			skip = scanWhereStmt(fn, x.R, x.L)
+		case *ast.UnaryOperationExpr:
+			skip = scanWhereStmt(fn, x.V)
+			// boolean_primary is true|false
+		case *ast.IsTruthExpr:
+			skip = scanWhereStmt(fn, x.Expr)
+			// boolean_primary is (not) null
+		case *ast.IsNullExpr:
+			skip = scanWhereStmt(fn, x.Expr)
+			// boolean_primary comparison_operator {ALL | ANY} (subquery)
+		case *ast.CompareSubqueryExpr:
+			skip = scanWhereStmt(fn, x.L, x.R)
+		case *ast.ExistsSubqueryExpr:
+			skip = scanWhereStmt(fn, x.Sel)
+			// boolean_primary IN (expr,...)
+		case *ast.PatternInExpr:
+			es := []ast.ExprNode{}
+			es = append(es, x.Expr)
+			es = append(es, x.Sel)
+			es = append(es, x.List...)
+			skip = scanWhereStmt(fn, es...)
+			// boolean_primary Between expr and expr
+		case *ast.BetweenExpr:
+			skip = scanWhereStmt(fn, x.Expr, x.Left, x.Right)
+			// boolean_primary (not) like expr
+		case *ast.PatternLikeExpr:
+			skip = scanWhereStmt(fn, x.Expr, x.Pattern)
+			// boolean_primary (not) regexp expr
+		case *ast.PatternRegexpExpr:
+			skip = scanWhereStmt(fn, x.Expr, x.Pattern)
+		case *ast.RowExpr:
+			skip = scanWhereStmt(fn, x.Values...)
+		}
+		if skip {
+			return skip
+		}
+	}
+	return false
+}
+
+func whereStmtHasSubQuery(where ast.ExprNode) bool {
+	hasSubQuery := false
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch expr.(type) {
+		case *ast.SubqueryExpr:
+			hasSubQuery = true
+			return true
+		}
+		return false
+	}, where)
+	return hasSubQuery
+}
+
 func whereStmtHasOneColumn(where ast.ExprNode) bool {
-	return scanWhereStmtColumn(where, func(expr *ast.ColumnNameExpr) bool {
-		return true
-	})
+	hasColumn := false
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch expr.(type) {
+		case *ast.ColumnNameExpr:
+			hasColumn = true
+			return true
+		}
+		return false
+	}, where)
+	return hasColumn
 }
 
 func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
-	return scanWhereStmtColumn(where, func(expr *ast.ColumnNameExpr) bool {
-		if expr.Name.Name.L == strings.ToLower(columnName) {
-			return true
-		}
-		return false
-	})
-}
-
-func scanWhereStmtColumn(where ast.ExprNode, fn func(expr *ast.ColumnNameExpr) bool) bool {
-	switch x := where.(type) {
-	case nil:
-	case *ast.ColumnNameExpr:
-		return fn(x)
-	case *ast.BinaryOperationExpr:
-		if scanWhereStmtColumn(x.R, fn) || scanWhereStmtColumn(x.L, fn) {
-			return true
-		} else {
-			return false
-		}
-	case *ast.UnaryOperationExpr:
-		return scanWhereStmtColumn(x.V, fn)
-	// boolean_primary is true|false
-	case *ast.IsTruthExpr:
-		return scanWhereStmtColumn(x.Expr, fn)
-	// boolean_primary is (not) null
-	case *ast.IsNullExpr:
-		return scanWhereStmtColumn(x.Expr, fn)
-	// boolean_primary comparison_operator {ALL | ANY} (subquery)
-	case *ast.CompareSubqueryExpr:
-		return scanWhereStmtColumn(x.L, fn)
-	// boolean_primary IN (expr,...)
-	case *ast.PatternInExpr:
-		return scanWhereStmtColumn(x.Expr, fn)
-	// boolean_primary Between expr and expr
-	case *ast.BetweenExpr:
-		return scanWhereStmtColumn(x.Expr, fn)
-	// boolean_primary (not) like expr
-	case *ast.PatternLikeExpr:
-		return scanWhereStmtColumn(x.Expr, fn)
-	// boolean_primary (not) regexp expr
-	case *ast.PatternRegexpExpr:
-		return scanWhereStmtColumn(x.Expr, fn)
-	case *ast.RowExpr:
-		if x.Values != nil {
-			ok := false
-			for _, expr := range x.Values {
-				ok = ok || scanWhereStmtColumn(expr, fn)
-				if ok {
-					return ok
-				}
+	hasSpecificColumn := false
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch cn := expr.(type) {
+		case *ast.ColumnNameExpr:
+			if cn.Name.Name.L == strings.ToLower(columnName) {
+				hasSpecificColumn = true
 			}
-			return ok
+			return true
 		}
-	default:
 		return false
-	}
-	return false
+	}, where)
+	return hasSpecificColumn
 }
 
 func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
