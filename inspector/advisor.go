@@ -157,6 +157,8 @@ func (i *Inspect) CheckInvalid(node ast.Node) (*InspectResults, error) {
 		err = i.checkInvalidUpdate(stmt, results)
 	case *ast.DeleteStmt:
 		err = i.checkInvalidDelete(stmt, results)
+	case *ast.SelectStmt:
+		err = i.checkInvalidSelect(stmt, results)
 	}
 	return results, err
 }
@@ -662,12 +664,8 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 
 func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResults) error {
 	tables := []*ast.TableName{}
-	tableAlias := map[string]string{}
-	isMultiUpdate := false
+	tableAlias := map[*ast.TableName]string{}
 	tableSources := getTableSources(stmt.TableRefs.TableRefs)
-	if len(tableSources) > 1 {
-		isMultiUpdate = true
-	}
 	for _, tableSource := range tableSources {
 		switch source := tableSource.Source.(type) {
 		case *ast.TableName:
@@ -675,7 +673,7 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 			tables = append(tables, table)
 			alias := tableSource.AsName.String()
 			if alias != "" {
-				tableAlias[alias] = table.Name.String()
+				tableAlias[table] = alias
 			}
 		case *ast.SelectStmt, *ast.UnionStmt:
 			continue
@@ -714,78 +712,52 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 		return nil
 	}
 
-	allTableColNameMap := map[string]map[string]struct{}{}
+	tc := newTableChecker()
 	for _, table := range tables {
-		tableName := table.Name.String()
-		if _, ok := allTableColNameMap[tableName]; ok {
-			continue
+		schemaName := table.Schema.String()
+		if schemaName == "" {
+			schemaName = i.Ctx.currentSchema
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(table)
+		tableName := table.Name.String()
+		if alias, ok := tableAlias[table]; ok {
+			tableName = alias
+		}
+		createStmt, exist, err := i.getCreateTableStmt(table)
 		if err != nil || !exist {
 			return err
 		}
-		colNameMap := map[string]struct{}{}
-		for _, col := range createTableStmt.Cols {
-			colNameMap[col.Name.Name.L] = struct{}{}
-		}
-		allTableColNameMap[tableName] = colNameMap
-	}
-
-	updateColsName := []string{}
-	for _, list := range stmt.List {
-		tableName := list.Column.Table.String()
-		if name, ok := tableAlias[tableName]; ok {
-			tableName = name
-		}
-		columnName := ""
-		if !isMultiUpdate {
-			columnName = list.Column.Name.String()
-		} else if tableName != "" {
-			columnName = fmt.Sprintf("%s.%s", tableName, list.Column.Name.String())
-		} else {
-			columnName = list.Column.String()
-		}
-		updateColsName = append(updateColsName, columnName)
-	}
-	if d := getDuplicate(updateColsName); len(d) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, strings.Join(d, ","))
+		tc.add(schemaName, tableName, createStmt)
 	}
 
 	needExistColsName := []string{}
 	ambiguousColsName := []string{}
 	for _, list := range stmt.List {
-		colName := list.Column.Name.String()
-
-		tableName := list.Column.Table.String()
-		if name, ok := tableAlias[tableName]; ok {
-			tableName = name
+		col := list.Column
+		colExists, colIsAmbiguous := tc.checkColumnByName(col)
+		if colIsAmbiguous {
+			ambiguousColsName = append(ambiguousColsName, col.String())
+			continue
 		}
-		if tableName != "" {
-			colNameMap, ok := allTableColNameMap[tableName]
-			if !ok {
-				needExistColsName = append(needExistColsName, fmt.Sprintf("%s.%s", tableName, colName))
-			}
-			if _, ok := colNameMap[colName]; !ok {
-				needExistColsName = append(needExistColsName, fmt.Sprintf("%s.%s", tableName, colName))
-			}
-		} else {
-			colExist := false
-			for _, colNameMap := range allTableColNameMap {
-				_, ok := colNameMap[colName]
-				if ok {
-					if !colExist {
-						colExist = true
-						continue
-					} else {
-						ambiguousColsName = append(ambiguousColsName, colName)
-					}
-				}
-			}
-			if !colExist {
-				needExistColsName = append(needExistColsName, colName)
-			}
+		if !colExists {
+			needExistColsName = append(needExistColsName, col.String())
 		}
 	}
+
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.ColumnNameExpr:
+			col := x.Name
+			colExists, colIsAmbiguous := tc.checkColumnByName(col)
+			if colIsAmbiguous {
+				ambiguousColsName = append(ambiguousColsName, col.String())
+			}
+			if !colExists {
+				needExistColsName = append(needExistColsName, col.String())
+			}
+		}
+		return false
+	}, stmt.Where)
+
 	if len(needExistColsName) > 0 {
 		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistColsName), ","))
@@ -800,6 +772,97 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 
 func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResults) error {
 	tables := getTables(stmt.TableRefs.TableRefs)
+	needExistsSchemasName := []string{}
+	needExistsTablesName := []string{}
+	for _, table := range tables {
+		schemaName := i.getSchemaName(table)
+		schemaExist, err := i.isSchemaExist(schemaName)
+		if err != nil {
+			return err
+		}
+		if !schemaExist {
+			needExistsSchemasName = append(needExistsSchemasName, schemaName)
+		} else {
+			tableExist, err := i.isTableExist(table)
+			if err != nil {
+				return err
+			}
+			if !tableExist {
+				needExistsTablesName = append(needExistsTablesName, i.getTableName(table))
+			}
+		}
+	}
+	if len(needExistsSchemasName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(needExistsSchemasName), ","))
+	}
+	if len(needExistsTablesName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(needExistsTablesName), ","))
+	}
+	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
+		return nil
+	}
+
+	tc := newTableChecker()
+	for _, table := range tables {
+		schemaName := table.Schema.String()
+		if schemaName == "" {
+			schemaName = i.Ctx.currentSchema
+		}
+		tableName := table.Name.String()
+		createStmt, exist, err := i.getCreateTableStmt(table)
+		if err != nil || !exist {
+			return err
+		}
+		tc.add(schemaName, tableName, createStmt)
+	}
+
+	needExistColsName := []string{}
+	ambiguousColsName := []string{}
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.ColumnNameExpr:
+			col := x.Name
+			colExists, colIsAmbiguous := tc.checkColumnByName(col)
+			if colIsAmbiguous {
+				ambiguousColsName = append(ambiguousColsName, col.String())
+			}
+			if !colExists {
+				needExistColsName = append(needExistColsName, col.String())
+			}
+		}
+		return false
+	}, stmt.Where)
+
+	if len(needExistColsName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+			strings.Join(removeDuplicate(needExistColsName), ","))
+	}
+
+	if len(ambiguousColsName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS,
+			strings.Join(removeDuplicate(ambiguousColsName), ","))
+	}
+	return nil
+}
+
+func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResults) error {
+	tables := []*ast.TableName{}
+	tableSources := getTableSources(stmt.From.TableRefs)
+	// not select from table statement
+	if len(tableSources) < 1 {
+		return nil
+	}
+	for _, tableSource := range tableSources {
+		switch source := tableSource.Source.(type) {
+		case *ast.TableName:
+			table := source
+			tables = append(tables, table)
+		case *ast.SelectStmt, *ast.UnionStmt:
+			continue
+		}
+	}
 	needExistsSchemasName := []string{}
 	needExistsTablesName := []string{}
 	for _, table := range tables {

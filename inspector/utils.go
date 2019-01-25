@@ -568,3 +568,75 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 	}
 	return newTable, nil
 }
+
+type TableChecker struct {
+	schemaTables map[string]map[string]*ast.CreateTableStmt
+}
+
+func newTableChecker() *TableChecker {
+	return &TableChecker{
+		schemaTables: map[string]map[string]*ast.CreateTableStmt{},
+	}
+}
+
+func (t *TableChecker) add(schemaName, tableName string, table *ast.CreateTableStmt) {
+	tables, ok := t.schemaTables[schemaName]
+	if ok {
+		tables[tableName] = table
+	} else {
+		t.schemaTables[schemaName] = map[string]*ast.CreateTableStmt{tableName: table}
+	}
+}
+
+func (t *TableChecker) checkColumnByName(colNameStmt *ast.ColumnName) (bool, bool) {
+	schemaName := colNameStmt.Schema.String()
+	tableName := colNameStmt.Table.String()
+	colName := colNameStmt.Name.String()
+	tables, schemaExists := t.schemaTables[schemaName]
+	if schemaExists {
+		table, tableExists := tables[tableName]
+		if tableExists {
+			return tableExistCol(table, colName), false
+		}
+	}
+	if schemaName != "" {
+		return false, false
+	}
+	colExists := false
+	colIsAmbiguous := false
+
+	for _, tables := range t.schemaTables {
+		table, tableExist := tables[tableName]
+		if tableExist {
+			exist := tableExistCol(table, colName)
+			if exist {
+				if colExists {
+					colIsAmbiguous = true
+				}
+				colExists = true
+			}
+		}
+		if tableName != "" {
+			continue
+		}
+		for _, table := range tables {
+			exist := tableExistCol(table, colName)
+			if exist {
+				if colExists {
+					colIsAmbiguous = true
+				}
+				colExists = true
+			}
+		}
+	}
+	return colExists, colIsAmbiguous
+}
+
+func tableExistCol(table *ast.CreateTableStmt, colName string) bool {
+	for _, col := range table.Cols {
+		if col.Name.Name.String() == colName {
+			return true
+		}
+	}
+	return false
+}

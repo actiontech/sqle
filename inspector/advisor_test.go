@@ -627,6 +627,20 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
 }
 
 func TestCheckInvalidUpdate(t *testing.T) {
+	runInspectCase(t, "update: ok", DefaultMysqlInspect(),
+		`
+update exist_db.exist_tb_1 set v1="2" where id=1;
+`,
+		newTestResult(),
+	)
+
+	runInspectCase(t, "update: ok", DefaultMysqlInspect(),
+		`
+update exist_tb_1 set v1="2" where exist_db.exist_tb_1.id=1;
+`,
+		newTestResult(),
+	)
+
 	runInspectCase(t, "update: schema not exist", DefaultMysqlInspect(),
 		`
 update not_exist_db.not_exist_tb set v1="2" where id=1;
@@ -648,11 +662,11 @@ update exist_db.exist_tb_1 set v3="2" where id=1;
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
 	)
 
-	runInspectCase(t, "update: column is duplicate", DefaultMysqlInspect(),
+	runInspectCase(t, "update: where column not exist", DefaultMysqlInspect(),
 		`
-update exist_db.exist_tb_1 set v1="2",v1="1" where id=1;
+update exist_db.exist_tb_1 set v1="2" where v3=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
 	)
 
 	runInspectCase(t, "update with alias: ok", DefaultMysqlInspect(),
@@ -672,21 +686,21 @@ update exist_db.not_exist_tb as t set t.v3 = "1" where t.id = 1;
 		`
 update exist_tb_1 as t set t.v3 = "1" where t.id = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "t.v3"),
 	)
 
-	runInspectCase(t, "update with alias: column is duplicate", DefaultMysqlInspect(),
+	runInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
-update exist_tb_1 as t set t.v2 = "1",t.v2="1" where t.id = 1;
+update exist_tb_1 as t set t.v1 = "1" where t.v3 = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v2"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "t.v3"),
 	)
 
-	runInspectCase(t, "update with alias: column is duplicate", DefaultMysqlInspect(),
+	runInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
-update exist_tb_1 as t set t.v2 = "1",exist_tb_1.v2="1" where t.id = 1;
+update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v2"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v1"),
 	)
 
 	runInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -724,6 +738,27 @@ update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_2.v3"),
 	)
 
+	runInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+		`
+update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3,exist_tb_2.v3"),
+	)
+
+	runInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+		`
+update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_3.v1"),
+	)
+
+	runInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+		`
+update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "not_exist_db.exist_tb_1.v1"),
+	)
+
 	runInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.id;
@@ -738,22 +773,29 @@ update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS, "v1"),
 	)
 
-	runInspectCase(t, "multi-update: column is duplicate", DefaultMysqlInspect(),
+	runInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
-update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = 1,exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
+update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "exist_tb_1.v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS, "v1"),
 	)
 
-	runInspectCase(t, "multi-update: column is duplicate", DefaultMysqlInspect(),
+	runInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
-update exist_tb_1 t,exist_tb_2 set t.v1 = 1,exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
+update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "exist_tb_1.v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS, "v1"),
 	)
 }
 
 func TestCheckInvalidDelete(t *testing.T) {
+	runInspectCase(t, "delete: ok", DefaultMysqlInspect(),
+		`
+delete from exist_db.exist_tb_1 where id=1;
+`,
+		newTestResult(),
+	)
+
 	runInspectCase(t, "delete: schema not exist", DefaultMysqlInspect(),
 		`
 delete from not_exist_db.not_exist_tb where id=1;
@@ -764,6 +806,43 @@ delete from not_exist_db.not_exist_tb where id=1;
 	runInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.not_exist_tb where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+	)
+
+	runInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
+		`
+delete from exist_db.exist_tb_1 where v3=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+	)
+
+	runInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
+		`
+delete from exist_db.exist_tb_1 where exist_tb_1.v3=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3"),
+	)
+
+	runInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
+		`
+delete from exist_db.exist_tb_1 where exist_tb_2.id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_2.id"),
+	)
+}
+
+func TestCheckInvalidSelect(t *testing.T) {
+	runInspectCase(t, "select: schema not exist", DefaultMysqlInspect(),
+		`
+select id from not_exist_db.not_exist_tb where id=1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+	)
+
+	runInspectCase(t, "select: table not exist", DefaultMysqlInspect(),
+		`
+select id from exist_db.not_exist_tb where id=1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
 	)
