@@ -13,14 +13,18 @@ type TableInfo struct {
 	OriginalTable *ast.CreateTableStmt
 
 	//
-	MergedTable   *ast.CreateTableStmt
+	MergedTable *ast.CreateTableStmt
 
 	// save alter table parse object from input sql;
 	AlterTables []*ast.AlterTableStmt
 }
 
 type SchemaInfo struct {
-	Tables map[string]*TableInfo
+	DefaultEngine    string
+	engineLoad       bool
+	DefaultCharacter string
+	characterLoad    bool
+	Tables           map[string]*TableInfo
 }
 
 type Context struct {

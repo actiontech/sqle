@@ -122,6 +122,10 @@ func DefaultMysqlInspect() *Inspect {
 			schemaHasLoad: true,
 			schemas: map[string]*SchemaInfo{
 				"exist_db": &SchemaInfo{
+					DefaultEngine:    "InnoDB",
+					engineLoad:       true,
+					DefaultCharacter: "utf8mb4",
+					characterLoad:    true,
 					Tables: map[string]*TableInfo{
 						"exist_tb_1": &TableInfo{
 							sizeLoad:      true,
@@ -1209,13 +1213,24 @@ INDEX idx_1 (id,v1,v2,v3,v4,v5)
 }
 
 func TestCheckTableWithoutInnodbUtf8mb4(t *testing.T) {
+	runInspectCase(t, "create_table: ok", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
 	runInspectCase(t, "create_table: table engine not innodb", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
-)AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+)ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4),
 	)
@@ -1226,7 +1241,7 @@ CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
-)ENGINE=InnoDB AUTO_INCREMENT=3 COMMENT="unit test";
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1  COMMENT="unit test";
 `,
 		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4),
 	)

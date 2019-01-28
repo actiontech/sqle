@@ -460,6 +460,7 @@ func checkMergeAlterTable(i *Inspect, node ast.Node) error {
 func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 	var engine string
 	var characterSet string
+	var err error
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.ReferTable != nil {
@@ -471,6 +472,18 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 				engine = op.StrValue
 			case ast.TableOptionCharset:
 				characterSet = op.StrValue
+			}
+		}
+		if engine == "" {
+			engine, err = i.getSchemaEngine(stmt.Table)
+			if err != nil {
+				return err
+			}
+		}
+		if characterSet == "" {
+			characterSet, err = i.getSchemaCharacter(stmt.Table)
+			if err != nil {
+				return err
 			}
 		}
 	default:
