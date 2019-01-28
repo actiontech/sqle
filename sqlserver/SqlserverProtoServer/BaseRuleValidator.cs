@@ -845,7 +845,6 @@ namespace SqlserverProtoServer {
                 }
 
                 if (statement.DeleteSpecification.WhereClause != null) {
-                    Console.WriteLine("++++++++++++++not null++++++++++++++");
                     var columnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
                     var needExistsColumns = new List<String>();
                     var columnNames = new List<String>();
@@ -860,8 +859,6 @@ namespace SqlserverProtoServer {
                         logger.Info("columns {0} should exists", String.Join(",", needExistsColumns));
                         return true;
                     }
-                } else {
-                    Console.WriteLine("++++++++++++++null++++++++++++++");
                 }
             }
             return false;
