@@ -44,6 +44,7 @@ namespace SqlserverProtoServer {
         public static String DUPLICATE_COLUMN_OF_INDEX_MSG = "索引 {0} 字段 {1} 重复";
         public static String KEY_COLUMN_NOT_EXIST_MSG = "索引字段 {0} 不存在";
         public static String CONSTRAINT_COLUMN_NOT_EXIST_MSG = "约束字段 {0} 不存在";
+        public static String DUPLICATE_COLUMN_OF_CONSTRAINT_MSG = "约束 {0} 字段 {1} 重复";
         public static String NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配";
 
         // rule names
