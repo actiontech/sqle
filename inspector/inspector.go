@@ -276,6 +276,52 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 	return info.Size, nil
 }
 
+func (i *Inspect) getSchemaEngine(stmt *ast.TableName) (string, error) {
+	schemaName := i.getSchemaName(stmt)
+	schema, schemaExist := i.Ctx.GetSchema(schemaName)
+	if schemaExist {
+		if schema.engineLoad {
+			return schema.DefaultEngine, nil
+		}
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+	engine, err := conn.ShowDefaultEngine()
+	if err != nil {
+		return "", err
+	}
+	if schemaExist {
+		schema.DefaultEngine = engine
+		schema.engineLoad = true
+	}
+	return engine, nil
+}
+
+func (i *Inspect) getSchemaCharacter(stmt *ast.TableName) (string, error) {
+	schemaName := i.getSchemaName(stmt)
+	schema, schemaExist := i.Ctx.GetSchema(schemaName)
+	if schemaExist {
+		if schema.characterLoad {
+			return schema.DefaultCharacter, nil
+		}
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+	character, err := conn.ShowDefaultCharacter()
+	if err != nil {
+		return "", err
+	}
+	if schemaExist {
+		schema.DefaultCharacter = character
+		schema.characterLoad = true
+	}
+	return character, nil
+}
+
 func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
 	t, err := parseOneSql(i.Task.Instance.DbType, sql)
 	if err != nil {

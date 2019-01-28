@@ -407,3 +407,43 @@ where table_schema = '%s' and table_name = '%s'`, schema, table)
 	}
 	return size, nil
 }
+
+func (c *Executor) ShowDefaultEngine() (string, error) {
+	if c.dbType != model.DB_TYPE_MYSQL {
+		return "", nil
+	}
+	sql := `select @@default_storage_engine`
+	result, err := c.Db.Query(sql)
+	if err != nil {
+		return "", err
+	}
+	// table not found, rows = 0
+	if len(result) == 0 {
+		return "", nil
+	}
+	engine, ok := result[0]["@@default_storage_engine"]
+	if !ok {
+		return "", nil
+	}
+	return engine.String, nil
+}
+
+func (c *Executor)ShowDefaultCharacter()(string, error){
+	if c.dbType != model.DB_TYPE_MYSQL {
+		return "", nil
+	}
+	sql := "select @@character_set_database"
+	result, err := c.Db.Query(sql)
+	if err != nil {
+		return "", err
+	}
+	// table not found, rows = 0
+	if len(result) == 0 {
+		return "", nil
+	}
+	character, ok := result[0]["@@character_set_database"]
+	if !ok {
+		return "", nil
+	}
+	return character.String, nil
+}
