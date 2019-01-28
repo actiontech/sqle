@@ -58,6 +58,8 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.POST("/tasks/:task_id/rollback", controller.RollbackTask)
 	e.POST("/tasks/:task_id/upload_sql_file", controller.UploadSqlFile)
 
+	e.POST("/task/create_inspect",controller.CreateAndInspectTask)
+
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
 

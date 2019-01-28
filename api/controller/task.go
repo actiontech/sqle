@@ -32,21 +32,32 @@ type GetTaskRes struct {
 // @Success 200 {object} controller.GetTaskRes
 // @router /tasks [post]
 func CreateTask(c echo.Context) error {
+	task, res := createTask(c)
+	if res.Code != 0 {
+		return c.JSON(200, res)
+	}
+	return c.JSON(200, &GetTaskRes{
+		BaseRes: res,
+		Data:    task.Detail(),
+	})
+}
+
+func createTask(c echo.Context) (*model.Task, BaseRes) {
 	s := model.GetStorage()
 	req := new(CreateTaskReq)
 	if err := c.Bind(req); err != nil {
-		return err
+		return nil, NewBaseReq(err)
 	}
 	if err := c.Validate(req); err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(err))
+		return nil, NewBaseReq(err)
 	}
 
 	inst, exist, err := s.GetInstByName(req.InstName)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
+		return nil, NewBaseReq(err)
 	}
 	if !exist {
-		return c.JSON(200, INSTANCE_NOT_EXIST_ERROR)
+		return nil, INSTANCE_NOT_EXIST_ERROR
 	}
 
 	task := &model.Task{
@@ -60,7 +71,7 @@ func CreateTask(c echo.Context) error {
 	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil, nil).
 		ParseSql(req.Sql)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
+		return nil, NewBaseReq(err)
 	}
 	for n, node := range nodes {
 		task.CommitSqls = append(task.CommitSqls, &model.CommitSql{
@@ -73,12 +84,9 @@ func CreateTask(c echo.Context) error {
 	task.Instance = nil
 	err = s.Save(task)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
+		return nil, NewBaseReq(err)
 	}
-	return c.JSON(200, &GetTaskRes{
-		BaseRes: NewBaseReq(nil),
-		Data:    task.Detail(),
-	})
+	return task, NewBaseReq(nil)
 }
 
 // @Summary 上传 SQL 文件
@@ -270,4 +278,27 @@ func RollbackTask(c echo.Context) error {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, NewBaseReq(nil))
+}
+
+// @Summary 创建Sql审核任务并提交审核
+// @Description create a task and inspect
+// @Accept json
+// @Produce json
+// @Param instance body controller.CreateTaskReq true "add task"
+// @Success 200 {object} controller.GetTaskRes
+// @router /task/create_inspect [post]
+func CreateAndInspectTask(c echo.Context) error {
+	task, res := createTask(c)
+	if res.Code != 0 {
+		return c.JSON(200, res)
+	}
+
+	task, err := server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), model.TASK_ACTION_INSPECT)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	return c.JSON(http.StatusOK, &GetTaskRes{
+		BaseRes: NewBaseReq(nil),
+		Data:    task.Detail(),
+	})
 }
