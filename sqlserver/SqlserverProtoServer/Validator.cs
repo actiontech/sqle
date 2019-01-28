@@ -41,6 +41,7 @@ namespace SqlserverProtoServer {
         public static String DUPLICATE_CONSTAINT_ERROR_MSG = "约束名 {0} 重复";
         public static String PRIMARY_KEY_MULTI_ERROR_MSG = "主键只能设置一个";
         public static String PRIMARY_KEY_EXIST_MSG = "已经存在主键，不能再添加";
+        public static String DUPLICATE_COLUMN_OF_INDEX_MSG = "索引 {0} 字段 {1} 重复";
         public static String KEY_COLUMN_NOT_EXIST_MSG = "索引字段 {0} 不存在";
         public static String CONSTRAINT_COLUMN_NOT_EXIST_MSG = "约束字段 {0} 不存在";
         public static String NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配";

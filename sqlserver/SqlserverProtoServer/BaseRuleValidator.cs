@@ -33,6 +33,10 @@ namespace SqlserverProtoServer {
                     isInvalid = IsInvalidDropDatabaseStatement(logger, context, dropDatabaseStatement);
                     break;
 
+                case DropSchemaStatement dropSchemaStatement:
+                    isInvalid = IsInvalidDropSchemaStatement(logger, context, dropSchemaStatement);
+                    break;
+
                 case CreateIndexStatement createIndexStatement:
                     isInvalid = IsInvalidCreateIndexStatement(logger, context, createIndexStatement);
                     break;
@@ -136,6 +140,7 @@ namespace SqlserverProtoServer {
                 var indexColumnNames = new List<String>();
                 if (statement.Definition.Indexes != null) {
                     foreach (var indexDefinition in statement.Definition.Indexes) {
+                        var columnNameCounter = new Dictionary<String, int>();
                         indexNames.Add(indexDefinition.Name.Value);
                         foreach (var column in indexDefinition.Columns) {
                             ColumnReferenceExpression columnReferenceExpression = column.Column;
@@ -143,6 +148,19 @@ namespace SqlserverProtoServer {
                             if (identifiers.Count > 0) {
                                 var identifier = identifiers[identifiers.Count - 1];
                                 indexColumnNames.Add(identifier.Value);
+                                if (!columnNameCounter.ContainsKey(identifier.Value)) {
+                                    columnNameCounter[identifier.Value] = 1;
+                                } else {
+                                    columnNameCounter[identifier.Value] += 1;
+                                }
+                            }
+                        }
+
+                        foreach (var columnNameCounterPair in columnNameCounter) {
+                            if (columnNameCounterPair.Value > 1) {
+                                logger.Info("index {0} has duplicated column: {1}", indexDefinition.Name.Value, columnNameCounterPair.Key);
+                                context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_COLUMN_OF_INDEX_MSG, indexDefinition.Name.Value, columnNameCounterPair.Key));
+                                isInvalid = true;
                             }
                         }
                     }
@@ -510,6 +528,21 @@ namespace SqlserverProtoServer {
             return false;
         }
 
+        public bool IsInvalidDropSchemaStatement(Logger logger, SqlserverContext context, DropSchemaStatement statement) {
+            if (statement.IsIfExists) {
+                return false;
+            }
+
+            var schemaName = statement.Schema.BaseIdentifier.Value;
+            if (!context.SchemaExists(logger, schemaName)) {
+                logger.Info("schema {0} should exist", schemaName);
+                context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.SCHEMA_NOT_EXIST_MSG, schemaName));
+                return true;
+            }
+
+            return false;
+        }
+
         public bool IsInvalidCreateIndexStatement(Logger logger, SqlserverContext context, CreateIndexStatement statement) {
             var isInvalid = false;
             var schemaObject = statement.OnName;
@@ -552,6 +585,7 @@ namespace SqlserverProtoServer {
 
             var columnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
             var needExistsColumns = new List<String>();
+            var columnNameCounter = new Dictionary<String, int>();
             foreach (var column in statement.Columns) {
                 var identifiers = column.Column.MultiPartIdentifier.Identifiers;
                 if (identifiers.Count > 0) {
@@ -559,6 +593,16 @@ namespace SqlserverProtoServer {
                     if (!columnDefinitions.ContainsKey(identifier.Value)) {
                         needExistsColumns.Add(identifier.Value);
                     }
+                    if (!columnNameCounter.ContainsKey(identifier.Value)) {
+                        columnNameCounter[identifier.Value] = 1;
+                    } else {
+                        columnNameCounter[identifier.Value] += 1;
+                    }
+                }
+            }
+            foreach (var columnNameCounterPair in columnNameCounter) {
+                if (columnNameCounterPair.Value > 1) {
+                    context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_COLUMN_OF_INDEX_MSG, statement.Name.Value, columnNameCounterPair.Key));
                 }
             }
             if (needExistsColumns.Count > 0) {
@@ -747,17 +791,25 @@ namespace SqlserverProtoServer {
                     }
                 }
                 logger.Info("update columns:{0}", String.Join(",", updateColumns));
-
-                if (needExistsColumns.Count > 0) {
-                    context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.COLUMN_NOT_EXIST_MSG, String.Join(",", needExistsColumns)));
-                    logger.Info("columns {0} should exists", String.Join(",", needExistsColumns));
-                    isInvalid = true;
-                }
-
                 var duplicatedColumns = GetDuplicatedNames(updateColumns);
                 if (duplicatedColumns.Count > 0) {
                     context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_COLUMN_ERROR_MSG, String.Join(",", duplicatedColumns)));
                     logger.Info("duplicated columns {0} in insert statement", String.Join(",", duplicatedColumns));
+                    isInvalid = true;
+                }
+
+                if (statement.UpdateSpecification.WhereClause != null) {
+                    var columnNames = new List<String>();
+                    columnNames = GetColumnNameFromBooleanExpression(statement.UpdateSpecification.WhereClause.SearchCondition, columnNames);
+                    foreach(var columnName in columnNames) {
+                        if (!columnDefinitions.ContainsKey(columnName)) {
+                            needExistsColumns.Add(columnName);
+                        }
+                    }
+                }
+                if (needExistsColumns.Count > 0) {
+                    context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.COLUMN_NOT_EXIST_MSG, String.Join(",", needExistsColumns)));
+                    logger.Info("columns {0} should exists", String.Join(",", needExistsColumns));
                     isInvalid = true;
                 }
             }
@@ -790,6 +842,26 @@ namespace SqlserverProtoServer {
                     context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.TABLE_NOT_EXIST_MSG, tableName));
                     logger.Info("tables {0} should exists", tableName);
                     return true;
+                }
+
+                if (statement.DeleteSpecification.WhereClause != null) {
+                    Console.WriteLine("++++++++++++++not null++++++++++++++");
+                    var columnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
+                    var needExistsColumns = new List<String>();
+                    var columnNames = new List<String>();
+                    columnNames = GetColumnNameFromBooleanExpression(statement.DeleteSpecification.WhereClause.SearchCondition, columnNames);
+                    foreach (var columnName in columnNames) {
+                        if (!columnDefinitions.ContainsKey(columnName)) {
+                            needExistsColumns.Add(columnName);
+                        }
+                    }
+                    if (needExistsColumns.Count > 0) {
+                        context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.COLUMN_NOT_EXIST_MSG, String.Join(",", needExistsColumns)));
+                        logger.Info("columns {0} should exists", String.Join(",", needExistsColumns));
+                        return true;
+                    }
+                } else {
+                    Console.WriteLine("++++++++++++++null++++++++++++++");
                 }
             }
             return false;
@@ -876,6 +948,78 @@ namespace SqlserverProtoServer {
             }
 
             return ret;
+        }
+
+        public String GetColumnNameFromColumnReferenceExpression(ColumnReferenceExpression expression) {
+            var identifiers = expression.MultiPartIdentifier.Identifiers;
+            if (identifiers.Count > 0) {
+                return identifiers[identifiers.Count - 1].Value;
+            }
+            return "";
+        }
+
+        public List<String> GetColumnNameFromBooleanExpression(BooleanExpression expression, List<String> columnNames) {
+            switch (expression) {
+                case BooleanComparisonExpression comparisonExpression:
+                    if (comparisonExpression.FirstExpression is ColumnReferenceExpression) {
+                        var firstColumnName = GetColumnNameFromColumnReferenceExpression(comparisonExpression.FirstExpression as ColumnReferenceExpression);
+                        if (firstColumnName != "") {
+                            columnNames.Add(firstColumnName);
+                        }
+                    }
+                    if (comparisonExpression.SecondExpression is ColumnReferenceExpression) {
+                        var secondColumnName = GetColumnNameFromColumnReferenceExpression(comparisonExpression.SecondExpression as ColumnReferenceExpression);
+                        if (secondColumnName != "") {
+                            columnNames.Add(secondColumnName);
+                        }
+                    }
+                    break;
+
+                case BooleanNotExpression notExpression:
+                    return GetColumnNameFromBooleanExpression(notExpression.Expression, columnNames);
+
+                case BooleanParenthesisExpression parenthesisExpression:
+                    return GetColumnNameFromBooleanExpression(parenthesisExpression.Expression, columnNames);
+
+                case BooleanBinaryExpression binaryExpression:
+                    columnNames = GetColumnNameFromBooleanExpression(binaryExpression.FirstExpression, columnNames);
+                    return GetColumnNameFromBooleanExpression(binaryExpression.SecondExpression, columnNames);
+
+                case InPredicate inPredicate:
+                    if (inPredicate.Expression is ColumnReferenceExpression) {
+                        var columnName = GetColumnNameFromColumnReferenceExpression(inPredicate.Expression as ColumnReferenceExpression);
+                        if (columnName != "") {
+                            columnNames.Add(columnName);
+                        }
+                    }
+                    break;
+
+                case BooleanTernaryExpression ternaryExpression:
+                    if (ternaryExpression.FirstExpression is ColumnReferenceExpression) {
+                        var firstColumnName = GetColumnNameFromColumnReferenceExpression(ternaryExpression.FirstExpression as ColumnReferenceExpression);
+                        if (firstColumnName != "") {
+                            columnNames.Add(firstColumnName);
+                        }
+                    }
+                    if (ternaryExpression.SecondExpression is ColumnReferenceExpression) {
+                        var secondColumnName = GetColumnNameFromColumnReferenceExpression(ternaryExpression.SecondExpression as ColumnReferenceExpression);
+                        if (secondColumnName != "") {
+                            columnNames.Add(secondColumnName);
+                        }
+                    }
+                    break;
+
+                case BooleanIsNullExpression isNullExpression:
+                    if (isNullExpression.Expression is ColumnReferenceExpression) {
+                        var columnName = GetColumnNameFromColumnReferenceExpression(isNullExpression.Expression as ColumnReferenceExpression);
+                        if (columnName != "") {
+                            columnNames.Add(columnName);
+                        }
+                    }
+                    break;
+            }
+
+            return columnNames;
         }
 
         public BaseRuleValidator() {}

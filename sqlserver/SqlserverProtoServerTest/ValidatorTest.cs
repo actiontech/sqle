@@ -63,7 +63,7 @@ namespace SqlServerProtoServerTest {
                                                                  "col1 INT PRIMARY KEY," +
                                                                  "col1 INT," +
                                                                  "col2 INT," +
-                                                                 "INDEX IX1 (col1)," +
+                                                                 "INDEX IX1 (col1, col1)," +
                                                                  "INDEX IX1 (col3)," +
                                                                  "CONSTRAINT PK_Constaint PRIMARY KEY (col1)," +
                                                                  "CONSTRAINT UN_1 UNIQUE (col1)," +
@@ -86,7 +86,7 @@ namespace SqlServerProtoServerTest {
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
-                Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 tbl1 已存在\n[error]字段名 col1 重复\n[error]索引名 IX1 重复\n[error]索引字段 col3 不存在\n[error]约束名 UN_1 重复\n[error]约束字段 col4 不存在\n[error]主键只能设置一个", context.AdviseResultContext.GetMessage());
+                Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 tbl1 已存在\n[error]字段名 col1 重复\n[error]索引 IX1 字段 col1 重复\n[error]索引名 IX1 重复\n[error]索引字段 col3 不存在\n[error]约束名 UN_1 重复\n[error]约束字段 col4 不存在\n[error]主键只能设置一个", context.AdviseResultContext.GetMessage());
             }
         }
 
@@ -237,6 +237,23 @@ namespace SqlServerProtoServerTest {
             Assert.Equal("[error]database database1 不存在", context.AdviseResultContext.GetMessage());
         }
 
+        private void IsInvalidDropSchema() {
+            // schema exist
+            StatementList statementList = ParseStatementList("DROP SCHEMA schema1");
+            var context = new SqlserverContext(new SqlserverMeta());
+            context.IsTest = true;
+            context.ExpectSchemaExist = false;
+            Console.WriteLine();
+            Console.WriteLine("IsInvalidDropSchema");
+
+            foreach (var statement in statementList.Statements) {
+                var invalid = new BaseRuleValidator().IsInvalidDropSchemaStatement(LogManager.GetCurrentClassLogger(), context, statement as DropSchemaStatement);
+                Assert.True(invalid == true);
+            }
+            Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+            Assert.Equal("[error]schema schema1 不存在", context.AdviseResultContext.GetMessage());
+        }
+
         private void IsInvalidCreateIndex() {
             Console.WriteLine();
             Console.WriteLine("IsInvalidCreateIndex");
@@ -267,7 +284,6 @@ namespace SqlServerProtoServerTest {
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
                                                                      "CONSTRAINT UN_1 UNIQUE (col2)," +
                                                                      "INDEX IX_1 (col2))");
-                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseExist = true;
@@ -279,13 +295,13 @@ namespace SqlServerProtoServerTest {
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
                 {
-                    StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col3);");
+                    StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col3, col3);");
                     foreach (var statment in statementList.Statements) {
                         var invalid = new BaseRuleValidator().IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
-                    Assert.Equal("[error]索引 IX_1 已存在\n[error]字段 col3 不存在", context.AdviseResultContext.GetMessage());
+                    Assert.Equal("[error]索引 IX_1 已存在\n[error]索引 IX_1 字段 col3 重复\n[error]字段 col3,col3 不存在", context.AdviseResultContext.GetMessage());
                 }
             }
         }
@@ -376,7 +392,6 @@ namespace SqlServerProtoServerTest {
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
                                                                      "CONSTRAINT UN_1 UNIQUE (col2)," +
                                                                      "INDEX IX_1 (col2))");
-                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseExist = true;
@@ -453,7 +468,6 @@ namespace SqlServerProtoServerTest {
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
                                                                      "CONSTRAINT UN_1 UNIQUE (col2)," +
                                                                      "INDEX IX_1 (col2))");
-                CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseExist = true;
@@ -465,13 +479,13 @@ namespace SqlServerProtoServerTest {
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
                 {
-                    StatementList statementList = ParseStatementList("UPDATE database1.schema1.table1 SET col1=1, col1=2, col2=2, col3=3;");
+                    StatementList statementList = ParseStatementList("UPDATE database1.schema1.table1 SET col1=1, col1=2, col2=2, col3=3 WHERE col4=4;");
                     foreach (var statment in statementList.Statements) {
                         var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
-                    Assert.Equal("[error]字段 col3 不存在\n[error]字段名 col1 重复", context.AdviseResultContext.GetMessage());
+                    Assert.Equal("[error]字段名 col1 重复\n[error]字段 col3,col4 不存在", context.AdviseResultContext.GetMessage());
                 }
             }
         }
@@ -480,14 +494,22 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidDelete");
 
             {
-                StatementList statementList = ParseStatementList("DELETE FROM databse1.schema1.table1;");
+                // init data
+                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                                                                     "col1 INT NOT NULL, " +
+                                                                     "col2 INT NOT NULL, " +
+                                                                     "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
+                                                                     "CONSTRAINT UN_1 UNIQUE (col2)," +
+                                                                     "INDEX IX_1 (col2))");
                 var context = new SqlserverContext(new SqlserverMeta());
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
                 context.IsTest = true;
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
 
 
+                StatementList statementList = ParseStatementList("DELETE FROM databse1.schema1.table1 WHERE col3=1;");
                 context.ExpectDatabaseExist = false;
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
@@ -518,6 +540,17 @@ namespace SqlServerProtoServerTest {
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
                 Assert.Equal("[error]表 table1 不存在", context.AdviseResultContext.GetMessage());
+                context.AdviseResultContext.ResetAdviseResult();
+
+                context.ExpectDatabaseExist = true;
+                context.ExpectSchemaExist = true;
+                context.ExpectTableExist = true;
+                foreach (var statment in statementList.Statements) {
+                    var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
+                    Assert.True(invalid == true);
+                }
+                Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
+                Assert.Equal("[error]字段 col3 不存在", context.AdviseResultContext.GetMessage());
                 context.AdviseResultContext.ResetAdviseResult();
             }
         }
@@ -563,6 +596,7 @@ namespace SqlServerProtoServerTest {
             IsInvalidDropTable();
             IsInvalidCreateDatabase();
             IsInvalidDropDatabase();
+            IsInvalidDropSchema();
             IsInvalidCreateIndex();
             IsInvalidDropIndex();
             IsInvalidInsert();
