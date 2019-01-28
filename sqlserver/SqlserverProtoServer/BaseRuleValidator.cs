@@ -135,7 +135,7 @@ namespace SqlserverProtoServer {
                     isInvalid = true;
                 }
 
-                // no duplicate index
+                // no duplicate index && no duplicate column in index
                 var indexNames = new List<String>();
                 var indexColumnNames = new List<String>();
                 if (statement.Definition.Indexes != null) {
@@ -186,7 +186,7 @@ namespace SqlserverProtoServer {
                     isInvalid = true;
                 }
 
-                // no duplicate constaint
+                // no duplicate constaint && no duplicate column in constaint
                 var constraintNames = new List<String>();
                 var constraintColumnNames = new List<String>();
                 if (statement.Definition.TableConstraints != null) {
@@ -200,12 +200,25 @@ namespace SqlserverProtoServer {
                             if (uniqueConstaintDefinition.IsPrimaryKey) {
                                 pkCounter += 1;
                             }
+                            var columnNameCounter = new Dictionary<String, int>();
                             foreach (var column in uniqueConstaintDefinition.Columns) {
                                 ColumnReferenceExpression columnReferenceExpression = column.Column;
                                 var identifiers = columnReferenceExpression.MultiPartIdentifier.Identifiers;
                                 if (identifiers.Count > 0) {
                                     var identifier = identifiers[identifiers.Count - 1];
                                     constraintColumnNames.Add(identifier.Value);
+                                    if (!columnNameCounter.ContainsKey(identifier.Value)) {
+                                        columnNameCounter[identifier.Value] = 1;
+                                    } else {
+                                        columnNameCounter[identifier.Value] += 1;
+                                    }
+                                }
+                            }
+                            foreach (var columnNameCounterPair in columnNameCounter) {
+                                if (columnNameCounterPair.Value > 1) {
+                                    logger.Info("constraint {0} has duplicated column: {1}", constraintDefinition.ConstraintIdentifier.Value, columnNameCounterPair.Key);
+                                    context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_COLUMN_OF_CONSTRAINT_MSG, constraintDefinition.ConstraintIdentifier.Value, columnNameCounterPair.Key));
+                                    isInvalid = true;
                                 }
                             }
                         }
@@ -314,13 +327,27 @@ namespace SqlserverProtoServer {
                                 needNotExistsIndexName.Add(addIndexName);
                             }
 
+                            var columnNameCounter = new Dictionary<String, int>();
                             foreach (var column in index.Columns) {
                                 var identifiers = column.Column.MultiPartIdentifier.Identifiers;
                                 if (identifiers.Count > 0) {
                                     var identifier = identifiers[identifiers.Count - 1];
                                     if (!addColumnDefinitions.ContainsKey(identifier.Value)) {
                                         needExistsColumnName.Add(identifier.Value);
+                                        if (!columnNameCounter.ContainsKey(identifier.Value)) {
+                                            columnNameCounter[identifier.Value] = 1;
+                                        } else {
+                                            columnNameCounter[identifier.Value] += 1;
+                                        }
                                     }
+                                }
+                            }
+
+                            foreach (var columnNameCounterPair in columnNameCounter) {
+                                if (columnNameCounterPair.Value > 1) {
+                                    logger.Info("index {0} has duplicated column: {1}", addIndexName, columnNameCounterPair.Key);
+                                    context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_COLUMN_OF_INDEX_MSG, addIndexName, columnNameCounterPair.Key));
+                                    isInvalid = true;
                                 }
                             }
                         }
@@ -344,6 +371,7 @@ namespace SqlserverProtoServer {
                                     isAddPrimaryKey = true;
                                 }
 
+                                var columnNameCounter = new Dictionary<String, int>();
                                 foreach (var column in uniqueConstaint.Columns) {
                                     var identifiers = column.Column.MultiPartIdentifier.Identifiers;
                                     if (identifiers.Count > 0) {
@@ -351,6 +379,18 @@ namespace SqlserverProtoServer {
                                         if (!addColumnDefinitions.ContainsKey(identifier.Value)) {
                                             needExistsColumnName.Add(identifier.Value);
                                         }
+                                        if (!columnNameCounter.ContainsKey(identifier.Value)) {
+                                            columnNameCounter[identifier.Value] = 1;
+                                        } else {
+                                            columnNameCounter[identifier.Value] += 1;
+                                        }
+                                    }
+                                }
+                                foreach (var columnNameCounterPair in columnNameCounter) {
+                                    if (columnNameCounterPair.Value > 1) {
+                                        logger.Info("constraint {0} has duplicated column: {1}", constaintName, columnNameCounterPair.Key);
+                                        context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.DUPLICATE_COLUMN_OF_CONSTRAINT_MSG, constaintName, columnNameCounterPair.Key));
+                                        isInvalid = true;
                                     }
                                 }
                             }

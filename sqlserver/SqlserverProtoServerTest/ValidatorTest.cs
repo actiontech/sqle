@@ -65,7 +65,7 @@ namespace SqlServerProtoServerTest {
                                                                  "col2 INT," +
                                                                  "INDEX IX1 (col1, col1)," +
                                                                  "INDEX IX1 (col3)," +
-                                                                 "CONSTRAINT PK_Constaint PRIMARY KEY (col1)," +
+                                                                 "CONSTRAINT PK_Constaint PRIMARY KEY (col1, col1)," +
                                                                  "CONSTRAINT UN_1 UNIQUE (col1)," +
                                                                  "CONSTRAINT UN_1 UNIQUE (col4)" +
                                                                  ");");
@@ -86,7 +86,7 @@ namespace SqlServerProtoServerTest {
                     Assert.True(invalid == true);
                 }
                 Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
-                Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 tbl1 已存在\n[error]字段名 col1 重复\n[error]索引 IX1 字段 col1 重复\n[error]索引名 IX1 重复\n[error]索引字段 col3 不存在\n[error]约束名 UN_1 重复\n[error]约束字段 col4 不存在\n[error]主键只能设置一个", context.AdviseResultContext.GetMessage());
+                Assert.Equal("[error]database database1 不存在\n[error]schema schema1 不存在\n[error]表 tbl1 已存在\n[error]字段名 col1 重复\n[error]索引 IX1 字段 col1 重复\n[error]索引名 IX1 重复\n[error]索引字段 col3 不存在\n[error]约束 PK_Constaint 字段 col1 重复\n[error]约束名 UN_1 重复\n[error]约束字段 col4 不存在\n[error]主键只能设置一个", context.AdviseResultContext.GetMessage());
             }
         }
 
@@ -146,25 +146,25 @@ namespace SqlServerProtoServerTest {
 
                 // add index
                 {
-                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD INDEX IX_1 (col3)");
+                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD INDEX IX_1 (col3, col3)");
                     foreach (var statment in statementList.Statements) {
                         var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
-                    Assert.Equal("[error]字段 col3 不存在\n[error]索引 IX_1 已存在", context.AdviseResultContext.GetMessage());
+                    Assert.Equal("[error]索引 IX_1 字段 col3 重复\n[error]字段 col3,col3 不存在\n[error]索引 IX_1 已存在", context.AdviseResultContext.GetMessage());
                     context.AdviseResultContext.ResetAdviseResult();
                 }
 
                 // add constraint
                 {
-                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT UN_1 UNIQUE (col3)");
+                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT UN_1 UNIQUE (col3, col3)");
                     foreach (var statment in statementList.Statements) {
                         var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
                     Assert.Equal(RULE_LEVEL_STRING.GetRuleLevelString(RULE_LEVEL.ERROR), context.AdviseResultContext.GetLevel());
-                    Assert.Equal("[error]字段 col3 不存在\n[error]约束 UN_1 已存在", context.AdviseResultContext.GetMessage());
+                    Assert.Equal("[error]约束 UN_1 字段 col3 重复\n[error]字段 col3,col3 不存在\n[error]约束 UN_1 已存在", context.AdviseResultContext.GetMessage());
                     context.AdviseResultContext.ResetAdviseResult();
                 }
 
