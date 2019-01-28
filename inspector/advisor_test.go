@@ -344,6 +344,58 @@ PRIMARY KEY (id11)
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
 			"id11"))
+
+	runInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id,id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+			"id"))
+
+	runInspectCase(t, "create_table: index column is duplicate", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v1,v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_1",
+			"v1"))
+
+	runInspectCase(t, "create_table: index column is duplicate(2)", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX (v1,v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "(匿名)",
+			"v1").addResult(DDL_CHECK_INDEX_PREFIX))
+
+	runInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v1,v1),
+INDEX idx_2 (v1,v2,v2)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_1",
+			"v1").add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2", "v2"))
 }
 
 func TestCheckInvalidAlterTable(t *testing.T) {
@@ -379,30 +431,6 @@ ALTER TABLE exist_db.exist_tb_1 drop column v5;
 			"v5"),
 	)
 
-	runInspectCase(t, "alter_table: add a exist index", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.exist_tb_1 add index idx_1 (v1);
-`,
-		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG,
-			"idx_1"),
-	)
-
-	runInspectCase(t, "alter_table: drop a not exist index", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
-`,
-		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
-			"idx_2"),
-	)
-
-	runInspectCase(t, "alter_table: add index but key column not exist", DefaultMysqlInspect(),
-		`
-ALTER TABLE exist_db.exist_tb_1 add index idx_2 (v3);
-`,
-		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
-			"v3"),
-	)
-
 	runInspectCase(t, "alter_table: alter a not exist column", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
@@ -434,6 +462,13 @@ ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAUL
 			"v1"),
 	)
 
+	runInspectCase(t, "alter_table: add pk ok", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_2 add primary key(id);
+`,
+		newTestResult(),
+	)
+
 	runInspectCase(t, "alter_table: add pk but exist pk", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 add primary key(v1);
@@ -448,11 +483,53 @@ ALTER TABLE exist_db.exist_tb_2 add primary key(id11);
 		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
 			"id11"),
 	)
-	runInspectCase(t, "alter_table: add pk ok", DefaultMysqlInspect(),
+
+	runInspectCase(t, "alter_table: add pk but key column is duplicate", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.exist_tb_2 add primary key(id);
+ALTER TABLE exist_db.exist_tb_2 add primary key(id,id);
 `,
-		newTestResult(),
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+			"id"),
+	)
+
+	runInspectCase(t, "alter_table: add a exist index", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index idx_1 (v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG,
+			"idx_1"),
+	)
+
+	runInspectCase(t, "alter_table: drop a not exist index", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
+			"idx_2"),
+	)
+
+	runInspectCase(t, "alter_table: add index but key column not exist", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index idx_2 (v3);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+			"v3"),
+	)
+
+	runInspectCase(t, "alter_table: add index but key column is duplicate", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index idx_2 (id,id);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2",
+			"id"),
+	)
+
+	runInspectCase(t, "alter_table: add index but key column is duplicate", DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 add index (id,id);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "(匿名)",
+			"id").addResult(DDL_CHECK_INDEX_PREFIX),
 	)
 }
 
@@ -499,6 +576,20 @@ CREATE INDEX idx_1 ON exist_db.exist_tb_1(v1);
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(v3);
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG, "v3"),
+	)
+
+	runInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2", "id"),
+	)
+
+	runInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
+		`
+CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id,v1);
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2", "id"),
 	)
 }
 
