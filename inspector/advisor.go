@@ -113,22 +113,24 @@ func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
 }
 
 var (
-	SCHEMA_NOT_EXIST_MSG         = "schema %s 不存在"
-	SCHEMA_EXIST_MSG             = "schema %s 已存在"
-	TABLE_NOT_EXIST_MSG          = "表 %s 不存在"
-	TABLE_EXIST_MSG              = "表 %s 已存在"
-	COLUMN_NOT_EXIST_MSG         = "字段 %s 不存在"
-	COLUMN_EXIST_MSG             = "字段 %s 已存在"
-	COLUMN_IS_AMBIGUOUS          = "字段 %s 指代不明"
-	INDEX_NOT_EXIST_MSG          = "索引 %s 不存在"
-	INDEX_EXIST_MSG              = "索引 %s 已存在"
-	DUPLICATE_COLUMN_ERROR_MSG   = "字段名 %s 重复"
-	DUPLICATE_INDEX_ERROR_MSG    = "索引名 %s 重复"
-	PRIMARY_KEY_MULTI_ERROR_MSG  = "主键只能设置一个"
-	KEY_COLUMN_NOT_EXIST_MSG     = "索引字段 %s 不存在"
-	PRIMARY_KEY_EXIST_MSG        = "已经存在主键，不能再添加"
-	PRIMARY_KEY_NOT_EXIST_MSG    = "当前没有主键，不能执行删除"
-	NOT_MATCH_VALUES_AND_COLUMNS = "指定的值列数与字段列数不匹配"
+	SCHEMA_NOT_EXIST_MSG             = "schema %s 不存在"
+	SCHEMA_EXIST_MSG                 = "schema %s 已存在"
+	TABLE_NOT_EXIST_MSG              = "表 %s 不存在"
+	TABLE_EXIST_MSG                  = "表 %s 已存在"
+	COLUMN_NOT_EXIST_MSG             = "字段 %s 不存在"
+	COLUMN_EXIST_MSG                 = "字段 %s 已存在"
+	COLUMN_IS_AMBIGUOUS              = "字段 %s 指代不明"
+	INDEX_NOT_EXIST_MSG              = "索引 %s 不存在"
+	INDEX_EXIST_MSG                  = "索引 %s 已存在"
+	DUPLICATE_COLUMN_ERROR_MSG       = "字段名 %s 重复"
+	DUPLICATE_INDEX_ERROR_MSG        = "索引名 %s 重复"
+	PRIMARY_KEY_MULTI_ERROR_MSG      = "主键只能设置一个"
+	KEY_COLUMN_NOT_EXIST_MSG         = "索引字段 %s 不存在"
+	PRIMARY_KEY_EXIST_MSG            = "已经存在主键，不能再添加"
+	PRIMARY_KEY_NOT_EXIST_MSG        = "当前没有主键，不能执行删除"
+	NOT_MATCH_VALUES_AND_COLUMNS     = "指定的值列数与字段列数不匹配"
+	DUPLICATE_PRIMARY_KEY_COLUMN_MSG = "主键字段 %s 重复"
+	DUPLICATE_INDEX_COLUMN_MSG       = "索引 %s 字段 %s重复"
 )
 
 func (i *Inspect) CheckInvalid(node ast.Node) (*InspectResults, error) {
@@ -208,15 +210,34 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
 			pkCounter += 1
+			names := []string{}
 			for _, col := range constraint.Keys {
-				keyColsName = append(keyColsName, col.Column.Name.L)
+				colName := col.Column.Name.L
+				names = append(names, colName)
+				keyColsName = append(keyColsName, colName)
+			}
+			duplicateName := getDuplicate(names)
+			if len(duplicateName) > 0 {
+				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+					strings.Join(duplicateName, ","))
 			}
 		case ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintFulltext:
-			if constraint.Name != "" {
+			constraintName := constraint.Name
+			if constraintName != "" {
 				indexesName = append(indexesName, constraint.Name)
+			} else {
+				constraintName = "(匿名)"
 			}
+			names := []string{}
 			for _, col := range constraint.Keys {
-				keyColsName = append(keyColsName, col.Column.Name.L)
+				colName := col.Column.Name.L
+				names = append(names, colName)
+				keyColsName = append(keyColsName, colName)
+			}
+			duplicateName := getDuplicate(names)
+			if len(duplicateName) > 0 {
+				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, constraintName,
+					strings.Join(duplicateName, ","))
 			}
 		}
 	}
@@ -389,25 +410,43 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
 			} else {
 				hasPk = true
-				for _, col := range spec.Constraint.Keys {
-					colName := col.Column.Name.L
-					if _, ok := colNameMap[colName]; !ok {
-						needExistsKeyColsName = append(needExistsKeyColsName, colName)
-					}
-				}
 			}
-		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
-			indexName := strings.ToLower(spec.Constraint.Name)
-			if _, ok := indexNameMap[indexName]; ok {
-				needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
-			} else {
-				indexNameMap[indexName] = struct{}{}
-			}
+			names := []string{}
 			for _, col := range spec.Constraint.Keys {
 				colName := col.Column.Name.L
+				names = append(names, colName)
 				if _, ok := colNameMap[colName]; !ok {
 					needExistsKeyColsName = append(needExistsKeyColsName, colName)
 				}
+			}
+			duplicateColumn := getDuplicate(names)
+			if len(duplicateColumn) > 0 {
+				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+					strings.Join(duplicateColumn, ","))
+			}
+		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
+			indexName := strings.ToLower(spec.Constraint.Name)
+			if indexName != "" {
+				if _, ok := indexNameMap[indexName]; ok {
+					needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
+				} else {
+					indexNameMap[indexName] = struct{}{}
+				}
+			} else {
+				indexName = "(匿名)"
+			}
+			names := []string{}
+			for _, col := range spec.Constraint.Keys {
+				colName := col.Column.Name.L
+				names = append(names, colName)
+				if _, ok := colNameMap[colName]; !ok {
+					needExistsKeyColsName = append(needExistsKeyColsName, colName)
+				}
+			}
+			duplicateColumn := getDuplicate(names)
+			if len(duplicateColumn) > 0 {
+				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, indexName,
+					strings.Join(duplicateColumn, ","))
 			}
 		}
 	}
@@ -546,13 +585,21 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 	if _, ok := indexNameMap[stmt.IndexName]; ok {
 		results.add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG, stmt.IndexName)
 	}
+	keyColsName := []string{}
 	keyColNeedExist := []string{}
 	for _, col := range stmt.IndexColNames {
 		colName := col.Column.Name.L
+		keyColsName = append(keyColsName, colName)
 		if _, ok := colNameMap[col.Column.Name.L]; !ok {
 			keyColNeedExist = append(keyColNeedExist, colName)
 		}
 	}
+	duplicateName := getDuplicate(keyColsName)
+	if len(duplicateName) > 0 {
+		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, stmt.IndexName,
+			strings.Join(duplicateName, ","))
+	}
+
 	if len(keyColNeedExist) > 0 {
 		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(keyColNeedExist), ","))

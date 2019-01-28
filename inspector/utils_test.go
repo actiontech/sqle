@@ -48,3 +48,15 @@ func TestReplaceSchemaName(t *testing.T) {
 	output := "alter table `tb1` drop column a1"
 	assert.Equal(t, replaceTableName(input, "db1", "tb1"), output)
 }
+
+func TestGetDuplicate(t *testing.T) {
+	assert.Equal(t, []string{}, getDuplicate([]string{"1", "2", "3"}))
+	assert.Equal(t, []string{"2"}, getDuplicate([]string{"1", "2", "2"}))
+	assert.Equal(t, []string{"2", "3"}, getDuplicate([]string{"1", "2", "2", "3", "3", "3"}))
+}
+
+func TestRemoveDuplicate(t *testing.T) {
+	assert.Equal(t, []string{"1", "2", "3"}, removeDuplicate([]string{"1", "2", "3"}))
+	assert.Equal(t, []string{"1", "2", "3"}, removeDuplicate([]string{"1", "2", "2", "3"}))
+	assert.Equal(t, []string{"1", "2", "3"}, removeDuplicate([]string{"1", "2", "2", "3", "3", "3"}))
+}

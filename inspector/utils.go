@@ -386,7 +386,7 @@ func getDuplicate(c []string) []string {
 			}
 		}
 	}
-	return d
+	return removeDuplicate(d)
 }
 
 func removeDuplicate(c []string) []string {
