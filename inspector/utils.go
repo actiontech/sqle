@@ -43,7 +43,10 @@ func (rs *InspectResults) message() string {
 	messages := make([]string, len(rs.results))
 	for n, result := range rs.results {
 		var message string
-		if strings.HasPrefix(result.Message, fmt.Sprintf("[%s]", result.Level)) {
+		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
+			model.RULE_LEVEL_ERROR, model.RULE_LEVEL_WARN, model.RULE_LEVEL_NOTICE, model.RULE_LEVEL_NORMAL, "osc"),
+			result.Message)
+		if match {
 			message = result.Message
 		} else {
 			message = fmt.Sprintf("[%s]%s", result.Level, result.Message)

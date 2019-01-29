@@ -83,4 +83,30 @@ func TestInspectResults(t *testing.T) {
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
 [error]表 not_exist_tb 不存在
 [notice]test`, results2.message())
+
+	results3 := newInspectResults()
+	results3.add(results2.level(), results2.message())
+	results3.add("notice", "[osc]test")
+	assert.Equal(t, "error", results3.level())
+	assert.Equal(t,
+		`[error]新建表必须加入if not exists create，保证重复执行不报错
+[error]表 not_exist_tb 不存在
+[notice]test
+[osc]test`, results3.message())
+
+	results4 := newInspectResults()
+	results4.add("notice", "[notice]test")
+	results4.add("error", "[osc]test")
+	assert.Equal(t, "error", results4.level())
+	assert.Equal(t,
+		`[notice]test
+[osc]test`, results4.message())
+
+	results5 := newInspectResults()
+	results5.add("warn", "[warn]test")
+	results5.add("notice", "[osc]test")
+	assert.Equal(t, "warn", results5.level())
+	assert.Equal(t,
+		`[warn]test
+[osc]test`, results5.message())
 }
