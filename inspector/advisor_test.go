@@ -8,7 +8,6 @@ import (
 
 	"github.com/pingcap/tidb/ast"
 	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 )
 
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
@@ -153,20 +152,6 @@ func DefaultMysqlInspect() *Inspect {
 	}
 }
 
-func TestInspectResults(t *testing.T) {
-	results := newInspectResults()
-	handler := RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST]
-	results.add(handler.Rule.Level, handler.Message)
-	assert.Equal(t, "error", results.level())
-	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.message())
-
-	results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "not_exist_tb")
-	assert.Equal(t, "error", results.level())
-	assert.Equal(t,
-		`[error]新建表必须加入if not exists create，保证重复执行不报错
-[error]表 not_exist_tb 不存在`, results.message())
-}
-
 func runInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
 	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
@@ -248,7 +233,11 @@ PRIMARY KEY (id)
 `,
 		newTestResult(),
 	)
+	handler := RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST]
 	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST)
+	defer func() {
+		RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST] = handler
+	}()
 	runInspectCase(t, "create_table: table is exist(2)", DefaultMysqlInspect(),
 		`
 CREATE TABLE exist_db.exist_tb_1 (
@@ -594,8 +583,11 @@ CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id,v1);
 }
 
 func TestCheckInvalidDrop(t *testing.T) {
+	handler := RuleHandlerMap[DDL_DISABLE_DROP_STATEMENT]
 	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
-	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
+	defer func() {
+		RuleHandlerMap[DDL_DISABLE_DROP_STATEMENT] = handler
+	}()
 	runInspectCase(t, "drop_database: ok", DefaultMysqlInspect(),
 		`
 DROP DATABASE if exists exist_db;
@@ -1366,7 +1358,12 @@ PRIMARY KEY (id)
 		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
 	)
 
+	handler := RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE]
 	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	defer func() {
+		RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE] = handler
+	}()
+
 	runInspectCase(t, "create_table: disable index column blob (3)", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
@@ -1539,7 +1536,12 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob COMMENT "unit test";
 }
 
 func TestCheckColumnTimestampDefault(t *testing.T) {
+	handler := RuleHandlerMap[DDL_CHECK_COLUMN_WITHOUT_DEFAULT]
 	delete(RuleHandlerMap, DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
+	defer func() {
+		RuleHandlerMap[DDL_CHECK_COLUMN_WITHOUT_DEFAULT] = handler
+	}()
+
 	runInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (

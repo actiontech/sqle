@@ -6,7 +6,11 @@ import (
 )
 
 func TestContext(t *testing.T) {
+	handler := RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE]
 	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	defer func() {
+		RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE] = handler
+	}()
 
 	runInspectCase(t, "rename table and drop column: table not exists", DefaultMysqlInspect(),
 		`
@@ -101,7 +105,12 @@ alter table exist_tb_1 drop index idx_1;
 }
 
 func TestParentContext(t *testing.T) {
+	handler := RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE]
 	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	defer func() {
+		RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE] = handler
+	}()
+
 	inspect1 := DefaultMysqlInspect()
 	runInspectCase(t, "ddl 1: create table, ok", inspect1,
 		`
