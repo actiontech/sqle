@@ -1437,7 +1437,9 @@ namespace SqlserverProtoServer {
     
         public bool NeedRollback(int rowCount) {
             if (Config == null) {
-                return false;
+                Config = new Config {
+                    DMLRollbackMaxRows = -1
+                };
             }
             if (Config.DMLRollbackMaxRows < 0) {
                 return false;

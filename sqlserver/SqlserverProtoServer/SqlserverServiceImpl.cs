@@ -246,22 +246,14 @@ namespace SqlserverProtoServer {
             var meta = request.SqlserverMeta;
             var rollbackSqlContext = new SqlserverContext(meta, request.RollbackConfig);
             var logger = LogManager.GetCurrentClassLogger();
-            logger.Info("getrollback sqls:{0}", String.Join("\n", sqls));
             logger.Info("getrollback host:{0}, port:{1}, user:{2}, current database:{3}", meta.Host, meta.Port, meta.User, meta.CurrentDatabase);
 
             foreach (var sql in sqls) {
                 try {
                     var statementList = ParseStatementList(logger, version, sql);
+                    logger.Info("sql:{0}\n", sql);
                     foreach (var statement in statementList.Statements) {
-                        var rollbackSql = new Sql();
-                        bool isDDL = false;
-                        bool isDML = false;
-                        rollbackSql.Sql_ = new RollbackSql().GetRollbackSql(rollbackSqlContext, statement, out isDDL, out isDML);
-                        rollbackSql.IsDDL = isDDL;
-                        rollbackSql.IsDML = isDML;
-                        logger.Info("sql:{0}\nrollback sql:{1}\nisDDL:{2}\nisDML:{3}", sql, rollbackSql.Sql_, isDDL, isDML);
-                        output.RollbackSqls.Add(rollbackSql);
-
+                        output.RollbackSqls.Add(new RollbackSql().GetRollbackSql(rollbackSqlContext, statement));
                         rollbackSqlContext.UpdateContext(logger, statement);
                     }
                 } catch (Exception e) {

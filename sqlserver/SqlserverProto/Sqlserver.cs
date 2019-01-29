@@ -25,40 +25,41 @@ namespace SqlserverProto {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Cg9TcWxzZXJ2ZXIucHJvdG8SDlNxbHNlcnZlclByb3RvIi8KDlNwbGl0U3Fs",
-            "c0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAEoCSIwCgNTcWwS",
-            "CwoDU3FsGAEgASgJEg0KBUlzRERMGAIgASgIEg0KBUlzRE1MGAMgASgIIjkK",
-            "D1NwbGl0U3Fsc091dHB1dBImCglTcGxpdFNxbHMYASADKAsyEy5TcWxzZXJ2",
-            "ZXJQcm90by5TcWwiewoNU3Fsc2VydmVyTWV0YRIMCgRVc2VyGAEgASgJEhAK",
-            "CFBhc3N3b3JkGAIgASgJEgwKBEhvc3QYAyABKAkSDAoEUG9ydBgEIAEoCRIX",
-            "Cg9DdXJyZW50RGF0YWJhc2UYBSABKAkSFQoNQ3VycmVudFNjaGVtYRgGIAEo",
-            "CSKpAQoLQWR2aXNlSW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIg",
-            "AygJEhEKCVJ1bGVOYW1lcxgDIAMoCRI0Cg1TcWxzZXJ2ZXJNZXRhGAQgASgL",
-            "Mh0uU3Fsc2VydmVyUHJvdG8uU3Fsc2VydmVyTWV0YRIyCg5ERExDb250ZXh0",
-            "U3FscxgFIAMoCzIaLlNxbHNlcnZlclByb3RvLkRETENvbnRleHQiGgoKRERM",
-            "Q29udGV4dBIMCgRTcWxzGAEgAygJIrUBCgxBZHZpc2VPdXRwdXQSOgoHUmVz",
-            "dWx0cxgBIAMoCzIpLlNxbHNlcnZlclByb3RvLkFkdmlzZU91dHB1dC5SZXN1",
-            "bHRzRW50cnkSGwoTQmFzZVZhbGlkYXRvckZhaWxlZBgCIAEoCBpMCgxSZXN1",
-            "bHRzRW50cnkSCwoDa2V5GAEgASgJEisKBXZhbHVlGAIgASgLMhwuU3Fsc2Vy",
-            "dmVyUHJvdG8uQWR2aXNlUmVzdWx0OgI4ASJeCgxBZHZpc2VSZXN1bHQSEwoL",
-            "QWR2aXNlTGV2ZWwYASABKAkSGwoTQWR2aXNlUmVzdWx0TWVzc2FnZRgCIAEo",
-            "CRINCgVJc0RETBgDIAEoCBINCgVJc0RNTBgEIAEoCCIkCgZDb25maWcSGgoS",
-            "RE1MUm9sbGJhY2tNYXhSb3dzGAEgASgDIpsBChRHZXRSb2xsYmFja1NxbHNJ",
-            "bnB1dBIPCgdWZXJzaW9uGAEgASgJEgwKBFNxbHMYAiADKAkSNAoNU3Fsc2Vy",
-            "dmVyTWV0YRgDIAEoCzIdLlNxbHNlcnZlclByb3RvLlNxbHNlcnZlck1ldGES",
-            "LgoOUm9sbGJhY2tDb25maWcYBCABKAsyFi5TcWxzZXJ2ZXJQcm90by5Db25m",
-            "aWciQgoVR2V0Um9sbGJhY2tTcWxzT3V0cHV0EikKDFJvbGxiYWNrU3FscxgB",
-            "IAMoCzITLlNxbHNlcnZlclByb3RvLlNxbDKOAgoQU3Fsc2VydmVyU2Vydmlj",
-            "ZRJRCgxHZXRTcGxpdFNxbHMSHi5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNJ",
-            "bnB1dBofLlNxbHNlcnZlclByb3RvLlNwbGl0U3Fsc091dHB1dCIAEkUKBkFk",
-            "dmlzZRIbLlNxbHNlcnZlclByb3RvLkFkdmlzZUlucHV0GhwuU3Fsc2VydmVy",
-            "UHJvdG8uQWR2aXNlT3V0cHV0IgASYAoPR2V0Um9sbGJhY2tTcWxzEiQuU3Fs",
-            "c2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzSW5wdXQaJS5TcWxzZXJ2ZXJQ",
-            "cm90by5HZXRSb2xsYmFja1NxbHNPdXRwdXQiAGIGcHJvdG8z"));
+            "c0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAEoCSJACgNTcWwS",
+            "CwoDU3FsGAEgASgJEg0KBUlzRERMGAIgASgIEg0KBUlzRE1MGAMgASgIEg4K",
+            "BkVyck1zZxgEIAEoCSI5Cg9TcGxpdFNxbHNPdXRwdXQSJgoJU3BsaXRTcWxz",
+            "GAEgAygLMhMuU3Fsc2VydmVyUHJvdG8uU3FsInsKDVNxbHNlcnZlck1ldGES",
+            "DAoEVXNlchgBIAEoCRIQCghQYXNzd29yZBgCIAEoCRIMCgRIb3N0GAMgASgJ",
+            "EgwKBFBvcnQYBCABKAkSFwoPQ3VycmVudERhdGFiYXNlGAUgASgJEhUKDUN1",
+            "cnJlbnRTY2hlbWEYBiABKAkiqQEKC0FkdmlzZUlucHV0Eg8KB1ZlcnNpb24Y",
+            "ASABKAkSDAoEU3FscxgCIAMoCRIRCglSdWxlTmFtZXMYAyADKAkSNAoNU3Fs",
+            "c2VydmVyTWV0YRgEIAEoCzIdLlNxbHNlcnZlclByb3RvLlNxbHNlcnZlck1l",
+            "dGESMgoORERMQ29udGV4dFNxbHMYBSADKAsyGi5TcWxzZXJ2ZXJQcm90by5E",
+            "RExDb250ZXh0IhoKCkRETENvbnRleHQSDAoEU3FscxgBIAMoCSK1AQoMQWR2",
+            "aXNlT3V0cHV0EjoKB1Jlc3VsdHMYASADKAsyKS5TcWxzZXJ2ZXJQcm90by5B",
+            "ZHZpc2VPdXRwdXQuUmVzdWx0c0VudHJ5EhsKE0Jhc2VWYWxpZGF0b3JGYWls",
+            "ZWQYAiABKAgaTAoMUmVzdWx0c0VudHJ5EgsKA2tleRgBIAEoCRIrCgV2YWx1",
+            "ZRgCIAEoCzIcLlNxbHNlcnZlclByb3RvLkFkdmlzZVJlc3VsdDoCOAEiXgoM",
+            "QWR2aXNlUmVzdWx0EhMKC0FkdmlzZUxldmVsGAEgASgJEhsKE0FkdmlzZVJl",
+            "c3VsdE1lc3NhZ2UYAiABKAkSDQoFSXNEREwYAyABKAgSDQoFSXNETUwYBCAB",
+            "KAgiJAoGQ29uZmlnEhoKEkRNTFJvbGxiYWNrTWF4Um93cxgBIAEoAyKbAQoU",
+            "R2V0Um9sbGJhY2tTcWxzSW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxz",
+            "GAIgAygJEjQKDVNxbHNlcnZlck1ldGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90",
+            "by5TcWxzZXJ2ZXJNZXRhEi4KDlJvbGxiYWNrQ29uZmlnGAQgASgLMhYuU3Fs",
+            "c2VydmVyUHJvdG8uQ29uZmlnIkIKFUdldFJvbGxiYWNrU3Fsc091dHB1dBIp",
+            "CgxSb2xsYmFja1NxbHMYASADKAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwyjgIK",
+            "EFNxbHNlcnZlclNlcnZpY2USUQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVy",
+            "UHJvdG8uU3BsaXRTcWxzSW5wdXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNx",
+            "bHNPdXRwdXQiABJFCgZBZHZpc2USGy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJ",
+            "bnB1dBocLlNxbHNlcnZlclByb3RvLkFkdmlzZU91dHB1dCIAEmAKD0dldFJv",
+            "bGxiYWNrU3FscxIkLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lu",
+            "cHV0GiUuU3Fsc2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBi",
+            "BnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsInput), global::SqlserverProto.SplitSqlsInput.Parser, new[]{ "Version", "Sqls" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Sql), global::SqlserverProto.Sql.Parser, new[]{ "Sql_", "IsDDL", "IsDML" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Sql), global::SqlserverProto.Sql.Parser, new[]{ "Sql_", "IsDDL", "IsDML", "ErrMsg" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsOutput), global::SqlserverProto.SplitSqlsOutput.Parser, new[]{ "SplitSqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SqlserverMeta), global::SqlserverProto.SqlserverMeta.Parser, new[]{ "User", "Password", "Host", "Port", "CurrentDatabase", "CurrentSchema" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta", "DDLContextSqls" }, null, null, null),
@@ -259,6 +260,7 @@ namespace SqlserverProto {
       sql_ = other.sql_;
       isDDL_ = other.isDDL_;
       isDML_ = other.isDML_;
+      errMsg_ = other.errMsg_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -300,6 +302,17 @@ namespace SqlserverProto {
       }
     }
 
+    /// <summary>Field number for the "ErrMsg" field.</summary>
+    public const int ErrMsgFieldNumber = 4;
+    private string errMsg_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string ErrMsg {
+      get { return errMsg_; }
+      set {
+        errMsg_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as Sql);
@@ -316,6 +329,7 @@ namespace SqlserverProto {
       if (Sql_ != other.Sql_) return false;
       if (IsDDL != other.IsDDL) return false;
       if (IsDML != other.IsDML) return false;
+      if (ErrMsg != other.ErrMsg) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -325,6 +339,7 @@ namespace SqlserverProto {
       if (Sql_.Length != 0) hash ^= Sql_.GetHashCode();
       if (IsDDL != false) hash ^= IsDDL.GetHashCode();
       if (IsDML != false) hash ^= IsDML.GetHashCode();
+      if (ErrMsg.Length != 0) hash ^= ErrMsg.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -350,6 +365,10 @@ namespace SqlserverProto {
         output.WriteRawTag(24);
         output.WriteBool(IsDML);
       }
+      if (ErrMsg.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(ErrMsg);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -366,6 +385,9 @@ namespace SqlserverProto {
       }
       if (IsDML != false) {
         size += 1 + 1;
+      }
+      if (ErrMsg.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(ErrMsg);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -386,6 +408,9 @@ namespace SqlserverProto {
       }
       if (other.IsDML != false) {
         IsDML = other.IsDML;
+      }
+      if (other.ErrMsg.Length != 0) {
+        ErrMsg = other.ErrMsg;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -408,6 +433,10 @@ namespace SqlserverProto {
           }
           case 24: {
             IsDML = input.ReadBool();
+            break;
+          }
+          case 34: {
+            ErrMsg = input.ReadString();
             break;
           }
         }
