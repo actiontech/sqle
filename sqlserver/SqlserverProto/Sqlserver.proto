@@ -17,6 +17,7 @@ message Sql {
     string Sql = 1;
     bool IsDDL = 2;
     bool IsDML = 3;
+    string ErrMsg = 4;
 }
 
 message SplitSqlsOutput {
