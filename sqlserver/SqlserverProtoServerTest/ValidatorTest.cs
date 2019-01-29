@@ -479,7 +479,7 @@ namespace SqlServerProtoServerTest {
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
                 {
-                    StatementList statementList = ParseStatementList("UPDATE database1.schema1.table1 SET col1=1, col1=2, col2=2, col3=3 WHERE col4=4;");
+                    StatementList statementList = ParseStatementList("UPDATE x SET col1=1, x.col1=2, x.col2=2, x.col3=3 FROM database1.schema1.table1 AS x WHERE x.col4=4;");
                     foreach (var statment in statementList.Statements) {
                         var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                         Assert.True(invalid == true);
@@ -509,7 +509,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectTableName = "table1";
 
 
-                StatementList statementList = ParseStatementList("DELETE FROM databse1.schema1.table1 WHERE col3=1;");
+                StatementList statementList = ParseStatementList("DELETE f FROM databse1.schema1.table1 AS f WHERE f.col3=1;");
                 context.ExpectDatabaseExist = false;
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
