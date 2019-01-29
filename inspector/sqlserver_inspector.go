@@ -1,11 +1,13 @@
 package inspector
 
 import (
-	"github.com/pingcap/tidb/ast"
-	"github.com/sirupsen/logrus"
+	"fmt"
 	"sqle/model"
 	"sqle/sqlserver/SqlserverProto"
 	"sqle/sqlserverClient"
+
+	"github.com/pingcap/tidb/ast"
+	"github.com/sirupsen/logrus"
 )
 
 type SqlserverInspect struct {
@@ -106,11 +108,35 @@ func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error
 	i.Logger().Info("start generate rollback sql")
 
 	var meta = sqlserverClient.GetSqlserverMeta(i.Task.Instance.User, i.Task.Instance.Password, i.Task.Instance.Host, i.Task.Instance.Port, i.Task.Schema, "")
-	rollbackSqls, err := sqlserverClient.GetClient().GenerateAllRollbackSql(i.Task.CommitSqls, &SqlserverProto.Config{DMLRollbackMaxRows: i.config.DMLRollbackMaxRows}, meta)
+	sqls, err := sqlserverClient.GetClient().GenerateAllRollbackSql(i.Task.CommitSqls, &SqlserverProto.Config{DMLRollbackMaxRows: i.config.DMLRollbackMaxRows}, meta)
 	if err != nil {
 		i.Logger().Errorf("generage t-sql rollback sqls error: %v", err)
 	} else {
 		i.Logger().Info("generate rollback sql finish")
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	// update reason of no rollback sql
+	if len(i.Task.CommitSqls) != len(sqls) {
+		return nil, fmt.Errorf("don't match sql rollback result")
+	}
+	rollbackSqls := []string{}
+	for idx, val := range sqls {
+		if val.Sql != "" {
+			rollbackSqls = append(rollbackSqls, val.Sql)
+		}
+		if val.ErrMsg != "" {
+			result := newInspectResults()
+			if i.Task.CommitSqls[idx].InspectResult != "" {
+				result.add(i.Task.CommitSqls[idx].InspectLevel, i.Task.CommitSqls[idx].InspectResult)
+			}
+			result.add(model.RULE_LEVEL_NOTICE, val.ErrMsg)
+			i.Task.CommitSqls[idx].InspectLevel = result.level()
+			i.Task.CommitSqls[idx].InspectResult = result.message()
+		}
+	}
+
 	return i.Inspect.GetAllRollbackSql(rollbackSqls), err
 }

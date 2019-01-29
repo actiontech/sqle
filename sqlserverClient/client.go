@@ -3,13 +3,14 @@ package sqlserverClient
 import (
 	"context"
 	"fmt"
-	"github.com/pingcap/tidb/ast"
-	"google.golang.org/grpc"
 	"sqle/errors"
 	"sqle/log"
 	"sqle/model"
 	"sqle/sqlserver/SqlserverProto"
 	"time"
+
+	"github.com/pingcap/tidb/ast"
+	"google.golang.org/grpc"
 )
 
 var GrpcClient *Client
@@ -92,24 +93,16 @@ func (c *Client) Advise(sqls []string, ruleNames []string, meta *SqlserverProto.
 	return out, nil
 }
 
-func (c *Client) GenerateAllRollbackSql(commitSqls []*model.CommitSql, config *SqlserverProto.Config, meta *SqlserverProto.SqlserverMeta) ([]string, error) {
+func (c *Client) GenerateAllRollbackSql(commitSqls []*model.CommitSql, config *SqlserverProto.Config, meta *SqlserverProto.SqlserverMeta) ([]*SqlserverProto.Sql, error) {
 	sqls := []string{}
 	for _, commitSql := range commitSqls {
 		sqls = append(sqls, commitSql.Content)
 	}
 	out, err := c.client.GetRollbackSqls(context.Background(), &SqlserverProto.GetRollbackSqlsInput{
-		Version: c.version,
-		Sqls: sqls,
-		SqlserverMeta: meta,
+		Version:        c.version,
+		Sqls:           sqls,
+		SqlserverMeta:  meta,
 		RollbackConfig: config,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	rollbackSqls := []string{}
-	for _, v := range out.GetRollbackSqls() {
-		rollbackSqls = append(rollbackSqls, v.Sql)
-	}
- 	return rollbackSqls, err
+	return out.GetRollbackSqls(), err
 }
