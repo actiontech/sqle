@@ -16,10 +16,23 @@ func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 
 	rollbackSqls := []string{}
 	for _, commitSql := range i.Task.CommitSqls {
-		err := i.Add(&commitSql.Sql, func(sql *model.Sql) error {
+		currentSql := commitSql
+		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
 			rollbackSql, err := i.GenerateRollbackSql(sql)
 			if rollbackSql != "" {
 				rollbackSqls = append(rollbackSqls, rollbackSql)
+			}
+
+			// message will be call back from i.GenerateRollbackSql
+			message := ""
+			if message != "" {
+				result := newInspectResults()
+				if currentSql.InspectResult != "" {
+					result.add(currentSql.InspectLevel, currentSql.InspectResult)
+				}
+				result.add(model.RULE_LEVEL_NOTICE, message)
+				currentSql.InspectLevel = result.level()
+				currentSql.InspectResult = result.message()
 			}
 			return err
 		})

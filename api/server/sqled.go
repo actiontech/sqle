@@ -183,6 +183,18 @@ func (s *Sqled) inspect(task *model.Task) error {
 			}
 		}
 	}
+	var rollbackSqls = []*model.RollbackSql{}
+	// generate rollback after advise
+	if !firstSqlInvalid {
+		ctx = inspector.NewContext(nil)
+		i = inspector.NewInspector(entry, ctx, task, nil, ruleMap)
+		rollbackSqls, err = i.GenerateAllRollbackSql()
+		if err != nil {
+			return err
+		}
+	} else {
+		entry.Warnf("sql invalid, ignore generate rollback")
+	}
 
 	var normalCount float64
 	for _, sql := range task.CommitSqls {
@@ -207,22 +219,12 @@ func (s *Sqled) inspect(task *model.Task) error {
 		return err
 	}
 
-	// generate rollback after advise
-	if firstSqlInvalid {
-		entry.Warnf("sql invalid, ignore generate rollback")
-		return nil
-	}
-	ctx = inspector.NewContext(nil)
-	i = inspector.NewInspector(entry, ctx, task, nil, ruleMap)
-	rollbackSqls, err := i.GenerateAllRollbackSql()
-	if err != nil {
-		return err
-	}
-
-	err = st.UpdateRollbackSql(task, rollbackSqls)
-	if err != nil {
-		entry.Errorf("save rollback sql to storage failed, error: %v", err)
-		return err
+	if len(rollbackSqls) > 0 {
+		err = st.UpdateRollbackSql(task, rollbackSqls)
+		if err != nil {
+			entry.Errorf("save rollback sql to storage failed, error: %v", err)
+			return err
+		}
 	}
 	return nil
 }

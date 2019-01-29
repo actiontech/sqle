@@ -42,7 +42,13 @@ func (rs *InspectResults) level() string {
 func (rs *InspectResults) message() string {
 	messages := make([]string, len(rs.results))
 	for n, result := range rs.results {
-		messages[n] = fmt.Sprintf("[%s]%s", result.Level, result.Message)
+		var message string
+		if strings.HasPrefix(result.Message, fmt.Sprintf("[%s]", result.Level)) {
+			message = result.Message
+		} else {
+			message = fmt.Sprintf("[%s]%s", result.Level, result.Message)
+		}
+		messages[n] = message
 	}
 	return strings.Join(messages, "\n")
 }
