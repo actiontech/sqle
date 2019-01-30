@@ -59,6 +59,7 @@ func (s CommitSql) TableName() string {
 
 type RollbackSql struct {
 	Sql
+	CommitSqlNumber uint `json:"commit_sql_number"`
 }
 
 func (s RollbackSql) TableName() string {
