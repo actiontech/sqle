@@ -378,9 +378,12 @@ namespace SqlserverProtoServer {
             switch (statement) {
                 case CreateTableStatement createTableStatement:
                     if (createTableStatement.Definition.TableConstraints != null) {
-                        foreach (var constaint in createTableStatement.Definition.TableConstraints) {
-                            if (constaint is UniqueConstraintDefinition) {
-                                indexes.Add(constaint.ConstraintIdentifier.Value);
+                        foreach (var constraint in createTableStatement.Definition.TableConstraints) {
+                            if (constraint is UniqueConstraintDefinition) {
+                                var uniqueConstraint = constraint as UniqueConstraintDefinition;
+                                if (!uniqueConstraint.IsPrimaryKey) {
+                                    indexes.Add(constraint.ConstraintIdentifier.Value);
+                                }
                             }
                         }
                     }
