@@ -1435,17 +1435,14 @@ namespace SqlserverProtoServer {
             }
         }
     
-        public bool NeedRollback(int rowCount) {
-            if (Config == null) {
-                Config = new Config {
-                    DMLRollbackMaxRows = -1
-                };
+        public int NeedRollback(int rowCount) {
+            if (Config == null || Config.DMLRollbackMaxRows < 0) {
+                return -1;
             }
-            if (Config.DMLRollbackMaxRows < 0) {
-                return false;
+            if (rowCount > Config.DMLRollbackMaxRows) {
+                return 0;
             }
-
-            return rowCount <= Config.DMLRollbackMaxRows;
+            return 1;
         }
     }
 

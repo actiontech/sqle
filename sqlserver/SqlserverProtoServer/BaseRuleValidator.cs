@@ -302,6 +302,9 @@ namespace SqlserverProtoServer {
             var needExistsConstraintName = new List<String>();
             var needNotExistsConstaintName = new List<String>();
             var isAddPrimaryKey = false;
+            var constraintDefinitions = context.GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName);
+            var alterColumnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
+            var alterIndexDefinitions = context.GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
 
             switch (statement) {
                 case AlterTableAddTableElementStatement addTableElementStatement:
@@ -354,7 +357,6 @@ namespace SqlserverProtoServer {
                     }
 
                     if (definition.TableConstraints.Count > 0) {
-                        var constraintDefinitions = context.GetTableConstraintDefinitions(logger, databaseName, schemaName, tableName);
                         foreach (var tableConstaint in definition.TableConstraints) {
                             if (tableConstaint.ConstraintIdentifier == null) {
                                 continue;
@@ -410,7 +412,6 @@ namespace SqlserverProtoServer {
 
                 case AlterTableAlterColumnStatement alterColumnStatement:
                     var columnName = alterColumnStatement.ColumnIdentifier.Value;
-                    var alterColumnDefinitions = context.GetTableColumnDefinitions(logger, databaseName, schemaName, tableName);
                     logger.Info("alert column:{0}", columnName);
                     if (!alterColumnDefinitions.ContainsKey(columnName)) {
                         needNotExistsColumnName.Add(columnName);
@@ -421,7 +422,6 @@ namespace SqlserverProtoServer {
                 case AlterTableAlterIndexStatement alterIndexStatement:
                     var indexName = alterIndexStatement.IndexIdentifier.Value;
                     logger.Info("alert index:{0}", indexName);
-                    var alterIndexDefinitions = context.GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
                     if (!alterIndexDefinitions.ContainsKey(indexName)) {
                         needExistsIndexName.Add(indexName);
                     }
@@ -434,17 +434,23 @@ namespace SqlserverProtoServer {
                             switch (dropTableElement.TableElementType) {
                                 case TableElementType.Column:
                                     logger.Info("drop column:{0}", dropTableElement.Name.Value);
-                                    needExistsColumnName.Add(dropTableElement.Name.Value);
+                                    if (!alterColumnDefinitions.ContainsKey(dropTableElement.Name.Value)) {
+                                        needExistsColumnName.Add(dropTableElement.Name.Value);
+                                    }
                                     break;
 
                                 case TableElementType.Constraint:
                                     logger.Info("drop constraint:{0}", dropTableElement.Name.Value);
-                                    needExistsConstraintName.Add(dropTableElement.Name.Value);
+                                    if (!constraintDefinitions.ContainsKey(dropTableElement.Name.Value)) {
+                                        needExistsConstraintName.Add(dropTableElement.Name.Value);
+                                    }
                                     break;
 
                                 case TableElementType.Index:
                                     logger.Info("drop index:{0}", dropTableElement.Name.Value);
-                                    needExistsIndexName.Add(dropTableElement.Name.Value);
+                                    if (!alterIndexDefinitions.ContainsKey(dropTableElement.Name.Value)) {
+                                        needExistsIndexName.Add(dropTableElement.Name.Value);
+                                    }
                                     break;
                             }
                         }

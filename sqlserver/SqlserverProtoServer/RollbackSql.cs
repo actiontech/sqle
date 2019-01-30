@@ -270,7 +270,9 @@ namespace SqlserverProtoServer {
             List<String> columns = new List<string>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT a.type_desc AS Index_type, a.is_unique AS Index_unique, COL_NAME(b.object_id, b.column_id) AS Col_name FROM {0}.sys.indexes a JOIN {0}.sys.index_columns b ON a.object_id=b.object_id AND a.index_id =b.index_id WHERE a.object_id=OBJECT_ID('{1}') AND a.name='{2}';", databaseName, tableName, indexName), connection);
+                var commandStr = String.Format("USE {0}; SELECT a.type_desc AS Index_type, a.is_unique AS Index_unique, COL_NAME(b.object_id, b.column_id) AS Col_name FROM sys.indexes a JOIN sys.index_columns b ON a.object_id=b.object_id AND a.index_id =b.index_id WHERE a.object_id=OBJECT_ID('{1}') AND a.name='{2}';", databaseName, tableName, indexName);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+                SqlCommand command = new SqlCommand(commandStr, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -330,7 +332,7 @@ namespace SqlserverProtoServer {
 
                     var rollbackIndexSql = GetCreateIndexSql(context, indexName, databaseName, schemaName, tableName);
                     if (rollbackIndexSql != "") {
-                        rollbackSql += String.Format("{0};\n", rollbackIndexSql);
+                        rollbackSql += String.Format("{0}\n", rollbackIndexSql);
                     } else {
                         logger.Info("can not get index definition for {0}.{1}.{2}", databaseName, schemaName, tableName);
                     }
@@ -371,7 +373,9 @@ namespace SqlserverProtoServer {
                 }
 
                 var insertSource = insertSpecification.InsertSource as ValuesInsertSource;
-                if (!context.NeedRollback(insertSource.RowValues.Count)) {
+                if (context.NeedRollback(insertSource.RowValues.Count) == -1) {
+                    return sql;
+                } else if (context.NeedRollback(insertSource.RowValues.Count) == 0) {
                     sql.ErrMsg = EXCEED_MAX_ROWS_NOT_ROLLBACK;
                     return sql;
                 }
@@ -485,7 +489,9 @@ namespace SqlserverProtoServer {
                 }
 
                 var recordsCount = context.GetRecordsCount(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
-                if (!context.NeedRollback(recordsCount)) {
+                if (context.NeedRollback(recordsCount) == -1) {
+                    return sql;
+                } else if (context.NeedRollback(recordsCount) == 0) {
                     sql.ErrMsg = EXCEED_MAX_ROWS_NOT_ROLLBACK;
                     return sql;
                 }
@@ -554,7 +560,9 @@ namespace SqlserverProtoServer {
                     }
                 }
                 var recordsCount = context.GetRecordsCount(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
-                if (!context.NeedRollback(recordsCount)) {
+                if (context.NeedRollback(recordsCount) == -1) {
+                    return sql;
+                } else if (context.NeedRollback(recordsCount) == 0) {
                     sql.ErrMsg = EXCEED_MAX_ROWS_NOT_ROLLBACK;
                     return sql;
                 }
