@@ -197,7 +197,6 @@ namespace SqlserverProtoServer {
             foreach (var sql in sqls) {
                 try {
                     var statementList = ParseStatementList(logger, version, sql);
-                    bool isDDL = false, isDML = false;
                     foreach (var statement in statementList.Statements) {
                         var baseRuleValidator = new BaseRuleValidator();
                         baseRuleValidator.Check(ruleValidatorContext, statement);
@@ -213,13 +212,11 @@ namespace SqlserverProtoServer {
                         }
 
                         ruleValidatorContext.UpdateContext(logger, statement);
-                        isDDL = IsDDL(statement);
-                        isDML = IsDML(statement);
+                        var result = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
+                        result.IsDDL = IsDDL(statement);
+                        result.IsDML = IsDML(statement); ;
+                        output.Results.Add(result);
                     }
-                    var result = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
-                    result.IsDDL = isDDL;
-                    result.IsDML = isDML;
-                    output.Results.Add(result);
                     ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
                 } catch (Exception e) {
                     logger.Fatal("Advise exception stacktrace:{0}", e.StackTrace);
