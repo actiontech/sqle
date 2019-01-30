@@ -84,11 +84,8 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	}
 
 	results := out.GetResults()
-	for _, commitSql := range i.Task.CommitSqls {
-		result, ok := results[commitSql.Content]
-		if !ok {
-			continue
-		}
+	for idx, commitSql := range i.Task.CommitSqls {
+		result := results[idx]
 		stmt := sqlserverClient.NewSqlServerStmt(commitSql.Content, result.IsDDL, result.IsDML)
 		if stmt.IsDDLStmt() {
 			i.counterDDL += 1

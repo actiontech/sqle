@@ -35,26 +35,24 @@ namespace SqlserverProto {
             "ASABKAkSDAoEU3FscxgCIAMoCRIRCglSdWxlTmFtZXMYAyADKAkSNAoNU3Fs",
             "c2VydmVyTWV0YRgEIAEoCzIdLlNxbHNlcnZlclByb3RvLlNxbHNlcnZlck1l",
             "dGESMgoORERMQ29udGV4dFNxbHMYBSADKAsyGi5TcWxzZXJ2ZXJQcm90by5E",
-            "RExDb250ZXh0IhoKCkRETENvbnRleHQSDAoEU3FscxgBIAMoCSK1AQoMQWR2",
-            "aXNlT3V0cHV0EjoKB1Jlc3VsdHMYASADKAsyKS5TcWxzZXJ2ZXJQcm90by5B",
-            "ZHZpc2VPdXRwdXQuUmVzdWx0c0VudHJ5EhsKE0Jhc2VWYWxpZGF0b3JGYWls",
-            "ZWQYAiABKAgaTAoMUmVzdWx0c0VudHJ5EgsKA2tleRgBIAEoCRIrCgV2YWx1",
-            "ZRgCIAEoCzIcLlNxbHNlcnZlclByb3RvLkFkdmlzZVJlc3VsdDoCOAEiXgoM",
-            "QWR2aXNlUmVzdWx0EhMKC0FkdmlzZUxldmVsGAEgASgJEhsKE0FkdmlzZVJl",
-            "c3VsdE1lc3NhZ2UYAiABKAkSDQoFSXNEREwYAyABKAgSDQoFSXNETUwYBCAB",
-            "KAgiJAoGQ29uZmlnEhoKEkRNTFJvbGxiYWNrTWF4Um93cxgBIAEoAyKbAQoU",
-            "R2V0Um9sbGJhY2tTcWxzSW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxz",
-            "GAIgAygJEjQKDVNxbHNlcnZlck1ldGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90",
-            "by5TcWxzZXJ2ZXJNZXRhEi4KDlJvbGxiYWNrQ29uZmlnGAQgASgLMhYuU3Fs",
-            "c2VydmVyUHJvdG8uQ29uZmlnIkIKFUdldFJvbGxiYWNrU3Fsc091dHB1dBIp",
-            "CgxSb2xsYmFja1NxbHMYASADKAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwyjgIK",
-            "EFNxbHNlcnZlclNlcnZpY2USUQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVy",
-            "UHJvdG8uU3BsaXRTcWxzSW5wdXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNx",
-            "bHNPdXRwdXQiABJFCgZBZHZpc2USGy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJ",
-            "bnB1dBocLlNxbHNlcnZlclByb3RvLkFkdmlzZU91dHB1dCIAEmAKD0dldFJv",
-            "bGxiYWNrU3FscxIkLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lu",
-            "cHV0GiUuU3Fsc2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBi",
-            "BnByb3RvMw=="));
+            "RExDb250ZXh0IhoKCkRETENvbnRleHQSDAoEU3FscxgBIAMoCSJaCgxBZHZp",
+            "c2VPdXRwdXQSLQoHUmVzdWx0cxgBIAMoCzIcLlNxbHNlcnZlclByb3RvLkFk",
+            "dmlzZVJlc3VsdBIbChNCYXNlVmFsaWRhdG9yRmFpbGVkGAIgASgIIl4KDEFk",
+            "dmlzZVJlc3VsdBITCgtBZHZpc2VMZXZlbBgBIAEoCRIbChNBZHZpc2VSZXN1",
+            "bHRNZXNzYWdlGAIgASgJEg0KBUlzRERMGAMgASgIEg0KBUlzRE1MGAQgASgI",
+            "IiQKBkNvbmZpZxIaChJETUxSb2xsYmFja01heFJvd3MYASABKAMimwEKFEdl",
+            "dFJvbGxiYWNrU3Fsc0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgC",
+            "IAMoCRI0Cg1TcWxzZXJ2ZXJNZXRhGAMgASgLMh0uU3Fsc2VydmVyUHJvdG8u",
+            "U3Fsc2VydmVyTWV0YRIuCg5Sb2xsYmFja0NvbmZpZxgEIAEoCzIWLlNxbHNl",
+            "cnZlclByb3RvLkNvbmZpZyJCChVHZXRSb2xsYmFja1NxbHNPdXRwdXQSKQoM",
+            "Um9sbGJhY2tTcWxzGAEgAygLMhMuU3Fsc2VydmVyUHJvdG8uU3FsMo4CChBT",
+            "cWxzZXJ2ZXJTZXJ2aWNlElEKDEdldFNwbGl0U3FscxIeLlNxbHNlcnZlclBy",
+            "b3RvLlNwbGl0U3Fsc0lucHV0Gh8uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxz",
+            "T3V0cHV0IgASRQoGQWR2aXNlEhsuU3Fsc2VydmVyUHJvdG8uQWR2aXNlSW5w",
+            "dXQaHC5TcWxzZXJ2ZXJQcm90by5BZHZpc2VPdXRwdXQiABJgCg9HZXRSb2xs",
+            "YmFja1NxbHMSJC5TcWxzZXJ2ZXJQcm90by5HZXRSb2xsYmFja1NxbHNJbnB1",
+            "dBolLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc091dHB1dCIAYgZw",
+            "cm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -64,7 +62,7 @@ namespace SqlserverProto {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SqlserverMeta), global::SqlserverProto.SqlserverMeta.Parser, new[]{ "User", "Password", "Host", "Port", "CurrentDatabase", "CurrentSchema" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta", "DDLContextSqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.DDLContext), global::SqlserverProto.DDLContext.Parser, new[]{ "Sqls" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results", "BaseValidatorFailed" }, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results", "BaseValidatorFailed" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage", "IsDDL", "IsDML" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Config), global::SqlserverProto.Config.Parser, new[]{ "DMLRollbackMaxRows" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta", "RollbackConfig" }, null, null, null),
@@ -1216,11 +1214,11 @@ namespace SqlserverProto {
 
     /// <summary>Field number for the "Results" field.</summary>
     public const int ResultsFieldNumber = 1;
-    private static readonly pbc::MapField<string, global::SqlserverProto.AdviseResult>.Codec _map_results_codec
-        = new pbc::MapField<string, global::SqlserverProto.AdviseResult>.Codec(pb::FieldCodec.ForString(10), pb::FieldCodec.ForMessage(18, global::SqlserverProto.AdviseResult.Parser), 10);
-    private readonly pbc::MapField<string, global::SqlserverProto.AdviseResult> results_ = new pbc::MapField<string, global::SqlserverProto.AdviseResult>();
+    private static readonly pb::FieldCodec<global::SqlserverProto.AdviseResult> _repeated_results_codec
+        = pb::FieldCodec.ForMessage(10, global::SqlserverProto.AdviseResult.Parser);
+    private readonly pbc::RepeatedField<global::SqlserverProto.AdviseResult> results_ = new pbc::RepeatedField<global::SqlserverProto.AdviseResult>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public pbc::MapField<string, global::SqlserverProto.AdviseResult> Results {
+    public pbc::RepeatedField<global::SqlserverProto.AdviseResult> Results {
       get { return results_; }
     }
 
@@ -1248,7 +1246,7 @@ namespace SqlserverProto {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (!Results.Equals(other.Results)) return false;
+      if(!results_.Equals(other.results_)) return false;
       if (BaseValidatorFailed != other.BaseValidatorFailed) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -1256,7 +1254,7 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override int GetHashCode() {
       int hash = 1;
-      hash ^= Results.GetHashCode();
+      hash ^= results_.GetHashCode();
       if (BaseValidatorFailed != false) hash ^= BaseValidatorFailed.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -1271,7 +1269,7 @@ namespace SqlserverProto {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
-      results_.WriteTo(output, _map_results_codec);
+      results_.WriteTo(output, _repeated_results_codec);
       if (BaseValidatorFailed != false) {
         output.WriteRawTag(16);
         output.WriteBool(BaseValidatorFailed);
@@ -1284,7 +1282,7 @@ namespace SqlserverProto {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
-      size += results_.CalculateSize(_map_results_codec);
+      size += results_.CalculateSize(_repeated_results_codec);
       if (BaseValidatorFailed != false) {
         size += 1 + 1;
       }
@@ -1315,7 +1313,7 @@ namespace SqlserverProto {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            results_.AddEntriesFrom(input, _map_results_codec);
+            results_.AddEntriesFrom(input, _repeated_results_codec);
             break;
           }
           case 16: {

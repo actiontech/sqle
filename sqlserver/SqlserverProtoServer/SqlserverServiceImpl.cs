@@ -216,9 +216,10 @@ namespace SqlserverProtoServer {
                         isDDL = IsDDL(statement);
                         isDML = IsDML(statement);
                     }
-                    output.Results[sql] = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
-                    output.Results[sql].IsDDL = isDDL;
-                    output.Results[sql].IsDML = isDML;
+                    var result = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
+                    result.IsDDL = isDDL;
+                    result.IsDML = isDML;
+                    output.Results.Add(result);
                     ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
                 } catch (Exception e) {
                     logger.Fatal("Advise exception stacktrace:{0}", e.StackTrace);
