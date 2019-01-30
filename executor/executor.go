@@ -279,7 +279,7 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 func (c *Executor) ShowDatabases() ([]string, error) {
 	var query string
 	if c.dbType == model.DB_TYPE_SQLSERVER {
-		query = "select name from sys.databases where name not in ('master','tempdb','model','msdb')"
+		query = "select name from sys.databases where name not in ('master','tempdb','model','msdb','distribution')"
 	} else {
 		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
 	}
@@ -428,7 +428,7 @@ func (c *Executor) ShowDefaultEngine() (string, error) {
 	return engine.String, nil
 }
 
-func (c *Executor)ShowDefaultCharacter()(string, error){
+func (c *Executor) ShowDefaultCharacter() (string, error) {
 	if c.dbType != model.DB_TYPE_MYSQL {
 		return "", nil
 	}
