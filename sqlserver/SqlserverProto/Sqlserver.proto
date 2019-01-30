@@ -46,7 +46,7 @@ message DDLContext {
 }
 
 message AdviseOutput {
-    map<string, AdviseResult> Results = 1;
+    repeated AdviseResult Results = 1;
     bool BaseValidatorFailed = 2;
 }
 
