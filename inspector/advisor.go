@@ -66,12 +66,15 @@ func (i *Inspect) advise(rules []model.Rule) error {
 				return err
 			}
 			if oscCommandLine != "" {
+				results := newInspectResults()
 				if currentSql.InspectResult != "" {
-					currentSql.InspectResult += "\n"
+					results.add(currentSql.InspectLevel, currentSql.InspectResult)
 				}
-				currentSql.InspectResult = fmt.Sprintf("%s[osc]%s",
-					currentSql.InspectResult, oscCommandLine)
+				results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s",oscCommandLine))
+				currentSql.InspectLevel = results.level()
+				currentSql.InspectResult = results.message()
 			}
+
 			i.Logger().Infof("sql=%s, level=%s, result=%s",
 				currentSql.Content, currentSql.InspectLevel, currentSql.InspectResult)
 			return nil

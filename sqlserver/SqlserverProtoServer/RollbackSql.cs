@@ -2,63 +2,60 @@
 using Microsoft.SqlServer.TransactSql.ScriptDom;
 using System.Data.SqlClient;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using NLog;
+using SqlserverProto;
 
 namespace SqlserverProtoServer {
     public class RollbackSql {
+        private String NOT_SUPPORT_STATEMENT_ROLLBACK = "暂不支持回滚该类型的语句";
+        private String NOT_SUPPORT_NO_PK_TABLE_ROLLBACK = "不支持回滚没有主键的表的DML语句";
+        private String NOT_SUPPORT_SUB_QUERY_STATEMENT_ROLLBACK = "暂不支持回滚带子查询的语句";
+        private String EXCEED_MAX_ROWS_NOT_ROLLBACK = "预计影响行数超过配置的最大值，不生成回滚语句";
+        private String NOT_SUPPORT_NO_PK_INSERT_ROLLBACK = "不支持回滚 INSERT 没有指定主键的语句";
+
         protected Logger logger = LogManager.GetCurrentClassLogger();
 
-        public String GetRollbackSql(SqlserverContext context, TSqlStatement statement, out bool isDDL, out bool isDML) {
-            isDDL = false;
-            isDML = false;
-
+        public Sql GetRollbackSql(SqlserverContext context, TSqlStatement statement) {
             switch (statement) {
                 // ddl
                 case CreateTableStatement createTableStatement:
-                    isDDL = true;
                     return GenerateCreateTableRollbackSql(context, createTableStatement);
 
                 case DropTableStatement dropTableStatement:
-                    isDDL = true;
                     return GenerateDropTableRollbackSql(context, dropTableStatement);
 
                 case AlterTableStatement alterTableStatement:
-                    isDDL = true;
                     return GenerateAlterTableRollbackSql(context, alterTableStatement);
 
                 case ExecuteStatement executeStatement:
-                    isDDL = true;
                     return GenerateRenameRollbackSql(context, executeStatement);
 
                 case CreateIndexStatement createIndexStatement:
-                    isDDL = true;
                     return GenerateCreateIndexRollbackSql(context, createIndexStatement);
 
                 case DropIndexStatement dropIndexStatement:
-                    isDDL = true;
                     return GenerateDropIndexRollbackSql(context, dropIndexStatement);
 
                 // dml
                 case InsertStatement insertStatement:
-                    isDML = true;
                     return GenerateInsertRollbackSql(context, insertStatement);
 
                 case DeleteStatement deleteStatement:
-                    isDML = true;
                     return GenerateDeleteRollbackSql(context, deleteStatement);
 
                 case UpdateStatement updateStatement:
-                    isDML = true;
                     return GenerateUpdateRollbackSql(context, updateStatement);
             }
-
-            return "";
+            return new Sql();
         }
 
-        public String GenerateCreateTableRollbackSql(SqlserverContext context, CreateTableStatement statement) {
+        public Sql GenerateCreateTableRollbackSql(SqlserverContext context, CreateTableStatement statement) {
             context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(statement.SchemaObjectName, out String databaseName, out String schemaName, out String tableName);
-            return String.Format("DROP TABLE {0}.{1}.{2};", databaseName, schemaName, tableName);
+            var sql = new Sql{
+                IsDDL = true,
+                Sql_ = String.Format("DROP TABLE {0}.{1}.{2};", databaseName, schemaName, tableName),
+            };
+            return sql;
         }
 
         public String GetCreateTableSql(SqlserverContext context, String databaseName, String schemaName, String tableName) {
@@ -92,7 +89,7 @@ namespace SqlserverProtoServer {
             return "";
         }
 
-        public String GenerateDropTableRollbackSql(SqlserverContext context, DropTableStatement statement) {
+        public Sql GenerateDropTableRollbackSql(SqlserverContext context, DropTableStatement statement) {
             var rollbackSql = "";
             foreach (var tableObject in statement.Objects) {
                 String databaseName, schemaName, tableName;
@@ -110,10 +107,15 @@ namespace SqlserverProtoServer {
 
                 rollbackSql += GetCreateTableSql(context, databaseName, schemaName, tableName);
             }
-            return rollbackSql;
+
+            var sql = new Sql {
+                IsDDL = true,
+                Sql_ = rollbackSql
+            };
+            return sql;
         }
 
-        public String GenerateAlterTableRollbackSql(SqlserverContext context, AlterTableStatement statement) {
+        public Sql GenerateAlterTableRollbackSql(SqlserverContext context, AlterTableStatement statement) {
             context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(statement.SchemaObjectName, out String databaseName, out String schemaName, out String tableName);
             var key = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
             var rollbackPrefix = String.Format("ALTER TABLE {0}.{1}.{2}", databaseName, schemaName, tableName);
@@ -194,10 +196,18 @@ namespace SqlserverProtoServer {
                     }
                     break;
             }
-            return String.Join(';', rollbackActions);
+            var sql = new Sql {
+                IsDDL = true,
+                Sql_ = String.Join(';', rollbackActions)
+            };
+            if (sql.Sql_ == "") {
+                logger.Info("unsupported alter table statement({0})", statement);
+                sql.ErrMsg = NOT_SUPPORT_STATEMENT_ROLLBACK;
+            }
+            return sql;
         }
 
-        public String GenerateRenameRollbackSql(SqlserverContext context, ExecuteStatement statement) {
+        public Sql GenerateRenameRollbackSql(SqlserverContext context, ExecuteStatement statement) {
             var rollbackSql = "";
             var entity = statement.ExecuteSpecification.ExecutableEntity;
             if (entity is ExecutableProcedureReference) {
@@ -242,7 +252,16 @@ namespace SqlserverProtoServer {
                 }
             }
 
-            return rollbackSql;
+            var sql = new Sql {
+                IsDDL = true,
+                Sql_ = rollbackSql
+            };
+            if (sql.Sql_ == "") {
+                logger.Info("unsupported alter table statement({0})", statement);
+                sql.ErrMsg = NOT_SUPPORT_STATEMENT_ROLLBACK;
+            }
+
+            return sql;
         }
 
         public String GetCreateIndexSql(SqlserverContext context, String indexName, String databaseName, String schemaName, String tableName) {
@@ -251,7 +270,9 @@ namespace SqlserverProtoServer {
             List<String> columns = new List<string>();
             String connectionString = context.GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
-                SqlCommand command = new SqlCommand(String.Format("SELECT a.type_desc AS Index_type, a.is_unique AS Index_unique, COL_NAME(b.object_id, b.column_id) AS Col_name FROM {0}.sys.indexes a JOIN {0}.sys.index_columns b ON a.object_id=b.object_id AND a.index_id =b.index_id WHERE a.object_id=OBJECT_ID('{1}') AND a.name='{2}';", databaseName, tableName, indexName), connection);
+                var commandStr = String.Format("USE {0}; SELECT a.type_desc AS Index_type, a.is_unique AS Index_unique, COL_NAME(b.object_id, b.column_id) AS Col_name FROM sys.indexes a JOIN sys.index_columns b ON a.object_id=b.object_id AND a.index_id =b.index_id WHERE a.object_id=OBJECT_ID('{1}') AND a.name='{2}';", databaseName, tableName, indexName);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+                SqlCommand command = new SqlCommand(commandStr, connection);
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
                 try {
@@ -272,7 +293,7 @@ namespace SqlserverProtoServer {
             return "";
         }
 
-        public String GenerateCreateIndexRollbackSql(SqlserverContext context, CreateIndexStatement statement) {
+        public Sql GenerateCreateIndexRollbackSql(SqlserverContext context, CreateIndexStatement statement) {
             var indexName = statement.Name.Value;
             context.GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(statement.OnName, out String databaseName, out String schemaName, out String tableName);
 
@@ -286,18 +307,22 @@ namespace SqlserverProtoServer {
                     }
                 }
             }
+            var sql = new Sql {
+                IsDDL = true
+            };
             var rollbackSql = "";
             if (dropExisting) {
                 rollbackSql = GetCreateIndexSql(context, indexName, databaseName, schemaName, tableName);
                 if (rollbackSql != "") {
-                    return String.Format("{0} WITH (DROP_EXISTING=ON);", rollbackSql);
+                    sql.Sql_ = String.Format("{0} WITH (DROP_EXISTING=ON);", rollbackSql);
+                    return sql;
                 }
             }
-
-            return String.Format("DROP INDEX {0} ON {1}.{2}.{3};", indexName, databaseName, schemaName, tableName);
+            sql.Sql_ = String.Format("DROP INDEX {0} ON {1}.{2}.{3};", indexName, databaseName, schemaName, tableName);
+            return sql;
         }
 
-        public String GenerateDropIndexRollbackSql(SqlserverContext context, DropIndexStatement statement) {
+        public Sql GenerateDropIndexRollbackSql(SqlserverContext context, DropIndexStatement statement) {
             var rollbackSql = "";
             foreach (var dropIndexClauseBase in statement.DropIndexClauses) {
                 if (dropIndexClauseBase is DropIndexClause) {
@@ -307,14 +332,24 @@ namespace SqlserverProtoServer {
 
                     var rollbackIndexSql = GetCreateIndexSql(context, indexName, databaseName, schemaName, tableName);
                     if (rollbackIndexSql != "") {
-                        rollbackSql += String.Format("{0};\n", rollbackIndexSql);
+                        rollbackSql += String.Format("{0}\n", rollbackIndexSql);
+                    } else {
+                        logger.Info("can not get index definition for {0}.{1}.{2}", databaseName, schemaName, tableName);
                     }
                 }
             }
-            return rollbackSql;
+
+            var sql = new Sql {
+                IsDDL = true,
+                Sql_ = rollbackSql
+            };
+            return sql;
         }
 
-        public String GenerateInsertRollbackSql(SqlserverContext context, InsertStatement statement) {
+        public Sql GenerateInsertRollbackSql(SqlserverContext context, InsertStatement statement) {
+            var sql = new Sql {
+                IsDML = true
+            };
             var rollbackSqls = new List<String>();
             var insertSpecification = statement.InsertSpecification;
             if (insertSpecification.InsertSource is ValuesInsertSource) {
@@ -323,7 +358,8 @@ namespace SqlserverProtoServer {
 
                 var primaryKeys = context.GetPrimaryKeys(databaseName, schemaName, tableName);
                 if (primaryKeys.Count == 0) {
-                    return "";
+                    sql.ErrMsg = NOT_SUPPORT_NO_PK_TABLE_ROLLBACK;
+                    return sql;
                 }
                 var columns = new List<String>();
                 if (insertSpecification.Columns.Count > 0) {
@@ -337,12 +373,15 @@ namespace SqlserverProtoServer {
                 }
 
                 var insertSource = insertSpecification.InsertSource as ValuesInsertSource;
-                if (!context.NeedRollback(insertSource.RowValues.Count)) {
-                    return "";
+                if (context.NeedRollback(insertSource.RowValues.Count) == -1) {
+                    return sql;
+                } else if (context.NeedRollback(insertSource.RowValues.Count) == 0) {
+                    sql.ErrMsg = EXCEED_MAX_ROWS_NOT_ROLLBACK;
+                    return sql;
                 }
                 foreach (var rowValue in insertSource.RowValues) {
                     if (rowValue.ColumnValues.Count != columns.Count) {
-                        return "";
+                        return sql;
                     }
 
                     var whereCondition = new List<String>();
@@ -369,13 +408,15 @@ namespace SqlserverProtoServer {
                         }
                     }
                     if (whereCondition.Count != primaryKeys.Count) {
-                        return "";
+                        sql.ErrMsg = NOT_SUPPORT_NO_PK_INSERT_ROLLBACK;
+                        return sql;
                     }
                     rollbackSqls.Add(String.Format("DELETE FROM {0}.{1}.{2} WHERE {3};", databaseName, schemaName, tableName, String.Join(" AND ", whereCondition)));
                 }
             }
 
-            return String.Join('\n', rollbackSqls);
+            sql.Sql_ = String.Join('\n', rollbackSqls);
+            return sql;
         }
 
         public bool IfSubqueryExists(BooleanExpression booleanExpression) {
@@ -415,8 +456,10 @@ namespace SqlserverProtoServer {
             return false;
         }
 
-        public String GenerateDeleteRollbackSql(SqlserverContext context, DeleteStatement statement) {
-            var rollbackSql = "";
+        public Sql GenerateDeleteRollbackSql(SqlserverContext context, DeleteStatement statement) {
+            var sql = new Sql {
+                IsDML = true
+            };
             var deleteSpecification = statement.DeleteSpecification;
             TableReference tableReference = null;
             if (deleteSpecification.FromClause != null && deleteSpecification.FromClause.TableReferences != null) {
@@ -437,7 +480,8 @@ namespace SqlserverProtoServer {
                 if (deleteSpecification.WhereClause != null) {
                     var whereClause = deleteSpecification.WhereClause;
                     if (IfSubqueryExists(whereClause.SearchCondition)) {
-                        return "";
+                        sql.ErrMsg = NOT_SUPPORT_SUB_QUERY_STATEMENT_ROLLBACK;
+                        return sql;
                     }
                     for (int index = whereClause.FirstTokenIndex; index <= whereClause.LastTokenIndex; index++) {
                         where += whereClause.ScriptTokenStream[index].Text;
@@ -445,8 +489,11 @@ namespace SqlserverProtoServer {
                 }
 
                 var recordsCount = context.GetRecordsCount(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
-                if (!context.NeedRollback(recordsCount)) {
-                    return "";
+                if (context.NeedRollback(recordsCount) == -1) {
+                    return sql;
+                } else if (context.NeedRollback(recordsCount) == 0) {
+                    sql.ErrMsg = EXCEED_MAX_ROWS_NOT_ROLLBACK;
+                    return sql;
                 }
                 var records = context.GetRecords(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
                 var columns = context.GetColumns(databaseName, schemaName, tableName);
@@ -454,7 +501,8 @@ namespace SqlserverProtoServer {
                 var values = new List<String>();
                 foreach (var record in records) {
                     if (record.Count != columns.Count) {
-                        return "";
+                        logger.Info("record.Count:{0}, columns.Count{1}", record.Count, columns.Count);
+                        return sql;
                     }
 
                     var recordValues = new List<String>();
@@ -469,14 +517,16 @@ namespace SqlserverProtoServer {
                 }
 
                 if (values.Count > 0) {
-                    rollbackSql = String.Format("INSERT INTO {0}.{1}.{2} ({3}) VALUES {4}", databaseName, schemaName, tableName, String.Join(", ", columns), String.Join(", ", values));
+                    sql.Sql_ = String.Format("INSERT INTO {0}.{1}.{2} ({3}) VALUES {4}", databaseName, schemaName, tableName, String.Join(", ", columns), String.Join(", ", values));
                 }
             }
-            return rollbackSql;
+            return sql;
         }
 
-        public String GenerateUpdateRollbackSql(SqlserverContext context, UpdateStatement statement) {
-            var rollbacksql = "";
+        public Sql GenerateUpdateRollbackSql(SqlserverContext context, UpdateStatement statement) {
+            var sql = new Sql {
+                IsDML = true
+            };
             var updateSpecification = statement.UpdateSpecification;
             TableReference tableReference = null;
             if (statement.UpdateSpecification.FromClause != null && statement.UpdateSpecification.FromClause.TableReferences != null) {
@@ -494,22 +544,27 @@ namespace SqlserverProtoServer {
 
                 var primaryKeys = context.GetPrimaryKeys(databaseName, schemaName, tableName);
                 if (primaryKeys.Count == 0) {
-                    return "";
+                    sql.ErrMsg = NOT_SUPPORT_NO_PK_TABLE_ROLLBACK;
+                    return sql;
                 }
 
                 var where = "";
                 if (updateSpecification.WhereClause != null) {
                     var whereClause = updateSpecification.WhereClause;
                     if (IfSubqueryExists(whereClause.SearchCondition)) {
-                        return "";
+                        sql.ErrMsg = NOT_SUPPORT_SUB_QUERY_STATEMENT_ROLLBACK;
+                        return sql;
                     }
                     for (int index = whereClause.FirstTokenIndex; index <= whereClause.LastTokenIndex; index++) {
                         where += whereClause.ScriptTokenStream[index].Text;
                     }
                 }
                 var recordsCount = context.GetRecordsCount(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
-                if (!context.NeedRollback(recordsCount)) {
-                    return "";
+                if (context.NeedRollback(recordsCount) == -1) {
+                    return sql;
+                } else if (context.NeedRollback(recordsCount) == 0) {
+                    sql.ErrMsg = EXCEED_MAX_ROWS_NOT_ROLLBACK;
+                    return sql;
                 }
 
                 var records = context.GetRecords(databaseName, schemaName, String.Format("{0} {1}", tableName, tableAlias), where);
@@ -517,7 +572,8 @@ namespace SqlserverProtoServer {
 
                 foreach (var record in records) {
                     if (record.Count != columns.Count) {
-                        return "";
+                        logger.Info("record.Count:{0}, columns.Count{1}", record.Count, columns.Count);
+                        return sql;
                     }
 
                     var whereConditions = new List<String>();
@@ -570,10 +626,10 @@ namespace SqlserverProtoServer {
                         }
 
                     }
-                    rollbacksql += String.Format("UPDATE {0}.{1}.{2} SET {3} WHERE {4};", databaseName, schemaName, tableName, String.Join(", ", value), String.Join(" AND ", whereConditions));
+                    sql.Sql_ += String.Format("UPDATE {0}.{1}.{2} SET {3} WHERE {4};", databaseName, schemaName, tableName, String.Join(", ", value), String.Join(" AND ", whereConditions));
                 }
             }
-            return rollbacksql;
+            return sql;
         }
     }
 }

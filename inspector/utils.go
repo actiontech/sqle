@@ -42,7 +42,16 @@ func (rs *InspectResults) level() string {
 func (rs *InspectResults) message() string {
 	messages := make([]string, len(rs.results))
 	for n, result := range rs.results {
-		messages[n] = fmt.Sprintf("[%s]%s", result.Level, result.Message)
+		var message string
+		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
+			model.RULE_LEVEL_ERROR, model.RULE_LEVEL_WARN, model.RULE_LEVEL_NOTICE, model.RULE_LEVEL_NORMAL, "osc"),
+			result.Message)
+		if match {
+			message = result.Message
+		} else {
+			message = fmt.Sprintf("[%s]%s", result.Level, result.Message)
+		}
+		messages[n] = message
 	}
 	return strings.Join(messages, "\n")
 }
