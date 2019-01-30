@@ -122,21 +122,27 @@ func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error
 	if len(i.Task.CommitSqls) != len(sqls) {
 		return nil, fmt.Errorf("don't match sql rollback result")
 	}
-	rollbackSqls := []string{}
+	rollbackSqls := []*model.RollbackSql{}
 	for idx, val := range sqls {
+		commitSql := i.Task.CommitSqls[idx]
 		if val.Sql != "" {
-			rollbackSqls = append(rollbackSqls, val.Sql)
+			rollbackSqls = append(rollbackSqls, &model.RollbackSql{
+				Sql: model.Sql{
+					Content: val.Sql,
+				},
+				CommitSqlNumber: commitSql.Number,
+			})
 		}
 		if val.ErrMsg != "" {
 			result := newInspectResults()
-			if i.Task.CommitSqls[idx].InspectResult != "" {
-				result.add(i.Task.CommitSqls[idx].InspectLevel, i.Task.CommitSqls[idx].InspectResult)
+			if commitSql.InspectResult != "" {
+				result.add(commitSql.InspectLevel, commitSql.InspectResult)
 			}
 			result.add(model.RULE_LEVEL_NOTICE, val.ErrMsg)
-			i.Task.CommitSqls[idx].InspectLevel = result.level()
-			i.Task.CommitSqls[idx].InspectResult = result.message()
+			commitSql.InspectLevel = result.level()
+			commitSql.InspectResult = result.message()
 		}
 	}
 
-	return i.Inspect.GetAllRollbackSql(rollbackSqls), err
+	return i.Inspect.GetAllRollbackSqlReversed(rollbackSqls), err
 }

@@ -14,13 +14,18 @@ import (
 func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	i.Logger().Info("start generate rollback sql")
 
-	rollbackSqls := []string{}
+	rollbackSqls := []*model.RollbackSql{}
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
 			rollbackSql, reason, err := i.GenerateRollbackSql(sql)
 			if rollbackSql != "" {
-				rollbackSqls = append(rollbackSqls, rollbackSql)
+				rollbackSqls = append(rollbackSqls, &model.RollbackSql{
+					Sql: model.Sql{
+						Content: rollbackSql,
+					},
+					CommitSqlNumber: currentSql.Number,
+				})
 			}
 			if reason != "" {
 				result := newInspectResults()
@@ -43,20 +48,19 @@ func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 		return nil, err
 	}
 	i.Logger().Info("generate rollback sql finish")
-	return i.GetAllRollbackSql(rollbackSqls), nil
+	return i.GetAllRollbackSqlReversed(rollbackSqls), nil
 }
 
-func (i *Inspect) GetAllRollbackSql(sqls []string) []*model.RollbackSql {
+func (i *Inspect) GetAllRollbackSqlReversed(sqls []*model.RollbackSql) []*model.RollbackSql {
 	rollbackSqls := []*model.RollbackSql{}
 	// Reverse order
 	var number uint = 1
 	for n := len(sqls) - 1; n >= 0; n-- {
-		rollbackSqls = append(rollbackSqls, &model.RollbackSql{
-			Sql: model.Sql{
-				Number:  number,
-				Content: sqls[n],
-			},
-		})
+		rollbackSql := sqls[n]
+		if rollbackSql != nil {
+			rollbackSql.Number = number
+		}
+		rollbackSqls = append(rollbackSqls, rollbackSql)
 		number += 1
 	}
 	return rollbackSqls
