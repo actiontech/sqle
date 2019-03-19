@@ -16,17 +16,28 @@ func GetSqled() *Sqled {
 	return sqled
 }
 
+// Sqled is an async task scheduling service.
+// receive tasks from queue, the tasks include inspect, commit, rollback;
+// and the task will only be executed once.
 type Sqled struct {
 	sync.Mutex
-	exit            chan struct{}
-	currentTask     map[string]struct{}
-	queue           chan *Action
+	// exit is Sqled service exit signal.
+	exit chan struct{}
+	// currentTask record the current task before execution,
+	// and delete it after execution.
+	currentTask map[string]struct{}
+	// queue is a chan used to receive tasks.
+	queue chan *Action
+	// instancesStatus save schemas info for all db instance.
 	instancesStatus map[uint]*InstanceStatus
 }
 
+// Action is an action for the task;
+// when you want to commit a task, you can define an action whose type is rollback.
 type Action struct {
 	sync.Mutex
 	Task  *model.Task
+	// Typ is task type, include inspect, commit, rollback.
 	Typ   int
 	Error error
 	Done  chan struct{}
@@ -48,6 +59,8 @@ func (s *Sqled) HasTask(taskId string) bool {
 	return ok
 }
 
+// addTask receive taskId and action type, using taskId and typ to create an action;
+// action will be validated, and sent to Sqled.queue.
 func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 	var err error
 	action := &Action{
@@ -114,6 +127,7 @@ func (s *Sqled) Start() {
 	go s.statusLoop()
 }
 
+// taskLoop is a task loop used to receive action from queue.
 func (s *Sqled) taskLoop() {
 	for {
 		select {
