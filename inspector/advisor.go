@@ -168,6 +168,19 @@ func (i *Inspect) CheckInvalid(node ast.Node) (*InspectResults, error) {
 	return results, err
 }
 
+/*
+------------------------------------------------------------------
+create table ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table can't exist if SQL has not "IF NOT EXISTS";
+3. column name can't duplicated;
+4. primary key can only be set once;
+5. index name can't be duplicated;
+6. index column must exist;
+7. index column can't duplicated, "index idx_1(id,id)" is invalid
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *InspectResults) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
@@ -270,6 +283,22 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+alter table ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist;
+3. add/update column, name can't duplicated;
+4. delete column, name must exist;
+5. add/update pk, pk can only be set once;
+6. delete pk, pk must exist;
+7. add/update index, name can't be duplicated;
+8. delete index, name must exist;
+9. index column must exist;
+10. index column can't duplicated.
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *InspectResults) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
@@ -477,6 +506,14 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+drop table ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist if SQL has not "IF EXISTS".
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt, results *InspectResults) error {
 	if stmt.IfExists {
 		return nil
@@ -512,6 +549,13 @@ func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt, results *Inspec
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+use database ...
+------------------------------------------------------------------
+1. schema must exist.
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt, results *InspectResults) error {
 	schemaExist, err := i.isSchemaExist(stmt.DBName)
 	if err != nil {
@@ -523,6 +567,13 @@ func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt, results *InspectResults) er
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+create database ...
+------------------------------------------------------------------
+1. schema can't exist if SQL has not "IF NOT EXISTS".
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt,
 	results *InspectResults) error {
 	if stmt.IfNotExists {
@@ -539,6 +590,13 @@ func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt,
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+drop database ...
+------------------------------------------------------------------
+1. schema must exist if SQL has not "IF EXISTS".
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt,
 	results *InspectResults) error {
 	if stmt.IfExists {
@@ -555,6 +613,16 @@ func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt,
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+create index ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist;
+3. index name can't be duplicated;
+4. index column name can't be duplicated.
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 	results *InspectResults) error {
 	schemaName := i.getSchemaName(stmt.Table)
@@ -610,6 +678,15 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+drop index ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist;
+3. index name must exist if SQL has not "IF EXISTS".
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 	results *InspectResults) error {
 	if stmt.IfExists {
@@ -645,6 +722,16 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+insert into ... values ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist;
+3. column must exist;
+4. value length must match column length.
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResults) error {
 	tables := getTables(stmt.Table.TableRefs)
 	table := tables[0]
@@ -712,6 +799,16 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+update ... set  ... where ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist;
+3. field column ("set column = ...") must exist;
+4. where column ("where column = ...") must exist.
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResults) error {
 	tables := []*ast.TableName{}
 	tableAlias := map[*ast.TableName]string{}
@@ -820,6 +917,15 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+delete from ... where ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist;
+3. where column ("where column = ...") must exist.
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResults) error {
 	tables := getTables(stmt.TableRefs.TableRefs)
 	needExistsSchemasName := []string{}
@@ -897,6 +1003,14 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResul
 	return nil
 }
 
+/*
+------------------------------------------------------------------
+select ... from ...
+------------------------------------------------------------------
+1. schema must exist;
+2. table must exist.
+------------------------------------------------------------------
+*/
 func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResults) error {
 	tables := []*ast.TableName{}
 	tableSources := getTableSources(stmt.From.TableRefs)
