@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Inspect implements Inspector interface for SQL Server.
 type SqlserverInspect struct {
 	*Inspect
 }

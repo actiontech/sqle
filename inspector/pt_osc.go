@@ -48,7 +48,8 @@ const (
 	OSC_AVOID_ADD_NOT_NULL_NO_DEFAULT_COLUMN = "非空字段必须设置默认值，不然 pt-online-schema-change 会执行失败"
 )
 
-// see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html
+// generateOSCCommandLine generate pt-online-schema-change command-line statement;
+// see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
 func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	// just support mysql
 	if i.Task.Instance.DbType != model.DB_TYPE_MYSQL {

@@ -120,6 +120,7 @@ const (
 	EXCEED_MAX_ROWS_NOT_ROLLBACK               = "预计影响行数超过配置的最大值，不生成回滚语句"
 )
 
+// generateAlterTableRollbackSql generate alter table SQL for alter table.
 func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, string, error) {
 	schemaName := i.getSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
@@ -314,6 +315,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 	return rollbackSql, "", nil
 }
 
+// generateCreateSchemaRollbackSql generate drop database SQL for create database.
 func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, string, error) {
 	schemaName := stmt.Name
 	schemaExist, err := i.isSchemaExist(schemaName)
@@ -327,6 +329,7 @@ func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) 
 	return rollbackSql, "", nil
 }
 
+// generateCreateTableRollbackSql generate drop table SQL for create table.
 func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, string, error) {
 	schemaExist, err := i.isSchemaExist(i.getSchemaName(stmt.Table))
 	if err != nil {
@@ -349,6 +352,7 @@ func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (str
 	return rollbackSql, "", nil
 }
 
+// generateDropTableRollbackSql generate create table SQL for drop table.
 func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, string, error) {
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
@@ -365,10 +369,12 @@ func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string,
 	return rollbackSql, "", nil
 }
 
+// generateCreateIndexRollbackSql generate drop index SQL for create index.
 func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, string, error) {
 	return fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)), "", nil
 }
 
+// generateDropIndexRollbackSql generate create index SQL for drop index.
 func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, string, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
@@ -402,6 +408,7 @@ func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string,
 	return rollbackSql, "", nil
 }
 
+// generateInsertRollbackSql generate delete SQL for insert.
 func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, string, error) {
 	tables := getTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
@@ -489,6 +496,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 	return rollbackSql, "", nil
 }
 
+// generateDeleteRollbackSql generate insert SQL for delete.
 func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, string, error) {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
@@ -560,6 +568,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 	return rollbackSql, "", nil
 }
 
+// generateUpdateRollbackSql generate update SQL for update.
 func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, string, error) {
 	tableSources := getTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
@@ -665,6 +674,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 	return rollbackSql, "", nil
 }
 
+// getRecords select all data which will be update or delete.
 func (i *Inspect) getRecords(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
@@ -675,6 +685,7 @@ func (i *Inspect) getRecords(tableName *ast.TableName, tableAlias string, where 
 	return conn.Db.Query(sql)
 }
 
+// getRecordCount select all data count which will be update or delete.
 func (i *Inspect) getRecordCount(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) (int64, error) {
 	conn, err := i.getDbConn()
@@ -706,6 +717,7 @@ ERROR:
 	return 0, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("do not match records for select count(*)"))
 }
 
+// generateGetRecordsSql generate select SQL.
 func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) string {
 	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, getTableNameWithQuote(tableName))

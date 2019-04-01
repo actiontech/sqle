@@ -10,16 +10,34 @@ import (
 	"strings"
 )
 
+// The Inspector is a interface for inspect, commit, rollback task.
 type Inspector interface {
+	// Context return SQL context, you can use it as parent context for next.
 	Context() *Context
+
+	// SqlType get task SQL type, result is "DDL" or "DML".
 	SqlType() string
+
+	// SqlInvalid represents one of task's commit sql base-validation failed.
 	SqlInvalid() bool
+
+	// Add and Do are designed to reduce duplicate code, and used to converge
+	// important processes, such as close db connection, update SQL context.
 	Add(sql *model.Sql, action func(sql *model.Sql) error) error
 	Do() error
+
+	// Advise advise task.commitSql using the given rules.
 	Advise(rules []model.Rule) error
+
+	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
 	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
+
+	// Commit commit task.commitSql.
 	Commit(sql *model.Sql) error
+
+	// ParseSql parser sql text to ast.
 	ParseSql(sql string) ([]ast.Node, error)
+
 	Logger() *logrus.Entry
 }
 
@@ -37,21 +55,36 @@ type Config struct {
 	DDLOSCMinSize      int64
 }
 
+// Inspect implements Inspector interface for MySQL and MyCat.
 type Inspect struct {
-	Ctx           *Context
-	config        *Config
-	Results       *InspectResults
+	// Ctx is SQL context.
+	Ctx *Context
+	// config is task config, config variables record in rules.
+	config *Config
+	// Results is inspect result for commit sql.
+	Results *InspectResults
+	// HasInvalidSql represent one of the commit sql base-validation failed.
 	HasInvalidSql bool
-	currentRule   model.Rule
-	Task          *model.Task
-	RelateTasks   []model.Task
-	log           *logrus.Entry
-	dbConn        *executor.Executor
-	isConnected   bool
-	counterDDL    uint
-	counterDML    uint
-	SqlArray      []*model.Sql
-	SqlAction     []func(sql *model.Sql) error
+	// currentRule is instance's rules.
+	currentRule model.Rule
+
+	Task *model.Task
+	// RelateTasks is relate ddl tasks for the dml task.
+	RelateTasks []model.Task
+
+	log *logrus.Entry
+	// dbConn is a SQL driver for MySQL, MyCat, SQL Server.
+	dbConn *executor.Executor
+	// isConnected represent dbConn has Connected.
+	isConnected bool
+	// counterDDL is a counter for all ddl sql.
+	counterDDL uint
+	// counterDML is a counter for all dml sql.
+	counterDML uint
+
+	// SqlArray and SqlAction is two list for Add-Do design.
+	SqlArray  []*model.Sql
+	SqlAction []func(sql *model.Sql) error
 }
 
 func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
@@ -173,6 +206,7 @@ func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 	i.Results.add(level, message, args...)
 }
 
+// getDbConn get db conn and just connect once.
 func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
@@ -185,6 +219,7 @@ func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	return conn, err
 }
 
+// closeDbConn close db conn and just close once.
 func (i *Inspect) closeDbConn() {
 	if i.isConnected {
 		i.dbConn.Db.Close()
@@ -192,6 +227,8 @@ func (i *Inspect) closeDbConn() {
 	}
 }
 
+// getSchemaName get schema name from TableName ast;
+// if schema name is default, using current schema from SQL ctx.
 func (i *Inspect) getSchemaName(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
 		return i.Ctx.currentSchema
@@ -200,6 +237,8 @@ func (i *Inspect) getSchemaName(stmt *ast.TableName) string {
 	}
 }
 
+// isSchemaExist determine if the schema exists in the SQL ctx;
+// and lazy load schema info from db to SQL ctx.
 func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 	if !i.Ctx.HasLoadSchemas() {
 		conn, err := i.getDbConn()
@@ -215,6 +254,7 @@ func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 	return i.Ctx.HasSchema(schemaName), nil
 }
 
+// getTableName get table name from TableName ast.
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
 	schema := i.getSchemaName(stmt)
 	if schema == "" {
@@ -223,11 +263,14 @@ func (i *Inspect) getTableName(stmt *ast.TableName) string {
 	return fmt.Sprintf("%s.%s", schema, stmt.Name)
 }
 
+// getTableNameWithQuote get table name with quote.
 func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
 	name := strings.Replace(i.getTableName(stmt), ".", "`.`", -1)
 	return fmt.Sprintf("`%s`", name)
 }
 
+// isTableExist determine if the table exists in the SQL ctx;
+// and lazy load table info from db to SQL ctx.
 func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 	schemaName := i.getSchemaName(stmt)
 	schemaExist, err := i.isSchemaExist(schemaName)
@@ -251,12 +294,14 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 	return i.Ctx.HasTable(schemaName, stmt.Name.String()), nil
 }
 
+// getTableInfo get table info if table exist.
 func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 	schema := i.getSchemaName(stmt)
 	table := stmt.Name.String()
 	return i.Ctx.GetTable(schema, table)
 }
 
+// getTableSize get table size.
 func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 	info, exist := i.getTableInfo(stmt)
 	if !exist {
@@ -276,6 +321,7 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 	return info.Size, nil
 }
 
+// getSchemaEngine get schema default engine.
 func (i *Inspect) getSchemaEngine(stmt *ast.TableName) (string, error) {
 	schemaName := i.getSchemaName(stmt)
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
@@ -299,6 +345,7 @@ func (i *Inspect) getSchemaEngine(stmt *ast.TableName) (string, error) {
 	return engine, nil
 }
 
+// getSchemaCharacter get schema default character.
 func (i *Inspect) getSchemaCharacter(stmt *ast.TableName) (string, error) {
 	schemaName := i.getSchemaName(stmt)
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
@@ -322,6 +369,7 @@ func (i *Inspect) getSchemaCharacter(stmt *ast.TableName) (string, error) {
 	return character, nil
 }
 
+// parseCreateTableStmt parse create table sql text to CreateTableStmt ast.
 func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
 	t, err := parseOneSql(i.Task.Instance.DbType, sql)
 	if err != nil {
@@ -371,6 +419,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	return createStmt, exist, nil
 }
 
+// getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
 	var pkColumnsName = map[string]struct{}{}
 	schemaName := i.getSchemaName(stmt.Table)
