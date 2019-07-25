@@ -1078,7 +1078,7 @@ namespace SqlserverProtoServer {
             String id = String.Format("{0}.{1}.{2}", databaseName, schema, tableName);
             logger.Info("table key:{0}", id);
             bool databaseBeDropped = false;
-            bool tableBeDropped = false;
+            bool tableBeCreated = false;
             foreach (var action in DDLActions) {
                 if (action.ID == databaseName && action.Action == DDLAction.REMOVE_DATABASE) {
                     logger.Info("REMOVE_DATABASE:{0}", databaseName);
@@ -1088,18 +1088,22 @@ namespace SqlserverProtoServer {
                     logger.Info("ADD_DATABASE:{0}", databaseName);
                     databaseBeDropped = false;
                 }
-                if (action.ID == tableName && action.Action == DDLAction.REMOVE_TABLE) {
-                    logger.Info("REMOVE_TABLE:{0}", tableName);
-                    tableBeDropped = true;
+                if (action.ID == id && action.Action == DDLAction.REMOVE_TABLE) {
+                    logger.Info("REMOVE_TABLE:{0}", id);
+                    tableBeCreated = false;
                 }
-                if (action.ID == tableName && action.Action == DDLAction.ADD_TABLE) {
-                    logger.Info("ADD_TABLE:{0}", tableName);
-                    tableBeDropped = false;
+                if (action.ID == id && action.Action == DDLAction.ADD_TABLE) {
+                    logger.Info("ADD_TABLE:{0}", id);
+                    tableBeCreated = true;
                 }
             }
 
-            if (databaseBeDropped || tableBeDropped) {
+            if (databaseBeDropped) {
                 return false;
+            }
+
+            if (tableBeCreated) {
+                return true;
             }
 
             var allTables = GetAllTables(databaseName);
