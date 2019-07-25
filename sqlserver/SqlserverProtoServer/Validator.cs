@@ -334,10 +334,12 @@ namespace SqlserverProtoServer {
         public Dictionary<String/*database*/, bool> AllDatabases;
         public Dictionary<String/*schema*/, bool> AllSchemas;
         public Dictionary<String/*database.schema.table*/, bool> AllTables;
+        public Dictionary<String/*database.schema.table*/, List<String>> AllIndexes;
         public Dictionary<String/*database.schema.table*/, List<String>> PrimaryKeys;
         public bool databaseHasLoad;
         public bool schemaHasLoad;
         public Dictionary<String/*database*/, bool> tableHasLoad;
+        public Dictionary<String/*database.schema.table*/, bool> indexesHasLoad;
 
         public class DDLAction {
             public const String ADD_DATABASE = "add_database";
@@ -374,6 +376,7 @@ namespace SqlserverProtoServer {
         public String ExpectSchemaName;
         public String ExpectTableName;
         public List<String> ExpectColumns;
+        public List<String> ExpectIndexes;
         public List<Dictionary<String, String>> ExpectRecords;
         public int ExpectRecordsCount;
         public List<String> ExpectConstraintNames;
@@ -455,6 +458,40 @@ namespace SqlserverProtoServer {
             }
         }
 
+        public void LoadIndexesFromDB(String databaseName, String schemaName, String tableName) {
+            String id = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (indexesHasLoad.ContainsKey(id)) {
+                return;
+            }
+
+            var result = new List<String>();
+            String connectionString = GetConnectionString();
+            using (SqlConnection connection = new SqlConnection(connectionString)) {
+                var commandStr = String.Format("SELECT " +
+                                               "ix.name AS Index_name " +
+                                               "FROM {0}.sys.indexes ix " +
+                                               "WHERE ix.object_id=OBJECT_ID('{0}.{1}.{2}', 'U') AND ix.is_primary_key !=1 AND ix.is_unique_constraint !=1", databaseName, schemaName, tableName);
+                SqlCommand command = new SqlCommand(commandStr, connection);
+                LogManager.GetCurrentClassLogger().Info("sql query: {0}", commandStr);
+
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+                try {
+                    var indexCols = new Dictionary<String, List<String>>();
+                    var indexTypeDesc = new Dictionary<String, String>();
+                    while (reader.Read()) {
+                        var indexName = (String)reader["Index_name"];
+                        result.Add(indexName);
+                    }
+                } finally {
+                    reader.Close();
+                }
+            }
+
+            indexesHasLoad[id] = true;
+            AllIndexes[id] = result;
+        }
+
         public void LoadCurrentDatabase() {
             String connectionString = GetConnectionString();
             using (SqlConnection connection = new SqlConnection(connectionString)) {
@@ -486,6 +523,7 @@ namespace SqlserverProtoServer {
                 }
             }
         }
+       
 
         public Dictionary<String, bool> GetAllDatabases() {
             LoadDatabasesFromDB();
@@ -500,6 +538,40 @@ namespace SqlserverProtoServer {
         public Dictionary<String, bool> GetAllTables(String databaseName) {
             LoadTablesFromDB(databaseName);
             return AllTables;
+        }
+
+        public List<String> GetAllIndexes(String databaseName, String schemaName, String tableName) {
+            if (IsTest) {
+                return ExpectIndexes;
+            }
+
+            LoadIndexesFromDB(databaseName, schemaName, tableName);
+            String id = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            return AllIndexes[id];
+        }
+
+        public void AddIndex(String indexName, String databaseName, String schemaName, String tableName) {
+            var indexes = GetAllIndexes(databaseName, schemaName, tableName);
+            String createIndexId = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            if (indexes.Count == 0) {
+                indexes = new List<String>();
+                indexes.Add(indexName);
+                AllIndexes[createIndexId] = indexes;
+            } else if (!indexes.Contains(indexName)) {
+                AllIndexes[createIndexId].Add(indexName);
+            }
+        }
+
+        public void DropIndex(String indexName, String databaseName, String schemaName, String tableName) {
+            var tableIndexes = GetAllIndexes(databaseName, schemaName, tableName);
+            String dropIndexId = String.Format("{0}.{1}.{2}", databaseName, schemaName, tableName);
+            var newIndexes = new List<String>();
+            foreach (var index in tableIndexes) {
+                if (index != indexName) {
+                    newIndexes.Add(index);
+                }
+            }
+            AllIndexes[dropIndexId] = newIndexes;
         }
 
         public String GetCurrentDatabase() {
@@ -889,6 +961,11 @@ namespace SqlserverProtoServer {
             if (TableIndexDefinitions.ContainsKey(indexDefinitionKey)) {
                 TableIndexDefinitions.Remove(indexDefinitionKey);
             }
+
+            var allIndexes = GetAllIndexes(databaseName, schemaName, tableName);
+            if (allIndexes.Contains(indexDefinitionKey)) {
+                AllIndexes[indexDefinitionKey] = new List<String>();
+            }
         }
 
         public void SetTableIndexDefinitions(TableDefinition definition, String databaseName, String schemaName, String tableName) {
@@ -908,6 +985,8 @@ namespace SqlserverProtoServer {
                     TableIndexDefinitions[indexDefinitionKey] = new Dictionary<String, String>();
                 }
                 TableIndexDefinitions[indexDefinitionKey][indexName] = indexString;
+
+                AddIndex(indexName, databaseName, schemaName, tableName);
             }
         }
 
@@ -1002,11 +1081,13 @@ namespace SqlserverProtoServer {
             AllDatabases = new Dictionary<String, bool>();
             AllSchemas = new Dictionary<string, bool>();
             AllTables = new Dictionary<String, bool>();
+            AllIndexes = new Dictionary<string, List<string>>();
             PrimaryKeys = new Dictionary<string, List<string>>();
             DDLActions = new List<DDLAction>();
             AlterTableStmts = new Dictionary<string, List<AlterTableStatement>>();
             AdviseResultContext = new AdviseResultContext();
             tableHasLoad = new Dictionary<String, bool>();
+            indexesHasLoad = new Dictionary<String, bool>();
             schemaHasLoad = false;
             databaseHasLoad = false;
             IsDDL = false;
@@ -1078,7 +1159,7 @@ namespace SqlserverProtoServer {
             String id = String.Format("{0}.{1}.{2}", databaseName, schema, tableName);
             logger.Info("table key:{0}", id);
             bool databaseBeDropped = false;
-            bool tableBeDropped = false;
+            bool tableBeCreated = false;
             foreach (var action in DDLActions) {
                 if (action.ID == databaseName && action.Action == DDLAction.REMOVE_DATABASE) {
                     logger.Info("REMOVE_DATABASE:{0}", databaseName);
@@ -1088,18 +1169,22 @@ namespace SqlserverProtoServer {
                     logger.Info("ADD_DATABASE:{0}", databaseName);
                     databaseBeDropped = false;
                 }
-                if (action.ID == tableName && action.Action == DDLAction.REMOVE_TABLE) {
-                    logger.Info("REMOVE_TABLE:{0}", tableName);
-                    tableBeDropped = true;
+                if (action.ID == id && action.Action == DDLAction.REMOVE_TABLE) {
+                    logger.Info("REMOVE_TABLE:{0}", id);
+                    tableBeCreated = false;
                 }
-                if (action.ID == tableName && action.Action == DDLAction.ADD_TABLE) {
-                    logger.Info("ADD_TABLE:{0}", tableName);
-                    tableBeDropped = false;
+                if (action.ID == id && action.Action == DDLAction.ADD_TABLE) {
+                    logger.Info("ADD_TABLE:{0}", id);
+                    tableBeCreated = true;
                 }
             }
 
-            if (databaseBeDropped || tableBeDropped) {
+            if (databaseBeDropped) {
                 return false;
+            }
+
+            if (tableBeCreated) {
+                return true;
             }
 
             var allTables = GetAllTables(databaseName);
@@ -1429,6 +1514,26 @@ namespace SqlserverProtoServer {
                                     }
                                 }
                             }
+                        }
+                    }
+                    break;
+
+                case CreateIndexStatement createIndexStatement:
+                    GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(createIndexStatement.OnName, out databaseName, out schemaName, out tableName);
+                    AddIndex(createIndexStatement.Name.Value, databaseName, schemaName, tableName);
+                    break;
+
+                case DropIndexStatement dropIndexStatement:
+                    if (dropIndexStatement.IsIfExists) {
+                        break;
+                    }
+
+                    foreach (var clause in dropIndexStatement.DropIndexClauses) {
+                        if (clause is DropIndexClause) {
+                            DropIndexClause dropIndexClause = clause as DropIndexClause;
+                            GetDatabaseNameAndSchemaNameAndTableNameFromSchemaObjectName(dropIndexClause.Object, out databaseName, out schemaName, out tableName);
+                            var dropIndexName = dropIndexClause.Index.Value;
+                            DropIndex(dropIndexName, databaseName, schemaName, tableName);
                         }
                     }
                     break;

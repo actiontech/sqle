@@ -129,6 +129,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectIndexes = new List<String>();
                 context.ExpectConstraintNames = new List<String>();
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
@@ -268,6 +269,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectIndexes = new List<String>();
                 foreach (var statment in statementList.Statements) {
                     var invalid = new BaseRuleValidator().IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
                     Assert.True(invalid == true);
@@ -292,6 +294,8 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectIndexes = new List<String>();
+                context.ExpectIndexes.Add("IX_1");
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
                 {
@@ -326,6 +330,7 @@ namespace SqlServerProtoServerTest {
             context.ExpectDatabaseName = "database1";
             context.ExpectSchemaName = "schema1";
             context.ExpectTableName = "table1";
+            context.ExpectIndexes = new List<String>();
             context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
             {
@@ -400,6 +405,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectIndexes = new List<String>();
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
                 {
@@ -476,6 +482,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectIndexes = new List<String>();
                 context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
                 {
@@ -502,11 +509,12 @@ namespace SqlServerProtoServerTest {
                                                                      "CONSTRAINT UN_1 UNIQUE (col2)," +
                                                                      "INDEX IX_1 (col2))");
                 var context = new SqlserverContext(new SqlserverMeta());
-                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
                 context.IsTest = true;
                 context.ExpectDatabaseName = "database1";
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
+                context.ExpectIndexes = new List<String>();
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
 
                 StatementList statementList = ParseStatementList("DELETE f FROM databse1.schema1.table1 AS f WHERE f.col3=1;");
@@ -575,6 +583,7 @@ namespace SqlServerProtoServerTest {
             context.ExpectDatabaseName = "database1";
             context.ExpectSchemaName = "schema1";
             context.ExpectTableName = "table1";
+            context.ExpectIndexes = new List<String>();
             context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
 
             {

@@ -45,6 +45,7 @@ namespace SqlServerProtoServerTest {
                 ExpectDatabaseName = "database1",
                 ExpectSchemaName = "schema1",
                 ExpectTableName = "table1",
+                ExpectIndexes = new List<String>(),
             };
 
             {
