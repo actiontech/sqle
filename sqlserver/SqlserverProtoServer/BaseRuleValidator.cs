@@ -621,8 +621,8 @@ namespace SqlserverProtoServer {
                 }
             }
 
-            var indexDefinitions = context.GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
-            if (indexDefinitions.ContainsKey(statement.Name.Value)) {
+            var allIndexes = context.GetAllIndexes(databaseName, schemaName, tableName);
+            if (allIndexes.Contains(statement.Name.Value)) {
                 context.AdviseResultContext.AddAdviseResult(RULE_LEVEL.ERROR, String.Format(DefaultRules.INDEX_EXIST_MSG, statement.Name.Value));
                 isInvalid = true;
                 logger.Info("index {0} should not exist", statement.Name.Value);
@@ -701,8 +701,8 @@ namespace SqlserverProtoServer {
                         }
                     }
 
-                    var indexDefinitions = context.GetTableIndexDefinitions(logger, databaseName, schemaName, tableName);
-                    if (!indexDefinitions.ContainsKey(dropIndexCaluse.Index.Value)) {
+                    var allIndexes = context.GetAllIndexes(databaseName, schemaName, tableName);
+                    if (!allIndexes.Contains(dropIndexCaluse.Index.Value)) {
                         needExistsIndex.Add(dropIndexCaluse.Index.Value);
                     }
                 }
