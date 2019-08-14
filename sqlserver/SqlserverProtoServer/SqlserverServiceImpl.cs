@@ -226,6 +226,7 @@ namespace SqlserverProtoServer {
             }
 
             if (baseValidatorStatus == AdviseResultContext.BASE_RULE_FAILED && contextStart < contextSqls.Count) {
+                output.Results.Clear();
                 goto Try;
             }
 
