@@ -798,12 +798,12 @@ namespace SqlserverProtoServer {
                                 sqlLine += String.Format("({0})", maxLen == -1 ? "MAX" : (maxLen / 2).ToString());
                             }
                             if (typeName == "DATETIME2" || typeName == "TIME2" || typeName == "DATETIMEOFFSET") {
-                                var scale = (Int32)reader["Scale"];
+                                var scale = (Byte)reader["Scale"];
                                 sqlLine += String.Format("({0})", scale);
                             }
                             if (typeName == "DECIMAL") {
-                                var precesion = (Int32)reader["Precesion"];
-                                var scale = (Int32)reader["Scale"];
+                                var precesion = (Byte)reader["Precesion"];
+                                var scale = (Byte)reader["Scale"];
                                 sqlLine += String.Format("({0},{1})", precesion, scale);
                             }
 
