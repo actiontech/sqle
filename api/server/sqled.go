@@ -36,7 +36,7 @@ type Sqled struct {
 // when you want to commit a task, you can define an action whose type is rollback.
 type Action struct {
 	sync.Mutex
-	Task  *model.Task
+	Task *model.Task
 	// Typ is task type, include inspect, commit, rollback.
 	Typ   int
 	Error error
@@ -182,8 +182,9 @@ func (s *Sqled) inspect(task *model.Task) error {
 		return err
 	}
 	firstSqlInvalid := i.SqlInvalid()
+	sqlType := i.SqlType()
 	// if sql type is DML and sql invalid, try to advise with other DDL.
-	if i.SqlType() == model.SQL_TYPE_DML && i.SqlInvalid() {
+	if sqlType == model.SQL_TYPE_DML && i.SqlInvalid() {
 		relateTasks, err := st.GetRelatedDDLTask(task)
 		if err != nil {
 			return err
@@ -225,7 +226,7 @@ func (s *Sqled) inspect(task *model.Task) error {
 	}
 
 	err = st.UpdateTask(task, map[string]interface{}{
-		"sql_type":    i.SqlType(),
+		"sql_type":    sqlType,
 		"normal_rate": task.NormalRate,
 	})
 	if err != nil {
