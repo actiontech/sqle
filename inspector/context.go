@@ -1,6 +1,8 @@
 package inspector
 
 import (
+	"sqle/model"
+
 	"github.com/pingcap/tidb/ast"
 )
 
@@ -34,6 +36,8 @@ type Context struct {
 	schemas map[string]*SchemaInfo
 	// if schemas info has collected, set true
 	schemaHasLoad bool
+
+	batchCommitSqls []*model.CommitSql
 }
 
 func NewContext(parent *Context) *Context {
@@ -170,6 +174,14 @@ func (c *Context) DelTable(schemaName, tableName string) {
 
 func (c *Context) UseSchema(schema string) {
 	c.currentSchema = schema
+}
+
+func (c *Context) BatchCommitSqls(commitSqls []*model.CommitSql) {
+	c.batchCommitSqls = commitSqls
+}
+
+func (c *Context) GetBatchCommitSqls() []*model.CommitSql {
+	return c.batchCommitSqls
 }
 
 func (i *Inspect) updateContext(node ast.Node) {

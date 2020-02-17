@@ -3,9 +3,11 @@ package inspector
 import (
 	"database/sql/driver"
 	"fmt"
+	"sqle/executor"
+	"sqle/model"
+
 	"github.com/labstack/gommon/log"
 	"github.com/pingcap/tidb/ast"
-	"sqle/model"
 )
 
 func (i *Inspect) CommitAll() error {
@@ -43,6 +45,15 @@ func (i *Inspect) RollbackAll(sql *model.RollbackSql) error {
 }
 
 func (i *Inspect) Commit(sql *model.Sql) error {
+	batchCommitSqls := i.Context().GetBatchCommitSqls()
+	if len(batchCommitSqls) > 0 {
+		sqls := make([]*model.Sql, 0, len(batchCommitSqls))
+		for _, commitSql := range batchCommitSqls {
+			sqls = append(sqls, &commitSql.Sql)
+		}
+		return i.commitDMLs(sqls)
+	}
+
 	if i.SqlType() == model.SQL_TYPE_DDL {
 		return i.commitDDL(sql)
 	} else {
@@ -71,13 +82,14 @@ func (i *Inspect) commitDDL(sql *model.Sql) error {
 
 func (i *Inspect) commitDML(sql *model.Sql) error {
 	var err error
+	var conn *executor.Executor
 	var result driver.Result
 	var rowAffect int64
 	var qs []string
 
-	conn, err := i.getDbConn()
+	conn, err = i.getDbConn()
 	if err != nil {
-		return err
+		goto ERROR
 	}
 
 	sql.StartBinlogFile, sql.StartBinlogPos, err = conn.FetchMasterBinlogPos()
@@ -91,7 +103,7 @@ func (i *Inspect) commitDML(sql *model.Sql) error {
 	}
 
 	if len(qs) > 1 && i.Task.Instance.DbType != model.DB_TYPE_MYCAT {
-		err = conn.Db.Transact(qs...)
+		_, err = conn.Db.Transact(qs...)
 		if err != nil {
 			goto ERROR
 		}
@@ -118,6 +130,62 @@ func (i *Inspect) commitDML(sql *model.Sql) error {
 ERROR:
 	sql.ExecStatus = model.TASK_ACTION_ERROR
 	sql.ExecResult = err.Error()
+	return err
+}
+
+// commitDMLs commit dml sqls and only one stmt in one sql.
+func (i *Inspect) commitDMLs(sqls []*model.Sql) error {
+	var err error
+	var conn *executor.Executor
+	var startBinlogFile, endBinlogFile string
+	var startBinlogPos, endBinlogPos int64
+	var results []driver.Result
+	qs := make([]string, 0, len(sqls))
+
+	conn, err = i.getDbConn()
+	if err != nil {
+		goto Return
+	}
+
+	startBinlogFile, startBinlogPos, err = conn.FetchMasterBinlogPos()
+	if err != nil {
+		goto Return
+	}
+
+	for _, sql := range sqls {
+		qs = append(qs, sql.Stmts[0].Text())
+	}
+	results, err = conn.Db.Transact(qs...)
+	if err != nil {
+		goto Return
+	}
+	if len(results) != len(sqls) {
+		err = fmt.Errorf("number of transaction result does not match number of sqls")
+		goto Return
+	}
+
+	// if sql has commit success, ignore error for check status.
+	endBinlogFile, endBinlogPos, _ = conn.FetchMasterBinlogPos()
+
+Return:
+	for idx, sql := range sqls {
+		if err != nil {
+			sql.ExecStatus = model.TASK_ACTION_ERROR
+			sql.ExecResult = err.Error()
+			continue
+		}
+		sql.StartBinlogFile = startBinlogFile
+		sql.StartBinlogPos = startBinlogPos
+		sql.RowAffects, err = results[idx].RowsAffected()
+		if err != nil {
+			log.Warnf("get rows affect failed, error: %v", err)
+		}
+		sql.ExecStatus = model.TASK_ACTION_DONE
+		sql.ExecResult = "ok"
+		sql.EndBinlogFile = endBinlogFile
+		sql.EndBinlogPos = endBinlogPos
+	}
+
 	return err
 }
 
