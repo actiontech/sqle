@@ -2,12 +2,13 @@ package inspector
 
 import (
 	"fmt"
-	"github.com/pingcap/tidb/ast"
-	"github.com/sirupsen/logrus"
 	"sqle/errors"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
+
+	"github.com/pingcap/tidb/ast"
+	"github.com/sirupsen/logrus"
 )
 
 // The Inspector is a interface for inspect, commit, rollback task.
@@ -32,8 +33,11 @@ type Inspector interface {
 	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
 	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
 
-	// Commit commit task.commitSql.
-	Commit(sql *model.Sql) error
+	// CommitDDL commit task.commitSql(ddl).
+	CommitDDL(sql *model.Sql) error
+
+	// CommitDMLs commit task.commitSql(dml) in one transaction.
+	CommitDMLs(sqls []*model.Sql) error
 
 	// ParseSql parser sql text to ast.
 	ParseSql(sql string) ([]ast.Node, error)

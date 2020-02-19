@@ -249,6 +249,14 @@ func (s *Sqled) commit(task *model.Task) error {
 		return s.commitDML(task)
 	}
 
+	if task.SqlType == model.SQL_TYPE_DDL {
+		return s.commitDDL(task)
+	}
+
+	return fmt.Errorf("unknow task sql type: %v", task.SqlType)
+}
+
+func (s *Sqled) commitDDL(task *model.Task) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 
 	st := model.GetStorage()
@@ -263,7 +271,7 @@ func (s *Sqled) commit(task *model.Task) error {
 				i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 				return err
 			}
-			i.Commit(sql)
+			i.CommitDDL(sql)
 			err = st.Save(currentSql)
 			if err != nil {
 				i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
@@ -281,6 +289,7 @@ func (s *Sqled) commit(task *model.Task) error {
 	} else {
 		entry.Info("commit sql finish")
 	}
+
 	return err
 }
 
@@ -290,9 +299,8 @@ func (s *Sqled) commitDML(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	ctx := inspector.NewContext(nil)
-	ctx.BatchCommitSqls(task.CommitSqls)
-	i := inspector.NewInspector(entry, ctx, task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	sqls := []*model.Sql{}
 	for _, commitSql := range task.CommitSqls {
 		err := st.UpdateCommitSqlStatus(&commitSql.Sql, model.TASK_ACTION_DOING, "")
 		if err != nil {
@@ -305,8 +313,10 @@ func (s *Sqled) commitDML(task *model.Task) error {
 			return err
 		}
 		commitSql.Stmts = nodes
+
+		sqls = append(sqls, &commitSql.Sql)
 	}
-	i.Commit(nil)
+	i.CommitDMLs(sqls)
 	for _, commitSql := range task.CommitSqls {
 		if err := st.Save(commitSql); err != nil {
 			i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
@@ -335,7 +345,15 @@ func (s *Sqled) rollback(task *model.Task) error {
 				i.Logger().Errorf("update rollback sql status to storage failed, error: %v", err)
 				return err
 			}
-			i.Commit(sql)
+			switch task.SqlType {
+			case model.SQL_TYPE_DDL:
+				i.CommitDDL(sql)
+			case model.SQL_TYPE_DML:
+				i.CommitDMLs([]*model.Sql{sql})
+			default:
+				i.Logger().Errorf("unknown task sql type: %v", task.SqlType)
+				return fmt.Errorf("unknown task sql type: %v", task.SqlType)
+			}
 			err = st.Save(currentSql)
 			if err != nil {
 				i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
