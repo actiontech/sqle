@@ -19,6 +19,9 @@ type Inspector interface {
 	// SqlType get task SQL type, result is "DDL" or "DML".
 	SqlType() string
 
+	// ParseSqlType parse task SQL type
+	ParseSqlType() error
+
 	// SqlInvalid represents one of task's commit sql base-validation failed.
 	SqlInvalid() bool
 
@@ -139,6 +142,28 @@ func (i *Inspect) SqlType() string {
 	}
 }
 
+func (i *Inspect) ParseSqlType() error {
+	for _, commitSql := range i.Task.CommitSqls {
+		nodes, err := i.ParseSql(commitSql.Content)
+		if err != nil {
+			return err
+		}
+		i.addNodeCounter(nodes)
+	}
+	return nil
+}
+
+func (i *Inspect) addNodeCounter(nodes []ast.Node) {
+	for _, node := range nodes {
+		switch node.(type) {
+		case ast.DDLNode:
+			i.counterDDL += 1
+		case ast.DMLNode:
+			i.counterDML += 1
+		}
+	}
+}
+
 func (i *Inspect) SqlInvalid() bool {
 	return i.HasInvalidSql
 }
@@ -148,14 +173,7 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 	if err != nil {
 		return err
 	}
-	for _, node := range nodes {
-		switch node.(type) {
-		case ast.DDLNode:
-			i.counterDDL += 1
-		case ast.DMLNode:
-			i.counterDML += 1
-		}
-	}
+	i.addNodeCounter(nodes)
 	sql.Stmts = nodes
 	i.SqlArray = append(i.SqlArray, sql)
 	i.SqlAction = append(i.SqlAction, action)
