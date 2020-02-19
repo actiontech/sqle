@@ -30,11 +30,18 @@ func (i *SqlserverInspect) ParseSql(sql string) ([]ast.Node, error) {
 	return sqls, err
 }
 
-func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
-	nodes, err := i.ParseSql(sql.Content)
-	if err != nil {
-		return err
+func (i *SqlserverInspect) ParseSqlType() error {
+	for _, commitSql := range i.Task.CommitSqls {
+		nodes, err := i.ParseSql(commitSql.Content)
+		if err != nil {
+			return err
+		}
+		i.addNodeCounter(nodes)
 	}
+	return nil
+}
+
+func (i *SqlserverInspect) addNodeCounter(nodes []ast.Node) {
 	for _, node := range nodes {
 		switch stmt := node.(type) {
 		case sqlserverClient.SqlServerNode:
@@ -45,6 +52,14 @@ func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error
 			}
 		}
 	}
+}
+
+func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
+	nodes, err := i.ParseSql(sql.Content)
+	if err != nil {
+		return err
+	}
+	i.addNodeCounter(nodes)
 
 	sql.Stmts = nodes
 	i.SqlArray = append(i.SqlArray, sql)

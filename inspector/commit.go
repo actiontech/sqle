@@ -3,54 +3,14 @@ package inspector
 import (
 	"database/sql/driver"
 	"fmt"
+	"sqle/executor"
+	"sqle/model"
+
 	"github.com/labstack/gommon/log"
 	"github.com/pingcap/tidb/ast"
-	"sqle/model"
 )
 
-func (i *Inspect) CommitAll() error {
-	for _, commitSql := range i.Task.CommitSqls {
-		currentSql := commitSql
-		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
-			err := i.Commit(sql)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return i.Do()
-}
-
-func (i *Inspect) RollbackAll(sql *model.RollbackSql) error {
-	for _, rollbackSql := range i.Task.RollbackSqls {
-		currentSql := rollbackSql
-		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
-			err := i.Commit(sql)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return i.Do()
-}
-
-func (i *Inspect) Commit(sql *model.Sql) error {
-	if i.SqlType() == model.SQL_TYPE_DDL {
-		return i.commitDDL(sql)
-	} else {
-		return i.commitDML(sql)
-	}
-}
-
-func (i *Inspect) commitDDL(sql *model.Sql) error {
+func (i *Inspect) CommitDDL(sql *model.Sql) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
@@ -69,56 +29,72 @@ func (i *Inspect) commitDDL(sql *model.Sql) error {
 	return nil
 }
 
-func (i *Inspect) commitDML(sql *model.Sql) error {
-	var err error
-	var result driver.Result
-	var rowAffect int64
-	var qs []string
-
-	conn, err := i.getDbConn()
-	if err != nil {
-		return err
+func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
+	if i.Task.Instance.DbType == model.DB_TYPE_MYCAT {
+		return i.commitMycatDMLs(sqls)
 	}
 
-	sql.StartBinlogFile, sql.StartBinlogPos, err = conn.FetchMasterBinlogPos()
-	if err != nil {
-		goto ERROR
-	}
+	var retErr error
+	var conn *executor.Executor
+	var startBinlogFile, endBinlogFile string
+	var startBinlogPos, endBinlogPos int64
+	var results []driver.Result
 
-	qs = make([]string, 0, len(sql.Stmts))
-	for _, stmt := range sql.Stmts {
-		qs = append(qs, stmt.Text())
-	}
-
-	if len(qs) > 1 && i.Task.Instance.DbType != model.DB_TYPE_MYCAT {
-		err = conn.Db.Transact(qs...)
-		if err != nil {
-			goto ERROR
+	qs := []string{}
+	sqlToQsIdxes := make([][]int, len(sqls), len(sqls))
+	qsIndex := 0
+	for sqlIdx, sql := range sqls {
+		qsIdxes := []int{}
+		for _, stmt := range sql.Stmts {
+			qs = append(qs, stmt.Text())
+			qsIdxes = append(qsIdxes, qsIndex)
+			qsIndex += 1
 		}
+		sqlToQsIdxes[sqlIdx] = qsIdxes
+	}
+	defer func() {
+		for sqlIdx, sql := range sqls {
+			if retErr != nil {
+				sql.ExecStatus = model.TASK_ACTION_ERROR
+				sql.ExecResult = retErr.Error()
+				continue
+			}
+			sql.StartBinlogFile = startBinlogFile
+			sql.StartBinlogPos = startBinlogPos
+			for _, qsIdx := range sqlToQsIdxes[sqlIdx] {
+				rowAffects, err := results[qsIdx].RowsAffected()
+				if err != nil {
+					log.Warnf("get rows affect failed, error: %v", err)
+					continue
+				}
+				sql.RowAffects += rowAffects
+			}
+			sql.ExecStatus = model.TASK_ACTION_DONE
+			sql.ExecResult = "ok"
+			sql.EndBinlogFile = endBinlogFile
+			sql.EndBinlogPos = endBinlogPos
+		}
+	}()
+
+	conn, retErr = i.getDbConn()
+	if retErr != nil {
+		return retErr
+	}
+
+	startBinlogFile, startBinlogPos, retErr = conn.FetchMasterBinlogPos()
+	if retErr != nil {
+		return retErr
+	}
+
+	results, err := conn.Db.Transact(qs...)
+	if err != nil {
+		retErr = err
+	} else if len(results) != len(qs) {
+		retErr = fmt.Errorf("number of transaction result does not match number of sqls")
 	} else {
-		for _, query := range qs {
-			result, err = conn.Db.Exec(query)
-			if err != nil {
-				goto ERROR
-			}
-			rowAffect, err = result.RowsAffected()
-			if err != nil {
-				log.Warnf("get rows affect failed, error: %s", err)
-			} else {
-				sql.RowAffects += rowAffect
-			}
-		}
+		endBinlogFile, endBinlogPos, _ = conn.FetchMasterBinlogPos()
 	}
-
-	sql.ExecStatus = model.TASK_ACTION_DONE
-	sql.ExecResult = "ok"
-	// if sql has commit success, ignore error for check status.
-	sql.EndBinlogFile, sql.EndBinlogPos, _ = conn.FetchMasterBinlogPos()
-	return nil
-ERROR:
-	sql.ExecStatus = model.TASK_ACTION_ERROR
-	sql.ExecResult = err.Error()
-	return err
+	return retErr
 }
 
 func (i *Inspect) commitMycatDDL(sql *model.Sql) error {
@@ -178,6 +154,48 @@ DONE:
 	} else {
 		sql.ExecStatus = model.TASK_ACTION_DONE
 		sql.ExecResult = "ok"
+	}
+	return nil
+}
+
+func (i *Inspect) commitMycatDMLs(sqls []*model.Sql) error {
+	conn, err := i.getDbConn()
+	if err != nil {
+		for _, sql := range sqls {
+			sql.ExecStatus = model.TASK_ACTION_ERROR
+			sql.ExecResult = err.Error()
+		}
+		return err
+	}
+
+	for _, sql := range sqls {
+		startBinlogFile, startBinlogPos, err := conn.FetchMasterBinlogPos()
+		if err != nil {
+			sql.ExecStatus = model.TASK_ACTION_ERROR
+			sql.ExecResult = err.Error()
+			return err
+		}
+		sql.StartBinlogFile = startBinlogFile
+		sql.StartBinlogPos = startBinlogPos
+
+		for _, stmt := range sql.Stmts {
+			query := stmt.Text()
+			result, err := conn.Db.Exec(query)
+			if err != nil {
+				sql.ExecStatus = model.TASK_ACTION_ERROR
+				sql.ExecResult = err.Error()
+				return err
+			}
+			rowAffect, err := result.RowsAffected()
+			if err != nil {
+				log.Warnf("get rows affect failed, error: %v", err)
+			} else {
+				sql.RowAffects += rowAffect
+			}
+		}
+		sql.ExecStatus = model.TASK_ACTION_DONE
+		sql.ExecStatus = "ok"
+		sql.EndBinlogFile, sql.EndBinlogPos, _ = conn.FetchMasterBinlogPos()
 	}
 	return nil
 }

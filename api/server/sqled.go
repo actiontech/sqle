@@ -245,6 +245,32 @@ func (s *Sqled) inspect(task *model.Task) error {
 }
 
 func (s *Sqled) commit(task *model.Task) error {
+	if task.SqlType == model.SQL_TYPE_DML {
+		return s.commitDML(task)
+	}
+
+	if task.SqlType == model.SQL_TYPE_DDL {
+		return s.commitDDL(task)
+	}
+
+	// if task is not inspected, parse task SQL type and commit it.
+	entry := log.NewEntry().WithField("task_id", task.ID)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	if err := i.ParseSqlType(); err != nil {
+		return err
+	}
+	switch i.SqlType() {
+	case model.SQL_TYPE_DML:
+		return s.commitDML(task)
+	case model.SQL_TYPE_DDL:
+		return s.commitDDL(task)
+	case model.SQL_TYPE_MULTI:
+		return errors.SQL_STMT_CONFLICT_ERROR
+	}
+	return nil
+}
+
+func (s *Sqled) commitDDL(task *model.Task) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 
 	st := model.GetStorage()
@@ -259,7 +285,7 @@ func (s *Sqled) commit(task *model.Task) error {
 				i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 				return err
 			}
-			i.Commit(sql)
+			i.CommitDDL(sql)
 			err = st.Save(currentSql)
 			if err != nil {
 				i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
@@ -277,7 +303,42 @@ func (s *Sqled) commit(task *model.Task) error {
 	} else {
 		entry.Info("commit sql finish")
 	}
+
 	return err
+}
+
+func (s *Sqled) commitDML(task *model.Task) error {
+	entry := log.NewEntry().WithField("task_id", task.ID)
+
+	st := model.GetStorage()
+
+	entry.Info("start commit")
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	sqls := []*model.Sql{}
+	for _, commitSql := range task.CommitSqls {
+		err := st.UpdateCommitSqlStatus(&commitSql.Sql, model.TASK_ACTION_DOING, "")
+		if err != nil {
+			i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
+			return err
+		}
+
+		nodes, err := i.ParseSql(commitSql.Content)
+		if err != nil {
+			return err
+		}
+		commitSql.Stmts = nodes
+
+		sqls = append(sqls, &commitSql.Sql)
+	}
+	i.CommitDMLs(sqls)
+	for _, commitSql := range task.CommitSqls {
+		if err := st.Save(commitSql); err != nil {
+			i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Sqled) rollback(task *model.Task) error {
@@ -298,7 +359,15 @@ func (s *Sqled) rollback(task *model.Task) error {
 				i.Logger().Errorf("update rollback sql status to storage failed, error: %v", err)
 				return err
 			}
-			i.Commit(sql)
+			switch i.SqlType() {
+			case model.SQL_TYPE_DDL:
+				i.CommitDDL(sql)
+			case model.SQL_TYPE_DML:
+				i.CommitDMLs([]*model.Sql{sql})
+			case model.SQL_TYPE_MULTI:
+				i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
+				return errors.SQL_STMT_CONFLICT_ERROR
+			}
 			err = st.Save(currentSql)
 			if err != nil {
 				i.Logger().Errorf("save commit sql to storage failed, error: %v", err)

@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"sqle/errors"
 	"sqle/model"
+
+	"github.com/sirupsen/logrus"
 )
 
 type MycatConn struct {
@@ -64,7 +65,7 @@ func (mc *MycatConn) Exec(query string) (driver.Result, error) {
 	return mc.Conn.Exec(query)
 }
 
-func (mc *MycatConn) Transact(qs ...string) error {
+func (mc *MycatConn) Transact(qs ...string) ([]driver.Result, error) {
 	return mc.Conn.Transact(qs...)
 }
 

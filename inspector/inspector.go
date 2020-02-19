@@ -2,12 +2,13 @@ package inspector
 
 import (
 	"fmt"
-	"github.com/pingcap/tidb/ast"
-	"github.com/sirupsen/logrus"
 	"sqle/errors"
 	"sqle/executor"
 	"sqle/model"
 	"strings"
+
+	"github.com/pingcap/tidb/ast"
+	"github.com/sirupsen/logrus"
 )
 
 // The Inspector is a interface for inspect, commit, rollback task.
@@ -17,6 +18,9 @@ type Inspector interface {
 
 	// SqlType get task SQL type, result is "DDL" or "DML".
 	SqlType() string
+
+	// ParseSqlType parse task SQL type
+	ParseSqlType() error
 
 	// SqlInvalid represents one of task's commit sql base-validation failed.
 	SqlInvalid() bool
@@ -32,8 +36,11 @@ type Inspector interface {
 	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
 	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
 
-	// Commit commit task.commitSql.
-	Commit(sql *model.Sql) error
+	// CommitDDL commit task.commitSql(ddl).
+	CommitDDL(sql *model.Sql) error
+
+	// CommitDMLs commit task.commitSql(dml) in one transaction.
+	CommitDMLs(sqls []*model.Sql) error
 
 	// ParseSql parser sql text to ast.
 	ParseSql(sql string) ([]ast.Node, error)
@@ -135,6 +142,28 @@ func (i *Inspect) SqlType() string {
 	}
 }
 
+func (i *Inspect) ParseSqlType() error {
+	for _, commitSql := range i.Task.CommitSqls {
+		nodes, err := i.ParseSql(commitSql.Content)
+		if err != nil {
+			return err
+		}
+		i.addNodeCounter(nodes)
+	}
+	return nil
+}
+
+func (i *Inspect) addNodeCounter(nodes []ast.Node) {
+	for _, node := range nodes {
+		switch node.(type) {
+		case ast.DDLNode:
+			i.counterDDL += 1
+		case ast.DMLNode:
+			i.counterDML += 1
+		}
+	}
+}
+
 func (i *Inspect) SqlInvalid() bool {
 	return i.HasInvalidSql
 }
@@ -144,14 +173,7 @@ func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
 	if err != nil {
 		return err
 	}
-	for _, node := range nodes {
-		switch node.(type) {
-		case ast.DDLNode:
-			i.counterDDL += 1
-		case ast.DMLNode:
-			i.counterDML += 1
-		}
-	}
+	i.addNodeCounter(nodes)
 	sql.Stmts = nodes
 	i.SqlArray = append(i.SqlArray, sql)
 	i.SqlAction = append(i.SqlAction, action)
