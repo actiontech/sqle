@@ -26,7 +26,8 @@ const (
 )
 
 var (
-	SQL_STMT_CONFLICT_ERROR = New(-1, fmt.Errorf("不能同时提交 DDL 和 DML 语句"))
+	SQL_STMT_CONFLICT_ERROR           = New(-1, fmt.Errorf("不能同时提交 DDL 和 DML 语句"))
+	SQL_STMT_PROCEUDRE_FUNCTION_ERROR = New(-1, fmt.Errorf("包含存储过程或者函数的任务不能包含其他DDL、DML语句"))
 )
 
 type CodeError struct {

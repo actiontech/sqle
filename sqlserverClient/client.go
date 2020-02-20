@@ -69,7 +69,7 @@ func (c *Client) ParseSql(sql string) ([]ast.Node, error) {
 	sqls := out.GetSplitSqls()
 	stmts := make([]ast.Node, 0, len(sqls))
 	for _, s := range sqls {
-		stmts = append(stmts, NewSqlServerStmt(s.Sql, s.IsDDL, s.IsDML))
+		stmts = append(stmts, NewSqlServerStmt(s.Sql, s.IsDDL, s.IsDML, s.IsProcedure, s.IsFunction))
 	}
 	return stmts, errors.New(errors.CONNECT_SQLSERVER_RPC_ERROR, err)
 }

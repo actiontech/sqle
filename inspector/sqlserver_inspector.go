@@ -2,6 +2,7 @@ package inspector
 
 import (
 	"fmt"
+	"sqle/errors"
 	"sqle/model"
 	"sqle/sqlserver/SqlserverProto"
 	"sqle/sqlserverClient"
@@ -49,6 +50,10 @@ func (i *SqlserverInspect) addNodeCounter(nodes []ast.Node) {
 				i.counterDDL += 1
 			} else if stmt.IsDMLStmt() {
 				i.counterDML += 1
+			} else if stmt.IsProcedureStmt() {
+				i.counterProcedure += 1
+			} else if stmt.IsFunctionStmt() {
+				i.counterFunction += 1
 			}
 		}
 	}
@@ -102,17 +107,28 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	results := out.GetResults()
 	for idx, commitSql := range i.Task.CommitSqls {
 		result := results[idx]
-		stmt := sqlserverClient.NewSqlServerStmt(commitSql.Content, result.IsDDL, result.IsDML)
+		stmt := sqlserverClient.NewSqlServerStmt(commitSql.Content, result.IsDDL, result.IsDML, result.IsProcedure, result.IsFunction)
 		if stmt.IsDDLStmt() {
 			i.counterDDL += 1
 		} else if stmt.IsDMLStmt() {
 			i.counterDML += 1
+		} else if stmt.IsProcedureStmt() {
+			i.counterProcedure += 1
+		} else if stmt.IsFunctionStmt() {
+			i.counterFunction += 1
 		}
 		commitSql.InspectLevel = result.AdviseLevel
 		commitSql.InspectResult = result.AdviseResultMessage
 		commitSql.InspectStatus = model.TASK_ACTION_DONE
 	}
 	i.HasInvalidSql = out.BaseValidatorFailed
+
+	if i.SqlType() == model.SQL_TYPE_MULTI {
+		return errors.SQL_STMT_CONFLICT_ERROR
+	}
+	if i.SqlType() == model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI {
+		return errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR
+	}
 
 	return err
 }

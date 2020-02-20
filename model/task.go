@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
+	"sqle/errors"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/tidb/ast"
-	"sqle/errors"
 )
 
 // task action
@@ -15,13 +16,15 @@ const (
 )
 
 const (
-	TASK_ACTION_INIT  = ""
-	TASK_ACTION_DOING = "doing"
-	TASK_ACTION_DONE  = "finish"
-	TASK_ACTION_ERROR = "failed"
-	SQL_TYPE_DML      = "dml"
-	SQL_TYPE_DDL      = "ddl"
-	SQL_TYPE_MULTI    = "dml&ddl"
+	TASK_ACTION_INIT                  = ""
+	TASK_ACTION_DOING                 = "doing"
+	TASK_ACTION_DONE                  = "finish"
+	TASK_ACTION_ERROR                 = "failed"
+	SQL_TYPE_DML                      = "dml"
+	SQL_TYPE_DDL                      = "ddl"
+	SQL_TYPE_MULTI                    = "dml&ddl"
+	SQL_TYPE_PROCEDURE_FUNCTION       = "procedure&function"
+	SQL_TYPE_PROCEDURE_FUNCTION_MULTI = "procedure&function&dml&ddl"
 )
 
 var ActionMap = map[int]string{

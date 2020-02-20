@@ -25,45 +25,46 @@ namespace SqlserverProto {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Cg9TcWxzZXJ2ZXIucHJvdG8SDlNxbHNlcnZlclByb3RvIi8KDlNwbGl0U3Fs",
-            "c0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAEoCSJACgNTcWwS",
+            "c0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgCIAEoCSJpCgNTcWwS",
             "CwoDU3FsGAEgASgJEg0KBUlzRERMGAIgASgIEg0KBUlzRE1MGAMgASgIEg4K",
-            "BkVyck1zZxgEIAEoCSI5Cg9TcGxpdFNxbHNPdXRwdXQSJgoJU3BsaXRTcWxz",
-            "GAEgAygLMhMuU3Fsc2VydmVyUHJvdG8uU3FsInsKDVNxbHNlcnZlck1ldGES",
-            "DAoEVXNlchgBIAEoCRIQCghQYXNzd29yZBgCIAEoCRIMCgRIb3N0GAMgASgJ",
-            "EgwKBFBvcnQYBCABKAkSFwoPQ3VycmVudERhdGFiYXNlGAUgASgJEhUKDUN1",
-            "cnJlbnRTY2hlbWEYBiABKAkiqQEKC0FkdmlzZUlucHV0Eg8KB1ZlcnNpb24Y",
-            "ASABKAkSDAoEU3FscxgCIAMoCRIRCglSdWxlTmFtZXMYAyADKAkSNAoNU3Fs",
-            "c2VydmVyTWV0YRgEIAEoCzIdLlNxbHNlcnZlclByb3RvLlNxbHNlcnZlck1l",
-            "dGESMgoORERMQ29udGV4dFNxbHMYBSADKAsyGi5TcWxzZXJ2ZXJQcm90by5E",
-            "RExDb250ZXh0IhoKCkRETENvbnRleHQSDAoEU3FscxgBIAMoCSJaCgxBZHZp",
-            "c2VPdXRwdXQSLQoHUmVzdWx0cxgBIAMoCzIcLlNxbHNlcnZlclByb3RvLkFk",
-            "dmlzZVJlc3VsdBIbChNCYXNlVmFsaWRhdG9yRmFpbGVkGAIgASgIIl4KDEFk",
-            "dmlzZVJlc3VsdBITCgtBZHZpc2VMZXZlbBgBIAEoCRIbChNBZHZpc2VSZXN1",
-            "bHRNZXNzYWdlGAIgASgJEg0KBUlzRERMGAMgASgIEg0KBUlzRE1MGAQgASgI",
-            "IiQKBkNvbmZpZxIaChJETUxSb2xsYmFja01heFJvd3MYASABKAMimwEKFEdl",
-            "dFJvbGxiYWNrU3Fsc0lucHV0Eg8KB1ZlcnNpb24YASABKAkSDAoEU3FscxgC",
-            "IAMoCRI0Cg1TcWxzZXJ2ZXJNZXRhGAMgASgLMh0uU3Fsc2VydmVyUHJvdG8u",
-            "U3Fsc2VydmVyTWV0YRIuCg5Sb2xsYmFja0NvbmZpZxgEIAEoCzIWLlNxbHNl",
-            "cnZlclByb3RvLkNvbmZpZyJCChVHZXRSb2xsYmFja1NxbHNPdXRwdXQSKQoM",
-            "Um9sbGJhY2tTcWxzGAEgAygLMhMuU3Fsc2VydmVyUHJvdG8uU3FsMo4CChBT",
-            "cWxzZXJ2ZXJTZXJ2aWNlElEKDEdldFNwbGl0U3FscxIeLlNxbHNlcnZlclBy",
-            "b3RvLlNwbGl0U3Fsc0lucHV0Gh8uU3Fsc2VydmVyUHJvdG8uU3BsaXRTcWxz",
-            "T3V0cHV0IgASRQoGQWR2aXNlEhsuU3Fsc2VydmVyUHJvdG8uQWR2aXNlSW5w",
-            "dXQaHC5TcWxzZXJ2ZXJQcm90by5BZHZpc2VPdXRwdXQiABJgCg9HZXRSb2xs",
-            "YmFja1NxbHMSJC5TcWxzZXJ2ZXJQcm90by5HZXRSb2xsYmFja1NxbHNJbnB1",
-            "dBolLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc091dHB1dCIAYgZw",
-            "cm90bzM="));
+            "BkVyck1zZxgEIAEoCRITCgtJc1Byb2NlZHVyZRgFIAEoCBISCgpJc0Z1bmN0",
+            "aW9uGAYgASgIIjkKD1NwbGl0U3Fsc091dHB1dBImCglTcGxpdFNxbHMYASAD",
+            "KAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwiewoNU3Fsc2VydmVyTWV0YRIMCgRV",
+            "c2VyGAEgASgJEhAKCFBhc3N3b3JkGAIgASgJEgwKBEhvc3QYAyABKAkSDAoE",
+            "UG9ydBgEIAEoCRIXCg9DdXJyZW50RGF0YWJhc2UYBSABKAkSFQoNQ3VycmVu",
+            "dFNjaGVtYRgGIAEoCSKpAQoLQWR2aXNlSW5wdXQSDwoHVmVyc2lvbhgBIAEo",
+            "CRIMCgRTcWxzGAIgAygJEhEKCVJ1bGVOYW1lcxgDIAMoCRI0Cg1TcWxzZXJ2",
+            "ZXJNZXRhGAQgASgLMh0uU3Fsc2VydmVyUHJvdG8uU3Fsc2VydmVyTWV0YRIy",
+            "Cg5ERExDb250ZXh0U3FscxgFIAMoCzIaLlNxbHNlcnZlclByb3RvLkRETENv",
+            "bnRleHQiGgoKRERMQ29udGV4dBIMCgRTcWxzGAEgAygJIloKDEFkdmlzZU91",
+            "dHB1dBItCgdSZXN1bHRzGAEgAygLMhwuU3Fsc2VydmVyUHJvdG8uQWR2aXNl",
+            "UmVzdWx0EhsKE0Jhc2VWYWxpZGF0b3JGYWlsZWQYAiABKAgihwEKDEFkdmlz",
+            "ZVJlc3VsdBITCgtBZHZpc2VMZXZlbBgBIAEoCRIbChNBZHZpc2VSZXN1bHRN",
+            "ZXNzYWdlGAIgASgJEg0KBUlzRERMGAMgASgIEg0KBUlzRE1MGAQgASgIEhMK",
+            "C0lzUHJvY2VkdXJlGAUgASgIEhIKCklzRnVuY3Rpb24YBiABKAgiJAoGQ29u",
+            "ZmlnEhoKEkRNTFJvbGxiYWNrTWF4Um93cxgBIAEoAyKbAQoUR2V0Um9sbGJh",
+            "Y2tTcWxzSW5wdXQSDwoHVmVyc2lvbhgBIAEoCRIMCgRTcWxzGAIgAygJEjQK",
+            "DVNxbHNlcnZlck1ldGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2",
+            "ZXJNZXRhEi4KDlJvbGxiYWNrQ29uZmlnGAQgASgLMhYuU3Fsc2VydmVyUHJv",
+            "dG8uQ29uZmlnIkIKFUdldFJvbGxiYWNrU3Fsc091dHB1dBIpCgxSb2xsYmFj",
+            "a1NxbHMYASADKAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwyjgIKEFNxbHNlcnZl",
+            "clNlcnZpY2USUQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3Bs",
+            "aXRTcWxzSW5wdXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQi",
+            "ABJFCgZBZHZpc2USGy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJbnB1dBocLlNx",
+            "bHNlcnZlclByb3RvLkFkdmlzZU91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3Fs",
+            "cxIkLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fs",
+            "c2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsInput), global::SqlserverProto.SplitSqlsInput.Parser, new[]{ "Version", "Sqls" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Sql), global::SqlserverProto.Sql.Parser, new[]{ "Sql_", "IsDDL", "IsDML", "ErrMsg" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Sql), global::SqlserverProto.Sql.Parser, new[]{ "Sql_", "IsDDL", "IsDML", "ErrMsg", "IsProcedure", "IsFunction" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SplitSqlsOutput), global::SqlserverProto.SplitSqlsOutput.Parser, new[]{ "SplitSqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.SqlserverMeta), global::SqlserverProto.SqlserverMeta.Parser, new[]{ "User", "Password", "Host", "Port", "CurrentDatabase", "CurrentSchema" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseInput), global::SqlserverProto.AdviseInput.Parser, new[]{ "Version", "Sqls", "RuleNames", "SqlserverMeta", "DDLContextSqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.DDLContext), global::SqlserverProto.DDLContext.Parser, new[]{ "Sqls" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseOutput), global::SqlserverProto.AdviseOutput.Parser, new[]{ "Results", "BaseValidatorFailed" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage", "IsDDL", "IsDML" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage", "IsDDL", "IsDML", "IsProcedure", "IsFunction" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Config), global::SqlserverProto.Config.Parser, new[]{ "DMLRollbackMaxRows" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta", "RollbackConfig" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null)
@@ -259,6 +260,8 @@ namespace SqlserverProto {
       isDDL_ = other.isDDL_;
       isDML_ = other.isDML_;
       errMsg_ = other.errMsg_;
+      isProcedure_ = other.isProcedure_;
+      isFunction_ = other.isFunction_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -311,6 +314,28 @@ namespace SqlserverProto {
       }
     }
 
+    /// <summary>Field number for the "IsProcedure" field.</summary>
+    public const int IsProcedureFieldNumber = 5;
+    private bool isProcedure_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool IsProcedure {
+      get { return isProcedure_; }
+      set {
+        isProcedure_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "IsFunction" field.</summary>
+    public const int IsFunctionFieldNumber = 6;
+    private bool isFunction_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool IsFunction {
+      get { return isFunction_; }
+      set {
+        isFunction_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as Sql);
@@ -328,6 +353,8 @@ namespace SqlserverProto {
       if (IsDDL != other.IsDDL) return false;
       if (IsDML != other.IsDML) return false;
       if (ErrMsg != other.ErrMsg) return false;
+      if (IsProcedure != other.IsProcedure) return false;
+      if (IsFunction != other.IsFunction) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -338,6 +365,8 @@ namespace SqlserverProto {
       if (IsDDL != false) hash ^= IsDDL.GetHashCode();
       if (IsDML != false) hash ^= IsDML.GetHashCode();
       if (ErrMsg.Length != 0) hash ^= ErrMsg.GetHashCode();
+      if (IsProcedure != false) hash ^= IsProcedure.GetHashCode();
+      if (IsFunction != false) hash ^= IsFunction.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -367,6 +396,14 @@ namespace SqlserverProto {
         output.WriteRawTag(34);
         output.WriteString(ErrMsg);
       }
+      if (IsProcedure != false) {
+        output.WriteRawTag(40);
+        output.WriteBool(IsProcedure);
+      }
+      if (IsFunction != false) {
+        output.WriteRawTag(48);
+        output.WriteBool(IsFunction);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -386,6 +423,12 @@ namespace SqlserverProto {
       }
       if (ErrMsg.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(ErrMsg);
+      }
+      if (IsProcedure != false) {
+        size += 1 + 1;
+      }
+      if (IsFunction != false) {
+        size += 1 + 1;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -409,6 +452,12 @@ namespace SqlserverProto {
       }
       if (other.ErrMsg.Length != 0) {
         ErrMsg = other.ErrMsg;
+      }
+      if (other.IsProcedure != false) {
+        IsProcedure = other.IsProcedure;
+      }
+      if (other.IsFunction != false) {
+        IsFunction = other.IsFunction;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -435,6 +484,14 @@ namespace SqlserverProto {
           }
           case 34: {
             ErrMsg = input.ReadString();
+            break;
+          }
+          case 40: {
+            IsProcedure = input.ReadBool();
+            break;
+          }
+          case 48: {
+            IsFunction = input.ReadBool();
             break;
           }
         }
@@ -861,7 +918,7 @@ namespace SqlserverProto {
       version_ = other.version_;
       sqls_ = other.sqls_.Clone();
       ruleNames_ = other.ruleNames_.Clone();
-      sqlserverMeta_ = other.sqlserverMeta_ != null ? other.sqlserverMeta_.Clone() : null;
+      SqlserverMeta = other.sqlserverMeta_ != null ? other.SqlserverMeta.Clone() : null;
       dDLContextSqls_ = other.dDLContextSqls_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -1355,6 +1412,8 @@ namespace SqlserverProto {
       adviseResultMessage_ = other.adviseResultMessage_;
       isDDL_ = other.isDDL_;
       isDML_ = other.isDML_;
+      isProcedure_ = other.isProcedure_;
+      isFunction_ = other.isFunction_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1407,6 +1466,28 @@ namespace SqlserverProto {
       }
     }
 
+    /// <summary>Field number for the "IsProcedure" field.</summary>
+    public const int IsProcedureFieldNumber = 5;
+    private bool isProcedure_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool IsProcedure {
+      get { return isProcedure_; }
+      set {
+        isProcedure_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "IsFunction" field.</summary>
+    public const int IsFunctionFieldNumber = 6;
+    private bool isFunction_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool IsFunction {
+      get { return isFunction_; }
+      set {
+        isFunction_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
       return Equals(other as AdviseResult);
@@ -1424,6 +1505,8 @@ namespace SqlserverProto {
       if (AdviseResultMessage != other.AdviseResultMessage) return false;
       if (IsDDL != other.IsDDL) return false;
       if (IsDML != other.IsDML) return false;
+      if (IsProcedure != other.IsProcedure) return false;
+      if (IsFunction != other.IsFunction) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1434,6 +1517,8 @@ namespace SqlserverProto {
       if (AdviseResultMessage.Length != 0) hash ^= AdviseResultMessage.GetHashCode();
       if (IsDDL != false) hash ^= IsDDL.GetHashCode();
       if (IsDML != false) hash ^= IsDML.GetHashCode();
+      if (IsProcedure != false) hash ^= IsProcedure.GetHashCode();
+      if (IsFunction != false) hash ^= IsFunction.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1463,6 +1548,14 @@ namespace SqlserverProto {
         output.WriteRawTag(32);
         output.WriteBool(IsDML);
       }
+      if (IsProcedure != false) {
+        output.WriteRawTag(40);
+        output.WriteBool(IsProcedure);
+      }
+      if (IsFunction != false) {
+        output.WriteRawTag(48);
+        output.WriteBool(IsFunction);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1481,6 +1574,12 @@ namespace SqlserverProto {
         size += 1 + 1;
       }
       if (IsDML != false) {
+        size += 1 + 1;
+      }
+      if (IsProcedure != false) {
+        size += 1 + 1;
+      }
+      if (IsFunction != false) {
         size += 1 + 1;
       }
       if (_unknownFields != null) {
@@ -1505,6 +1604,12 @@ namespace SqlserverProto {
       }
       if (other.IsDML != false) {
         IsDML = other.IsDML;
+      }
+      if (other.IsProcedure != false) {
+        IsProcedure = other.IsProcedure;
+      }
+      if (other.IsFunction != false) {
+        IsFunction = other.IsFunction;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1531,6 +1636,14 @@ namespace SqlserverProto {
           }
           case 32: {
             IsDML = input.ReadBool();
+            break;
+          }
+          case 40: {
+            IsProcedure = input.ReadBool();
+            break;
+          }
+          case 48: {
+            IsFunction = input.ReadBool();
             break;
           }
         }
@@ -1695,8 +1808,8 @@ namespace SqlserverProto {
     public GetRollbackSqlsInput(GetRollbackSqlsInput other) : this() {
       version_ = other.version_;
       sqls_ = other.sqls_.Clone();
-      sqlserverMeta_ = other.sqlserverMeta_ != null ? other.sqlserverMeta_.Clone() : null;
-      rollbackConfig_ = other.rollbackConfig_ != null ? other.rollbackConfig_.Clone() : null;
+      SqlserverMeta = other.sqlserverMeta_ != null ? other.SqlserverMeta.Clone() : null;
+      RollbackConfig = other.rollbackConfig_ != null ? other.RollbackConfig.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 

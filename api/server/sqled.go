@@ -249,7 +249,7 @@ func (s *Sqled) commit(task *model.Task) error {
 		return s.commitDML(task)
 	}
 
-	if task.SqlType == model.SQL_TYPE_DDL {
+	if task.SqlType == model.SQL_TYPE_DDL || task.SqlType == model.SQL_TYPE_PROCEDURE_FUNCTION {
 		return s.commitDDL(task)
 	}
 
@@ -266,6 +266,8 @@ func (s *Sqled) commit(task *model.Task) error {
 		return s.commitDDL(task)
 	case model.SQL_TYPE_MULTI:
 		return errors.SQL_STMT_CONFLICT_ERROR
+	case model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI:
+		return errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR
 	}
 	return nil
 }
@@ -367,6 +369,11 @@ func (s *Sqled) rollback(task *model.Task) error {
 			case model.SQL_TYPE_MULTI:
 				i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 				return errors.SQL_STMT_CONFLICT_ERROR
+			case model.SQL_TYPE_PROCEDURE_FUNCTION:
+				// need not rollback procedure and function
+			case model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI:
+				i.Logger().Error((errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR))
+				return errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR
 			}
 			err = st.Save(currentSql)
 			if err != nil {

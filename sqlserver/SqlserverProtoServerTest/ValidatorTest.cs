@@ -9,29 +9,23 @@ using NLog;
 
 namespace SqlServerProtoServerTest {
     public class ValidatorTest {
-        public StatementList ParseStatementList(string text) {
-            var parser = new TSql130Parser(false);
-            var reader = new StringReader(text);
-            IList<ParseError> errorList;
-            var statementList = parser.ParseStatementList(reader, out errorList);
-            if (errorList.Count > 0) {
-                throw new ArgumentException(String.Format("parse sql {0} error: {1}", text, errorList.ToString()));
-            }
+        public IList<TSqlStatement> Parse(string text) {
+            var sqlserverImpl = new SqlServerServiceImpl();
+            var statements = sqlserverImpl.Parse(LogManager.GetCurrentClassLogger(), "", text);
 
-            return statementList;
+            return statements;
         }
 
         [Fact]
         public void ParseStatementListTestWithGOTest() {
             try {
-                StatementList statementList;
                 var sqlserverImpl = new SqlServerServiceImpl();
-                statementList = sqlserverImpl.ParseStatementList(LogManager.GetCurrentClassLogger(), "", 
+                var statements = sqlserverImpl.Parse(LogManager.GetCurrentClassLogger(), "", 
                                                                  @"CREATE TABLE table1(col1 INT)
                                                                    GO
                                                                    INSERT INTO table1 VALUES(1)");
-                Assert.True(statementList.Statements.Count > 0);
-                statementList = sqlserverImpl.ParseStatementList(LogManager.GetCurrentClassLogger(), "", 
+                Assert.True(statements.Count > 0);
+                statements = sqlserverImpl.Parse(LogManager.GetCurrentClassLogger(), "", 
                                                                        @"CREATE TABLE table1(col1 INT);
                                                                        GO;
                                                                        INSERT INTO table1 VALUES(1);");
@@ -42,14 +36,82 @@ namespace SqlServerProtoServerTest {
             }
         }
 
+        [Fact]
+        public void ParseProcedureTest() {
+            try {
+                var text = @"
+CREATE PROCEDURE HumanResources.uspGetAllEmployees  
+AS  
+    SET NOCOUNT ON;  
+    SELECT LastName, FirstName, JobTitle, Department  
+    FROM HumanResources.vEmployeeDepartment;
+GO
+
+ALTER PROCEDURE HumanResources.uspGetAllEmployees
+AS
+    SET NOCOUNT ON;
+    SELECT LastName, FirstName FROM HumanResources.vEmployeeDepartment;
+GO
+
+
+DROP PROCEDURE HumanResources.uspGetAllEmployees;
+GO
+
+CREATE FUNCTION Sales.ufn_SalesByStore (@storeid int)  
+RETURNS TABLE  
+AS  
+RETURN   
+(  
+    SELECT P.ProductID, P.Name, SUM(SD.LineTotal) AS 'Total'  
+    FROM Production.Product AS P   
+    JOIN Sales.SalesOrderDetail AS SD ON SD.ProductID = P.ProductID  
+    JOIN Sales.SalesOrderHeader AS SH ON SH.SalesOrderID = SD.SalesOrderID  
+    JOIN Sales.Customer AS C ON SH.CustomerID = C.CustomerID  
+    WHERE C.StoreID = @storeid  
+    GROUP BY P.ProductID, P.Name  
+);  
+GO
+
+ALTER FUNCTION Sales.ufn_SalesByStore (@storeid int)  
+RETURNS TABLE  
+AS  
+RETURN   
+(  
+    SELECT P.ProductID, P.Name, SUM(SD.LineTotal) AS 'Total'  
+    FROM Production.Product AS P   
+    JOIN Sales.SalesOrderDetail AS SD ON SD.ProductID = P.ProductID  
+    JOIN Sales.SalesOrderHeader AS SH ON SH.SalesOrderID = SD.SalesOrderID  
+    JOIN Sales.Customer AS C ON SH.CustomerID = C.CustomerID  
+    WHERE C.StoreID = @storeid  
+    GROUP BY P.ProductID, P.Name  
+);
+GO
+
+DROP FUNCTION Sales.ufn_SalesByStore;
+GO
+ ";
+                var statements = Parse(text);
+                Assert.True(statements.Count == 6);
+                foreach (var statement in statements) {
+                    for (var i = statement.FirstTokenIndex; i < statement.LastTokenIndex; i++) {
+                        Console.Write(statement.ScriptTokenStream[i].Text);
+                    }
+                    Console.WriteLine();
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
+        }
+
         private void IsInvalidUse() {
             // database not exist
-            StatementList statementList = ParseStatementList("USE database1");
+            var statements = Parse("USE database1");
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = false;
             Console.WriteLine("IsInvalidUse");
-            foreach (var statment in statementList.Statements) {
+            foreach (var statment in statements) {
                 var invalid = new BaseRuleValidator().IsInvalidUse(LogManager.GetCurrentClassLogger(), context, statment as UseStatement);
                 Assert.True(invalid == true);
             }
@@ -59,7 +121,7 @@ namespace SqlServerProtoServerTest {
 
         private void IsInvalidCreateTable() {
             {
-                StatementList statementList = ParseStatementList("CREATE TABLE database1.schema1.tbl1 (" +
+                var statements = Parse("CREATE TABLE database1.schema1.tbl1 (" +
                                                                  "col1 INT PRIMARY KEY," +
                                                                  "col1 INT," +
                                                                  "col2 INT," +
@@ -81,7 +143,7 @@ namespace SqlServerProtoServerTest {
                 Console.WriteLine();
                 Console.WriteLine("IsInvalidCreateTable");
 
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidCreateTableStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateTableStatement);
                     Assert.True(invalid == true);
                 }
@@ -92,7 +154,7 @@ namespace SqlServerProtoServerTest {
 
         private void IsInvalidAlterTable() {
             {
-                StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD col1 INT NOT NULL");
+                var statements = Parse("ALTER TABLE database1.schema1.table1 ADD col1 INT NOT NULL");
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseExist = false;
@@ -105,7 +167,7 @@ namespace SqlServerProtoServerTest {
                 Console.WriteLine();
                 Console.WriteLine("IsInvalidAlterTable");
 
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                     Assert.True(invalid == true);
                 }
@@ -115,7 +177,7 @@ namespace SqlServerProtoServerTest {
 
             {
                 // init data
-                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                var initStatements = Parse("CREATE TABLE database1.schema1.table1(" +
                                                                      "col1 INT NOT NULL, " +
                                                                      "col2 INT NOT NULL, " +
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
@@ -131,12 +193,12 @@ namespace SqlServerProtoServerTest {
                 context.ExpectTableName = "table1";
                 context.ExpectIndexes = new List<String>();
                 context.ExpectConstraintNames = new List<String>();
-                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatements[0]);
 
                 // add column
                 {
-                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD col1 INT NOT NULL");
-                    foreach (var statment in statementList.Statements) {
+                    var statements = Parse("ALTER TABLE database1.schema1.table1 ADD col1 INT NOT NULL");
+                    foreach (var statment in statements) {
                         var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
@@ -147,8 +209,8 @@ namespace SqlServerProtoServerTest {
 
                 // add index
                 {
-                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD INDEX IX_1 (col3, col3)");
-                    foreach (var statment in statementList.Statements) {
+                    var statements = Parse("ALTER TABLE database1.schema1.table1 ADD INDEX IX_1 (col3, col3)");
+                    foreach (var statment in statements) {
                         var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
@@ -159,8 +221,8 @@ namespace SqlServerProtoServerTest {
 
                 // add constraint
                 {
-                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT UN_1 UNIQUE (col3, col3)");
-                    foreach (var statment in statementList.Statements) {
+                    var statements = Parse("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT UN_1 UNIQUE (col3, col3)");
+                    foreach (var statment in statements) {
                         var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
@@ -171,8 +233,8 @@ namespace SqlServerProtoServerTest {
 
                 // add primary key constraint
                 {
-                    StatementList statementList = ParseStatementList("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT PK_1 PRIMARY KEY (col3)");
-                    foreach (var statment in statementList.Statements) {
+                    var statements = Parse("ALTER TABLE database1.schema1.table1 ADD CONSTRAINT PK_1 PRIMARY KEY (col3)");
+                    foreach (var statment in statements) {
                         var invalid = new BaseRuleValidator().IsInvalidAlterTableStatement(LogManager.GetCurrentClassLogger(), context, statment as AlterTableStatement);
                         Assert.True(invalid == true);
                     }
@@ -184,7 +246,7 @@ namespace SqlServerProtoServerTest {
         }
 
         private void IsInvalidDropTable() {
-            StatementList statementList = ParseStatementList("DROP TABLE database1.schema1.table1;");
+            var statements = Parse("DROP TABLE database1.schema1.table1;");
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = false;
@@ -196,7 +258,7 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine();
             Console.WriteLine("IsInvalidDropTable");
 
-            foreach (var statment in statementList.Statements) {
+            foreach (var statment in statements) {
                 var invalid = new BaseRuleValidator().IsInvalidDropTableStatement(LogManager.GetCurrentClassLogger(), context, statment as DropTableStatement);
                 Assert.True(invalid == true);
             }
@@ -206,14 +268,14 @@ namespace SqlServerProtoServerTest {
 
         private void IsInvalidCreateDatabase() {
             // database not exist
-            StatementList statementList = ParseStatementList("CREATE DATABASE database1");
+            var statements = Parse("CREATE DATABASE database1");
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = true;
             Console.WriteLine();
             Console.WriteLine("IsInvalidCreateDatabase");
 
-            foreach (var statment in statementList.Statements) {
+            foreach (var statment in statements) {
                 var invalid = new BaseRuleValidator().IsInvalidCreateDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateDatabaseStatement);
                 Assert.True(invalid == true);
             }
@@ -223,14 +285,14 @@ namespace SqlServerProtoServerTest {
 
         private void IsInvalidDropDatabase() {
             // database exist
-            StatementList statementList = ParseStatementList("DROP DATABASE database1");
+            var statements = Parse("DROP DATABASE database1");
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = false;
             Console.WriteLine();
             Console.WriteLine("IsInvalidDropDatabase");
 
-            foreach (var statment in statementList.Statements) {
+            foreach (var statment in statements) {
                 var invalid = new BaseRuleValidator().IsInvalidDropDatabaseStatement(LogManager.GetCurrentClassLogger(), context, statment as DropDatabaseStatement);
                 Assert.True(invalid == true);
             }
@@ -240,14 +302,14 @@ namespace SqlServerProtoServerTest {
 
         private void IsInvalidDropSchema() {
             // schema exist
-            StatementList statementList = ParseStatementList("DROP SCHEMA schema1");
+            var statements = Parse("DROP SCHEMA schema1");
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectSchemaExist = false;
             Console.WriteLine();
             Console.WriteLine("IsInvalidDropSchema");
 
-            foreach (var statement in statementList.Statements) {
+            foreach (var statement in statements) {
                 var invalid = new BaseRuleValidator().IsInvalidDropSchemaStatement(LogManager.GetCurrentClassLogger(), context, statement as DropSchemaStatement);
                 Assert.True(invalid == true);
             }
@@ -260,7 +322,7 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidCreateIndex");
 
             {
-                StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col1);");
+                var statements = Parse("CREATE INDEX IX_1 ON database1.schema1.table1 (col1);");
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseExist = false;
@@ -270,7 +332,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
                 context.ExpectIndexes = new List<String>();
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
                     Assert.True(invalid == true);
                 }
@@ -280,7 +342,7 @@ namespace SqlServerProtoServerTest {
 
             {
                 // init data
-                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                var initStatements = Parse("CREATE TABLE database1.schema1.table1(" +
                                                                      "col1 INT NOT NULL, " +
                                                                      "col2 INT NOT NULL, " +
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
@@ -296,11 +358,11 @@ namespace SqlServerProtoServerTest {
                 context.ExpectTableName = "table1";
                 context.ExpectIndexes = new List<String>();
                 context.ExpectIndexes.Add("IX_1");
-                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatements[0]);
 
                 {
-                    StatementList statementList = ParseStatementList("CREATE INDEX IX_1 ON database1.schema1.table1 (col3, col3);");
-                    foreach (var statment in statementList.Statements) {
+                    var statements = Parse("CREATE INDEX IX_1 ON database1.schema1.table1 (col3, col3);");
+                    foreach (var statment in statements) {
                         var invalid = new BaseRuleValidator().IsInvalidCreateIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as CreateIndexStatement);
                         Assert.True(invalid == true);
                     }
@@ -315,13 +377,13 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidDropIndex");
 
             // init data
-            StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+            var initStatements = Parse("CREATE TABLE database1.schema1.table1(" +
                                                                  "col1 INT NOT NULL, " +
                                                                  "col2 INT NOT NULL, " +
                                                                  "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
                                                                  "CONSTRAINT UN_1 UNIQUE (col2)," +
                                                                  "INDEX IX_1 (col2))");
-            CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+            CreateTableStatement initStatement = initStatements[0] as CreateTableStatement;
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = true;
@@ -331,11 +393,11 @@ namespace SqlServerProtoServerTest {
             context.ExpectSchemaName = "schema1";
             context.ExpectTableName = "table1";
             context.ExpectIndexes = new List<String>();
-            context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+            context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatements[0]);
 
             {
-                StatementList statementList = ParseStatementList("DROP INDEX IX_2 ON schema1.table1;");
-                foreach (var statment in statementList.Statements) {
+                var statements = Parse("DROP INDEX IX_2 ON schema1.table1;");
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidDropIndexStatement(LogManager.GetCurrentClassLogger(), context, statment as DropIndexStatement);
                     Assert.True(invalid == true);
                 }
@@ -348,7 +410,7 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidInsert");
 
             {
-                StatementList statementList = ParseStatementList("INSERT INTO databse1.schema1.table1 VALUES(1);");
+                var statements = Parse("INSERT INTO databse1.schema1.table1 VALUES(1);");
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseName = "database1";
@@ -359,7 +421,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseExist = false;
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                     Assert.True(invalid == true);
                 }
@@ -370,7 +432,7 @@ namespace SqlServerProtoServerTest {
 
                 context.ExpectDatabaseExist = true;
                 context.ExpectSchemaExist = false;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                     Assert.True(invalid == true);
                 }
@@ -380,7 +442,7 @@ namespace SqlServerProtoServerTest {
 
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = false;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                     Assert.True(invalid == true);
                 }
@@ -391,7 +453,7 @@ namespace SqlServerProtoServerTest {
 
             {
                 // init data
-                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                var initStatements = Parse("CREATE TABLE database1.schema1.table1(" +
                                                                      "col1 INT NOT NULL, " +
                                                                      "col2 INT NOT NULL, " +
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
@@ -406,11 +468,11 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
                 context.ExpectIndexes = new List<String>();
-                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatements[0]);
 
                 {
-                    StatementList statementList = ParseStatementList("INSERT INTO database1.schema1.table1(col1, col2, col2, col3) VALUES(2, 3);");
-                    foreach (var statment in statementList.Statements) {
+                    var statements = Parse("INSERT INTO database1.schema1.table1(col1, col2, col2, col3) VALUES(2, 3);");
+                    foreach (var statment in statements) {
                         var invalid = new BaseRuleValidator().IsInvalidInsertStatement(LogManager.GetCurrentClassLogger(), context, statment as InsertStatement);
                         Assert.True(invalid == true);
                     }
@@ -425,7 +487,7 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidUpdate");
 
             {
-                StatementList statementList = ParseStatementList("UPDATE databse1.schema1.table1 SET col1=1;");
+                var statements = Parse("UPDATE databse1.schema1.table1 SET col1=1;");
                 var context = new SqlserverContext(new SqlserverMeta());
                 context.IsTest = true;
                 context.ExpectDatabaseName = "database1";
@@ -436,7 +498,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseExist = false;
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                     Assert.True(invalid == true);
                 }
@@ -447,7 +509,7 @@ namespace SqlServerProtoServerTest {
 
                 context.ExpectDatabaseExist = true;
                 context.ExpectSchemaExist = false;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                     Assert.True(invalid == true);
                 }
@@ -457,7 +519,7 @@ namespace SqlServerProtoServerTest {
 
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = false;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                     Assert.True(invalid == true);
                 }
@@ -468,7 +530,7 @@ namespace SqlServerProtoServerTest {
 
             {
                 // init data
-                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                var initStatements = Parse("CREATE TABLE database1.schema1.table1(" +
                                                                      "col1 INT NOT NULL, " +
                                                                      "col2 INT NOT NULL, " +
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
@@ -483,11 +545,11 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
                 context.ExpectIndexes = new List<String>();
-                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatements[0]);
 
                 {
-                    StatementList statementList = ParseStatementList("UPDATE x SET col1=1, x.col1=2, x.col2=2, x.col3=3 FROM database1.schema1.table1 AS x WHERE x.col4=4;");
-                    foreach (var statment in statementList.Statements) {
+                    var statements = Parse("UPDATE x SET col1=1, x.col1=2, x.col2=2, x.col3=3 FROM database1.schema1.table1 AS x WHERE x.col4=4;");
+                    foreach (var statment in statements) {
                         var invalid = new BaseRuleValidator().IsInvalidUpdateStatement(LogManager.GetCurrentClassLogger(), context, statment as UpdateStatement);
                         Assert.True(invalid == true);
                     }
@@ -502,7 +564,7 @@ namespace SqlServerProtoServerTest {
 
             {
                 // init data
-                StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+                var initStatements = Parse("CREATE TABLE database1.schema1.table1(" +
                                                                      "col1 INT NOT NULL, " +
                                                                      "col2 INT NOT NULL, " +
                                                                      "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
@@ -514,14 +576,14 @@ namespace SqlServerProtoServerTest {
                 context.ExpectSchemaName = "schema1";
                 context.ExpectTableName = "table1";
                 context.ExpectIndexes = new List<String>();
-                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+                context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatements[0]);
 
 
-                StatementList statementList = ParseStatementList("DELETE f FROM databse1.schema1.table1 AS f WHERE f.col3=1;");
+                var statements = Parse("DELETE f FROM databse1.schema1.table1 AS f WHERE f.col3=1;");
                 context.ExpectDatabaseExist = false;
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
                     Assert.True(invalid == true);
                 }
@@ -532,7 +594,7 @@ namespace SqlServerProtoServerTest {
 
                 context.ExpectDatabaseExist = true;
                 context.ExpectSchemaExist = false;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
                     Assert.True(invalid == true);
                 }
@@ -542,7 +604,7 @@ namespace SqlServerProtoServerTest {
 
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = false;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
                     Assert.True(invalid == true);
                 }
@@ -553,7 +615,7 @@ namespace SqlServerProtoServerTest {
                 context.ExpectDatabaseExist = true;
                 context.ExpectSchemaExist = true;
                 context.ExpectTableExist = true;
-                foreach (var statment in statementList.Statements) {
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidDeleteStatement(LogManager.GetCurrentClassLogger(), context, statment as DeleteStatement);
                     Assert.True(invalid == true);
                 }
@@ -568,13 +630,13 @@ namespace SqlServerProtoServerTest {
             Console.WriteLine("IsInvalidSelect");
 
             // init data
-            StatementList initStatementList = ParseStatementList("CREATE TABLE database1.schema1.table1(" +
+            var initStatements = Parse("CREATE TABLE database1.schema1.table1(" +
                                                                  "col1 INT NOT NULL, " +
                                                                  "col2 INT NOT NULL, " +
                                                                  "CONSTRAINT PK_1 PRIMARY KEY (col1)," +
                                                                  "CONSTRAINT UN_1 UNIQUE (col2)," +
                                                                  "INDEX IX_1 (col2))");
-            CreateTableStatement initStatement = initStatementList.Statements[0] as CreateTableStatement;
+            CreateTableStatement initStatement = initStatements[0] as CreateTableStatement;
             var context = new SqlserverContext(new SqlserverMeta());
             context.IsTest = true;
             context.ExpectDatabaseExist = true;
@@ -584,11 +646,11 @@ namespace SqlServerProtoServerTest {
             context.ExpectSchemaName = "schema1";
             context.ExpectTableName = "table1";
             context.ExpectIndexes = new List<String>();
-            context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatementList.Statements[0]);
+            context.UpdateContext(LogManager.GetCurrentClassLogger(), initStatements[0]);
 
             {
-                StatementList statementList = ParseStatementList("SELECT col1 FROM database1.schema1.table1;");
-                foreach (var statment in statementList.Statements) {
+                var statements = Parse("SELECT col1 FROM database1.schema1.table1;");
+                foreach (var statment in statements) {
                     var invalid = new BaseRuleValidator().IsInvalidSelectStatement(LogManager.GetCurrentClassLogger(), context, statment as SelectStatement);
                     Assert.True(invalid == true);
                 }
@@ -615,8 +677,8 @@ namespace SqlServerProtoServerTest {
         }
 
         private void MyAssert(String ruleName, String text, String expectRuleLevel, String expectErrMsg) {
-            var statementList = ParseStatementList(text);
-            foreach (var statment in statementList.Statements) {
+            var statements = Parse(text);
+            foreach (var statment in statements) {
                 var context = new SqlserverContext(new SqlserverMeta());
                 var validator = DefaultRules.RuleValidators[ruleName];
                 validator.Check(context, statment);
@@ -879,8 +941,8 @@ namespace SqlServerProtoServerTest {
                     }) {
                         Console.WriteLine("text:{0}", text);
 
-                        var statementList = ParseStatementList(text);
-                        foreach (var statment in statementList.Statements) {
+                        var statements = Parse(text);
+                        foreach (var statment in statements) {
                             var context = new SqlserverContext(new SqlserverMeta());
                             var validator = DefaultRules.RuleValidators[DefaultRules.DDL_CHECK_INDEX_COUNT];
                             var checkIndexCountValidator = validator as NumberOfIndexesShouldNotExceedMaxRuleValidator;
@@ -911,8 +973,8 @@ namespace SqlServerProtoServerTest {
                     }) {
                         Console.WriteLine("text:{0}", text);
 
-                        var statementList = ParseStatementList(text);
-                        foreach (var statment in statementList.Statements) {
+                        var statements = Parse(text);
+                        foreach (var statment in statements) {
                             var context = new SqlserverContext(new SqlserverMeta());
                             var validator = DefaultRules.RuleValidators[DefaultRules.DDL_CHECK_INDEX_COUNT];
                             var checkIndexCountValidator = validator as NumberOfIndexesShouldNotExceedMaxRuleValidator;
@@ -1035,8 +1097,8 @@ namespace SqlServerProtoServerTest {
                     }) {
                         Console.WriteLine("text:{0}", text);
 
-                        var statementList = ParseStatementList(text);
-                        foreach (var statment in statementList.Statements) {
+                        var statements = Parse(text);
+                        foreach (var statment in statements) {
                             var context = new SqlserverContext(new SqlserverMeta());
                             var validator = DefaultRules.RuleValidators[DefaultRules.DDL_CHECK_INDEX_COLUMN_WITH_BLOB];
                             var checkIndexCountValidator = validator as DisableAddIndexForColumnsTypeBlob;
@@ -1072,8 +1134,8 @@ namespace SqlServerProtoServerTest {
                     }) {
                         Console.WriteLine("text:{0}", sql);
 
-                        var statementList = ParseStatementList(sql);
-                        foreach (var statement in statementList.Statements) {
+                        var statements = Parse(sql);
+                        foreach (var statement in statements) {
                             ruleValidator.Check(ruleValidatorContext, statement);
                             ruleValidatorContext.UpdateContext(LogManager.GetCurrentClassLogger(), statement);
                         }
