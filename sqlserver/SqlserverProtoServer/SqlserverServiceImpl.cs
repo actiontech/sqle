@@ -60,8 +60,88 @@ namespace SqlserverProtoServer {
             };
         }
 
+        internal class SQLVisitor: TSqlFragmentVisitor {
+            public List<TSqlStatement> Statements = new List<TSqlStatement>();
+
+            public override void ExplicitVisit(CreateProcedureStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(AlterProcedureStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(DropProcedureStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(CreateFunctionStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(AlterFunctionStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(DropFunctionStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(UseStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(CreateTableStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(AlterTableStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(DropTableStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(CreateDatabaseStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(DropDatabaseStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(DropSchemaStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(CreateIndexStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(DropIndexStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(InsertStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(DeleteStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(UpdateStatement node) {
+                Statements.Add(node);
+            }
+
+            public override void ExplicitVisit(SelectStatement node) {
+                Statements.Add(node);
+            }
+        }
+
         // parse sqls
-        public StatementList ParseStatementList(Logger logger, String version, String text) {
+        public IList<TSqlStatement> ParseStatementList(Logger logger, String version, String text) {
             // get parser
             var parser = GetParser(version);
 
@@ -98,7 +178,50 @@ namespace SqlserverProtoServer {
                 throw new ArgumentException(String.Format("parse sql `{0}` error: {1}", text, String.Join("; ", errMsgList)));
             }
 
-            return statementList;
+            return statementList.Statements;
+        }
+
+        // parse procedure & function
+        public IList<TSqlStatement> ParseWithVisitor(Logger logger, String version, String text) {
+            // get parser
+            var parser = GetParser(version);
+
+            var reader = new StringReader(text);
+            IList<ParseError> errorList;
+            TSqlFragment sqlFragment = parser.Parse(reader, out errorList);
+            if (errorList.Count > 0) {
+                var errMsgList = new List<String>();
+                foreach (var parseErr in errorList) {
+                    errMsgList.Add(parseErr.Message);
+                }
+                throw new ArgumentException(String.Format("parse sql `{0}` error: {1}", text, String.Join("; ", errMsgList)));
+            }
+
+            SQLVisitor sqlVisitor = new SQLVisitor();
+            sqlFragment.Accept(sqlVisitor);
+
+            return sqlVisitor.Statements;
+        }
+
+        public IList<TSqlStatement> Parse(Logger logger, String version, String text) {
+            try {
+                var statements = ParseStatementList(logger, version, text);
+                return statements;
+            } catch (Exception parseStatementListException) {
+                logger.Fatal("ParseStatementList exception error: {0}", parseStatementListException.Message);
+                logger.Fatal("ParseStatementList exception stackstrace: {0}", parseStatementListException.StackTrace);
+
+                // ParseStatementList can not parse procedure or function, using Parse try again.
+                try {
+                    var statements = ParseWithVisitor(logger, version, text);
+                    return statements;
+                } catch (Exception parseWithVisitorException) {
+                    logger.Fatal("ParseWithVisitor exception error: {0}", parseWithVisitorException.Message);
+                    logger.Fatal("ParseWithVisitor exception stackstrace: {0}", parseWithVisitorException.StackTrace);
+
+                    throw parseWithVisitorException;
+                }
+            }
         }
 
         // Splite sqls
@@ -109,9 +232,9 @@ namespace SqlserverProtoServer {
             var logger = LogManager.GetCurrentClassLogger();
 
             try {
-                var statementList = ParseStatementList(logger, version, sqls);
+                var statements = Parse(logger, version, sqls);
 
-                foreach (var statement in statementList.Statements) {
+                foreach (var statement in statements) {
                     var sql = "";
                     for (int index = statement.FirstTokenIndex; index <= statement.LastTokenIndex; index++) {
                         sql += statement.ScriptTokenStream[index].Text;
@@ -121,6 +244,8 @@ namespace SqlserverProtoServer {
                     splitSql.Sql_ = sql;
                     splitSql.IsDDL = IsDDL(statement);
                     splitSql.IsDML = IsDML(statement);
+                    splitSql.IsProcedure = IsProcedure(statement);
+                    splitSql.IsFunction = IsFunction(statement);
                     output.SplitSqls.Add(splitSql);
                 }
             } catch (Exception e) {
@@ -160,6 +285,30 @@ namespace SqlserverProtoServer {
             return false;
         }
 
+        public bool IsProcedure(TSqlStatement statement) {
+            if (statement is CreateProcedureStatement) {
+                return true;
+            } else if (statement is AlterProcedureStatement) {
+                return true;
+            } else if (statement is DropProcedureStatement) {
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool IsFunction(TSqlStatement statement) {
+            if (statement is CreateFunctionStatement) {
+                return true;
+            } else if (statement is AlterFunctionStatement) {
+                return true;
+            } else if (statement is DropFunctionStatement) {
+                return true;
+            }
+
+            return false;
+        }
+
         // Advise implement
         public override Task<AdviseOutput> Advise(AdviseInput request, ServerCallContext context) {
             var output = new AdviseOutput();
@@ -179,8 +328,8 @@ namespace SqlserverProtoServer {
                 for (var index = contextStart; index < contextSqls.Count; index++) {
                     logger.Info("context {0} sqls: {1}", index, String.Join("\n", contextSqls[index].Sqls));
                     foreach (var sql in contextSqls[index].Sqls) {
-                        var statementList = ParseStatementList(logger, version, sql);
-                        foreach (var statement in statementList.Statements) {
+                        var statements = Parse(logger, version, sql);
+                        foreach (var statement in statements) {
                             ruleValidatorContext.UpdateContext(logger, statement);
                         }
                     }
@@ -196,8 +345,8 @@ namespace SqlserverProtoServer {
             var baseValidatorStatus = AdviseResultContext.BASE_RULE_OK;
             foreach (var sql in sqls) {
                 try {
-                    var statementList = ParseStatementList(logger, version, sql);
-                    foreach (var statement in statementList.Statements) {
+                    var statements = Parse(logger, version, sql);
+                    foreach (var statement in statements) {
                         var baseRuleValidator = new BaseRuleValidator();
                         baseRuleValidator.Check(ruleValidatorContext, statement);
                         if (ruleValidatorContext.AdviseResultContext.GetBaseRuleStatus() == AdviseResultContext.BASE_RULE_FAILED) {
@@ -214,7 +363,9 @@ namespace SqlserverProtoServer {
                         ruleValidatorContext.UpdateContext(logger, statement);
                         var result = ruleValidatorContext.AdviseResultContext.GetAdviseResult();
                         result.IsDDL = IsDDL(statement);
-                        result.IsDML = IsDML(statement); ;
+                        result.IsDML = IsDML(statement);
+                        result.IsProcedure = IsProcedure(statement);
+                        result.IsFunction = IsFunction(statement);
                         output.Results.Add(result);
                     }
                     ruleValidatorContext.AdviseResultContext.ResetAdviseResult();
@@ -249,11 +400,23 @@ namespace SqlserverProtoServer {
 
             foreach (var sql in sqls) {
                 try {
-                    var statementList = ParseStatementList(logger, version, sql);
+                    var statements = Parse(logger, version, sql);
                     logger.Info("sql:{0}\n", sql);
-                    foreach (var statement in statementList.Statements) {
-                        output.RollbackSqls.Add(new RollbackSql().GetRollbackSql(rollbackSqlContext, statement));
-                        rollbackSqlContext.UpdateContext(logger, statement);
+                    foreach (var statement in statements) {
+                        if (IsProcedure(statement)) {
+                            var procedureRollbackSql = new Sql {
+                                IsProcedure = true,
+                            };
+                            output.RollbackSqls.Add(procedureRollbackSql);
+                        } else if (IsFunction(statement)) {
+                            var functionRollbackSql = new Sql {
+                                IsFunction = true,
+                            };
+                            output.RollbackSqls.Add(functionRollbackSql);
+                        } else {
+                            output.RollbackSqls.Add(new RollbackSql().GetRollbackSql(rollbackSqlContext, statement));
+                            rollbackSqlContext.UpdateContext(logger, statement);
+                        }
                     }
                 } catch (Exception e) {
                     logger.Fatal("GetRollbackSqls exception message:{0}", e.Message);

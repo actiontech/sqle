@@ -27,12 +27,16 @@ type SqlServerNode interface {
 	ast.Node
 	IsDDLStmt() bool
 	IsDMLStmt() bool
+	IsProcedureStmt() bool
+	IsFunctionStmt() bool
 }
 
 type SqlServerStmt struct {
 	Node
-	isDDL bool
-	isDML bool
+	isDDL       bool
+	isDML       bool
+	isProcedure bool
+	isFunction  bool
 }
 
 func (s *SqlServerStmt) IsDDLStmt() bool {
@@ -43,12 +47,22 @@ func (s *SqlServerStmt) IsDMLStmt() bool {
 	return s.isDML
 }
 
-func NewSqlServerStmt(sql string, isDDL, isDML bool) *SqlServerStmt {
+func (s *SqlServerStmt) IsProcedureStmt() bool {
+	return s.isProcedure
+}
+
+func (s *SqlServerStmt) IsFunctionStmt() bool {
+	return s.isFunction
+}
+
+func NewSqlServerStmt(sql string, isDDL, isDML, isProcedure, isFunction bool) *SqlServerStmt {
 	return &SqlServerStmt{
 		Node: Node{
 			text: sql,
 		},
-		isDML: isDML,
-		isDDL: isDDL,
+		isDML:       isDML,
+		isDDL:       isDDL,
+		isProcedure: isProcedure,
+		isFunction:  isFunction,
 	}
 }

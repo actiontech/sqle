@@ -18,6 +18,8 @@ message Sql {
     bool IsDDL = 2;
     bool IsDML = 3;
     string ErrMsg = 4;
+    bool IsProcedure = 5;
+    bool IsFunction = 6;
 }
 
 message SplitSqlsOutput {
@@ -55,6 +57,8 @@ message AdviseResult {
     string AdviseResultMessage = 2;
     bool IsDDL = 3;
     bool IsDML = 4;
+    bool IsProcedure = 5;
+    bool IsFunction = 6;
 }
 
 message Config {
