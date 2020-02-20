@@ -259,7 +259,6 @@ func (s *Sqled) commit(task *model.Task) error {
 	if err := i.ParseSqlType(); err != nil {
 		return err
 	}
-	i.Logger().Errorf("i.SqlType():%v\n", i.SqlType())
 	switch i.SqlType() {
 	case model.SQL_TYPE_DML:
 		return s.commitDML(task)
