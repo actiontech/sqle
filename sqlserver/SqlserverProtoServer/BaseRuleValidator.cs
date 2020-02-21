@@ -917,6 +917,9 @@ namespace SqlserverProtoServer {
                 var needExistsDatabaseNames = new List<String>();
                 var needExistsSchemaNames = new List<String>();
                 var needExistsTableNames = new List<String>();
+                if (querySpecfication.FromClause == null) {
+                    return false;
+                }
                 foreach (var tableReference in querySpecfication.FromClause.TableReferences) {
                     if (tableReference is NamedTableReference) {
                         var namedTableReference = tableReference as NamedTableReference;
