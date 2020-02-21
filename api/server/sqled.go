@@ -302,7 +302,9 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 				if backupSqls != nil {
 					for _, backupSql := range backupSqls {
 						backupSqlModel := &model.Sql{Content: backupSql}
-						i.CommitDDL(backupSqlModel)
+						if err := i.CommitDDL(backupSqlModel); err != nil {
+							i.Logger().Errorf("create procedure function backup failed, sql: %v, error: %v", backupSql, err)
+						}
 					}
 				}
 			}
