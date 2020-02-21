@@ -175,3 +175,17 @@ func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error
 
 	return i.Inspect.GetAllRollbackSqlReversed(rollbackSqls), err
 }
+
+func (i *SqlserverInspect) GetProcedureFunctionBackupSql(sql string) ([]string, error) {
+	i.Logger().Info("start get procedure & function backup sql")
+
+	var meta = sqlserverClient.GetSqlserverMeta(i.Task.Instance.User, i.Task.Instance.Password, i.Task.Instance.Host, i.Task.Instance.Port, i.Task.Schema, "")
+	backupSql, err := sqlserverClient.GetClient().GetProcedureFunctionBackupSql(sql, meta)
+	if err != nil {
+		i.Logger().Errorf("get procedure & function backup sql error: %v", err)
+		return nil, err
+	}
+	i.Logger().Info("get procedure & function backup sql finish")
+
+	return backupSql, nil
+}

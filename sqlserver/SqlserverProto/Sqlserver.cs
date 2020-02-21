@@ -47,13 +47,20 @@ namespace SqlserverProto {
             "DVNxbHNlcnZlck1ldGEYAyABKAsyHS5TcWxzZXJ2ZXJQcm90by5TcWxzZXJ2",
             "ZXJNZXRhEi4KDlJvbGxiYWNrQ29uZmlnGAQgASgLMhYuU3Fsc2VydmVyUHJv",
             "dG8uQ29uZmlnIkIKFUdldFJvbGxiYWNrU3Fsc091dHB1dBIpCgxSb2xsYmFj",
-            "a1NxbHMYASADKAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwyjgIKEFNxbHNlcnZl",
-            "clNlcnZpY2USUQoMR2V0U3BsaXRTcWxzEh4uU3Fsc2VydmVyUHJvdG8uU3Bs",
-            "aXRTcWxzSW5wdXQaHy5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNPdXRwdXQi",
-            "ABJFCgZBZHZpc2USGy5TcWxzZXJ2ZXJQcm90by5BZHZpc2VJbnB1dBocLlNx",
-            "bHNlcnZlclByb3RvLkFkdmlzZU91dHB1dCIAEmAKD0dldFJvbGxiYWNrU3Fs",
-            "cxIkLlNxbHNlcnZlclByb3RvLkdldFJvbGxiYWNrU3Fsc0lucHV0GiUuU3Fs",
-            "c2VydmVyUHJvdG8uR2V0Um9sbGJhY2tTcWxzT3V0cHV0IgBiBnByb3RvMw=="));
+            "a1NxbHMYASADKAsyEy5TcWxzZXJ2ZXJQcm90by5TcWwiZwoiR2V0UHJvY2Vk",
+            "dXJlRnVuY3Rpb25CYWNrdXBTcWxJbnB1dBILCgNTcWwYASABKAkSNAoNU3Fs",
+            "c2VydmVyTWV0YRgCIAEoCzIdLlNxbHNlcnZlclByb3RvLlNxbHNlcnZlck1l",
+            "dGEiOQojR2V0UHJvY2VkdXJlRnVuY3Rpb25CYWNrdXBTcWxPdXRwdXQSEgoK",
+            "QmFja3VwU3FscxgBIAMoCTKbAwoQU3Fsc2VydmVyU2VydmljZRJRCgxHZXRT",
+            "cGxpdFNxbHMSHi5TcWxzZXJ2ZXJQcm90by5TcGxpdFNxbHNJbnB1dBofLlNx",
+            "bHNlcnZlclByb3RvLlNwbGl0U3Fsc091dHB1dCIAEkUKBkFkdmlzZRIbLlNx",
+            "bHNlcnZlclByb3RvLkFkdmlzZUlucHV0GhwuU3Fsc2VydmVyUHJvdG8uQWR2",
+            "aXNlT3V0cHV0IgASYAoPR2V0Um9sbGJhY2tTcWxzEiQuU3Fsc2VydmVyUHJv",
+            "dG8uR2V0Um9sbGJhY2tTcWxzSW5wdXQaJS5TcWxzZXJ2ZXJQcm90by5HZXRS",
+            "b2xsYmFja1NxbHNPdXRwdXQiABKKAQodR2V0UHJvY2VkdXJlRnVuY3Rpb25C",
+            "YWNrdXBTcWwSMi5TcWxzZXJ2ZXJQcm90by5HZXRQcm9jZWR1cmVGdW5jdGlv",
+            "bkJhY2t1cFNxbElucHV0GjMuU3Fsc2VydmVyUHJvdG8uR2V0UHJvY2VkdXJl",
+            "RnVuY3Rpb25CYWNrdXBTcWxPdXRwdXQiAGIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -67,7 +74,9 @@ namespace SqlserverProto {
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.AdviseResult), global::SqlserverProto.AdviseResult.Parser, new[]{ "AdviseLevel", "AdviseResultMessage", "IsDDL", "IsDML", "IsProcedure", "IsFunction" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.Config), global::SqlserverProto.Config.Parser, new[]{ "DMLRollbackMaxRows" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsInput), global::SqlserverProto.GetRollbackSqlsInput.Parser, new[]{ "Version", "Sqls", "SqlserverMeta", "RollbackConfig" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetRollbackSqlsOutput), global::SqlserverProto.GetRollbackSqlsOutput.Parser, new[]{ "RollbackSqls" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetProcedureFunctionBackupSqlInput), global::SqlserverProto.GetProcedureFunctionBackupSqlInput.Parser, new[]{ "Sql", "SqlserverMeta" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::SqlserverProto.GetProcedureFunctionBackupSqlOutput), global::SqlserverProto.GetProcedureFunctionBackupSqlOutput.Parser, new[]{ "BackupSqls" }, null, null, null)
           }));
     }
     #endregion
@@ -918,7 +927,7 @@ namespace SqlserverProto {
       version_ = other.version_;
       sqls_ = other.sqls_.Clone();
       ruleNames_ = other.ruleNames_.Clone();
-      SqlserverMeta = other.sqlserverMeta_ != null ? other.SqlserverMeta.Clone() : null;
+      sqlserverMeta_ = other.sqlserverMeta_ != null ? other.sqlserverMeta_.Clone() : null;
       dDLContextSqls_ = other.dDLContextSqls_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -1808,8 +1817,8 @@ namespace SqlserverProto {
     public GetRollbackSqlsInput(GetRollbackSqlsInput other) : this() {
       version_ = other.version_;
       sqls_ = other.sqls_.Clone();
-      SqlserverMeta = other.sqlserverMeta_ != null ? other.SqlserverMeta.Clone() : null;
-      RollbackConfig = other.rollbackConfig_ != null ? other.RollbackConfig.Clone() : null;
+      sqlserverMeta_ = other.sqlserverMeta_ != null ? other.sqlserverMeta_.Clone() : null;
+      rollbackConfig_ = other.rollbackConfig_ != null ? other.rollbackConfig_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -2111,6 +2120,290 @@ namespace SqlserverProto {
             break;
           case 10: {
             rollbackSqls_.AddEntriesFrom(input, _repeated_rollbackSqls_codec);
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
+  public sealed partial class GetProcedureFunctionBackupSqlInput : pb::IMessage<GetProcedureFunctionBackupSqlInput> {
+    private static readonly pb::MessageParser<GetProcedureFunctionBackupSqlInput> _parser = new pb::MessageParser<GetProcedureFunctionBackupSqlInput>(() => new GetProcedureFunctionBackupSqlInput());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<GetProcedureFunctionBackupSqlInput> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[11]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public GetProcedureFunctionBackupSqlInput() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public GetProcedureFunctionBackupSqlInput(GetProcedureFunctionBackupSqlInput other) : this() {
+      sql_ = other.sql_;
+      sqlserverMeta_ = other.sqlserverMeta_ != null ? other.sqlserverMeta_.Clone() : null;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public GetProcedureFunctionBackupSqlInput Clone() {
+      return new GetProcedureFunctionBackupSqlInput(this);
+    }
+
+    /// <summary>Field number for the "Sql" field.</summary>
+    public const int SqlFieldNumber = 1;
+    private string sql_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public string Sql {
+      get { return sql_; }
+      set {
+        sql_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "SqlserverMeta" field.</summary>
+    public const int SqlserverMetaFieldNumber = 2;
+    private global::SqlserverProto.SqlserverMeta sqlserverMeta_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public global::SqlserverProto.SqlserverMeta SqlserverMeta {
+      get { return sqlserverMeta_; }
+      set {
+        sqlserverMeta_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as GetProcedureFunctionBackupSqlInput);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(GetProcedureFunctionBackupSqlInput other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Sql != other.Sql) return false;
+      if (!object.Equals(SqlserverMeta, other.SqlserverMeta)) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Sql.Length != 0) hash ^= Sql.GetHashCode();
+      if (sqlserverMeta_ != null) hash ^= SqlserverMeta.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      if (Sql.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Sql);
+      }
+      if (sqlserverMeta_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(SqlserverMeta);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (Sql.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Sql);
+      }
+      if (sqlserverMeta_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(SqlserverMeta);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(GetProcedureFunctionBackupSqlInput other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Sql.Length != 0) {
+        Sql = other.Sql;
+      }
+      if (other.sqlserverMeta_ != null) {
+        if (sqlserverMeta_ == null) {
+          sqlserverMeta_ = new global::SqlserverProto.SqlserverMeta();
+        }
+        SqlserverMeta.MergeFrom(other.SqlserverMeta);
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Sql = input.ReadString();
+            break;
+          }
+          case 18: {
+            if (sqlserverMeta_ == null) {
+              sqlserverMeta_ = new global::SqlserverProto.SqlserverMeta();
+            }
+            input.ReadMessage(sqlserverMeta_);
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
+  public sealed partial class GetProcedureFunctionBackupSqlOutput : pb::IMessage<GetProcedureFunctionBackupSqlOutput> {
+    private static readonly pb::MessageParser<GetProcedureFunctionBackupSqlOutput> _parser = new pb::MessageParser<GetProcedureFunctionBackupSqlOutput>(() => new GetProcedureFunctionBackupSqlOutput());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<GetProcedureFunctionBackupSqlOutput> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::SqlserverProto.SqlserverReflection.Descriptor.MessageTypes[12]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public GetProcedureFunctionBackupSqlOutput() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public GetProcedureFunctionBackupSqlOutput(GetProcedureFunctionBackupSqlOutput other) : this() {
+      backupSqls_ = other.backupSqls_.Clone();
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public GetProcedureFunctionBackupSqlOutput Clone() {
+      return new GetProcedureFunctionBackupSqlOutput(this);
+    }
+
+    /// <summary>Field number for the "BackupSqls" field.</summary>
+    public const int BackupSqlsFieldNumber = 1;
+    private static readonly pb::FieldCodec<string> _repeated_backupSqls_codec
+        = pb::FieldCodec.ForString(10);
+    private readonly pbc::RepeatedField<string> backupSqls_ = new pbc::RepeatedField<string>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public pbc::RepeatedField<string> BackupSqls {
+      get { return backupSqls_; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as GetProcedureFunctionBackupSqlOutput);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(GetProcedureFunctionBackupSqlOutput other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if(!backupSqls_.Equals(other.backupSqls_)) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      hash ^= backupSqls_.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      backupSqls_.WriteTo(output, _repeated_backupSqls_codec);
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      size += backupSqls_.CalculateSize(_repeated_backupSqls_codec);
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(GetProcedureFunctionBackupSqlOutput other) {
+      if (other == null) {
+        return;
+      }
+      backupSqls_.Add(other.backupSqls_);
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            backupSqls_.AddEntriesFrom(input, _repeated_backupSqls_codec);
             break;
           }
         }
