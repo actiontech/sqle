@@ -420,12 +420,66 @@ namespace SqlserverProtoServer {
                     }
                 } catch (Exception e) {
                     logger.Fatal("GetRollbackSqls exception message:{0}", e.Message);
-                    logger.Fatal("GetRollbackSqls exception stackstrace:{0}", e.StackTrace, e.Message);
+                    logger.Fatal("GetRollbackSqls exception stackstrace:{0}", e.StackTrace);
                     throw new RpcException(new Status(StatusCode.Internal, e.Message));
                 }
 
             }
 
+            return Task.FromResult(output);
+        }
+
+        // GetProcedureFunctionBackupSql implement
+        public override Task<GetProcedureFunctionBackupSqlOutput> GetProcedureFunctionBackupSql(GetProcedureFunctionBackupSqlInput request, ServerCallContext context) {
+            var output = new GetProcedureFunctionBackupSqlOutput();
+            var logger = LogManager.GetCurrentClassLogger();
+            var sqlserverMeta = request.SqlserverMeta;
+            ProcedureFunctionBackupSqlGenerator procedureFunctionBackupSqlGenerator = new ProcedureFunctionBackupSqlGenerator(request.SqlserverMeta);
+
+            try {
+                var statements = Parse(logger, "", request.Sql);
+                foreach (var statement in statements) {
+                    List<string> backupSqls = new List<string>();
+                    // drop procedure
+                    if (statement is DropProcedureStatement) {
+                        var dropProcedureStatement = statement as DropProcedureStatement;
+                        backupSqls = procedureFunctionBackupSqlGenerator.GetbackupSqlsForObejcts(logger, dropProcedureStatement.Objects);
+                    }
+
+                    // alter procedure
+                    if (statement is AlterProcedureStatement) {
+                        var alterProcedureStatement = statement as AlterProcedureStatement;
+                        var objects = new List<SchemaObjectName>();
+                        objects.Add(alterProcedureStatement.ProcedureReference.Name);
+                        backupSqls = procedureFunctionBackupSqlGenerator.GetbackupSqlsForObejcts(logger, objects);
+                    }
+
+                    // drop function
+                    if (statement is DropFunctionStatement) {
+                        var dropFunctionStatement = statement as DropFunctionStatement;
+                        backupSqls = procedureFunctionBackupSqlGenerator.GetbackupSqlsForObejcts(logger, dropFunctionStatement.Objects);
+                    }
+
+                    // alter function
+                    if (statement is AlterFunctionStatement) {
+                        var alterFunctionStatement = statement as AlterFunctionStatement;
+                        var obejcts = new List<SchemaObjectName>();
+                        obejcts.Add(alterFunctionStatement.Name);
+                        backupSqls = procedureFunctionBackupSqlGenerator.GetbackupSqlsForObejcts(logger, obejcts);
+                    }
+
+                    foreach (var backupSql in backupSqls) {
+                        if (!output.BackupSqls.Contains(backupSql)) {
+                            output.BackupSqls.Add(backupSql);
+                        }
+                    }
+                }
+            } catch(Exception e) {
+                logger.Fatal("GetProcedureFunctionBackupSql exception message:{0}", e.Message);
+                logger.Fatal("GetProcedureFunctionBackupSql exception stackstrace:{0}", e.StackTrace);
+
+                throw new RpcException(new Status(StatusCode.Internal, e.Message));
+            }
             return Task.FromResult(output);
         }
     }

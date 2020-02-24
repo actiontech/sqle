@@ -106,3 +106,11 @@ func (c *Client) GenerateAllRollbackSql(commitSqls []*model.CommitSql, config *S
 	})
 	return out.GetRollbackSqls(), err
 }
+
+func (c *Client) GetProcedureFunctionBackupSql(sql string, meta *SqlserverProto.SqlserverMeta) ([]string, error) {
+	out, err := c.client.GetProcedureFunctionBackupSql(context.Background(), &SqlserverProto.GetProcedureFunctionBackupSqlInput{
+		Sql:           sql,
+		SqlserverMeta: meta,
+	})
+	return out.GetBackupSqls(), err
+}

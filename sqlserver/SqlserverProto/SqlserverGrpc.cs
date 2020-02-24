@@ -18,6 +18,8 @@ namespace SqlserverProto {
     static readonly grpc::Marshaller<global::SqlserverProto.AdviseOutput> __Marshaller_SqlserverProto_AdviseOutput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.AdviseOutput.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::SqlserverProto.GetRollbackSqlsInput> __Marshaller_SqlserverProto_GetRollbackSqlsInput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.GetRollbackSqlsInput.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::SqlserverProto.GetRollbackSqlsOutput> __Marshaller_SqlserverProto_GetRollbackSqlsOutput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.GetRollbackSqlsOutput.Parser.ParseFrom);
+    static readonly grpc::Marshaller<global::SqlserverProto.GetProcedureFunctionBackupSqlInput> __Marshaller_SqlserverProto_GetProcedureFunctionBackupSqlInput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.GetProcedureFunctionBackupSqlInput.Parser.ParseFrom);
+    static readonly grpc::Marshaller<global::SqlserverProto.GetProcedureFunctionBackupSqlOutput> __Marshaller_SqlserverProto_GetProcedureFunctionBackupSqlOutput = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::SqlserverProto.GetProcedureFunctionBackupSqlOutput.Parser.ParseFrom);
 
     static readonly grpc::Method<global::SqlserverProto.SplitSqlsInput, global::SqlserverProto.SplitSqlsOutput> __Method_GetSplitSqls = new grpc::Method<global::SqlserverProto.SplitSqlsInput, global::SqlserverProto.SplitSqlsOutput>(
         grpc::MethodType.Unary,
@@ -40,6 +42,13 @@ namespace SqlserverProto {
         __Marshaller_SqlserverProto_GetRollbackSqlsInput,
         __Marshaller_SqlserverProto_GetRollbackSqlsOutput);
 
+    static readonly grpc::Method<global::SqlserverProto.GetProcedureFunctionBackupSqlInput, global::SqlserverProto.GetProcedureFunctionBackupSqlOutput> __Method_GetProcedureFunctionBackupSql = new grpc::Method<global::SqlserverProto.GetProcedureFunctionBackupSqlInput, global::SqlserverProto.GetProcedureFunctionBackupSqlOutput>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "GetProcedureFunctionBackupSql",
+        __Marshaller_SqlserverProto_GetProcedureFunctionBackupSqlInput,
+        __Marshaller_SqlserverProto_GetProcedureFunctionBackupSqlOutput);
+
     /// <summary>Service descriptor</summary>
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
     {
@@ -60,6 +69,11 @@ namespace SqlserverProto {
       }
 
       public virtual global::System.Threading.Tasks.Task<global::SqlserverProto.GetRollbackSqlsOutput> GetRollbackSqls(global::SqlserverProto.GetRollbackSqlsInput request, grpc::ServerCallContext context)
+      {
+        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
+      }
+
+      public virtual global::System.Threading.Tasks.Task<global::SqlserverProto.GetProcedureFunctionBackupSqlOutput> GetProcedureFunctionBackupSql(global::SqlserverProto.GetProcedureFunctionBackupSqlInput request, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -137,6 +151,22 @@ namespace SqlserverProto {
       {
         return CallInvoker.AsyncUnaryCall(__Method_GetRollbackSqls, null, options, request);
       }
+      public virtual global::SqlserverProto.GetProcedureFunctionBackupSqlOutput GetProcedureFunctionBackupSql(global::SqlserverProto.GetProcedureFunctionBackupSqlInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GetProcedureFunctionBackupSql(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      public virtual global::SqlserverProto.GetProcedureFunctionBackupSqlOutput GetProcedureFunctionBackupSql(global::SqlserverProto.GetProcedureFunctionBackupSqlInput request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_GetProcedureFunctionBackupSql, null, options, request);
+      }
+      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.GetProcedureFunctionBackupSqlOutput> GetProcedureFunctionBackupSqlAsync(global::SqlserverProto.GetProcedureFunctionBackupSqlInput request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GetProcedureFunctionBackupSqlAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      public virtual grpc::AsyncUnaryCall<global::SqlserverProto.GetProcedureFunctionBackupSqlOutput> GetProcedureFunctionBackupSqlAsync(global::SqlserverProto.GetProcedureFunctionBackupSqlInput request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_GetProcedureFunctionBackupSql, null, options, request);
+      }
       /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
       protected override SqlserverServiceClient NewInstance(ClientBaseConfiguration configuration)
       {
@@ -151,7 +181,8 @@ namespace SqlserverProto {
       return grpc::ServerServiceDefinition.CreateBuilder()
           .AddMethod(__Method_GetSplitSqls, serviceImpl.GetSplitSqls)
           .AddMethod(__Method_Advise, serviceImpl.Advise)
-          .AddMethod(__Method_GetRollbackSqls, serviceImpl.GetRollbackSqls).Build();
+          .AddMethod(__Method_GetRollbackSqls, serviceImpl.GetRollbackSqls)
+          .AddMethod(__Method_GetProcedureFunctionBackupSql, serviceImpl.GetProcedureFunctionBackupSql).Build();
     }
 
   }

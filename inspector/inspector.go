@@ -36,6 +36,9 @@ type Inspector interface {
 	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
 	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
 
+	// GetProcedureFunctionBackupSql return backupSql for procedure & function
+	GetProcedureFunctionBackupSql(sql string) ([]string, error)
+
 	// CommitDDL commit task.commitSql(ddl).
 	CommitDDL(sql *model.Sql) error
 
@@ -483,4 +486,8 @@ func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{},
 		}
 	}
 	return pkColumnsName, hasPk, nil
+}
+
+func (i *Inspect) GetProcedureFunctionBackupSql(sql string) ([]string, error) {
+	return nil, nil
 }

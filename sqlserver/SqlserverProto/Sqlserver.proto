@@ -6,6 +6,7 @@ service SqlserverService {
     rpc GetSplitSqls(SplitSqlsInput) returns (SplitSqlsOutput) {}
     rpc Advise(AdviseInput) returns (AdviseOutput) {}
     rpc GetRollbackSqls(GetRollbackSqlsInput) returns (GetRollbackSqlsOutput) {}
+    rpc GetProcedureFunctionBackupSql(GetProcedureFunctionBackupSqlInput) returns (GetProcedureFunctionBackupSqlOutput) {}
 }
 
 message SplitSqlsInput {
@@ -74,4 +75,13 @@ message GetRollbackSqlsInput {
 
 message GetRollbackSqlsOutput {
     repeated Sql RollbackSqls = 1;
+}
+
+message GetProcedureFunctionBackupSqlInput {
+    string Sql = 1;
+    SqlserverMeta SqlserverMeta = 2;
+}
+
+message GetProcedureFunctionBackupSqlOutput {
+    repeated string BackupSqls = 1;
 }

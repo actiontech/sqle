@@ -249,8 +249,12 @@ func (s *Sqled) commit(task *model.Task) error {
 		return s.commitDML(task)
 	}
 
-	if task.SqlType == model.SQL_TYPE_DDL || task.SqlType == model.SQL_TYPE_PROCEDURE_FUNCTION {
-		return s.commitDDL(task)
+	if task.SqlType == model.SQL_TYPE_DDL {
+		return s.commitDDL(task, false)
+	}
+
+	if task.SqlType == model.SQL_TYPE_PROCEDURE_FUNCTION {
+		return s.commitDDL(task, true)
 	}
 
 	// if task is not inspected, parse task SQL type and commit it.
@@ -263,16 +267,18 @@ func (s *Sqled) commit(task *model.Task) error {
 	case model.SQL_TYPE_DML:
 		return s.commitDML(task)
 	case model.SQL_TYPE_DDL:
-		return s.commitDDL(task)
+		return s.commitDDL(task, false)
 	case model.SQL_TYPE_MULTI:
 		return errors.SQL_STMT_CONFLICT_ERROR
+	case model.SQL_TYPE_PROCEDURE_FUNCTION:
+		return s.commitDDL(task, true)
 	case model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI:
 		return errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR
 	}
 	return nil
 }
 
-func (s *Sqled) commitDDL(task *model.Task) error {
+func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 
 	st := model.GetStorage()
@@ -286,6 +292,21 @@ func (s *Sqled) commitDDL(task *model.Task) error {
 			if err != nil {
 				i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 				return err
+			}
+			if isProcedureFunction {
+				backupSqls, err := i.GetProcedureFunctionBackupSql(sql.Content)
+				if err != nil {
+					i.Logger().Errorf("get procedure function backup sql failed, error: %v", err)
+					return err
+				}
+				if backupSqls != nil {
+					for _, backupSql := range backupSqls {
+						backupSqlModel := &model.Sql{Content: backupSql}
+						if err := i.CommitDDL(backupSqlModel); err != nil {
+							i.Logger().Errorf("create procedure function backup failed, sql: %v, error: %v", backupSql, err)
+						}
+					}
+				}
 			}
 			i.CommitDDL(sql)
 			err = st.Save(currentSql)
