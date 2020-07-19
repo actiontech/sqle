@@ -2,13 +2,14 @@ package controller
 
 import (
 	"fmt"
-	"github.com/labstack/echo"
 	"net/http"
 	"sqle/api/server"
 	"sqle/errors"
 	"sqle/inspector"
 	"sqle/log"
 	"sqle/model"
+
+	"github.com/labstack/echo"
 )
 
 type CreateTaskReq struct {
@@ -315,7 +316,7 @@ type GetCommittingResultRes struct {
 // @router /tasks/{task_id}/committing_result [get]
 func GetCommittingResult(c echo.Context) error {
 	s := model.GetStorage()
-	taskId :=  c.Param("task_id")
+	taskId := c.Param("task_id")
 	res, err := s.GetSqlCommittingResultByTaskId(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
@@ -323,7 +324,30 @@ func GetCommittingResult(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetCommittingResultRes{
 		BaseRes: NewBaseReq(nil),
-		Data:   res,
+		Data:    res,
 	})
 }
 
+type GetUploadedSqlsRes struct {
+	BaseRes
+	Data []model.CommitSql `json:"data"`
+}
+
+// @Summary 获取指定task的SQLs信息
+// @Description get information of all SQLs belong to the specified task
+// @Param task_id path string true "Task ID"
+// @Success 200 {object} controller.GetUploadedSqlsRes
+// @router /tasks/{task_id}/uploaded_sqls [get]
+func GetUploadedSqls(c echo.Context) error {
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	res, err := s.GetSqlsByTaskId(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	return c.JSON(http.StatusOK, &GetUploadedSqlsRes{
+		BaseRes: NewBaseReq(nil),
+		Data:    res,
+	})
+}
