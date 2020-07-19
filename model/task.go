@@ -2,10 +2,9 @@ package model
 
 import (
 	"fmt"
-	"sqle/errors"
-
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/tidb/ast"
+	"sqle/errors"
 )
 
 // task action
@@ -251,4 +250,11 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 		Action:     TASK_ACTION_INSPECT,
 	}).Preload("Instance").Preload("CommitSqls").Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetSqlCommittingResultByTaskId(taskId string) (string, error) {
+	//TODO @luowei support task with multi SQLs
+	CommitSql := CommitSql{}
+	err := s.db.Where("task_id=?",taskId).First(&CommitSql).Error
+	return CommitSql.ExecStatus, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
