@@ -309,7 +309,7 @@ type GetCommittingResultRes struct {
 }
 
 // @Summary 获取SQLs上线结果
-// @Description get execution result of all SQLs within the specified task
+// @Description get execution result of all SQLs belong to the specified task
 // @Param task_id path string true "Task ID"
 // @Success 200 {object} controller.GetCommittingResultRes
 // @router /tasks/{task_id}/committing_result [get]
