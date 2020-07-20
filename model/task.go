@@ -258,3 +258,10 @@ func (s *Storage) GetSqlCommittingResultByTaskId(taskId string) (string, error) 
 	err := s.db.Where("task_id=?",taskId).First(&CommitSql).Error
 	return CommitSql.ExecStatus, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+
+func (s *Storage) GetSqlsByTaskId(taskId string) ([]CommitSql, error) {
+	//TODO @luowei support filter and limit
+	CommitSqls := []CommitSql{}
+	err := s.db.Where("task_id=?",taskId).Find(&CommitSqls).Error
+	return CommitSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
