@@ -302,3 +302,28 @@ func CreateAndInspectTask(c echo.Context) error {
 		Data:    task.Detail(),
 	})
 }
+
+type GetCommittingResultRes struct {
+	BaseRes
+	Data string `json:"data"`
+}
+
+// @Summary 获取SQLs上线结果
+// @Description get execution result of all SQLs belong to the specified task
+// @Param task_id path string true "Task ID"
+// @Success 200 {object} controller.GetCommittingResultRes
+// @router /tasks/{task_id}/committing_result [get]
+func GetCommittingResult(c echo.Context) error {
+	s := model.GetStorage()
+	taskId :=  c.Param("task_id")
+	res, err := s.GetSqlCommittingResultByTaskId(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	return c.JSON(http.StatusOK, &GetCommittingResultRes{
+		BaseRes: NewBaseReq(nil),
+		Data:   res,
+	})
+}
+
