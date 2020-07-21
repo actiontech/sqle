@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
+	"sqle/errors"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/tidb/ast"
-	"sqle/errors"
 )
 
 // task action
@@ -75,6 +76,7 @@ type Task struct {
 	Schema       string         `json:"schema" example:"db1"`
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
 	InstanceId   uint           `json:"instance_id"`
+	InstanceName string         `json:"instance_name"`
 	NormalRate   float64        `json:"normal_rate"`
 	SqlType      string         `json:"-"`
 	Action       uint           `json:"-"`
@@ -186,6 +188,12 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 func (s *Storage) GetTasks() ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Find(&tasks).Error
+	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetTasksById(ids []string) ([]Task, error) {
+	tasks := []Task{}
+	err := s.db.Where("id IN (?)", ids).Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 

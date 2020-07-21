@@ -8,6 +8,7 @@ import (
 	"sqle/inspector"
 	"sqle/log"
 	"sqle/model"
+	"strings"
 
 	"github.com/labstack/echo"
 )
@@ -186,6 +187,7 @@ type GetAllTaskRes struct {
 
 // @Summary Sql审核列表
 // @Description get all tasks
+// @Param task_ids query string false "get task by ids(interlaced by ',')"
 // @Success 200 {object} controller.GetAllTaskRes
 // @router /tasks [get]
 func GetTasks(c echo.Context) error {
@@ -193,7 +195,14 @@ func GetTasks(c echo.Context) error {
 	if s == nil {
 		c.String(500, "nil")
 	}
-	tasks, err := s.GetTasks()
+	var err error
+	var tasks []model.Task
+	taskIds := c.QueryParam("task_ids")
+	if taskIds == "" {
+		tasks, err = s.GetTasks()
+	} else {
+		tasks, err = s.GetTasksById(strings.Split(strings.TrimRight(taskIds, ","), ","))
+	}
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
