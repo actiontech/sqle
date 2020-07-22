@@ -63,12 +63,13 @@ func createTask(c echo.Context) (*model.Task, BaseRes) {
 	}
 
 	task := &model.Task{
-		Name:       req.Name,
-		Desc:       req.Desc,
-		Schema:     req.Schema,
-		InstanceId: inst.ID,
-		Instance:   inst,
-		CommitSqls: []*model.CommitSql{},
+		Name:         req.Name,
+		Desc:         req.Desc,
+		Schema:       req.Schema,
+		InstanceId:   inst.ID,
+		Instance:     inst,
+		CommitSqls:   []*model.CommitSql{},
+		InstanceName: req.InstName,
 	}
 	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil, nil).
 		ParseSql(req.Sql)
