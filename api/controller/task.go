@@ -202,7 +202,7 @@ func GetTasks(c echo.Context) error {
 	if taskIds == "" {
 		tasks, err = s.GetTasks()
 	} else {
-		tasks, err = s.GetTasksById(strings.Split(strings.TrimRight(taskIds, ","), ","))
+		tasks, err = s.GetTasksByIds(strings.Split(strings.TrimRight(taskIds, ","), ","))
 	}
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))

@@ -191,7 +191,7 @@ func (s *Storage) GetTasks() ([]Task, error) {
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetTasksById(ids []string) ([]Task, error) {
+func (s *Storage) GetTasksByIds(ids []string) ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Where("id IN (?)", ids).Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
