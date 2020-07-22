@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
+	"sqle/errors"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/tidb/ast"
-	"sqle/errors"
 )
 
 // task action
@@ -17,7 +18,7 @@ const (
 const (
 	TASK_ACTION_INIT                  = ""
 	TASK_ACTION_DOING                 = "doing"
-	TASK_ACTION_DONE                  = "finish"
+	TASK_ACTION_DONE                  = "finished"
 	TASK_ACTION_ERROR                 = "failed"
 	SQL_TYPE_DML                      = "dml"
 	SQL_TYPE_DDL                      = "ddl"
@@ -75,6 +76,7 @@ type Task struct {
 	Schema       string         `json:"schema" example:"db1"`
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
 	InstanceId   uint           `json:"instance_id"`
+	InstanceName string         `json:"instance_name"`
 	NormalRate   float64        `json:"normal_rate"`
 	SqlType      string         `json:"-"`
 	Action       uint           `json:"-"`
@@ -186,6 +188,12 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 func (s *Storage) GetTasks() ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Find(&tasks).Error
+	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetTasksByIds(ids []string) ([]Task, error) {
+	tasks := []Task{}
+	err := s.db.Where("id IN (?)", ids).Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
