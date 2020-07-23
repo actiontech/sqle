@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"sqle/api/server"
 	"sqle/errors"
 	"sqle/inspector"
@@ -198,7 +199,11 @@ func GetTasks(c echo.Context) error {
 	}
 	var err error
 	var tasks []model.Task
-	taskIds := c.QueryParam("task_ids")
+
+	taskIds, err := url.QueryUnescape(c.QueryParam("task_ids"))
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
 	if taskIds == "" {
 		tasks, err = s.GetTasks()
 	} else {
