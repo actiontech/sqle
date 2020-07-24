@@ -182,6 +182,29 @@ func DeleteTask(c echo.Context) error {
 	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
 
+
+// @Summary 批量删除审核任务
+// @Description delete tasks by ids
+// @Param task_ids formData string true "remove tasks by ids(interlaced by ',')"
+// @Success 200 {object} controller.BaseRes
+// @router /tasks/remove_by_task_ids [post]
+func DeleteTasks(c echo.Context) error {
+	s := model.GetStorage()
+
+	taskIds, err := url.QueryUnescape(c.FormValue("task_ids"))
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	err = s.DeleteTasksByIds(strings.Split(strings.TrimRight(taskIds, ","), ","))
+
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	return c.JSON(http.StatusOK, NewBaseReq(nil))
+}
+
+
 type GetAllTaskRes struct {
 	BaseRes
 	Data []model.Task `json:"data"`
