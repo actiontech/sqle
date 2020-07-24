@@ -273,3 +273,10 @@ func (s *Storage) GetSqlsByTaskId(taskId string) ([]CommitSql, error) {
 	err := s.db.Where("task_id=?",taskId).Find(&CommitSqls).Error
 	return CommitSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+
+
+func (s *Storage) DeleteTasksByIds(ids []string) error{
+	tasks := Task{}
+	err := s.db.Where("id IN (?)", ids).Delete(tasks).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
