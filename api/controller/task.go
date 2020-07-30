@@ -350,6 +350,7 @@ func CreateAndInspectTask(c echo.Context) error {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
+	//todo @luowei unescape params using function of echo
 	params := []*string{&req.Name, &req.Desc, &req.InstName, &req.Schema, &req.Sql}
 	if err := unescapeParamString(params); nil != err {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
