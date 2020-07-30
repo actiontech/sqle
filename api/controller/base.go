@@ -5,6 +5,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo"
 	"io/ioutil"
+	"net/url"
 	"sqle/errors"
 )
 
@@ -61,4 +62,15 @@ type CustomValidator struct {
 func (cv *CustomValidator) Validate(i interface{}) error {
 	_, err := govalidator.ValidateStruct(i)
 	return err
+}
+
+func unescapeParamString(params []*string) error {
+	for i, p := range params {
+		r, err := url.QueryUnescape(*p)
+		if nil != err {
+			return fmt.Errorf("unescape param [%v] failed: %v", err)
+		}
+		*params[i] = r
+	}
+	return nil
 }
