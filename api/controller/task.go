@@ -46,7 +46,6 @@ func CreateTask(c echo.Context) error {
 }
 
 func createTask(c echo.Context) (*model.Task, BaseRes) {
-	s := model.GetStorage()
 	req := new(CreateTaskReq)
 	if err := c.Bind(req); err != nil {
 		return nil, NewBaseReq(err)
@@ -55,6 +54,16 @@ func createTask(c echo.Context) (*model.Task, BaseRes) {
 		return nil, NewBaseReq(err)
 	}
 
+	params := []*string{&req.Name, &req.Desc, &req.InstName, &req.Schema, &req.Sql}
+	if err := unescapeParamString(params); nil != err {
+		return nil, NewBaseReq(err)
+	}
+
+	return createTaskByRequestParam(req)
+}
+
+func createTaskByRequestParam(req *CreateTaskReq) (*model.Task, BaseRes) {
+	s := model.GetStorage()
 	inst, exist, err := s.GetInstByName(req.InstName)
 	if err != nil {
 		return nil, NewBaseReq(err)
@@ -72,6 +81,7 @@ func createTask(c echo.Context) (*model.Task, BaseRes) {
 		CommitSqls:   []*model.CommitSql{},
 		InstanceName: req.InstName,
 	}
+
 	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil, nil).
 		ParseSql(req.Sql)
 	if err != nil {
@@ -182,7 +192,6 @@ func DeleteTask(c echo.Context) error {
 	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
 
-
 // @Summary 批量删除审核任务
 // @Description delete tasks by ids
 // @Param task_ids formData string true "remove tasks by ids(interlaced by ',')"
@@ -203,7 +212,6 @@ func DeleteTasks(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
-
 
 type GetAllTaskRes struct {
 	BaseRes
@@ -320,14 +328,43 @@ func RollbackTask(c echo.Context) error {
 }
 
 // @Summary 创建Sql审核任务并提交审核
-// @Description create a task and inspect
-// @Accept json
+// @Description create a task and inspect. NOTE: it will create a task with sqls from "sql" if "sql" isn't empty
+// @Accept mpfd
 // @Produce json
-// @Param instance body controller.CreateTaskReq true "add task"
+// @Param name formData string true "task name"
+// @Param desc formData string false "description of task"
+// @Param inst_name formData string true "instance name"
+// @Param schema formData string false "schema of instance"
+// @Param sql formData string false "sqls for audit"
+// @Param uploaded_sql_file formData file false "uploaded SQL file"
 // @Success 200 {object} controller.GetTaskRes
 // @router /task/create_inspect [post]
 func CreateAndInspectTask(c echo.Context) error {
-	task, res := createTask(c)
+	//check params
+	req := new(CreateTaskReq)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	if err := c.Validate(req); err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	params := []*string{&req.Name, &req.Desc, &req.InstName, &req.Schema, &req.Sql}
+	if err := unescapeParamString(params); nil != err {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	if "" == req.Sql {
+		_, sqls, err := readFileToByte(c, "uploaded_sql_file")
+		if err != nil {
+			return c.JSON(http.StatusOK, NewBaseReq(err))
+		}
+
+		req.Sql = string(sqls)
+	}
+
+	task, res := createTaskByRequestParam(req)
 	if res.Code != 0 {
 		return c.JSON(200, res)
 	}
