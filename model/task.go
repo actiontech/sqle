@@ -16,7 +16,7 @@ const (
 )
 
 const (
-	TASK_ACTION_INIT                  = ""
+	TASK_ACTION_INIT                  = "init"
 	TASK_ACTION_DOING                 = "doing"
 	TASK_ACTION_DONE                  = "finished"
 	TASK_ACTION_ERROR                 = "failed"
