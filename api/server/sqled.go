@@ -378,7 +378,9 @@ func (s *Sqled) commitDML(task *model.Task) error {
 		if err := st.Save(commitSql); err != nil {
 			i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
 			execStatus = model.TASK_ACTION_ERROR
-			st.UpdateTask(task, map[string]interface{}{"exec_status": execStatus})
+			if err := st.UpdateTask(task, map[string]interface{}{"exec_status": execStatus}); nil != errr {
+				log.Logger().Errorf("update task exec_status failed: %v", err)
+			}
 			return err
 		}
 
@@ -446,4 +448,3 @@ func round(f float64, n int) float64 {
 	p := math.Pow10(n)
 	return math.Trunc(f*p+0.5) / p
 }
-
