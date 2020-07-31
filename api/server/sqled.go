@@ -320,6 +320,10 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 			return err
 		}
 	}
+
+	execStatus := model.TASK_ACTION_DONE
+	updateTaskExecStatusById(st, task, execStatus)
+
 	err := i.Do()
 	if err != nil {
 		entry.Error("commit sql failed")
@@ -327,6 +331,14 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 		entry.Info("commit sql finish")
 	}
 
+	for _, sql := range task.CommitSqls {
+		if sql.ExecStatus == model.TASK_ACTION_ERROR {
+			execStatus = model.TASK_ACTION_ERROR
+			break
+		}
+	}
+
+	updateTaskExecStatusById(st, task, execStatus)
 	return err
 }
 
@@ -353,14 +365,25 @@ func (s *Sqled) commitDML(task *model.Task) error {
 
 		sqls = append(sqls, &commitSql.Sql)
 	}
+
+	execStatus := model.TASK_ACTION_DOING
+	updateTaskExecStatusById(st, task, execStatus)
 	i.CommitDMLs(sqls)
+	execStatus = model.TASK_ACTION_DONE
 	for _, commitSql := range task.CommitSqls {
 		if err := st.Save(commitSql); err != nil {
 			i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
+			execStatus = model.TASK_ACTION_ERROR
+			updateTaskExecStatusById(st, task, execStatus)
 			return err
+		}
+
+		if commitSql.ExecStatus == model.TASK_ACTION_ERROR {
+			execStatus = model.TASK_ACTION_ERROR
 		}
 	}
 
+	updateTaskExecStatusById(st, task, execStatus)
 	return nil
 }
 
@@ -419,4 +442,11 @@ func (s *Sqled) rollback(task *model.Task) error {
 func round(f float64, n int) float64 {
 	p := math.Pow10(n)
 	return math.Trunc(f*p+0.5) / p
+}
+
+func updateTaskExecStatusById(st *model.Storage, task *model.Task, execStatus string) (err error) {
+	if err = st.UpdateTask(task, map[string]interface{}{"exec_status": execStatus}); nil != err {
+		log.Logger().Errorf("update task exec_status failed: %v [task id=%v]", err, task.ID)
+	}
+	return
 }
