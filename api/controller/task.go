@@ -310,15 +310,10 @@ func CommitTask(c echo.Context) error {
 	sqledServer := server.GetSqled()
 	taskRes := &model.Task{}
 	if isSync == "true" {
-		_, err = sqledServer.AddTaskWaitResult(taskId, model.TASK_ACTION_COMMIT)
+		taskRes, err = sqledServer.AddTaskWaitResult(taskId, model.TASK_ACTION_COMMIT)
 	} else {
 		err = sqledServer.AddTask(taskId, model.TASK_ACTION_COMMIT)
 	}
-	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(err))
-	}
-
-	taskRes,_, err = model.GetStorage().GetTaskById(taskId)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
