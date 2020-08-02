@@ -80,6 +80,7 @@ type Task struct {
 	NormalRate   float64        `json:"normal_rate"`
 	SqlType      string         `json:"-"`
 	Action       uint           `json:"-"`
+	ExecStatus   string         `json:"-"`
 	CommitSqls   []*CommitSql   `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSqls []*RollbackSql `json:"-" gorm:"foreignkey:TaskId"`
 }

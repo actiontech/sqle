@@ -277,13 +277,25 @@ func InspectTask(c echo.Context) error {
 	})
 }
 
+type CommitTaskRes struct {
+	BaseRes
+	Data CommitTaskResult `json:"data"`
+}
+
+type CommitTaskResult struct {
+	TaskExecStatus string `json:"task_exec_status"`
+}
+
 // @Summary Sql提交上线
 // @Description commit sql
+// @Accept x-www-form-urlencoded
 // @Param task_id path string true "Task ID"
-// @Success 200 {object} controller.BaseRes
+// @Param is_sync formData boolean false "the request is sync or async."
+// @Success 200 {object} controller.CommitTaskRes
 // @router /tasks/{task_id}/commit [post]
 func CommitTask(c echo.Context) error {
 	s := model.GetStorage()
+	isSync := c.FormValue("is_sync")
 	taskId := c.Param("task_id")
 	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
@@ -295,11 +307,21 @@ func CommitTask(c echo.Context) error {
 	if task.Instance == nil {
 		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
 	}
-	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_COMMIT)
+	sqledServer := server.GetSqled()
+	taskRes := &model.Task{}
+	if isSync == "true" {
+		taskRes, err = sqledServer.AddTaskWaitResult(taskId, model.TASK_ACTION_COMMIT)
+	} else {
+		err = sqledServer.AddTask(taskId, model.TASK_ACTION_COMMIT)
+	}
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	return c.JSON(http.StatusOK, NewBaseReq(nil))
+
+	return c.JSON(http.StatusOK, &CommitTaskRes{
+		BaseRes: NewBaseReq(nil),
+		Data:    CommitTaskResult{TaskExecStatus:taskRes.ExecStatus},
+	})
 }
 
 // @Summary Sql提交回滚
@@ -377,30 +399,6 @@ func CreateAndInspectTask(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetTaskRes{
 		BaseRes: NewBaseReq(nil),
 		Data:    task.Detail(),
-	})
-}
-
-type GetCommittingResultRes struct {
-	BaseRes
-	Data string `json:"data"`
-}
-
-// @Summary 获取SQLs上线结果
-// @Description get execution result of all SQLs belong to the specified task
-// @Param task_id path string true "Task ID"
-// @Success 200 {object} controller.GetCommittingResultRes
-// @router /tasks/{task_id}/committing_result [get]
-func GetCommittingResult(c echo.Context) error {
-	s := model.GetStorage()
-	taskId := c.Param("task_id")
-	res, err := s.GetSqlCommittingResultByTaskId(taskId)
-	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(err))
-	}
-
-	return c.JSON(http.StatusOK, &GetCommittingResultRes{
-		BaseRes: NewBaseReq(nil),
-		Data:    res,
 	})
 }
 

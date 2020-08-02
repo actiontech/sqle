@@ -320,6 +320,12 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 			return err
 		}
 	}
+
+	execStatus := model.TASK_ACTION_DOING
+	if err := updateTaskExecStatus(task,st,execStatus); nil != err {
+		return err
+	}
+
 	err := i.Do()
 	if err != nil {
 		entry.Error("commit sql failed")
@@ -327,7 +333,15 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 		entry.Info("commit sql finish")
 	}
 
-	return err
+	execStatus = model.TASK_ACTION_DONE
+	for _, sql := range task.CommitSqls {
+		if sql.ExecStatus == model.TASK_ACTION_ERROR {
+			execStatus = model.TASK_ACTION_ERROR
+			break
+		}
+	}
+
+	return updateTaskExecStatus(task,st,execStatus)
 }
 
 func (s *Sqled) commitDML(task *model.Task) error {
@@ -353,15 +367,29 @@ func (s *Sqled) commitDML(task *model.Task) error {
 
 		sqls = append(sqls, &commitSql.Sql)
 	}
+
+	execStatus := model.TASK_ACTION_DOING
+	if err := updateTaskExecStatus(task,st,model.TASK_ACTION_DOING); nil != err {
+		return err
+	}
 	i.CommitDMLs(sqls)
+	execStatus = model.TASK_ACTION_DONE
 	for _, commitSql := range task.CommitSqls {
 		if err := st.Save(commitSql); err != nil {
 			i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
+			execStatus = model.TASK_ACTION_ERROR
+			if err := updateTaskExecStatus(task,st,execStatus); nil != err {
+				log.Logger().Errorf("update task exec_status failed: %v", err)
+			}
 			return err
+		}
+
+		if commitSql.ExecStatus == model.TASK_ACTION_ERROR {
+			execStatus = model.TASK_ACTION_ERROR
 		}
 	}
 
-	return nil
+	return updateTaskExecStatus(task,st,execStatus)
 }
 
 func (s *Sqled) rollback(task *model.Task) error {
@@ -419,4 +447,12 @@ func (s *Sqled) rollback(task *model.Task) error {
 func round(f float64, n int) float64 {
 	p := math.Pow10(n)
 	return math.Trunc(f*p+0.5) / p
+}
+
+func updateTaskExecStatus(task *model.Task, st *model.Storage, execStatus string) error {
+	task.ExecStatus = execStatus
+	if err := st.UpdateTask(task, map[string]interface{}{"exec_status": execStatus}); nil != err {
+		return err
+	}
+	return nil
 }
