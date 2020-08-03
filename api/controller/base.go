@@ -68,7 +68,7 @@ func unescapeParamString(params []*string) error {
 	for i, p := range params {
 		r, err := url.QueryUnescape(*p)
 		if nil != err {
-			return fmt.Errorf("unescape param [%v] failed: %v", err)
+			return fmt.Errorf("unescape param [%v] failed: %v", params, err)
 		}
 		*params[i] = r
 	}
