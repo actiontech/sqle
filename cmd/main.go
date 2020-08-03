@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
+	"io"
 	"os"
 	"sqle/api"
 	"sqle/api/server"
@@ -11,6 +11,10 @@ import (
 	"sqle/model"
 	"sqle/sqlserverClient"
 	"sqle/utils"
+	"strconv"
+	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 var version string
@@ -51,6 +55,58 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
 	rootCmd.PersistentFlags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
+
+	var createConfigFileCmd = &cobra.Command{
+		Use:   "load",
+		Short: "create config file using the filled in parameters",
+		Long:  "create config file using the filled in parameters",
+		Run: func(cmd *cobra.Command, args []string) {
+			log.InitLogger(logPath)
+			defer log.ExitLogger()
+			log.Logger().Info("create config file using the filled in parameters")
+
+			//fileName := fmt.Sprintf("/etc/%v", configFile)
+			f, err := os.Create(configPath)
+			if err != nil {
+				log.Logger().Errorf("open %v file error :%v", configPath, err)
+				return
+			}
+			fileContent := `
+[server]
+port={{SERVER_PORT}}
+mysql_host={{MYSQL_HOST}}
+mysql_port={{MYSQL_PORT}}
+mysql_user={{MYSQL_USER}}
+mysql_password={{MYSQL_PASSWORD}}
+mysql_schema={{MYSQL_SCHEMA}}
+log_path=./logs
+#
+auto_migrate_table={{AUTO_MIGRATE_TABLE}}
+debug={{DEBUG}}
+
+# SQLServer parser server config
+[ms_parser_server]
+host=
+port=
+`
+
+			fileContent = strings.Replace(fileContent, "{{SERVER_PORT}}", strconv.Itoa(port), -1)
+			fileContent = strings.Replace(fileContent, "{{MYSQL_HOST}}", mysqlHost, -1)
+			fileContent = strings.Replace(fileContent, "{{MYSQL_PORT}}", mysqlPort, -1)
+			fileContent = strings.Replace(fileContent, "{{MYSQL_USER}}", mysqlUser, -1)
+			fileContent = strings.Replace(fileContent, "{{MYSQL_PASSWORD}}", mysqlPass, -1)
+			fileContent = strings.Replace(fileContent, "{{MYSQL_SCHEMA}}", mysqlSchema, -1)
+			fileContent = strings.Replace(fileContent, "{{AUTO_MIGRATE_TABLE}}", strconv.FormatBool(autoMigrateTable), -1)
+			fileContent = strings.Replace(fileContent, "{{DEBUG}}", strconv.FormatBool(debug), -1)
+			_, err = io.WriteString(f, fileContent)
+			if nil != err {
+				log.Logger().Errorf("write config file error :%v", err)
+				return
+			}
+		},
+	}
+	rootCmd.AddCommand(createConfigFileCmd)
+
 	rootCmd.Execute()
 }
 
