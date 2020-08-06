@@ -231,6 +231,13 @@ func (s *Storage) UpdateCommitSqlStatus(sql *Sql, status, result string) error {
 	return s.UpdateCommitSqlById(fmt.Sprintf("%v", sql.ID), attr)
 }
 
+func (s *Storage) HardDeleteRollbackSqlByTaskIds(taskIds []string) error{
+	rollbackSql := RollbackSql{}
+	err := s.db.Unscoped().Where("task_id IN (?)", taskIds).Delete(rollbackSql).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+
 func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface{}) error {
 	err := s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
@@ -261,6 +268,12 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
+func (s *Storage) HardDeleteSqlCommittingResultByTaskIds(ids []string) error{
+	CommitSql := CommitSql{}
+	err := s.db.Unscoped().Where("task_id IN (?)", ids).Delete(CommitSql).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
 func (s *Storage) GetSqlCommittingResultByTaskId(taskId string) (string, error) {
 	//TODO @luowei support task with multi SQLs
 	CommitSql := CommitSql{}
@@ -281,3 +294,11 @@ func (s *Storage) DeleteTasksByIds(ids []string) error{
 	err := s.db.Where("id IN (?)", ids).Delete(tasks).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+
+func (s *Storage) HardDeleteTasksByIds(ids []string) error{
+	tasks := Task{}
+	err := s.db.Unscoped().Where("id IN (?)", ids).Delete(tasks).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+
