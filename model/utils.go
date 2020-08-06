@@ -18,6 +18,11 @@ func GetStorage() *Storage {
 	return storage
 }
 
+func UpdateStorage(newStorage *Storage) {
+	storage.db.Close()
+	storage = newStorage
+}
+
 func GetDb() *gorm.DB {
 	return storage.db
 }
