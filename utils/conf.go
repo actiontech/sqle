@@ -26,6 +26,28 @@ func (i *Ini) GetString(section, key, _default string) string {
 	return v
 }
 
+func (i *Ini) SetString(section, key, value string) error {
+	s, err := i.f.GetSection(section)
+	if err != nil {
+		return  err
+	}
+	s.Key(key).SetValue(value)
+	return nil
+}
+
+func (i *Ini) GetSection(section string) (*ini.Section, error) {
+	return i.f.GetSection(section)
+}
+
+func (i *Ini) Save(path string) error {
+	err := i.f.SaveTo(path)
+	if err != nil {
+		return  err
+	}
+	return nil
+}
+
+
 func (i *Ini) GetInt(section, key string, _default int) int {
 	k, err := i.getValue(section, key)
 	if err != nil {

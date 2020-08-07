@@ -5,17 +5,31 @@ import (
 	"github.com/jinzhu/gorm"
 	"sqle/errors"
 	"sqle/log"
+	"sync"
 	"time"
 )
 
 var storage *Storage
 
+var storageMutex sync.Mutex
+
 func InitStorage(s *Storage) {
+	storageMutex.Lock()
+	defer storageMutex.Unlock()
 	storage = s
 }
 
 func GetStorage() *Storage {
+	storageMutex.Lock()
+	defer storageMutex.Unlock()
 	return storage
+}
+
+func UpdateStorage(newStorage *Storage) {
+	storageMutex.Lock()
+	defer storageMutex.Unlock()
+	storage.db.Close()
+	storage = newStorage
 }
 
 func GetDb() *gorm.DB {

@@ -63,7 +63,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
-
+	e.POST("/base/reload", controller.ReloadBaseInfo)
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)
 	log.Logger().Fatal(e.Start(address))
