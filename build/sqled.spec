@@ -62,7 +62,7 @@ fi
 (which bash 1>/dev/null 2>&1) || (echo "require bash" && exit 12)
 (which pkill 1>/dev/null 2>&1) || (echo "require pkill" && exit 13)
 (getent group actiontech 1>/dev/null 2>&1) || groupadd -g 5700 actiontech
-(id actiontech-sqle 1>/dev/null 2>&1) || useradd -M -g actiontech -s $(which nologin) actiontech-sqle
+(id actiontech-universe 1>/dev/null 2>&1) || useradd -M -g actiontech -s $(which nologin) actiontech-universe
 
 #check bash env
 bash -c "" 2>&1 | grep -e 'warning' -e 'error'
@@ -78,7 +78,7 @@ fi
 grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
-    -e "s|User=|User=actiontech-sqle|g" \
+    -e "s|User=|User=actiontech-universe|g" \
     -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/sqled.cnf --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
@@ -115,7 +115,7 @@ port=
 EOF
 
 #chown
-chown -R actiontech-sqle: $RPM_INSTALL_PREFIX
+chown -R actiontech-universe: $RPM_INSTALL_PREFIX
 
 #chmod
 find $RPM_INSTALL_PREFIX -type d -exec chmod 0750 {} \;

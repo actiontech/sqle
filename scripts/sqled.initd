@@ -21,7 +21,7 @@ SQLED_OPTS=
 NAME=sqle
 
 # User and group
-USER=actiontech-sqle
+USER=actiontech-universe
 GROUP=actiontech
 
 PROJECT_PATH=
