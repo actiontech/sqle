@@ -234,15 +234,17 @@ func HardRemoveTasks(c echo.Context) error {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
-	err = s.HardDeleteTasksByIds(strings.Split(strings.TrimRight(taskIds, ","), ","))
+	deleteTaskIds := strings.Split(strings.TrimRight(taskIds, ","), ",")
+
+	err = s.HardDeleteTasksByIds(deleteTaskIds)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	err = s.HardDeleteRollbackSqlByTaskIds(strings.Split(strings.TrimRight(taskIds, ","), ","))
+	err = s.HardDeleteRollbackSqlByTaskIds(deleteTaskIds)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	err = s.HardDeleteSqlCommittingResultByTaskIds(strings.Split(strings.TrimRight(taskIds, ","), ","))
+	err = s.HardDeleteSqlCommittingResultByTaskIds(deleteTaskIds)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
