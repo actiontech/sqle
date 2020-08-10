@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"sqle/api"
 	"sqle/api/server"
 	"sqle/inspector"
@@ -13,6 +14,7 @@ import (
 	"sqle/utils"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -173,6 +175,11 @@ func run(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	//todo temporary solution  DMP-4714
+	killChan := make(chan os.Signal, 1)
+	signal.Notify(killChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGUSR2 )
+
+
 	exitChan := make(chan struct{}, 0)
 	server.InitSqled(exitChan)
 	go api.StartApi(port, exitChan, logPath)
@@ -187,6 +194,8 @@ func run(cmd *cobra.Command, _ []string) error {
 		//
 		//os.HaltIfShutdown(stage)
 		//log.UserInfo(stage, "Exit by signal %v", sig)
+	case <-killChan:
+
 	}
 	log.Logger().Info("stop sqled server")
 	return nil
