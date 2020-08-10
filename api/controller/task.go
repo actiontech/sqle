@@ -196,25 +196,28 @@ func DeleteTask(c echo.Context) error {
 // @Description delete tasks by ids
 // @Accept x-www-form-urlencoded
 // @Param task_ids formData string true "remove tasks by ids(interlaced by ',')"
-// @Param is_hard_delete formData boolean false "is soft delete or hard delete(default soft delete)"
 // @Success 200 {object} controller.BaseRes
 // @router /tasks/remove_by_task_ids [post]
 func DeleteTasks(c echo.Context) error {
+	s := model.GetStorage()
 	taskIds, err := url.QueryUnescape(c.FormValue("task_ids"))
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	deleteTaskIds := strings.Split(strings.TrimRight(taskIds, ","), ",")
-	s := model.GetStorage()
-	if c.FormValue("is_hard_delete") == "true" {
-		err := hardDeleteTasks(deleteTaskIds,s)
-		return c.JSON(http.StatusOK, NewBaseReq(err))
-	}
-	err = s.DeleteTasksByIds(deleteTaskIds)
+
+	err = s.HardDeleteTasksByIds(deleteTaskIds)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-
+	err = s.HardDeleteRollbackSqlByTaskIds(deleteTaskIds)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	err = s.HardDeleteSqlCommittingResultByTaskIds(deleteTaskIds)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
 	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
 
@@ -223,21 +226,6 @@ type GetAllTaskRes struct {
 	Data []model.Task `json:"data"`
 }
 
-func hardDeleteTasks(deleteTaskIds []string,s *model.Storage) error {
-	err := s.HardDeleteTasksByIds(deleteTaskIds)
-	if err != nil {
-		return err
-	}
-	err = s.HardDeleteRollbackSqlByTaskIds(deleteTaskIds)
-	if err != nil {
-		return err
-	}
-	err = s.HardDeleteSqlCommittingResultByTaskIds(deleteTaskIds)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 // @Summary Sql审核列表
 // @Description get all tasks
