@@ -48,7 +48,6 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	e.GET("/rules", controller.GetRules)
 	e.PATCH("/rules", controller.UpdateRules)
-
 	e.GET("/tasks", controller.GetTasks)
 	e.POST("/tasks", controller.CreateTask)
 	e.GET("/tasks/:task_id/", controller.GetTask)
