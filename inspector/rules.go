@@ -26,7 +26,6 @@ const (
 	DDL_DISABLE_DROP_STATEMENT                 = "ddl_disable_drop_statement"
 	DML_CHECK_WHERE_IS_INVALID                 = "all_check_where_is_invalid"
 	DML_DISABE_SELECT_ALL_COLUMN               = "dml_disable_select_all_column"
-	DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM    = "dml_check_mycat_without_sharding_column"
 	DDL_CHECK_TABLE_WITHOUT_COMMENT            = "ddl_check_table_without_comment"
 	DDL_CHECK_COLUMN_WITHOUT_COMMENT           = "ddl_check_column_without_comment"
 	DDL_CHECK_INDEX_PREFIX                     = "ddl_check_index_prefix"
@@ -228,15 +227,6 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "禁止除索引外的drop操作",
 		Func:    disableDropStmt,
-	},
-	RuleHandler{
-		Rule: model.Rule{
-			Name:  DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM,
-			Desc:  "mycat dml 必须使用分片字段",
-			Level: model.RULE_LEVEL_ERROR,
-		},
-		Message: "mycat dml 必须使用分片字段",
-		Func:    checkMycatShardingColumn,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -810,100 +800,6 @@ func disableDropStmt(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkMycatShardingColumn(i *Inspect, node ast.Node) error {
-	if i.Task.Instance.DbType != model.DB_TYPE_MYCAT {
-		return nil
-	}
-	config := i.Task.Instance.MycatConfig
-	hasShardingColumn := false
-	switch stmt := node.(type) {
-	case *ast.InsertStmt:
-		tables := getTables(stmt.Table.TableRefs)
-		// tables must be one on InsertIntoStmt in parser.go
-		if len(tables) != 1 {
-			return nil
-		}
-		table := tables[0]
-		schema, ok := config.AlgorithmSchemas[i.getSchemaName(table)]
-		if !ok {
-			return nil
-		}
-		tableName := table.Name.String()
-		if schema.AlgorithmTables == nil {
-			return nil
-		}
-		at, ok := schema.AlgorithmTables[tableName]
-		if !ok {
-			return nil
-		}
-		shardingCoulmn := at.ShardingColumn
-		if stmt.Columns != nil {
-			for _, column := range stmt.Columns {
-				if column.Name.L == strings.ToLower(shardingCoulmn) {
-					hasShardingColumn = true
-				}
-			}
-		}
-		if stmt.Setlist != nil {
-			for _, set := range stmt.Setlist {
-				if set.Column.Name.L == strings.ToLower(shardingCoulmn) {
-					hasShardingColumn = true
-				}
-			}
-		}
-	case *ast.UpdateStmt:
-		tables := getTables(stmt.TableRefs.TableRefs)
-		// multi table related update not supported on mycat
-		if len(tables) != 1 {
-			return nil
-		}
-		table := tables[0]
-		schema, ok := config.AlgorithmSchemas[i.getSchemaName(table)]
-		if !ok {
-			return nil
-		}
-		tableName := table.Name.String()
-		if schema.AlgorithmTables == nil {
-			return nil
-		}
-		at, ok := schema.AlgorithmTables[tableName]
-		if !ok {
-			return nil
-		}
-		shardingCoulmn := at.ShardingColumn
-		hasShardingColumn = whereStmtHasSpecificColumn(stmt.Where, shardingCoulmn)
-	case *ast.DeleteStmt:
-		// not support multi table related delete
-		if stmt.IsMultiTable {
-			return nil
-		}
-		tables := getTables(stmt.TableRefs.TableRefs)
-		if len(tables) != 1 {
-			return nil
-		}
-		table := tables[0]
-		schema, ok := config.AlgorithmSchemas[i.getSchemaName(table)]
-		if !ok {
-			return nil
-		}
-		tableName := table.Name.String()
-		if schema.AlgorithmTables == nil {
-			return nil
-		}
-		at, ok := schema.AlgorithmTables[tableName]
-		if !ok {
-			return nil
-		}
-		shardingCoulmn := at.ShardingColumn
-		hasShardingColumn = whereStmtHasSpecificColumn(stmt.Where, shardingCoulmn)
-	default:
-		return nil
-	}
-	if !hasShardingColumn {
-		i.addResult(DML_CHECK_MYCAT_WITHOUT_SHARDING_CLOUNM)
-	}
-	return nil
-}
 
 func checkTableWithoutComment(i *Inspect, node ast.Node) error {
 	var tableHasComment bool
