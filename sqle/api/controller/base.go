@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/url"
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"

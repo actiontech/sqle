@@ -4,8 +4,8 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/api/controller"
 
 	"fmt"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/swaggo/echo-swagger"
 	_ "actiontech.cloud/universe/sqle/v3/sqle/docs"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
