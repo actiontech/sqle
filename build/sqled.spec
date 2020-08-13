@@ -30,16 +30,16 @@ Acitontech Sqle
 %build
 echo "build sqle..."
 export GOPATH=%{_builddir}/%{buildsubdir}
-cd %{_builddir}/%{buildsubdir}/src/sqle
-make build
+cd %{_builddir}/%{buildsubdir}/sqle
+make install
 
 ##########
 
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
-cp %{_builddir}/%{buildsubdir}/src/sqle/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
-cp -R %{_builddir}/%{buildsubdir}/src/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
+cp %{_builddir}/%{buildsubdir}/sqle/bin/sqle $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
+cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
 
 ##########
 

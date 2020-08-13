@@ -10,7 +10,7 @@ LDFLAGS       = -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
 RPM_BUILD_BIN = $(shell type -p rpmbuild 2>/dev/null)
 COMPILE_FLAG  =
 DOCKER        = $(shell which docker)
-DOCKER_IMAGE  = docker-registry:5000/actiontech/universe-compiler-go1.10
+DOCKER_IMAGE  = docker-registry:5000/actiontech/universe-compiler-go1.14.1-centos6
 DOTNET_DOCKER_IMAGE = docker-registry:5000/actiontech/universe-compiler-dotnetcore2.1
 DOCKER_REGISTRY ?=10.186.18.20
 DOTNET_TARGET = centos.7-x64
@@ -36,7 +36,7 @@ install: swagger parser vet
 	GOBIN=${GOBIN} GOOS=${GOOS} GOARCH=${GOARCH} go install -mod=vendor ${LDFLAGS} ${MAIN_MODULE}/${PROJECT_NAME}
 
 build_sqlserver:
-	cd ./sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
+	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
 
 vet: swagger
 	$(GOVET) $$($(GOLIST) ./... | grep -v vendor/)
@@ -48,12 +48,12 @@ clean:
 	$(GOCLEAN)
 
 docker_rpm: pull_image
-	$(DOCKER) run -v $(shell pwd):/universe/src/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild -bb --with qa /universe/src/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${PROJECT_NAME}.x86_64.rpm
-	$(DOCKER) run -v $(shell pwd):/universe/src/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' -bb --with qa /universe/src/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.x86_64.rpm
+	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${PROJECT_NAME}.x86_64.rpm
+	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' -bb --with qa /universe/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.x86_64.rpm
 
 docker_test: pull_image
 	CTN_NAME="universe_docker_test_$$RANDOM" && \
-    $(DOCKER) run -d --entrypoint /sbin/init --add-host docker-registry:${DOCKER_REGISTRY}  --privileged --name $${CTN_NAME} -v $(shell pwd):/universe/src/sqle --rm -w /universe/src/sqle $(DOCKER_IMAGE) && \
+    $(DOCKER) run -d --entrypoint /sbin/init --add-host docker-registry:${DOCKER_REGISTRY}  --privileged --name $${CTN_NAME} -v $(shell pwd):/universe/sqle --rm -w /universe/sqle $(DOCKER_IMAGE) && \
     $(DOCKER) exec $${CTN_NAME} make test ; \
     $(DOCKER) stop $${CTN_NAME}
 
