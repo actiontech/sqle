@@ -94,7 +94,7 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 	if !exist {
 		t := &RuleTemplate{
 			Name: "all",
-			Desc: "default template for all rule",
+			Desc: "default template for all rules",
 		}
 		if err := s.Save(t); err != nil {
 			return err
