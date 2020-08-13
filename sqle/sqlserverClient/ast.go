@@ -1,12 +1,18 @@
 package sqlserverClient
 
 import (
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 )
 
 // Node implementations tidb ast Node interface
 type Node struct {
 	text string
+}
+
+func (n *Node) Restore(ctx *format.RestoreCtx) error {
+	//TODO implement
+	return nil
 }
 
 // SetText implements Node interface.

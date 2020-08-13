@@ -3,7 +3,7 @@ package inspector
 import (
 	"bytes"
 	"fmt"
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"strings"
 )

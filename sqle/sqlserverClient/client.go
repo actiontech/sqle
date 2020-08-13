@@ -9,7 +9,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/sqlserver/SqlserverProto"
 	"time"
 
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 	"google.golang.org/grpc"
 )
 

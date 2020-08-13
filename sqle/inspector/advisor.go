@@ -5,7 +5,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"strings"
 
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 )
 
 func (i *Inspect) Advise(rules []model.Rule) error {

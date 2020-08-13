@@ -7,7 +7,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 
 	"github.com/labstack/gommon/log"
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 )
 
 func (i *Inspect) CommitDDL(sql *model.Sql) error {

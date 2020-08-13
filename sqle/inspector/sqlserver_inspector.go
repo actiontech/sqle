@@ -7,7 +7,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/sqlserver/SqlserverProto"
 	"actiontech.cloud/universe/sqle/v3/sqle/sqlserverClient"
 
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
 )
 

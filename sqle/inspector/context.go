@@ -1,7 +1,7 @@
 package inspector
 
 import (
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 )
 
 type TableInfo struct {

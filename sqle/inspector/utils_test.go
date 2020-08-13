@@ -1,7 +1,7 @@
 package inspector
 
 import (
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 	"github.com/stretchr/testify/assert"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"testing"

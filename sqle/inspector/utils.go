@@ -3,10 +3,10 @@ package inspector
 import (
 	"errors"
 	"fmt"
-	"github.com/pingcap/tidb/ast"
-	_model "github.com/pingcap/tidb/model"
-	"github.com/pingcap/tidb/mysql"
-	"github.com/pingcap/tidb/parser"
+	"github.com/pingcap/parser/ast"
+	_model "github.com/pingcap/parser/model"
+	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser"
 	"regexp"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"strconv"
@@ -67,7 +67,7 @@ func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 	switch dbType {
 	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
 		p := parser.New()
-		stmts, err := p.Parse(sql, "", "")
+		stmts, _,err := p.Parse(sql, "", "")
 		if err != nil {
 			return nil, err
 		}

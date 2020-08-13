@@ -6,7 +6,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"testing"
 
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
 )
 

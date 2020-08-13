@@ -3,8 +3,8 @@ package inspector
 import (
 	"database/sql"
 	"fmt"
-	"github.com/pingcap/tidb/ast"
-	_model "github.com/pingcap/tidb/model"
+	"github.com/pingcap/parser/ast"
+	_model "github.com/pingcap/parser/model"
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"strconv"

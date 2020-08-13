@@ -1,8 +1,8 @@
 package inspector
 
 import (
-	"github.com/pingcap/tidb/ast"
-	"github.com/pingcap/tidb/mysql"
+	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/mysql"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"strings"
 )

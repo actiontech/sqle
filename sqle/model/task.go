@@ -5,7 +5,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 
 	"github.com/jinzhu/gorm"
-	"github.com/pingcap/tidb/ast"
+	"github.com/pingcap/parser/ast"
 )
 
 // task action
