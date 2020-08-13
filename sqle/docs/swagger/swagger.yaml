@@ -1,0 +1,1055 @@
+definitions:
+  controller.BaseRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.CreateInstanceReq:
+    properties:
+      db_type:
+        description: mysql, mycat, sqlserver
+        example: mysql
+        type: string
+      desc:
+        example: this is a test instance
+        type: string
+      host:
+        example: 10.10.10.10
+        type: string
+      mycat_config:
+        $ref: '#/definitions/model.MycatConfig'
+        description: mycat_config is required if db_type is "mycat"
+        type: object
+      name:
+        example: test
+        type: string
+      password:
+        example: "123456"
+        type: string
+      port:
+        example: "3306"
+        type: string
+      rule_template_name_list:
+        description: this a list for rule template name
+        example:
+        - all
+        items:
+          type: string
+        type: array
+      user:
+        example: root
+        type: string
+    type: object
+  controller.CreateTaskReq:
+    properties:
+      desc:
+        example: this is a test task
+        type: string
+      inst_name:
+        example: inst_1
+        type: string
+      name:
+        example: test
+        type: string
+      schema:
+        example: db1
+        type: string
+      sql:
+        example: alter table tb1 drop columns c1
+        type: string
+    type: object
+  controller.CreateTplReq:
+    properties:
+      desc:
+        type: string
+      name:
+        type: string
+      rule_name_list:
+        example:
+        - ddl_create_table_not_exist
+        items:
+          type: string
+        type: array
+    type: object
+  controller.GetAllInstReq:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.Instance'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllRuleRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.Rule'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllSchemasRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/server.InstanceStatus'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllTaskRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.Task'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllTplRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.RuleTemplate'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetCommittingResultRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        type: string
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetRuleTplRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/model.RuleTemplateDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetSchemaRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        example:
+        - db1
+        items:
+          type: string
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetTaskRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/model.TaskDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetUploadedSqlsRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.CommitSql'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.InstanceRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/model.InstanceDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.LoadMycatConfigRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/controller.CreateInstanceReq'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.PingInstRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        description: 'true: ping success; false: ping failed'
+        type: boolean
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.PingInstanceReq:
+    properties:
+      db_type:
+        description: mysql, mycat, sqlserver
+        example: mysql
+        type: string
+      host:
+        example: 10.10.10.10
+        type: string
+      mycat_config:
+        $ref: '#/definitions/model.MycatConfig'
+        description: mycat_config is required if db_type is "mycat"
+        type: object
+      password:
+        example: "123456"
+        type: string
+      port:
+        example: "3306"
+        type: string
+      user:
+        example: root
+        type: string
+    type: object
+  controller.UpdateAllRuleReq:
+    properties:
+      rule_list:
+        items:
+          $ref: '#/definitions/controller.UpdateRuleReq'
+        type: array
+    type: object
+  controller.UpdateRuleReq:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  model.CommitSql:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      end_binlog_file:
+        type: string
+      end_binlog_pos:
+        type: integer
+      exec_result:
+        type: string
+      exec_status:
+        type: string
+      id:
+        example: 1
+        type: integer
+      inspect_level:
+        description: 'level: error, warn, notice, normal'
+        type: string
+      inspect_result:
+        type: string
+      inspect_status:
+        type: string
+      number:
+        type: integer
+      row_affects:
+        type: integer
+      sql:
+        type: string
+      start_binlog_file:
+        type: string
+      start_binlog_pos:
+        type: integer
+    type: object
+  model.Instance:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      db_type:
+        example: mysql
+        type: string
+      desc:
+        example: this is a instance
+        type: string
+      host:
+        example: 10.10.10.10
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        type: string
+      port:
+        example: "3306"
+        type: string
+      user:
+        example: root
+        type: string
+    type: object
+  model.InstanceDetail:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      db_type:
+        example: mysql
+        type: string
+      desc:
+        example: this is a instance
+        type: string
+      host:
+        example: 10.10.10.10
+        type: string
+      id:
+        example: 1
+        type: integer
+      mycat_config:
+        $ref: '#/definitions/model.MycatConfig'
+        type: object
+      name:
+        type: string
+      port:
+        example: "3306"
+        type: string
+      rule_template_list:
+        items:
+          $ref: '#/definitions/model.RuleTemplate'
+        type: array
+      user:
+        example: root
+        type: string
+    type: object
+  model.MycatConfig:
+    properties:
+      data_host_list:
+        type: object
+      schema_list:
+        type: object
+    type: object
+  model.RollbackSql:
+    properties:
+      commit_sql_number:
+        type: integer
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      end_binlog_file:
+        type: string
+      end_binlog_pos:
+        type: integer
+      exec_result:
+        type: string
+      exec_status:
+        type: string
+      id:
+        example: 1
+        type: integer
+      number:
+        type: integer
+      row_affects:
+        type: integer
+      sql:
+        type: string
+      start_binlog_file:
+        type: string
+      start_binlog_pos:
+        type: integer
+    type: object
+  model.Rule:
+    properties:
+      desc:
+        type: string
+      level:
+        example: error
+        type: string
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  model.RuleTemplate:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        type: string
+    type: object
+  model.RuleTemplateDetail:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        type: string
+      rule_list:
+        items:
+          $ref: '#/definitions/model.Rule'
+        type: array
+    type: object
+  model.Task:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        example: this is a task
+        type: string
+      id:
+        example: 1
+        type: integer
+      instance_id:
+        type: integer
+      instance_name:
+        type: string
+      name:
+        example: REQ201812578
+        type: string
+      normal_rate:
+        type: number
+      schema:
+        example: db1
+        type: string
+    type: object
+  model.TaskDetail:
+    properties:
+      commit_sql_list:
+        items:
+          $ref: '#/definitions/model.CommitSql'
+        type: array
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        example: this is a task
+        type: string
+      id:
+        example: 1
+        type: integer
+      instance:
+        $ref: '#/definitions/model.Instance'
+        type: object
+      instance_id:
+        type: integer
+      instance_name:
+        type: string
+      name:
+        example: REQ201812578
+        type: string
+      normal_rate:
+        type: number
+      rollback_sql_list:
+        items:
+          $ref: '#/definitions/model.RollbackSql'
+        type: array
+      schema:
+        example: db1
+        type: string
+    type: object
+  server.InstanceStatus:
+    properties:
+      db_type:
+        type: string
+      host:
+        type: string
+      id:
+        type: integer
+      is_connect_failed:
+        type: boolean
+      name:
+        type: string
+      port:
+        type: string
+      schema_list:
+        items:
+          type: string
+        type: array
+    type: object
+info:
+  contact: {}
+  license: {}
+paths:
+  /instance/connection:
+    post:
+      consumes:
+      - application/json
+      description: test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的
+        json 的子集
+      parameters:
+      - description: instance info
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.PingInstanceReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.PingInstRes'
+            type: object
+      summary: 实例连通性测试（实例提交前）
+  /instance/load_mycat_config:
+    post:
+      consumes:
+      - multipart/form-data
+      description: unmarshal mycat config file
+      parameters:
+      - description: server.xml
+        in: formData
+        name: server_xml
+        required: true
+        type: file
+      - description: schema.xml
+        in: formData
+        name: schema_xml
+        required: true
+        type: file
+      - description: rule.xml
+        in: formData
+        name: rule_xml
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.LoadMycatConfigRes'
+            type: object
+      summary: 解析 mycat 配置
+  /instances:
+    get:
+      description: get all instances
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllInstReq'
+            type: object
+      summary: 实例列表
+    post:
+      consumes:
+      - application/json
+      description: create a instance
+      parameters:
+      - description: add instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateInstanceReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.InstanceRes'
+            type: object
+      summary: 添加实例
+  /instances/{instance_id}/:
+    delete:
+      description: delete instance db
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 删除实例
+    get:
+      description: get instance db
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.InstanceRes'
+            type: object
+      summary: 获取实例信息
+    patch:
+      description: update instance db
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance_id
+        required: true
+        type: string
+      - description: update instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateInstanceReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 更新实例
+  /instances/{instance_id}/connection:
+    get:
+      description: test instance db connection
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.PingInstRes'
+            type: object
+      summary: 实例连通性测试（实例提交后）
+  /instances/{instance_id}/schemas:
+    get:
+      description: instance schema list
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetSchemaRes'
+            type: object
+      summary: 实例 Schema 列表
+  /rule_templates:
+    get:
+      description: get all rule template
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllTplRes'
+            type: object
+      summary: 规则模板列表
+    post:
+      consumes:
+      - application/json
+      description: create a rule template
+      parameters:
+      - description: add instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateTplReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 添加规则模板
+  /rule_templates/{template_id}/:
+    delete:
+      description: delete rule template
+      parameters:
+      - description: Template ID
+        in: path
+        name: template_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 删除规则模板
+    get:
+      description: get rule template
+      parameters:
+      - description: Rule Template ID
+        in: path
+        name: template_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetRuleTplRes'
+            type: object
+      summary: 获取规则模板
+    put:
+      description: update rule template
+      parameters:
+      - description: Template ID
+        in: path
+        name: template_id
+        required: true
+        type: string
+      - description: update rule template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateTplReq'
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 更新规则模板
+  /rules:
+    get:
+      description: get all rule template
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllRuleRes'
+            type: object
+      summary: 规则列表
+    patch:
+      consumes:
+      - application/json
+      description: update rules
+      parameters:
+      - description: update rule
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.UpdateAllRuleReq'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 修改配置
+  /schemas:
+    get:
+      description: all schema list
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllSchemasRes'
+            type: object
+      summary: 所有实例的 Schema 列表
+  /schemas/manual_update:
+    post:
+      description: update schema list
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 手动刷新 Schema 列表
+  /task/create_inspect:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'create a task and inspect. NOTE: it will create a task with sqls
+        from "sql" if "sql" isn''t empty'
+      parameters:
+      - description: task name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: description of task
+        in: formData
+        name: desc
+        type: string
+      - description: instance name
+        in: formData
+        name: inst_name
+        required: true
+        type: string
+      - description: schema of instance
+        in: formData
+        name: schema
+        type: string
+      - description: sqls for audit
+        in: formData
+        name: sql
+        type: string
+      - description: uploaded SQL file
+        in: formData
+        name: uploaded_sql_file
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskRes'
+            type: object
+      summary: 创建Sql审核任务并提交审核
+  /tasks:
+    get:
+      description: get all tasks
+      parameters:
+      - description: get task by ids(interlaced by ',')
+        in: query
+        name: task_ids
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllTaskRes'
+            type: object
+      summary: Sql审核列表
+    post:
+      consumes:
+      - application/json
+      description: create a task
+      parameters:
+      - description: add task
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateTaskReq'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskRes'
+            type: object
+      summary: 创建Sql审核任务
+  /tasks/{task_id}/:
+    delete:
+      description: delete task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 删除审核任务
+    get:
+      description: get task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskRes'
+            type: object
+      summary: 获取Sql审核任务信息
+  /tasks/{task_id}/commit:
+    post:
+      description: commit sql
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交上线
+  /tasks/{task_id}/committing_result:
+    get:
+      description: get execution result of all SQLs belong to the specified task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetCommittingResultRes'
+            type: object
+      summary: 获取SQLs上线结果
+  /tasks/{task_id}/inspection:
+    post:
+      description: inspect sql
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskRes'
+            type: object
+      summary: Sql提交审核
+  /tasks/{task_id}/rollback:
+    post:
+      description: rollback sql
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: Sql提交回滚
+  /tasks/{task_id}/upload_sql_file:
+    post:
+      consumes:
+      - multipart/form-data
+      description: upload SQL file
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: SQL file
+        in: formData
+        name: sql_file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 上传 SQL 文件
+  /tasks/{task_id}/uploaded_sqls:
+    get:
+      description: get information of all SQLs belong to the specified task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetUploadedSqlsRes'
+            type: object
+      summary: 获取指定task的SQLs信息
+  /tasks/remove_by_task_ids:
+    post:
+      description: delete tasks by ids
+      parameters:
+      - description: remove tasks by ids(interlaced by ',')
+        in: formData
+        name: task_ids
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+            type: object
+      summary: 批量删除审核任务
