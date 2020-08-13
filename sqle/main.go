@@ -5,6 +5,10 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
+	"syscall"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/api"
 	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
 	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
@@ -12,10 +16,8 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"actiontech.cloud/universe/sqle/v3/sqle/sqlserverClient"
 	"actiontech.cloud/universe/sqle/v3/sqle/utils"
-	"strconv"
-	"strings"
-	"syscall"
 
+	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/spf13/cobra"
 )
 
@@ -177,8 +179,7 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	//todo temporary solution  DMP-4714
 	killChan := make(chan os.Signal, 1)
-	signal.Notify(killChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGUSR2 )
-
+	signal.Notify(killChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGUSR2)
 
 	exitChan := make(chan struct{}, 0)
 	server.InitSqled(exitChan)
