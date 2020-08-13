@@ -8,6 +8,7 @@ import (
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
