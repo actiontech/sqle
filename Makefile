@@ -59,5 +59,5 @@ parser:
 	cd $(shell pwd)/vendor/github.com/pingcap/tidb && make parser && cd -
 
 swagger:
-	$(GOBUILD) -o $(shell pwd)/swag $(shell pwd)/vendor/github.com/swaggo/swag/cmd/swag/main.go
-	$(shell pwd)/swag init -g $(shell pwd)/api/app.go
+	$(GOBUILD) -o $(shell pwd)/swag $(shell pwd)/build/swag/main.go
+	$(shell pwd)/swag init -g ./sqle/api/app.go
