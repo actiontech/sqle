@@ -52,80 +52,88 @@ func parseFieldSelectorExpr(astTypeSelectorExpr *ast.SelectorExpr, parser *Parse
 
 	if pkgName, ok := astTypeSelectorExpr.X.(*ast.Ident); ok {
 		if typeDefinitions, ok := parser.TypeDefinitions[pkgName.Name][astTypeSelectorExpr.Sel.Name]; ok {
-			parser.ParseDefinition(pkgName.Name, typeDefinitions, astTypeSelectorExpr.Sel.Name)
+			if expr, ok := typeDefinitions.Type.(*ast.SelectorExpr); ok {
+				if primitiveType, err := convertFromSpecificToPrimitive(expr.Sel.Name); err == nil {
+					return propertyNewFunc(primitiveType, "")
+				}
+			}
+			parser.ParseDefinition(pkgName.Name, astTypeSelectorExpr.Sel.Name, typeDefinitions)
 			return propertyNewFunc(astTypeSelectorExpr.Sel.Name, pkgName.Name)
 		}
-		if actualPrimitiveType, isCustomType := parser.CustomPrimitiveTypes[astTypeSelectorExpr.Sel.Name]; isCustomType {
+		if aliasedNames, ok := parser.ImportAliases[pkgName.Name]; ok {
+			for aliasedName := range aliasedNames {
+				if typeDefinitions, ok := parser.TypeDefinitions[aliasedName][astTypeSelectorExpr.Sel.Name]; ok {
+					if expr, ok := typeDefinitions.Type.(*ast.SelectorExpr); ok {
+						if primitiveType, err := convertFromSpecificToPrimitive(expr.Sel.Name); err == nil {
+							return propertyNewFunc(primitiveType, "")
+						}
+					}
+					parser.ParseDefinition(aliasedName, astTypeSelectorExpr.Sel.Name, typeDefinitions)
+					return propertyNewFunc(astTypeSelectorExpr.Sel.Name, aliasedName)
+				}
+			}
+		}
+		name := fmt.Sprintf("%s.%v", pkgName, astTypeSelectorExpr.Sel.Name)
+		if actualPrimitiveType, isCustomType := parser.CustomPrimitiveTypes[name]; isCustomType {
 			return propertyName{SchemaType: actualPrimitiveType, ArrayType: actualPrimitiveType}
 		}
 	}
-
-	fmt.Printf("%s is not supported. but it will be set with string temporary. Please report any problems.", astTypeSelectorExpr.Sel.Name)
 	return propertyName{SchemaType: "string", ArrayType: "string"}
 }
 
-// getPropertyName returns the string value for the given field if it exists, otherwise it panics.
+// getPropertyName returns the string value for the given field if it exists
 // allowedValues: array, boolean, integer, null, number, object, string
-func getPropertyName(field *ast.Field, parser *Parser) propertyName {
-	if astTypeSelectorExpr, ok := field.Type.(*ast.SelectorExpr); ok {
-		return parseFieldSelectorExpr(astTypeSelectorExpr, parser, newProperty)
-	}
+func getPropertyName(pkgName string, expr ast.Expr, parser *Parser) (propertyName, error) {
+	switch tp := expr.(type) {
+	case *ast.SelectorExpr:
+		return parseFieldSelectorExpr(tp, parser, newProperty), nil
+	case *ast.StarExpr:
+		return getPropertyName(pkgName, tp.X, parser)
+	case *ast.ArrayType:
+		return getArrayPropertyName(pkgName, tp.Elt, parser), nil
+	case *ast.MapType, *ast.StructType, *ast.InterfaceType:
+		return propertyName{SchemaType: "object", ArrayType: "object"}, nil
+	case *ast.FuncType:
+		return propertyName{SchemaType: "func", ArrayType: ""}, nil
+	case *ast.Ident:
+		name := tp.Name
+		// check if it is a custom type
+		if actualPrimitiveType, isCustomType := parser.CustomPrimitiveTypes[fullTypeName(pkgName, name)]; isCustomType {
+			return propertyName{SchemaType: actualPrimitiveType, ArrayType: actualPrimitiveType}, nil
+		}
 
-	// check if it is a custom type
-	typeName := fmt.Sprintf("%v", field.Type)
-	if actualPrimitiveType, isCustomType := parser.CustomPrimitiveTypes[typeName]; isCustomType {
-		return propertyName{SchemaType: actualPrimitiveType, ArrayType: actualPrimitiveType}
+		name = TransToValidSchemeType(name)
+		return propertyName{SchemaType: name, ArrayType: name}, nil
+	default:
+		return propertyName{}, errors.New("not supported" + fmt.Sprint(expr))
 	}
+}
 
-	if astTypeIdent, ok := field.Type.(*ast.Ident); ok {
-		name := astTypeIdent.Name
-		schemeType := TransToValidSchemeType(name)
-		return propertyName{SchemaType: schemeType, ArrayType: schemeType}
-	}
-	if ptr, ok := field.Type.(*ast.StarExpr); ok {
-		if astTypeSelectorExpr, ok := ptr.X.(*ast.SelectorExpr); ok {
-			return parseFieldSelectorExpr(astTypeSelectorExpr, parser, newProperty)
+func getArrayPropertyName(pkgName string, astTypeArrayElt ast.Expr, parser *Parser) propertyName {
+	switch elt := astTypeArrayElt.(type) {
+	case *ast.StructType, *ast.MapType, *ast.InterfaceType:
+		return propertyName{SchemaType: "array", ArrayType: "object"}
+	case *ast.ArrayType:
+		return propertyName{SchemaType: "array", ArrayType: "array"}
+	case *ast.StarExpr:
+		return getArrayPropertyName(pkgName, elt.X, parser)
+	case *ast.SelectorExpr:
+		return parseFieldSelectorExpr(elt, parser, newArrayProperty)
+	case *ast.Ident:
+		name := elt.Name
+		if actualPrimitiveType, isCustomType := parser.CustomPrimitiveTypes[fullTypeName(pkgName, name)]; isCustomType {
+			name = actualPrimitiveType
+		} else {
+			name = TransToValidSchemeType(elt.Name)
 		}
-		if astTypeIdent, ok := ptr.X.(*ast.Ident); ok {
-			name := astTypeIdent.Name
-			schemeType := TransToValidSchemeType(name)
-			return propertyName{SchemaType: schemeType, ArrayType: schemeType}
+		return propertyName{SchemaType: "array", ArrayType: name}
+	default:
+		name := fmt.Sprintf("%s", astTypeArrayElt)
+		if actualPrimitiveType, isCustomType := parser.CustomPrimitiveTypes[fullTypeName(pkgName, name)]; isCustomType {
+			name = actualPrimitiveType
+		} else {
+			name = TransToValidSchemeType(name)
 		}
-		if astTypeArray, ok := ptr.X.(*ast.ArrayType); ok { // if array
-			if astTypeArrayExpr, ok := astTypeArray.Elt.(*ast.SelectorExpr); ok {
-				return parseFieldSelectorExpr(astTypeArrayExpr, parser, newArrayProperty)
-			}
-			if astTypeArrayIdent, ok := astTypeArray.Elt.(*ast.Ident); ok {
-				name := astTypeArrayIdent.Name
-				return propertyName{SchemaType: "array", ArrayType: name}
-			}
-		}
+		return propertyName{SchemaType: "array", ArrayType: name}
 	}
-	if astTypeArray, ok := field.Type.(*ast.ArrayType); ok { // if array
-		if astTypeArrayExpr, ok := astTypeArray.Elt.(*ast.SelectorExpr); ok {
-			return parseFieldSelectorExpr(astTypeArrayExpr, parser, newArrayProperty)
-		}
-		if astTypeArrayExpr, ok := astTypeArray.Elt.(*ast.StarExpr); ok {
-			if astTypeArrayIdent, ok := astTypeArrayExpr.X.(*ast.Ident); ok {
-				name := astTypeArrayIdent.Name
-				return propertyName{SchemaType: "array", ArrayType: name}
-			}
-		}
-		itemTypeName := fmt.Sprintf("%s", astTypeArray.Elt)
-		if actualPrimitiveType, isCustomType := parser.CustomPrimitiveTypes[itemTypeName]; isCustomType {
-			itemTypeName = actualPrimitiveType
-		}
-		return propertyName{SchemaType: "array", ArrayType: itemTypeName}
-	}
-	if _, ok := field.Type.(*ast.MapType); ok { // if map
-		//TODO: support map
-		return propertyName{SchemaType: "object", ArrayType: "object"}
-	}
-	if _, ok := field.Type.(*ast.StructType); ok { // if struct
-		return propertyName{SchemaType: "object", ArrayType: "object"}
-	}
-	if _, ok := field.Type.(*ast.InterfaceType); ok { // if interface{}
-		return propertyName{SchemaType: "object", ArrayType: "object"}
-	}
-	panic("not supported" + fmt.Sprint(field.Type))
 }
