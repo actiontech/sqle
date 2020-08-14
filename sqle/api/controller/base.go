@@ -2,13 +2,14 @@ package controller
 
 import (
 	"fmt"
-	"github.com/asaskevich/govalidator"
-	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/url"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
+	"github.com/asaskevich/govalidator"
+	"github.com/labstack/echo/v4"
+	"gopkg.in/yaml.v2"
 )
 
 var INSTANCE_NOT_EXIST_ERROR = NewBaseReq(errors.New(errors.INSTANCE_NOT_EXIST, fmt.Errorf("instance not exist")))
@@ -77,6 +78,7 @@ func unescapeParamString(params []*string) error {
 	return nil
 }
 
+//todo rename sqle.yml after remould component
 const ConfigPath = "/opt/sqle/etc/sqled.cnf"
 
 // @Summary 加载数据库参数
@@ -100,25 +102,31 @@ func ReloadBaseInfo(c echo.Context) error {
 	if configPath == "" {
 		configPath = ConfigPath
 	}
-	conf, err := utils.LoadIniConf(configPath)
+	conf := model.Config{}
+
+	b, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(fmt.Errorf("load config path: %s failed", configPath)))
 	}
-	section ,err :=conf.GetSection("server")
+	err = yaml.Unmarshal(b, &conf)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
-	}
-	section.Key("mysql_user").SetValue(mysqlUser)
-	section.Key("mysql_password").SetValue(mysqlPassword)
-	section.Key("mysql_host").SetValue(mysqlHost)
-	section.Key("mysql_port").SetValue(mysqlPort)
-	section.Key("mysql_schema").SetValue(mysqlSchema)
-	err = conf.Save(configPath)
-	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
-	}
+		return c.JSON(200, NewBaseReq(fmt.Errorf("yaml unmarshal error %v", err)))
 
-	s, err := model.NewStorage(mysqlUser, mysqlPassword, mysqlHost, mysqlPort, mysqlSchema, false)
+	}
+	conf.Server.DBCnf.MysqlCnf.Port = mysqlPort
+	conf.Server.DBCnf.MysqlCnf.Host = mysqlHost
+	conf.Server.DBCnf.MysqlCnf.Schema = mysqlSchema
+	conf.Server.DBCnf.MysqlCnf.Password = mysqlPassword
+	conf.Server.DBCnf.MysqlCnf.User = mysqlUser
+	data, err := yaml.Marshal(conf)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(fmt.Errorf("yaml marshal error %v", err)))
+	}
+	err = ioutil.WriteFile(configPath, data, 0666)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(err))
+	}
+	s, err := model.NewStorage(mysqlUser, mysqlPassword, mysqlHost, mysqlPort, mysqlSchema, conf.Server.SqleCnf.DebugLog)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
