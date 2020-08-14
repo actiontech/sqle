@@ -96,22 +96,22 @@ mkdir -p $RPM_INSTALL_PREFIX/logs
 mkdir -p $RPM_INSTALL_PREFIX/etc
 
 cat > $RPM_INSTALL_PREFIX/etc/sqled.cnf.template<<EOF
-[server]
-port=
-mysql_host=
-mysql_port=
-mysql_user=
-mysql_password=
-mysql_schema=
-log_path=./logs
-#
-auto_migrate_table=true
-debug=false
-
-# SQLServer parser server config
-[ms_parser_server]
-host=
-port=
+server:
+ sqle_config:
+  server_port: 10000
+  auto_migrate_table: false
+  debug_log: false
+  log_path: './logs'
+ db_config:
+  mysql_cnf:
+   mysql_host: '127.0.0.1'
+   mysql_port: '3306'
+   mysql_user: 'root'
+   mysql_password: 'pass'
+   mysql_schema: 'sqle'
+  sql_server_cnf:
+   sql_server_host: '127.0.0.1'
+   sql_server_port: '10001'
 EOF
 
 #chown

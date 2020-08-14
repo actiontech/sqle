@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"strconv"
@@ -15,7 +16,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"actiontech.cloud/universe/sqle/v3/sqle/sqlserverClient"
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
+	"gopkg.in/yaml.v2"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/spf13/cobra"
@@ -76,22 +77,22 @@ func main() {
 				return
 			}
 			fileContent := `
-[server]
-port={{SERVER_PORT}}
-mysql_host={{MYSQL_HOST}}
-mysql_port={{MYSQL_PORT}}
-mysql_user={{MYSQL_USER}}
-mysql_password={{MYSQL_PASSWORD}}
-mysql_schema={{MYSQL_SCHEMA}}
-log_path=./logs
-#
-auto_migrate_table={{AUTO_MIGRATE_TABLE}}
-debug={{DEBUG}}
-
-# SQLServer parser server config
-[ms_parser_server]
-host=
-port=
+server:
+ sqle_config:
+  server_port: {{SERVER_PORT}}
+  auto_migrate_table: {{AUTO_MIGRATE_TABLE}}
+  debug_log: {{DEBUG}}
+  log_path: './logs'
+ db_config:
+  mysql_cnf:
+   mysql_host: '{{MYSQL_HOST}}'
+   mysql_port: '{{MYSQL_PORT}}'
+   mysql_user: '{{MYSQL_USER}}'
+   mysql_password: '{{MYSQL_PASSWORD}}'
+   mysql_schema: '{{MYSQL_SCHEMA}}'
+  sql_server_cnf:
+   sql_server_host:  
+   sql_server_port: 
 `
 
 			fileContent = strings.Replace(fileContent, "{{SERVER_PORT}}", strconv.Itoa(port), -1)
@@ -118,21 +119,26 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	// if conf path is exist, load option from conf
 	if configPath != "" {
-		conf, err := utils.LoadIniConf(configPath)
+		conf := model.Config{}
+		b, err := ioutil.ReadFile(configPath)
 		if err != nil {
-			return fmt.Errorf("load config path: %s failed", configPath)
+			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
 		}
-		mysqlUser = conf.GetString("server", "mysql_user", "sqle")
-		mysqlPass = conf.GetString("server", "mysql_password", "sqle")
-		mysqlHost = conf.GetString("server", "mysql_host", "localhost")
-		mysqlPort = conf.GetString("server", "mysql_port", "3306")
-		mysqlSchema = conf.GetString("server", "mysql_schema", "")
-		port = conf.GetInt("server", "port", 10000)
-		autoMigrateTable = conf.GetBool("server", "auto_migrate_table", false)
-		debug = conf.GetBool("server", "debug", false)
-		logPath = conf.GetString("server", "log_path", "./logs")
-		sqlServerParserServerHost = conf.GetString("ms_parser_server", "host", "localhost")
-		sqlServerParserServerPort = conf.GetString("ms_parser_server", "port", "10001")
+		err = yaml.Unmarshal(b, &conf)
+		if err != nil {
+			fmt.Printf("yaml unmarshal error %v", err)
+		}
+		mysqlUser = conf.Server.DBCnf.MysqlCnf.User
+		mysqlPass = conf.Server.DBCnf.MysqlCnf.Password
+		mysqlHost = conf.Server.DBCnf.MysqlCnf.Host
+		mysqlPort = conf.Server.DBCnf.MysqlCnf.Port
+		mysqlSchema = conf.Server.DBCnf.MysqlCnf.Schema
+		port = conf.Server.SqleCnf.SqleServerPort
+		autoMigrateTable = conf.Server.SqleCnf.AutoMigrateTable
+		debug = conf.Server.SqleCnf.DebugLog
+		logPath = conf.Server.SqleCnf.LogPath
+		sqlServerParserServerHost = conf.Server.DBCnf.SqlServerCnf.Host
+		sqlServerParserServerPort = conf.Server.DBCnf.SqlServerCnf.Port
 	}
 
 	// init logger
