@@ -9,6 +9,7 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -414,23 +415,65 @@ func CreateAndInspectTask(c echo.Context) error {
 type GetUploadedSqlsRes struct {
 	BaseRes
 	Data []model.CommitSql `json:"data"`
+	TotalNums uint32 `json:"total_nums"`
 }
 
 // @Summary 获取指定task的SQLs信息
 // @Description get information of all SQLs belong to the specified task
-// @Param task_id path string true "Task ID"
+// @Param task_id path string true "task id"
+// @Param page_index query string false "page index"
+// @Param page_size query string false "page size"
+// @Param filter_sql_execution_status query string false "filter: execution status of task uploaded sql" Enums(finished, initialized, doing, failed)
+// @Param filter_sql_audit_status query string false "filter: audit status of task uploaded sql" Enums(doing, finished)
 // @Success 200 {object} controller.GetUploadedSqlsRes
 // @router /tasks/{task_id}/uploaded_sqls [get]
 func GetUploadedSqls(c echo.Context) error {
 	s := model.GetStorage()
+	var pageIndex,pageSize int
 	taskId := c.Param("task_id")
-	res, err := s.GetSqlsByTaskId(taskId)
+	index, err := url.QueryUnescape(c.QueryParam("page_index"))
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-
+	pageIndex,err = FormatStringToInt(index)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	size, err := url.QueryUnescape(c.QueryParam("page_size"))
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	pageSize,err = FormatStringToInt(size)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	filterSqlExecutionStatus, err := url.QueryUnescape(c.QueryParam("filter_sql_execution_status"))
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	filterSqlAuditStatus, err := url.QueryUnescape(c.QueryParam("filter_sql_audit_status"))
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	res,totalNums, err := s.GetUploadedSqls(taskId,filterSqlExecutionStatus,filterSqlAuditStatus,pageIndex,pageSize)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
 	return c.JSON(http.StatusOK, &GetUploadedSqlsRes{
 		BaseRes: NewBaseReq(nil),
 		Data:    res,
+		TotalNums: totalNums,
 	})
+}
+
+func FormatStringToInt(s string)(ret int, err error){
+	if s == ""{
+		return 0 ,nil
+	}else{
+		ret, err = strconv.Atoi(s)
+		if err != nil {
+			return 0,err
+		}
+	}
+	return ret,nil
 }

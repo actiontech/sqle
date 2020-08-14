@@ -281,12 +281,38 @@ func (s *Storage) GetSqlCommittingResultByTaskId(taskId string) (string, error) 
 	return CommitSql.ExecStatus, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetSqlsByTaskId(taskId string) ([]CommitSql, error) {
-	//TODO @luowei support filter and limit
+func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus string, pageIndex, pageSize int) ([]CommitSql, uint32, error) {
+	var count uint32
 	CommitSqls := []CommitSql{}
-	err := s.db.Where("task_id=?",taskId).Find(&CommitSqls).Error
-	return CommitSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	queryFilter := "task_id=?"
+	queryArgs := make([]interface{}, 0)
+	queryArgs = append(queryArgs, taskId)
+	if filterSqlExecutionStatus != "" {
+		if filterSqlExecutionStatus == "initialized" {
+			filterSqlExecutionStatus = ""
+		}
+		queryFilter += " AND exec_status=?"
+		queryArgs = append(queryArgs, filterSqlExecutionStatus)
+	}
+	if filterSqlAuditStatus != "" {
+		queryFilter += " AND inspect_status=?"
+		queryArgs = append(queryArgs, filterSqlAuditStatus)
+	}
+	if pageSize == 0 {
+		err := s.db.Where(queryFilter, queryArgs...).Find(&CommitSqls).Count(&count).Error
+		return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err := s.db.Model(&CommitSql{}).Where(queryFilter, queryArgs...).Count(&count).Error
+	if err != nil {
+		return CommitSqls, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	err = s.db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Where(queryFilter, queryArgs...).Find(&CommitSqls).Error
+
+	return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+
 }
+
 
 
 func (s *Storage) DeleteTasksByIds(ids []string) error{
