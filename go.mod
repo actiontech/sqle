@@ -14,6 +14,7 @@ require (
 	github.com/cznic/strutil v0.0.0-20181122101858-275e90344537
 	github.com/cznic/y v0.0.0-20181122101901-b05e8c2e8d7b
 	github.com/denisenkom/go-mssqldb v0.0.0-20200620013148-b91950f658ec
+	github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.3.5
 	github.com/jinzhu/gorm v1.9.15
@@ -32,6 +33,7 @@ require (
 	google.golang.org/grpc v1.28.0
 	gopkg.in/ini.v1 v1.57.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/yaml.v2 v2.2.8
 )
 
 replace github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5

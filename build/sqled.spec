@@ -75,6 +75,7 @@ fi
 %post
 
 #service
+%if "%{runOnDmp}" != "true"
 grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
@@ -91,6 +92,7 @@ if [ $? -eq 0 ]; then
 #    chmod 755 /etc/init.d/sqled
 #    chkconfig --add sqled
 fi
+%endif
 
 mkdir -p $RPM_INSTALL_PREFIX/logs
 mkdir -p $RPM_INSTALL_PREFIX/etc
@@ -132,6 +134,7 @@ setcap %{caps} $RPM_INSTALL_PREFIX/bin/sqled
 
 %preun
 
+%if "%{runOnDmp}" != "true"
 if [ "$1" = "0" ]; then
     grep systemd /proc/1/comm 1>/dev/null 2>&1
     if [ $? -eq 0 ]; then
@@ -140,11 +143,13 @@ if [ "$1" = "0" ]; then
         service sqled stop || true
     fi
 fi
+%endif
 
 ##########
 
 %postun
 
+%if "%{runOnDmp}" != "true"
 if [ "$1" = "0" ]; then
     grep systemd /proc/1/comm 1>/dev/null 2>&1
     if [ $? -eq 0 ]; then
@@ -157,7 +162,7 @@ if [ "$1" = "0" ]; then
         rm -f /etc/init.d/sqled || true
     fi
 fi
-
+%endif
 
 ##########
 
