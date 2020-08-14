@@ -30,7 +30,7 @@ Acitontech Sqle_sqlserver
 
 %build
 echo "build sqle_sqlserver..."
-cd %{_builddir}/%{buildsubdir}/src/sqle
+cd %{_builddir}/%{buildsubdir}/sqle
 make build_sqlserver
 
 ##########
@@ -38,8 +38,8 @@ make build_sqlserver
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/libs
-cp -R %{_builddir}/%{buildsubdir}/src/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
-cp -R %{_builddir}/%{buildsubdir}/src/sqle/sqlserver/SqlserverProtoServer/bin/Release/netcoreapp2.1/%{_dotnet_target}/* $RPM_BUILD_ROOT/usr/local/sqle/libs
+cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
+cp -R %{_builddir}/%{buildsubdir}/sqle/sqle/sqlserver/SqlserverProtoServer/bin/Release/netcoreapp2.1/%{_dotnet_target}/* $RPM_BUILD_ROOT/usr/local/sqle/libs
 echo "%{_git_version}" > $RPM_BUILD_ROOT/usr/local/sqle/VERSION
 
 ##########

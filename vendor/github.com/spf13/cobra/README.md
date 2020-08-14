@@ -16,7 +16,7 @@ Many of the most widely used Go projects are built using Cobra including:
 * [CockroachDB](http://www.cockroachlabs.com/)
 * [Bleve](http://www.blevesearch.com/)
 * [ProjectAtomic (enterprise)](http://www.projectatomic.io/)
-* [Giant Swarm's gsctl](https://github.com/giantswarm/gsctl)
+* [GiantSwarm's swarm](https://github.com/giantswarm/cli)
 * [Nanobox](https://github.com/nanobox-io/nanobox)/[Nanopack](https://github.com/nanopack)
 * [rclone](http://rclone.org/)
 * [nehm](https://github.com/bogem/nehm)
@@ -152,6 +152,9 @@ In a Cobra app, typically the main.go file is very bare. It serves one purpose: 
 package main
 
 import (
+  "fmt"
+  "os"
+
   "{pathToYourApp}/cmd"
 )
 
@@ -262,6 +265,9 @@ In a Cobra app, typically the main.go file is very bare. It serves, one purpose,
 package main
 
 import (
+  "fmt"
+  "os"
+
   "{pathToYourApp}/cmd"
 )
 

@@ -1,22 +1,45 @@
 package echoSwagger
 
 import (
-	"golang.org/x/net/webdav"
 	"html/template"
 	"net/http"
 	"regexp"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/swaggo/files"
 	"github.com/swaggo/swag"
 )
 
-// WrapHandler wraps swaggerFiles.Handler and returns echo.HandlerFunc
-var WrapHandler = wrapHandler(swaggerFiles.Handler)
+// Config stores echoSwagger configuration variables.
+type Config struct {
+	//The url pointing to API definition (normally swagger.json or swagger.yaml). Default is `doc.json`.
+	URL string
+}
 
-// wapHandler wraps `http.Handler` into `gin.HandlerFunc`.
-func wrapHandler(h *webdav.Handler) echo.HandlerFunc {
-	//create a template with name
+// URL presents the url pointing to API definition (normally swagger.json or swagger.yaml).
+func URL(url string) func(c *Config) {
+	return func(c *Config) {
+		c.URL = url
+	}
+}
+
+// WrapHandler wraps swaggerFiles.Handler and returns echo.HandlerFunc
+var WrapHandler = EchoWrapHandler()
+
+// EchoWrapHandler wraps `http.Handler` into `echo.HandlerFunc`.
+func EchoWrapHandler(confs ...func(c *Config)) echo.HandlerFunc {
+
+	handler := swaggerFiles.Handler
+
+	config := &Config{
+		URL: "doc.json",
+	}
+
+	for _, c := range confs {
+		c(config)
+	}
+
+	// create a template with name
 	t := template.New("swagger_index.html")
 	index, _ := t.Parse(indexTempl)
 
@@ -34,19 +57,17 @@ func wrapHandler(h *webdav.Handler) echo.HandlerFunc {
 		}
 		path := matches[2]
 		prefix := matches[1]
-		h.Prefix = prefix
+		handler.Prefix = prefix
 
 		switch path {
 		case "index.html":
-			s := &pro{
-				Host: "doc.json", //TODO: provide to customs?
-			}
-			index.Execute(c.Response().Writer, s)
+
+			index.Execute(c.Response().Writer, config)
 		case "doc.json":
 			doc, _ := swag.ReadDoc()
 			c.Response().Write([]byte(doc))
 		default:
-			h.ServeHTTP(c.Response().Writer, c.Request())
+			handler.ServeHTTP(c.Response().Writer, c.Request())
 
 		}
 
@@ -129,7 +150,7 @@ const indexTempl = `<!-- HTML for static distribution bundle build -->
 window.onload = function() {
   // Build a system
   const ui = SwaggerUIBundle({
-    url: "{{.Host}}",
+    url: "{{.URL}}",
     dom_id: '#swagger-ui',
     validatorUrl: null,
     presets: [

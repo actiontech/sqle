@@ -19,11 +19,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"strconv"
 	"unicode/utf8"
 	"unsafe"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/util/hack"
-	"github.com/pkg/errors"
 )
 
 // Type returns type of BinaryJSON as string.
@@ -54,23 +55,28 @@ func (bj BinaryJSON) Type() string {
 	}
 }
 
+// Quote is for JSON_QUOTE
+func (bj BinaryJSON) Quote() string {
+	str := hack.String(bj.GetString())
+	return strconv.Quote(string(str))
+}
+
 // Unquote is for JSON_UNQUOTE.
 func (bj BinaryJSON) Unquote() (string, error) {
 	switch bj.TypeCode {
 	case TypeCodeString:
-		s, err := unquoteString(hack.String(bj.GetString()))
-		if err != nil {
-			return "", errors.Trace(err)
+		tmp := string(hack.String(bj.GetString()))
+		tlen := len(tmp)
+		if tlen < 2 {
+			return tmp, nil
 		}
-		// Remove prefix and suffix '"'.
-		slen := len(s)
-		if slen > 1 {
-			head, tail := s[0], s[slen-1]
-			if head == '"' && tail == '"' {
-				return s[1 : slen-1], nil
-			}
+		head, tail := tmp[0], tmp[tlen-1]
+		if head == '"' && tail == '"' {
+			// Remove prefix and suffix '"' before unquoting
+			return unquoteString(tmp[1 : tlen-1])
 		}
-		return s, nil
+		// if value is not double quoted, do nothing
+		return tmp, nil
 	default:
 		return bj.String(), nil
 	}
@@ -139,6 +145,67 @@ func decodeEscapedUnicode(s []byte) (char [4]byte, size int, err error) {
 	size = utf8.RuneLen(rune(unicode))
 	utf8.EncodeRune(char[0:size], rune(unicode))
 	return
+}
+
+// quoteString escapes interior quote and other characters for JSON_QUOTE
+// https://dev.mysql.com/doc/refman/5.7/en/json-creation-functions.html#function_json-quote
+// TODO: add JSON_QUOTE builtin
+func quoteString(s string) string {
+	var escapeByteMap = map[byte]string{
+		'\\': "\\\\",
+		'"':  "\\\"",
+		'\b': "\\b",
+		'\f': "\\f",
+		'\n': "\\n",
+		'\r': "\\r",
+		'\t': "\\t",
+	}
+
+	ret := new(bytes.Buffer)
+	ret.WriteByte('"')
+
+	start := 0
+	hasEscaped := false
+
+	for i := 0; i < len(s); {
+		if b := s[i]; b < utf8.RuneSelf {
+			escaped, ok := escapeByteMap[b]
+			if ok {
+				if start < i {
+					ret.WriteString(s[start:i])
+				}
+				hasEscaped = true
+				ret.WriteString(escaped)
+				i++
+				start = i
+			} else {
+				i++
+			}
+		} else {
+			c, size := utf8.DecodeRune([]byte(s[i:]))
+			if c == utf8.RuneError && size == 1 { // refer to codes of `binary.marshalStringTo`
+				if start < i {
+					ret.WriteString(s[start:i])
+				}
+				hasEscaped = true
+				ret.WriteString(`\ufffd`)
+				i += size
+				start = i
+				continue
+			}
+			i += size
+		}
+	}
+
+	if start < len(s) {
+		ret.WriteString(s[start:])
+	}
+
+	if hasEscaped {
+		ret.WriteByte('"')
+		return ret.String()
+	}
+	return ret.String()[1:]
 }
 
 // Extract receives several path expressions as arguments, matches them in bj, and returns:
@@ -217,7 +284,7 @@ func (bj BinaryJSON) objectSearchKey(key []byte) (BinaryJSON, bool) {
 	idx := sort.Search(elemCount, func(i int) bool {
 		return bytes.Compare(bj.objectGetKey(i), key) >= 0
 	})
-	if idx < elemCount && bytes.Compare(bj.objectGetKey(idx), key) == 0 {
+	if idx < elemCount && bytes.Equal(bj.objectGetKey(idx), key) {
 		return bj.objectGetVal(idx), true
 	}
 	return BinaryJSON{}, false
@@ -730,4 +797,188 @@ func ContainsBinary(obj, target BinaryJSON) bool {
 	default:
 		return CompareBinary(obj, target) == 0
 	}
+}
+
+// GetElemDepth for JSON_DEPTH
+// Returns the maximum depth of a JSON document
+// rules referenced by MySQL JSON_DEPTH function
+// [https://dev.mysql.com/doc/refman/5.7/en/json-attribute-functions.html#function_json-depth]
+// 1) An empty array, empty object, or scalar value has depth 1.
+// 2) A nonempty array containing only elements of depth 1 or nonempty object containing only member values of depth 1 has depth 2.
+// 3) Otherwise, a JSON document has depth greater than 2.
+// e.g. depth of '{}', '[]', 'true': 1
+// e.g. depth of '[10, 20]', '[[], {}]': 2
+// e.g. depth of '[10, {"a": 20}]': 3
+func (bj BinaryJSON) GetElemDepth() int {
+	switch bj.TypeCode {
+	case TypeCodeObject:
+		len := bj.GetElemCount()
+		maxDepth := 0
+		for i := 0; i < len; i++ {
+			obj := bj.objectGetVal(i)
+			depth := obj.GetElemDepth()
+			if depth > maxDepth {
+				maxDepth = depth
+			}
+		}
+		return maxDepth + 1
+	case TypeCodeArray:
+		len := bj.GetElemCount()
+		maxDepth := 0
+		for i := 0; i < len; i++ {
+			obj := bj.arrayGetElem(i)
+			depth := obj.GetElemDepth()
+			if depth > maxDepth {
+				maxDepth = depth
+			}
+		}
+		return maxDepth + 1
+	default:
+		return 1
+	}
+}
+
+// extractCallbackFn: the type of CALLBACK function for extractToCallback
+type extractCallbackFn func(fullpath PathExpression, bj BinaryJSON) (stop bool, err error)
+
+// extractToCallback: callback alternative of extractTo
+//     would be more effective when walk through the whole JSON is unnecessary
+// NOTICE: path [0] & [*] for JSON object other than array is INVALID, which is different from extractTo.
+func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extractCallbackFn, fullpath PathExpression) (stop bool, err error) {
+	if len(pathExpr.legs) == 0 {
+		return callbackFn(fullpath, bj)
+	}
+
+	currentLeg, subPathExpr := pathExpr.popOneLeg()
+	if currentLeg.typ == pathLegIndex && bj.TypeCode == TypeCodeArray {
+		elemCount := bj.GetElemCount()
+		if currentLeg.arrayIndex == arrayIndexAsterisk {
+			for i := 0; i < elemCount; i++ {
+				//buf = bj.arrayGetElem(i).extractTo(buf, subPathExpr)
+				path := fullpath.pushBackOneIndexLeg(i)
+				stop, err = bj.arrayGetElem(i).extractToCallback(subPathExpr, callbackFn, path)
+				if stop || err != nil {
+					return
+				}
+			}
+		} else if currentLeg.arrayIndex < elemCount {
+			//buf = bj.arrayGetElem(currentLeg.arrayIndex).extractTo(buf, subPathExpr)
+			path := fullpath.pushBackOneIndexLeg(currentLeg.arrayIndex)
+			stop, err = bj.arrayGetElem(currentLeg.arrayIndex).extractToCallback(subPathExpr, callbackFn, path)
+			if stop || err != nil {
+				return
+			}
+		}
+	} else if currentLeg.typ == pathLegKey && bj.TypeCode == TypeCodeObject {
+		elemCount := bj.GetElemCount()
+		if currentLeg.dotKey == "*" {
+			for i := 0; i < elemCount; i++ {
+				//buf = bj.objectGetVal(i).extractTo(buf, subPathExpr)
+				path := fullpath.pushBackOneKeyLeg(string(bj.objectGetKey(i)))
+				stop, err = bj.objectGetVal(i).extractToCallback(subPathExpr, callbackFn, path)
+				if stop || err != nil {
+					return
+				}
+			}
+		} else {
+			child, ok := bj.objectSearchKey(hack.Slice(currentLeg.dotKey))
+			if ok {
+				//buf = child.extractTo(buf, subPathExpr)
+				path := fullpath.pushBackOneKeyLeg(currentLeg.dotKey)
+				stop, err = child.extractToCallback(subPathExpr, callbackFn, path)
+				if stop || err != nil {
+					return
+				}
+			}
+		}
+	} else if currentLeg.typ == pathLegDoubleAsterisk {
+		//buf = bj.extractTo(buf, subPathExpr)
+		stop, err = bj.extractToCallback(subPathExpr, callbackFn, fullpath)
+		if stop || err != nil {
+			return
+		}
+
+		if bj.TypeCode == TypeCodeArray {
+			elemCount := bj.GetElemCount()
+			for i := 0; i < elemCount; i++ {
+				//buf = bj.arrayGetElem(i).extractTo(buf, pathExpr)
+				path := fullpath.pushBackOneIndexLeg(i)
+				stop, err = bj.arrayGetElem(i).extractToCallback(pathExpr, callbackFn, path)
+				if stop || err != nil {
+					return
+				}
+			}
+		} else if bj.TypeCode == TypeCodeObject {
+			elemCount := bj.GetElemCount()
+			for i := 0; i < elemCount; i++ {
+				//buf = bj.objectGetVal(i).extractTo(buf, pathExpr)
+				path := fullpath.pushBackOneKeyLeg(string(bj.objectGetKey(i)))
+				stop, err = bj.objectGetVal(i).extractToCallback(pathExpr, callbackFn, path)
+				if stop || err != nil {
+					return
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+// BinaryJSONWalkFunc is used as callback function for BinaryJSON.Walk
+type BinaryJSONWalkFunc func(fullpath PathExpression, bj BinaryJSON) (stop bool, err error)
+
+// Walk traverse BinaryJSON objects
+func (bj BinaryJSON) Walk(walkFn BinaryJSONWalkFunc, pathExprList ...PathExpression) (err error) {
+	pathSet := make(map[string]bool)
+
+	var doWalk extractCallbackFn
+	doWalk = func(fullpath PathExpression, bj BinaryJSON) (stop bool, err error) {
+		pathStr := fullpath.String()
+		if _, ok := pathSet[pathStr]; ok {
+			return false, nil
+		}
+
+		stop, err = walkFn(fullpath, bj)
+		pathSet[pathStr] = true
+		if stop || err != nil {
+			return
+		}
+
+		if bj.TypeCode == TypeCodeArray {
+			elemCount := bj.GetElemCount()
+			for i := 0; i < elemCount; i++ {
+				path := fullpath.pushBackOneIndexLeg(i)
+				stop, err = doWalk(path, bj.arrayGetElem(i))
+				if stop || err != nil {
+					return
+				}
+			}
+		} else if bj.TypeCode == TypeCodeObject {
+			elemCount := bj.GetElemCount()
+			for i := 0; i < elemCount; i++ {
+				path := fullpath.pushBackOneKeyLeg(string(bj.objectGetKey(i)))
+				stop, err = doWalk(path, bj.objectGetVal(i))
+				if stop || err != nil {
+					return
+				}
+			}
+		}
+		return false, nil
+	}
+
+	fullpath := PathExpression{legs: make([]pathLeg, 0, 32), flags: pathExpressionFlag(0)}
+	if len(pathExprList) > 0 {
+		for _, pathExpr := range pathExprList {
+			var stop bool
+			stop, err = bj.extractToCallback(pathExpr, doWalk, fullpath)
+			if stop || err != nil {
+				return err
+			}
+		}
+	} else {
+		_, err = doWalk(fullpath, bj)
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
