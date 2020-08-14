@@ -110,7 +110,7 @@ func ReloadBaseInfo(c echo.Context) error {
 	}
 	err = yaml.Unmarshal(b, &conf)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(fmt.Errorf("yaml unmarshal error %v", err)))
+		return c.JSON(200, NewBaseReq(fmt.Errorf("%v unmarshal error %v", configPath, err)))
 
 	}
 	conf.Server.DBCnf.MysqlCnf.Port = mysqlPort
@@ -120,11 +120,11 @@ func ReloadBaseInfo(c echo.Context) error {
 	conf.Server.DBCnf.MysqlCnf.User = mysqlUser
 	data, err := yaml.Marshal(conf)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(fmt.Errorf("yaml marshal error %v", err)))
+		return c.JSON(200, NewBaseReq(fmt.Errorf("%v marshal error %v", configPath, err)))
 	}
 	err = ioutil.WriteFile(configPath, data, 0666)
 	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
+		return c.JSON(200, NewBaseReq(fmt.Errorf("update sqle config file error %v", err)))
 	}
 	s, err := model.NewStorage(mysqlUser, mysqlPassword, mysqlHost, mysqlPort, mysqlSchema, conf.Server.SqleCnf.DebugLog)
 	if err != nil {
