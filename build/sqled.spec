@@ -70,6 +70,9 @@ if [ $? -eq 0 ]; then
     exit 14
 fi
 
+#CAP
+setcap %{caps} $RPM_INSTALL_PREFIX/bin/sqled
+
 ##########
 
 %post
