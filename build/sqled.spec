@@ -99,19 +99,19 @@ cat > $RPM_INSTALL_PREFIX/etc/sqled.cnf.template<<EOF
 server:
  sqle_config:
   server_port: 10000
-  auto_migrate_table:
-  debug_log:
+  auto_migrate_table: false
+  debug_log: false
   log_path: './logs'
  db_config:
   mysql_cnf:
-   mysql_host: ''
-   mysql_port: ''
-   mysql_user: ''
-   mysql_password: ''
-   mysql_schema: ''
+   mysql_host: '127.0.0.1'
+   mysql_port: '3306'
+   mysql_user: 'root'
+   mysql_password: 'pass'
+   mysql_schema: 'sqle'
   sql_server_cnf:
-   sql_server_host:
-   sql_server_port:
+   sql_server_host: '127.0.0.1'
+   sql_server_port: '10001'
 EOF
 
 #chown
