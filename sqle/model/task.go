@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 
 	"github.com/jinzhu/gorm"
@@ -231,12 +232,24 @@ func (s *Storage) UpdateCommitSqlStatus(sql *Sql, status, result string) error {
 	return s.UpdateCommitSqlById(fmt.Sprintf("%v", sql.ID), attr)
 }
 
-func (s *Storage) HardDeleteRollbackSqlByTaskIds(taskIds []string) error{
+func (s *Storage) HardDeleteRollbackSqlByTaskIds(taskIds []string) error {
 	rollbackSql := RollbackSql{}
 	err := s.db.Unscoped().Where("task_id IN (?)", taskIds).Delete(rollbackSql).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
+func (s *Storage) GetRollbackSqlByTaskId(taskId string, commitSqlNum []string) ([]RollbackSql, error) {
+	rollbackSqls := []RollbackSql{}
+	querySql := "task_id=?"
+	queryArgs := make([]interface{}, 0)
+	queryArgs = append(queryArgs, taskId)
+	if len(commitSqlNum) > 0 {
+		querySql += " AND COMMIT_SQL_NUMBER IN (?)"
+		queryArgs = append(queryArgs, commitSqlNum)
+	}
+	err := s.db.Where(querySql, queryArgs...).Find(&rollbackSqls).Error
+	return rollbackSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
 
 func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface{}) error {
 	err := s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
@@ -268,7 +281,7 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) HardDeleteSqlCommittingResultByTaskIds(ids []string) error{
+func (s *Storage) HardDeleteSqlCommittingResultByTaskIds(ids []string) error {
 	CommitSql := CommitSql{}
 	err := s.db.Unscoped().Where("task_id IN (?)", ids).Delete(CommitSql).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
@@ -277,7 +290,7 @@ func (s *Storage) HardDeleteSqlCommittingResultByTaskIds(ids []string) error{
 func (s *Storage) GetSqlCommittingResultByTaskId(taskId string) (string, error) {
 	//TODO @luowei support task with multi SQLs
 	CommitSql := CommitSql{}
-	err := s.db.Where("task_id=?",taskId).First(&CommitSql).Error
+	err := s.db.Where("task_id=?", taskId).First(&CommitSql).Error
 	return CommitSql.ExecStatus, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
@@ -313,18 +326,14 @@ func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAud
 
 }
 
-
-
-func (s *Storage) DeleteTasksByIds(ids []string) error{
+func (s *Storage) DeleteTasksByIds(ids []string) error {
 	tasks := Task{}
 	err := s.db.Where("id IN (?)", ids).Delete(tasks).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) HardDeleteTasksByIds(ids []string) error{
+func (s *Storage) HardDeleteTasksByIds(ids []string) error {
 	tasks := Task{}
 	err := s.db.Unscoped().Where("id IN (?)", ids).Delete(tasks).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
-
-
