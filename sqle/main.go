@@ -2,20 +2,9 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"os/signal"
 	"strconv"
 	"time"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/api"
-	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
-	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"actiontech.cloud/universe/sqle/v3/sqle/sqlserverClient"
-	"gopkg.in/yaml.v2"
 	"github.com/spf13/pflag"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
@@ -63,7 +52,7 @@ func main() {
 	rootCmd.AddUserFlag(&user, defaultUser)
 	rootCmd.AddUlimitNoFileFlag(&noFile)
 	rootCmd.AddUlimitNprocFlag(&nProc)
-	rootCmd.AddPortFlag(&port, 10000)
+	rootCmd.AddPortFlag(&port, 5801)
 
 	runOnDmp, err := strconv.ParseBool(runOnDmpStr)
 	if nil != err {

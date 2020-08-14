@@ -110,9 +110,7 @@ func (m *SqleOnDmpManager) initSqleOnDmpManagerTask() {
 		StartUcoreGuardService(m.opts.CompId, m.opts.UcoreHeartbeatPeriod).
 		StartDiagnosisService().
 		InitPlatform().
-		SetupQaDebugger()
-
-	m.r.StartComponentSipService(m.opts.CompType, m.opts.CompGroupId, m.opts.CompId, m.opts.ServerId)
+		StartComponentSipService(m.opts.CompType, m.opts.CompGroupId, m.opts.CompId, m.opts.ServerId)
 }
 
 func (m *SqleOnDmpManager) Run() {

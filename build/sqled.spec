@@ -70,9 +70,6 @@ if [ $? -eq 0 ]; then
     exit 14
 fi
 
-#CAP
-setcap %{caps} $RPM_INSTALL_PREFIX/bin/sqled
-
 ##########
 
 %post
@@ -125,6 +122,11 @@ find $RPM_INSTALL_PREFIX -type d -exec chmod 0750 {} \;
 find $RPM_INSTALL_PREFIX -type f -exec chmod 0640 {} \;
 chmod 0750 $RPM_INSTALL_PREFIX/bin/*
 chmod 0770 $RPM_INSTALL_PREFIX/etc
+
+##########
+
+#CAP
+setcap %{caps} $RPM_INSTALL_PREFIX/bin/sqled
 
 ##########
 
