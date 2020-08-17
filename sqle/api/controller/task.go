@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"strconv"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -227,7 +228,6 @@ type GetAllTaskRes struct {
 	Data []model.Task `json:"data"`
 }
 
-
 // @Summary Sql审核列表
 // @Description get all tasks
 // @Param task_ids query string false "get task by ids(interlaced by ',')"
@@ -414,8 +414,9 @@ func CreateAndInspectTask(c echo.Context) error {
 
 type GetUploadedSqlsRes struct {
 	BaseRes
-	Data []model.CommitSql `json:"data"`
-	TotalNums uint32 `json:"total_nums"`
+	CommitSqls   []model.CommitSql   `json:"commit_sql_list"`
+	TotalNums    uint32              `json:"total_nums"`
+	RollbackSqls []model.RollbackSql `json:"rollback_sql_list"`
 }
 
 // @Summary 获取指定task的SQLs信息
@@ -429,13 +430,13 @@ type GetUploadedSqlsRes struct {
 // @router /tasks/{task_id}/uploaded_sqls [get]
 func GetUploadedSqls(c echo.Context) error {
 	s := model.GetStorage()
-	var pageIndex,pageSize int
+	var pageIndex, pageSize int
 	taskId := c.Param("task_id")
 	index, err := url.QueryUnescape(c.QueryParam("page_index"))
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	pageIndex,err = FormatStringToInt(index)
+	pageIndex, err = FormatStringToInt(index)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -443,7 +444,7 @@ func GetUploadedSqls(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	pageSize,err = FormatStringToInt(size)
+	pageSize, err = FormatStringToInt(size)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
@@ -455,25 +456,34 @@ func GetUploadedSqls(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	res,totalNums, err := s.GetUploadedSqls(taskId,filterSqlExecutionStatus,filterSqlAuditStatus,pageIndex,pageSize)
+	commitSqls, totalNums, err := s.GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus, pageIndex, pageSize)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	commitSqlNum := make([]string, 0)
+	for _, commitSql := range commitSqls {
+		commitSqlNum = append(commitSqlNum, strconv.FormatUint(uint64(commitSql.Number), 10))
+	}
+	rollbackSqls, err := s.GetRollbackSqlByTaskId(taskId, commitSqlNum)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 	return c.JSON(http.StatusOK, &GetUploadedSqlsRes{
-		BaseRes: NewBaseReq(nil),
-		Data:    res,
-		TotalNums: totalNums,
+		BaseRes:      NewBaseReq(nil),
+		CommitSqls:   commitSqls,
+		RollbackSqls: rollbackSqls,
+		TotalNums:    totalNums,
 	})
 }
 
-func FormatStringToInt(s string)(ret int, err error){
-	if s == ""{
-		return 0 ,nil
-	}else{
+func FormatStringToInt(s string) (ret int, err error) {
+	if s == "" {
+		return 0, nil
+	} else {
 		ret, err = strconv.Atoi(s)
 		if err != nil {
-			return 0,err
+			return 0, err
 		}
 	}
-	return ret,nil
+	return ret, nil
 }
