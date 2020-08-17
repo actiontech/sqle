@@ -202,13 +202,17 @@ definitions:
       code:
         example: 0
         type: integer
-      data:
+      commit_sql_list:
         items:
           $ref: '#/definitions/model.CommitSql'
         type: array
       message:
         example: ok
         type: string
+      rollback_sql_list:
+        items:
+          $ref: '#/definitions/model.RollbackSql'
+        type: array
       total_nums:
         type: integer
     type: object

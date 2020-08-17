@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/facebookgo/grace/gracenet"
 	"io"
+	"io/ioutil"
 	os_ "os"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/facebookgo/grace/gracenet"
+	yaml "gopkg.in/yaml.v2"
 
 	"actiontech.cloud/universe/sqle/v3/sqle/api"
 	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
@@ -33,32 +36,34 @@ func createConfigFileCmd() *component.Cmd {
 		log.InitLogger(logPath)
 		defer log.ExitLogger()
 		log.Logger().Info("create config file using the filled in parameters")
-
-		//fileName := fmt.Sprintf("/etc/%v", configFile)
 		f, err := os_.Create(configPath)
 		if err != nil {
 			log.Logger().Errorf("open %v file error :%v", configPath, err)
 			return
 		}
 		fileContent := `
-[server]
-port={{SERVER_PORT}}
-mysql_host={{MYSQL_HOST}}
-mysql_port={{MYSQL_PORT}}
-mysql_user={{MYSQL_USER}}
-mysql_password={{MYSQL_PASSWORD}}
-mysql_schema={{MYSQL_SCHEMA}}
-log_path=./logs
-#
-auto_migrate_table={{AUTO_MIGRATE_TABLE}}
-debug={{DEBUG}}
-
-# SQLServer parser server config
-[ms_parser_server]
-host=
-port=
+server:
+ sqle_config:
+  server_port: {{SERVER_PORT}}
+  auto_migrate_table: {{AUTO_MIGRATE_TABLE}}
+  debug_log: {{DEBUG}}
+  log_path: './logs'
+ db_config:
+  mysql_cnf:
+   mysql_host: '{{MYSQL_HOST}}'
+   mysql_port: '{{MYSQL_PORT}}'
+   mysql_user: '{{MYSQL_USER}}'
+   mysql_password: '{{MYSQL_PASSWORD}}'
+   mysql_schema: '{{MYSQL_SCHEMA}}'
+  sql_server_cnf:
+   sql_server_host:  
+   sql_server_port:
 `
-
+		mysqlPass, err = utils.DecodeString(mysqlPass)
+		if err != nil {
+			log.Logger().Errorf("decode mysql password to string error :%v", err)
+			return
+		}
 		fileContent = strings.Replace(fileContent, "{{SERVER_PORT}}", strconv.Itoa(port), -1)
 		fileContent = strings.Replace(fileContent, "{{MYSQL_HOST}}", mysqlHost, -1)
 		fileContent = strings.Replace(fileContent, "{{MYSQL_PORT}}", mysqlPort, -1)
@@ -152,21 +157,27 @@ func (t *SqleTask) Initialize(stage *ucommonLog.Stage) error {
 
 	// if conf path is exist, load option from conf
 	if t.opts.ConfigPath != "" {
-		conf, err := utils.LoadIniConf(t.opts.ConfigPath)
+		conf := model.Config{}
+		b, err := ioutil.ReadFile(configPath)
 		if err != nil {
-			return fmt.Errorf("load config path: %s failed", t.opts.ConfigPath)
+			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
 		}
-		t.opts.MysqlUser = conf.GetString("server", "mysql_user", "sqle")
-		t.opts.MysqlPass = conf.GetString("server", "mysql_password", "sqle")
-		t.opts.MysqlHost = conf.GetString("server", "mysql_host", "localhost")
-		t.opts.MysqlPort = conf.GetString("server", "mysql_port", "3306")
-		t.opts.MysqlSchema = conf.GetString("server", "mysql_schema", "")
-		t.opts.Port = conf.GetInt("server", "port", 10000)
-		t.opts.AutoMigrateTable = conf.GetBool("server", "auto_migrate_table", false)
-		t.opts.Debug = conf.GetBool("server", "debug", false)
-		t.opts.LogPath = conf.GetString("server", "log_path", "./logs")
-		t.opts.SqlServerParserServerHost = conf.GetString("ms_parser_server", "host", "localhost")
-		t.opts.SqlServerParserServerPort = conf.GetString("ms_parser_server", "port", "10001")
+		err = yaml.Unmarshal(b, &conf)
+		if err != nil {
+			fmt.Printf("yaml unmarshal error %v", err)
+		}
+
+		t.opts.MysqlUser = conf.Server.DBCnf.MysqlCnf.User
+		t.opts.MysqlPass = conf.Server.DBCnf.MysqlCnf.Password
+		t.opts.MysqlHost = conf.Server.DBCnf.MysqlCnf.Host
+		t.opts.MysqlPort = conf.Server.DBCnf.MysqlCnf.Port
+		t.opts.MysqlSchema = conf.Server.DBCnf.MysqlCnf.Schema
+		t.opts.Port = conf.Server.SqleCnf.SqleServerPort
+		t.opts.AutoMigrateTable = conf.Server.SqleCnf.AutoMigrateTable
+		t.opts.Debug = conf.Server.SqleCnf.DebugLog
+		t.opts.LogPath = conf.Server.SqleCnf.LogPath
+		t.opts.SqlServerParserServerHost = conf.Server.DBCnf.SqlServerCnf.Host
+		t.opts.SqlServerParserServerPort = conf.Server.DBCnf.SqlServerCnf.Port
 	}
 
 	// init logger

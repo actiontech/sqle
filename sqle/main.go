@@ -1,6 +1,7 @@
 package main
 
 import (
+	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 	"fmt"
 	"strconv"
 	"time"
@@ -83,7 +84,7 @@ func main() {
 		BaseCmdFlag: component.BaseCmdFlag{
 			Name:      "mysql-password",
 			Shorthand: "",
-			Usage:     "mysql password",
+			Usage:     "Please make mysql password encode to base64",
 		},
 		PString:      &mysqlPass,
 		DefaultValue: "sqle",
@@ -183,6 +184,11 @@ func main() {
 }
 
 func run(runOnDmp bool, flags *pflag.FlagSet, excepts []string) error {
+	mysqlPass, err := utils.DecodeString(mysqlPass)
+	if err != nil {
+		return fmt.Errorf("decode mysql password to string error : %v", err)
+	}
+
 	task := NewSqleTask(&SqleTaskOptions{
 		ConfigPath:                configPath,
 		MysqlUser:                 mysqlUser,

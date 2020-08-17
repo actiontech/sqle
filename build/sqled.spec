@@ -100,7 +100,7 @@ mkdir -p $RPM_INSTALL_PREFIX/etc
 cat > $RPM_INSTALL_PREFIX/etc/sqled.cnf.template<<EOF
 server:
  sqle_config:
-  server_port: 10000
+  server_port: 5801
   auto_migrate_table: false
   debug_log: false
   log_path: './logs'

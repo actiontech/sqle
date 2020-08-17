@@ -1139,7 +1139,7 @@ var doc = `{
                     "type": "integer",
                     "example": 0
                 },
-                "data": {
+                "commit_sql_list": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.CommitSql"
@@ -1148,6 +1148,12 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                },
+                "rollback_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RollbackSql"
+                    }
                 },
                 "total_nums": {
                     "type": "integer"
