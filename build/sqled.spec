@@ -38,7 +38,7 @@ make install
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
-cp %{_builddir}/%{buildsubdir}/sqle/bin/sqle $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
+cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
 
 ##########

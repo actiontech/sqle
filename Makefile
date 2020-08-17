@@ -34,7 +34,7 @@ pull_image:
     $(DOCKER) pull ${DOCKER_IMAGE}
 
 install: swagger parser vet
-	GOBIN=${GOBIN} GOOS=${GOOS} GOARCH=${GOARCH} go install -mod=vendor ${SQLE_LDFLAGS} ${MAIN_MODULE}/${PROJECT_NAME}
+	GOBIN=${GOBIN} GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${GOBIN}/sqled -mod=vendor ${SQLE_LDFLAGS} ${MAIN_MODULE}/${PROJECT_NAME}
 
 build_sqlserver:
 	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
