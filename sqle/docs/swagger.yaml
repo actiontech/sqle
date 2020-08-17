@@ -202,13 +202,19 @@ definitions:
       code:
         example: 0
         type: integer
-      data:
+      commit_sql_list:
         items:
           $ref: '#/definitions/model.CommitSql'
         type: array
       message:
         example: ok
         type: string
+      rollback_sql_list:
+        items:
+          $ref: '#/definitions/model.RollbackSql'
+        type: array
+      total_nums:
+        type: integer
     type: object
   controller.InstanceRes:
     properties:
@@ -1074,10 +1080,34 @@ paths:
     get:
       description: get information of all SQLs belong to the specified task
       parameters:
-      - description: Task ID
+      - description: task id
         in: path
         name: task_id
         required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        type: string
+      - description: 'filter: execution status of task uploaded sql'
+        enum:
+        - finished
+        - initialized
+        - doing
+        - failed
+        in: query
+        name: filter_sql_execution_status
+        type: string
+      - description: 'filter: audit status of task uploaded sql'
+        enum:
+        - doing
+        - finished
+        in: query
+        name: filter_sql_audit_status
         type: string
       responses:
         "200":

@@ -391,20 +391,14 @@ func (scope *Scope) handleManyToManyPreload(field *Field, conditions []interface
 		key := toString(getValueFromFields(indirectScopeValue, foreignFieldNames))
 		fieldsSourceMap[key] = append(fieldsSourceMap[key], indirectScopeValue.FieldByName(field.Name))
 	}
-
-	for source, fields := range fieldsSourceMap {
-		for _, f := range fields {
+	for source, link := range linkHash {
+		for i, field := range fieldsSourceMap[source] {
 			//If not 0 this means Value is a pointer and we already added preloaded models to it
-			if f.Len() != 0 {
+			if fieldsSourceMap[source][i].Len() != 0 {
 				continue
 			}
-
-			v := reflect.MakeSlice(f.Type(), 0, 0)
-			if len(linkHash[source]) > 0 {
-				v = reflect.Append(f, linkHash[source]...)
-			}
-
-			f.Set(v)
+			field.Set(reflect.Append(fieldsSourceMap[source][i], link...))
 		}
+
 	}
 }

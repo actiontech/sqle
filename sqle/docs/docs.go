@@ -797,10 +797,44 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Task ID",
+                        "description": "task id",
                         "name": "task_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "finished",
+                            "initialized",
+                            "doing",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "description": "filter: execution status of task uploaded sql",
+                        "name": "filter_sql_execution_status",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "doing",
+                            "finished"
+                        ],
+                        "type": "string",
+                        "description": "filter: audit status of task uploaded sql",
+                        "name": "filter_sql_audit_status",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1105,7 +1139,7 @@ var doc = `{
                     "type": "integer",
                     "example": 0
                 },
-                "data": {
+                "commit_sql_list": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.CommitSql"
@@ -1114,6 +1148,15 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                },
+                "rollback_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RollbackSql"
+                    }
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },

@@ -1,9 +1,6 @@
 package gorm
 
-import (
-	"database/sql"
-	"fmt"
-)
+import "database/sql"
 
 // Define callbacks for row query
 func init() {
@@ -23,14 +20,6 @@ type RowsQueryResult struct {
 func rowQueryCallback(scope *Scope) {
 	if result, ok := scope.InstanceGet("row_query_result"); ok {
 		scope.prepareQuerySQL()
-
-		if str, ok := scope.Get("gorm:query_hint"); ok {
-			scope.SQL = fmt.Sprint(str) + scope.SQL
-		}
-
-		if str, ok := scope.Get("gorm:query_option"); ok {
-			scope.SQL += addExtraSpaceIfExist(fmt.Sprint(str))
-		}
 
 		if rowResult, ok := result.(*RowQueryResult); ok {
 			rowResult.Row = scope.SQLDB().QueryRow(scope.SQL, scope.SQLVars...)

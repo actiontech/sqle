@@ -38,7 +38,7 @@ make install
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
-cp %{_builddir}/%{buildsubdir}/sqle/bin/sqle $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
+cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
 
 ##########
@@ -75,6 +75,7 @@ fi
 %post
 
 #service
+%if "%{runOnDmp}" != "true"
 grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
@@ -91,6 +92,7 @@ if [ $? -eq 0 ]; then
 #    chmod 755 /etc/init.d/sqled
 #    chkconfig --add sqled
 fi
+%endif
 
 mkdir -p $RPM_INSTALL_PREFIX/logs
 mkdir -p $RPM_INSTALL_PREFIX/etc
@@ -98,7 +100,7 @@ mkdir -p $RPM_INSTALL_PREFIX/etc
 cat > $RPM_INSTALL_PREFIX/etc/sqled.cnf.template<<EOF
 server:
  sqle_config:
-  server_port: 10000
+  server_port: 5801
   auto_migrate_table: false
   debug_log: false
   log_path: './logs'
@@ -125,8 +127,14 @@ chmod 0770 $RPM_INSTALL_PREFIX/etc
 
 ##########
 
+#CAP
+setcap %{caps} $RPM_INSTALL_PREFIX/bin/sqled
+
+##########
+
 %preun
 
+%if "%{runOnDmp}" != "true"
 if [ "$1" = "0" ]; then
     grep systemd /proc/1/comm 1>/dev/null 2>&1
     if [ $? -eq 0 ]; then
@@ -135,11 +143,13 @@ if [ "$1" = "0" ]; then
         service sqled stop || true
     fi
 fi
+%endif
 
 ##########
 
 %postun
 
+%if "%{runOnDmp}" != "true"
 if [ "$1" = "0" ]; then
     grep systemd /proc/1/comm 1>/dev/null 2>&1
     if [ $? -eq 0 ]; then
@@ -152,7 +162,7 @@ if [ "$1" = "0" ]; then
         rm -f /etc/init.d/sqled || true
     fi
 fi
-
+%endif
 
 ##########
 
