@@ -10,6 +10,8 @@ import (
 	"strings"
 	"syscall"
 
+	"actiontech.cloud/universe/sqle/v3/sqle/utils"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/api"
 	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
 	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
@@ -52,7 +54,7 @@ func main() {
 	}
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 10000, "http server port")
 	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql-user", "", "sqle", "mysql user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql-password", "", "sqle", "mysql password")
+	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql-password", "", "sqle", "Please make mysql password encode to base64")
 	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
 	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
 	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
@@ -69,8 +71,6 @@ func main() {
 			log.InitLogger(logPath)
 			defer log.ExitLogger()
 			log.Logger().Info("create config file using the filled in parameters")
-
-			//fileName := fmt.Sprintf("/etc/%v", configFile)
 			f, err := os.Create(configPath)
 			if err != nil {
 				log.Logger().Errorf("open %v file error :%v", configPath, err)
@@ -94,7 +94,11 @@ server:
    sql_server_host:  
    sql_server_port: 
 `
-
+			mysqlPass, err = utils.DecodeString(mysqlPass)
+			if err != nil {
+				log.Logger().Errorf("decode mysql password to string error :%v", err)
+				return
+			}
 			fileContent = strings.Replace(fileContent, "{{SERVER_PORT}}", strconv.Itoa(port), -1)
 			fileContent = strings.Replace(fileContent, "{{MYSQL_HOST}}", mysqlHost, -1)
 			fileContent = strings.Replace(fileContent, "{{MYSQL_PORT}}", mysqlPort, -1)
@@ -117,6 +121,10 @@ server:
 
 func run(cmd *cobra.Command, _ []string) error {
 
+	mysqlPass, err := utils.DecodeString(mysqlPass)
+	if err != nil {
+		return fmt.Errorf("decode mysql password to string error : %v", err)
+	}
 	// if conf path is exist, load option from conf
 	if configPath != "" {
 		conf := model.Config{}
@@ -159,7 +167,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		}()
 	}
 
-	err := inspector.LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template")
+	err = inspector.LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template")
 	if err != nil {
 		return err
 	}
