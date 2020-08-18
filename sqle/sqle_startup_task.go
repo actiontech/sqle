@@ -158,13 +158,13 @@ func (t *SqleTask) Initialize(stage *ucommonLog.Stage) error {
 	// if conf path is exist, load option from conf
 	if t.opts.ConfigPath != "" {
 		conf := model.Config{}
-		b, err := ioutil.ReadFile(configPath)
+		b, err := ioutil.ReadFile(t.opts.ConfigPath)
 		if err != nil {
-			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
+			return fmt.Errorf("load config path: %s failed error :%v", t.opts.ConfigPath, err)
 		}
 		err = yaml.Unmarshal(b, &conf)
 		if err != nil {
-			fmt.Printf("yaml unmarshal error %v", err)
+			return fmt.Errorf("unmarshal config file error %v", err)
 		}
 
 		t.opts.MysqlUser = conf.Server.DBCnf.MysqlCnf.User
@@ -188,25 +188,25 @@ func (t *SqleTask) Initialize(stage *ucommonLog.Stage) error {
 
 	err := inspector.LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template")
 	if err != nil {
-		return err
+		return fmt.Errorf("load './scripts/pt-online-schema-change.template/' failed: %v", err)
 	}
 
 	s, err := model.NewStorage(t.opts.MysqlUser, t.opts.MysqlPass, t.opts.MysqlHost, t.opts.MysqlPort, t.opts.MysqlSchema, t.opts.Debug)
 	if err != nil {
-		return err
+		return fmt.Errorf("get new storage failed: %v", err)
 	}
 	model.InitStorage(s)
 	_ = sqlserverClient.InitClient(t.opts.SqlServerParserServerHost, t.opts.SqlServerParserServerPort)
 
 	if t.opts.AutoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
-			return err
+			return fmt.Errorf("auto migrate table failed: %v", err)
 		}
 		if err := s.CreateRulesIfNotExist(inspector.DefaultRules); err != nil {
-			return err
+			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
 		if err := s.CreateDefaultTemplate(inspector.DefaultRules); err != nil {
-			return err
+			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
 	}
 
