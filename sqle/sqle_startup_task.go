@@ -158,13 +158,13 @@ func (t *SqleTask) Initialize(stage *ucommonLog.Stage) error {
 	// if conf path is exist, load option from conf
 	if t.opts.ConfigPath != "" {
 		conf := model.Config{}
-		b, err := ioutil.ReadFile(configPath)
+		b, err := ioutil.ReadFile(t.opts.ConfigPath)
 		if err != nil {
-			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
+			return fmt.Errorf("load config path: %s failed error :%v", t.opts.ConfigPath, err)
 		}
 		err = yaml.Unmarshal(b, &conf)
 		if err != nil {
-			fmt.Printf("yaml unmarshal error %v", err)
+			return fmt.Errorf("unmarshal config file error %v", err)
 		}
 
 		t.opts.MysqlUser = conf.Server.DBCnf.MysqlCnf.User
