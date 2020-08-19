@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"actiontech.cloud/universe/sqle/v3/sqle/executor"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
@@ -72,6 +74,9 @@ func createTaskByRequestParam(req *CreateTaskReq) (*model.Task, BaseRes) {
 	}
 	if !exist {
 		return nil, INSTANCE_NOT_EXIST_ERROR
+	}
+	if err := executor.Ping(log.NewEntry(), inst); err != nil {
+		return nil, NewBaseReq(err)
 	}
 
 	task := &model.Task{
