@@ -4,11 +4,12 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/api/controller"
 
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/swaggo/echo-swagger"
+
 	_ "actiontech.cloud/universe/sqle/v3/sqle/docs"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 // @title Sqle API Docs
@@ -57,8 +58,10 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.POST("/tasks/:task_id/rollback", controller.RollbackTask)
 	e.POST("/tasks/:task_id/upload_sql_file", controller.UploadSqlFile)
 	e.GET("/tasks/:task_id/uploaded_sqls", controller.GetUploadedSqls)
+	e.GET("/tasks/:task_id/execute_error_uploaded_sqls", controller.GetExecErrUploadedSqls)
+
 	e.POST("/tasks/remove_by_task_ids", controller.DeleteTasks)
-	e.POST("/task/create_inspect",controller.CreateAndInspectTask)
+	e.POST("/task/create_inspect", controller.CreateAndInspectTask)
 
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)

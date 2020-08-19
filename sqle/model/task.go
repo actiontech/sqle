@@ -294,6 +294,12 @@ func (s *Storage) GetSqlCommittingResultByTaskId(taskId string) (string, error) 
 	return CommitSql.ExecStatus, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
+func (s *Storage) GetExecErrorCommitSqlsByTaskId(taskId string) ([]CommitSql, error) {
+	CommitSqls := []CommitSql{}
+	err := s.db.Not("exec_result", []string{"ok", ""}).Where("task_id=? ", taskId).Find(&CommitSqls).Error
+	return CommitSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
 func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus string, pageIndex, pageSize int) ([]CommitSql, uint32, error) {
 	var count uint32
 	CommitSqls := []CommitSql{}

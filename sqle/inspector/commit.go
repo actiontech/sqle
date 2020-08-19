@@ -3,6 +3,7 @@ package inspector
 import (
 	"database/sql/driver"
 	"fmt"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/executor"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 
@@ -39,8 +40,10 @@ func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
 	var startBinlogFile, endBinlogFile string
 	var startBinlogPos, endBinlogPos int64
 	var results []driver.Result
-
+	qsExecResultMap := make(map[int] /*sql index*/ string /*exec result*/)
+	qsExecErrorMap := make(map[int]string)
 	qs := []string{}
+
 	sqlToQsIdxes := make([][]int, len(sqls), len(sqls))
 	qsIndex := 0
 	for sqlIdx, sql := range sqls {
@@ -57,6 +60,16 @@ func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
 			if retErr != nil {
 				sql.ExecStatus = model.TASK_ACTION_ERROR
 				sql.ExecResult = retErr.Error()
+				continue
+			}
+			if len(qsExecErrorMap) > 0 {
+				sql.ExecStatus = model.TASK_ACTION_ERROR
+				for _, qsIdx := range sqlToQsIdxes[sqlIdx] {
+					if errMsg, ok := qsExecErrorMap[qsIdx]; ok {
+						sql.ExecResult = fmt.Sprintf("sql exec error: %v ", errMsg)
+						break
+					}
+				}
 				continue
 			}
 			sql.StartBinlogFile = startBinlogFile
@@ -85,15 +98,22 @@ func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
 	if retErr != nil {
 		return retErr
 	}
-
-	results, err := conn.Db.Transact(qs...)
+	results, qsExecResultMap, err := conn.Db.Transact(qs...)
+	for index, result := range qsExecResultMap {
+		if result != "ok" {
+			qsExecErrorMap[index] = result
+		}
+	}
 	if err != nil {
 		retErr = err
+	} else if len(qsExecErrorMap) > 0 {
+		return fmt.Errorf("exec dml sqls failed")
 	} else if len(results) != len(qs) {
 		retErr = fmt.Errorf("number of transaction result does not match number of sqls")
 	} else {
 		endBinlogFile, endBinlogPos, _ = conn.FetchMasterBinlogPos()
 	}
+
 	return retErr
 }
 

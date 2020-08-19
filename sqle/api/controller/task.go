@@ -481,6 +481,29 @@ func GetUploadedSqls(c echo.Context) error {
 	})
 }
 
+type GetExecErrUploadedSqlsRes struct {
+	BaseRes
+	ExecErrCommitSqls []model.CommitSql `json:"exec_error_commit_sql_list"`
+}
+
+// @Summary 获取指定task 执行异常的SQLs信息
+// @Description get information of execute error SQLs belong to the specified task
+// @Param task_id path string true "task id"
+// @Success 200 {object} controller.GetExecErrUploadedSqlsRes
+// @router /tasks/{task_id}/execute_error_uploaded_sqls [get]
+func GetExecErrUploadedSqls(c echo.Context) error {
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	execErrCommitSqls, err := s.GetExecErrorCommitSqlsByTaskId(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	return c.JSON(http.StatusOK, &GetExecErrUploadedSqlsRes{
+		BaseRes:           NewBaseReq(nil),
+		ExecErrCommitSqls: execErrCommitSqls,
+	})
+}
+
 func FormatStringToInt(s string) (ret int, err error) {
 	if s == "" {
 		return 0, nil
