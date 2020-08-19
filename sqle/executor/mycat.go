@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 
@@ -65,7 +66,7 @@ func (mc *MycatConn) Exec(query string) (driver.Result, error) {
 	return mc.Conn.Exec(query)
 }
 
-func (mc *MycatConn) Transact(qs ...string) ([]driver.Result, error) {
+func (mc *MycatConn) Transact(qs ...string) ([]driver.Result, map[int]string, error) {
 	return mc.Conn.Transact(qs...)
 }
 

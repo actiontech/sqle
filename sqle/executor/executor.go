@@ -7,10 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"strconv"
 	"time"
+
+	"actiontech.cloud/universe/sqle/v3/sqle/errors"
+	"actiontech.cloud/universe/sqle/v3/sqle/model"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
@@ -23,7 +24,7 @@ type Db interface {
 	Close()
 	Ping() error
 	Exec(query string) (driver.Result, error)
-	Transact(qs ...string) ([]driver.Result, error)
+	Transact(qs ...string) ([]driver.Result, map[int]string, error)
 	ExecDDL(query, schema, table string) error
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	Logger() *logrus.Entry
@@ -117,14 +118,15 @@ func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
-func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
+func (c *BaseConn) Transact(qs ...string) ([]driver.Result, map[int] /*sql index*/ string /*exec result*/, error) {
 	var err error
 	var tx *sql.Tx
 	var results []driver.Result
+	qsExecResultMap := make(map[int] /*sql index*/ string /*exec result*/)
 	c.Logger().Infof("doing sql transact, host: %s, port: %s, user: %s", c.host, c.port, c.user)
 	tx, err = c.conn.BeginTx(context.Background(), nil)
 	if err != nil {
-		return results, err
+		return results, qsExecResultMap, err
 	}
 	defer func() {
 		if p := recover(); p != nil {
@@ -144,18 +146,20 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 			c.Logger().Info("done sql transact")
 		}
 	}()
-	for _, query := range qs {
+	for index, query := range qs {
 		var txResult driver.Result
 		txResult, err = tx.Exec(query)
 		if err != nil {
+			qsExecResultMap[index] = err.Error()
 			c.Logger().Errorf("exec sql failed, error: %s, query: %s", err, query)
-			return results, err
+			return results, qsExecResultMap, nil
 		} else {
+			qsExecResultMap[index] = "ok"
 			results = append(results, txResult)
 			c.Logger().Infof("exec sql success, query: %s", query)
 		}
 	}
-	return results, nil
+	return results, qsExecResultMap, nil
 }
 
 func (c *BaseConn) ExecDDL(query, schema, table string) error {
