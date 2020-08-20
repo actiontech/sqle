@@ -287,13 +287,6 @@ func (s *Storage) HardDeleteSqlCommittingResultByTaskIds(ids []string) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetSqlCommittingResultByTaskId(taskId string) (string, error) {
-	//TODO @luowei support task with multi SQLs
-	CommitSql := CommitSql{}
-	err := s.db.Where("task_id=?", taskId).First(&CommitSql).Error
-	return CommitSql.ExecStatus, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
 func (s *Storage) GetExecErrorCommitSqlsByTaskId(taskId string) ([]CommitSql, error) {
 	CommitSqls := []CommitSql{}
 	err := s.db.Not("exec_result", []string{"ok", ""}).Where("task_id=? ", taskId).Find(&CommitSqls).Error
