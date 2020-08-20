@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/url"
 
+	"actiontech.cloud/universe/ucommon/v3/log"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"github.com/asaskevich/govalidator"
@@ -78,8 +80,7 @@ func unescapeParamString(params []*string) error {
 	return nil
 }
 
-//todo rename sqle.yml after remould component
-const ConfigPath = "/opt/sqle/etc/sqled.cnf"
+const ConfigPath = "/opt/sqle/etc/sqled.yml"
 
 // @Summary 加载数据库参数
 // @Description reload base info

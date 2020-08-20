@@ -1,10 +1,11 @@
 package main
 
 import (
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 	"fmt"
 	"strconv"
 	"time"
+
+	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 
 	"github.com/spf13/pflag"
 
@@ -45,7 +46,7 @@ var runOnDmpStr string
 
 const (
 	PID_FILE    = "sqled.pid"
-	CONFIG_FILE = "./etc/sqled.cnf"
+	CONFIG_FILE = "./etc/sqled.yml"
 )
 
 func main() {

@@ -6,7 +6,7 @@
 *.rpm
 *.log
 /sqled
-/sqled.cnf*
+/sqled.yml*
 /swag
 sqlserver/.vs/
 sqlserver/SqlserverProtoServer/obj/
