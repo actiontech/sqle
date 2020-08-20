@@ -3,10 +3,11 @@ package model
 import (
 	"encoding/xml"
 	"fmt"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 	"strconv"
 	"strings"
+
+	"actiontech.cloud/universe/sqle/v3/sqle/errors"
+	"actiontech.cloud/universe/ucommon/v3/util"
 )
 
 type MycatConfig struct {
@@ -31,10 +32,10 @@ type DataNode struct {
 }
 
 type DataHost struct {
-	User     string         `json:"user"`
-	Host     string         `json:"host"`
-	Port     string         `json:"port"`
-	Password utils.Password `json:"password"`
+	User     string        `json:"user"`
+	Host     string        `json:"host"`
+	Port     string        `json:"port"`
+	Password util.Password `json:"password"`
 }
 
 func (m *MycatConfig) IsShardingSchema(schemaName string) (bool, error) {

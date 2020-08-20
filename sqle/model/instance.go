@@ -3,9 +3,10 @@ package model
 import (
 	"encoding/json"
 
+	"actiontech.cloud/universe/ucommon/v3/util"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 	"github.com/jinzhu/gorm"
 )
 
@@ -58,7 +59,7 @@ func (i *Instance) decryptPassword() error {
 		return nil
 	}
 	if i.Password == "" {
-		data, err := utils.AesDecrypt(i.SecretPassword)
+		data, err := util.AesDecrypt(i.SecretPassword)
 		if err != nil {
 			return err
 		} else {
@@ -73,7 +74,7 @@ func (i *Instance) encryptPassword() error {
 		return nil
 	}
 	if i.SecretPassword == "" {
-		data, err := utils.AesEncrypt(i.Password)
+		data, err := util.AesEncrypt(i.Password)
 		if err != nil {
 			return err
 		}
@@ -97,11 +98,11 @@ func (i *Instance) unmarshalMycatConfig() error {
 		return err
 	}
 	for _, dataHost := range i.MycatConfig.DataHosts {
-		password, err := utils.AesDecrypt(string(dataHost.Password))
+		password, err := util.AesDecrypt(string(dataHost.Password))
 		if err != nil {
 			return err
 		}
-		dataHost.Password = utils.Password(password)
+		dataHost.Password = util.Password(password)
 	}
 	return nil
 }
