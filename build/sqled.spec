@@ -143,6 +143,34 @@ if [ "$1" = "0" ]; then
         service sqled stop || true
     fi
 fi
+%else
+
+function kill_and_wait {
+        pidfile=$1
+        if [ -e $pidfile ]; then
+                kill $(cat $pidfile) &>/dev/null
+        fi
+        for i in {1..60}; do
+                if [ ! -e $pidfile ]; then
+                        return 0
+                fi
+                kill -0 $(cat $pidfile) &>/dev/null
+                if [ $? -ne 0 ]; then
+                        return 0
+                fi
+                sleep 1
+        done
+        return 1
+}
+
+if [ "$1" = "0" ]; then
+    kill_and_wait $RPM_INSTALL_PREFIX/sqled.pid
+    if [ $? -ne 0 ]; then
+    	(>&2 echo "wait pid shutdown timeout")
+    	exit 1
+    fi
+fi
+
 %endif
 
 ##########
