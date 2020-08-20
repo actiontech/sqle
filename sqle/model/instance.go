@@ -2,10 +2,12 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/jinzhu/gorm"
+
+	"actiontech.cloud/universe/ucommon/v3/util"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
+	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -23,7 +25,7 @@ type Instance struct {
 	Port            string         `json:"port" gorm:"not null" example:"3306"`
 	User            string         `json:"user" gorm:"not null" example:"root"`
 	Password        string         `json:"-" gorm:"-"`
-	SecretPassword  string         `json:"-" gorm:"not null;column:password"`
+	SecretPassword  string         `json:"secret_password" gorm:"not null;column:password"`
 	Desc            string         `json:"desc" example:"this is a instance"`
 	RuleTemplates   []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
 	MycatConfig     *MycatConfig   `json:"-" gorm:"-"`
@@ -57,7 +59,7 @@ func (i *Instance) decryptPassword() error {
 		return nil
 	}
 	if i.Password == "" {
-		data, err := utils.AesDecrypt(i.SecretPassword)
+		data, err := util.AesDecrypt(i.SecretPassword)
 		if err != nil {
 			return err
 		} else {
@@ -72,7 +74,7 @@ func (i *Instance) encryptPassword() error {
 		return nil
 	}
 	if i.SecretPassword == "" {
-		data, err := utils.AesEncrypt(i.Password)
+		data, err := util.AesEncrypt(i.Password)
 		if err != nil {
 			return err
 		}
@@ -96,11 +98,11 @@ func (i *Instance) unmarshalMycatConfig() error {
 		return err
 	}
 	for _, dataHost := range i.MycatConfig.DataHosts {
-		password, err := utils.AesDecrypt(string(dataHost.Password))
+		password, err := util.AesDecrypt(string(dataHost.Password))
 		if err != nil {
 			return err
 		}
-		dataHost.Password = utils.Password(password)
+		dataHost.Password = util.Password(password)
 	}
 	return nil
 }

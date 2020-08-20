@@ -3,15 +3,16 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"net/http"
+	"strings"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/executor"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
-	"strings"
+	"actiontech.cloud/universe/ucommon/v3/util"
+	"github.com/labstack/echo/v4"
 )
 
 var nullString = ""
@@ -219,7 +220,7 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["user"] = *req.User
 	}
 	if req.Password != nil {
-		password, err := utils.AesEncrypt(*req.Password)
+		password, err := util.AesEncrypt(*req.Password)
 		if err != nil {
 			return c.JSON(200, NewBaseReq(err))
 		}
