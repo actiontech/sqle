@@ -3,11 +3,12 @@ package server
 import (
 	"fmt"
 	"math"
+	"sync"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"sync"
 )
 
 var sqled *Sqled
@@ -309,6 +310,14 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 				}
 			}
 			i.CommitDDL(sql)
+			if sql.ExecResult != "ok" {
+				err = st.Save(currentSql)
+				if err != nil {
+					i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
+				}
+				return fmt.Errorf("exec ddl commit sql failed")
+			}
+
 			err = st.Save(currentSql)
 			if err != nil {
 				i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
@@ -322,7 +331,7 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 	}
 
 	execStatus := model.TASK_ACTION_DOING
-	if err := updateTaskExecStatus(task,st,execStatus); nil != err {
+	if err := updateTaskExecStatus(task, st, execStatus); nil != err {
 		return err
 	}
 
@@ -341,7 +350,7 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 		}
 	}
 
-	return updateTaskExecStatus(task,st,execStatus)
+	return updateTaskExecStatus(task, st, execStatus)
 }
 
 func (s *Sqled) commitDML(task *model.Task) error {
@@ -369,7 +378,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 	}
 
 	execStatus := model.TASK_ACTION_DOING
-	if err := updateTaskExecStatus(task,st,model.TASK_ACTION_DOING); nil != err {
+	if err := updateTaskExecStatus(task, st, model.TASK_ACTION_DOING); nil != err {
 		return err
 	}
 	i.CommitDMLs(sqls)
@@ -378,7 +387,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 		if err := st.Save(commitSql); err != nil {
 			i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
 			execStatus = model.TASK_ACTION_ERROR
-			if err := updateTaskExecStatus(task,st,execStatus); nil != err {
+			if err := updateTaskExecStatus(task, st, execStatus); nil != err {
 				log.Logger().Errorf("update task exec_status failed: %v", err)
 			}
 			return err
@@ -389,7 +398,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 		}
 	}
 
-	return updateTaskExecStatus(task,st,execStatus)
+	return updateTaskExecStatus(task, st, execStatus)
 }
 
 func (s *Sqled) rollback(task *model.Task) error {
