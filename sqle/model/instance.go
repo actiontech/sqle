@@ -2,10 +2,11 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/jinzhu/gorm"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"actiontech.cloud/universe/sqle/v3/sqle/utils"
+	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -23,7 +24,7 @@ type Instance struct {
 	Port            string         `json:"port" gorm:"not null" example:"3306"`
 	User            string         `json:"user" gorm:"not null" example:"root"`
 	Password        string         `json:"-" gorm:"-"`
-	SecretPassword  string         `json:"-" gorm:"not null;column:password"`
+	SecretPassword  string         `json:"secret_password" gorm:"not null;column:password"`
 	Desc            string         `json:"desc" example:"this is a instance"`
 	RuleTemplates   []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
 	MycatConfig     *MycatConfig   `json:"-" gorm:"-"`
