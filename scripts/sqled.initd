@@ -41,7 +41,7 @@ if [ ! -x $DAEMON ]; then
 fi
 
 # Configuration file
-CONFIG=$PROJECT_PATH/etc/sqled.cnf
+CONFIG=$PROJECT_PATH/etc/sqled.yml
 
 # PID file for the daemon
 PIDFILE=$PROJECT_PATH/sqled.pid

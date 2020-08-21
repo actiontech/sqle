@@ -80,7 +80,7 @@ grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
     -e "s|User=|User=actiontech-universe|g" \
-    -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/sqled.cnf --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
+    -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/sqled.yml --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
     systemctl daemon-reload
@@ -97,7 +97,7 @@ fi
 mkdir -p $RPM_INSTALL_PREFIX/logs
 mkdir -p $RPM_INSTALL_PREFIX/etc
 
-cat > $RPM_INSTALL_PREFIX/etc/sqled.cnf.template<<EOF
+cat > $RPM_INSTALL_PREFIX/etc/sqled.yml.template<<EOF
 server:
  sqle_config:
   server_port: 5801

@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
-	os_ "os"
-	"strconv"
-	"strings"
 	"syscall"
+
+	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
 	yaml "gopkg.in/yaml.v2"
@@ -18,7 +16,6 @@ import (
 	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"actiontech.cloud/universe/sqle/v3/sqle/sqlserverClient"
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 	ucommonLog "actiontech.cloud/universe/ucommon/v3/log"
 	"actiontech.cloud/universe/ucommon/v3/os"
 	"actiontech.cloud/universe/ucommon/v3/ubootstrap"
@@ -36,45 +33,32 @@ func createConfigFileCmd() *component.Cmd {
 		log.InitLogger(logPath)
 		defer log.ExitLogger()
 		log.Logger().Info("create config file using the filled in parameters")
-		f, err := os_.Create(configPath)
-		if err != nil {
-			log.Logger().Errorf("open %v file error :%v", configPath, err)
-			return
-		}
-		fileContent := `
-server:
- sqle_config:
-  server_port: {{SERVER_PORT}}
-  auto_migrate_table: {{AUTO_MIGRATE_TABLE}}
-  debug_log: {{DEBUG}}
-  log_path: './logs'
- db_config:
-  mysql_cnf:
-   mysql_host: '{{MYSQL_HOST}}'
-   mysql_port: '{{MYSQL_PORT}}'
-   mysql_user: '{{MYSQL_USER}}'
-   mysql_password: '{{MYSQL_PASSWORD}}'
-   mysql_schema: '{{MYSQL_SCHEMA}}'
-  sql_server_cnf:
-   sql_server_host:  
-   sql_server_port:
-`
-		mysqlPass, err = utils.DecodeString(mysqlPass)
+		mysqlPass, err := utils.DecodeString(mysqlPass)
 		if err != nil {
 			log.Logger().Errorf("decode mysql password to string error :%v", err)
 			return
+
 		}
-		fileContent = strings.Replace(fileContent, "{{SERVER_PORT}}", strconv.Itoa(port), -1)
-		fileContent = strings.Replace(fileContent, "{{MYSQL_HOST}}", mysqlHost, -1)
-		fileContent = strings.Replace(fileContent, "{{MYSQL_PORT}}", mysqlPort, -1)
-		fileContent = strings.Replace(fileContent, "{{MYSQL_USER}}", mysqlUser, -1)
-		fileContent = strings.Replace(fileContent, "{{MYSQL_PASSWORD}}", mysqlPass, -1)
-		fileContent = strings.Replace(fileContent, "{{MYSQL_SCHEMA}}", mysqlSchema, -1)
-		fileContent = strings.Replace(fileContent, "{{AUTO_MIGRATE_TABLE}}", strconv.FormatBool(autoMigrateTable), -1)
-		fileContent = strings.Replace(fileContent, "{{DEBUG}}", strconv.FormatBool(debug), -1)
-		_, err = io.WriteString(f, fileContent)
-		if nil != err {
-			log.Logger().Errorf("write config file error :%v", err)
+		conf := model.Config{}
+		conf.Server.DBCnf.MysqlCnf.Port = mysqlPort
+		conf.Server.DBCnf.MysqlCnf.Host = mysqlHost
+		conf.Server.DBCnf.MysqlCnf.Schema = mysqlSchema
+		conf.Server.DBCnf.MysqlCnf.Password = mysqlPass
+		conf.Server.DBCnf.MysqlCnf.User = mysqlUser
+		conf.Server.SqleCnf.DebugLog = debug
+		conf.Server.SqleCnf.LogPath = logPath
+		conf.Server.SqleCnf.SqleServerPort = port
+		conf.Server.SqleCnf.AutoMigrateTable = autoMigrateTable
+		data, err := yaml.Marshal(conf)
+		if err != nil {
+
+			log.Logger().Errorf("marshal sqle config error %v", err)
+			return
+
+		}
+		err = ioutil.WriteFile(configPath, data, 0666)
+		if err != nil {
+			log.Logger().Errorf("%v write sqle config file error %v", configPath, err)
 			return
 		}
 	})
