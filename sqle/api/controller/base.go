@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	"actiontech.cloud/universe/ucommon/v3/log"
-
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"github.com/asaskevich/govalidator"
