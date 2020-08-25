@@ -1,11 +1,11 @@
 actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5 h1:yj/ASd2p5s3xmHVKNgjog2lKQyaaxsTP2qft3NQI6VQ=
 actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5/go.mod h1:Og/7KQAysEVfuDxg1hvbGoHWj5C896+20EcmGcjLrKw=
-actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200811054036-162aa8ef9066 h1:qXcWlw0+gQ1zfQowfnb8qhKiBtCJPiEnwqW6mWJgLyk=
-actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200811054036-162aa8ef9066/go.mod h1:vu8ATgXQeWSC/pgrGIB2UfVdA6mKLWtCXutEbrm/7wU=
-actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200814022705-81294bec2ffa h1:2A7PI4ontMr/MUm3z/87XMFZar8+fLl4Jhl72fukb/o=
-actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200814022705-81294bec2ffa/go.mod h1:Ny33yqzdytxSpDYDz7QQr0eFXgbU4GQnSwqCiuSruAc=
-actiontech.cloud/universe/uinterface/v3 v3.0.0-20200811055600-67cd5e815cd0 h1:MZSl1vc3fLTVj5hwqximMfBCTKdk4cVzaM9KbcQ2E/8=
-actiontech.cloud/universe/uinterface/v3 v3.0.0-20200811055600-67cd5e815cd0/go.mod h1:QxpW9Fg9XWP79PcM9ZOIZIsu7xK/VrG3160jlAaO074=
+actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200820110303-d0b80590c05a h1:JwCz5WrSJzK+Jpi4sZpsoM4JqRZJv1OC51XGEVdeH6w=
+actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200820110303-d0b80590c05a/go.mod h1:vu8ATgXQeWSC/pgrGIB2UfVdA6mKLWtCXutEbrm/7wU=
+actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200824083250-8196e6543f57 h1:Vy5KMyGikmY0oGQFgS2RZwKizOyM4x4+ZBEaCVgjZpk=
+actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200824083250-8196e6543f57/go.mod h1:+XYyGbr+muMzrkUxSZj+suHsQFI6lcEIgxxM8cuWmS4=
+actiontech.cloud/universe/uinterface/v3 v3.0.0-20200821015730-0d2646482998 h1:MHrqbI7bBsbwMmlWAVVEfr1bFvLgNVS4ftOt46mvG9w=
+actiontech.cloud/universe/uinterface/v3 v3.0.0-20200821015730-0d2646482998/go.mod h1:67MREoB71n92ho+AEMJeLMrFdjf9M7p0OTOyraEqiCc=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=
