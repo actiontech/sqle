@@ -2,8 +2,9 @@ package inspector
 
 import (
 	"fmt"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
 	"strings"
+
+	"actiontech.cloud/universe/sqle/v3/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -70,7 +71,7 @@ func (i *Inspect) advise(rules []model.Rule) error {
 				if currentSql.InspectResult != "" {
 					results.add(currentSql.InspectLevel, currentSql.InspectResult)
 				}
-				results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s",oscCommandLine))
+				results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s", oscCommandLine))
 				currentSql.InspectLevel = results.level()
 				currentSql.InspectResult = results.message()
 			}
@@ -1012,6 +1013,9 @@ select ... from ...
 ------------------------------------------------------------------
 */
 func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResults) error {
+	if stmt.From == nil {
+		return fmt.Errorf("failed sql :%v  only support select from table", stmt.Text())
+	}
 	tables := []*ast.TableName{}
 	tableSources := getTableSources(stmt.From.TableRefs)
 	// not select from table statement
