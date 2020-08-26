@@ -127,7 +127,7 @@ func (m *SqleManager) initSqleManagerTask() {
 		CheckPrivileges(m.opts.RunUser, m.opts.RunUserBackupGround, m.opts.Caps).
 		PersistFlags(m.opts.Flags, m.opts.ExceptPersistFlags).
 		InitAndCheckResourceLimit(m.opts.NoFile, m.opts.NProc).
-		StartUagentWatchOrGuardService(m.opts.PIDFile) // the aim of using this step is to create and recycle pid file
+		StartUagentWatchOrGuardService(m.opts.PIDFile) // the aim of using this function is to create and recycle pid file
 }
 
 func (m *SqleManager) Run() {
