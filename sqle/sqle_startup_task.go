@@ -107,6 +107,36 @@ func (m *SqleOnDmpManager) Run() {
 	m.r.Run()
 }
 
+// for sqle running independently
+type SqleManager struct {
+	r    *component.Runner
+	opts *component.RunnerOptions
+}
+
+func NewSqleManager(opts *component.RunnerOptions, blockedTask component.ComponentLifeCycleTask) *SqleManager {
+	m := &SqleManager{
+		r:    component.NewRunner(),
+		opts: opts,
+	}
+	m.r.AddBlockedTask(blockedTask)
+	return m
+}
+
+func (m *SqleManager) initSqleManagerTask() {
+	m.r.InitLoggerWithHouseKeep(m.opts.LogFileLimit, m.opts.LogTotalLimit, m.opts.RunUser, m.opts.EnableDetailLog).
+		InitComponentInfo(m.opts.RunUser, m.opts.GrpcPort, m.opts.PgrpcPort, m.opts.Caps,
+			m.opts.CompType, m.opts.CompId, m.opts.CompGroupId, m.opts.Version, m.opts.ServerId).
+		CheckPrivileges(m.opts.RunUser, m.opts.RunUserBackupGround, m.opts.Caps).
+		PersistFlags(m.opts.Flags, m.opts.ExceptPersistFlags).
+		InitAndCheckResourceLimit(m.opts.NoFile, m.opts.NProc).
+		StartUagentWatchOrGuardService(m.opts.PIDFile)
+}
+
+func (m *SqleManager) Run() {
+	m.initSqleManagerTask()
+	m.r.Run()
+}
+
 type SqleTaskOptions struct {
 	ConfigPath                string
 	MysqlUser                 string
