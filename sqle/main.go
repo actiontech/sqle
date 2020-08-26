@@ -238,7 +238,7 @@ func run(runOnDmp bool, flags *pflag.FlagSet, excepts []string) error {
 	if runOnDmp {
 		NewSqleOnDmpManager(runnerOpts, task).Run()
 	} else {
-		//TODO startup without DMP
+		NewSqleManager(runnerOpts, task).Run()
 	}
 	return nil
 }
