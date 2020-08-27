@@ -31,7 +31,7 @@ Acitontech Sqle
 echo "build sqle..."
 export GOPATH=%{_builddir}/%{buildsubdir}
 cd %{_builddir}/%{buildsubdir}/sqle
-make install
+make install RUN_ON_DMP=%{runOnDmp}
 
 ##########
 
