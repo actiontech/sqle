@@ -13,6 +13,8 @@ DOCKER        = $(shell which docker)
 DOCKER_IMAGE  = docker-registry:5000/actiontech/universe-compiler-go1.14.1-centos6
 DOTNET_DOCKER_IMAGE = docker-registry:5000/actiontech/universe-compiler-dotnetcore2.1
 DOTNET_TARGET = centos.7-x64
+
+RUN_ON_DMP = true
 SQLE_LDFLAGS = -ldflags "-X 'main.version=\"${GIT_VERSION}\"' -X 'main.caps=${CAP}' -X 'main.defaultUser=${USER_NAME}' -X 'main.runOnDmpStr=${RUN_ON_DMP}'"
 
 PROJECT_NAME = sqle
