@@ -75,19 +75,19 @@ func CreateInst(c echo.Context) error {
 
 	tpls := []model.RuleTemplate{}
 	notExistTpls := []string{}
-	for _, tplName := range req.RuleTemplates {
-		t, exist, err := s.GetTemplateByName(tplName)
+	for _, tplId := range req.RuleTemplates {
+		t, exist, err := s.GetTemplateById(tplId)
 		if err != nil {
 			return c.JSON(200, NewBaseReq(err))
 		}
 		if !exist {
-			notExistTpls = append(notExistTpls, tplName)
+			notExistTpls = append(notExistTpls, tplId)
 		}
 		tpls = append(tpls, t)
 	}
 
 	if len(notExistTpls) > 0 {
-		err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTpls, ", "))
+		err := fmt.Errorf("rule_template id : %s not exist", strings.Join(notExistTpls, ", "))
 		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
 	}
 
@@ -118,6 +118,33 @@ func GetInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceId := c.Param("instance_id")
 	instance, exist, err := s.GetInstById(instanceId)
+	if err != nil {
+		return c.JSON(200, PingInstRes{
+			BaseRes: NewBaseReq(err),
+			Data:    false,
+		})
+	}
+	if !exist {
+		return c.JSON(200, PingInstRes{
+			BaseRes: INSTANCE_NOT_EXIST_ERROR,
+			Data:    false,
+		})
+	}
+	return c.JSON(200, &InstanceRes{
+		BaseRes: NewBaseReq(nil),
+		Data:    instance.Detail(),
+	})
+}
+
+// @Summary 获取实例信息
+// @Description get instance db
+// @Param instance_name path string true "Instance Name"
+// @Success 200 {object} controller.InstanceRes
+// @router /instances/{instance_name}/get_instance_by_name [get]
+func GetInstanceByName(c echo.Context) error {
+	s := model.GetStorage()
+	instanceName := c.Param("instance_name")
+	instance, exist, err := s.GetInstByName(instanceName)
 	if err != nil {
 		return c.JSON(200, PingInstRes{
 			BaseRes: NewBaseReq(err),

@@ -2,11 +2,12 @@ package model
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
 	"sync"
 	"time"
+
+	"actiontech.cloud/universe/sqle/v3/sqle/errors"
+	"actiontech.cloud/universe/sqle/v3/sqle/log"
+	"github.com/jinzhu/gorm"
 )
 
 var storage *Storage
@@ -39,7 +40,7 @@ func GetDb() *gorm.DB {
 type Model struct {
 	ID        uint       `json:"id" gorm:"primary_key" example:"1"`
 	CreatedAt time.Time  `json:"created_at" example:"2018-10-21T16:40:23+08:00"`
-	UpdatedAt time.Time  `json:"-"`
+	UpdatedAt time.Time  `json:"updated_at" example:"2018-10-21T16:40:23+08:00"`
 	DeletedAt *time.Time `json:"-" sql:"index"`
 }
 

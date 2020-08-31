@@ -2,17 +2,19 @@ package controller
 
 import (
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"net/http"
+	"strings"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"strings"
+	"github.com/labstack/echo/v4"
 )
 
 type CreateTplReq struct {
-	Name      string   `json:"name" valid:"required"`
-	Desc      string   `json:"desc" valid:"-"`
-	RulesName []string `json:"rule_name_list" example:"ddl_create_table_not_exist" valid:"-"`
+	Name         string   `json:"name" valid:"required"`
+	Desc         string   `json:"desc" valid:"-"`
+	RulesName    []string `json:"rule_name_list" example:"ddl_check_index_count" valid:"-"`
+	InstanceName []string `json:"instance_name_list" example:"mysql-xxx" valid:"-"`
 }
 
 // @Summary 添加规则模板
@@ -57,7 +59,29 @@ func CreateTemplate(c echo.Context) error {
 		}
 	}
 
+	instances := []model.Instance{}
+	notExistInsts := []string{}
+	for _, instName := range req.InstanceName {
+		t, exist, err := s.GetInstByName(instName)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(err))
+		}
+		if !exist {
+			notExistInsts = append(notExistInsts, instName)
+		}
+		instances = append(instances, *t)
+	}
+
+	if len(notExistInsts) > 0 {
+		err := fmt.Errorf("instance name : %s not exist", strings.Join(notExistInsts, ", "))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
+	}
+
 	err = s.Save(t)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(err))
+	}
+	err = s.UpdateTemplateInst(t, instances...)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -86,6 +110,7 @@ func GetRuleTemplate(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST,
 			fmt.Errorf("rule template is not exist"))))
 	}
+
 	return c.JSON(http.StatusOK, &GetRuleTplRes{
 		BaseRes: NewBaseReq(nil),
 		Data:    template.Detail(),
@@ -155,7 +180,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 		if exist {
 			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_EXIST,
-				fmt.Errorf("template is exist"))))
+				fmt.Errorf("template name %s is exist", req.Name))))
 		}
 	}
 	template.Name = req.Name
@@ -176,6 +201,24 @@ func UpdateRuleTemplate(c echo.Context) error {
 			templateRules = append(templateRules, rule)
 		}
 	}
+	instances := []model.Instance{}
+	notExistInsts := []string{}
+	for _, instName := range req.InstanceName {
+		t, exist, err := s.GetInstByName(instName)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(err))
+		}
+		if !exist {
+			notExistInsts = append(notExistInsts, instName)
+		}
+		instances = append(instances, *t)
+	}
+
+	if len(notExistInsts) > 0 {
+		err := fmt.Errorf("instance name : %s not exist", strings.Join(notExistInsts, ", "))
+		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
+	}
+
 	err = s.Save(&template)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
@@ -184,6 +227,11 @@ func UpdateRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
+	err = s.UpdateTemplateInst(&template, instances...)
+	if err != nil {
+		return c.JSON(200, NewBaseReq(err))
+	}
+
 	return c.JSON(200, NewBaseReq(nil))
 }
 

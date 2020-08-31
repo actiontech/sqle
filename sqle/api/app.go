@@ -36,6 +36,8 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.GET("/instances", controller.GetInsts)
 	e.POST("/instances", controller.CreateInst)
 	e.GET("/instances/:instance_id/", controller.GetInstance)
+	e.GET("/instances/:instance_name/get_instance_by_name", controller.GetInstanceByName)
+
 	e.DELETE("/instances/:instance_id/", controller.DeleteInstance)
 	e.PATCH("/instances/:instance_id/", controller.UpdateInstance)
 	e.GET("/instances/:instance_id/connection", controller.PingInstanceById)
