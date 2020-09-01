@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 	"strconv"
+
+	"actiontech.cloud/universe/sqle/v3/sqle/errors"
+	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -23,9 +24,10 @@ var RuleLevelMap = map[string]int{
 
 type RuleTemplate struct {
 	Model
-	Name  string `json:"name"`
-	Desc  string `json:"desc"`
-	Rules []Rule `json:"-" gorm:"many2many:rule_template_rule"`
+	Name      string     `json:"name"`
+	Desc      string     `json:"desc"`
+	Rules     []Rule     `json:"-" gorm:"many2many:rule_template_rule"`
+	Instances []Instance `json:"instance_list" gorm:"many2many:instance_rule_template"`
 }
 
 type Rule struct {
@@ -63,23 +65,28 @@ func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
 // it is same as RuleTemplate, but display Rules in json format.
 type RuleTemplateDetail struct {
 	RuleTemplate
-	Rules []Rule `json:"rule_list"`
+	Rules     []Rule     `json:"rule_list"`
+	Instances []Instance `json:"instance_list"`
 }
 
 func (r *RuleTemplate) Detail() RuleTemplateDetail {
 	data := RuleTemplateDetail{
 		RuleTemplate: *r,
 		Rules:        r.Rules,
+		Instances:    r.Instances,
 	}
 	if r.Rules == nil {
 		data.Rules = []Rule{}
+	}
+	if r.Instances == nil {
+		data.Instances = []Instance{}
 	}
 	return data
 }
 
 func (s *Storage) GetTemplateById(templateId string) (RuleTemplate, bool, error) {
 	t := RuleTemplate{}
-	err := s.db.Preload("Rules").Where("id = ?", templateId).First(&t).Error
+	err := s.db.Preload("Rules").Preload("Instances").Where("id = ?", templateId).First(&t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
@@ -99,10 +106,14 @@ func (s *Storage) UpdateTemplateRules(tpl *RuleTemplate, rules ...Rule) error {
 	err := s.db.Model(tpl).Association("Rules").Replace(rules).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+func (s *Storage) UpdateTemplateInst(tpl *RuleTemplate, inst ...Instance) error {
+	err := s.db.Model(tpl).Association("Instances").Replace(inst).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
 
 func (s *Storage) GetAllTemplate() ([]RuleTemplate, error) {
 	ts := []RuleTemplate{}
-	err := s.db.Find(&ts).Error
+	err := s.db.Preload("Instances").Find(&ts).Error
 	return ts, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
