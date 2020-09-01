@@ -27,7 +27,7 @@ type CreateInstanceReq struct {
 	Password *string `json:"password" example:"123456" valid:"required"`
 	Desc     *string `json:"desc" example:"this is a test instance" valid:"-"`
 	// this a list for rule template name
-	RuleTemplates []string `json:"rule_template_name_list" example:"all" valid:"-"`
+	RuleTemplates []string `json:"rule_template_id_list" example:"1" valid:"-"`
 	// mycat_config is required if db_type is "mycat"
 	MycatConfig *model.MycatConfig `json:"mycat_config" valid:"-"`
 }
