@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"time"
 
 	"actiontech.cloud/universe/sqle/v3/sqle/errors"
 
@@ -205,13 +206,44 @@ func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
 }
 
 func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
-	err := s.db.Model(task).Association("CommitSqls").Replace(commitSql).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	tx := s.db.Begin()
+	if err := tx.Where("task_id=?", task.ID).Delete(CommitSql{}).Error; err != nil {
+		return err
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	for _, sql := range commitSql {
+		if err := tx.Exec("INSERT commit_sql_detail(created_at, updated_at, task_id, number, content, "+
+			"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
+			"exec_status, exec_result, inspect_status, inspect_result, inspect_level) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			now, now, task.ID, sql.Number, sql.Content, sql.StartBinlogFile, sql.StartBinlogPos, sql.EndBinlogFile,
+			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.InspectStatus, sql.InspectResult,
+			sql.InspectLevel).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit().Error
 }
 
 func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) error {
-	err := s.db.Model(task).Association("RollbackSqls").Replace(rollbackSql).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	tx := s.db.Begin()
+	if err := tx.Where("task_id=?", task.ID).Delete(RollbackSql{}).Error; err != nil {
+		return err
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	for _, sql := range rollbackSql {
+		if err := tx.Exec("INSERT INTO rollback_sql_detail(created_at, updated_at, task_id, number, content, "+
+			"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
+			"exec_status, exec_result, commit_sql_number) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			now, now, task.ID, sql.Number, sql.Content, sql.StartBinlogFile, sql.StartBinlogPos, sql.EndBinlogFile,
+			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.CommitSqlNumber).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit().Error
 }
 
 func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {

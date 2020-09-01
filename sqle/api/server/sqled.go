@@ -212,14 +212,15 @@ func (s *Sqled) inspect(task *model.Task) error {
 		entry.Warnf("sql invalid, ignore generate rollback")
 	}
 
+	if err := st.UpdateCommitSql(task, task.CommitSqls); err != nil {
+		entry.Errorf("save commit sql to storage failed, error: %v", err)
+		return err
+	}
+
 	var normalCount float64
 	for _, sql := range task.CommitSqls {
 		if sql.InspectLevel == model.RULE_LEVEL_NORMAL {
 			normalCount += 1
-		}
-		if err := st.Save(&sql); err != nil {
-			entry.Errorf("save commit sql to storage failed, error: %v", err)
-			return err
 		}
 	}
 	if len(task.CommitSqls) != 0 {
