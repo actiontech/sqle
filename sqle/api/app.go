@@ -47,7 +47,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.POST("/rule_templates", controller.CreateTemplate)
 	e.GET("/rule_templates/:template_id/", controller.GetRuleTemplate)
 	e.DELETE("/rule_templates/:template_id/", controller.DeleteRuleTemplate)
-	e.PUT("/rule_templates/:template_id/", controller.UpdateRuleTemplate)
+	e.PATCH("/rule_templates/:template_id/", controller.UpdateRuleTemplate)
 
 	e.GET("/rules", controller.GetRules)
 	e.PATCH("/rules", controller.UpdateRules)
