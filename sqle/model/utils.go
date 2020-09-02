@@ -127,5 +127,5 @@ func (s *Storage) Update(model interface{}, attrs ...interface{}) error {
 }
 
 func (s *Storage) Delete(model interface{}) error {
-	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(model).Error)
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Unscoped().Delete(model).Error)
 }
