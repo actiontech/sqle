@@ -11,8 +11,8 @@ import (
 )
 
 type CreateTplReq struct {
-	Name         string   `json:"name" valid:"required"`
-	Desc         string   `json:"desc" valid:"-"`
+	Name         *string  `json:"name" valid:"required"`
+	Desc         *string  `json:"desc" valid:"-"`
 	RulesName    []string `json:"rule_name_list" example:"ddl_check_index_count" valid:"-"`
 	InstanceName []string `json:"instance_name_list" example:"mysql-xxx" valid:"-"`
 }
@@ -33,7 +33,7 @@ func CreateTemplate(c echo.Context) error {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
 
-	_, exist, err := s.GetTemplateByName(req.Name)
+	_, exist, err := s.GetTemplateByName(*req.Name)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -41,10 +41,14 @@ func CreateTemplate(c echo.Context) error {
 		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_EXIST,
 			fmt.Errorf("template is exist"))))
 	}
-	t := &model.RuleTemplate{
-		Name: req.Name,
-		Desc: req.Desc,
+	t := &model.RuleTemplate{}
+	if req.Name != nil {
+		t.Name = *req.Name
 	}
+	if req.Desc != nil {
+		t.Desc = *req.Desc
+	}
+
 	rules, err := s.GetAllRule()
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
@@ -59,17 +63,16 @@ func CreateTemplate(c echo.Context) error {
 		}
 	}
 
-	instances := []model.Instance{}
 	notExistInsts := []string{}
 	for _, instName := range req.InstanceName {
-		t, exist, err := s.GetInstByName(instName)
+		i, exist, err := s.GetInstByName(instName)
 		if err != nil {
 			return c.JSON(200, NewBaseReq(err))
 		}
 		if !exist {
 			notExistInsts = append(notExistInsts, instName)
 		}
-		instances = append(instances, *t)
+		t.Instances = append(t.Instances, *i)
 	}
 
 	if len(notExistInsts) > 0 {
@@ -78,10 +81,6 @@ func CreateTemplate(c echo.Context) error {
 	}
 
 	err = s.Save(t)
-	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
-	}
-	err = s.UpdateTemplateInst(t, instances...)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
@@ -155,7 +154,7 @@ func DeleteRuleTemplate(c echo.Context) error {
 // @Param template_id path string true "Template ID"
 // @Param instance body controller.CreateTplReq true "update rule template"
 // @Success 200 {object} controller.BaseRes
-// @router /rule_templates/{template_id}/ [put]
+// @router /rule_templates/{template_id}/ [patch]
 func UpdateRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateId := c.Param("template_id")
@@ -173,63 +172,80 @@ func UpdateRuleTemplate(c echo.Context) error {
 			fmt.Errorf("rule template is not exist"))))
 	}
 
-	if template.Name != req.Name {
-		_, exist, err := s.GetTemplateByName(req.Name)
+	if req.Name != nil && template.Name != *req.Name {
+		_, exist, err := s.GetTemplateByName(*req.Name)
 		if err != nil {
 			return c.JSON(200, NewBaseReq(err))
 		}
 		if exist {
 			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_EXIST,
-				fmt.Errorf("template name %s is exist", req.Name))))
+				fmt.Errorf("template name %s is exist", *req.Name))))
 		}
 	}
-	template.Name = req.Name
-	template.Desc = req.Desc
-	template.Rules = nil
+
+	if req.Name != nil {
+		template.Name = *req.Name
+	}
+	if req.Desc != nil {
+		template.Desc = *req.Desc
+	}
 
 	templateRules := []model.Rule{}
-	rules, err := s.GetAllRule()
-	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
-	}
-	ruleMap := model.GetRuleMapFromAllArray(rules)
-	for _, name := range req.RulesName {
-		if rule, ok := ruleMap[name]; !ok {
-			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_NOT_EXIST,
-				fmt.Errorf("rule: %s is invalid", name))))
-		} else {
-			templateRules = append(templateRules, rule)
-		}
-	}
-	instances := []model.Instance{}
-	notExistInsts := []string{}
-	for _, instName := range req.InstanceName {
-		t, exist, err := s.GetInstByName(instName)
+	if req.RulesName != nil {
+		template.Rules = nil
+		rules, err := s.GetAllRule()
 		if err != nil {
 			return c.JSON(200, NewBaseReq(err))
 		}
-		if !exist {
-			notExistInsts = append(notExistInsts, instName)
+		ruleMap := model.GetRuleMapFromAllArray(rules)
+		for _, name := range req.RulesName {
+			if rule, ok := ruleMap[name]; !ok {
+				return c.JSON(200, NewBaseReq(errors.New(errors.RULE_NOT_EXIST,
+					fmt.Errorf("rule: %s is invalid", name))))
+			} else {
+				templateRules = append(templateRules, rule)
+			}
 		}
-		instances = append(instances, *t)
+
 	}
 
-	if len(notExistInsts) > 0 {
-		err := fmt.Errorf("instance name : %s not exist", strings.Join(notExistInsts, ", "))
-		return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
+	instances := []model.Instance{}
+	if req.InstanceName != nil {
+		template.Instances = nil
+		notExistInsts := []string{}
+		for _, instName := range req.InstanceName {
+			t, exist, err := s.GetInstByName(instName)
+			if err != nil {
+				return c.JSON(200, NewBaseReq(err))
+			}
+			if !exist {
+				notExistInsts = append(notExistInsts, instName)
+			}
+			instances = append(instances, *t)
+		}
+
+		if len(notExistInsts) > 0 {
+			err := fmt.Errorf("instance name : %s not exist", strings.Join(notExistInsts, ", "))
+			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
+		}
 	}
 
 	err = s.Save(&template)
 	if err != nil {
 		return c.JSON(200, NewBaseReq(err))
 	}
-	err = s.UpdateTemplateRules(&template, templateRules...)
-	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
+	if req.RulesName != nil {
+		err = s.UpdateTemplateRules(&template, templateRules...)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(err))
+		}
 	}
-	err = s.UpdateTemplateInst(&template, instances...)
-	if err != nil {
-		return c.JSON(200, NewBaseReq(err))
+
+	if req.InstanceName != nil {
+		err = s.UpdateTemplateInst(&template, instances...)
+		if err != nil {
+			return c.JSON(200, NewBaseReq(err))
+		}
 	}
 
 	return c.JSON(200, NewBaseReq(nil))
