@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"syscall"
 
+	"actiontech.cloud/universe/ucommon/v3/util"
+
 	"actiontech.cloud/universe/sqle/v3/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
@@ -40,18 +42,36 @@ func createConfigFileCmd() *component.Cmd {
 
 		}
 		conf := model.Config{}
-		conf.Server.DBCnf.MysqlCnf.Port = mysqlPort
-		conf.Server.DBCnf.MysqlCnf.Host = mysqlHost
-		conf.Server.DBCnf.MysqlCnf.Schema = mysqlSchema
-		conf.Server.DBCnf.MysqlCnf.Password = mysqlPass
-		conf.Server.DBCnf.MysqlCnf.User = mysqlUser
-		conf.Server.SqleCnf.DebugLog = debug
-		conf.Server.SqleCnf.LogPath = logPath
-		conf.Server.SqleCnf.SqleServerPort = port
-		conf.Server.SqleCnf.AutoMigrateTable = autoMigrateTable
+		if util.IsFileExist(configPath) {
+			b, err := ioutil.ReadFile(configPath)
+			if err != nil {
+				log.Logger().Errorf("load config path: %s failed", configPath)
+				return
+			}
+			err = yaml.Unmarshal(b, &conf)
+			if err != nil {
+				log.Logger().Errorf("%v unmarshal sqle config error %v", configPath, err)
+				return
+
+			}
+			conf.Server.DBCnf.MysqlCnf.Port = mysqlPort
+			conf.Server.DBCnf.MysqlCnf.Host = mysqlHost
+			conf.Server.DBCnf.MysqlCnf.Schema = mysqlSchema
+			conf.Server.DBCnf.MysqlCnf.Password = mysqlPass
+			conf.Server.DBCnf.MysqlCnf.User = mysqlUser
+		} else {
+			conf.Server.DBCnf.MysqlCnf.Port = mysqlPort
+			conf.Server.DBCnf.MysqlCnf.Host = mysqlHost
+			conf.Server.DBCnf.MysqlCnf.Schema = mysqlSchema
+			conf.Server.DBCnf.MysqlCnf.Password = mysqlPass
+			conf.Server.DBCnf.MysqlCnf.User = mysqlUser
+			conf.Server.SqleCnf.DebugLog = debug
+			conf.Server.SqleCnf.LogPath = logPath
+			conf.Server.SqleCnf.SqleServerPort = port
+			conf.Server.SqleCnf.AutoMigrateTable = autoMigrateTable
+		}
 		data, err := yaml.Marshal(conf)
 		if err != nil {
-
 			log.Logger().Errorf("marshal sqle config error %v", err)
 			return
 
