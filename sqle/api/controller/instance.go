@@ -264,21 +264,21 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	if req.RuleTemplates != nil {
-		notExistTs := []string{}
+		notExistTpls := []string{}
 		ruleTemplates := []model.RuleTemplate{}
-		for _, tplName := range req.RuleTemplates {
-			t, exist, err := s.GetTemplateByName(tplName)
+		for _, tplId := range req.RuleTemplates {
+			t, exist, err := s.GetTemplateById(tplId)
 			if err != nil {
 				return c.JSON(200, NewBaseReq(err))
 			}
 			if !exist {
-				notExistTs = append(notExistTs, tplName)
+				notExistTpls = append(notExistTpls, tplId)
 			}
 			ruleTemplates = append(ruleTemplates, t)
 		}
 
-		if len(notExistTs) > 0 {
-			err := fmt.Errorf("rule_template %s not exist", strings.Join(notExistTs, ", "))
+		if len(notExistTpls) > 0 {
+			err := fmt.Errorf("rule_template id : %s not exist", strings.Join(notExistTpls, ", "))
 			return c.JSON(200, NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST, err)))
 		}
 
