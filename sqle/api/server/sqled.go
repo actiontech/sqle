@@ -385,7 +385,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 	execStatus := model.TASK_ACTION_DONE
 
 	if err := st.UpdateCommitSql(task, task.CommitSqls); err != nil {
-		entry.Errorf("save commit sql to storage failed, error: %v", err)
+		i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
 		execStatus = model.TASK_ACTION_ERROR
 		if err := updateTaskExecStatus(task, st, execStatus); nil != err {
 			log.Logger().Errorf("update task exec_status failed: %v", err)
