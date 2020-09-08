@@ -207,7 +207,7 @@ func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
 
 func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
 	tx := s.db.Begin()
-	if err := tx.Where("task_id=?", task.ID).Delete(CommitSql{}).Error; err != nil {
+	if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(CommitSql{}).Error; err != nil {
 		return err
 	}
 
@@ -228,7 +228,7 @@ func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
 
 func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) error {
 	tx := s.db.Begin()
-	if err := tx.Where("task_id=?", task.ID).Delete(RollbackSql{}).Error; err != nil {
+	if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(RollbackSql{}).Error; err != nil {
 		return err
 	}
 
@@ -246,9 +246,16 @@ func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) erro
 	return tx.Commit().Error
 }
 
-func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {
-	err := s.db.Table(CommitSql{}.TableName()).Where("id = ?", commitSqlId).Update(attrs...).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+func (s *Storage) UpdateCommitSqlStatusByTaskID(task *Task, status string) error {
+	updateSql := "UPDATE commit_sql_detail SET exec_status=? , updated_at =? WHERE task_id=?"
+
+	tx := s.db.Begin()
+	now := time.Now().Format(time.RFC3339)
+	if err := tx.Exec(updateSql, status, now, task.ID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
 }
 
 func (s *Storage) UpdateCommitSqlStatus(sql *Sql, status, result string) error {
@@ -262,6 +269,31 @@ func (s *Storage) UpdateCommitSqlStatus(sql *Sql, status, result string) error {
 		attr["exec_result"] = result
 	}
 	return s.UpdateCommitSqlById(fmt.Sprintf("%v", sql.ID), attr)
+}
+
+func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {
+
+	err := s.db.Table(CommitSql{}.TableName()).Where("id = ?", commitSqlId).Update(attrs...).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+
+}
+
+func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface{}) error {
+	err := s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) UpdateRollbackSqlStatus(sql *Sql, status, result string) error {
+	attr := map[string]interface{}{}
+	if status != "" {
+		sql.ExecStatus = status
+		attr["exec_status"] = status
+	}
+	if result != "" {
+		sql.ExecResult = result
+		attr["exec_result"] = result
+	}
+	return s.UpdateRollbackSqlById(fmt.Sprintf("%v", sql.ID), attr)
 }
 
 func (s *Storage) HardDeleteRollbackSqlByTaskIds(taskIds []string) error {
@@ -281,24 +313,6 @@ func (s *Storage) GetRollbackSqlByTaskId(taskId string, commitSqlNum []string) (
 	}
 	err := s.db.Where(querySql, queryArgs...).Find(&rollbackSqls).Error
 	return rollbackSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
-func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface{}) error {
-	err := s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
-func (s *Storage) UpdateRollbackSqlStatus(sql *Sql, status, result string) error {
-	attr := map[string]interface{}{}
-	if status != "" {
-		sql.ExecStatus = status
-		attr["exec_status"] = status
-	}
-	if result != "" {
-		sql.ExecResult = result
-		attr["exec_result"] = result
-	}
-	return s.UpdateRollbackSqlById(fmt.Sprintf("%v", sql.ID), attr)
 }
 
 func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
