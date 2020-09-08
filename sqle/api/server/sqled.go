@@ -362,13 +362,13 @@ func (s *Sqled) commitDML(task *model.Task) error {
 	entry.Info("start commit")
 	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
 	sqls := []*model.Sql{}
-	for _, commitSql := range task.CommitSqls {
-		err := st.UpdateCommitSqlStatus(&commitSql.Sql, model.TASK_ACTION_DOING, "")
-		if err != nil {
-			i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
-			return err
-		}
 
+	err := st.UpdateCommitSqlStatusByTaskID(task, model.TASK_ACTION_DOING)
+	if err != nil {
+		i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
+		return err
+	}
+	for _, commitSql := range task.CommitSqls {
 		nodes, err := i.ParseSql(commitSql.Content)
 		if err != nil {
 			return err
@@ -378,24 +378,24 @@ func (s *Sqled) commitDML(task *model.Task) error {
 		sqls = append(sqls, &commitSql.Sql)
 	}
 
-	execStatus := model.TASK_ACTION_DOING
 	if err := updateTaskExecStatus(task, st, model.TASK_ACTION_DOING); nil != err {
 		return err
 	}
 	i.CommitDMLs(sqls)
-	execStatus = model.TASK_ACTION_DONE
-	for _, commitSql := range task.CommitSqls {
-		if err := st.Save(commitSql); err != nil {
-			i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
-			execStatus = model.TASK_ACTION_ERROR
-			if err := updateTaskExecStatus(task, st, execStatus); nil != err {
-				log.Logger().Errorf("update task exec_status failed: %v", err)
-			}
-			return err
-		}
+	execStatus := model.TASK_ACTION_DONE
 
+	if err := st.UpdateCommitSql(task, task.CommitSqls); err != nil {
+		entry.Errorf("save commit sql to storage failed, error: %v", err)
+		execStatus = model.TASK_ACTION_ERROR
+		if err := updateTaskExecStatus(task, st, execStatus); nil != err {
+			log.Logger().Errorf("update task exec_status failed: %v", err)
+		}
+		return err
+	}
+	for _, commitSql := range task.CommitSqls {
 		if commitSql.ExecStatus == model.TASK_ACTION_ERROR {
 			execStatus = model.TASK_ACTION_ERROR
+			break
 		}
 	}
 
