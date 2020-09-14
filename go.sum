@@ -1,13 +1,10 @@
 actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5 h1:yj/ASd2p5s3xmHVKNgjog2lKQyaaxsTP2qft3NQI6VQ=
 actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5/go.mod h1:Og/7KQAysEVfuDxg1hvbGoHWj5C896+20EcmGcjLrKw=
-actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200825032055-0210931f1bee/go.mod h1:vu8ATgXQeWSC/pgrGIB2UfVdA6mKLWtCXutEbrm/7wU=
 actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200826073009-a0a8616435b0/go.mod h1:vu8ATgXQeWSC/pgrGIB2UfVdA6mKLWtCXutEbrm/7wU=
-actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200910023516-a9824983006c h1:pEh4Sj975N2iD48Rd0rFL4ElLyXbmBnsd6T3NL3ZGPo=
-actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200910023516-a9824983006c/go.mod h1:vu8ATgXQeWSC/pgrGIB2UfVdA6mKLWtCXutEbrm/7wU=
-actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200910073114-540a1f5b9067 h1:IdpYWanMHGcKeC3Yqb1OdwHyHdpXuMGrfcZAap/LR3c=
-actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200910073114-540a1f5b9067/go.mod h1:EzU9yE49P9LvS3zvRddrWc0NjTqQK+p09DNsRN0/7Jo=
-actiontech.cloud/universe/uinterface/v3 v3.0.0-20200826072910-2fc3758daace h1:7kc6nY6VssqPhITtTUSKSamiEQDvNl781FoX8uJH+EA=
-actiontech.cloud/universe/uinterface/v3 v3.0.0-20200826072910-2fc3758daace/go.mod h1:8pvYH6NT4EV8+pNifCgTLQxkFGJFNCLQiE87DGMOsQA=
+actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200910104953-742fa12acee4 h1:eMDGaUqptXAvcHkBlL+1YdtavGd2kUGrZlnU0e5QuMM=
+actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200910104953-742fa12acee4/go.mod h1:vu8ATgXQeWSC/pgrGIB2UfVdA6mKLWtCXutEbrm/7wU=
+actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200914025644-05f3c4e3ce7e h1:0IAfitS+RX4KhrgrCKsFIbgPNG3iBrDAjzb8OT8IxfI=
+actiontech.cloud/universe/ucore-common/v3 v3.0.0-20200914025644-05f3c4e3ce7e/go.mod h1:80gkS4yWvYeW0tvTL/zKDPxi56Hs7nqEVjFxbt2VYHY=
 actiontech.cloud/universe/uinterface/v3 v3.0.0-20200910073128-46642efdd9aa h1:6CNyrDcYRFQHY/IXwf4Esm1B7LwA8zbaSvgwp9IL4fE=
 actiontech.cloud/universe/uinterface/v3 v3.0.0-20200910073128-46642efdd9aa/go.mod h1:lXqm1bqLdkntDygdIDPkhyvdjimbQavMUbpP8a4xlU0=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
