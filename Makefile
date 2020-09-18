@@ -1,73 +1,86 @@
 include ./vendor/actiontech.cloud/universe/ucommon/v3/build/Makefile.variables
-GOCMD=$(shell which go)
-GOBUILD=$(GOCMD) build
-GOTEST=$(GOCMD) test
-GOVET=$(GOCMD) vet
-GOLIST=$(GOCMD) list
-GOCLEAN=$(GOCMD) clean
 
-GIT_VERSION   = $(shell git rev-parse --abbrev-ref HEAD) $(shell git rev-parse HEAD)
-RPM_BUILD_BIN = $(shell type -p rpmbuild 2>/dev/null)
-COMPILE_FLAG  =
-DOCKER        = $(shell which docker)
-DOCKER_IMAGE  = docker-registry:5000/actiontech/universe-compiler-go1.14.1-centos6
-DOTNET_DOCKER_IMAGE = docker-registry:5000/actiontech/universe-compiler-dotnetcore2.1
-DOTNET_TARGET = centos.7-x64
+## Makefile Content
+# 1.Parameter Definition And Check
+# 2.Code Check
+# 3.Stripped Dependence
+# 4.Golang Binary Compile
+# 5.RPM Build/Upload
+# 6.K8s Docker Images Build
+# 7.Frontend(Optional)
 
+
+################################## 1.Parameter Definition And Check ##########################################
+## Dynamic Parameter
+# The ftp host and user/pass used to upload rpm package, can be overwrite by: `make DOCKER_IMAGE=image:tag`
+DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-centos6
+DOTNET_DOCKER_IMAGE ?= docker-registry:5000/actiontech/universe-compiler-dotnetcore2.1
+TEST_DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-ubuntu-with-docker
+K8S_DOCKER_IMAGE_BUILD ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-ubuntu-with-docker
+
+## Static Parameter, should not be overwrite
+CAP = CAP_CHOWN,CAP_SYS_RESOURCE,CAP_SETUID,CAP_SETGID+eip
 RUN_ON_DMP = true
-SQLE_LDFLAGS = -ldflags "-X 'main.version=\"${GIT_VERSION}\"' -X 'main.caps=${CAP}' -X 'main.defaultUser=${USER_NAME}' -X 'main.runOnDmpStr=${RUN_ON_DMP}'"
-
 PROJECT_NAME = sqle
 SUB_PROJECT_NAME = sqle_sqlserver
 VERSION       = 9.9.9.9
-CAP = CAP_CHOWN,CAP_SYS_RESOURCE,CAP_SETUID,CAP_SETGID+eip
-
+GOBIN = ${shell pwd}/bin
+K8S_DOCKER_IMAGE_GENERATED = docker-registry:5000/actiontech/k8s/$(PROJECT_NAME):v$(VERSION)
+default: install
+DOTNET_TARGET = centos.7-x64
 PARSER_PATH   = ${shell pwd}/vendor/github.com/pingcap/parser
-MAIN_MODULE   = ${shell pwd}
-GOBIN         = ${MAIN_MODULE}/bin
+SQLE_LDFLAGS   = ${LDFLAGS}" -X 'main.runOnDmpStr=${RUN_ON_DMP}'"
 
-.PHONY: build docs
-
-default: build
-
-pull_image:
-    $(DOCKER) pull ${DOCKER_IMAGE}
-
-install: swagger parser vet
-	GOBIN=${GOBIN} GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${GOBIN}/sqled -mod=vendor ${SQLE_LDFLAGS} ${MAIN_MODULE}/${PROJECT_NAME}
-
-build_sqlserver:
-	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
-
+######################################## 2.Code Check ####################################################
+## Static Code Analysis
 vet: swagger
-	$(GOVET) $$($(GOLIST) ./... | grep -v vendor/)
+	GOOS=$(GOOS) GOARCH=amd64 go vet $$(GOOS=${GOOS} GOARCH=${GOARCH} go list ./...)
+	GOOS=$(GOOS) GOARCH=amd64 go vet ./vendor/actiontech.cloud/...
 
+## Unit Test
 test: swagger parser
-	$(GOTEST) -v ./...
+	GOOS=$(GOOS) GOARCH=amd64 go test -v ./$(PROJECT_NAME)
 
-clean:
-	$(GOCLEAN)
-
-docker_rpm: pull_image
-	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild --define 'caps ${CAP}' --define 'runOnDmp true' -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${PROJECT_NAME}.x86_64.rpm
-	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' -bb --with qa /universe/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.x86_64.rpm
-
-docker_rpm_without_dmp: pull_image
-	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild --define 'caps ${CAP}' --define 'runOnDmp false' -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${PROJECT_NAME}.x86_64.rpm
-	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; (tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && (rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' -bb --with qa /universe/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && (cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.x86_64.rpm
 
 docker_test: pull_image
 	CTN_NAME="universe_docker_test_$$RANDOM" && \
     $(DOCKER) run -d --entrypoint /sbin/init --add-host docker-registry:${DOCKER_REGISTRY}  --privileged --name $${CTN_NAME} -v $(shell pwd):/universe/sqle --rm -w /universe/sqle $(DOCKER_IMAGE) && \
-    $(DOCKER) exec $${CTN_NAME} make test ; \
+    $(DOCKER) exec $${CTN_NAME} make test vet ; \
     $(DOCKER) stop $${CTN_NAME}
 
-upload:
-	curl -T $(shell pwd)/${PROJECT_NAME}.x86_64.rpm -u admin:ftpadmin ftp://${RELEASE_FTPD_HOST}/actiontech-${PROJECT_NAME}/qa/${VERSION}/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm
-	curl -T $(shell pwd)/${SUB_PROJECT_NAME}.x86_64.rpm -u admin:ftpadmin ftp://${RELEASE_FTPD_HOST}/actiontech-${PROJECT_NAME}/qa/${VERSION}/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm
+
+#################################### 3.Stripped Dependence ##############################################
+# All stripped dependence should upload to ftp before doing rpm packing.
+# FTP Directory structure shoule be:
+# aarch64 RHEL7 -- ${RELEASE_FTPD_HOST}/deploy-stripped/linux_aarch64/el7/
+# aarch64 RHEL8 -- ${RELEASE_FTPD_HOST}/deploy-stripped/linux_aarch64/el8/
+# arm64 RHEL7 -- ${RELEASE_FTPD_HOST}/deploy-stripped/linux_amd64/el7/
+# arm64 RHEL8 -- ${RELEASE_FTPD_HOST}/deploy-stripped/linux_amd64/el8/
+
+# sqle had no stripped dependence
+################################### 4.Golang Binary Compile #############################################
+# For go mod
+sync_vendor:
+	GOPROXY=$(GOPROXY) GONOSUMDB=$(GONOSUMDB) go mod vendor
+
+# Generic
+docker_clean:
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(DOCKER_IMAGE) -c "cd /universe && make clean ${MAKEFLAGS}"
+docker_install:
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(DOCKER_IMAGE) -c "cd /universe && make install $(MAKEFLAGS)"
+install: swagger parser
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(SQLE_LDFLAGS) $(GO_BUILD_FLAGS) -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)
+
+build_sqlserver:
+	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
+
+swagger:
+	GOARCH=amd64 go build -o ${shell pwd}/$(PROJECT_NAME)/swag ${shell pwd}/build/swag/main.go
+	rm -rf ${shell pwd}/sqle/docs
+	${shell pwd}/$(PROJECT_NAME)/swag init -g ./$(PROJECT_NAME)/api/app.go -o ${shell pwd}/sqle/docs
 
 parser:
-	cd build/goyacc && GOOS=${GOOS} GOARCH=${GOARCH} GOBIN=$(GOBIN) go install
+	cd build/goyacc && GOOS=${GOOS} GOARCH=amd64 GOBIN=$(GOBIN) go install
 	$(GOBIN)/goyacc -o /dev/null ${PARSER_PATH}/parser.y
 	$(GOBIN)/goyacc -o ${PARSER_PATH}/parser.go ${PARSER_PATH}/parser.y 2>&1 | egrep "(shift|reduce)/reduce" | awk '{print} END {if (NR > 0) {print "Find conflict in parser.y. Please check y.output for more information."; exit 1;}}'
 	rm -f y.output
@@ -83,7 +96,41 @@ parser:
 
 	@awk 'BEGIN{print "// Code generated by goyacc DO NOT EDIT."} {print $0}' ${PARSER_PATH}/parser.go > tmp_parser.go && mv tmp_parser.go ${PARSER_PATH}/parser.go;
 
-swagger:
-	$(GOBUILD) -o $(MAIN_MODULE)/$(PROJECT_NAME)/swag $(MAIN_MODULE)/build/swag/main.go
-	rm -rf $(MAIN_MODULE)/sqle/docs
-	$(MAIN_MODULE)/$(PROJECT_NAME)/swag init -g ./$(PROJECT_NAME)/api/app.go -o $(MAIN_MODULE)/sqle/docs
+# Clean
+clean:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
+
+###################################### 5.RPM Build #####################################################
+# Compiler docker image
+pull_image:
+	$(DOCKER) pull $(DOCKER_IMAGE)
+
+docker_rpm: docker_rpm/sqle docker_rpm/sqle_sqlserver
+
+docker_rpm/sqle: pull_image docker_install
+	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
+	(tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && \
+	(rpmbuild --define 'caps ${CAP}' --define 'runOnDmp ${RUN_ON_DMP}' -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && \
+	(cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm
+
+docker_rpm/sqle_sqlserver: pull_image docker_install
+	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
+	(tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && \
+	(rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' -bb --with qa /universe/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && \
+	(cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.x86_64.rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm
+
+upload:
+	curl -T $(shell pwd)/$(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm \
+	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
+	curl -T $(shell pwd)/$(SUB_PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm \
+	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(SUB_PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
+############################### 6.K8s Docker Images Build ##############################################
+
+# sqle had no supprot K8s docker images build
+
+.PHONY: help
+help:
+	$(warning ---------------------------------------------------------------------------------)
+	$(warning Supported Variables And Values:)
+	$(warning ---------------------------------------------------------------------------------)
+	$(foreach v, $(.VARIABLES), $(if $(filter file,$(origin $(v))), $(info $(v)=$($(v)))))
