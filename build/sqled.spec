@@ -27,13 +27,14 @@ Acitontech Sqle
 
 ##########
 
+##########
+
 %build
-echo "build sqle..."
-export GOPATH=%{_builddir}/%{buildsubdir}
-cd %{_builddir}/%{buildsubdir}/sqle
-make install RUN_ON_DMP=%{runOnDmp}
+## build is done in outside, please see Makefile.
 
 ##########
+
+
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -49,6 +50,8 @@ cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/sc
 ##########
 
 %pre
+
+#check directory
 grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
     if [ ! -d "/lib/systemd/system" ];then
