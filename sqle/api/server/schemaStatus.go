@@ -2,9 +2,9 @@ package server
 
 import (
 	"github.com/sirupsen/logrus"
-	"actiontech.cloud/universe/sqle/v3/sqle/executor"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/executor"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"sync"
 	"time"
 )

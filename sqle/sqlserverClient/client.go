@@ -3,10 +3,10 @@ package sqlserverClient
 import (
 	"context"
 	"fmt"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"actiontech.cloud/universe/sqle/v3/sqle/sqlserver/SqlserverProto"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/sqlserver/SqlserverProto"
 	"time"
 
 	"github.com/pingcap/parser/ast"

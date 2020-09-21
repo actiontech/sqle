@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/ucommon/v3/util"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/ucommon/v4/util"
 )
 
 type MycatConfig struct {

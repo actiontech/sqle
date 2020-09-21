@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/executor"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"actiontech.cloud/universe/ucommon/v3/util"
+	"actiontech.cloud/universe/sqle/v4/sqle/api/server"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/executor"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/universe/ucommon/v4/util"
 	"github.com/labstack/echo/v4"
 )
 

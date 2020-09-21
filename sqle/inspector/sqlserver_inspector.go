@@ -2,10 +2,10 @@ package inspector
 
 import (
 	"fmt"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"actiontech.cloud/universe/sqle/v3/sqle/sqlserver/SqlserverProto"
-	"actiontech.cloud/universe/sqle/v3/sqle/sqlserverClient"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/sqlserver/SqlserverProto"
+	"actiontech.cloud/universe/sqle/v4/sqle/sqlserverClient"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 )

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"github.com/jinzhu/gorm"
 )
 

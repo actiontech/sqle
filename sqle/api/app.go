@@ -1,12 +1,12 @@
 package api
 
 import (
-	"actiontech.cloud/universe/sqle/v3/sqle/api/controller"
+	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
 
 	"fmt"
 
-	_ "actiontech.cloud/universe/sqle/v3/sqle/docs"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
+	_ "actiontech.cloud/universe/sqle/v4/sqle/docs"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"

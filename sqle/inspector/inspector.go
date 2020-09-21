@@ -2,9 +2,9 @@ package inspector
 
 import (
 	"fmt"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/executor"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/executor"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"strings"
 
 	"github.com/pingcap/parser/ast"

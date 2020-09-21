@@ -5,23 +5,23 @@ import (
 	"io/ioutil"
 	"syscall"
 
-	"actiontech.cloud/universe/ucommon/v3/util"
+	"actiontech.cloud/universe/ucommon/v4/util"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
+	"actiontech.cloud/universe/sqle/v4/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
 	yaml "gopkg.in/yaml.v2"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/api"
-	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
-	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
-	"actiontech.cloud/universe/sqle/v3/sqle/sqlserverClient"
-	ucommonLog "actiontech.cloud/universe/ucommon/v3/log"
-	"actiontech.cloud/universe/ucommon/v3/os"
-	"actiontech.cloud/universe/ucommon/v3/ubootstrap"
-	"actiontech.cloud/universe/ucore-common/v3/component"
+	"actiontech.cloud/universe/sqle/v4/sqle/api"
+	"actiontech.cloud/universe/sqle/v4/sqle/api/server"
+	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/sqlserverClient"
+	ucommonLog "actiontech.cloud/universe/ucommon/v4/log"
+	"actiontech.cloud/universe/ucommon/v4/os"
+	"actiontech.cloud/universe/ucommon/v4/ubootstrap"
+	"actiontech.cloud/universe/ucore-common/v4/component"
 )
 
 func createConfigFileCmd() *component.Cmd {

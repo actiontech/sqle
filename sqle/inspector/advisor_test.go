@@ -2,8 +2,8 @@ package inspector
 
 import (
 	"fmt"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"testing"
 
 	"github.com/pingcap/parser/ast"

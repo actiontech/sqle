@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/executor"
+	"actiontech.cloud/universe/sqle/v4/sqle/executor"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/api/server"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/inspector"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/api/server"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )

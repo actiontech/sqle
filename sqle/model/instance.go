@@ -3,10 +3,10 @@ package model
 import (
 	"encoding/json"
 
-	"actiontech.cloud/universe/ucommon/v3/util"
+	"actiontech.cloud/universe/ucommon/v4/util"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"github.com/jinzhu/gorm"
 )
 

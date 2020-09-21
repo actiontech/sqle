@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/parser/ast"

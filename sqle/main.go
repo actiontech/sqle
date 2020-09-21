@@ -5,16 +5,16 @@ import (
 	"strconv"
 	"time"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/utils"
+	"actiontech.cloud/universe/sqle/v4/sqle/utils"
 
 	"github.com/spf13/pflag"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
 
-	ucobra "actiontech.cloud/universe/ucommon/v3/cobra"
-	"actiontech.cloud/universe/ucommon/v3/os"
-	"actiontech.cloud/universe/ucore-common/v3/component"
-	ucoreModel "actiontech.cloud/universe/ucore-common/v3/model"
+	ucobra "actiontech.cloud/universe/ucommon/v4/cobra"
+	"actiontech.cloud/universe/ucommon/v4/os"
+	"actiontech.cloud/universe/ucore-common/v4/component"
+	ucoreModel "actiontech.cloud/universe/ucore-common/v4/model"
 )
 
 var version string

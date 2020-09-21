@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"github.com/labstack/echo/v4"
 )
 

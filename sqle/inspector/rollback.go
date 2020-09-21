@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"strconv"
 	"strings"
 )

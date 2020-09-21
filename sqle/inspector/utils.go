@@ -8,7 +8,7 @@ import (
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser"
 	"regexp"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"strconv"
 	"strings"
 )

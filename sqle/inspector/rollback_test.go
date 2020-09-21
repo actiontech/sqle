@@ -2,7 +2,7 @@ package inspector
 
 import (
 	"github.com/stretchr/testify/assert"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"testing"
 )
 

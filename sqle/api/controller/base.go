@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	"actiontech.cloud/universe/sqle/v3/sqle/errors"
-	"actiontech.cloud/universe/sqle/v3/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v2"

@@ -1,4 +1,4 @@
-include ./vendor/actiontech.cloud/universe/ucommon/v3/build/Makefile.variables
+include ./vendor/actiontech.cloud/universe/ucommon/v4/build/Makefile.variables
 
 ## Makefile Content
 # 1.Parameter Definition And Check
