@@ -23,7 +23,7 @@ CAP = CAP_CHOWN,CAP_SYS_RESOURCE,CAP_SETUID,CAP_SETGID+eip
 RUN_ON_DMP = true
 PROJECT_NAME = sqle
 SUB_PROJECT_NAME = sqle_sqlserver
-VERSION       = 9.9.9.9
+override VERSION = 9.9.9.9
 GOBIN = ${shell pwd}/bin
 K8S_DOCKER_IMAGE_GENERATED = docker-registry:5000/actiontech/k8s/$(PROJECT_NAME):v$(VERSION)
 default: install
