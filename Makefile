@@ -111,13 +111,13 @@ docker_rpm/sqle: pull_image docker_install
 	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
 	(tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && \
 	(rpmbuild --define 'caps ${CAP}' --define 'runOnDmp ${RUN_ON_DMP}' --target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && \
-	(cat /root/rpmbuild/RPMS/x86_64/${PROJECT_NAME}-${VERSION}-qa.$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm
+	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-${VERSION}-qa.$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm
 
 docker_rpm/sqle_sqlserver: pull_image docker_install
 	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
 	(tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}/' >/tmp/build.log 2>&1) && \
 	(rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' --target $(RPMBUILD_TARGET) -bb --with qa /universe/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && \
-	(cat /root/rpmbuild/RPMS/x86_64/${SUB_PROJECT_NAME}-${VERSION}-qa.$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm
+	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${SUB_PROJECT_NAME}-${VERSION}-qa.$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm
 
 upload:
 	curl -T $(shell pwd)/$(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(RPMBUILD_TARGET).rpm \
