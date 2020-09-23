@@ -62,8 +62,9 @@ fi
 (which nologin 1>/dev/null 2>&1) || (echo "require nologin" && exit 11)
 (which bash 1>/dev/null 2>&1) || (echo "require bash" && exit 12)
 (which pkill 1>/dev/null 2>&1) || (echo "require pkill" && exit 13)
-(getent group actiontech 1>/dev/null 2>&1) || groupadd -g 5700 actiontech
-(id actiontech-universe 1>/dev/null 2>&1) || useradd -M -g actiontech -s $(which nologin) actiontech-universe
+(getent group %{group_name} 1>/dev/null 2>&1) || groupadd -g 5700 %{group_name}
+(id %{user_name} 1>/dev/null 2>&1) || useradd -M -g %{group_name} -s $(which nologin) -u 5700 %{user_name}
+
 
 #check bash env
 bash -c "" 2>&1 | grep -e 'warning' -e 'error'
