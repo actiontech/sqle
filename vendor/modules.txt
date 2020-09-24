@@ -1,17 +1,4 @@
-# actiontech.cloud/universe/ucommon/v3 v3.2006.1-0.20200918071119-858d264a1eca
-actiontech.cloud/universe/ucommon/v3/conf
-actiontech.cloud/universe/ucommon/v3/grpc
-actiontech.cloud/universe/ucommon/v3/log
-actiontech.cloud/universe/ucommon/v3/mysql
-actiontech.cloud/universe/ucommon/v3/os
-actiontech.cloud/universe/ucommon/v3/rpcInterceptor
-actiontech.cloud/universe/ucommon/v3/scsi
-actiontech.cloud/universe/ucommon/v3/secure
-actiontech.cloud/universe/ucommon/v3/user
-actiontech.cloud/universe/ucommon/v3/util
-actiontech.cloud/universe/ucommon/v3/wrapper
-actiontech.cloud/universe/ucommon/v3/wrapper/syscall
-# actiontech.cloud/universe/ucommon/v4 v4.2008.1-0.20200921030449-980fedaf5da1
+# actiontech.cloud/universe/ucommon/v4 v4.2008.1-0.20200923054037-44227de373e8
 ## explicit
 actiontech.cloud/universe/ucommon/v4/build
 actiontech.cloud/universe/ucommon/v4/cobra
@@ -32,7 +19,7 @@ actiontech.cloud/universe/ucommon/v4/user
 actiontech.cloud/universe/ucommon/v4/util
 actiontech.cloud/universe/ucommon/v4/wrapper
 actiontech.cloud/universe/ucommon/v4/wrapper/syscall
-# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20200920145951-780a66e81460
+# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20200924083646-2297cc39110c
 ## explicit
 actiontech.cloud/universe/ucore-common/v4/client
 actiontech.cloud/universe/ucore-common/v4/common
@@ -41,7 +28,7 @@ actiontech.cloud/universe/ucore-common/v4/model
 actiontech.cloud/universe/ucore-common/v4/orm
 actiontech.cloud/universe/ucore-common/v4/pgrpc
 actiontech.cloud/universe/ucore-common/v4/qahelper
-# actiontech.cloud/universe/uinterface/v4 v4.0.0-20200920135340-f5fca9fbed68
+# actiontech.cloud/universe/uinterface/v4 v4.0.0-20200924073256-0f651c61a66b
 actiontech.cloud/universe/uinterface/v4/common
 actiontech.cloud/universe/uinterface/v4/ucore
 # github.com/KyleBanks/depth v1.2.1

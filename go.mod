@@ -3,8 +3,8 @@ module actiontech.cloud/universe/sqle/v4
 go 1.14
 
 require (
-	actiontech.cloud/universe/ucommon/v4 v4.2008.1-0.20200921030449-980fedaf5da1
-	actiontech.cloud/universe/ucore-common/v4 v4.0.0-20200920145951-780a66e81460
+	actiontech.cloud/universe/ucommon/v4 v4.2008.1-0.20200923054037-44227de373e8
+	actiontech.cloud/universe/ucore-common/v4 v4.0.0-20200924083646-2297cc39110c
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
