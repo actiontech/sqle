@@ -116,7 +116,7 @@ func (m *SqleOnDmpManager) initSqleOnDmpManagerTask() {
 		WatchGrpcConfig().
 		StartVersionUpdater(m.opts.CompId, m.opts.Version).
 		StartUagentWatchOrGuardService(m.opts.PIDFile).
-		StartUcoreGuardService(m.opts.CompId, m.opts.UcoreHeartbeatPeriod).
+		StartUcoreGuardService(m.opts.CompId, m.opts.UcoreHeartbeatPeriod, nil).
 		StartDiagnosisService().
 		InitPlatform().
 		StartComponentSipService(m.opts.CompType, m.opts.CompGroupId, m.opts.CompId, m.opts.ServerId)
