@@ -1,5 +1,5 @@
 Summary: Actiontech Sqle_sqlserver
-Name: sqle_sqlserver
+Name: sqle_sqlserver_%{commit}
 Version: 9.9.9.9
 %if %{?_with_qa:1}%{!?_with_qa:0}
 Release: qa
