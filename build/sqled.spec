@@ -1,10 +1,10 @@
 Summary: Actiontech Sqle
 Name: sqle
-Version: 9.9.9.9
+Version: 9.9.9.9_%{commit}
 %if %{?_with_qa:1}%{!?_with_qa:0}
-Release: qa
+Release: qa.%{os_version}
 %else
-Release: rel
+Release: rel.%{os_version}
 %endif
 Source0: %{name}.tar.gz
 License: Commercial
