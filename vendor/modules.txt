@@ -1,4 +1,4 @@
-# actiontech.cloud/universe/ucommon/v4 v4.2008.3-0.20201117105257-693dd01d6c3c
+# actiontech.cloud/universe/ucommon/v4 v4.2011.1-0.20201130023048-056dd16a1cf3
 ## explicit
 actiontech.cloud/universe/ucommon/v4/build
 actiontech.cloud/universe/ucommon/v4/cobra
@@ -19,7 +19,7 @@ actiontech.cloud/universe/ucommon/v4/user
 actiontech.cloud/universe/ucommon/v4/util
 actiontech.cloud/universe/ucommon/v4/wrapper
 actiontech.cloud/universe/ucommon/v4/wrapper/syscall
-# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20201125074155-82a0f9a114c2
+# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20201201023630-551496c6552d
 ## explicit
 actiontech.cloud/universe/ucore-common/v4/client
 actiontech.cloud/universe/ucore-common/v4/common
@@ -28,7 +28,7 @@ actiontech.cloud/universe/ucore-common/v4/model
 actiontech.cloud/universe/ucore-common/v4/orm
 actiontech.cloud/universe/ucore-common/v4/pgrpc
 actiontech.cloud/universe/ucore-common/v4/qahelper
-# actiontech.cloud/universe/uinterface/v4 v4.0.0-20201124054012-a3f10ad57320
+# actiontech.cloud/universe/uinterface/v4 v4.0.0-20201127061901-462c1bd87941
 actiontech.cloud/universe/uinterface/v4/common
 actiontech.cloud/universe/uinterface/v4/ucore
 # github.com/KyleBanks/depth v1.2.1
@@ -76,6 +76,9 @@ github.com/denisenkom/go-mssqldb/internal/decimal
 github.com/denisenkom/go-mssqldb/internal/querytext
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
+# github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
+github.com/docker/spdystream
+github.com/docker/spdystream/spdy
 # github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
 ## explicit
 github.com/facebookgo/grace/gracenet
@@ -415,10 +418,13 @@ k8s.io/apimachinery/pkg/types
 k8s.io/apimachinery/pkg/util/clock
 k8s.io/apimachinery/pkg/util/errors
 k8s.io/apimachinery/pkg/util/framer
+k8s.io/apimachinery/pkg/util/httpstream
+k8s.io/apimachinery/pkg/util/httpstream/spdy
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/util/json
 k8s.io/apimachinery/pkg/util/naming
 k8s.io/apimachinery/pkg/util/net
+k8s.io/apimachinery/pkg/util/remotecommand
 k8s.io/apimachinery/pkg/util/runtime
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/validation
@@ -427,6 +433,7 @@ k8s.io/apimachinery/pkg/util/wait
 k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
+k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
 # k8s.io/client-go v0.17.4
 k8s.io/client-go/discovery
@@ -482,9 +489,12 @@ k8s.io/client-go/rest/watch
 k8s.io/client-go/tools/clientcmd/api
 k8s.io/client-go/tools/metrics
 k8s.io/client-go/tools/reference
+k8s.io/client-go/tools/remotecommand
 k8s.io/client-go/transport
+k8s.io/client-go/transport/spdy
 k8s.io/client-go/util/cert
 k8s.io/client-go/util/connrotation
+k8s.io/client-go/util/exec
 k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/keyutil
 # k8s.io/klog v1.0.0
