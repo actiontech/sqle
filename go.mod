@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	actiontech.cloud/universe/ucommon/v4 v4.2011.1-0.20201130023048-056dd16a1cf3
-	actiontech.cloud/universe/ucore-common/v4 v4.0.0-20201201023630-551496c6552d
+	actiontech.cloud/universe/ucore-common/v4 v4.0.0-20201202230756-5a1422540b01
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
