@@ -112,13 +112,7 @@ func UpdateSqlWhitelistItem(c echo.Context) error {
 // @router /sql_whitelist [get]
 func GetAllWhitelist(c echo.Context) error {
 	s := model.GetStorage()
-	if s == nil {
-		c.String(500, "nil")
-	}
-	var err error
-	var sqlWhitelist []model.SqlWhitelist
-
-	sqlWhitelist, err = s.GetSqlWhitelist()
+	sqlWhitelist, err := s.GetSqlWhitelist()
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
