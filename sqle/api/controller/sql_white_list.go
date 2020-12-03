@@ -13,8 +13,8 @@ type SqlWhitelistItemRes struct {
 	Data []model.SqlWhitelist `json:"data"`
 }
 
-// @Summary 获取SQL白名单信息
-// @Description get sql white
+// @Summary 获取指定SQL白名单信息
+// @Description get sql whitelist item
 // @Param sql_whitelist_id path string true "sql whitelist item ID"
 // @Success 200 {object} controller.SqlWhitelistItemRes
 // @router /sql_whitelist/{sql_whitelist_id}/ [get]
@@ -36,7 +36,7 @@ func GetSqlWhitelistItem(c echo.Context) error {
 
 type CreateSqlWhitelistItemReq struct {
 	Value *string `json:"value" example:"create table" valid:"required"`
-	Desc  *string `json:"desc" example:"used for rapid on-line" valid:"-"`
+	Desc  *string `json:"desc" example:"used for rapid release" valid:"-"`
 }
 
 // @Summary 添加SQL白名单
