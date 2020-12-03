@@ -66,7 +66,7 @@ type Storage struct {
 }
 
 func (s *Storage) AutoMigrate() error {
-	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}).Error
+	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}, &SqlWhitelist{}).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 

@@ -68,6 +68,13 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.GET("/schemas", controller.GetAllSchemas)
 	e.POST("/schemas/manual_update", controller.ManualUpdateAllSchemas)
 	e.POST("/base/reload", controller.ReloadBaseInfo)
+
+	//SqlWhitelist
+	e.GET("/sql_whitelist/:sql_whitelist_id/", controller.GetSqlWhitelistItem)
+	e.POST("/sql_whitelist", controller.CreateSqlWhitelistItem)
+	e.GET("/sql_whitelist", controller.GetAllWhitelist)
+	e.PATCH("/sql_whitelist/:sql_white_id/", controller.UpdateSqlWhitelistItem)
+	e.DELETE("/sql_whitelist/:sql_white_id/", controller.RemoveSqlWhitelistItem)
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)
 	log.Logger().Fatal(e.Start(address))
