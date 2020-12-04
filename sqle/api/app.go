@@ -70,9 +70,9 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	e.POST("/base/reload", controller.ReloadBaseInfo)
 
 	//SqlWhitelist
-	e.GET("/sql_whitelist/:sql_whitelist_id/", controller.GetSqlWhitelistItem)
+	e.GET("/sql_whitelist/:sql_whitelist_id/", controller.GetSqlWhitelistItemById)
 	e.POST("/sql_whitelist", controller.CreateSqlWhitelistItem)
-	e.GET("/sql_whitelist", controller.GetAllWhitelist)
+	e.GET("/sql_whitelist", controller.GetSqlWhitelist)
 	e.PATCH("/sql_whitelist/:sql_white_id/", controller.UpdateSqlWhitelistItem)
 	e.DELETE("/sql_whitelist/:sql_white_id/", controller.RemoveSqlWhitelistItem)
 	address := fmt.Sprintf(":%v", port)
