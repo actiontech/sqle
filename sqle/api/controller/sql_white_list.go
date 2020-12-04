@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -13,12 +14,18 @@ type SqlWhitelistItemRes struct {
 	Data []model.SqlWhitelist `json:"data"`
 }
 
+type GetSqlWhitelistRes struct {
+	BaseRes
+	Data      []model.SqlWhitelist `json:"data"`
+	TotalNums uint32               `json:"total_nums"`
+}
+
 // @Summary 获取指定SQL白名单信息
 // @Description get sql whitelist item
 // @Param sql_whitelist_id path string true "sql whitelist item ID"
 // @Success 200 {object} controller.SqlWhitelistItemRes
 // @router /sql_whitelist/{sql_whitelist_id}/ [get]
-func GetSqlWhitelistItem(c echo.Context) error {
+func GetSqlWhitelistItemById(c echo.Context) error {
 	s := model.GetStorage()
 	sqlWhiteId := c.Param("sql_whitelist_id")
 	sqlWhitelistItem, exist, err := s.GetSqlWhitelistItemById(sqlWhiteId)
@@ -108,17 +115,37 @@ func UpdateSqlWhitelistItem(c echo.Context) error {
 
 // @Summary 获取Sql审核白名单
 // @Description get all whitelist
-// @Success 200 {object} controller.SqlWhitelistItemRes
+// @Param page_index query string false "page index"
+// @Param page_size query string false "page size"
+// @Success 200 {object} controller.GetSqlWhitelistRes
 // @router /sql_whitelist [get]
-func GetAllWhitelist(c echo.Context) error {
+func GetSqlWhitelist(c echo.Context) error {
 	s := model.GetStorage()
-	sqlWhitelist, err := s.GetSqlWhitelist()
+	index, err := url.QueryUnescape(c.QueryParam("page_index"))
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	return c.JSON(http.StatusOK, &SqlWhitelistItemRes{
-		BaseRes: NewBaseReq(nil),
-		Data:    sqlWhitelist,
+	pageIndex, err := FormatStringToInt(index)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	size, err := url.QueryUnescape(c.QueryParam("page_size"))
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	pageSize, err := FormatStringToInt(size)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	sqlWhitelist, count, err := s.GetSqlWhitelist(pageIndex, pageSize)
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+
+	return c.JSON(http.StatusOK, &GetSqlWhitelistRes{
+		BaseRes:   NewBaseReq(nil),
+		Data:      sqlWhitelist,
+		TotalNums: count,
 	})
 }
 
