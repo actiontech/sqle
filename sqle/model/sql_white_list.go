@@ -26,14 +26,14 @@ func (s *Storage) GetSqlWhitelist(pageIndex, pageSize int) ([]SqlWhitelist, uint
 	var count uint32
 	sqlWhitelist := []SqlWhitelist{}
 	if pageSize == 0 {
-		err := s.db.Find(&sqlWhitelist).Count(&count).Error
+		err := s.db.Order("id desc").Find(&sqlWhitelist).Count(&count).Error
 		return sqlWhitelist, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	err := s.db.Model(&SqlWhitelist{}).Count(&count).Error
 	if err != nil {
 		return sqlWhitelist, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
-	err = s.db.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Find(&sqlWhitelist).Error
+	err = s.db.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Order("id desc").Find(&sqlWhitelist).Error
 	return sqlWhitelist, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 
 }
