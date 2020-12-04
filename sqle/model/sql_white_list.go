@@ -22,8 +22,18 @@ func (s *Storage) GetSqlWhitelistItemById(sqlWhiteId string) (*SqlWhitelist, boo
 	}
 	return sqlWhitelist, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
-func (s *Storage) GetSqlWhitelist() ([]SqlWhitelist, error) {
+func (s *Storage) GetSqlWhitelist(pageIndex, pageSize int) ([]SqlWhitelist, uint32, error) {
+	var count uint32
 	sqlWhitelist := []SqlWhitelist{}
-	err := s.db.Find(&sqlWhitelist).Error
-	return sqlWhitelist, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	if pageSize == 0 {
+		err := s.db.Find(&sqlWhitelist).Count(&count).Error
+		return sqlWhitelist, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err := s.db.Model(&SqlWhitelist{}).Count(&count).Error
+	if err != nil {
+		return sqlWhitelist, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err = s.db.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Find(&sqlWhitelist).Error
+	return sqlWhitelist, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+
 }
