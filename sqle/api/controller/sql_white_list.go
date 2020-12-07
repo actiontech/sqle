@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strings"
 
+	"actiontech.cloud/universe/sqle/v4/sqle/utils"
+
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -66,7 +68,7 @@ func CreateSqlWhitelistItem(c echo.Context) error {
 	sqlWhitelistItem := &model.SqlWhitelist{
 		Value:         *req.Value,
 		Desc:          *req.Desc,
-		MessageDigest: model.Md5String(strings.ToUpper(*req.Value)),
+		MessageDigest: utils.Md5String(strings.ToUpper(*req.Value)),
 	}
 	err := s.Save(sqlWhitelistItem)
 	if err != nil {
@@ -105,7 +107,7 @@ func UpdateSqlWhitelistItem(c echo.Context) error {
 	}
 	sqlWhitelistItem.Value = *req.Value
 	sqlWhitelistItem.Desc = *req.Desc
-	sqlWhitelistItem.MessageDigest = model.Md5String(strings.ToUpper(*req.Value))
+	sqlWhitelistItem.MessageDigest = utils.Md5String(strings.ToUpper(*req.Value))
 	err = s.Save(sqlWhitelistItem)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))

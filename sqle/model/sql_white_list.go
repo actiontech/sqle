@@ -1,8 +1,6 @@
 package model
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"strconv"
 	"sync"
@@ -46,7 +44,7 @@ func (s *Storage) GetSqlWhitelist(pageIndex, pageSize int) ([]SqlWhitelist, uint
 
 }
 
-var sqlWhitelistMD5Map map[string] /*whitelist id*/ string /*whitelist value md5Data*/
+var sqlWhitelistMD5Map map[string] /*whitelist id*/ string /*whitelist message digest md5Data*/
 
 var sqlWhitelistMutex sync.Mutex
 
@@ -102,11 +100,4 @@ func getSqlWhitelistMD5Map() map[string]struct{} {
 	}
 	sqlWhitelistMutex.Unlock()
 	return ret
-}
-
-func Md5String(data string) string {
-	md5 := md5.New()
-	md5.Write([]byte(data))
-	md5Data := md5.Sum([]byte(nil))
-	return hex.EncodeToString(md5Data)
 }

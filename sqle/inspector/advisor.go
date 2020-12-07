@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"actiontech.cloud/universe/sqle/v4/sqle/utils"
+
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 
 	"github.com/pingcap/parser/ast"
@@ -33,7 +35,7 @@ func (i *Inspect) advise(rules []model.Rule) error {
 			if len(sql.Stmts) <= 0 {
 				return nil
 			}
-			if _, ok := sqlWhiltelistMD5Map[model.Md5String(strings.ToUpper(sql.Content))]; ok {
+			if _, ok := sqlWhiltelistMD5Map[utils.Md5String(strings.ToUpper(sql.Content))]; ok {
 				currentSql.InspectStatus = model.TASK_ACTION_DONE
 				currentSql.InspectLevel = model.RULE_LEVEL_NORMAL
 				currentSql.InspectResult = "白名单"
