@@ -26,54 +26,61 @@ func (i *Inspect) advise(rules []model.Rule) error {
 	if err != nil {
 		return err
 	}
+	sqlWhiltelistMD5Map := model.GetSqlWhitelistMD5Map()
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
 			if len(sql.Stmts) <= 0 {
 				return nil
 			}
-			node := sql.Stmts[0]
-			results, err := i.CheckInvalid(node)
-			if err != nil {
-				return err
-			}
-			if results.level() == model.RULE_LEVEL_ERROR {
-				i.HasInvalidSql = true
-				i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
-			}
-			i.Results = results
-			if rules != nil {
-				for _, rule := range rules {
-					i.currentRule = rule
-					handler, ok := RuleHandlerMap[rule.Name]
-					if !ok || handler.Func == nil {
-						continue
-					}
-					err := handler.Func(i, node)
-					if err != nil {
-						return err
+			if _, ok := sqlWhiltelistMD5Map[model.Md5String(strings.ToUpper(sql.Content))]; ok {
+				currentSql.InspectStatus = model.TASK_ACTION_DONE
+				currentSql.InspectLevel = model.RULE_LEVEL_NORMAL
+				currentSql.InspectResult = "白名单"
+			} else {
+				node := sql.Stmts[0]
+				results, err := i.CheckInvalid(node)
+				if err != nil {
+					return err
+				}
+				if results.level() == model.RULE_LEVEL_ERROR {
+					i.HasInvalidSql = true
+					i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
+				}
+				i.Results = results
+				if rules != nil {
+					for _, rule := range rules {
+						i.currentRule = rule
+						handler, ok := RuleHandlerMap[rule.Name]
+						if !ok || handler.Func == nil {
+							continue
+						}
+						err := handler.Func(i, node)
+						if err != nil {
+							return err
+						}
 					}
 				}
-			}
-			currentSql.InspectStatus = model.TASK_ACTION_DONE
-			currentSql.InspectLevel = i.Results.level()
-			currentSql.InspectResult = i.Results.message()
-			// clean up results
-			i.Results = newInspectResults()
+				currentSql.InspectStatus = model.TASK_ACTION_DONE
+				currentSql.InspectLevel = i.Results.level()
+				currentSql.InspectResult = i.Results.message()
+				// clean up results
+				i.Results = newInspectResults()
 
-			// print osc
-			oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
-			if err != nil {
-				return err
-			}
-			if oscCommandLine != "" {
-				results := newInspectResults()
-				if currentSql.InspectResult != "" {
-					results.add(currentSql.InspectLevel, currentSql.InspectResult)
+				// print osc
+				oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
+				if err != nil {
+					return err
 				}
-				results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s", oscCommandLine))
-				currentSql.InspectLevel = results.level()
-				currentSql.InspectResult = results.message()
+				if oscCommandLine != "" {
+					results := newInspectResults()
+					if currentSql.InspectResult != "" {
+						results.add(currentSql.InspectLevel, currentSql.InspectResult)
+					}
+					results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s", oscCommandLine))
+					currentSql.InspectLevel = results.level()
+					currentSql.InspectResult = results.message()
+				}
 			}
 
 			i.Logger().Infof("sql=%s, level=%s, result=%s",
