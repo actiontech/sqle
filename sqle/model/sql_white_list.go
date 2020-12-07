@@ -20,6 +20,7 @@ type SqlWhitelist struct {
 func (s SqlWhitelist) TableName() string {
 	return "sql_whitelist"
 }
+
 func (s *Storage) GetSqlWhitelistItemById(sqlWhiteId string) (*SqlWhitelist, bool, error) {
 	sqlWhitelist := &SqlWhitelist{}
 	err := s.db.Table("sql_whitelist").Where("id = ?", sqlWhiteId).First(sqlWhitelist).Error
@@ -44,6 +45,13 @@ func (s *Storage) GetSqlWhitelist(pageIndex, pageSize int) ([]SqlWhitelist, uint
 
 }
 
+func (s *Storage) GetSqlWhitelistIdAndMD5() ([]SqlWhitelist, error) {
+	sqlWhitelist := []SqlWhitelist{}
+	err := s.db.Table("sql_whitelist").Select("sql_whitelist.id, sql_whitelist.message_digest").Scan(&sqlWhitelist).Error
+	return sqlWhitelist, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+
+}
+
 var sqlWhitelistMD5Map map[string] /*whitelist id*/ string /*whitelist message digest md5Data*/
 
 var sqlWhitelistMutex sync.Mutex
@@ -51,7 +59,7 @@ var sqlWhitelistMutex sync.Mutex
 func (s *SqlWhitelist) InitSqlWhitelistMD5Map() error {
 	sqlWhitelistMD5Map = make(map[string]string, 0)
 	storage := GetStorage()
-	sqlWhitelist, _, err := storage.GetSqlWhitelist(0, 0)
+	sqlWhitelist, err := storage.GetSqlWhitelistIdAndMD5()
 	if err != nil {
 		log.Logger().Error(fmt.Sprintf("init sql whitelist error %v", err))
 		return err
