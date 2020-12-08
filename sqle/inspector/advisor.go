@@ -13,8 +13,7 @@ import (
 
 func (i *Inspect) Advise(rules []model.Rule) error {
 	i.Logger().Info("start advise sql")
-
-	err := i.advise(rules)
+	err := i.advise(rules, model.GetSqlWhitelistMD5Map())
 	if err != nil {
 		i.Logger().Error("advise sql failed")
 	} else {
@@ -23,12 +22,12 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 	return err
 }
 
-func (i *Inspect) advise(rules []model.Rule) error {
+func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]struct{}) error {
 	err := i.adviseRelateTask(i.RelateTasks)
 	if err != nil {
 		return err
 	}
-	sqlWhiltelistMD5Map := model.GetSqlWhitelistMD5Map()
+
 	for _, commitSql := range i.Task.CommitSqls {
 		currentSql := commitSql
 		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
@@ -109,7 +108,7 @@ func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
 	currentCtx := NewContext(i.Context())
 	for _, task := range relateTasks {
 		ri := NewInspect(i.Logger(), currentCtx, &task, nil, nil)
-		err := ri.advise(nil)
+		err := ri.advise(nil, nil)
 		if err != nil {
 			return err
 		}
