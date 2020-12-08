@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
+
+	"actiontech.cloud/universe/sqle/v4/sqle/utils"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -63,14 +66,15 @@ func CreateSqlWhitelistItem(c echo.Context) error {
 	}
 
 	sqlWhitelistItem := &model.SqlWhitelist{
-		Value: *req.Value,
-		Desc:  *req.Desc,
+		Value:         *req.Value,
+		Desc:          *req.Desc,
+		MessageDigest: utils.Md5String(strings.ToUpper(*req.Value)),
 	}
 	err := s.Save(sqlWhitelistItem)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-
+	sqlWhitelistItem.PutSqlWhitelistMD5()
 	return c.JSON(http.StatusOK, &SqlWhitelistItemRes{
 		BaseRes: NewBaseReq(nil),
 		Data:    []model.SqlWhitelist{*sqlWhitelistItem},
@@ -103,10 +107,12 @@ func UpdateSqlWhitelistItem(c echo.Context) error {
 	}
 	sqlWhitelistItem.Value = *req.Value
 	sqlWhitelistItem.Desc = *req.Desc
+	sqlWhitelistItem.MessageDigest = utils.Md5String(strings.ToUpper(*req.Value))
 	err = s.Save(sqlWhitelistItem)
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
+	sqlWhitelistItem.PutSqlWhitelistMD5()
 	return c.JSON(http.StatusOK, &SqlWhitelistItemRes{
 		BaseRes: NewBaseReq(nil),
 		Data:    []model.SqlWhitelist{*sqlWhitelistItem},
@@ -168,6 +174,6 @@ func RemoveSqlWhitelistItem(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-
+	sqlWhitelistItem.RemoveSqlWhitelistMD5()
 	return c.JSON(http.StatusOK, NewBaseReq(nil))
 }
