@@ -51,15 +51,24 @@ definitions:
       port:
         example: "3306"
         type: string
-      rule_template_name_list:
+      rule_template_id_list:
         description: this a list for rule template name
         example:
-        - all
+        - "1"
         items:
           type: string
         type: array
       user:
         example: root
+        type: string
+    type: object
+  controller.CreateSqlWhitelistItemReq:
+    properties:
+      desc:
+        example: used for rapid release
+        type: string
+      value:
+        example: create table
         type: string
     type: object
   controller.CreateTaskReq:
@@ -84,11 +93,17 @@ definitions:
     properties:
       desc:
         type: string
+      instance_name_list:
+        example:
+        - mysql-xxx
+        items:
+          type: string
+        type: array
       name:
         type: string
       rule_name_list:
         example:
-        - ddl_create_table_not_exist
+        - ddl_check_index_count
         items:
           type: string
         type: array
@@ -158,6 +173,19 @@ definitions:
         example: ok
         type: string
     type: object
+  controller.GetExecErrUploadedSqlsRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      exec_error_commit_sql_list:
+        items:
+          $ref: '#/definitions/model.CommitSql'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   controller.GetRuleTplRes:
     properties:
       code:
@@ -184,6 +212,21 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  controller.GetSqlWhitelistRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.SqlWhitelist'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   controller.GetTaskRes:
     properties:
@@ -275,6 +318,19 @@ definitions:
         example: root
         type: string
     type: object
+  controller.SqlWhitelistItemRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.SqlWhitelist'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   controller.UpdateAllRuleReq:
     properties:
       rule_list:
@@ -321,6 +377,8 @@ definitions:
         type: string
       exec_status:
         type: string
+      fingerPrint:
+        type: string
       id:
         example: 1
         type: integer
@@ -341,6 +399,9 @@ definitions:
         type: string
       start_binlog_pos:
         type: integer
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
     type: object
   model.DataHost:
     properties:
@@ -382,6 +443,11 @@ definitions:
       port:
         example: "3306"
         type: string
+      secret_password:
+        type: string
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
       user:
         example: root
         type: string
@@ -415,6 +481,11 @@ definitions:
         items:
           $ref: '#/definitions/model.RuleTemplate'
         type: array
+      secret_password:
+        type: string
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
       user:
         example: root
         type: string
@@ -445,6 +516,8 @@ definitions:
         type: string
       exec_status:
         type: string
+      fingerPrint:
+        type: string
       id:
         example: 1
         type: integer
@@ -458,6 +531,9 @@ definitions:
         type: string
       start_binlog_pos:
         type: integer
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
     type: object
   model.Rule:
     properties:
@@ -482,7 +558,14 @@ definitions:
       id:
         example: 1
         type: integer
+      instance_list:
+        items:
+          $ref: '#/definitions/model.Instance'
+        type: array
       name:
+        type: string
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
         type: string
     type: object
   model.RuleTemplateDetail:
@@ -495,12 +578,37 @@ definitions:
       id:
         example: 1
         type: integer
+      instance_list:
+        items:
+          $ref: '#/definitions/model.Instance'
+        type: array
       name:
         type: string
       rule_list:
         items:
           $ref: '#/definitions/model.Rule'
         type: array
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+    type: object
+  model.SqlWhitelist:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        type: string
+      id:
+        example: 1
+        type: integer
+      message_digest:
+        type: string
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      value:
+        type: string
     type: object
   model.Task:
     properties:
@@ -524,6 +632,9 @@ definitions:
         type: number
       schema:
         example: db1
+        type: string
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
         type: string
     type: object
   model.TaskDetail:
@@ -559,6 +670,9 @@ definitions:
         type: array
       schema:
         example: db1
+        type: string
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
         type: string
     type: object
   server.InstanceStatus:
@@ -779,6 +893,21 @@ paths:
           schema:
             $ref: '#/definitions/controller.GetSchemaRes'
       summary: 实例 Schema 列表
+  /instances/{instance_name}/get_instance_by_name:
+    get:
+      description: get instance db
+      parameters:
+      - description: Instance Name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.InstanceRes'
+      summary: 获取实例信息
   /rule_templates:
     get:
       description: get all rule template
@@ -834,7 +963,7 @@ paths:
           schema:
             $ref: '#/definitions/controller.GetRuleTplRes'
       summary: 获取规则模板
-    put:
+    patch:
       description: update rule template
       parameters:
       - description: Template ID
@@ -900,6 +1029,92 @@ paths:
           schema:
             $ref: '#/definitions/controller.BaseRes'
       summary: 手动刷新 Schema 列表
+  /sql_whitelist:
+    get:
+      description: get all whitelist
+      parameters:
+      - description: page index
+        in: query
+        name: page_index
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetSqlWhitelistRes'
+      summary: 获取Sql审核白名单
+    post:
+      consumes:
+      - application/json
+      description: create a sql whitelist item
+      parameters:
+      - description: add sql whitelist item
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateSqlWhitelistItemReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.SqlWhitelistItemRes'
+      summary: 添加SQL白名单
+  /sql_whitelist/{sql_whitelist_id}/:
+    delete:
+      description: remove sql white
+      parameters:
+      - description: sql whitelist item ID
+        in: path
+        name: sql_whitelist_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.SqlWhitelistItemRes'
+      summary: 删除SQL白名单信息
+    get:
+      description: get sql whitelist item
+      parameters:
+      - description: sql whitelist item ID
+        in: path
+        name: sql_whitelist_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.SqlWhitelistItemRes'
+      summary: 获取指定SQL白名单信息
+    patch:
+      consumes:
+      - application/json
+      description: update a sql whitelist item
+      parameters:
+      - description: sql whitelist item ID
+        in: path
+        name: sql_whitelist_id
+        required: true
+        type: string
+      - description: update sql whitelist item
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateSqlWhitelistItemReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.SqlWhitelistItemRes'
+      summary: 更新SQL白名单
   /task/create_inspect:
     post:
       consumes:
@@ -1024,6 +1239,21 @@ paths:
           schema:
             $ref: '#/definitions/controller.CommitTaskRes'
       summary: Sql提交上线
+  /tasks/{task_id}/execute_error_uploaded_sqls:
+    get:
+      description: get information of execute error SQLs belong to the specified task
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetExecErrUploadedSqlsRes'
+      summary: 获取指定task 执行异常的SQLs信息
   /tasks/{task_id}/inspection:
     post:
       description: inspect sql
@@ -1108,6 +1338,11 @@ paths:
         - finished
         in: query
         name: filter_sql_audit_status
+        type: string
+      - description: 'no duplicate: select unique fingerprint and inspect result from
+          the commit_sql_detail table'
+        in: query
+        name: no_duplicate
         type: string
       responses:
         "200":

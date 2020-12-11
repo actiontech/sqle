@@ -313,6 +313,29 @@ var doc = `{
                 }
             }
         },
+        "/instances/{instance_name}/get_instance_by_name": {
+            "get": {
+                "description": "get instance db",
+                "summary": "获取实例信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance Name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.InstanceRes"
+                        }
+                    }
+                }
+            }
+        },
         "/rule_templates": {
             "get": {
                 "description": "get all rule template",
@@ -375,7 +398,28 @@ var doc = `{
                     }
                 }
             },
-            "put": {
+            "delete": {
+                "description": "delete rule template",
+                "summary": "删除规则模板",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID",
+                        "name": "template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
                 "description": "update rule template",
                 "summary": "更新规则模板",
                 "parameters": [
@@ -394,27 +438,6 @@ var doc = `{
                         "schema": {
                             "$ref": "#/definitions/controller.CreateTplReq"
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "delete rule template",
-                "summary": "删除规则模板",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Template ID",
-                        "name": "template_id",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -493,6 +516,137 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/sql_whitelist": {
+            "get": {
+                "description": "get all whitelist",
+                "summary": "获取Sql审核白名单",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetSqlWhitelistRes"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "create a sql whitelist item",
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "添加SQL白名单",
+                "parameters": [
+                    {
+                        "description": "add sql whitelist item",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateSqlWhitelistItemReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/sql_whitelist/{sql_whitelist_id}/": {
+            "get": {
+                "description": "get sql whitelist item",
+                "summary": "获取指定SQL白名单信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sql whitelist item ID",
+                        "name": "sql_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "remove sql white",
+                "summary": "删除SQL白名单信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sql whitelist item ID",
+                        "name": "sql_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "update a sql whitelist item",
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "更新SQL白名单",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sql whitelist item ID",
+                        "name": "sql_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update sql whitelist item",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateSqlWhitelistItemReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
                         }
                     }
                 }
@@ -711,6 +865,29 @@ var doc = `{
                 }
             }
         },
+        "/tasks/{task_id}/execute_error_uploaded_sqls": {
+            "get": {
+                "description": "get information of execute error SQLs belong to the specified task",
+                "summary": "获取指定task 执行异常的SQLs信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetExecErrUploadedSqlsRes"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/{task_id}/inspection": {
             "post": {
                 "description": "inspect sql",
@@ -835,6 +1012,12 @@ var doc = `{
                         "description": "filter: audit status of task uploaded sql",
                         "name": "filter_sql_audit_status",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "no duplicate: select unique fingerprint and inspect result from the commit_sql_detail table",
+                        "name": "no_duplicate",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -920,19 +1103,32 @@ var doc = `{
                     "type": "string",
                     "example": "3306"
                 },
-                "rule_template_name_list": {
+                "rule_template_id_list": {
                     "description": "this a list for rule template name",
                     "type": "array",
                     "items": {
                         "type": "string"
                     },
                     "example": [
-                        "all"
+                        "1"
                     ]
                 },
                 "user": {
                     "type": "string",
                     "example": "root"
+                }
+            }
+        },
+        "controller.CreateSqlWhitelistItemReq": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string",
+                    "example": "used for rapid release"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "create table"
                 }
             }
         },
@@ -967,6 +1163,15 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "mysql-xxx"
+                    ]
+                },
                 "name": {
                     "type": "string"
                 },
@@ -976,7 +1181,7 @@ var doc = `{
                         "type": "string"
                     },
                     "example": [
-                        "ddl_create_table_not_exist"
+                        "ddl_check_index_count"
                     ]
                 }
             }
@@ -1076,6 +1281,25 @@ var doc = `{
                 }
             }
         },
+        "controller.GetExecErrUploadedSqlsRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "exec_error_commit_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CommitSql"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "controller.GetRuleTplRes": {
             "type": "object",
             "properties": {
@@ -1112,6 +1336,28 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "controller.GetSqlWhitelistRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SqlWhitelist"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -1242,6 +1488,25 @@ var doc = `{
                 }
             }
         },
+        "controller.SqlWhitelistItemRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SqlWhitelist"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "controller.UpdateAllRuleReq": {
             "type": "object",
             "properties": {
@@ -1312,6 +1577,9 @@ var doc = `{
                 "exec_status": {
                     "type": "string"
                 },
+                "fingerPrint": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -1340,6 +1608,10 @@ var doc = `{
                 },
                 "start_binlog_pos": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
                 }
             }
         },
@@ -1401,6 +1673,13 @@ var doc = `{
                     "type": "string",
                     "example": "3306"
                 },
+                "secret_password": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
+                },
                 "user": {
                     "type": "string",
                     "example": "root"
@@ -1447,6 +1726,13 @@ var doc = `{
                         "$ref": "#/definitions/model.RuleTemplate"
                     }
                 },
+                "secret_password": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
+                },
                 "user": {
                     "type": "string",
                     "example": "root"
@@ -1492,6 +1778,9 @@ var doc = `{
                 "exec_status": {
                     "type": "string"
                 },
+                "fingerPrint": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -1510,6 +1799,10 @@ var doc = `{
                 },
                 "start_binlog_pos": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
                 }
             }
         },
@@ -1546,8 +1839,18 @@ var doc = `{
                     "type": "integer",
                     "example": 1
                 },
+                "instance_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Instance"
+                    }
+                },
                 "name": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
                 }
             }
         },
@@ -1565,6 +1868,12 @@ var doc = `{
                     "type": "integer",
                     "example": 1
                 },
+                "instance_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Instance"
+                    }
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1573,6 +1882,36 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/model.Rule"
                     }
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
+                }
+            }
+        },
+        "model.SqlWhitelist": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "message_digest": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -1607,6 +1946,10 @@ var doc = `{
                 "schema": {
                     "type": "string",
                     "example": "db1"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
                 }
             }
         },
@@ -1657,6 +2000,10 @@ var doc = `{
                 "schema": {
                     "type": "string",
                     "example": "db1"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
                 }
             }
         },

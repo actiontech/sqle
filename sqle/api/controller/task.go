@@ -431,6 +431,7 @@ type GetUploadedSqlsRes struct {
 // @Param page_size query string false "page size"
 // @Param filter_sql_execution_status query string false "filter: execution status of task uploaded sql" Enums(finished, initialized, doing, failed)
 // @Param filter_sql_audit_status query string false "filter: audit status of task uploaded sql" Enums(doing, finished)
+// @Param no_duplicate query string false "no duplicate: select unique fingerprint and inspect result from the commit_sql_detail table"
 // @Success 200 {object} controller.GetUploadedSqlsRes
 // @router /tasks/{task_id}/uploaded_sqls [get]
 func GetUploadedSqls(c echo.Context) error {
@@ -461,9 +462,13 @@ func GetUploadedSqls(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	commitSqls, totalNums, err := s.GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus, pageIndex, pageSize)
+	noDuplicate, err := url.QueryUnescape(c.QueryParam("no_duplicate"))
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
+	}
+	commitSqls, totalNums, err := s.GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus, pageIndex, pageSize, noDuplicate=="1")
+	if err != nil {
+		return c.JSON(http.StatusOK, NewBaseReq(fmt.Errorf("GetUploadedSqls error: %v", err)))
 	}
 	commitSqlNum := make([]string, 0)
 	for _, commitSql := range commitSqls {
@@ -471,7 +476,7 @@ func GetUploadedSqls(c echo.Context) error {
 	}
 	rollbackSqls, err := s.GetRollbackSqlByTaskId(taskId, commitSqlNum)
 	if err != nil {
-		return c.JSON(http.StatusOK, NewBaseReq(err))
+		return c.JSON(http.StatusOK, NewBaseReq(fmt.Errorf("GetRollbackSqlByTaskId error: %v", err)))
 	}
 	return c.JSON(http.StatusOK, &GetUploadedSqlsRes{
 		BaseRes:      NewBaseReq(nil),
