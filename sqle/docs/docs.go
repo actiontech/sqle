@@ -1014,7 +1014,7 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "boolean",
                         "description": "no duplicate: select unique fingerprint and inspect result from the commit_sql_detail table",
                         "name": "no_duplicate",
                         "in": "query"

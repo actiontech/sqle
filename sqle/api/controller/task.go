@@ -431,7 +431,7 @@ type GetUploadedSqlsRes struct {
 // @Param page_size query string false "page size"
 // @Param filter_sql_execution_status query string false "filter: execution status of task uploaded sql" Enums(finished, initialized, doing, failed)
 // @Param filter_sql_audit_status query string false "filter: audit status of task uploaded sql" Enums(doing, finished)
-// @Param no_duplicate query string false "no duplicate: select unique fingerprint and inspect result from the commit_sql_detail table"
+// @Param no_duplicate query boolean false "no duplicate: select unique fingerprint and inspect result from the commit_sql_detail table"
 // @Success 200 {object} controller.GetUploadedSqlsRes
 // @router /tasks/{task_id}/uploaded_sqls [get]
 func GetUploadedSqls(c echo.Context) error {
@@ -466,7 +466,7 @@ func GetUploadedSqls(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
 	}
-	commitSqls, totalNums, err := s.GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus, pageIndex, pageSize, noDuplicate=="1")
+	commitSqls, totalNums, err := s.GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus, pageIndex, pageSize, FormatStringToBoolean(noDuplicate))
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(fmt.Errorf("GetUploadedSqls error: %v", err)))
 	}
@@ -519,4 +519,13 @@ func FormatStringToInt(s string) (ret int, err error) {
 		}
 	}
 	return ret, nil
+}
+
+func FormatStringToBoolean(s string) (ret bool) {
+	switch s {
+	case "TRUE", "true", "True", "1", "ON", "on", "On":
+		return true
+	default:
+		return false
+	}
 }

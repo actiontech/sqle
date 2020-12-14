@@ -1343,7 +1343,7 @@ paths:
           the commit_sql_detail table'
         in: query
         name: no_duplicate
-        type: string
+        type: boolean
       responses:
         "200":
           description: OK
