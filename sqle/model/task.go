@@ -357,23 +357,21 @@ func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAud
 		queryFilter += " AND inspect_status=?"
 		queryArgs = append(queryArgs, filterSqlAuditStatus)
 	}
-	var joinWithQueryFilter string
+	db := s.db
 	if noDuplicate {
-		joinWithQueryFilter = fmt.Sprintf("JOIN (SELECT MIN(id) as id FROM commit_sql_detail WHERE %v GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id)) t2 ON commit_sql_detail.id = t2.id", queryFilter)
-	} else {
-		joinWithQueryFilter = fmt.Sprintf("JOIN (SELECT id FROM commit_sql_detail WHERE %v) t2 ON commit_sql_detail.id = t2.id", queryFilter)
+		db = db.Where(fmt.Sprintf("id IN (SELECT MIN(id) as id FROM commit_sql_detail GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id))"))
 	}
 
 	if pageSize == 0 {
-		err := s.db.Joins(joinWithQueryFilter, queryArgs).Find(&CommitSqls).Count(&count).Error
+		err := db.Where(queryFilter, queryArgs).Find(&CommitSqls).Count(&count).Error
 		return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
-	err := s.db.Model(&CommitSql{}).Joins(joinWithQueryFilter, queryArgs).Count(&count).Error
+	err := db.Model(&CommitSql{}).Where(queryFilter, queryArgs).Count(&count).Error
 	if err != nil {
 		return CommitSqls, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 
-	err = s.db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Joins(joinWithQueryFilter, queryArgs).Find(&CommitSqls).Error
+	err = db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Where(queryFilter, queryArgs).Find(&CommitSqls).Error
 
 	return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 
