@@ -48,6 +48,7 @@ type Sql struct {
 	ExecStatus      string     `json:"exec_status"`
 	ExecResult      string     `json:"exec_result"`
 	Stmts           []ast.Node `json:"-" gorm:"-"`
+	FingerPrint     string     `json:"fingerPrint" gorm:"type:text"`
 }
 
 type CommitSql struct {
@@ -215,9 +216,9 @@ func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
 	for _, sql := range commitSql {
 		if err := tx.Exec("INSERT commit_sql_detail(created_at, updated_at, task_id, number, content, "+
 			"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
-			"exec_status, exec_result, inspect_status, inspect_result, inspect_level) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			"exec_status, exec_result, finger_print, inspect_status, inspect_result, inspect_level) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
 			now, now, task.ID, sql.Number, sql.Content, sql.StartBinlogFile, sql.StartBinlogPos, sql.EndBinlogFile,
-			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.InspectStatus, sql.InspectResult,
+			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.FingerPrint, sql.InspectStatus, sql.InspectResult,
 			sql.InspectLevel).Error; err != nil {
 			tx.Rollback()
 			return err
@@ -236,9 +237,9 @@ func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) erro
 	for _, sql := range rollbackSql {
 		if err := tx.Exec("INSERT INTO rollback_sql_detail(created_at, updated_at, task_id, number, content, "+
 			"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
-			"exec_status, exec_result, commit_sql_number) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			"exec_status, exec_result, finger_print, commit_sql_number) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
 			now, now, task.ID, sql.Number, sql.Content, sql.StartBinlogFile, sql.StartBinlogPos, sql.EndBinlogFile,
-			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.CommitSqlNumber).Error; err != nil {
+			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.FingerPrint, sql.CommitSqlNumber).Error; err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -339,7 +340,7 @@ func (s *Storage) GetExecErrorCommitSqlsByTaskId(taskId string) ([]CommitSql, er
 	return CommitSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus string, pageIndex, pageSize int) ([]CommitSql, uint32, error) {
+func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus string, pageIndex, pageSize int, noDuplicate bool) ([]CommitSql, uint32, error) {
 	var count uint32
 	CommitSqls := []CommitSql{}
 	queryFilter := "task_id=?"
@@ -356,16 +357,21 @@ func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAud
 		queryFilter += " AND inspect_status=?"
 		queryArgs = append(queryArgs, filterSqlAuditStatus)
 	}
+	db := s.db
+	if noDuplicate {
+		db = db.Where(fmt.Sprintf("id IN (SELECT MIN(id) as id FROM commit_sql_detail GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id))"))
+	}
+
 	if pageSize == 0 {
-		err := s.db.Where(queryFilter, queryArgs...).Find(&CommitSqls).Count(&count).Error
+		err := db.Where(queryFilter, queryArgs).Find(&CommitSqls).Count(&count).Error
 		return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
-	err := s.db.Model(&CommitSql{}).Where(queryFilter, queryArgs...).Count(&count).Error
+	err := db.Model(&CommitSql{}).Where(queryFilter, queryArgs).Count(&count).Error
 	if err != nil {
 		return CommitSqls, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 
-	err = s.db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Where(queryFilter, queryArgs...).Find(&CommitSqls).Error
+	err = db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Where(queryFilter, queryArgs).Find(&CommitSqls).Error
 
 	return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 
