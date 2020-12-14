@@ -1,9 +1,11 @@
 package inspector
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	_model "github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser"
@@ -648,4 +650,14 @@ func tableExistCol(table *ast.CreateTableStmt, colName string) bool {
 		}
 	}
 	return false
+}
+
+func restoreToSqlWithFlag(restoreFlag format.RestoreFlags, node ast.Node) (sqlStr string, err error) {
+	buf := new(bytes.Buffer)
+	restoreCtx := format.NewRestoreCtx(restoreFlag, buf)
+	err = node.Restore(restoreCtx)
+	if nil != err {
+		return "", err
+	}
+	return buf.String(), nil
 }
