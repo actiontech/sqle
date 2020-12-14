@@ -40,6 +40,12 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 				currentSql.InspectResult = "白名单"
 			} else {
 				node := sql.Stmts[0]
+
+				var err error
+				if currentSql.FingerPrint, err = i.Fingerprint(sql.Content); err != nil {
+					i.Logger().Warnf("sql %s generate fingerprint failed, error: %v", sql.Content, err)
+				}
+
 				results, err := i.CheckInvalid(node)
 				if err != nil {
 					return err
