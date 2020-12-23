@@ -359,7 +359,7 @@ func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAud
 	}
 	db := s.db
 	if noDuplicate {
-		db = db.Where(fmt.Sprintf("id IN (SELECT MIN(id) as id FROM commit_sql_detail WHERE task_id=? GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id))"), taskId)
+		db = db.Where(fmt.Sprintf("id IN (SELECT SQL_BIG_RESULT MIN(id) as id FROM commit_sql_detail WHERE task_id=? GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id) ORDER BY null)"), taskId)
 	}
 
 	if pageSize == 0 {
