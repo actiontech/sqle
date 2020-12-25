@@ -2,13 +2,14 @@ package inspector
 
 import (
 	"fmt"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"testing"
 
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
+
 	"github.com/pingcap/parser/ast"
-	"github.com/sirupsen/logrus"
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/sirupsen/logrus"
 )
 
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
@@ -167,7 +168,7 @@ func runInspectCase(t *testing.T, desc string, i *Inspect, sql string, results .
 			},
 		})
 	}
-	err = i.Advise(DefaultRules)
+	err = i.Advise(DefaultTemplateRules)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
@@ -1686,4 +1687,3 @@ func DefaultMycatInspect() *Inspect {
 		},
 	}
 }
-

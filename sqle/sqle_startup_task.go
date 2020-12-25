@@ -234,10 +234,10 @@ func (t *SqleTask) Initialize(stage *ucommonLog.Stage) error {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
 		}
-		if err := s.CreateRulesIfNotExist(inspector.DefaultRules); err != nil {
+		if err := s.CreateRulesIfNotExist(inspector.InitRules); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.CreateDefaultTemplate(inspector.DefaultRules); err != nil {
+		if err := s.CreateDefaultTemplate(inspector.DefaultTemplateRules); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
 	}
