@@ -19,7 +19,7 @@ actiontech.cloud/universe/ucommon/v4/user
 actiontech.cloud/universe/ucommon/v4/util
 actiontech.cloud/universe/ucommon/v4/wrapper
 actiontech.cloud/universe/ucommon/v4/wrapper/syscall
-# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20201229230832-8198d0363070
+# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20201230230630-df5cc7a4e1ee
 ## explicit
 actiontech.cloud/universe/ucore-common/v4/client
 actiontech.cloud/universe/ucore-common/v4/common
@@ -28,7 +28,7 @@ actiontech.cloud/universe/ucore-common/v4/model
 actiontech.cloud/universe/ucore-common/v4/orm
 actiontech.cloud/universe/ucore-common/v4/pgrpc
 actiontech.cloud/universe/ucore-common/v4/qahelper
-# actiontech.cloud/universe/uinterface/v4 v4.0.0-20201229024611-e3331dce9e2c
+# actiontech.cloud/universe/uinterface/v4 v4.0.0-20201230072045-37996a4028a1
 actiontech.cloud/universe/uinterface/v4/common
 actiontech.cloud/universe/uinterface/v4/ucore
 # github.com/KyleBanks/depth v1.2.1
