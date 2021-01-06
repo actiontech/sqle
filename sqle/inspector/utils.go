@@ -8,6 +8,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pingcap/tidb/types"
+
+	driver "github.com/pingcap/tidb/types/parser_driver"
+
 	"github.com/pingcap/parser/opcode"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
@@ -320,10 +324,57 @@ func isFuncUsedOnColumnInWhereStmt(cols map[string]struct{}, where ast.ExprNode)
 	return usedFunc
 }
 
+func isColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where ast.ExprNode) bool {
+	hasConversion := false
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.BinaryOperationExpr:
+			var valueExpr *driver.ValueExpr
+			var columnNameExpr *ast.ColumnNameExpr
+			if colValue, checkValueExpr := x.L.(*driver.ValueExpr); checkValueExpr {
+				valueExpr = colValue
+			} else if columnName, checkColumnNameExpr := x.L.(*ast.ColumnNameExpr); checkColumnNameExpr {
+				columnNameExpr = columnName
+			} else {
+				return false
+			}
+			if colValue, checkValueExpr := x.R.(*driver.ValueExpr); checkValueExpr {
+				valueExpr = colValue
+			} else if columnName, checkColumnNameExpr := x.R.(*ast.ColumnNameExpr); checkColumnNameExpr {
+				columnNameExpr = columnName
+			} else {
+				return false
+			}
+			if valueExpr == nil || columnNameExpr == nil {
+				return false
+			}
+			if colType, ok := colTypeMap[columnNameExpr.Name.String()]; ok {
+				switch valueExpr.Datum.GetValue().(type) {
+				case string:
+					if colType != "string" {
+						hasConversion = true
+						return true
+					}
+				case int, int8, int16, int32, int64, *types.MyDecimal:
+					if colType != "int" {
+						hasConversion = true
+						return true
+					}
+				}
+			}
+		}
+		return false
+	}, where)
+	return hasConversion
+}
+
 func whereStmtExistNot(where ast.ExprNode) bool {
 	existNOT := false
 	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
+		case *ast.IsNullExpr:
+			existNOT = true
+			return true
 		case *ast.BinaryOperationExpr:
 			if x.Op == opcode.NE || x.Op == opcode.Not {
 				existNOT = true
@@ -343,6 +394,22 @@ func whereStmtExistNot(where ast.ExprNode) bool {
 		return false
 	}, where)
 	return existNOT
+}
+func whereStmtExistScalarSubQueries(where ast.ExprNode) bool {
+	existScalarSubQueries := false
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.SubqueryExpr:
+			if query, ok := x.Query.(*ast.SelectStmt); ok {
+				if len(query.Fields.Fields) == 1 {
+					existScalarSubQueries = true
+					return true
+				}
+			}
+		}
+		return false
+	}, where)
+	return existScalarSubQueries
 }
 
 func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {

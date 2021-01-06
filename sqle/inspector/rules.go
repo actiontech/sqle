@@ -47,11 +47,15 @@ const (
 )
 
 const (
-	DML_CHECK_INSERT_COLUMNS_EXIST       = "dml_check_insert_columns_exist"
-	DML_CHECK_BATCH_INSERT_lISTS_MAX     = "dml_check_batch_insert_lists_max"
-	DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT = "ddl_check_pk_prohibit_auto_increment"
-	DML_CHECK_WHERE_EXIST_FUNC           = "dml_check_where_exist_func"
-	DML_CHECK_WHERE_EXIET_NOT            = "dml_check_where_exiet_not"
+	DML_CHECK_INSERT_COLUMNS_EXIST                   = "dml_check_insert_columns_exist"
+	DML_CHECK_BATCH_INSERT_LISTS_MAX                 = "dml_check_batch_insert_lists_max"
+	DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT             = "ddl_check_pk_prohibit_auto_increment"
+	DML_CHECK_WHERE_EXIST_FUNC                       = "dml_check_where_exist_func"
+	DML_CHECK_WHERE_EXIST_NOT                        = "dml_check_where_exist_not"
+	DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION        = "dml_check_where_exist_implicit_conversion"
+	DML_CHECK_LIMIT_MUST_EXIST                       = "dml_check_limit_must_exist"
+	DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES         = "dml_check_where_exist_scalar_sub_queries"
+	DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS = "ddl_check_indexes_exist_before_creat_constraints"
 )
 
 type RuleHandler struct {
@@ -370,7 +374,7 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkDMLWithInsertColumnExist,
 	}, RuleHandler{
 		Rule: model.Rule{
-			Name:  DML_CHECK_BATCH_INSERT_lISTS_MAX,
+			Name:  DML_CHECK_BATCH_INSERT_LISTS_MAX,
 			Desc:  "单条insert语句，建议批量插入不超过阈值",
 			Level: model.RULE_LEVEL_NOTICE,
 			Value: "5000",
@@ -396,12 +400,45 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkWhereExistFunc,
 	}, RuleHandler{
 		Rule: model.Rule{
-			Name:  DML_CHECK_WHERE_EXIET_NOT,
+			Name:  DML_CHECK_WHERE_EXIST_NOT,
 			Desc:  "不建议对条件字段使用负向查询",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
 		Message: "不建议对条件字段使用负向查询",
 		Func:    checkSelectWhere,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION,
+			Desc:  "条件字段存在数值和字符的隐式转换",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "条件字段存在数值和字符的隐式转换",
+		Func:    checkWhereColumnImplicitConversion,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_LIMIT_MUST_EXIST,
+			Desc:  "delete/update 语句必须有limit条件",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "delete/update 语句必须有limit条件",
+		Func:    checkDMLLimitExist,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES,
+			Desc:  "避免使用标量子查询",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "避免使用标量子查询",
+		Func:    checkSelectWhere,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS,
+			Desc:  "建议创建约束前,先行创建索引",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "建议创建约束前,先行创建索引",
+		Func:    checkIndexesExistBeforeCreatConstraints,
 	},
 }
 
@@ -446,7 +483,46 @@ func checkSelectWhere(rule model.Rule, i *Inspect, node ast.Node) error {
 		i.addResult(DML_CHECK_WHERE_IS_INVALID)
 	}
 	if where != nil && whereStmtExistNot(where) {
-		i.addResult(DML_CHECK_WHERE_EXIET_NOT)
+		i.addResult(DML_CHECK_WHERE_EXIST_NOT)
+	}
+	if where != nil && whereStmtExistScalarSubQueries(where) {
+		i.addResult(DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES)
+	}
+
+	return nil
+}
+
+func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.AlterTableStmt:
+		constraintMap := make(map[string]struct{})
+		cols := []string{}
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			if spec.Constraint != nil && (spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
+				spec.Constraint.Tp == ast.ConstraintUniq || spec.Constraint.Tp == ast.ConstraintUniqKey) {
+				for _, key := range spec.Constraint.Keys {
+					cols = append(cols, key.Column.Name.String())
+				}
+			}
+		}
+		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return nil
+		}
+		for _, constraints := range createTableStmt.Constraints {
+			for _, key := range constraints.Keys {
+				constraintMap[key.Column.Name.String()] = struct{}{}
+			}
+		}
+		for _, col := range cols {
+			if _, ok := constraintMap[col]; !ok {
+				i.addResult(DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS)
+				return nil
+			}
+		}
 	}
 	return nil
 }
@@ -1234,6 +1310,19 @@ func checkDMLWithLimit(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	return nil
 }
+func checkDMLLimitExist(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.UpdateStmt:
+		if stmt.Limit == nil {
+			i.addResult(DML_CHECK_LIMIT_MUST_EXIST)
+		}
+	case *ast.DeleteStmt:
+		if stmt.Limit == nil {
+			i.addResult(DML_CHECK_LIMIT_MUST_EXIST)
+		}
+	}
+	return nil
+}
 
 func checkDMLWithOrderBy(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
@@ -1267,7 +1356,7 @@ func checkDMLWithBatchInsertMaxLimits(rule model.Rule, i *Inspect, node ast.Node
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		if len(stmt.Lists) > value {
-			i.addResult(DML_CHECK_BATCH_INSERT_lISTS_MAX, value)
+			i.addResult(DML_CHECK_BATCH_INSERT_LISTS_MAX, value)
 		}
 	}
 	return nil
@@ -1331,6 +1420,77 @@ func checkWhereExistFunc(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	if isFuncUsedOnColumnInWhereStmt(colMap, where) {
 		i.addResult(DML_CHECK_WHERE_EXIST_FUNC)
+	}
+	return nil
+
+}
+func checkWhereColumnImplicitConversion(rule model.Rule, i *Inspect, node ast.Node) error {
+	var where ast.ExprNode
+	tables := []*ast.TableName{}
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Where != nil {
+			where = stmt.Where
+			tableSources := getTableSources(stmt.From.TableRefs)
+			// not select from table statement
+			if len(tableSources) < 1 {
+				break
+			}
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
+				}
+			}
+		}
+	case *ast.UpdateStmt:
+		if stmt.Where != nil {
+			where = stmt.Where
+			tableSources := getTableSources(stmt.TableRefs.TableRefs)
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
+				}
+			}
+		}
+	case *ast.DeleteStmt:
+		if stmt.Where != nil {
+			where = stmt.Where
+			tables = getTables(stmt.TableRefs.TableRefs)
+		}
+	default:
+		return nil
+	}
+	if where == nil {
+		return nil
+	}
+	var cols []*ast.ColumnDef
+	for _, tableName := range tables {
+		createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+		if exist && err == nil {
+			cols = append(cols, createTableStmt.Cols...)
+		}
+	}
+	colMap := make(map[string]string)
+	for _, col := range cols {
+		colType := ""
+		if col.Tp == nil {
+			continue
+		}
+		switch col.Tp.Tp {
+		case mysql.TypeVarchar, mysql.TypeString:
+			colType = "string"
+		case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeDouble, mysql.TypeFloat, mysql.TypeNewDecimal:
+			colType = "int"
+		}
+		if colType != "" {
+			colMap[col.Name.String()] = colType
+		}
+
+	}
+	if isColumnImplicitConversionInWhereStmt(colMap, where) {
+		i.addResult(DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION)
 	}
 	return nil
 
