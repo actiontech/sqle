@@ -56,6 +56,9 @@ const (
 	DML_CHECK_LIMIT_MUST_EXIST                       = "dml_check_limit_must_exist"
 	DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES         = "dml_check_where_exist_scalar_sub_queries"
 	DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS = "ddl_check_indexes_exist_before_creat_constraints"
+	DML_CHECK_SELECT_FOR_UPDATE                      = "dml_check_select_for_update"
+	DDL_CHECK_COLLATION_DATABASE                     = "ddl_check_collation_database"
+	DDL_CHECK_DECIMAL_TYPE_COLUMN                    = "ddl_check_decimal_type_column"
 )
 
 type RuleHandler struct {
@@ -439,6 +442,31 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "建议创建约束前,先行创建索引",
 		Func:    checkIndexesExistBeforeCreatConstraints,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_SELECT_FOR_UPDATE,
+			Desc:  "建议避免使用select for update",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "建议避免使用select for update",
+		Func:    checkDMLSelectForUpdate,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLLATION_DATABASE,
+			Desc:  "建议使用规定的数据库排序规则",
+			Level: model.RULE_LEVEL_NOTICE,
+			Value: "utf8mb4_0900_ai_ci",
+		},
+		Message: "建议使用规定的数据库排序规则为%s",
+		Func:    checkCollationDatabase,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_DECIMAL_TYPE_COLUMN,
+			Desc:  "精确浮点数建议使用DECIMAL",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "精确浮点数建议使用DECIMAL",
+		Func:    checkDecimalTypeColumn,
 	},
 }
 
@@ -1494,4 +1522,65 @@ func checkWhereColumnImplicitConversion(rule model.Rule, i *Inspect, node ast.No
 	}
 	return nil
 
+}
+
+func checkDMLSelectForUpdate(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.LockTp == ast.SelectLockForUpdate {
+			i.addResult(DML_CHECK_SELECT_FOR_UPDATE)
+		}
+	}
+	return nil
+}
+
+func checkCollationDatabase(rule model.Rule, i *Inspect, node ast.Node) error {
+
+	var collationDatabase string
+	var err error
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.ReferTable != nil {
+			return nil
+		}
+		for _, op := range stmt.Options {
+			switch op.Tp {
+			case ast.TableOptionCollate:
+				collationDatabase = op.StrValue
+			}
+		}
+		if collationDatabase == "" {
+			collationDatabase, err = i.getCollationDatabase(stmt.Table)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		return nil
+	}
+	if strings.ToLower(collationDatabase) != strings.ToLower(rule.Value) {
+		i.addResult(DDL_CHECK_COLLATION_DATABASE, rule.Value)
+	}
+	return nil
+}
+func checkDecimalTypeColumn(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
+				i.addResult(DDL_CHECK_DECIMAL_TYPE_COLUMN)
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, col := range spec.NewColumns {
+				if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
+					i.addResult(DDL_CHECK_DECIMAL_TYPE_COLUMN)
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	return nil
 }
