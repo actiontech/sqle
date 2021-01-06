@@ -62,7 +62,7 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 						if !ok || handler.Func == nil {
 							continue
 						}
-						err := handler.Func(i, node)
+						err := handler.Func(rule, i, node)
 						if err != nil {
 							return err
 						}

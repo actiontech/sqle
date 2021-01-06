@@ -1,10 +1,12 @@
 package inspector
 
 import (
+	"strconv"
+	"strings"
+
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
-	"strings"
 )
 
 // inspector rule code
@@ -44,15 +46,25 @@ const (
 	CONFIG_DDL_OSC_MIN_SIZE      = "ddl_osc_min_size"
 )
 
+const (
+	DML_CHECK_INSERT_COLUMNS_EXIST       = "dml_check_insert_columns_exist"
+	DML_CHECK_BATCH_INSERT_lISTS_MAX     = "dml_check_batch_insert_lists_max"
+	DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT = "ddl_check_pk_prohibit_auto_increment"
+	DML_CHECK_WHERE_EXIST_FUNC           = "dml_check_where_exist_func"
+	DML_CHECK_WHERE_EXIET_NOT            = "dml_check_where_exiet_not"
+)
+
 type RuleHandler struct {
-	Rule    model.Rule
-	Message string
-	Func    func(*Inspect, ast.Node) error
+	Rule          model.Rule
+	Message       string
+	Func          func(model.Rule, *Inspect, ast.Node) error
+	IsDefaultRule bool
 }
 
 var (
-	RuleHandlerMap = map[string]RuleHandler{}
-	DefaultRules   = []model.Rule{}
+	RuleHandlerMap       = map[string]RuleHandler{}
+	DefaultTemplateRules = []model.Rule{}
+	InitRules            = []model.Rule{}
 )
 
 var RuleHandlers = []RuleHandler{
@@ -63,7 +75,8 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "在 DML 语句中预计影响行数超过指定值则不回滚",
 			Value: "1000",
 		},
-		Func: nil,
+		Func:          nil,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -71,7 +84,8 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
 			Value: "16",
 		},
-		Func: nil,
+		Func:          nil,
+		IsDefaultRule: true,
 	},
 
 	// rule
@@ -81,8 +95,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "新建表必须加入if not exists create，保证重复执行不报错",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "新建表必须加入if not exists create，保证重复执行不报错",
-		Func:    checkIfNotExist,
+		Message:       "新建表必须加入if not exists create，保证重复执行不报错",
+		Func:          checkIfNotExist,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -90,8 +105,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "表名、列名、索引名的长度不能大于64字节",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "表名、列名、索引名的长度不能大于64字节",
-		Func:    checkNewObjectName,
+		Message:       "表名、列名、索引名的长度不能大于64字节",
+		Func:          checkNewObjectName,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -99,8 +115,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "表必须有主键",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "表必须有主键",
-		Func:    checkPrimaryKey,
+		Message:       "表必须有主键",
+		Func:          checkPrimaryKey,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -108,8 +125,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "主键建议使用自增",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "主键建议使用自增",
-		Func:    checkPrimaryKey,
+		Message:       "主键建议使用自增",
+		Func:          checkPrimaryKey,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -117,8 +135,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "主键建议使用 bigint 无符号类型，即 bigint unsigned",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "主键建议使用 bigint 无符号类型，即 bigint unsigned",
-		Func:    checkPrimaryKey,
+		Message:       "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+		Func:          checkPrimaryKey,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -126,8 +145,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "禁止使用 varchar(max)",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "禁止使用 varchar(max)",
-		Func:    nil,
+		Message:       "禁止使用 varchar(max)",
+		Func:          nil,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -135,8 +155,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "char长度大于20时，必须使用varchar类型",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "char长度大于20时，必须使用varchar类型",
-		Func:    checkStringType,
+		Message:       "char长度大于20时，必须使用varchar类型",
+		Func:          checkStringType,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -144,26 +165,31 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "禁止使用外键",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "禁止使用外键",
-		Func:    checkForeignKey,
+		Message:       "禁止使用外键",
+		Func:          checkForeignKey,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_INDEX_COUNT,
-			Desc:  "索引个数建议不超过5个",
+			Desc:  "索引个数建议不超过阈值",
 			Level: model.RULE_LEVEL_NOTICE,
+			Value: "5",
 		},
-		Message: "索引个数建议不超过5个",
-		Func:    checkIndex,
+		Message:       "索引个数建议不超过%v个",
+		Func:          checkIndex,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COMPOSITE_INDEX_MAX,
-			Desc:  "复合索引的列数量不建议超过5个",
+			Desc:  "复合索引的列数量不建议超过阈值",
 			Level: model.RULE_LEVEL_NOTICE,
+			Value: "3",
 		},
-		Message: "复合索引的列数量不建议超过5个",
-		Func:    checkIndex,
+		Message:       "复合索引的列数量不建议超过%v个",
+		Func:          checkIndex,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -171,8 +197,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "数据库对象命名禁止使用关键字",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "数据库对象命名禁止使用关键字 %s",
-		Func:    checkNewObjectName,
+		Message:       "数据库对象命名禁止使用关键字 %s",
+		Func:          checkNewObjectName,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -180,8 +207,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "建议使用Innodb引擎,utf8mb4字符集",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
-		Message: "建议使用Innodb引擎,utf8mb4字符集",
-		Func:    checkEngineAndCharacterSet,
+		Message:       "建议使用Innodb引擎,utf8mb4字符集",
+		Func:          checkEngineAndCharacterSet,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -189,8 +217,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "禁止将blob类型的列加入索引",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "禁止将blob类型的列加入索引",
-		Func:    disableAddIndexForColumnsTypeBlob,
+		Message:       "禁止将blob类型的列加入索引",
+		Func:          disableAddIndexForColumnsTypeBlob,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -198,8 +227,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
-		Func:    checkSelectWhere,
+		Message:       "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
+		Func:          checkSelectWhere,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -207,8 +237,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
-		Message: "已存在对该表的修改语句，建议合并成一个ALTER语句",
-		Func:    checkMergeAlterTable,
+		Message:       "已存在对该表的修改语句，建议合并成一个ALTER语句",
+		Func:          checkMergeAlterTable,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -216,8 +247,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "不建议使用select *",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
-		Message: "不建议使用select *",
-		Func:    checkSelectAll,
+		Message:       "不建议使用select *",
+		Func:          checkSelectAll,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -225,8 +257,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "禁止除索引外的drop操作",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "禁止除索引外的drop操作",
-		Func:    disableDropStmt,
+		Message:       "禁止除索引外的drop操作",
+		Func:          disableDropStmt,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -234,8 +267,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "表建议添加注释",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
-		Message: "表建议添加注释",
-		Func:    checkTableWithoutComment,
+		Message:       "表建议添加注释",
+		Func:          checkTableWithoutComment,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -243,8 +277,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "列建议添加注释",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
-		Message: "列建议添加注释",
-		Func:    checkColumnWithoutComment,
+		Message:       "列建议添加注释",
+		Func:          checkColumnWithoutComment,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -252,8 +287,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "普通索引必须要以\"idx_\"为前缀",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "普通索引必须要以\"idx_\"为前缀",
-		Func:    checkIndexPrefix,
+		Message:       "普通索引必须要以\"idx_\"为前缀",
+		Func:          checkIndexPrefix,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -261,8 +297,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "unique索引必须要以\"uniq_\"为前缀",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "unique索引必须要以\"uniq_\"为前缀",
-		Func:    checkUniqIndexPrefix,
+		Message:       "unique索引必须要以\"uniq_\"为前缀",
+		Func:          checkUniqIndexPrefix,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -270,8 +307,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "除了自增列及大字段列之外，每个列都必须添加默认值",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "除了自增列及大字段列之外，每个列都必须添加默认值",
-		Func:    checkColumnWithoutDefault,
+		Message:       "除了自增列及大字段列之外，每个列都必须添加默认值",
+		Func:          checkColumnWithoutDefault,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -279,8 +317,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "timestamp 类型的列必须添加默认值",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "timestamp 类型的列必须添加默认值",
-		Func:    checkColumnTimestampWithoutDefault,
+		Message:       "timestamp 类型的列必须添加默认值",
+		Func:          checkColumnTimestampWithoutDefault,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -288,8 +327,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
-		Func:    checkColumnBlobNotNull,
+		Message:       "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+		Func:          checkColumnBlobNotNull,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -297,8 +337,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
-		Func:    checkColumnBlobDefaultNull,
+		Message:       "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+		Func:          checkColumnBlobDefaultNull,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -306,8 +347,9 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "delete/update 语句不能有limit条件",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "delete/update 语句不能有limit条件",
-		Func:    checkDMLWithLimit,
+		Message:       "delete/update 语句不能有limit条件",
+		Func:          checkDMLWithLimit,
+		IsDefaultRule: true,
 	},
 	RuleHandler{
 		Rule: model.Rule{
@@ -315,19 +357,65 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "delete/update 语句不能有order by",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message: "delete/update 语句不能有order by",
-		Func:    checkDMLWithOrderBy,
+		Message:       "delete/update 语句不能有order by",
+		Func:          checkDMLWithOrderBy,
+		IsDefaultRule: true,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_INSERT_COLUMNS_EXIST,
+			Desc:  "insert 语句必须指定column",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "insert 语句必须指定column",
+		Func:    checkDMLWithInsertColumnExist,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_BATCH_INSERT_lISTS_MAX,
+			Desc:  "单条insert语句，建议批量插入不超过阈值",
+			Level: model.RULE_LEVEL_NOTICE,
+			Value: "5000",
+		},
+		Message: "单条insert语句，建议批量插入不超过%v条",
+		Func:    checkDMLWithBatchInsertMaxLimits,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT,
+			Desc:  "主键禁止使用自增",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "主键禁止使用自增",
+		Func:    checkPrimaryKey,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WHERE_EXIST_FUNC,
+			Desc:  "避免对条件字段使用函数操作",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "避免对条件字段使用函数操作",
+		Func:    checkWhereExistFunc,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WHERE_EXIET_NOT,
+			Desc:  "不建议对条件字段使用负向查询",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "不建议对条件字段使用负向查询",
+		Func:    checkSelectWhere,
 	},
 }
 
 func init() {
 	for _, rh := range RuleHandlers {
 		RuleHandlerMap[rh.Rule.Name] = rh
-		DefaultRules = append(DefaultRules, rh.Rule)
+		InitRules = append(InitRules, rh.Rule)
+		if rh.IsDefaultRule {
+			DefaultTemplateRules = append(DefaultTemplateRules, rh.Rule)
+		}
 	}
 }
 
-func checkSelectAll(i *Inspect, node ast.Node) error {
+func checkSelectAll(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// check select all column
@@ -342,7 +430,7 @@ func checkSelectAll(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkSelectWhere(i *Inspect, node ast.Node) error {
+func checkSelectWhere(rule model.Rule, i *Inspect, node ast.Node) error {
 	var where ast.ExprNode
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -357,10 +445,13 @@ func checkSelectWhere(i *Inspect, node ast.Node) error {
 	if where == nil || !whereStmtHasOneColumn(where) {
 		i.addResult(DML_CHECK_WHERE_IS_INVALID)
 	}
+	if where != nil && whereStmtExistNot(where) {
+		i.addResult(DML_CHECK_WHERE_EXIET_NOT)
+	}
 	return nil
 }
 
-func checkPrimaryKey(i *Inspect, node ast.Node) error {
+func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 	var hasPk = false
 	var pkColumnExist = false
 	var pkIsAutoIncrement = false
@@ -427,13 +518,17 @@ func checkPrimaryKey(i *Inspect, node ast.Node) error {
 	if hasPk && pkColumnExist && !pkIsAutoIncrement {
 		i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
 	}
+	if hasPk && pkColumnExist && pkIsAutoIncrement {
+		i.addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT)
+	}
 	if hasPk && pkColumnExist && !pkIsBigIntUnsigned {
 		i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
 	}
+
 	return nil
 }
 
-func checkMergeAlterTable(i *Inspect, node ast.Node) error {
+func checkMergeAlterTable(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
@@ -447,7 +542,7 @@ func checkMergeAlterTable(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
+func checkEngineAndCharacterSet(rule model.Rule, i *Inspect, node ast.Node) error {
 	var engine string
 	var characterSet string
 	var err error
@@ -486,7 +581,7 @@ func checkEngineAndCharacterSet(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
+func disableAddIndexForColumnsTypeBlob(rule model.Rule, i *Inspect, node ast.Node) error {
 	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
 	switch stmt := node.(type) {
@@ -584,7 +679,7 @@ func disableAddIndexForColumnsTypeBlob(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkNewObjectName(i *Inspect, node ast.Node) error {
+func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 	names := []string{}
 	invalidNames := []string{}
 
@@ -657,7 +752,7 @@ func checkNewObjectName(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkForeignKey(i *Inspect, node ast.Node) error {
+func checkForeignKey(rule model.Rule, i *Inspect, node ast.Node) error {
 	hasFk := false
 
 	switch stmt := node.(type) {
@@ -684,10 +779,13 @@ func checkForeignKey(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIndex(i *Inspect, node ast.Node) error {
+func checkIndex(rule model.Rule, i *Inspect, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
-
+	value, err := strconv.Atoi(rule.Value)
+	if err != nil {
+		return err
+	}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check index
@@ -746,16 +844,16 @@ func checkIndex(i *Inspect, node ast.Node) error {
 	default:
 		return nil
 	}
-	if indexCounter > 5 {
-		i.addResult(DDL_CHECK_INDEX_COUNT)
+	if indexCounter > value {
+		i.addResult(DDL_CHECK_INDEX_COUNT, value)
 	}
-	if compositeIndexMax > 5 {
-		i.addResult(DDL_CHECK_COMPOSITE_INDEX_MAX)
+	if compositeIndexMax > value {
+		i.addResult(DDL_CHECK_COMPOSITE_INDEX_MAX, value)
 	}
 	return nil
 }
 
-func checkStringType(i *Inspect, node ast.Node) error {
+func checkStringType(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
@@ -778,7 +876,7 @@ func checkStringType(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIfNotExist(i *Inspect, node ast.Node) error {
+func checkIfNotExist(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
@@ -789,7 +887,7 @@ func checkIfNotExist(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func disableDropStmt(i *Inspect, node ast.Node) error {
+func disableDropStmt(rule model.Rule, i *Inspect, node ast.Node) error {
 	// specific check
 	switch node.(type) {
 	case *ast.DropDatabaseStmt:
@@ -800,8 +898,7 @@ func disableDropStmt(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-
-func checkTableWithoutComment(i *Inspect, node ast.Node) error {
+func checkTableWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error {
 	var tableHasComment bool
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -824,7 +921,7 @@ func checkTableWithoutComment(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnWithoutComment(i *Inspect, node ast.Node) error {
+func checkColumnWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -864,7 +961,7 @@ func checkColumnWithoutComment(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIndexPrefix(i *Inspect, node ast.Node) error {
+func checkIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 	indexesName := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -897,7 +994,7 @@ func checkIndexPrefix(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkUniqIndexPrefix(i *Inspect, node ast.Node) error {
+func checkUniqIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 	uniqueIndexesName := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -930,7 +1027,7 @@ func checkUniqIndexPrefix(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
+func checkColumnWithoutDefault(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -994,7 +1091,7 @@ func checkColumnWithoutDefault(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnTimestampWithoutDefault(i *Inspect, node ast.Node) error {
+func checkColumnTimestampWithoutDefault(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1034,7 +1131,7 @@ func checkColumnTimestampWithoutDefault(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnBlobNotNull(i *Inspect, node ast.Node) error {
+func checkColumnBlobNotNull(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1079,7 +1176,7 @@ func checkColumnBlobNotNull(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnBlobDefaultNull(i *Inspect, node ast.Node) error {
+func checkColumnBlobDefaultNull(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1124,7 +1221,7 @@ func checkColumnBlobDefaultNull(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkDMLWithLimit(i *Inspect, node ast.Node) error {
+func checkDMLWithLimit(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit != nil {
@@ -1138,7 +1235,7 @@ func checkDMLWithLimit(i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkDMLWithOrderBy(i *Inspect, node ast.Node) error {
+func checkDMLWithOrderBy(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Order != nil {
@@ -1150,4 +1247,91 @@ func checkDMLWithOrderBy(i *Inspect, node ast.Node) error {
 		}
 	}
 	return nil
+}
+
+func checkDMLWithInsertColumnExist(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.InsertStmt:
+		if len(stmt.Columns) == 0 {
+			i.addResult(DML_CHECK_INSERT_COLUMNS_EXIST)
+		}
+	}
+	return nil
+}
+
+func checkDMLWithBatchInsertMaxLimits(rule model.Rule, i *Inspect, node ast.Node) error {
+	value, err := strconv.Atoi(rule.Value)
+	if err != nil {
+		return err
+	}
+	switch stmt := node.(type) {
+	case *ast.InsertStmt:
+		if len(stmt.Lists) > value {
+			i.addResult(DML_CHECK_BATCH_INSERT_lISTS_MAX, value)
+		}
+	}
+	return nil
+}
+
+func checkWhereExistFunc(rule model.Rule, i *Inspect, node ast.Node) error {
+
+	var where ast.ExprNode
+	tables := []*ast.TableName{}
+
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Where != nil {
+			where = stmt.Where
+			tableSources := getTableSources(stmt.From.TableRefs)
+			// not select from table statement
+			if len(tableSources) < 1 {
+				break
+			}
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
+				}
+			}
+		}
+	case *ast.UpdateStmt:
+		if stmt.Where != nil {
+			where = stmt.Where
+			tableSources := getTableSources(stmt.TableRefs.TableRefs)
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
+				}
+			}
+		}
+	case *ast.DeleteStmt:
+		if stmt.Where != nil {
+			where = stmt.Where
+			tables = getTables(stmt.TableRefs.TableRefs)
+		}
+
+	default:
+		return nil
+	}
+	if where == nil {
+		return nil
+	}
+
+	var cols []*ast.ColumnDef
+	for _, tableName := range tables {
+		createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+		if exist && err == nil {
+			cols = append(cols, createTableStmt.Cols...)
+		}
+	}
+	colMap := make(map[string]struct{})
+	for _, col := range cols {
+		colMap[col.Name.String()] = struct{}{}
+	}
+	if isFuncUsedOnColumnInWhereStmt(colMap, where) {
+		i.addResult(DML_CHECK_WHERE_EXIST_FUNC)
+	}
+	return nil
+
 }
