@@ -1028,7 +1028,7 @@ select ... from ...
 */
 func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResults) error {
 	if stmt.From == nil {
-		return fmt.Errorf("failed sql :%v  only support select from table", stmt.Text())
+		return nil
 	}
 	tables := []*ast.TableName{}
 	tableSources := getTableSources(stmt.From.TableRefs)

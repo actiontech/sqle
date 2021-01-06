@@ -499,6 +499,9 @@ func checkSelectWhere(rule model.Rule, i *Inspect, node ast.Node) error {
 	var where ast.ExprNode
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
+		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return nil
+		}
 		where = stmt.Where
 	case *ast.UpdateStmt:
 		where = stmt.Where
