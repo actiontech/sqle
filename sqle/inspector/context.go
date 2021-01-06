@@ -24,6 +24,8 @@ type SchemaInfo struct {
 	engineLoad       bool
 	DefaultCharacter string
 	characterLoad    bool
+	DefaultCollation string
+	collationLoad    bool
 	Tables           map[string]*TableInfo
 }
 
