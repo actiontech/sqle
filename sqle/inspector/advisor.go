@@ -808,6 +808,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
 				results.add(model.RULE_LEVEL_ERROR, NOT_MATCH_VALUES_AND_COLUMNS)
+				break
 			}
 		}
 	}

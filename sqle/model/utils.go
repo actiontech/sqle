@@ -71,12 +71,20 @@ func (s *Storage) AutoMigrate() error {
 }
 
 func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
+	allRules, err := s.GetAllRule()
+	if err != nil {
+		return err
+	}
+	allRulesMap := make(map[string]string)
+	for _, rule := range allRules {
+		allRulesMap[rule.Name] = rule.Value
+	}
 	for _, rule := range rules {
-		exist, err := s.Exist(&rule)
-		if err != nil {
-			return err
-		}
-		if exist {
+		/*If rule exist
+		1.value is used, skip init
+		2.new value is empty,skip init (otherwise it will cause a panic)
+		*/
+		if existRuleValue, ok := allRulesMap[rule.Name]; ok && (existRuleValue != "" || rule.Value == "") {
 			continue
 		}
 		err = s.Save(rule)
