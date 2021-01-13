@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -891,7 +892,7 @@ func checkIndex(rule model.Rule, i *Inspect, node ast.Node) error {
 	compositeIndexMax := 0
 	value, err := strconv.Atoi(rule.Value)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
 	}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -1382,7 +1383,7 @@ func checkDMLWithInsertColumnExist(rule model.Rule, i *Inspect, node ast.Node) e
 func checkDMLWithBatchInsertMaxLimits(rule model.Rule, i *Inspect, node ast.Node) error {
 	value, err := strconv.Atoi(rule.Value)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
 	}
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
