@@ -2,10 +2,10 @@ actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5 h1:yj/ASd2p5s3
 actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5/go.mod h1:Og/7KQAysEVfuDxg1hvbGoHWj5C896+20EcmGcjLrKw=
 actiontech.cloud/universe/ucommon/v4 v4.2011.1-0.20210104132157-12a82fac6de7 h1:LDYLgzGXOnCEX25UFQW/If5FlOLPZ7TkXxih08eTQt0=
 actiontech.cloud/universe/ucommon/v4 v4.2011.1-0.20210104132157-12a82fac6de7/go.mod h1:M/gXEzvb01FKlIm7dRqRq0X0TX/Ze4H7D3hJQ7DhC0Y=
-actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210111230538-5b7fd51e7df5 h1:agDo5MWiU02BXY2K0HEmE/VwKT9dMB0O5WYK8Caxd9U=
-actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210111230538-5b7fd51e7df5/go.mod h1:gW1GnBx3fOgf/oaGjmWGDDd86umiQrfogf2+BtbfL/c=
-actiontech.cloud/universe/uinterface/v4 v4.0.0-20210111072559-dd54e7d78ad6 h1:10DAW0OfsPL7LzZxyG6jJ8o2yHGo2KTpNABvx3eotMM=
-actiontech.cloud/universe/uinterface/v4 v4.0.0-20210111072559-dd54e7d78ad6/go.mod h1:Ft9xzja5D0Dgj5CcNSPkHNgsh+ZF3JUS+UHRUJv7AD4=
+actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210113230810-be799834e805 h1:OJaI521vpAgOGqzMRMDkGB1ijMt2DtaY89qEg78C1gQ=
+actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210113230810-be799834e805/go.mod h1:DvWLUPCggf4Mq0fXy9jVpyy10Cli4yYtbOfcavL/V+o=
+actiontech.cloud/universe/uinterface/v4 v4.0.0-20210112111525-23b7fde8fbd3 h1:/v8Cfe/hz2ra8/RQqzmgA/mKMQXn9mVWXpbPie9gTdM=
+actiontech.cloud/universe/uinterface/v4 v4.0.0-20210112111525-23b7fde8fbd3/go.mod h1:Ft9xzja5D0Dgj5CcNSPkHNgsh+ZF3JUS+UHRUJv7AD4=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=
