@@ -2,10 +2,11 @@ package inspector
 
 import (
 	"fmt"
+	"strings"
+
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/executor"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
-	"strings"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
@@ -374,7 +375,8 @@ func (i *Inspect) getSchemaEngine(stmt *ast.TableName) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	engine, err := conn.ShowDefaultEngine()
+
+	engine, err := conn.ShowDefaultConfiguration("select @@default_storage_engine", "@@default_storage_engine")
 	if err != nil {
 		return "", err
 	}
@@ -398,7 +400,7 @@ func (i *Inspect) getSchemaCharacter(stmt *ast.TableName) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	character, err := conn.ShowDefaultCharacter()
+	character, err := conn.ShowDefaultConfiguration("select @@character_set_database", "@@character_set_database")
 	if err != nil {
 		return "", err
 	}
@@ -407,6 +409,28 @@ func (i *Inspect) getSchemaCharacter(stmt *ast.TableName) (string, error) {
 		schema.characterLoad = true
 	}
 	return character, nil
+}
+
+func (i *Inspect) getCollationDatabase(stmt *ast.TableName) (string, error) {
+	schemaName := i.getSchemaName(stmt)
+	schema, schemaExist := i.Ctx.GetSchema(schemaName)
+	if schemaExist && schema.collationLoad {
+		return schema.DefaultCollation, nil
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+
+	collation, err := conn.ShowDefaultConfiguration("select @@collation_database", "@@collation_database")
+	if err != nil {
+		return "", err
+	}
+	if schemaExist {
+		schema.DefaultCollation = collation
+		schema.collationLoad = true
+	}
+	return collation, nil
 }
 
 // parseCreateTableStmt parse create table sql text to CreateTableStmt ast.

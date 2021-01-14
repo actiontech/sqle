@@ -62,7 +62,7 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 						if !ok || handler.Func == nil {
 							continue
 						}
-						err := handler.Func(i, node)
+						err := handler.Func(rule, i, node)
 						if err != nil {
 							return err
 						}
@@ -808,6 +808,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
 				results.add(model.RULE_LEVEL_ERROR, NOT_MATCH_VALUES_AND_COLUMNS)
+				break
 			}
 		}
 	}
@@ -1028,7 +1029,7 @@ select ... from ...
 */
 func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResults) error {
 	if stmt.From == nil {
-		return fmt.Errorf("failed sql :%v  only support select from table", stmt.Text())
+		return nil
 	}
 	tables := []*ast.TableName{}
 	tableSources := getTableSources(stmt.From.TableRefs)

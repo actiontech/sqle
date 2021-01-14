@@ -59,6 +59,11 @@ var sqlWhitelistMutex sync.Mutex
 func (s *SqlWhitelist) InitSqlWhitelistMD5Map() error {
 	sqlWhitelistMD5Map = make(map[string]string, 0)
 	storage := GetStorage()
+	if storage == nil {
+		//storage uninitialized, used in unit testing
+		sqlWhitelistMD5Map["unit_test"] = "unit_test"
+		return nil
+	}
 	sqlWhitelist, err := storage.GetSqlWhitelistIdAndMD5()
 	if err != nil {
 		log.Logger().Error(fmt.Sprintf("init sql whitelist error %v", err))
