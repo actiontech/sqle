@@ -65,7 +65,7 @@ fi
 (which bash 1>/dev/null 2>&1) || (echo "require bash" && exit 12)
 (which pkill 1>/dev/null 2>&1) || (echo "require pkill" && exit 13)
 (getent group %{group_name} 1>/dev/null 2>&1) || groupadd -g 5700 %{group_name}
-(id %{user_name} 1>/dev/null 2>&1) || useradd -M -g %{group_name} -s $(which nologin) -u 5700 %{user_name}
+(id %{user_name} 1>/dev/null 2>&1) || (useradd -M -g %{group_name} -s $(which nologin) -u 5700 %{user_name} && chage -M 99999 %{user_name})
 
 
 #check bash env
