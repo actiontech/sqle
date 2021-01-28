@@ -1,4 +1,4 @@
-# actiontech.cloud/universe/ucommon/v4 v4.2101.1-0.20210127095936-cef96a1a891e
+# actiontech.cloud/universe/ucommon/v4 v4.2101.1-0.20210128025016-786c01958eb4
 ## explicit
 actiontech.cloud/universe/ucommon/v4/build
 actiontech.cloud/universe/ucommon/v4/cobra
@@ -19,7 +19,7 @@ actiontech.cloud/universe/ucommon/v4/user
 actiontech.cloud/universe/ucommon/v4/util
 actiontech.cloud/universe/ucommon/v4/wrapper
 actiontech.cloud/universe/ucommon/v4/wrapper/syscall
-# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210127230850-da3b0207313c
+# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210128230656-fa0326a6789b
 ## explicit
 actiontech.cloud/universe/ucore-common/v4/client
 actiontech.cloud/universe/ucore-common/v4/common
@@ -28,7 +28,7 @@ actiontech.cloud/universe/ucore-common/v4/model
 actiontech.cloud/universe/ucore-common/v4/orm
 actiontech.cloud/universe/ucore-common/v4/pgrpc
 actiontech.cloud/universe/ucore-common/v4/qahelper
-# actiontech.cloud/universe/uinterface/v4 v4.0.0-20210120055806-0f08d9b30008
+# actiontech.cloud/universe/uinterface/v4 v4.0.0-20210127231650-5ffb824245b2
 actiontech.cloud/universe/uinterface/v4/common
 actiontech.cloud/universe/uinterface/v4/ucore
 # github.com/KyleBanks/depth v1.2.1
