@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -33,10 +34,14 @@ const (
 	DDL_CHECK_COLUMN_WITHOUT_COMMENT           = "ddl_check_column_without_comment"
 	DDL_CHECK_INDEX_PREFIX                     = "ddl_check_index_prefix"
 	DDL_CHECK_UNIQUE_INDEX_PRIFIX              = "ddl_check_unique_index_prefix"
+	DDL_CHECK_UNIQUE_INDEX                     = "ddl_check_unique_index"
 	DDL_CHECK_COLUMN_WITHOUT_DEFAULT           = "ddl_check_column_without_default"
 	DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT = "ddl_check_column_timestamp_without_default"
 	DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL        = "ddl_check_column_blob_with_not_null"
 	DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL  = "ddl_check_column_blob_default_is_not_null"
+	DDL_CHECK_COLUMN_ENUM_NOTICE               = "ddl_check_column_enum_notice"
+	DDL_CHECK_COLUMN_SET_NOTICE                = "ddl_check_column_set_notice"
+	DDL_CHECK_COLUMN_BLOB_NOTICE               = "ddl_check_column_blob_notice"
 	DML_CHECK_WITH_LIMIT                       = "dml_check_with_limit"
 	DML_CHECK_WITH_ORDER_BY                    = "dml_check_with_order_by"
 )
@@ -56,6 +61,7 @@ const (
 	DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION        = "dml_check_where_exist_implicit_conversion"
 	DML_CHECK_LIMIT_MUST_EXIST                       = "dml_check_limit_must_exist"
 	DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES         = "dml_check_where_exist_scalar_sub_queries"
+	DML_CHECK_WHERE_EXIST_NULL                       = "dml_check_where_exist_null"
 	DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS = "ddl_check_indexes_exist_before_creat_constraints"
 	DML_CHECK_SELECT_FOR_UPDATE                      = "dml_check_select_for_update"
 	DDL_CHECK_COLLATION_DATABASE                     = "ddl_check_collation_database"
@@ -311,6 +317,15 @@ var RuleHandlers = []RuleHandler{
 	},
 	RuleHandler{
 		Rule: model.Rule{
+			Name:  DDL_CHECK_UNIQUE_INDEX,
+			Desc:  "unique索引名必须使用 IDX_UK_表名_字段名",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "unique索引名必须使用 IDX_UK_表名_字段名",
+		Func:    checkUniqIndex,
+	},
+	RuleHandler{
+		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
 			Desc:  "除了自增列及大字段列之外，每个列都必须添加默认值",
 			Level: model.RULE_LEVEL_ERROR,
@@ -410,8 +425,15 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "不建议对条件字段使用负向查询",
 		Func:    checkSelectWhere,
-	},
-	RuleHandler{
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_WHERE_EXIST_NULL,
+			Desc:  "不建议对条件字段使用 NULL 值判断",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "不建议对条件字段使用 NULL 值判断",
+		Func:    checkWhereExistNull,
+	}, RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION,
 			Desc:  "条件字段存在数值和字符的隐式转换",
@@ -469,6 +491,33 @@ var RuleHandlers = []RuleHandler{
 		Message: "精确浮点数建议使用DECIMAL",
 		Func:    checkDecimalTypeColumn,
 	},
+	{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_ENUM_NOTICE,
+			Desc:  "不建议使用 ENUM 类型",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "不建议使用 ENUM 类型",
+		Func:    checkColumnEnumNotice,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_SET_NOTICE,
+			Desc:  "不建议使用 SET 类型",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "不建议使用 SET 类型",
+		Func:    checkColumnSetNotice,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_COLUMN_BLOB_NOTICE,
+			Desc:  "不建议使用 BLOB 或 TEXT 类型",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "不建议使用 BLOB 或 TEXT 类型",
+		Func:    checkColumnBlobNotice,
+	},
 }
 
 func init() {
@@ -497,20 +546,8 @@ func checkSelectAll(rule model.Rule, i *Inspect, node ast.Node) error {
 }
 
 func checkSelectWhere(rule model.Rule, i *Inspect, node ast.Node) error {
-	var where ast.ExprNode
-	switch stmt := node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
-			return nil
-		}
-		where = stmt.Where
-	case *ast.UpdateStmt:
-		where = stmt.Where
-	case *ast.DeleteStmt:
-		where = stmt.Where
-	default:
-		return nil
-	}
+	where := getWhereExpr(node)
+
 	if where == nil || !whereStmtHasOneColumn(where) {
 		i.addResult(DML_CHECK_WHERE_IS_INVALID)
 	}
@@ -522,6 +559,39 @@ func checkSelectWhere(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 
 	return nil
+}
+
+func checkWhereExistNull(rule model.Rule, i *Inspect, node ast.Node) error {
+	if where := getWhereExpr(node); where != nil {
+		var existNull bool
+		scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			if _, ok := expr.(*ast.IsNullExpr); ok {
+				existNull = true
+				return true
+			}
+			return false
+		}, where)
+
+		if existNull {
+			i.addResult(rule.Name)
+		}
+	}
+	return nil
+}
+
+func getWhereExpr(node ast.Node) (where ast.ExprNode) {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return nil
+		}
+		where = stmt.Where
+	case *ast.UpdateStmt:
+		where = stmt.Where
+	case *ast.DeleteStmt:
+		where = stmt.Where
+	}
+	return
 }
 
 func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node ast.Node) error {
@@ -1103,32 +1173,61 @@ func checkIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 }
 
 func checkUniqIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
-	uniqueIndexesName := []string{}
+	return checkIfUniqIndexSatisfy(rule, i, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
+		return strings.HasPrefix(uniqIndexName, "uniq_")
+	})
+}
+
+func checkUniqIndex(rule model.Rule, i *Inspect, node ast.Node) error {
+	return checkIfUniqIndexSatisfy(rule, i, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
+		return strings.EqualFold(uniqIndexName, fmt.Sprintf("IDX_UK_%v_%v", tableName, strings.Join(indexedColNames, "_")))
+	})
+}
+
+func checkIfUniqIndexSatisfy(
+	rule model.Rule,
+	i *Inspect,
+	node ast.Node,
+	isSatisfy func(uniqIndexName, tableName string, indexedColNames []string) bool) error {
+
+	var tableName string
+	var indexes = make(map[string] /*unique index name*/ []string /*indexed columns*/)
+
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		tableName = stmt.Table.Name.String()
 		for _, constraint := range stmt.Constraints {
 			switch constraint.Tp {
 			case ast.ConstraintUniq:
-				uniqueIndexesName = append(uniqueIndexesName, constraint.Name)
+				for _, key := range constraint.Keys {
+					indexes[constraint.Name] = append(indexes[constraint.Name], key.Column.Name.String())
+				}
 			}
 		}
 	case *ast.AlterTableStmt:
+		tableName = stmt.Table.Name.String()
 		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
 			case ast.ConstraintUniq:
-				uniqueIndexesName = append(uniqueIndexesName, spec.Constraint.Name)
+				for _, key := range spec.Constraint.Keys {
+					indexes[spec.Constraint.Name] = append(indexes[spec.Constraint.Name], key.Column.Name.String())
+				}
 			}
 		}
 	case *ast.CreateIndexStmt:
+		tableName = stmt.Table.Name.String()
 		if stmt.Unique {
-			uniqueIndexesName = append(uniqueIndexesName, stmt.IndexName)
+			for _, indexCol := range stmt.IndexColNames {
+				indexes[stmt.IndexName] = append(indexes[stmt.IndexName], indexCol.Column.Name.String())
+			}
 		}
 	default:
 		return nil
 	}
-	for _, name := range uniqueIndexesName {
-		if !strings.HasPrefix(name, "uniq_") {
-			i.addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX)
+
+	for index, indexedCols := range indexes {
+		if !isSatisfy(index, tableName, indexedCols) {
+			i.addResult(rule.Name)
 			return nil
 		}
 	}
@@ -1281,6 +1380,56 @@ func checkColumnBlobNotNull(rule model.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 	}
+	return nil
+}
+
+func checkColumnEnumNotice(rule model.Rule, i *Inspect, node ast.Node) error {
+	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeEnum)
+}
+
+func checkColumnSetNotice(rule model.Rule, i *Inspect, node ast.Node) error {
+	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeSet)
+}
+
+func checkColumnBlobNotice(rule model.Rule, i *Inspect, node ast.Node) error {
+	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob)
+}
+
+func checkColumnShouldNotBeType(rule model.Rule, i *Inspect, node ast.Node, colTypes ...byte) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if col == nil {
+				continue
+			}
+			if bytes.Contains(colTypes, []byte{col.Tp.Tp}) {
+				i.addResult(rule.Name)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range getAlterTableSpecByTp(
+			stmt.Specs,
+			ast.AlterTableAddColumns,
+			ast.AlterTableModifyColumn,
+			ast.AlterTableChangeColumn) {
+
+			for _, newCol := range spec.NewColumns {
+				if newCol.Tp == nil {
+					continue
+				}
+
+				if bytes.Contains(colTypes, []byte{newCol.Tp.Tp}) {
+					i.addResult(rule.Name)
+					return nil
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -1888,6 +1888,186 @@ ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 DECIMAL;
 
 }
 
+func TestCheckColumnTypeBlobText(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`(1)create table`: `CREATE TABLE t1(id BLOB);`,
+		`(2)create table`: `CREATE TABLE t1(id TINYBLOB);`,
+		`(3)create table`: `CREATE TABLE t1(id MEDIUMBLOB);`,
+		`(4)create table`: `CREATE TABLE t1(id LONGBLOB);`,
+		`(5)create table`: `CREATE TABLE t1(id TEXT);`,
+		`(6)create table`: `CREATE TABLE t1(id TINYTEXT);`,
+		`(7)create table`: `CREATE TABLE t1(id MEDIUMTEXT);`,
+		`(8)create table`: `CREATE TABLE t1(id LONGTEXT);`,
+		`(1)alter table`:  `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 BLOB;`,
+		`(2)alter table`:  `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 BLOB;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLUMN_BLOB_NOTICE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_NOTICE))
+	}
+
+	for desc, sql := range map[string]string{
+		`(1)create table`: `CREATE TABLE t1(id INT);`,
+		`(1)alter table`:  `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 VARCHAR(100);`,
+		`(2)alter table`:  `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 SET('male', 'female');`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLUMN_BLOB_NOTICE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckColumnTypeSet(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`create table`:   `CREATE TABLE t1(id INT, sex SET("male", "female"));`,
+		`(1)alter table`: `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 SET("male", "female");`,
+		`(2)alter table`: `ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 v1 SET("male", "female");`,
+		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 SET("male", "female");`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLUMN_SET_NOTICE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_COLUMN_SET_NOTICE))
+	}
+
+	for desc, sql := range map[string]string{
+		`create table`:   `CREATE TABLE t1(id INT);`,
+		`(1)alter table`: `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 INT;`,
+		`(2)alter table`: `ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 v1 BLOB;`,
+		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 BLOB;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLUMN_SET_NOTICE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckColumnTypeEnum(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`create table`:   `CREATE TABLE t1(id INT, sex ENUM("male", "female"));`,
+		`(1)alter table`: `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 ENUM("male", "female");`,
+		`(2)alter table`: `ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 v1 ENUM("male", "female");`,
+		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 ENUM("male", "female");`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLUMN_ENUM_NOTICE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_COLUMN_ENUM_NOTICE))
+	}
+
+	for desc, sql := range map[string]string{
+		`create table`:   `CREATE TABLE t1(id INT);`,
+		`(1)alter table`: `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 BLOB;`,
+		`(2)alter table`: `ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 v1 BLOB`,
+		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 BLOB;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLUMN_ENUM_NOTICE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckUniqueIndex(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`create table`: `CREATE TABLE t1(id INT, c1 INT, UNIQUE INDEX unique_idx (c1));`,
+		`alter table`:  `ALTER TABLE exist_db.exist_tb_1 ADD UNIQUE INDEX unique_id(id);`,
+		`create index`: `CREATE UNIQUE INDEX i_u_id ON exist_db.exist_tb_1(id);`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_UNIQUE_INDEX].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX))
+	}
+
+	for desc, sql := range map[string]string{
+		`create table`: `
+CREATE TABLE t1(
+id INT,
+c1 INT,
+c2 INT,
+UNIQUE INDEX idx_uk_t1_c1 (c1),
+UNIQUE INDEX IDX_UK_t1_c1_c2 (c1, c2),
+INDEX idx_id(id)
+);
+`,
+		`alter table`: `
+ALTER TABLE exist_db.exist_tb_1
+ADD UNIQUE INDEX idx_uk_exist_tb_1_v1(v1),
+ADD UNIQUE INDEX IDX_UK_exist_tb_1_id_v1(id, v1),
+ADD INDEX idx_v2(v2);
+`,
+		`(1)create index`: `CREATE UNIQUE INDEX idx_uk_exist_tb_1_id_v1 ON exist_db.exist_tb_1(id, v1);`,
+		`(2)create index`: `CREATE UNIQUE INDEX IDX_UK_exist_tb_1_id ON exist_db.exist_tb_1(id);`,
+		`(3)create index`: `CREATE INDEX idx_id ON exist_db.exist_tb_1(id);`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_UNIQUE_INDEX].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckWhereExistNull(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`(1)select table`: `SELECT * FROM exist_db.exist_tb_1 WHERE id IS NULL;`,
+		`(2)select table`: `SELECT * FROM exist_db.exist_tb_1 WHERE id IS NOT NULL;`,
+		`(1)update table`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE id IS NULL;`,
+		`(2)update table`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE id IS NOT NULL;`,
+		`(1)delete table`: `DELETE FROM exist_db.exist_tb_1 WHERE id IS NULL;`,
+		`(2)delete table`: `DELETE FROM exist_db.exist_tb_1 WHERE id IS NOT NULL;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_WHERE_EXIST_NULL].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DML_CHECK_WHERE_EXIST_NULL))
+	}
+
+	for desc, sql := range map[string]string{
+		`select table`: `SELECT * FROM exist_db.exist_tb_1 WHERE id = 1;`,
+		`update table`: `UPDATE exist_db.exist_tb_1 SET id = 10 WHERE id = 1;`,
+		`delete table`: `DELETE FROM exist_db.exist_tb_1 WHERE id = 1;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_WHERE_EXIST_NULL].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
 		log:     log.NewEntry(),
