@@ -19,7 +19,7 @@ actiontech.cloud/universe/ucommon/v4/user
 actiontech.cloud/universe/ucommon/v4/util
 actiontech.cloud/universe/ucommon/v4/wrapper
 actiontech.cloud/universe/ucommon/v4/wrapper/syscall
-# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210201022241-0bcec0cf567b
+# actiontech.cloud/universe/ucore-common/v4 v4.0.0-20210202032748-cc8103e7b3ee
 ## explicit
 actiontech.cloud/universe/ucore-common/v4/client
 actiontech.cloud/universe/ucore-common/v4/common
