@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
+
+	"actiontech.cloud/universe/ucommon/v4/util"
+
+	driver "github.com/pingcap/tidb/types/parser_driver"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"github.com/pingcap/parser/ast"
@@ -66,6 +71,17 @@ const (
 	DML_CHECK_SELECT_FOR_UPDATE                      = "dml_check_select_for_update"
 	DDL_CHECK_COLLATION_DATABASE                     = "ddl_check_collation_database"
 	DDL_CHECK_DECIMAL_TYPE_COLUMN                    = "ddl_check_decimal_type_column"
+	DML_CHECK_NEEDLESS_FUNC                          = "dml_check_needless_func"
+	DDL_CHECK_DATABASE_SUFFIX                        = "ddl_check_database_suffix"
+	DDL_CHECK_PK_NAME                                = "ddl_check_pk_name"
+	DDL_CHECK_TRANSACTION_ISOLATION_LEVEL            = "ddl_check_transaction_isolation_level"
+	DML_CHECK_FUZZY_SEARCH                           = "dml_check_fuzzy_search"
+	DDL_CHECK_TABLE_PARTITION                        = "ddl_check_table_partition"
+	DML_CHECK_NUMBER_OF_JOIN_TABLES                  = "dml_check_number_of_join_tables"
+	DDL_CHECK_IS_AFTER_UNION_DISTINCT                = "ddl_check_is_after_union_distinct"
+	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
+	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
+	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
 )
 
 type RuleHandler struct {
@@ -212,6 +228,15 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RULE_LEVEL_ERROR,
 		},
 		Message:       "数据库对象命名禁止使用关键字 %s",
+		Func:          checkNewObjectName,
+		IsDefaultRule: true,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_OBJECT_NAME_USING_CN,
+			Desc:  "数据库对象命名禁止使用中文",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message:       "数据库对象命名禁止使用中文",
 		Func:          checkNewObjectName,
 		IsDefaultRule: true,
 	},
@@ -490,6 +515,93 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "精确浮点数建议使用DECIMAL",
 		Func:    checkDecimalTypeColumn,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_NEEDLESS_FUNC,
+			Desc:  "避免使用不必要的内置函数",
+			Level: model.RULE_LEVEL_NOTICE,
+			Value: "sha(),sqrt(),md5()",
+		},
+		Message: "避免使用不必要的内置函数[%v]",
+		Func:    checkNeedlessFunc,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_DATABASE_SUFFIX,
+			Desc:  "数据库名称建议以\"_DB\"结尾",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "数据库名称建议以\"_DB\"结尾",
+		Func:    checkDatabaseSuffix,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_PK_NAME,
+			Desc:  "建议主键命名为\"PK_表名\"",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "建议主键命名为\"PK_表名\"",
+		Func:    checkPKIndexName,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_TRANSACTION_ISOLATION_LEVEL,
+			Desc:  "事物隔离级别建议设置成RC",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "事物隔离级别建议设置成RC",
+		Func:    checkTransactionIsolationLevel,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_FUZZY_SEARCH,
+			Desc:  "禁止使用全模糊搜索或左模糊搜索",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止使用全模糊搜索或左模糊搜索",
+		Func:    checkSelectWhere,
+	},
+	RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_TABLE_PARTITION,
+			Desc:  "不建议使用分区表相关功能",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "不建议使用分区表相关功能",
+		Func:    checkTablePartition,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DML_CHECK_NUMBER_OF_JOIN_TABLES,
+			Desc:  "使用JOIN连接表查询建议不超过阈值",
+			Level: model.RULE_LEVEL_NOTICE,
+			Value: "3",
+		},
+		Message: "使用JOIN连接表查询建议不超过%v张",
+		Func:    checkNumberOfJoinTables,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_IS_AFTER_UNION_DISTINCT,
+			Desc:  "建议使用UNION ALL,替代UNION",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "建议使用UNION ALL,替代UNION",
+		Func:    checkIsAfterUnionDistinct,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_IS_EXIST_LIMIT_OFFSET,
+			Desc:  "使用LIMIT分页时,避免使用LIMIT M,N",
+			Level: model.RULE_LEVEL_NOTICE,
+		},
+		Message: "使用LIMIT分页时,避免使用LIMIT M,N",
+		Func:    checkIsExistLimitOffset,
+	}, RuleHandler{
+		Rule: model.Rule{
+			Name:  DDL_CHECK_INDEX_OPTION,
+			Desc:  "建议选择可选性超过阈值字段作为索引",
+			Level: model.RULE_LEVEL_NOTICE,
+			Value: "0.7",
+		},
+		Message: "创建索引的字段可选性未超过阈值:%v",
+		Func:    checkIndexOption,
 	},
 	{
 		Rule: model.Rule{
@@ -546,21 +658,52 @@ func checkSelectAll(rule model.Rule, i *Inspect, node ast.Node) error {
 }
 
 func checkSelectWhere(rule model.Rule, i *Inspect, node ast.Node) error {
-	where := getWhereExpr(node)
 
-	if where == nil || !whereStmtHasOneColumn(where) {
-		i.addResult(DML_CHECK_WHERE_IS_INVALID)
-	}
-	if where != nil && whereStmtExistNot(where) {
-		i.addResult(DML_CHECK_WHERE_EXIST_NOT)
-	}
-	if where != nil && whereStmtExistScalarSubQueries(where) {
-		i.addResult(DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES)
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return nil
+		}
+		checkWhere(i, stmt.Where)
+
+	case *ast.UpdateStmt:
+		checkWhere(i, stmt.Where)
+	case *ast.DeleteStmt:
+		checkWhere(i, stmt.Where)
+	case *ast.UnionStmt:
+		for _, ss := range stmt.SelectList.Selects {
+			if checkWhere(i, ss.Where) {
+				break
+			}
+		}
+	default:
+		return nil
 	}
 
 	return nil
 }
 
+func checkWhere(i *Inspect, where ast.ExprNode) bool {
+	isAddResult := false
+
+	if where == nil || !whereStmtHasOneColumn(where) {
+		i.addResult(DML_CHECK_WHERE_IS_INVALID)
+		isAddResult = true
+	}
+	if where != nil && whereStmtExistNot(where) {
+		i.addResult(DML_CHECK_WHERE_EXIST_NOT)
+		isAddResult = true
+	}
+	if where != nil && whereStmtExistScalarSubQueries(where) {
+		i.addResult(DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES)
+		isAddResult = true
+	}
+	if where != nil && checkWhereFuzzySearch(where) {
+		i.addResult(DML_CHECK_FUZZY_SEARCH)
+		isAddResult = true
+	}
+	return isAddResult
+}
 func checkWhereExistNull(rule model.Rule, i *Inspect, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		var existNull bool
@@ -571,7 +714,6 @@ func checkWhereExistNull(rule model.Rule, i *Inspect, node ast.Node) error {
 			}
 			return false
 		}, where)
-
 		if existNull {
 			i.addResult(rule.Name)
 		}
@@ -590,6 +732,7 @@ func getWhereExpr(node ast.Node) (where ast.ExprNode) {
 		where = stmt.Where
 	case *ast.DeleteStmt:
 		where = stmt.Where
+
 	}
 	return
 }
@@ -721,11 +864,14 @@ func checkMergeAlterTable(rule model.Rule, i *Inspect, node ast.Node) error {
 }
 
 func checkEngineAndCharacterSet(rule model.Rule, i *Inspect, node ast.Node) error {
+	var tableName *ast.TableName
 	var engine string
 	var characterSet string
 	var err error
+	schemaName := ""
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		tableName = stmt.Table
 		if stmt.ReferTable != nil {
 			return nil
 		}
@@ -737,20 +883,48 @@ func checkEngineAndCharacterSet(rule model.Rule, i *Inspect, node ast.Node) erro
 				characterSet = op.StrValue
 			}
 		}
-		if engine == "" {
-			engine, err = i.getSchemaEngine(stmt.Table)
-			if err != nil {
-				return err
+	case *ast.AlterTableStmt:
+		tableName = stmt.Table
+		for _, ss := range stmt.Specs {
+			for _, op := range ss.Options {
+				switch op.Tp {
+				case ast.TableOptionEngine:
+					engine = op.StrValue
+				case ast.TableOptionCharset:
+					characterSet = op.StrValue
+				}
 			}
 		}
-		if characterSet == "" {
-			characterSet, err = i.getSchemaCharacter(stmt.Table)
-			if err != nil {
-				return err
+	case *ast.CreateDatabaseStmt:
+		schemaName = stmt.Name
+		for _, ss := range stmt.Options {
+			if ss.Tp == ast.DatabaseOptionCharset {
+				characterSet = ss.Value
+				break
+			}
+		}
+	case *ast.AlterDatabaseStmt:
+		schemaName = stmt.Name
+		for _, ss := range stmt.Options {
+			if ss.Tp == ast.DatabaseOptionCharset {
+				characterSet = ss.Value
+				break
 			}
 		}
 	default:
 		return nil
+	}
+	if engine == "" {
+		engine, err = i.getSchemaEngine(tableName, schemaName)
+		if err != nil {
+			return err
+		}
+	}
+	if characterSet == "" {
+		characterSet, err = i.getSchemaCharacter(tableName, schemaName)
+		if err != nil {
+			return err
+		}
 	}
 	if strings.ToLower(engine) == "innodb" && strings.ToLower(characterSet) == "utf8mb4" {
 		return nil
@@ -917,6 +1091,16 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 			break
 		}
 	}
+	// check  exist cn
+	for _, name := range names {
+		for _, v := range name {
+			if unicode.Is(unicode.Han, v) {
+				i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
+				break
+			}
+		}
+	}
+
 	// check keyword
 	for _, name := range names {
 		if IsMysqlReservedKeyword(name) {
@@ -1544,14 +1728,10 @@ func checkDMLWithBatchInsertMaxLimits(rule model.Rule, i *Inspect, node ast.Node
 }
 
 func checkWhereExistFunc(rule model.Rule, i *Inspect, node ast.Node) error {
-
-	var where ast.ExprNode
 	tables := []*ast.TableName{}
-
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
-			where = stmt.Where
 			tableSources := getTableSources(stmt.From.TableRefs)
 			// not select from table statement
 			if len(tableSources) < 1 {
@@ -1563,10 +1743,10 @@ func checkWhereExistFunc(rule model.Rule, i *Inspect, node ast.Node) error {
 					tables = append(tables, source)
 				}
 			}
+			checkExistFunc(i, tables, stmt.Where)
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
-			where = stmt.Where
 			tableSources := getTableSources(stmt.TableRefs.TableRefs)
 			for _, tableSource := range tableSources {
 				switch source := tableSource.Source.(type) {
@@ -1574,20 +1754,37 @@ func checkWhereExistFunc(rule model.Rule, i *Inspect, node ast.Node) error {
 					tables = append(tables, source)
 				}
 			}
+			checkExistFunc(i, tables, stmt.Where)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			where = stmt.Where
-			tables = getTables(stmt.TableRefs.TableRefs)
+			checkExistFunc(i, getTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
-
+	case *ast.UnionStmt:
+		for _, ss := range stmt.SelectList.Selects {
+			tableSources := getTableSources(ss.From.TableRefs)
+			if len(tableSources) < 1 {
+				continue
+			}
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
+				}
+			}
+			if checkExistFunc(i, tables, ss.Where) {
+				break
+			}
+		}
 	default:
 		return nil
 	}
+	return nil
+}
+func checkExistFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) bool {
 	if where == nil {
-		return nil
+		return false
 	}
-
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
 		createTableStmt, exist, err := i.getCreateTableStmt(tableName)
@@ -1601,17 +1798,16 @@ func checkWhereExistFunc(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	if isFuncUsedOnColumnInWhereStmt(colMap, where) {
 		i.addResult(DML_CHECK_WHERE_EXIST_FUNC)
+		return true
 	}
-	return nil
-
+	return false
 }
+
 func checkWhereColumnImplicitConversion(rule model.Rule, i *Inspect, node ast.Node) error {
-	var where ast.ExprNode
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
-			where = stmt.Where
 			tableSources := getTableSources(stmt.From.TableRefs)
 			// not select from table statement
 			if len(tableSources) < 1 {
@@ -1623,10 +1819,10 @@ func checkWhereColumnImplicitConversion(rule model.Rule, i *Inspect, node ast.No
 					tables = append(tables, source)
 				}
 			}
+			checkWhereColumnImplicitConversionFunc(i, tables, stmt.Where)
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
-			where = stmt.Where
 			tableSources := getTableSources(stmt.TableRefs.TableRefs)
 			for _, tableSource := range tableSources {
 				switch source := tableSource.Source.(type) {
@@ -1634,17 +1830,36 @@ func checkWhereColumnImplicitConversion(rule model.Rule, i *Inspect, node ast.No
 					tables = append(tables, source)
 				}
 			}
+			checkWhereColumnImplicitConversionFunc(i, tables, stmt.Where)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			where = stmt.Where
-			tables = getTables(stmt.TableRefs.TableRefs)
+			checkWhereColumnImplicitConversionFunc(i, getTables(stmt.TableRefs.TableRefs), stmt.Where)
+		}
+	case *ast.UnionStmt:
+		for _, ss := range stmt.SelectList.Selects {
+			tableSources := getTableSources(ss.From.TableRefs)
+			if len(tableSources) < 1 {
+				continue
+			}
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
+				}
+			}
+			if checkWhereColumnImplicitConversionFunc(i, tables, ss.Where) {
+				break
+			}
 		}
 	default:
 		return nil
 	}
+	return nil
+}
+func checkWhereColumnImplicitConversionFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) bool {
 	if where == nil {
-		return nil
+		return false
 	}
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
@@ -1672,9 +1887,9 @@ func checkWhereColumnImplicitConversion(rule model.Rule, i *Inspect, node ast.No
 	}
 	if isColumnImplicitConversionInWhereStmt(colMap, where) {
 		i.addResult(DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION)
+		return true
 	}
-	return nil
-
+	return false
 }
 
 func checkDMLSelectForUpdate(rule model.Rule, i *Inspect, node ast.Node) error {
@@ -1688,30 +1903,58 @@ func checkDMLSelectForUpdate(rule model.Rule, i *Inspect, node ast.Node) error {
 }
 
 func checkCollationDatabase(rule model.Rule, i *Inspect, node ast.Node) error {
-
+	var tableName *ast.TableName
 	var collationDatabase string
 	var err error
+	schemaName := ""
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		tableName = stmt.Table
 		if stmt.ReferTable != nil {
 			return nil
 		}
 		for _, op := range stmt.Options {
-			switch op.Tp {
-			case ast.TableOptionCollate:
+			if op.Tp == ast.TableOptionCollate {
 				collationDatabase = op.StrValue
+				break
 			}
 		}
-		if collationDatabase == "" {
-			collationDatabase, err = i.getCollationDatabase(stmt.Table)
-			if err != nil {
-				return err
+	case *ast.AlterTableStmt:
+		tableName = stmt.Table
+		for _, ss := range stmt.Specs {
+			for _, op := range ss.Options {
+				if op.Tp == ast.TableOptionCollate {
+					collationDatabase = op.StrValue
+					break
+				}
+			}
+		}
+	case *ast.CreateDatabaseStmt:
+		schemaName = stmt.Name
+		for _, ss := range stmt.Options {
+			if ss.Tp == ast.DatabaseOptionCollate {
+				collationDatabase = ss.Value
+				break
+			}
+		}
+	case *ast.AlterDatabaseStmt:
+		schemaName = stmt.Name
+		for _, ss := range stmt.Options {
+			if ss.Tp == ast.DatabaseOptionCollate {
+				collationDatabase = ss.Value
+				break
 			}
 		}
 	default:
 		return nil
 	}
-	if strings.ToLower(collationDatabase) != strings.ToLower(rule.Value) {
+	if collationDatabase == "" && (tableName != nil || schemaName != "") {
+		collationDatabase, err = i.getCollationDatabase(tableName, schemaName)
+		if err != nil {
+			return err
+		}
+	}
+	if !strings.EqualFold(collationDatabase, rule.Value) {
 		i.addResult(DDL_CHECK_COLLATION_DATABASE, rule.Value)
 	}
 	return nil
@@ -1734,6 +1977,189 @@ func checkDecimalTypeColumn(rule model.Rule, i *Inspect, node ast.Node) error {
 		}
 	default:
 		return nil
+	}
+	return nil
+}
+
+func checkNeedlessFunc(rule model.Rule, i *Inspect, node ast.Node) error {
+	needlessFuncArr := strings.Split(rule.Value, ",")
+	sql := strings.ToLower(node.Text())
+	for _, needlessFunc := range needlessFuncArr {
+		needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, ")"))
+		if strings.Contains(sql, needlessFunc) {
+			i.addResult(DML_CHECK_NEEDLESS_FUNC, rule.Value)
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkDatabaseSuffix(rule model.Rule, i *Inspect, node ast.Node) error {
+	databaseName := ""
+	switch stmt := node.(type) {
+	case *ast.CreateDatabaseStmt:
+		databaseName = stmt.Name
+	case *ast.AlterDatabaseStmt:
+		databaseName = stmt.Name
+	default:
+		return nil
+	}
+	if databaseName != "" && !strings.HasSuffix(strings.ToUpper(databaseName), "_DB") {
+		i.addResult(DDL_CHECK_DATABASE_SUFFIX)
+		return nil
+	}
+	return nil
+}
+
+func checkPKIndexName(rule model.Rule, i *Inspect, node ast.Node) error {
+	indexesName := ""
+	tableName := ""
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp == ast.ConstraintPrimaryKey {
+				indexesName = constraint.Name
+				tableName = stmt.Table.Name.String()
+				break
+			}
+		}
+	case *ast.AlterTableStmt:
+		tableName = strings.ToUpper(stmt.Table.Name.String())
+		for _, spec := range stmt.Specs {
+			if spec.Constraint != nil && spec.Constraint.Tp == ast.ConstraintPrimaryKey {
+				indexesName = spec.Constraint.Name
+				tableName = stmt.Table.Name.String()
+				break
+			}
+		}
+	default:
+		return nil
+	}
+	if indexesName != "" && !strings.EqualFold(indexesName, "PK_"+tableName) {
+		i.addResult(DDL_CHECK_PK_NAME)
+		return nil
+	}
+	return nil
+}
+
+func checkTransactionIsolationLevel(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.SetStmt:
+		for _, variable := range stmt.Variables {
+			if util.Contains([]string{"tx_isolation", "tx_isolation_one_shot"}, variable.Name) {
+				switch node := variable.Value.(type) {
+				case *driver.ValueExpr:
+					if node.Datum.GetString() != ast.ReadCommitted {
+						i.addResult(DDL_CHECK_TRANSACTION_ISOLATION_LEVEL)
+						return nil
+					}
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
+func checkTablePartition(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.PartitionNames != nil || spec.PartDefinitions != nil || spec.Partition != nil {
+				i.addResult(DDL_CHECK_TABLE_PARTITION)
+				return nil
+			}
+		}
+	case *ast.CreateTableStmt:
+		if stmt.Partition != nil {
+			i.addResult(DDL_CHECK_TABLE_PARTITION)
+			return nil
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+func checkNumberOfJoinTables(rule model.Rule, i *Inspect, node ast.Node) error {
+	nums, err := strconv.Atoi(rule.Value)
+	if err != nil {
+		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
+	}
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return nil
+		}
+		if nums < getNumberOfJoinTables(stmt.From.TableRefs) {
+			i.addResult(DML_CHECK_NUMBER_OF_JOIN_TABLES, rule.Value)
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
+func checkIsAfterUnionDistinct(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.UnionStmt:
+		for _, ss := range stmt.SelectList.Selects {
+			if ss.IsAfterUnionDistinct {
+				i.addResult(DDL_CHECK_IS_AFTER_UNION_DISTINCT)
+				return nil
+			}
+		}
+	default:
+		return nil
+	}
+
+	return nil
+}
+
+func checkIsExistLimitOffset(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Limit != nil && stmt.Limit.Offset != nil {
+			i.addResult(DDL_CHECK_IS_EXIST_LIMIT_OFFSET)
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
+func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
+
+	var tableName *ast.TableName
+	indexColumns := make([]string, 0)
+	switch stmt := node.(type) {
+	case *ast.AlterTableStmt:
+		tableName = stmt.Table
+		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			if spec.Constraint == nil {
+				continue
+			}
+			for _, key := range spec.Constraint.Keys {
+				indexColumns = append(indexColumns, key.Column.Name.String())
+			}
+		}
+	case *ast.CreateIndexStmt:
+		tableName = stmt.Table
+		for _, indexCol := range stmt.IndexColNames {
+			indexColumns = append(indexColumns, indexCol.Column.Name.String())
+		}
+	default:
+		return nil
+	}
+	if len(indexColumns) == 0 {
+		return nil
+	}
+	maxIndexOption, err := i.getMaxIndexOptionForTable(tableName, indexColumns)
+	if err != nil {
+		return err
+	}
+	if strings.Compare(rule.Value, maxIndexOption) > 0 {
+		i.addResult(rule.Name, rule.Value)
 	}
 	return nil
 }

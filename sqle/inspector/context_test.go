@@ -108,6 +108,9 @@ alter table exist_tb_1 drop index idx_1;
 func TestParentContext(t *testing.T) {
 	handler := RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE]
 	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	// It's trick :),
+	// elegant method: unit test support MySQL.
+	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
 	defer func() {
 		RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE] = handler
 	}()

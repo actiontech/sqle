@@ -363,8 +363,10 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 }
 
 // getSchemaEngine get schema default engine.
-func (i *Inspect) getSchemaEngine(stmt *ast.TableName) (string, error) {
-	schemaName := i.getSchemaName(stmt)
+func (i *Inspect) getSchemaEngine(stmt *ast.TableName, schemaName string) (string, error) {
+	if schemaName == "" {
+		schemaName = i.getSchemaName(stmt)
+	}
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
 	if schemaExist {
 		if schema.engineLoad {
@@ -388,8 +390,10 @@ func (i *Inspect) getSchemaEngine(stmt *ast.TableName) (string, error) {
 }
 
 // getSchemaCharacter get schema default character.
-func (i *Inspect) getSchemaCharacter(stmt *ast.TableName) (string, error) {
-	schemaName := i.getSchemaName(stmt)
+func (i *Inspect) getSchemaCharacter(stmt *ast.TableName, schemaName string) (string, error) {
+	if schemaName == "" {
+		schemaName = i.getSchemaName(stmt)
+	}
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
 	if schemaExist {
 		if schema.characterLoad {
@@ -410,9 +414,44 @@ func (i *Inspect) getSchemaCharacter(stmt *ast.TableName) (string, error) {
 	}
 	return character, nil
 }
+func (i *Inspect) getMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (string, error) {
+	_, tableExist := i.Ctx.GetTable(i.getSchemaName(stmt), stmt.Name.String())
+	if !tableExist {
+		return "", nil
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+	sqls := make([]string, 0, len(columnNames))
+	for _, col := range columnNames {
+		sqls = append(sqls, fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) AS %v", col, col))
+	}
+	queryIndexOptionSql := fmt.Sprintf("SELECT %v FROM %v", strings.Join(sqls, ","), stmt.Name)
 
-func (i *Inspect) getCollationDatabase(stmt *ast.TableName) (string, error) {
-	schemaName := i.getSchemaName(stmt)
+	result, err := conn.Db.Query(queryIndexOptionSql)
+	if err != nil {
+		return "", fmt.Errorf("query max index option for table error: %v", err)
+	}
+	maxIndexOption := ""
+	for _, r := range result {
+		for _, value := range r {
+			if maxIndexOption == "" {
+				maxIndexOption = value.String
+				continue
+			}
+			if strings.Compare(value.String, maxIndexOption) > 0 {
+				maxIndexOption = value.String
+			}
+		}
+	}
+	return maxIndexOption, nil
+}
+
+func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (string, error) {
+	if schemaName == "" {
+		schemaName = i.getSchemaName(stmt)
+	}
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
 	if schemaExist && schema.collationLoad {
 		return schema.DefaultCollation, nil
