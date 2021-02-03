@@ -78,7 +78,7 @@ const (
 	DML_CHECK_FUZZY_SEARCH                           = "dml_check_fuzzy_search"
 	DDL_CHECK_TABLE_PARTITION                        = "ddl_check_table_partition"
 	DML_CHECK_NUMBER_OF_JOIN_TABLES                  = "dml_check_number_of_join_tables"
-	DDL_CHECK_IS_AFTER_UNION_DISTINCT                = "ddl_check_is_after_union_distinct"
+	DML_CHECK_IS_AFTER_UNION_DISTINCT                = "dml_check_is_after_union_distinct"
 	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
 	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
 	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
@@ -579,7 +579,7 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkNumberOfJoinTables,
 	}, RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_IS_AFTER_UNION_DISTINCT,
+			Name:  DML_CHECK_IS_AFTER_UNION_DISTINCT,
 			Desc:  "建议使用UNION ALL,替代UNION",
 			Level: model.RULE_LEVEL_NOTICE,
 		},
@@ -2105,7 +2105,7 @@ func checkIsAfterUnionDistinct(rule model.Rule, i *Inspect, node ast.Node) error
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
 			if ss.IsAfterUnionDistinct {
-				i.addResult(DDL_CHECK_IS_AFTER_UNION_DISTINCT)
+				i.addResult(DML_CHECK_IS_AFTER_UNION_DISTINCT)
 				return nil
 			}
 		}
