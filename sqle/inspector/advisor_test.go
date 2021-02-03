@@ -55,8 +55,14 @@ func getTestCreateTableStmt3() *ast.CreateTableStmt {
 CREATE TABLE exist_db.exist_tb_3 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL COMMENT "unit test",
-v2 varchar(255) COMMENT "unit test"
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="uint test";
+v2 varchar(255) COMMENT "unit test",
+v3 int COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="uint test"
+PARTITION BY LIST(v3) (
+PARTITION p1 VALUES IN(1, 2, 3),
+PARTITION p2 VALUES IN(4, 5, 6),
+PARTITION p3 VALUES IN(7, 8, 9)
+);
 `
 	node, err := parseOneSql("mysql", baseCreateQuery)
 	if err != nil {
@@ -401,6 +407,9 @@ INDEX idx_2 (v1,v2,v2)
 }
 
 func TestCheckInvalidAlterTable(t *testing.T) {
+	// It's trick :),
+	// elegant method: unit test support MySQL.
+	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
@@ -1844,19 +1853,33 @@ select v1 from exist_db.exist_tb_1;
 	)
 }
 func TestCheckCollationDatabase(t *testing.T) {
-	rule := RuleHandlerMap[DDL_CHECK_COLLATION_DATABASE].Rule
-	runSingleRuleInspectCase(rule, t, "create table: collation database", DefaultMysqlInspect(),
-		`
-CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8_general_ci;
-`,
-		newTestResult().addResult(DDL_CHECK_COLLATION_DATABASE, rule.Value),
-	)
-	runSingleRuleInspectCase(rule, t, "create table: passing the check collation database", DefaultMysqlInspect(),
-		`
-CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci; 
-`,
-		newTestResult(),
-	)
+	for desc, sql := range map[string]string{
+		`create table`:    `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8_general_ci;`,
+		`alter table`:     `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8_general_ci;`,
+		`create database`: `CREATE DATABASE db COLLATE utf8_general_ci;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLLATION_DATABASE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_COLLATION_DATABASE))
+	}
+
+	for desc, sql := range map[string]string{
+		`create table`:    `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci;`,
+		`alter table`:     `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8mb4_0900_ai_ci;`,
+		`create database`: `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_COLLATION_DATABASE].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
 }
 
 func TestCheckDecimalTypeColumn(t *testing.T) {
@@ -2060,6 +2083,339 @@ func TestCheckWhereExistNull(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(
 			RuleHandlerMap[DML_CHECK_WHERE_EXIST_NULL].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckNeedlessFunc(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`(1)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, MD5('aaa'), MD5('bbb'));`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_NEEDLESS_FUNC].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DML_CHECK_NEEDLESS_FUNC))
+	}
+
+	for desc, sql := range map[string]string{
+		`(1)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, sha1('aaa'), sha1('bbb'));`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_NEEDLESS_FUNC].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckDatabaseSuffix(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`create database`: `CREATE DATABASE app_service;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_DATABASE_SUFFIX].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_DATABASE_SUFFIX))
+	}
+
+	for desc, sql := range map[string]string{
+		`create database`: `CREATE DATABASE app_service_db;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_DATABASE_SUFFIX].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckTransactionIsolationLevel(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`(1)transaction isolation should notice`: `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;`,
+		`(2)transaction isolation should notice`: `SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;`,
+		`(3)transaction isolation should notice`: `SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;`,
+		`(4)transaction isolation should notice`: `SET GLOBAL TRANSACTION READ ONLY, ISOLATION LEVEL SERIALIZABLE;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_TRANSACTION_ISOLATION_LEVEL].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_TRANSACTION_ISOLATION_LEVEL))
+	}
+
+	for desc, sql := range map[string]string{
+		`(1)transaction isolation should not notice`: `SET TRANSACTION ISOLATION LEVEL READ COMMITTED;`,
+		`(2)transaction isolation should not notice`: `SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;`,
+		`(3)transaction isolation should not notice`: `SET GLOBAL TRANSACTION ISOLATION LEVEL READ COMMITTED;`,
+		`(4)transaction isolation should not notice`: `SET GLOBAL TRANSACTION READ ONLY;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_TRANSACTION_ISOLATION_LEVEL].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckFuzzySearch(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`(1)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
+		`(2)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
+		`(3)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
+		`(4)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
+
+		`(1)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a%';`,
+		`(2)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a';`,
+		`(3)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a';`,
+		`(4)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a%';`,
+
+		`(1)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
+		`(2)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
+		`(3)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
+		`(4)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DML_CHECK_FUZZY_SEARCH))
+	}
+
+	for desc, sql := range map[string]string{
+		`select table should not error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
+		`update table should not error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a%';`,
+		`delete table should not error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckTablePartition(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`create table should error`: `
+CREATE TABLE t1(
+c1 INT,
+c2 INT)
+PARTITION BY LIST(c1)
+(
+PARTITION p1 VALUES IN(1, 2, 3),
+PARTITION p2 VALUES IN(4, 5, 6),
+PARTITION p3 VALUES IN(7, 8, 9)
+)
+`,
+		`alter table should error`: `
+ALTER TABLE exist_db.exist_tb_1
+PARTITION BY LIST(v1)
+(
+PARTITION p1 VALUES IN(1, 2, 3),
+PARTITION p2 VALUES IN(4, 5, 6),
+PARTITION p3 VALUES IN(7, 8, 9)
+)
+`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_TABLE_PARTITION].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_TABLE_PARTITION))
+	}
+
+	for desc, sql := range map[string]string{
+		`create table should not error`: `
+CREATE TABLE t1(
+c1 INT,
+c2 INT)
+`,
+		`alter table should not error`: `
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 INT;
+`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_TABLE_PARTITION].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckNumberOfJoinTables(t *testing.T) {
+	// create table for JOIN test
+	inspector := DefaultMysqlInspect()
+	{
+		parent := DefaultMysqlInspect()
+		runDefaultRulesInspectCase(t, "create table for JOIN test", parent,
+			`
+create table if not exists exist_db.exist_tb_4 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+			newTestResult(),
+		)
+		inspector.Ctx = NewContext(parent.Ctx)
+	}
+
+	for desc, sql := range map[string]string{
+		`select table should error`: `
+SELECT * FROM exist_db.exist_tb_1 JOIN exist_db.exist_tb_2 ON exist_db.exist_tb_1.id = exist_db.exist_tb_2.id 
+JOIN exist_db.exist_tb_3 ON exist_db.exist_tb_2.id = exist_db.exist_tb_3.id
+JOIN exist_db.exist_tb_4 ON exist_db.exist_tb_3.id = exist_db.exist_tb_4.id
+`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_NUMBER_OF_JOIN_TABLES].Rule,
+			t,
+			desc,
+			inspector,
+			sql,
+			newTestResult().addResult(DML_CHECK_NUMBER_OF_JOIN_TABLES))
+	}
+
+	for desc, sql := range map[string]string{
+		`(1)select table should not error`: `
+		SELECT * FROM exist_db.exist_tb_1
+		`,
+		`(2)select table should not error`: `
+SELECT * FROM exist_db.exist_tb_1 JOIN exist_db.exist_tb_2 ON exist_db.exist_tb_1.id = exist_db.exist_tb_2.id 
+JOIN exist_db.exist_tb_3 ON exist_db.exist_tb_2.id = exist_db.exist_tb_3.id
+		`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_CHECK_NUMBER_OF_JOIN_TABLES].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckIsAfterUnionDistinct(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`select table should error`: `
+SELECT 1, 2 UNION SELECT 'a', 'b';`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_IS_AFTER_UNION_DISTINCT))
+	}
+
+	for desc, sql := range map[string]string{
+		`select table should error`: `
+SELECT 1, 2 UNION ALL SELECT 'a', 'b';`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckIsExistLimitOffset(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`(1)select table should error`: `
+SELECT * FROM exist_db.exist_tb_1 LIMIT 5,6;`,
+		`(2)select table should error`: `
+SELECT * FROM exist_db.exist_tb_1 LIMIT 6 OFFSET 5;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_IS_EXIST_LIMIT_OFFSET].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_IS_EXIST_LIMIT_OFFSET))
+	}
+
+	for desc, sql := range map[string]string{
+		`select table should not error`: `
+SELECT * FROM exist_db.exist_tb_1 LIMIT 5`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_IS_EXIST_LIMIT_OFFSET].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult())
+	}
+}
+
+func TestCheckObjectNameUseCn(t *testing.T) {
+	for desc, sql := range map[string]string{
+		`create database should error`: `
+CREATE DATABASE 应用1;`,
+		`(1)create table should error`: `
+CREATE TABLE 服务1(id int);`,
+		`(2)create table should error`: `
+CREATE TABLE app(字段 int);`,
+		`alter table should error`: `
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN 字段 int;`,
+		`create index should error`: `
+CREATE INDEX 索引_1 ON exist_db.exist_tb_1(v1)`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
+			t,
+			desc,
+			DefaultMysqlInspect(),
+			sql,
+			newTestResult().addResult(DDL_CHECK_OBJECT_NAME_USING_CN))
+	}
+
+	for desc, sql := range map[string]string{
+		`create database should error`: `
+CREATE DATABASE app1;`,
+		`(1)create table should error`: `
+CREATE TABLE service1(id int);`,
+		`(2)create table should error`: `
+CREATE TABLE app(id int);`,
+		`alter table should error`: `
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v4 int;`,
+		`create index should error`: `
+CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),

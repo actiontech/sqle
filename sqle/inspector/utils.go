@@ -100,6 +100,23 @@ func parseOneSql(dbType, sql string) (ast.StmtNode, error) {
 		return nil, errors.New("db type is invalid")
 	}
 }
+func getNumberOfJoinTables(stmt *ast.Join) int {
+	nums := 0
+	if stmt == nil {
+		return nums
+	}
+	parseTableFunc := func(resultSetNode ast.ResultSetNode) int {
+		switch t := resultSetNode.(type) {
+		case *ast.TableSource:
+			return 1
+		case *ast.Join:
+			return getNumberOfJoinTables(t)
+		}
+		return 0
+	}
+	nums += parseTableFunc(stmt.Left) + parseTableFunc(stmt.Right)
+	return nums
+}
 
 func getTables(stmt *ast.Join) []*ast.TableName {
 	tables := []*ast.TableName{}
@@ -284,6 +301,9 @@ func whereStmtHasOneColumn(where ast.ExprNode) bool {
 	hasColumn := false
 	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
+		case *ast.FuncCallExpr:
+			hasColumn = true
+			return true
 		case *ast.ColumnNameExpr:
 			hasColumn = true
 			return true
@@ -395,6 +415,26 @@ func whereStmtExistNot(where ast.ExprNode) bool {
 	}, where)
 	return existNOT
 }
+
+//Check is exist a full fuzzy query or a left fuzzy query. E.g: %name% or %name
+func checkWhereFuzzySearch(where ast.ExprNode) bool {
+	isExist := false
+	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.PatternLikeExpr:
+			switch pattern := x.Pattern.(type) {
+			case *driver.ValueExpr:
+				if strings.HasPrefix(pattern.Datum.GetString(), "%") {
+					isExist = true
+					return true
+				}
+			}
+		}
+		return false
+	}, where)
+	return isExist
+}
+
 func whereStmtExistScalarSubQueries(where ast.ExprNode) bool {
 	existScalarSubQueries := false
 	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
