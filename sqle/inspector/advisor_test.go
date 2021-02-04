@@ -2328,12 +2328,12 @@ func TestCheckIsAfterUnionDistinct(t *testing.T) {
 SELECT 1, 2 UNION SELECT 'a', 'b';`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			RuleHandlerMap[DML_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_IS_AFTER_UNION_DISTINCT))
+			newTestResult().addResult(DML_CHECK_IS_AFTER_UNION_DISTINCT))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2341,7 +2341,7 @@ SELECT 1, 2 UNION SELECT 'a', 'b';`,
 SELECT 1, 2 UNION ALL SELECT 'a', 'b';`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			RuleHandlerMap[DML_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
