@@ -308,7 +308,6 @@ type GetAllInstReq struct {
 // @router /instances [get]
 func GetInsts(c echo.Context) error {
 	s := model.GetStorage()
-	util.DebugPause("pause between get storage handle and query storage")
 	databases, err := s.GetInstances()
 	if err != nil {
 		return c.JSON(http.StatusOK, NewBaseReq(err))
