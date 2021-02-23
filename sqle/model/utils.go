@@ -29,9 +29,8 @@ func GetStorage() *Storage {
 func UpdateStorage(newStorage *Storage) {
 	storageMutex.Lock()
 	defer storageMutex.Unlock()
-	oldDB := storage.db
-	storage.db = newStorage.db
-	oldDB.Close()
+	storage.db.Close()
+	storage = newStorage
 }
 
 func GetDb() *gorm.DB {
