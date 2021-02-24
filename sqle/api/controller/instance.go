@@ -29,7 +29,8 @@ type CreateInstanceReq struct {
 	// this a list for rule template name
 	RuleTemplates []string `json:"rule_template_id_list" example:"1" valid:"-"`
 	// mycat_config is required if db_type is "mycat"
-	MycatConfig *model.MycatConfig `json:"mycat_config" valid:"-"`
+	MycatConfig        *model.MycatConfig `json:"mycat_config" valid:"-"`
+	WorkflowTemplateId int                `json:"workflow_template_id"`
 }
 
 type InstanceRes struct {
