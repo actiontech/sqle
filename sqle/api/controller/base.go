@@ -2,7 +2,9 @@ package controller
 
 import (
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
@@ -37,6 +39,22 @@ func NewBaseReq(err error) BaseRes {
 		}
 	}
 	return res
+}
+
+func BindAndValidateReq(c echo.Context, i interface{}) error {
+	if err := c.Bind(i); err != nil {
+		return err
+	}
+	if err := c.Validate(i); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest ,err)
+	}
+	return nil
+}
+
+func GetUserName(c echo.Context) string {
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	return claims["name"].(string)
 }
 
 func readFileToByte(c echo.Context, name string) (fileName string, data []byte, err error) {

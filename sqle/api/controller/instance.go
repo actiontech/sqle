@@ -20,17 +20,17 @@ var nullString = ""
 type CreateInstanceReq struct {
 	Name *string `json:"name" example:"test" valid:"required"`
 	// mysql, mycat, sqlserver
-	DbType   *string `json:"db_type" example:"mysql" valid:"required,in(mysql|mycat|sqlserver)"`
-	User     *string `json:"user" example:"root" valid:"required"`
-	Host     *string `json:"host" example:"10.10.10.10" valid:"required,ipv4"`
-	Port     *string `json:"port" example:"3306" valid:"required,range(1|65535)"`
-	Password *string `json:"password" example:"123456" valid:"required"`
-	Desc     *string `json:"desc" example:"this is a test instance" valid:"-"`
+	DbType             *string `json:"db_type" example:"mysql" valid:"required,in(mysql|mycat|sqlserver)"`
+	User               *string `json:"user" example:"root" valid:"required"`
+	Host               *string `json:"host" example:"10.10.10.10" valid:"required,ipv4"`
+	Port               *string `json:"port" example:"3306" valid:"required,range(1|65535)"`
+	Password           *string `json:"password" example:"123456" valid:"required"`
+	Desc               *string `json:"desc" example:"this is a test instance" valid:"-"`
+	WorkflowTemplateId *int    `json:"workflow_template_id" form:"workflow_template_id"`
 	// this a list for rule template name
 	RuleTemplates []string `json:"rule_template_id_list" example:"1" valid:"-"`
 	// mycat_config is required if db_type is "mycat"
-	MycatConfig        *model.MycatConfig `json:"mycat_config" valid:"-"`
-	WorkflowTemplateId int                `json:"workflow_template_id"`
+	MycatConfig *model.MycatConfig `json:"mycat_config" valid:"-"`
 }
 
 type InstanceRes struct {

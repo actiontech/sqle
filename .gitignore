@@ -15,3 +15,5 @@ sqlserver/SqlserverProto/obj/
 sqlserver/SqlserverProto/bin/
 sqlserver/SqlserverProtoServerTest/obj/
 sqlserver/SqlserverProtoServerTest/bin/
+
+bin/

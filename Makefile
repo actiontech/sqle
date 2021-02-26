@@ -69,15 +69,15 @@ docker_clean:
 docker_install:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(DOCKER_IMAGE) -c "cd /universe && make install $(MAKEFLAGS)"
 install: swagger parser
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(SQLE_LDFLAGS) $(GO_BUILD_FLAGS) -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(SQLE_LDFLAGS) $(GO_BUILD_FLAGS) -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
 
 build_sqlserver:
 	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
 
 swagger:
-	GOARCH=amd64 go build -o ${shell pwd}/$(PROJECT_NAME)/swag ${shell pwd}/build/swag/main.go
+	GOARCH=amd64 go build -o ${shell pwd}/bin/swag ${shell pwd}/build/swag/main.go
 	rm -rf ${shell pwd}/sqle/docs
-	${shell pwd}/$(PROJECT_NAME)/swag init -g ./$(PROJECT_NAME)/api/app.go -o ${shell pwd}/sqle/docs
+	${shell pwd}/bin/swag init -g ./$(PROJECT_NAME)/api/app.go -o ${shell pwd}/sqle/docs
 
 parser:
 	cd build/goyacc && GOOS=${GOOS} GOARCH=amd64 GOBIN=$(GOBIN) go install

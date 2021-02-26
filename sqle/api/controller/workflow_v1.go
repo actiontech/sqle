@@ -31,8 +31,8 @@ type WorkFlowStepRes struct {
 // @Summary 获取审批流程模板详情
 // @Description get workflow template detail
 // @Param workflow_template_id path string true "workflow template ID"
-// @Success 200 {object} controller.GetWorkflowTemplateRes
-// @router /workflow_templates/{workflow_template_id}/ [get]
+// @Success 200 {object} GetWorkflowTemplateRes
+// @router /v1/workflow_templates/{workflow_template_id}/ [get]
 func GetWorkflowTemplate(c echo.Context) error {
 	return nil
 }
@@ -60,7 +60,7 @@ type WorkFlowStepReq struct {
 // @Produce json
 // @Param instance body controller.CreateWorkflowTemplateReq true "create workflow template"
 // @Success 200 {object} controller.GetWorkflowTemplateRes
-// @router /workflow_templates [post]
+// @router /v1/workflow_templates [post]
 func CreateWorkflowTemplate(c echo.Context) error {
 	return nil
 }
@@ -72,7 +72,7 @@ func CreateWorkflowTemplate(c echo.Context) error {
 // @Param workflow_template_id path string true "workflow template ID"
 // @Param instance body controller.CreateWorkflowTemplateReq true "create workflow template"
 // @Success 200 {object} controller.GetWorkflowTemplateRes
-// @router /workflow_templates/{workflow_template_id}/ [put]
+// @router /v1/workflow_templates/{workflow_template_id}/ [put]
 func UpdateWorkflowTemplate(c echo.Context) error {
 	return nil
 }
@@ -83,7 +83,7 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 // @Produce json
 // @Param workflow_template_id path string true "workflow template ID"
 // @Success 200 {object} controller.BaseRes
-// @router /workflow_templates/{workflow_template_id}/ [delete]
+// @router /v1/workflow_templates/{workflow_template_id}/ [delete]
 func DeleteWorkflowTemplate(c echo.Context) error {
 	return nil
 }
@@ -97,7 +97,7 @@ type GetAllWorkflowTemplatesRes struct {
 // @Summary 获取审批流程模板列表
 // @Description get workflow template list
 // @Success 200 {object} controller.GetAllWorkflowTemplatesRes
-// @router /workflow_templates [get]
+// @router /v1/workflow_templates [get]
 func GetWorkflowTemplates(c echo.Context) error {
 	return nil
 }
@@ -106,7 +106,7 @@ func GetWorkflowTemplates(c echo.Context) error {
 // @Description create workflow
 // @Param task_id path string true "Task ID"
 // @Success 200 {object} controller.GetTaskRes
-// @router /workflows [post]
+// @router /v1/workflows [post]
 func CreateWorkflow(c echo.Context) error {
 	return nil
 }
@@ -142,7 +142,7 @@ type WorkflowRecord struct {
 // @Description get workflow detail
 // @Param workflow_id path string true "workflow ID"
 // @Success 200 {object} controller.GetWorkflowRes
-// @router /workflows/{workflow_id}/ [get]
+// @router /v1/workflows/{workflow_id}/ [get]
 func GetWorkflow(c echo.Context) error {
 	return nil
 }
@@ -152,7 +152,7 @@ func GetWorkflow(c echo.Context) error {
 // @Param workflow_id path string true "workflow ID"
 // @Param workflow_step_number path string true "workflow step number"
 // @Success 200 {object} controller.BaseRes
-// @router /workflows/{workflow_id}/{workflow_step_number}/accept [post]
+// @router /v1/workflows/{workflow_id}/{workflow_step_number}/accept [post]
 func AcceptWorkflow(c echo.Context) error {
 	return nil
 }
@@ -163,7 +163,7 @@ func AcceptWorkflow(c echo.Context) error {
 // @Param workflow_step_number path string true "workflow step number"
 // @Param reason query string false "reject reason"
 // @Success 200 {object} controller.BaseRes
-// @router /workflows/{workflow_id}/{workflow_step_number}/reject [post]
+// @router /v1/workflows/{workflow_id}/{workflow_step_number}/reject [post]
 func RejectWorkflow(c echo.Context) error {
 	return nil
 }
