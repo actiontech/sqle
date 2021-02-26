@@ -1029,6 +1029,277 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/v1/login": {
+            "post": {
+                "description": "user login",
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "user password",
+                        "name": "password",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.UserLoginRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflow_templates": {
+            "get": {
+                "description": "get workflow template list",
+                "summary": "获取审批流程模板列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetAllWorkflowTemplatesRes"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "create a workflow template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "创建Sql审批流程模板",
+                "parameters": [
+                    {
+                        "description": "create workflow template",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateWorkflowTemplateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetWorkflowTemplateRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflow_templates/{workflow_template_id}/": {
+            "get": {
+                "description": "get workflow template detail",
+                "summary": "获取审批流程模板详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow template ID",
+                        "name": "workflow_template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetWorkflowTemplateRes"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "update the workflow template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "更新Sql审批流程模板",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow template ID",
+                        "name": "workflow_template_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create workflow template",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.CreateWorkflowTemplateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetWorkflowTemplateRes"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "update the workflow template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "删除Sql审批流程模板",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow template ID",
+                        "name": "workflow_template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows": {
+            "post": {
+                "description": "create workflow",
+                "summary": "创建工单",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetTaskRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/{workflow_id}/": {
+            "get": {
+                "description": "get workflow detail",
+                "summary": "获取审批流程详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow ID",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.GetWorkflowRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/{workflow_id}/{workflow_step_number}/accept": {
+            "post": {
+                "description": "accept workflow",
+                "summary": "审批通过",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow ID",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow step number",
+                        "name": "workflow_step_number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/{workflow_id}/{workflow_step_number}/reject": {
+            "post": {
+                "description": "reject workflow",
+                "summary": "审批驳回",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow ID",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow step number",
+                        "name": "workflow_step_number",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "reject reason",
+                        "name": "reason",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1116,6 +1387,9 @@ var doc = `{
                 "user": {
                     "type": "string",
                     "example": "root"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1183,6 +1457,21 @@ var doc = `{
                     "example": [
                         "ddl_check_index_count"
                     ]
+                }
+            }
+        },
+        "controller.CreateWorkflowTemplateReq": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "step_list": {
+                    "type": "object",
+                    "$ref": "#/definitions/controller.WorkFlowStepReq"
                 }
             }
         },
@@ -1273,6 +1562,25 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.RuleTemplate"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "controller.GetAllWorkflowTemplatesRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.WorkflowTemplate"
                     }
                 },
                 "message": {
@@ -1406,6 +1714,40 @@ var doc = `{
                 }
             }
         },
+        "controller.GetWorkflowRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/controller.WorkflowRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "controller.GetWorkflowTemplateRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/controller.WorkflowTemplateRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "controller.InstanceRes": {
             "type": "object",
             "properties": {
@@ -1526,6 +1868,153 @@ var doc = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "controller.UserLoginRes": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "this is a jwt token string"
+                }
+            }
+        },
+        "controller.UserReq": {
+            "type": "object",
+            "properties": {
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.UserRes": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.WorkFlowStepReq": {
+            "type": "object",
+            "properties": {
+                "assignee_user_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controller.UserReq"
+                    }
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.WorkFlowStepRes": {
+            "type": "object",
+            "properties": {
+                "assignee_user_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controller.UserRes"
+                    }
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.WorkflowRecord": {
+            "type": "object",
+            "properties": {
+                "assignee_user_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controller.UserReq"
+                    }
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "operation_time": {
+                    "type": "string"
+                },
+                "operation_user_name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "integer"
+                },
+                "step_number": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.WorkflowRes": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "current_step_number": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "integer"
+                },
+                "step_record_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controller.WorkflowRecord"
+                    }
+                },
+                "task_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "controller.WorkflowTemplateRes": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "step_list": {
+                    "type": "object",
+                    "$ref": "#/definitions/controller.WorkFlowStepRes"
                 }
             }
         },
@@ -1683,6 +2172,9 @@ var doc = `{
                 "user": {
                     "type": "string",
                     "example": "root"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1736,6 +2228,9 @@ var doc = `{
                 "user": {
                     "type": "string",
                     "example": "root"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2000,6 +2495,29 @@ var doc = `{
                 "schema": {
                     "type": "string",
                     "example": "db1"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
+                }
+            }
+        },
+        "model.WorkflowTemplate": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2018-10-21T16:40:23+08:00"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string",

@@ -61,6 +61,8 @@ definitions:
       user:
         example: root
         type: string
+      workflow_template_id:
+        type: integer
     type: object
   controller.CreateSqlWhitelistItemReq:
     properties:
@@ -107,6 +109,16 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  controller.CreateWorkflowTemplateReq:
+    properties:
+      desc:
+        type: string
+      name:
+        type: string
+      step_list:
+        $ref: '#/definitions/controller.WorkFlowStepReq'
+        type: object
     type: object
   controller.GetAllInstReq:
     properties:
@@ -168,6 +180,19 @@ definitions:
       data:
         items:
           $ref: '#/definitions/model.RuleTemplate'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetAllWorkflowTemplatesRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.WorkflowTemplate'
         type: array
       message:
         example: ok
@@ -259,6 +284,30 @@ definitions:
       total_nums:
         type: integer
     type: object
+  controller.GetWorkflowRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/controller.WorkflowRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  controller.GetWorkflowTemplateRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/controller.WorkflowTemplateRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   controller.InstanceRes:
     properties:
       code:
@@ -344,6 +393,102 @@ definitions:
         type: string
       value:
         type: string
+    type: object
+  controller.UserLoginRes:
+    properties:
+      token:
+        example: this is a jwt token string
+        type: string
+    type: object
+  controller.UserReq:
+    properties:
+      user_name:
+        type: string
+    type: object
+  controller.UserRes:
+    properties:
+      user_id:
+        type: string
+      user_name:
+        type: string
+    type: object
+  controller.WorkFlowStepReq:
+    properties:
+      assignee_user_list:
+        items:
+          $ref: '#/definitions/controller.UserReq'
+        type: array
+      desc:
+        type: string
+      number:
+        type: string
+      type:
+        type: string
+    type: object
+  controller.WorkFlowStepRes:
+    properties:
+      assignee_user_list:
+        items:
+          $ref: '#/definitions/controller.UserRes'
+        type: array
+      desc:
+        type: string
+      number:
+        type: string
+      type:
+        type: string
+    type: object
+  controller.WorkflowRecord:
+    properties:
+      assignee_user_list:
+        items:
+          $ref: '#/definitions/controller.UserReq'
+        type: array
+      desc:
+        type: string
+      id:
+        type: integer
+      operation_time:
+        type: string
+      operation_user_name:
+        type: string
+      reason:
+        type: string
+      state:
+        type: integer
+      step_number:
+        type: integer
+      type:
+        type: string
+    type: object
+  controller.WorkflowRes:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      current_step_number:
+        type: integer
+      id:
+        type: integer
+      state:
+        type: integer
+      step_record_list:
+        items:
+          $ref: '#/definitions/controller.WorkflowRecord'
+        type: array
+      task_id:
+        type: integer
+    type: object
+  controller.WorkflowTemplateRes:
+    properties:
+      desc:
+        type: string
+      name:
+        type: string
+      step_list:
+        $ref: '#/definitions/controller.WorkFlowStepRes'
+        type: object
     type: object
   model.AlgorithmSchema:
     properties:
@@ -451,6 +596,8 @@ definitions:
       user:
         example: root
         type: string
+      workflow_template_id:
+        type: integer
     type: object
   model.InstanceDetail:
     properties:
@@ -489,6 +636,8 @@ definitions:
       user:
         example: root
         type: string
+      workflow_template_id:
+        type: integer
     type: object
   model.MycatConfig:
     properties:
@@ -670,6 +819,22 @@ definitions:
         type: array
       schema:
         example: db1
+        type: string
+      updated_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+    type: object
+  model.WorkflowTemplate:
+    properties:
+      created_at:
+        example: "2018-10-21T16:40:23+08:00"
+        type: string
+      desc:
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
         type: string
       updated_at:
         example: "2018-10-21T16:40:23+08:00"
@@ -1367,4 +1532,183 @@ paths:
           schema:
             $ref: '#/definitions/controller.BaseRes'
       summary: 批量删除审核任务
+  /v1/login:
+    post:
+      description: user login
+      parameters:
+      - description: user name
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: user password
+        in: formData
+        name: password
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.UserLoginRes'
+      summary: 用户登录
+  /v1/workflow_templates:
+    get:
+      description: get workflow template list
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAllWorkflowTemplatesRes'
+      summary: 获取审批流程模板列表
+    post:
+      consumes:
+      - application/json
+      description: create a workflow template
+      parameters:
+      - description: create workflow template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateWorkflowTemplateReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetWorkflowTemplateRes'
+      summary: 创建Sql审批流程模板
+  /v1/workflow_templates/{workflow_template_id}/:
+    delete:
+      consumes:
+      - application/json
+      description: update the workflow template
+      parameters:
+      - description: workflow template ID
+        in: path
+        name: workflow_template_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      summary: 删除Sql审批流程模板
+    get:
+      description: get workflow template detail
+      parameters:
+      - description: workflow template ID
+        in: path
+        name: workflow_template_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetWorkflowTemplateRes'
+      summary: 获取审批流程模板详情
+    put:
+      consumes:
+      - application/json
+      description: update the workflow template
+      parameters:
+      - description: workflow template ID
+        in: path
+        name: workflow_template_id
+        required: true
+        type: string
+      - description: create workflow template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/controller.CreateWorkflowTemplateReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetWorkflowTemplateRes'
+      summary: 更新Sql审批流程模板
+  /v1/workflows:
+    post:
+      description: create workflow
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetTaskRes'
+      summary: 创建工单
+  /v1/workflows/{workflow_id}/:
+    get:
+      description: get workflow detail
+      parameters:
+      - description: workflow ID
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetWorkflowRes'
+      summary: 获取审批流程详情
+  /v1/workflows/{workflow_id}/{workflow_step_number}/accept:
+    post:
+      description: accept workflow
+      parameters:
+      - description: workflow ID
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: workflow step number
+        in: path
+        name: workflow_step_number
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      summary: 审批通过
+  /v1/workflows/{workflow_id}/{workflow_step_number}/reject:
+    post:
+      description: reject workflow
+      parameters:
+      - description: workflow ID
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: workflow step number
+        in: path
+        name: workflow_step_number
+        required: true
+        type: string
+      - description: reject reason
+        in: query
+        name: reason
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      summary: 审批驳回
 swagger: "2.0"
