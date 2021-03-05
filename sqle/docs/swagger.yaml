@@ -9,852 +9,117 @@ definitions:
         example: ok
         type: string
     type: object
-  controller.CommitTaskRes:
+  v1.CreateRoleReqV1:
     properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/controller.CommitTaskResult'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.CommitTaskResult:
-    properties:
-      task_exec_status:
-        type: string
-    type: object
-  controller.CreateInstanceReq:
-    properties:
-      db_type:
-        description: mysql, mycat, sqlserver
-        example: mysql
-        type: string
-      desc:
-        example: this is a test instance
-        type: string
-      host:
-        example: 10.10.10.10
-        type: string
-      mycat_config:
-        $ref: '#/definitions/model.MycatConfig'
-        description: mycat_config is required if db_type is "mycat"
-        type: object
-      name:
-        example: test
-        type: string
-      password:
-        example: "123456"
-        type: string
-      port:
-        example: "3306"
-        type: string
-      rule_template_id_list:
-        description: this a list for rule template name
-        example:
-        - "1"
-        items:
-          type: string
-        type: array
-      user:
-        example: root
-        type: string
-      workflow_template_id:
-        type: integer
-    type: object
-  controller.CreateSqlWhitelistItemReq:
-    properties:
-      desc:
-        example: used for rapid release
-        type: string
-      value:
-        example: create table
-        type: string
-    type: object
-  controller.CreateTaskReq:
-    properties:
-      desc:
-        example: this is a test task
-        type: string
-      inst_name:
-        example: inst_1
-        type: string
-      name:
-        example: test
-        type: string
-      schema:
-        example: db1
-        type: string
-      sql:
-        example: alter table tb1 drop columns c1
-        type: string
-    type: object
-  controller.CreateTplReq:
-    properties:
-      desc:
-        type: string
       instance_name_list:
-        example:
-        - mysql-xxx
         items:
           type: string
         type: array
-      name:
+      role_desc:
         type: string
-      rule_name_list:
-        example:
-        - ddl_check_index_count
+      role_name:
+        type: string
+      user_name_list:
         items:
           type: string
         type: array
     type: object
-  controller.CreateWorkflowTemplateReq:
+  v1.CreateUserReqV1:
     properties:
-      desc:
+      email:
+        example: test@email.com
         type: string
-      name:
+      login_name:
+        example: test
         type: string
-      step_list:
-        $ref: '#/definitions/controller.WorkFlowStepReq'
-        type: object
-    type: object
-  controller.GetAllInstReq:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/model.Instance'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetAllRuleRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/model.Rule'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetAllSchemasRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/server.InstanceStatus'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetAllTaskRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/model.Task'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetAllTplRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/model.RuleTemplate'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetAllWorkflowTemplatesRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/model.WorkflowTemplate'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetExecErrUploadedSqlsRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      exec_error_commit_sql_list:
-        items:
-          $ref: '#/definitions/model.CommitSql'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetRuleTplRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/model.RuleTemplateDetail'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetSchemaRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        example:
-        - db1
-        items:
-          type: string
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetSqlWhitelistRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/model.SqlWhitelist'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  controller.GetTaskRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/model.TaskDetail'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetUploadedSqlsRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      commit_sql_list:
-        items:
-          $ref: '#/definitions/model.CommitSql'
-        type: array
-      message:
-        example: ok
-        type: string
-      rollback_sql_list:
-        items:
-          $ref: '#/definitions/model.RollbackSql'
-        type: array
-      total_nums:
-        type: integer
-    type: object
-  controller.GetWorkflowRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/controller.WorkflowRes'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.GetWorkflowTemplateRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/controller.WorkflowTemplateRes'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.InstanceRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/model.InstanceDetail'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.LoadMycatConfigRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/controller.CreateInstanceReq'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.PingInstRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        description: 'true: ping success; false: ping failed'
-        type: boolean
-      message:
-        example: ok
-        type: string
-    type: object
-  controller.PingInstanceReq:
-    properties:
-      db_type:
-        description: mysql, mycat, sqlserver
-        example: mysql
-        type: string
-      host:
-        example: 10.10.10.10
-        type: string
-      mycat_config:
-        $ref: '#/definitions/model.MycatConfig'
-        description: mycat_config is required if db_type is "mycat"
-        type: object
-      password:
+      login_password:
         example: "123456"
         type: string
-      port:
-        example: "3306"
-        type: string
-      user:
-        example: root
-        type: string
+      role_name_list:
+        items:
+          type: string
+        type: array
     type: object
-  controller.SqlWhitelistItemRes:
+  v1.GetRolesResV1:
     properties:
       code:
         example: 0
         type: integer
       data:
         items:
-          $ref: '#/definitions/model.SqlWhitelist'
+          $ref: '#/definitions/v1.RoleResV1'
         type: array
       message:
         example: ok
         type: string
+      total_nums:
+        type: integer
     type: object
-  controller.UpdateAllRuleReq:
+  v1.GetUsersResV1:
     properties:
-      rule_list:
+      code:
+        example: 0
+        type: integer
+      data:
         items:
-          $ref: '#/definitions/controller.UpdateRuleReq'
+          $ref: '#/definitions/v1.UserResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.RoleResV1:
+    properties:
+      instance_name_list:
+        items:
+          type: string
+        type: array
+      role_desc:
+        type: string
+      role_name:
+        type: string
+      user_name_list:
+        items:
+          type: string
         type: array
     type: object
-  controller.UpdateRuleReq:
+  v1.UpdateRoleReqV1:
     properties:
-      name:
+      instance_name_list:
+        items:
+          type: string
+        type: array
+      role_desc:
         type: string
-      value:
-        type: string
+      user_name_list:
+        items:
+          type: string
+        type: array
     type: object
-  controller.UserLoginRes:
+  v1.UpdateUserReqV1:
+    properties:
+      email:
+        type: string
+      role_name_list:
+        items:
+          type: string
+        type: array
+    type: object
+  v1.UserLoginRes:
     properties:
       token:
         example: this is a jwt token string
         type: string
     type: object
-  controller.UserReq:
+  v1.UserResV1:
     properties:
-      user_name:
+      email:
         type: string
-    type: object
-  controller.UserRes:
-    properties:
-      user_id:
+      login_name:
         type: string
-      user_name:
-        type: string
-    type: object
-  controller.WorkFlowStepReq:
-    properties:
-      assignee_user_list:
-        items:
-          $ref: '#/definitions/controller.UserReq'
-        type: array
-      desc:
-        type: string
-      number:
-        type: string
-      type:
-        type: string
-    type: object
-  controller.WorkFlowStepRes:
-    properties:
-      assignee_user_list:
-        items:
-          $ref: '#/definitions/controller.UserRes'
-        type: array
-      desc:
-        type: string
-      number:
-        type: string
-      type:
-        type: string
-    type: object
-  controller.WorkflowRecord:
-    properties:
-      assignee_user_list:
-        items:
-          $ref: '#/definitions/controller.UserReq'
-        type: array
-      desc:
-        type: string
-      id:
-        type: integer
-      operation_time:
-        type: string
-      operation_user_name:
-        type: string
-      reason:
-        type: string
-      state:
-        type: integer
-      step_number:
-        type: integer
-      type:
-        type: string
-    type: object
-  controller.WorkflowRes:
-    properties:
-      create_time:
-        type: string
-      create_user_name:
-        type: string
-      current_step_number:
-        type: integer
-      id:
-        type: integer
-      state:
-        type: integer
-      step_record_list:
-        items:
-          $ref: '#/definitions/controller.WorkflowRecord'
-        type: array
-      task_id:
-        type: integer
-    type: object
-  controller.WorkflowTemplateRes:
-    properties:
-      desc:
-        type: string
-      name:
-        type: string
-      step_list:
-        $ref: '#/definitions/controller.WorkFlowStepRes'
-        type: object
-    type: object
-  model.AlgorithmSchema:
-    properties:
-      data_node:
-        $ref: '#/definitions/model.DataNode'
-        type: object
-      table_list:
-        additionalProperties:
-          $ref: '#/definitions/model.AlgorithmTable'
-        type: object
-    type: object
-  model.AlgorithmTable:
-    properties:
-      data_node_list:
-        items:
-          $ref: '#/definitions/model.DataNode'
-        type: array
-      sharding_columns:
-        type: string
-    type: object
-  model.CommitSql:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      end_binlog_file:
-        type: string
-      end_binlog_pos:
-        type: integer
-      exec_result:
-        type: string
-      exec_status:
-        type: string
-      fingerPrint:
-        type: string
-      id:
-        example: 1
-        type: integer
-      inspect_level:
-        description: 'level: error, warn, notice, normal'
-        type: string
-      inspect_result:
-        type: string
-      inspect_status:
-        type: string
-      number:
-        type: integer
-      row_affects:
-        type: integer
-      sql:
-        type: string
-      start_binlog_file:
-        type: string
-      start_binlog_pos:
-        type: integer
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-    type: object
-  model.DataHost:
-    properties:
-      host:
-        type: string
-      password:
-        type: string
-      port:
-        type: string
-      user:
-        type: string
-    type: object
-  model.DataNode:
-    properties:
-      data_host:
-        type: string
-      database:
-        type: string
-    type: object
-  model.Instance:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      db_type:
-        example: mysql
-        type: string
-      desc:
-        example: this is a instance
-        type: string
-      host:
-        example: 10.10.10.10
-        type: string
-      id:
-        example: 1
-        type: integer
-      name:
-        type: string
-      port:
-        example: "3306"
-        type: string
-      secret_password:
-        type: string
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      user:
-        example: root
-        type: string
-      workflow_template_id:
-        type: integer
-    type: object
-  model.InstanceDetail:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      db_type:
-        example: mysql
-        type: string
-      desc:
-        example: this is a instance
-        type: string
-      host:
-        example: 10.10.10.10
-        type: string
-      id:
-        example: 1
-        type: integer
-      mycat_config:
-        $ref: '#/definitions/model.MycatConfig'
-        type: object
-      name:
-        type: string
-      port:
-        example: "3306"
-        type: string
-      rule_template_list:
-        items:
-          $ref: '#/definitions/model.RuleTemplate'
-        type: array
-      secret_password:
-        type: string
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      user:
-        example: root
-        type: string
-      workflow_template_id:
-        type: integer
-    type: object
-  model.MycatConfig:
-    properties:
-      data_host_list:
-        additionalProperties:
-          $ref: '#/definitions/model.DataHost'
-        type: object
-      schema_list:
-        additionalProperties:
-          $ref: '#/definitions/model.AlgorithmSchema'
-        type: object
-    type: object
-  model.RollbackSql:
-    properties:
-      commit_sql_number:
-        type: integer
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      end_binlog_file:
-        type: string
-      end_binlog_pos:
-        type: integer
-      exec_result:
-        type: string
-      exec_status:
-        type: string
-      fingerPrint:
-        type: string
-      id:
-        example: 1
-        type: integer
-      number:
-        type: integer
-      row_affects:
-        type: integer
-      sql:
-        type: string
-      start_binlog_file:
-        type: string
-      start_binlog_pos:
-        type: integer
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-    type: object
-  model.Rule:
-    properties:
-      desc:
-        type: string
-      level:
-        description: notice, warn, error
-        example: error
-        type: string
-      name:
-        type: string
-      value:
-        type: string
-    type: object
-  model.RuleTemplate:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      desc:
-        type: string
-      id:
-        example: 1
-        type: integer
-      instance_list:
-        items:
-          $ref: '#/definitions/model.Instance'
-        type: array
-      name:
-        type: string
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-    type: object
-  model.RuleTemplateDetail:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      desc:
-        type: string
-      id:
-        example: 1
-        type: integer
-      instance_list:
-        items:
-          $ref: '#/definitions/model.Instance'
-        type: array
-      name:
-        type: string
-      rule_list:
-        items:
-          $ref: '#/definitions/model.Rule'
-        type: array
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-    type: object
-  model.SqlWhitelist:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      desc:
-        type: string
-      id:
-        example: 1
-        type: integer
-      message_digest:
-        type: string
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      value:
-        type: string
-    type: object
-  model.Task:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      desc:
-        example: this is a task
-        type: string
-      id:
-        example: 1
-        type: integer
-      instance_id:
-        type: integer
-      instance_name:
-        type: string
-      name:
-        example: REQ201812578
-        type: string
-      normal_rate:
-        type: number
-      schema:
-        example: db1
-        type: string
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-    type: object
-  model.TaskDetail:
-    properties:
-      commit_sql_list:
-        items:
-          $ref: '#/definitions/model.CommitSql'
-        type: array
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      desc:
-        example: this is a task
-        type: string
-      id:
-        example: 1
-        type: integer
-      instance:
-        $ref: '#/definitions/model.Instance'
-        type: object
-      instance_id:
-        type: integer
-      instance_name:
-        type: string
-      name:
-        example: REQ201812578
-        type: string
-      normal_rate:
-        type: number
-      rollback_sql_list:
-        items:
-          $ref: '#/definitions/model.RollbackSql'
-        type: array
-      schema:
-        example: db1
-        type: string
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-    type: object
-  model.WorkflowTemplate:
-    properties:
-      created_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-      desc:
-        type: string
-      id:
-        example: 1
-        type: integer
-      name:
-        type: string
-      updated_at:
-        example: "2018-10-21T16:40:23+08:00"
-        type: string
-    type: object
-  server.InstanceStatus:
-    properties:
-      db_type:
-        type: string
-      host:
-        type: string
-      id:
-        type: integer
-      is_connect_failed:
-        type: boolean
-      name:
-        type: string
-      port:
-        type: string
-      schema_list:
+      role_name_list:
         items:
           type: string
         type: array
@@ -866,675 +131,10 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
-  /base/reload:
-    post:
-      consumes:
-      - application/x-www-form-urlencoded
-      description: reload base info
-      parameters:
-      - description: mysql user
-        in: formData
-        name: mysql_user
-        required: true
-        type: string
-      - description: mysql password
-        in: formData
-        name: mysql_password
-        required: true
-        type: string
-      - description: mysql host
-        in: formData
-        name: mysql_host
-        required: true
-        type: string
-      - description: mysql port
-        in: formData
-        name: mysql_port
-        required: true
-        type: string
-      - description: mysql schema
-        in: formData
-        name: mysql_schema
-        required: true
-        type: string
-      - description: confif path (Absolute Path)
-        in: formData
-        name: config_path
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 加载数据库参数
-  /instance/connection:
-    post:
-      consumes:
-      - application/json
-      description: test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的
-        json 的子集
-      parameters:
-      - description: instance info
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.PingInstanceReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.PingInstRes'
-      summary: 实例连通性测试（实例提交前）
-  /instance/load_mycat_config:
-    post:
-      consumes:
-      - multipart/form-data
-      description: unmarshal mycat config file
-      parameters:
-      - description: server.xml
-        in: formData
-        name: server_xml
-        required: true
-        type: file
-      - description: schema.xml
-        in: formData
-        name: schema_xml
-        required: true
-        type: file
-      - description: rule.xml
-        in: formData
-        name: rule_xml
-        required: true
-        type: file
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.LoadMycatConfigRes'
-      summary: 解析 mycat 配置
-  /instances:
-    get:
-      description: get all instances
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetAllInstReq'
-      summary: 实例列表
-    post:
-      consumes:
-      - application/json
-      description: create a instance
-      parameters:
-      - description: add instance
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateInstanceReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.InstanceRes'
-      summary: 添加实例
-  /instances/{instance_id}/:
-    delete:
-      description: delete instance db
-      parameters:
-      - description: Instance ID
-        in: path
-        name: instance_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 删除实例
-    get:
-      description: get instance db
-      parameters:
-      - description: Instance ID
-        in: path
-        name: instance_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.InstanceRes'
-      summary: 获取实例信息
-    patch:
-      description: update instance db
-      parameters:
-      - description: Instance ID
-        in: path
-        name: instance_id
-        required: true
-        type: string
-      - description: update instance
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateInstanceReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 更新实例
-  /instances/{instance_id}/connection:
-    get:
-      description: test instance db connection
-      parameters:
-      - description: Instance ID
-        in: path
-        name: instance_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.PingInstRes'
-      summary: 实例连通性测试（实例提交后）
-  /instances/{instance_id}/schemas:
-    get:
-      description: instance schema list
-      parameters:
-      - description: Instance ID
-        in: path
-        name: instance_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetSchemaRes'
-      summary: 实例 Schema 列表
-  /instances/{instance_name}/get_instance_by_name:
-    get:
-      description: get instance db
-      parameters:
-      - description: Instance Name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.InstanceRes'
-      summary: 获取实例信息
-  /rule_templates:
-    get:
-      description: get all rule template
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetAllTplRes'
-      summary: 规则模板列表
-    post:
-      consumes:
-      - application/json
-      description: create a rule template
-      parameters:
-      - description: add instance
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateTplReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 添加规则模板
-  /rule_templates/{template_id}/:
-    delete:
-      description: delete rule template
-      parameters:
-      - description: Template ID
-        in: path
-        name: template_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 删除规则模板
-    get:
-      description: get rule template
-      parameters:
-      - description: Rule Template ID
-        in: path
-        name: template_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetRuleTplRes'
-      summary: 获取规则模板
-    patch:
-      description: update rule template
-      parameters:
-      - description: Template ID
-        in: path
-        name: template_id
-        required: true
-        type: string
-      - description: update rule template
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateTplReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 更新规则模板
-  /rules:
-    get:
-      description: get all rule template
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetAllRuleRes'
-      summary: 规则列表
-    patch:
-      consumes:
-      - application/json
-      description: update rules
-      parameters:
-      - description: update rule
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.UpdateAllRuleReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 修改配置
-  /schemas:
-    get:
-      description: all schema list
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetAllSchemasRes'
-      summary: 所有实例的 Schema 列表
-  /schemas/manual_update:
-    post:
-      description: update schema list
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 手动刷新 Schema 列表
-  /sql_whitelist:
-    get:
-      description: get all whitelist
-      parameters:
-      - description: page index
-        in: query
-        name: page_index
-        type: string
-      - description: page size
-        in: query
-        name: page_size
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetSqlWhitelistRes'
-      summary: 获取Sql审核白名单
-    post:
-      consumes:
-      - application/json
-      description: create a sql whitelist item
-      parameters:
-      - description: add sql whitelist item
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateSqlWhitelistItemReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.SqlWhitelistItemRes'
-      summary: 添加SQL白名单
-  /sql_whitelist/{sql_whitelist_id}/:
-    delete:
-      description: remove sql white
-      parameters:
-      - description: sql whitelist item ID
-        in: path
-        name: sql_whitelist_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.SqlWhitelistItemRes'
-      summary: 删除SQL白名单信息
-    get:
-      description: get sql whitelist item
-      parameters:
-      - description: sql whitelist item ID
-        in: path
-        name: sql_whitelist_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.SqlWhitelistItemRes'
-      summary: 获取指定SQL白名单信息
-    patch:
-      consumes:
-      - application/json
-      description: update a sql whitelist item
-      parameters:
-      - description: sql whitelist item ID
-        in: path
-        name: sql_whitelist_id
-        required: true
-        type: string
-      - description: update sql whitelist item
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateSqlWhitelistItemReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.SqlWhitelistItemRes'
-      summary: 更新SQL白名单
-  /task/create_inspect:
-    post:
-      consumes:
-      - multipart/form-data
-      description: 'create a task and inspect. NOTE: it will create a task with sqls
-        from "sql" if "sql" isn''t empty'
-      parameters:
-      - description: task name
-        in: formData
-        name: name
-        required: true
-        type: string
-      - description: description of task
-        in: formData
-        name: desc
-        type: string
-      - description: instance name
-        in: formData
-        name: inst_name
-        required: true
-        type: string
-      - description: schema of instance
-        in: formData
-        name: schema
-        type: string
-      - description: sqls for audit
-        in: formData
-        name: sql
-        type: string
-      - description: uploaded SQL file
-        in: formData
-        name: uploaded_sql_file
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetTaskRes'
-      summary: 创建Sql审核任务并提交审核
-  /tasks:
-    get:
-      description: get all tasks
-      parameters:
-      - description: get task by ids(interlaced by ',')
-        in: query
-        name: task_ids
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetAllTaskRes'
-      summary: Sql审核列表
-    post:
-      consumes:
-      - application/json
-      description: create a task
-      parameters:
-      - description: add task
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateTaskReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetTaskRes'
-      summary: 创建Sql审核任务
-  /tasks/{task_id}/:
-    delete:
-      description: delete task
-      parameters:
-      - description: Task ID
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 删除审核任务
-    get:
-      description: get task
-      parameters:
-      - description: Task ID
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetTaskRes'
-      summary: 获取Sql审核任务信息
-  /tasks/{task_id}/commit:
-    post:
-      consumes:
-      - application/x-www-form-urlencoded
-      description: commit sql
-      parameters:
-      - description: Task ID
-        in: path
-        name: task_id
-        required: true
-        type: string
-      - description: the request is sync or async.
-        in: formData
-        name: is_sync
-        type: boolean
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.CommitTaskRes'
-      summary: Sql提交上线
-  /tasks/{task_id}/execute_error_uploaded_sqls:
-    get:
-      description: get information of execute error SQLs belong to the specified task
-      parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetExecErrUploadedSqlsRes'
-      summary: 获取指定task 执行异常的SQLs信息
-  /tasks/{task_id}/inspection:
-    post:
-      description: inspect sql
-      parameters:
-      - description: Task ID
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetTaskRes'
-      summary: Sql提交审核
-  /tasks/{task_id}/rollback:
-    post:
-      description: rollback sql
-      parameters:
-      - description: Task ID
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: Sql提交回滚
-  /tasks/{task_id}/upload_sql_file:
-    post:
-      consumes:
-      - multipart/form-data
-      description: upload SQL file
-      parameters:
-      - description: Task ID
-        in: path
-        name: task_id
-        required: true
-        type: string
-      - description: SQL file
-        in: formData
-        name: sql_file
-        required: true
-        type: file
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 上传 SQL 文件
-  /tasks/{task_id}/uploaded_sqls:
-    get:
-      description: get information of all SQLs belong to the specified task
-      parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: string
-      - description: page size
-        in: query
-        name: page_size
-        type: string
-      - description: 'filter: execution status of task uploaded sql'
-        enum:
-        - finished
-        - initialized
-        - doing
-        - failed
-        in: query
-        name: filter_sql_execution_status
-        type: string
-      - description: 'filter: audit status of task uploaded sql'
-        enum:
-        - doing
-        - finished
-        in: query
-        name: filter_sql_audit_status
-        type: string
-      - description: 'no duplicate: select unique fingerprint and inspect result from
-          the commit_sql_detail table'
-        in: query
-        name: no_duplicate
-        type: boolean
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetUploadedSqlsRes'
-      summary: 获取指定task的SQLs信息
-  /tasks/remove_by_task_ids:
-    post:
-      consumes:
-      - application/x-www-form-urlencoded
-      description: delete tasks by ids
-      parameters:
-      - description: remove tasks by ids(interlaced by ',')
-        in: formData
-        name: task_ids
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 批量删除审核任务
   /v1/login:
     post:
       description: user login
+      operationId: loginV1
       parameters:
       - description: user name
         in: formData
@@ -1550,45 +150,83 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.UserLoginRes'
+            $ref: '#/definitions/v1.UserLoginRes'
       summary: 用户登录
-  /v1/workflow_templates:
+      tags:
+      - user
+  /v1/roles:
     get:
-      description: get workflow template list
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetAllWorkflowTemplatesRes'
-      summary: 获取审批流程模板列表
-    post:
       consumes:
       - application/json
-      description: create a workflow template
+      description: get role list
+      operationId: getRoleListV1
       parameters:
-      - description: create workflow template
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/controller.CreateWorkflowTemplateReq'
+      - description: filter role name
+        in: query
+        name: filter_role_name
+        type: string
+      - description: filter user name
+        in: query
+        name: filter_user_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.GetWorkflowTemplateRes'
-      summary: 创建Sql审批流程模板
-  /v1/workflow_templates/{workflow_template_id}/:
+            $ref: '#/definitions/v1.GetRolesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取角色列表
+      tags:
+      - role
+    post:
+      consumes:
+      - application/json
+      description: create role
+      operationId: createRoleV1
+      parameters:
+      - description: create role
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateRoleReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建角色
+      tags:
+      - role
+  /v1/roles/{role_name}/:
     delete:
       consumes:
       - application/json
-      description: update the workflow template
+      description: delete role
+      operationId: deleteRoleV1
       parameters:
-      - description: workflow template ID
+      - description: role name
         in: path
-        name: workflow_template_id
+        name: role_name
         required: true
         type: string
       produces:
@@ -1598,117 +236,180 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
-      summary: 删除Sql审批流程模板
-    get:
-      description: get workflow template detail
-      parameters:
-      - description: workflow template ID
-        in: path
-        name: workflow_template_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetWorkflowTemplateRes'
-      summary: 获取审批流程模板详情
-    put:
+      security:
+      - ApiKeyAuth: []
+      summary: 删除角色
+      tags:
+      - role
+    patch:
       consumes:
       - application/json
-      description: update the workflow template
+      description: update role
+      operationId: updateRoleV1
       parameters:
-      - description: workflow template ID
+      - description: role name
         in: path
-        name: workflow_template_id
+        name: role_name
         required: true
         type: string
-      - description: create workflow template
+      - description: update role request
         in: body
         name: instance
         required: true
         schema:
-          $ref: '#/definitions/controller.CreateWorkflowTemplateReq'
+          $ref: '#/definitions/v1.UpdateRoleReqV1'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.GetWorkflowTemplateRes'
-      summary: 更新Sql审批流程模板
-  /v1/workflows:
-    post:
-      description: create workflow
-      parameters:
-      - description: Task ID
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.GetTaskRes'
-      summary: 创建工单
-  /v1/workflows/{workflow_id}/:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新角色信息
+      tags:
+      - role
+  /v1/test:
     get:
-      description: get workflow detail
-      parameters:
-      - description: workflow ID
-        in: path
-        name: workflow_id
-        required: true
-        type: string
+      description: user login
+      operationId: testV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.GetWorkflowRes'
-      summary: 获取审批流程详情
-  /v1/workflows/{workflow_id}/{workflow_step_number}/accept:
-    post:
-      description: accept workflow
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: test
+      tags:
+      - user
+  /v1/users:
+    get:
+      description: get user info list
+      operationId: getUserListV1
       parameters:
-      - description: workflow ID
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      - description: workflow step number
-        in: path
-        name: workflow_step_number
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 审批通过
-  /v1/workflows/{workflow_id}/{workflow_step_number}/reject:
-    post:
-      description: reject workflow
-      parameters:
-      - description: workflow ID
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      - description: workflow step number
-        in: path
-        name: workflow_step_number
-        required: true
-        type: string
-      - description: reject reason
+      - description: filter user name
         in: query
-        name: reason
+        name: filter_user_name
+        type: string
+      - description: filter role name
+        in: query
+        name: filter_role_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetUsersResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户信息列表
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      description: create user
+      operationId: createUserV1
+      parameters:
+      - description: create user
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateUserReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建用户
+      tags:
+      - user
+  /v1/users/{user_name}/:
+    delete:
+      description: delete user
+      operationId: deleteUserV1
+      parameters:
+      - description: user name
+        in: path
+        name: user_name
+        required: true
         type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
-      summary: 审批驳回
+      security:
+      - ApiKeyAuth: []
+      summary: 删除用户
+      tags:
+      - user
+    get:
+      description: get user info
+      operationId: getUserV1
+      parameters:
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.UserResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户信息
+      tags:
+      - user
+    patch:
+      consumes:
+      - application/json
+      description: update user
+      operationId: updateUserV1
+      parameters:
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      - description: update user
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateUserReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新用户信息
+      tags:
+      - user
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

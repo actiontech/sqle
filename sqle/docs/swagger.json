@@ -9,1015 +9,14 @@
     },
     "basePath": "/",
     "paths": {
-        "/base/reload": {
-            "post": {
-                "description": "reload base info",
-                "consumes": [
-                    "application/x-www-form-urlencoded"
-                ],
-                "summary": "加载数据库参数",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "mysql user",
-                        "name": "mysql_user",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "mysql password",
-                        "name": "mysql_password",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "mysql host",
-                        "name": "mysql_host",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "mysql port",
-                        "name": "mysql_port",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "mysql schema",
-                        "name": "mysql_schema",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "confif path (Absolute Path)",
-                        "name": "config_path",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/instance/connection": {
-            "post": {
-                "description": "test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集",
-                "consumes": [
-                    "application/json"
-                ],
-                "summary": "实例连通性测试（实例提交前）",
-                "parameters": [
-                    {
-                        "description": "instance info",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.PingInstanceReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.PingInstRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/instance/load_mycat_config": {
-            "post": {
-                "description": "unmarshal mycat config file",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "summary": "解析 mycat 配置",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "server.xml",
-                        "name": "server_xml",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "schema.xml",
-                        "name": "schema_xml",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "rule.xml",
-                        "name": "rule_xml",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.LoadMycatConfigRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/instances": {
-            "get": {
-                "description": "get all instances",
-                "summary": "实例列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetAllInstReq"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "create a instance",
-                "consumes": [
-                    "application/json"
-                ],
-                "summary": "添加实例",
-                "parameters": [
-                    {
-                        "description": "add instance",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.CreateInstanceReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.InstanceRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/instances/{instance_id}/": {
-            "get": {
-                "description": "get instance db",
-                "summary": "获取实例信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Instance ID",
-                        "name": "instance_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.InstanceRes"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "delete instance db",
-                "summary": "删除实例",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Instance ID",
-                        "name": "instance_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "description": "update instance db",
-                "summary": "更新实例",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Instance ID",
-                        "name": "instance_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update instance",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.CreateInstanceReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/instances/{instance_id}/connection": {
-            "get": {
-                "description": "test instance db connection",
-                "summary": "实例连通性测试（实例提交后）",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Instance ID",
-                        "name": "instance_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.PingInstRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/instances/{instance_id}/schemas": {
-            "get": {
-                "description": "instance schema list",
-                "summary": "实例 Schema 列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Instance ID",
-                        "name": "instance_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetSchemaRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/instances/{instance_name}/get_instance_by_name": {
-            "get": {
-                "description": "get instance db",
-                "summary": "获取实例信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Instance Name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.InstanceRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/rule_templates": {
-            "get": {
-                "description": "get all rule template",
-                "summary": "规则模板列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetAllTplRes"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "create a rule template",
-                "consumes": [
-                    "application/json"
-                ],
-                "summary": "添加规则模板",
-                "parameters": [
-                    {
-                        "description": "add instance",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.CreateTplReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/rule_templates/{template_id}/": {
-            "get": {
-                "description": "get rule template",
-                "summary": "获取规则模板",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Rule Template ID",
-                        "name": "template_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetRuleTplRes"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "delete rule template",
-                "summary": "删除规则模板",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Template ID",
-                        "name": "template_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "description": "update rule template",
-                "summary": "更新规则模板",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Template ID",
-                        "name": "template_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update rule template",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.CreateTplReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/rules": {
-            "get": {
-                "description": "get all rule template",
-                "summary": "规则列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetAllRuleRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "description": "update rules",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "修改配置",
-                "parameters": [
-                    {
-                        "description": "update rule",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.UpdateAllRuleReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/schemas": {
-            "get": {
-                "description": "all schema list",
-                "summary": "所有实例的 Schema 列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetAllSchemasRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/schemas/manual_update": {
-            "post": {
-                "description": "update schema list",
-                "summary": "手动刷新 Schema 列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/sql_whitelist": {
-            "get": {
-                "description": "get all whitelist",
-                "summary": "获取Sql审核白名单",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page size",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetSqlWhitelistRes"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "create a sql whitelist item",
-                "consumes": [
-                    "application/json"
-                ],
-                "summary": "添加SQL白名单",
-                "parameters": [
-                    {
-                        "description": "add sql whitelist item",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.CreateSqlWhitelistItemReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/sql_whitelist/{sql_whitelist_id}/": {
-            "get": {
-                "description": "get sql whitelist item",
-                "summary": "获取指定SQL白名单信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "sql whitelist item ID",
-                        "name": "sql_whitelist_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "remove sql white",
-                "summary": "删除SQL白名单信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "sql whitelist item ID",
-                        "name": "sql_whitelist_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "description": "update a sql whitelist item",
-                "consumes": [
-                    "application/json"
-                ],
-                "summary": "更新SQL白名单",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "sql whitelist item ID",
-                        "name": "sql_whitelist_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update sql whitelist item",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.CreateSqlWhitelistItemReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.SqlWhitelistItemRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/task/create_inspect": {
-            "post": {
-                "description": "create a task and inspect. NOTE: it will create a task with sqls from \"sql\" if \"sql\" isn't empty",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "创建Sql审核任务并提交审核",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "task name",
-                        "name": "name",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "description of task",
-                        "name": "desc",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "inst_name",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema of instance",
-                        "name": "schema",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sqls for audit",
-                        "name": "sql",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "uploaded SQL file",
-                        "name": "uploaded_sql_file",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetTaskRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks": {
-            "get": {
-                "description": "get all tasks",
-                "summary": "Sql审核列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "get task by ids(interlaced by ',')",
-                        "name": "task_ids",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetAllTaskRes"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "create a task",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "创建Sql审核任务",
-                "parameters": [
-                    {
-                        "description": "add task",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.CreateTaskReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetTaskRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/remove_by_task_ids": {
-            "post": {
-                "description": "delete tasks by ids",
-                "consumes": [
-                    "application/x-www-form-urlencoded"
-                ],
-                "summary": "批量删除审核任务",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "remove tasks by ids(interlaced by ',')",
-                        "name": "task_ids",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/{task_id}/": {
-            "get": {
-                "description": "get task",
-                "summary": "获取Sql审核任务信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetTaskRes"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "delete task",
-                "summary": "删除审核任务",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/{task_id}/commit": {
-            "post": {
-                "description": "commit sql",
-                "consumes": [
-                    "application/x-www-form-urlencoded"
-                ],
-                "summary": "Sql提交上线",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "the request is sync or async.",
-                        "name": "is_sync",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.CommitTaskRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/{task_id}/execute_error_uploaded_sqls": {
-            "get": {
-                "description": "get information of execute error SQLs belong to the specified task",
-                "summary": "获取指定task 执行异常的SQLs信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetExecErrUploadedSqlsRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/{task_id}/inspection": {
-            "post": {
-                "description": "inspect sql",
-                "summary": "Sql提交审核",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetTaskRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/{task_id}/rollback": {
-            "post": {
-                "description": "rollback sql",
-                "summary": "Sql提交回滚",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/{task_id}/upload_sql_file": {
-            "post": {
-                "description": "upload SQL file",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "summary": "上传 SQL 文件",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "SQL file",
-                        "name": "sql_file",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/tasks/{task_id}/uploaded_sqls": {
-            "get": {
-                "description": "get information of all SQLs belong to the specified task",
-                "summary": "获取指定task的SQLs信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "finished",
-                            "initialized",
-                            "doing",
-                            "failed"
-                        ],
-                        "type": "string",
-                        "description": "filter: execution status of task uploaded sql",
-                        "name": "filter_sql_execution_status",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "doing",
-                            "finished"
-                        ],
-                        "type": "string",
-                        "description": "filter: audit status of task uploaded sql",
-                        "name": "filter_sql_audit_status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "no duplicate: select unique fingerprint and inspect result from the commit_sql_detail table",
-                        "name": "no_duplicate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetUploadedSqlsRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/login": {
             "post": {
                 "description": "user login",
+                "tags": [
+                    "user"
+                ],
                 "summary": "用户登录",
+                "operationId": "loginV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -1038,42 +37,98 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.UserLoginRes"
+                            "$ref": "#/definitions/v1.UserLoginRes"
                         }
                     }
                 }
             }
         },
-        "/v1/workflow_templates": {
+        "/v1/roles": {
             "get": {
-                "description": "get workflow template list",
-                "summary": "获取审批流程模板列表",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get role list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "role"
+                ],
+                "summary": "获取角色列表",
+                "operationId": "getRoleListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter role name",
+                        "name": "filter_role_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter user name",
+                        "name": "filter_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.GetAllWorkflowTemplatesRes"
+                            "$ref": "#/definitions/v1.GetRolesResV1"
                         }
                     }
                 }
             },
             "post": {
-                "description": "create a workflow template",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create role",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "创建Sql审批流程模板",
+                "tags": [
+                    "role"
+                ],
+                "summary": "创建角色",
+                "operationId": "createRoleV1",
                 "parameters": [
                     {
-                        "description": "create workflow template",
+                        "description": "create role",
                         "name": "instance",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.CreateWorkflowTemplateReq"
+                            "$ref": "#/definitions/v1.CreateRoleReqV1"
                         }
                     }
                 ],
@@ -1081,58 +136,82 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.GetWorkflowTemplateRes"
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
             }
         },
-        "/v1/workflow_templates/{workflow_template_id}/": {
-            "get": {
-                "description": "get workflow template detail",
-                "summary": "获取审批流程模板详情",
-                "parameters": [
+        "/v1/roles/{role_name}/": {
+            "delete": {
+                "security": [
                     {
-                        "type": "string",
-                        "description": "workflow template ID",
-                        "name": "workflow_template_id",
-                        "in": "path",
-                        "required": true
+                        "ApiKeyAuth": []
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetWorkflowTemplateRes"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "update the workflow template",
+                "description": "delete role",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "更新Sql审批流程模板",
+                "tags": [
+                    "role"
+                ],
+                "summary": "删除角色",
+                "operationId": "deleteRoleV1",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "workflow template ID",
-                        "name": "workflow_template_id",
+                        "description": "role name",
+                        "name": "role_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "role"
+                ],
+                "summary": "更新角色信息",
+                "operationId": "updateRoleV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "role name",
+                        "name": "role_name",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "create workflow template",
+                        "description": "update role request",
                         "name": "instance",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.CreateWorkflowTemplateReq"
+                            "$ref": "#/definitions/v1.UpdateRoleReqV1"
                         }
                     }
                 ],
@@ -1140,139 +219,217 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.GetWorkflowTemplateRes"
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/test": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "user login",
+                "tags": [
+                    "user"
+                ],
+                "summary": "test",
+                "operationId": "testV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get user info list",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取用户信息列表",
+                "operationId": "getUserListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter user name",
+                        "name": "filter_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter role name",
+                        "name": "filter_role_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetUsersResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "创建用户",
+                "operationId": "createUserV1",
+                "parameters": [
+                    {
+                        "description": "create user",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateUserReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/{user_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get user info",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取用户信息",
+                "operationId": "getUserV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.UserResV1"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "update the workflow template",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete user",
+                "tags": [
+                    "user"
+                ],
+                "summary": "删除用户",
+                "operationId": "deleteUserV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update user",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "删除Sql审批流程模板",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow template ID",
-                        "name": "workflow_template_id",
-                        "in": "path",
-                        "required": true
-                    }
+                "tags": [
+                    "user"
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows": {
-            "post": {
-                "description": "create workflow",
-                "summary": "创建工单",
+                "summary": "更新用户信息",
+                "operationId": "updateUserV1",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Task ID",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetTaskRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/": {
-            "get": {
-                "description": "get workflow detail",
-                "summary": "获取审批流程详情",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow ID",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.GetWorkflowRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/{workflow_step_number}/accept": {
-            "post": {
-                "description": "accept workflow",
-                "summary": "审批通过",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow ID",
-                        "name": "workflow_id",
+                        "description": "user name",
+                        "name": "user_name",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "workflow step number",
-                        "name": "workflow_step_number",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                        "description": "update user",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.UpdateUserReqV1"
                         }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/{workflow_step_number}/reject": {
-            "post": {
-                "description": "reject workflow",
-                "summary": "审批驳回",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow ID",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workflow step number",
-                        "name": "workflow_step_number",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "reject reason",
-                        "name": "reason",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1300,521 +457,53 @@
                 }
             }
         },
-        "controller.CommitTaskRes": {
+        "v1.CreateRoleReqV1": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/controller.CommitTaskResult"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.CommitTaskResult": {
-            "type": "object",
-            "properties": {
-                "task_exec_status": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.CreateInstanceReq": {
-            "type": "object",
-            "properties": {
-                "db_type": {
-                    "description": "mysql, mycat, sqlserver",
-                    "type": "string",
-                    "example": "mysql"
-                },
-                "desc": {
-                    "type": "string",
-                    "example": "this is a test instance"
-                },
-                "host": {
-                    "type": "string",
-                    "example": "10.10.10.10"
-                },
-                "mycat_config": {
-                    "description": "mycat_config is required if db_type is \"mycat\"",
-                    "type": "object",
-                    "$ref": "#/definitions/model.MycatConfig"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "test"
-                },
-                "password": {
-                    "type": "string",
-                    "example": "123456"
-                },
-                "port": {
-                    "type": "string",
-                    "example": "3306"
-                },
-                "rule_template_id_list": {
-                    "description": "this a list for rule template name",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "1"
-                    ]
-                },
-                "user": {
-                    "type": "string",
-                    "example": "root"
-                },
-                "workflow_template_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "controller.CreateSqlWhitelistItemReq": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string",
-                    "example": "used for rapid release"
-                },
-                "value": {
-                    "type": "string",
-                    "example": "create table"
-                }
-            }
-        },
-        "controller.CreateTaskReq": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string",
-                    "example": "this is a test task"
-                },
-                "inst_name": {
-                    "type": "string",
-                    "example": "inst_1"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "test"
-                },
-                "schema": {
-                    "type": "string",
-                    "example": "db1"
-                },
-                "sql": {
-                    "type": "string",
-                    "example": "alter table tb1 drop columns c1"
-                }
-            }
-        },
-        "controller.CreateTplReq": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
                 "instance_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
-                    },
-                    "example": [
-                        "mysql-xxx"
-                    ]
+                    }
                 },
-                "name": {
+                "role_desc": {
                     "type": "string"
                 },
-                "rule_name_list": {
+                "role_name": {
+                    "type": "string"
+                },
+                "user_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
-                    },
-                    "example": [
-                        "ddl_check_index_count"
-                    ]
-                }
-            }
-        },
-        "controller.CreateWorkflowTemplateReq": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "step_list": {
-                    "type": "object",
-                    "$ref": "#/definitions/controller.WorkFlowStepReq"
-                }
-            }
-        },
-        "controller.GetAllInstReq": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Instance"
                     }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
-        "controller.GetAllRuleRes": {
+        "v1.CreateUserReqV1": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Rule"
-                    }
-                },
-                "message": {
+                "email": {
                     "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetAllSchemasRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
+                    "example": "test@email.com"
                 },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/server.InstanceStatus"
-                    }
-                },
-                "message": {
+                "login_name": {
                     "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetAllTaskRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
+                    "example": "test"
                 },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Task"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetAllTplRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.RuleTemplate"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetAllWorkflowTemplatesRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.WorkflowTemplate"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetExecErrUploadedSqlsRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "exec_error_commit_sql_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CommitSql"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetRuleTplRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.RuleTemplateDetail"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetSchemaRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "db1"
-                    ]
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetSqlWhitelistRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.SqlWhitelist"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "controller.GetTaskRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.TaskDetail"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetUploadedSqlsRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "commit_sql_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CommitSql"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "rollback_sql_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.RollbackSql"
-                    }
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "controller.GetWorkflowRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/controller.WorkflowRes"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.GetWorkflowTemplateRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/controller.WorkflowTemplateRes"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.InstanceRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.InstanceDetail"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.LoadMycatConfigRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/controller.CreateInstanceReq"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.PingInstRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "description": "true: ping success; false: ping failed",
-                    "type": "boolean"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "controller.PingInstanceReq": {
-            "type": "object",
-            "properties": {
-                "db_type": {
-                    "description": "mysql, mycat, sqlserver",
-                    "type": "string",
-                    "example": "mysql"
-                },
-                "host": {
-                    "type": "string",
-                    "example": "10.10.10.10"
-                },
-                "mycat_config": {
-                    "description": "mycat_config is required if db_type is \"mycat\"",
-                    "type": "object",
-                    "$ref": "#/definitions/model.MycatConfig"
-                },
-                "password": {
+                "login_password": {
                     "type": "string",
                     "example": "123456"
                 },
-                "port": {
-                    "type": "string",
-                    "example": "3306"
-                },
-                "user": {
-                    "type": "string",
-                    "example": "root"
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
-        "controller.SqlWhitelistItemRes": {
+        "v1.GetRolesResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -1824,38 +513,98 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.SqlWhitelist"
+                        "$ref": "#/definitions/v1.RoleResV1"
                     }
                 },
                 "message": {
                     "type": "string",
                     "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
-        "controller.UpdateAllRuleReq": {
+        "v1.GetUsersResV1": {
             "type": "object",
             "properties": {
-                "rule_list": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/controller.UpdateRuleReq"
+                        "$ref": "#/definitions/v1.UserResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.RoleResV1": {
+            "type": "object",
+            "properties": {
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "role_desc": {
+                    "type": "string"
+                },
+                "role_name": {
+                    "type": "string"
+                },
+                "user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 }
             }
         },
-        "controller.UpdateRuleReq": {
+        "v1.UpdateRoleReqV1": {
             "type": "object",
             "properties": {
-                "name": {
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "role_desc": {
                     "type": "string"
                 },
-                "value": {
-                    "type": "string"
+                "user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
-        "controller.UserLoginRes": {
+        "v1.UpdateUserReqV1": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.UserLoginRes": {
             "type": "object",
             "properties": {
                 "token": {
@@ -1864,679 +613,29 @@
                 }
             }
         },
-        "controller.UserReq": {
+        "v1.UserResV1": {
             "type": "object",
             "properties": {
-                "user_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.UserRes": {
-            "type": "object",
-            "properties": {
-                "user_id": {
+                "email": {
                     "type": "string"
                 },
-                "user_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.WorkFlowStepReq": {
-            "type": "object",
-            "properties": {
-                "assignee_user_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/controller.UserReq"
-                    }
-                },
-                "desc": {
+                "login_name": {
                     "type": "string"
                 },
-                "number": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.WorkFlowStepRes": {
-            "type": "object",
-            "properties": {
-                "assignee_user_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/controller.UserRes"
-                    }
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "number": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.WorkflowRecord": {
-            "type": "object",
-            "properties": {
-                "assignee_user_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/controller.UserReq"
-                    }
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "operation_time": {
-                    "type": "string"
-                },
-                "operation_user_name": {
-                    "type": "string"
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "integer"
-                },
-                "step_number": {
-                    "type": "integer"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.WorkflowRes": {
-            "type": "object",
-            "properties": {
-                "create_time": {
-                    "type": "string"
-                },
-                "create_user_name": {
-                    "type": "string"
-                },
-                "current_step_number": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "state": {
-                    "type": "integer"
-                },
-                "step_record_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/controller.WorkflowRecord"
-                    }
-                },
-                "task_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "controller.WorkflowTemplateRes": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "step_list": {
-                    "type": "object",
-                    "$ref": "#/definitions/controller.WorkFlowStepRes"
-                }
-            }
-        },
-        "model.AlgorithmSchema": {
-            "type": "object",
-            "properties": {
-                "data_node": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.DataNode"
-                },
-                "table_list": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.AlgorithmTable"
-                    }
-                }
-            }
-        },
-        "model.AlgorithmTable": {
-            "type": "object",
-            "properties": {
-                "data_node_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.DataNode"
-                    }
-                },
-                "sharding_columns": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.CommitSql": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "end_binlog_file": {
-                    "type": "string"
-                },
-                "end_binlog_pos": {
-                    "type": "integer"
-                },
-                "exec_result": {
-                    "type": "string"
-                },
-                "exec_status": {
-                    "type": "string"
-                },
-                "fingerPrint": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "inspect_level": {
-                    "description": "level: error, warn, notice, normal",
-                    "type": "string"
-                },
-                "inspect_result": {
-                    "type": "string"
-                },
-                "inspect_status": {
-                    "type": "string"
-                },
-                "number": {
-                    "type": "integer"
-                },
-                "row_affects": {
-                    "type": "integer"
-                },
-                "sql": {
-                    "type": "string"
-                },
-                "start_binlog_file": {
-                    "type": "string"
-                },
-                "start_binlog_pos": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                }
-            }
-        },
-        "model.DataHost": {
-            "type": "object",
-            "properties": {
-                "host": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "user": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.DataNode": {
-            "type": "object",
-            "properties": {
-                "data_host": {
-                    "type": "string"
-                },
-                "database": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.Instance": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "db_type": {
-                    "type": "string",
-                    "example": "mysql"
-                },
-                "desc": {
-                    "type": "string",
-                    "example": "this is a instance"
-                },
-                "host": {
-                    "type": "string",
-                    "example": "10.10.10.10"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "name": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string",
-                    "example": "3306"
-                },
-                "secret_password": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "user": {
-                    "type": "string",
-                    "example": "root"
-                },
-                "workflow_template_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.InstanceDetail": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "db_type": {
-                    "type": "string",
-                    "example": "mysql"
-                },
-                "desc": {
-                    "type": "string",
-                    "example": "this is a instance"
-                },
-                "host": {
-                    "type": "string",
-                    "example": "10.10.10.10"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "mycat_config": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.MycatConfig"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string",
-                    "example": "3306"
-                },
-                "rule_template_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.RuleTemplate"
-                    }
-                },
-                "secret_password": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "user": {
-                    "type": "string",
-                    "example": "root"
-                },
-                "workflow_template_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.MycatConfig": {
-            "type": "object",
-            "properties": {
-                "data_host_list": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.DataHost"
-                    }
-                },
-                "schema_list": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.AlgorithmSchema"
-                    }
-                }
-            }
-        },
-        "model.RollbackSql": {
-            "type": "object",
-            "properties": {
-                "commit_sql_number": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "end_binlog_file": {
-                    "type": "string"
-                },
-                "end_binlog_pos": {
-                    "type": "integer"
-                },
-                "exec_result": {
-                    "type": "string"
-                },
-                "exec_status": {
-                    "type": "string"
-                },
-                "fingerPrint": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "number": {
-                    "type": "integer"
-                },
-                "row_affects": {
-                    "type": "integer"
-                },
-                "sql": {
-                    "type": "string"
-                },
-                "start_binlog_file": {
-                    "type": "string"
-                },
-                "start_binlog_pos": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                }
-            }
-        },
-        "model.Rule": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "level": {
-                    "description": "notice, warn, error",
-                    "type": "string",
-                    "example": "error"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.RuleTemplate": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "instance_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Instance"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                }
-            }
-        },
-        "model.RuleTemplateDetail": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "instance_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Instance"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rule_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Rule"
-                    }
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                }
-            }
-        },
-        "model.SqlWhitelist": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "message_digest": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.Task": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "desc": {
-                    "type": "string",
-                    "example": "this is a task"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "instance_id": {
-                    "type": "integer"
-                },
-                "instance_name": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "REQ201812578"
-                },
-                "normal_rate": {
-                    "type": "number"
-                },
-                "schema": {
-                    "type": "string",
-                    "example": "db1"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                }
-            }
-        },
-        "model.TaskDetail": {
-            "type": "object",
-            "properties": {
-                "commit_sql_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CommitSql"
-                    }
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "desc": {
-                    "type": "string",
-                    "example": "this is a task"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "instance": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.Instance"
-                },
-                "instance_id": {
-                    "type": "integer"
-                },
-                "instance_name": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "REQ201812578"
-                },
-                "normal_rate": {
-                    "type": "number"
-                },
-                "rollback_sql_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.RollbackSql"
-                    }
-                },
-                "schema": {
-                    "type": "string",
-                    "example": "db1"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                }
-            }
-        },
-        "model.WorkflowTemplate": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "name": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2018-10-21T16:40:23+08:00"
-                }
-            }
-        },
-        "server.InstanceStatus": {
-            "type": "object",
-            "properties": {
-                "db_type": {
-                    "type": "string"
-                },
-                "host": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "is_connect_failed": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "schema_list": {
+                "role_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }
