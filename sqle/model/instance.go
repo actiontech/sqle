@@ -161,6 +161,12 @@ func (s *Storage) GetInstByName(name string) (*Instance, bool, error) {
 	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
+func (s *Storage) GetInstancesByNames(names []string) ([]*Instance, error) {
+	instances := []*Instance{}
+	err := s.db.Where("name in (?)", names).Find(&instances).Error
+	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
 func (s *Storage) UpdateInstanceById(InstanceId string, attrs ...interface{}) error {
 	err := s.db.Table("instances").Where("id = ?", InstanceId).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)

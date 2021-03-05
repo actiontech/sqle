@@ -21,6 +21,9 @@ const (
 	TASK_NOT_EXIST          ErrorCode = 4006
 	TASK_ACTION_INVALID     ErrorCode = 4009
 
+	DATA_EXIST     ErrorCode = 4010
+	DATA_NOT_EXIST ErrorCode = 4011
+
 	TASK_RUNNING     ErrorCode = 1001
 	TASK_ACTION_DONE ErrorCode = 1002
 )

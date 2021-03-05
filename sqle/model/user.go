@@ -1,19 +1,122 @@
 package model
 
+import (
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/ucommon/v4/util"
+	"github.com/jinzhu/gorm"
+)
+
 type User struct {
 	Model
-	Name     string
-	Mail     string
-	Password string
-
-	Roles []*Role `gorm:"many2many:user_role;"`
+	Name           string `gorm:"column:login_name"`
+	Email          string
+	Password       string  `json:"-" gorm:"-"`
+	SecretPassword string  `json:"secret_password" gorm:"not null;column:password"`
+	Roles          []*Role `gorm:"many2many:user_role;"`
 }
 
 type Role struct {
 	Model
-	Name string
-	Desc string
-
+	Name      string
+	Desc      string
 	Users     []*User     `gorm:"many2many:user_role;"`
-	Instances []*Instance `gorm:"many2many:user_languages;"`
+	Instances []*Instance `gorm:"many2many:instance_role;"`
+}
+
+// BeforeSave is a hook implement gorm model before exec create
+func (i *User) BeforeSave() error {
+	return i.encryptPassword()
+}
+
+// AfterFind is a hook implement gorm model after query, ignore err if query from db
+func (i *User) AfterFind() error {
+	err := i.decryptPassword()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt password for user %d failed, error: %v", i.Name, err)
+	}
+	return nil
+}
+
+func (i *User) decryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.Password == "" {
+		data, err := util.AesDecrypt(i.SecretPassword)
+		if err != nil {
+			return err
+		} else {
+			i.Password = string(data)
+		}
+	}
+	return nil
+}
+
+func (i *User) encryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.SecretPassword == "" {
+		data, err := util.AesEncrypt(i.Password)
+		if err != nil {
+			return err
+		}
+		i.SecretPassword = string(data)
+	}
+	return nil
+}
+
+func (s *Storage) GetUserByName(name string) (*User, bool, error) {
+	t := &User{}
+	err := s.db.Where("login_name = ?", name).First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		return t, false, nil
+	}
+	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetUserWithRolesByName(name string) (*User, bool, error) {
+	t := &User{}
+	err := s.db.Preload("Roles").Where("login_name = ?", name).First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		return t, false, nil
+	}
+	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) UpdateUserRoles(user *User, rs ...*Role) error {
+	err := s.db.Model(user).Association("Roles").Replace(rs).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
+	users := []*User{}
+	err := s.db.Where("login_name in (?)", names).Find(&users).Error
+	return users, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetRoleByName(name string) (*Role, bool, error) {
+	role := &Role{}
+	err := s.db.Where("name = ?", name).Find(role).Error
+	if err == gorm.ErrRecordNotFound {
+		return role, false, nil
+	}
+	return role, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetRolesByNames(names []string) ([]*Role, error) {
+	roles := []*Role{}
+	err := s.db.Where("name in (?)", names).Find(&roles).Error
+	return roles, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) UpdateRoleUsers(role *Role, users ...*User) error {
+	err := s.db.Model(role).Association("Users").Replace(users).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) UpdateRoleInstances(role *Role, instances ...*Instance) error {
+	err := s.db.Model(role).Association("Instances").Replace(instances).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

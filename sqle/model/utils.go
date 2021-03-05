@@ -2,17 +2,22 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"github.com/jinzhu/gorm"
+	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 )
 
 var storage *Storage
 
 var storageMutex sync.Mutex
+
+const dbDriver = "mysql"
 
 func InitStorage(s *Storage) {
 	storageMutex.Lock()
@@ -35,6 +40,12 @@ func UpdateStorage(newStorage *Storage) {
 
 func GetDb() *gorm.DB {
 	return storage.db
+}
+
+func GetSqlxDb() *sqlx.DB {
+	db := sqlx.NewDb(storage.db.DB(), dbDriver)
+	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	return db
 }
 
 type Model struct {
@@ -66,7 +77,17 @@ type Storage struct {
 }
 
 func (s *Storage) AutoMigrate() error {
-	err := s.db.AutoMigrate(&Instance{}, &RuleTemplate{}, &Rule{}, &Task{}, &CommitSql{}, &RollbackSql{}, &SqlWhitelist{}).Error
+	err := s.db.AutoMigrate(
+		&Instance{},
+		&RuleTemplate{},
+		&Rule{},
+		&Task{},
+		&CommitSql{},
+		&RollbackSql{},
+		&SqlWhitelist{},
+		&User{},
+		&Role{},
+	).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
@@ -109,6 +130,22 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 			return err
 		}
 		return s.UpdateTemplateRules(t, rules...)
+	}
+	return nil
+}
+
+const defaultAdminUser = "admin"
+
+func (s *Storage) CreateAdminUser() error {
+	_, exist, err := s.GetUserByName(defaultAdminUser)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return s.Save(&User{
+			Name:     defaultAdminUser,
+			Password: "admin",
+		})
 	}
 	return nil
 }
