@@ -75,6 +75,7 @@ github.com/denisenkom/go-mssqldb/internal/cp
 github.com/denisenkom/go-mssqldb/internal/decimal
 github.com/denisenkom/go-mssqldb/internal/querytext
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
+## explicit
 github.com/dgrijalva/jwt-go
 # github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
 github.com/docker/spdystream
@@ -125,6 +126,10 @@ github.com/jinzhu/gorm/dialects/mysql
 github.com/jinzhu/gorm/dialects/sqlite
 # github.com/jinzhu/inflection v1.0.0
 github.com/jinzhu/inflection
+# github.com/jmoiron/sqlx v1.3.1
+## explicit
+github.com/jmoiron/sqlx
+github.com/jmoiron/sqlx/reflectx
 # github.com/json-iterator/go v1.1.8
 github.com/json-iterator/go
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
@@ -202,6 +207,7 @@ github.com/sirupsen/logrus
 # github.com/smartystreets/goconvey v1.6.4
 ## explicit
 # github.com/spf13/cobra v0.0.7
+## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit
@@ -502,5 +508,6 @@ k8s.io/klog
 # k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 k8s.io/utils/integer
 # sigs.k8s.io/yaml v1.1.0
+## explicit
 sigs.k8s.io/yaml
 # github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
