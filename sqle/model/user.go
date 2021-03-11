@@ -96,6 +96,12 @@ func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	return users, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
+func (s *Storage) GetAllUserTip() ([]*User, error) {
+	users := []*User{}
+	err := s.db.Select("login_name").Find(&users).Error
+	return users, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
 func (s *Storage) GetRoleByName(name string) (*Role, bool, error) {
 	role := &Role{}
 	err := s.db.Where("name = ?", name).Find(role).Error
@@ -119,4 +125,10 @@ func (s *Storage) UpdateRoleUsers(role *Role, users ...*User) error {
 func (s *Storage) UpdateRoleInstances(role *Role, instances ...*Instance) error {
 	err := s.db.Model(role).Association("Instances").Replace(instances).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetAllRoleTip() ([]*Role, error) {
+	roles := []*Role{}
+	err := s.db.Select("name").Find(&roles).Error
+	return roles, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

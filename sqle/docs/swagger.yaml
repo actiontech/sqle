@@ -40,6 +40,19 @@ definitions:
         example: "123456"
         type: string
     type: object
+  v1.GetRoleTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RoleTipResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRolesResV1:
     properties:
       code:
@@ -54,6 +67,19 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetUserTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.UserTipResV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetUsersResV1:
     properties:
@@ -84,6 +110,11 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.RoleTipResV1:
+    properties:
+      role_name:
+        type: string
     type: object
   v1.UpdateRoleReqV1:
     properties:
@@ -133,6 +164,11 @@ definitions:
       user_name:
         type: string
     type: object
+  v1.UserTipResV1:
+    properties:
+      user_name:
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a sample server for dev.
@@ -159,6 +195,20 @@ paths:
       summary: 用户登录
       tags:
       - user
+  /v1/role_tips:
+    get:
+      description: get role tip list
+      operationId: getRoleTipListV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRoleTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取角色提示列表
+      tags:
+      - role
   /v1/roles:
     get:
       consumes:
@@ -287,6 +337,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: test
+      tags:
+      - user
+  /v1/user_tips:
+    get:
+      description: get user tip list
+      operationId: getUserTipListV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetUserTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户提示列表
       tags:
       - user
   /v1/users:

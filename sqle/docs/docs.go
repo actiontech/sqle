@@ -54,6 +54,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/role_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get role tip list",
+                "tags": [
+                    "role"
+                ],
+                "summary": "获取角色提示列表",
+                "operationId": "getRoleTipListV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRoleTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/roles": {
             "get": {
                 "security": [
@@ -254,6 +277,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get user tip list",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取用户提示列表",
+                "operationId": "getUserTipListV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetUserTipsResV1"
                         }
                     }
                 }
@@ -514,6 +560,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetRoleTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RoleTipResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRolesResV1": {
             "type": "object",
             "properties": {
@@ -533,6 +598,25 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetUserTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UserTipResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -578,6 +662,14 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.RoleTipResV1": {
+            "type": "object",
+            "properties": {
+                "role_name": {
+                    "type": "string"
                 }
             }
         },
@@ -649,6 +741,14 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UserTipResV1": {
+            "type": "object",
+            "properties": {
                 "user_name": {
                     "type": "string"
                 }

@@ -91,12 +91,14 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	{
 		v1Router.GET("/test", v1.Test, AdminUserAllowed())
 		v1Router.GET("/users", v1.GetUsers, AdminUserAllowed())
+		v1Router.GET("/user_tips", v1.GetUserTips, AdminUserAllowed())
 		v1Router.POST("/users", v1.CreateUser, AdminUserAllowed())
 		v1Router.GET("/users/:user_name/", v1.GetUser, AdminUserAllowed())
 		v1Router.PATCH("/users/:user_name/", v1.UpdateUser, AdminUserAllowed())
 		v1Router.DELETE("/users/:user_name/", v1.DeleteUser, AdminUserAllowed())
 
 		v1Router.GET("/roles", v1.GetRoles, AdminUserAllowed())
+		v1Router.GET("/role_tips", v1.GetRoleTips, AdminUserAllowed())
 		v1Router.POST("/roles", v1.CreateRole, AdminUserAllowed())
 		v1Router.PATCH("/roles", v1.UpdateRole, AdminUserAllowed())
 		v1Router.DELETE("/roles/:role_name/", v1.DeleteRole, AdminUserAllowed())
