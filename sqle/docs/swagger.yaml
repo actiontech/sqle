@@ -107,6 +107,15 @@ definitions:
           type: string
         type: array
     type: object
+  v1.UserLoginReq:
+    properties:
+      password:
+        example: "123456"
+        type: string
+      username:
+        example: test
+        type: string
+    type: object
   v1.UserLoginRes:
     properties:
       token:
@@ -136,16 +145,12 @@ paths:
       description: user login
       operationId: loginV1
       parameters:
-      - description: user name
-        in: formData
-        name: username
+      - description: user login request
+        in: body
+        name: user
         required: true
-        type: string
-      - description: user password
-        in: formData
-        name: password
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/v1.UserLoginReq'
       responses:
         "200":
           description: OK
