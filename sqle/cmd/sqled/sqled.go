@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"github.com/facebookgo/grace/gracenet"
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
-	"sigs.k8s.io/yaml"
 	"syscall"
 )
 
