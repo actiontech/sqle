@@ -1,0 +1,32 @@
+version: '2'
+services:
+  agent:
+      image: docker-registry:5000/actiontech/dotnet-runtime-2.1
+      #image: docker-registry:5000/actiontech/balm-runtime-centos7
+      privileged: true
+      stdin_open: true
+      tty: true
+      extra_hosts:
+        - "docker-registry:10.186.18.20"
+      cap_add:
+        - ALL
+      security_opt:
+        - seccomp:unconfined
+      working_dir: /opt
+      volumes:
+        - /shared:/shared
+
+  mysql:
+      image: mysql:5.7
+      privileged: true
+      stdin_open: true
+      tty: true
+      extra_hosts:
+        - "docker-registry:10.186.18.20"
+      cap_add:
+        - ALL
+      security_opt:
+        - seccomp:unconfined
+      working_dir: /opt
+      volumes:
+        - /shared:/shared

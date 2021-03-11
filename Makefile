@@ -16,20 +16,15 @@ include ./vendor/actiontech.cloud/universe/ucommon/v4/build/Makefile.variables
 DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-centos6
 DOTNET_DOCKER_IMAGE ?= docker-registry:5000/actiontech/universe-compiler-dotnetcore2.1
 TEST_DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-ubuntu-with-docker
-K8S_DOCKER_IMAGE_BUILD ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-ubuntu-with-docker
 
 ## Static Parameter, should not be overwrite
-CAP = CAP_CHOWN,CAP_SYS_RESOURCE,CAP_SETUID,CAP_SETGID+eip
-RUN_ON_DMP = true
 PROJECT_NAME = sqle
 SUB_PROJECT_NAME = sqle_sqlserver
 override VERSION = 9.9.9.9
 GOBIN = ${shell pwd}/bin
-K8S_DOCKER_IMAGE_GENERATED = docker-registry:5000/actiontech/k8s/$(PROJECT_NAME):v$(VERSION)
 default: install
 DOTNET_TARGET = centos.7-x64
 PARSER_PATH   = ${shell pwd}/vendor/github.com/pingcap/parser
-SQLE_LDFLAGS   = ${LDFLAGS}" -X 'main.runOnDmpStr=${RUN_ON_DMP}'"
 
 ######################################## 2.Code Check ####################################################
 ## Static Code Analysis
@@ -69,7 +64,7 @@ docker_clean:
 docker_install:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(DOCKER_IMAGE) -c "cd /universe && make install $(MAKEFLAGS)"
 install: swagger parser
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(SQLE_LDFLAGS) $(GO_BUILD_FLAGS) -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
 
 build_sqlserver:
 	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
@@ -110,7 +105,7 @@ docker_rpm: docker_rpm/sqle docker_rpm/sqle_sqlserver
 docker_rpm/sqle: pull_image docker_install
 	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
 	(tar zcf ${PROJECT_NAME}.tar.gz /universe --transform 's/universe/${PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)/' >/tmp/build.log 2>&1) && \
-	(rpmbuild --define 'caps ${CAP}' --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' --define 'runOnDmp ${RUN_ON_DMP}' \
+	(rpmbuild --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' \
 	--define 'commit $(GIT_COMMIT)' --define 'os_version $(OS_VERSION)' \
 	--target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && \
 	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
@@ -128,9 +123,14 @@ upload:
 	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm --ftp-create-dirs
 	curl -T $(shell pwd)/$(SUB_PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm \
 	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(SUB_PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm  --ftp-create-dirs
-############################### 6.K8s Docker Images Build ##############################################
 
-# sqle had no supprot K8s docker images build
+###################################### 5.docker start #####################################################
+docker_start: docker_rpm/sqle
+	cd ./docker-compose && docker-compose up -d
+	./docker-compose/install.sh
+
+docker_stop:
+	cd ./docker-compose && docker-compose down
 
 .PHONY: help
 help:
