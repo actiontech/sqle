@@ -29,16 +29,16 @@ definitions:
       email:
         example: test@email.com
         type: string
-      login_name:
-        example: test
-        type: string
-      login_password:
-        example: "123456"
-        type: string
       role_name_list:
         items:
           type: string
         type: array
+      user_name:
+        example: test
+        type: string
+      user_password:
+        example: "123456"
+        type: string
     type: object
   v1.GetRolesResV1:
     properties:
@@ -126,12 +126,12 @@ definitions:
     properties:
       email:
         type: string
-      login_name:
-        type: string
       role_name_list:
         items:
           type: string
         type: array
+      user_name:
+        type: string
     type: object
 info:
   contact: {}

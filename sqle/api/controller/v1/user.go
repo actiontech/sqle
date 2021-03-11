@@ -77,8 +77,8 @@ func getAndCheckInstanceExist(s *model.Storage, instanceNames []string) (instanc
 }
 
 type CreateUserReqV1 struct {
-	Name     string   `json:"login_name" form:"login_name" example:"test" valid:"required"`
-	Password string   `json:"login_password" form:"login_password" example:"123456" valid:"required"`
+	Name     string   `json:"user_name" form:"user_name" example:"test" valid:"required"`
+	Password string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
 	Email    string   `json:"email" form:"email" example:"test@email.com" valid:"email"`
 	Roles    []string `json:"role_name_list" form:"role_name_list"`
 }
@@ -214,7 +214,7 @@ type GetUserResV1 struct {
 }
 
 type UserResV1 struct {
-	Name  string   `json:"login_name"`
+	Name  string   `json:"user_name"`
 	Email string   `json:"email"`
 	Roles []string `json:"role_name_list,omitempty"`
 }
