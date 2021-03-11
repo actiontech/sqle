@@ -319,6 +319,42 @@ func GetUsers(c echo.Context) error {
 	})
 }
 
+type UserTipResV1 struct {
+	Name string `json:"user_name"`
+}
+
+type GetUserTipsResV1 struct {
+	controller.BaseRes
+	Data []UserTipResV1 `json:"data"`
+}
+
+// @Summary 获取用户提示列表
+// @Description get user tip list
+// @Tags user
+// @Id getUserTipListV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetUserTipsResV1
+// @router /v1/user_tips [get]
+func GetUserTips(c echo.Context) error {
+	s := model.GetStorage()
+	users, err := s.GetAllUserTip()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	userTipsRes := make([]UserTipResV1, 0, len(users))
+
+	for _, user := range users {
+		userTipRes := UserTipResV1{
+			Name: user.Name,
+		}
+		userTipsRes = append(userTipsRes, userTipRes)
+	}
+	return c.JSON(http.StatusOK, &GetUserTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    userTipsRes,
+	})
+}
+
 type CreateRoleReqV1 struct {
 	Name      string   `json:"role_name" form:"role_name" valid:"required"`
 	Desc      string   `json:"role_desc" form:"role_desc"`
@@ -557,5 +593,41 @@ func GetRoles(c echo.Context) error {
 		BaseRes:   controller.NewBaseReq(nil),
 		Data:      rolesRes,
 		TotalNums: count,
+	})
+}
+
+type RoleTipResV1 struct {
+	Name string `json:"role_name"`
+}
+
+type GetRoleTipsResV1 struct {
+	controller.BaseRes
+	Data []RoleTipResV1 `json:"data"`
+}
+
+// @Summary 获取角色提示列表
+// @Description get role tip list
+// @Tags role
+// @Id getRoleTipListV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetRoleTipsResV1
+// @router /v1/role_tips [get]
+func GetRoleTips(c echo.Context) error {
+	s := model.GetStorage()
+	roles, err := s.GetAllRoleTip()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	roleTipsRes := make([]RoleTipResV1, 0, len(roles))
+
+	for _, role := range roles {
+		roleTipRes := RoleTipResV1{
+			Name: role.Name,
+		}
+		roleTipsRes = append(roleTipsRes, roleTipRes)
+	}
+	return c.JSON(http.StatusOK, &GetRoleTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    roleTipsRes,
 	})
 }
