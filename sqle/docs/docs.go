@@ -498,19 +498,19 @@ var doc = `{
                     "type": "string",
                     "example": "test@email.com"
                 },
-                "login_name": {
-                    "type": "string",
-                    "example": "test"
-                },
-                "login_password": {
-                    "type": "string",
-                    "example": "123456"
-                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "user_name": {
+                    "type": "string",
+                    "example": "test"
+                },
+                "user_password": {
+                    "type": "string",
+                    "example": "123456"
                 }
             }
         },
@@ -643,14 +643,14 @@ var doc = `{
                 "email": {
                     "type": "string"
                 },
-                "login_name": {
-                    "type": "string"
-                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "user_name": {
+                    "type": "string"
                 }
             }
         }
