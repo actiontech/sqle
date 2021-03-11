@@ -35,18 +35,13 @@ var doc = `{
                 "operationId": "loginV1",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "user name",
-                        "name": "username",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "user password",
-                        "name": "password",
-                        "in": "formData",
-                        "required": true
+                        "description": "user login request",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UserLoginReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -617,6 +612,19 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.UserLoginReq": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "test"
                 }
             }
         },

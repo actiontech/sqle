@@ -24,8 +24,7 @@ type UserLoginRes struct {
 // @Description user login
 // @Tags user
 // @Id loginV1
-// @Param username formData string true "user name"
-// @param password formData string true "user password"
+// @Param user body v1.UserLoginReq true "user login request"
 // @Success 200 {object} UserLoginRes
 // @router /v1/login [post]
 func Login(c echo.Context) error {
