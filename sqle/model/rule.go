@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"github.com/jinzhu/gorm"
@@ -177,4 +178,32 @@ func (s *Storage) GetInstancesNameByTemplate(tpl RuleTemplate) ([]string, error)
 		names = append(names, name)
 	}
 	return names, nil
+}
+
+func (s *Storage) GetRuleTemplatesByNames(names []string) ([]*RuleTemplate, error) {
+	templates := []*RuleTemplate{}
+	err := s.db.Where("name in (?)", names).Find(&templates).Error
+	return templates, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemplates []*RuleTemplate, err error) {
+	ruleTemplates, err = s.GetRuleTemplatesByNames(templateNames)
+	if err != nil {
+		return ruleTemplates, err
+	}
+	existTemplateNames := map[string]struct{}{}
+	for _, user := range ruleTemplates {
+		existTemplateNames[user.Name] = struct{}{}
+	}
+	notExistTemplateNames := []string{}
+	for _, userName := range templateNames {
+		if _, ok := existTemplateNames[userName]; !ok {
+			notExistTemplateNames = append(notExistTemplateNames, userName)
+		}
+	}
+	if len(notExistTemplateNames) > 0 {
+		return ruleTemplates, errors.New(errors.DATA_NOT_EXIST,
+			fmt.Errorf("rule template %s not exist", strings.Join(notExistTemplateNames, ", ")))
+	}
+	return ruleTemplates, nil
 }

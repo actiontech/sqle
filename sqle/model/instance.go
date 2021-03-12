@@ -2,6 +2,8 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"actiontech.cloud/universe/ucommon/v4/util"
 
@@ -31,6 +33,7 @@ type Instance struct {
 	MycatConfig        *MycatConfig   `json:"-" gorm:"-"`
 	MycatConfigJson    string         `json:"-" gorm:"type:text;column:mycat_config"`
 	WorkflowTemplateId int            `json:"workflow_template_id"`
+	Roles              []*Role        `gorm:"many2many:instance_role;"`
 }
 
 // BeforeSave is a hook implement gorm model before exec create
@@ -152,9 +155,19 @@ func (s *Storage) GetInstById(id string) (*Instance, bool, error) {
 	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetInstByName(name string) (*Instance, bool, error) {
+func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
 	instance := &Instance{}
-	err := s.db.Preload("RuleTemplates").Where("name = ?", name).First(instance).Error
+	err := s.db.Where("name = ?", name).First(instance).Error
+	if err == gorm.ErrRecordNotFound {
+		return instance, false, nil
+	}
+	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetInstanceDetailByName(name string) (*Instance, bool, error) {
+	instance := &Instance{}
+	err := s.db.Preload("Roles").Preload("RuleTemplates").
+		Where("name = ?", name).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
@@ -167,7 +180,7 @@ func (s *Storage) GetInstancesByNames(names []string) ([]*Instance, error) {
 	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateInstanceById(InstanceId string, attrs ...interface{}) error {
+func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) error {
 	err := s.db.Table("instances").Where("id = ?", InstanceId).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
@@ -178,7 +191,40 @@ func (s *Storage) GetInstances() ([]Instance, error) {
 	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateInstRuleTemplate(inst *Instance, ts ...RuleTemplate) error {
-	err := s.db.Model(inst).Association("RuleTemplates").Replace(ts).Error
+func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
+	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
+	err := s.db.Model(instance).Association("Roles").Replace(rs).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetAllInstanceTip() ([]*Instance, error) {
+	instances := []*Instance{}
+	err := s.db.Select("name").Find(&instances).Error
+	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetAndCheckInstanceExist(instanceNames []string) (instances []*Instance, err error) {
+	instances, err = s.GetInstancesByNames(instanceNames)
+	if err != nil {
+		return instances, err
+	}
+	existInstanceNames := map[string]struct{}{}
+	for _, instance := range instances {
+		existInstanceNames[instance.Name] = struct{}{}
+	}
+	notExistInstanceNames := []string{}
+	for _, instanceName := range instanceNames {
+		if _, ok := existInstanceNames[instanceName]; !ok {
+			notExistInstanceNames = append(notExistInstanceNames, instanceName)
+		}
+	}
+	if len(notExistInstanceNames) > 0 {
+		return instances, errors.New(errors.DATA_NOT_EXIST,
+			fmt.Errorf("instance %s not exist", strings.Join(notExistInstanceNames, ", ")))
+	}
+	return instances, nil
 }

@@ -9,6 +9,268 @@
     },
     "basePath": "/",
     "paths": {
+        "/v1/instance_connection": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "instance"
+                ],
+                "summary": "实例连通性测试（实例提交前）",
+                "operationId": "checkInstanceIsConnectableV1",
+                "parameters": [
+                    {
+                        "description": "instance info",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceConnectableReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceConnectableResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instance_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance tip list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例提示列表",
+                "operationId": "getInstanceTipListV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a instance",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "instance"
+                ],
+                "summary": "添加实例",
+                "operationId": "createInstanceV1",
+                "parameters": [
+                    {
+                        "description": "add instance",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateInstanceReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances/{instance_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance db",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例信息",
+                "operationId": "getInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete instance db",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "删除实例",
+                "operationId": "deleteInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update instance",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "更新实例",
+                "operationId": "updateInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update instance request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateInstanceReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances/{instance_name}/connection": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test instance db connection",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "实例连通性测试（实例提交后）",
+                "operationId": "checkInstanceIsConnectableByNameV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceConnectableResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances/{instance_name}/schemas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "instance schema list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "实例 Schema 列表",
+                "operationId": "getInstanceSchemasV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceSchemaResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/login": {
             "post": {
                 "description": "user login",
@@ -498,6 +760,50 @@
                 }
             }
         },
+        "v1.CreateInstanceReqV1": {
+            "type": "object",
+            "properties": {
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "root"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a test instance"
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "test"
+                },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_template_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "workflow_template_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CreateRoleReqV1": {
             "type": "object",
             "properties": {
@@ -541,6 +847,97 @@
                 "user_password": {
                     "type": "string",
                     "example": "123456"
+                }
+            }
+        },
+        "v1.GetInstanceConnectableReqV1": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "user": {
+                    "type": "string",
+                    "example": "root"
+                }
+            }
+        },
+        "v1.GetInstanceConnectableResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.InstanceConnectableResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.InstanceResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceSchemaResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.InstanceSchemaResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceTipResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -643,6 +1040,72 @@
                 }
             }
         },
+        "v1.InstanceConnectableResV1": {
+            "type": "object",
+            "properties": {
+                "is_instance_connectable": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.InstanceResV1": {
+            "type": "object",
+            "properties": {
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "root"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a instance"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_template_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "workflow_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.InstanceSchemaResV1": {
+            "type": "object",
+            "properties": {
+                "schema_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.InstanceTipResV1": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RoleResV1": {
             "type": "object",
             "properties": {
@@ -670,6 +1133,49 @@
             "type": "object",
             "properties": {
                 "role_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UpdateInstanceReqV1": {
+            "type": "object",
+            "properties": {
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "root"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a test instance"
+                },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_template_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "1"
+                    ]
+                },
+                "workflow_template_name": {
                     "type": "string"
                 }
             }

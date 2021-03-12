@@ -1,16 +1,15 @@
 package server
 
 import (
-	"github.com/sirupsen/logrus"
 	"actiontech.cloud/universe/sqle/v4/sqle/executor"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
 
 type InstanceStatus struct {
-	ID              uint     `json:"id"`
 	DbType          string   `json:"db_type"`
 	Name            string   `json:"name"`
 	Host            string   `json:"host"`
@@ -39,7 +38,7 @@ func (s *Sqled) UpdateAllInstanceStatus(entry *logrus.Entry) error {
 	if err != nil {
 		return err
 	}
-	instancesStatus := map[uint]*InstanceStatus{}
+	instancesStatus := map[string]*InstanceStatus{}
 	wait := sync.WaitGroup{}
 	mutex := sync.Mutex{}
 	for _, instance := range instances {
@@ -47,7 +46,6 @@ func (s *Sqled) UpdateAllInstanceStatus(entry *logrus.Entry) error {
 		currentInstance := instance
 		go func() {
 			status := &InstanceStatus{
-				ID:      currentInstance.ID,
 				DbType:  currentInstance.DbType,
 				Name:    currentInstance.Name,
 				Host:    currentInstance.Host,
@@ -61,7 +59,7 @@ func (s *Sqled) UpdateAllInstanceStatus(entry *logrus.Entry) error {
 				status.Schemas = schemas
 			}
 			mutex.Lock()
-			instancesStatus[currentInstance.ID] = status
+			instancesStatus[currentInstance.Name] = status
 			mutex.Unlock()
 			wait.Done()
 		}()
@@ -75,7 +73,6 @@ func (s *Sqled) UpdateAllInstanceStatus(entry *logrus.Entry) error {
 
 func (s *Sqled) UpdateAndGetInstanceStatus(entry *logrus.Entry, instance *model.Instance) (*InstanceStatus, error) {
 	status := &InstanceStatus{
-		ID:      instance.ID,
 		DbType:  instance.DbType,
 		Name:    instance.Name,
 		Host:    instance.Host,
@@ -89,7 +86,7 @@ func (s *Sqled) UpdateAndGetInstanceStatus(entry *logrus.Entry, instance *model.
 		status.Schemas = schemas
 	}
 	s.Lock()
-	s.instancesStatus[instance.ID] = status
+	s.instancesStatus[instance.Name] = status
 	s.Unlock()
 	return status, err
 }
@@ -106,6 +103,6 @@ func (s *Sqled) GetAllInstanceStatus() []InstanceStatus {
 
 func (s *Sqled) DeleteInstanceStatus(instance *model.Instance) {
 	s.Lock()
-	delete(s.instancesStatus, instance.ID)
+	delete(s.instancesStatus, instance.Name)
 	s.Unlock()
 }

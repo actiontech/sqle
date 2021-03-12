@@ -30,7 +30,7 @@ type Sqled struct {
 	// queue is a chan used to receive tasks.
 	queue chan *Action
 	// instancesStatus save schemas info for all db instance.
-	instancesStatus map[uint]*InstanceStatus
+	instancesStatus map[string]*InstanceStatus
 }
 
 // Action is an action for the task;
