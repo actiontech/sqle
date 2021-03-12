@@ -40,7 +40,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UserLoginReq"
+                            "$ref": "#/definitions/v1.UserLoginReqV1"
                         }
                     }
                 ],
@@ -48,7 +48,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.UserLoginRes"
+                            "$ref": "#/definitions/v1.GetUserLoginResV1"
                         }
                     }
                 }
@@ -601,6 +601,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetUserLoginResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.UserLoginResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetUserTipsResV1": {
             "type": "object",
             "properties": {
@@ -707,7 +724,7 @@ var doc = `{
                 }
             }
         },
-        "v1.UserLoginReq": {
+        "v1.UserLoginReqV1": {
             "type": "object",
             "properties": {
                 "password": {
@@ -720,7 +737,7 @@ var doc = `{
                 }
             }
         },
-        "v1.UserLoginRes": {
+        "v1.UserLoginResV1": {
             "type": "object",
             "properties": {
                 "token": {

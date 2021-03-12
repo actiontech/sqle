@@ -11,12 +11,17 @@ import (
 
 const JWTSecret = "secret"
 
-type UserLoginReq struct {
+type UserLoginReqV1 struct {
 	UserName string `json:"username" form:"username" example:"test" valid:"required"`
 	Password string `json:"password" form:"password" example:"123456" valid:"required"`
 }
 
-type UserLoginRes struct {
+type GetUserLoginResV1 struct {
+	controller.BaseRes
+	Data UserLoginResV1 `json:"data"`
+}
+
+type UserLoginResV1 struct {
 	Token string `json:"token" example:"this is a jwt token string"`
 }
 
@@ -24,11 +29,11 @@ type UserLoginRes struct {
 // @Description user login
 // @Tags user
 // @Id loginV1
-// @Param user body v1.UserLoginReq true "user login request"
-// @Success 200 {object} UserLoginRes
+// @Param user body v1.UserLoginReqV1 true "user login request"
+// @Success 200 {object} v1.GetUserLoginResV1
 // @router /v1/login [post]
 func Login(c echo.Context) error {
-	req := new(UserLoginReq)
+	req := new(UserLoginReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -36,7 +41,7 @@ func Login(c echo.Context) error {
 	s := model.GetStorage()
 	user, exist, err := s.GetUserByName(req.UserName)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err)
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist || !(req.UserName == user.Name && req.Password == user.Password) {
 		return echo.ErrUnauthorized
@@ -51,8 +56,11 @@ func Login(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err)
 	}
-	return c.JSON(http.StatusOK, &UserLoginRes{
-		Token: t,
+	return c.JSON(http.StatusOK, &GetUserLoginResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: UserLoginResV1{
+			Token: t,
+		},
 	})
 }
 

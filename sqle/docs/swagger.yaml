@@ -68,6 +68,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetUserLoginResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.UserLoginResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetUserTipsResV1:
     properties:
       code:
@@ -138,7 +150,7 @@ definitions:
           type: string
         type: array
     type: object
-  v1.UserLoginReq:
+  v1.UserLoginReqV1:
     properties:
       password:
         example: "123456"
@@ -147,7 +159,7 @@ definitions:
         example: test
         type: string
     type: object
-  v1.UserLoginRes:
+  v1.UserLoginResV1:
     properties:
       token:
         example: this is a jwt token string
@@ -186,12 +198,12 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/v1.UserLoginReq'
+          $ref: '#/definitions/v1.UserLoginReqV1'
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.UserLoginRes'
+            $ref: '#/definitions/v1.GetUserLoginResV1'
       summary: 用户登录
       tags:
       - user
