@@ -9,6 +9,37 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.CreateInstanceReqV1:
+    properties:
+      db_host:
+        example: 10.10.10.10
+        type: string
+      db_password:
+        example: "123456"
+        type: string
+      db_port:
+        example: "3306"
+        type: string
+      db_user:
+        example: root
+        type: string
+      desc:
+        example: this is a test instance
+        type: string
+      instance_name:
+        example: test
+        type: string
+      role_name_list:
+        items:
+          type: string
+        type: array
+      rule_template_name_list:
+        items:
+          type: string
+        type: array
+      workflow_template_name:
+        type: string
+    type: object
   v1.CreateRoleReqV1:
     properties:
       instance_name_list:
@@ -38,6 +69,70 @@ definitions:
         type: string
       user_password:
         example: "123456"
+        type: string
+    type: object
+  v1.GetInstanceConnectableReqV1:
+    properties:
+      host:
+        example: 10.10.10.10
+        type: string
+      password:
+        example: "123456"
+        type: string
+      port:
+        example: "3306"
+        type: string
+      user:
+        example: root
+        type: string
+    type: object
+  v1.GetInstanceConnectableResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.InstanceConnectableResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.InstanceResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceSchemaResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.InstanceSchemaResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceTipResV1'
+        type: array
+      message:
+        example: ok
         type: string
     type: object
   v1.GetRoleTipsResV1:
@@ -96,6 +191,50 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.InstanceConnectableResV1:
+    properties:
+      is_instance_connectable:
+        type: boolean
+    type: object
+  v1.InstanceResV1:
+    properties:
+      db_host:
+        example: 10.10.10.10
+        type: string
+      db_port:
+        example: "3306"
+        type: string
+      db_user:
+        example: root
+        type: string
+      desc:
+        example: this is a instance
+        type: string
+      instance_name:
+        type: string
+      role_name_list:
+        items:
+          type: string
+        type: array
+      rule_template_name_list:
+        items:
+          type: string
+        type: array
+      workflow_template_name:
+        type: string
+    type: object
+  v1.InstanceSchemaResV1:
+    properties:
+      schema_name_list:
+        items:
+          type: string
+        type: array
+    type: object
+  v1.InstanceTipResV1:
+    properties:
+      instance_name:
+        type: string
+    type: object
   v1.RoleResV1:
     properties:
       instance_name_list:
@@ -114,6 +253,36 @@ definitions:
   v1.RoleTipResV1:
     properties:
       role_name:
+        type: string
+    type: object
+  v1.UpdateInstanceReqV1:
+    properties:
+      db_host:
+        example: 10.10.10.10
+        type: string
+      db_password:
+        example: "123456"
+        type: string
+      db_port:
+        example: "3306"
+        type: string
+      db_user:
+        example: root
+        type: string
+      desc:
+        example: this is a test instance
+        type: string
+      role_name_list:
+        items:
+          type: string
+        type: array
+      rule_template_name_list:
+        example:
+        - "1"
+        items:
+          type: string
+        type: array
+      workflow_template_name:
         type: string
     type: object
   v1.UpdateRoleReqV1:
@@ -176,6 +345,171 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /v1/instance_connection:
+    post:
+      consumes:
+      - application/json
+      description: test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的
+        json 的子集
+      operationId: checkInstanceIsConnectableV1
+      parameters:
+      - description: instance info
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetInstanceConnectableReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceConnectableResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 实例连通性测试（实例提交前）
+      tags:
+      - instance
+  /v1/instance_tips:
+    get:
+      description: get instance tip list
+      operationId: getInstanceTipListV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例提示列表
+      tags:
+      - instance
+  /v1/instances:
+    post:
+      consumes:
+      - application/json
+      description: create a instance
+      operationId: createInstanceV1
+      parameters:
+      - description: add instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateInstanceReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加实例
+      tags:
+      - instance
+  /v1/instances/{instance_name}/:
+    delete:
+      description: delete instance db
+      operationId: deleteInstanceV1
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除实例
+      tags:
+      - instance
+    get:
+      description: get instance db
+      operationId: getInstanceV1
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例信息
+      tags:
+      - instance
+    patch:
+      description: update instance
+      operationId: updateInstanceV1
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: update instance request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateInstanceReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新实例
+      tags:
+      - instance
+  /v1/instances/{instance_name}/connection:
+    get:
+      description: test instance db connection
+      operationId: checkInstanceIsConnectableByNameV1
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceConnectableResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 实例连通性测试（实例提交后）
+      tags:
+      - instance
+  /v1/instances/{instance_name}/schemas:
+    get:
+      description: instance schema list
+      operationId: getInstanceSchemasV1
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceSchemaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 实例 Schema 列表
+      tags:
+      - instance
   /v1/login:
     post:
       description: user login
