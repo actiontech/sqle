@@ -4,7 +4,9 @@ import (
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"actiontech.cloud/universe/ucommon/v4/util"
+	"fmt"
 	"github.com/jinzhu/gorm"
+	"strings"
 )
 
 type User struct {
@@ -131,4 +133,48 @@ func (s *Storage) GetAllRoleTip() ([]*Role, error) {
 	roles := []*Role{}
 	err := s.db.Select("name").Find(&roles).Error
 	return roles, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err error) {
+	roles, err = s.GetRolesByNames(roleNames)
+	if err != nil {
+		return roles, err
+	}
+	existRoleNames := map[string]struct{}{}
+	for _, role := range roles {
+		existRoleNames[role.Name] = struct{}{}
+	}
+	notExistRoleNames := []string{}
+	for _, roleName := range roleNames {
+		if _, ok := existRoleNames[roleName]; !ok {
+			notExistRoleNames = append(notExistRoleNames, roleName)
+		}
+	}
+	if len(notExistRoleNames) > 0 {
+		return roles, errors.New(errors.DATA_NOT_EXIST,
+			fmt.Errorf("user role %s not exist", strings.Join(notExistRoleNames, ", ")))
+	}
+	return roles, nil
+}
+
+func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err error) {
+	users, err = s.GetUsersByNames(userNames)
+	if err != nil {
+		return users, err
+	}
+	existUserNames := map[string]struct{}{}
+	for _, user := range users {
+		existUserNames[user.Name] = struct{}{}
+	}
+	notExistUserNames := []string{}
+	for _, userName := range userNames {
+		if _, ok := existUserNames[userName]; !ok {
+			notExistUserNames = append(notExistUserNames, userName)
+		}
+	}
+	if len(notExistUserNames) > 0 {
+		return users, errors.New(errors.DATA_NOT_EXIST,
+			fmt.Errorf("user %s not exist", strings.Join(notExistUserNames, ", ")))
+	}
+	return users, nil
 }

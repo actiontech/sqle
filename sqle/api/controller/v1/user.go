@@ -10,72 +10,6 @@ import (
 	"strings"
 )
 
-func getAndCheckRoleExist(s *model.Storage, roleNames []string) (roles []*model.Role, err error) {
-	roles, err = s.GetRolesByNames(roleNames)
-	if err != nil {
-		return roles, err
-	}
-	existRoleNames := map[string]struct{}{}
-	for _, role := range roles {
-		existRoleNames[role.Name] = struct{}{}
-	}
-	notExistRoleNames := []string{}
-	for _, roleName := range roleNames {
-		if _, ok := existRoleNames[roleName]; !ok {
-			notExistRoleNames = append(notExistRoleNames, roleName)
-		}
-	}
-	if len(notExistRoleNames) > 0 {
-		return roles, errors.New(errors.DATA_NOT_EXIST,
-			fmt.Errorf("user role %s not exist", strings.Join(notExistRoleNames, ", ")))
-	}
-	return roles, nil
-}
-
-func getAndCheckUserExist(s *model.Storage, userNames []string) (users []*model.User, err error) {
-	users, err = s.GetUsersByNames(userNames)
-	if err != nil {
-		return users, err
-	}
-	existUserNames := map[string]struct{}{}
-	for _, user := range users {
-		existUserNames[user.Name] = struct{}{}
-	}
-	notExistUserNames := []string{}
-	for _, userName := range userNames {
-		if _, ok := existUserNames[userName]; !ok {
-			notExistUserNames = append(notExistUserNames, userName)
-		}
-	}
-	if len(notExistUserNames) > 0 {
-		return users, errors.New(errors.DATA_NOT_EXIST,
-			fmt.Errorf("user %s not exist", strings.Join(notExistUserNames, ", ")))
-	}
-	return users, nil
-}
-
-func getAndCheckInstanceExist(s *model.Storage, instanceNames []string) (instances []*model.Instance, err error) {
-	instances, err = s.GetInstancesByNames(instanceNames)
-	if err != nil {
-		return instances, err
-	}
-	existInstanceNames := map[string]struct{}{}
-	for _, instance := range instances {
-		existInstanceNames[instance.Name] = struct{}{}
-	}
-	notExistInstanceNames := []string{}
-	for _, instanceName := range instanceNames {
-		if _, ok := existInstanceNames[instanceName]; !ok {
-			notExistInstanceNames = append(notExistInstanceNames, instanceName)
-		}
-	}
-	if len(notExistInstanceNames) > 0 {
-		return instances, errors.New(errors.DATA_NOT_EXIST,
-			fmt.Errorf("user %s not exist", strings.Join(notExistInstanceNames, ", ")))
-	}
-	return instances, nil
-}
-
 type CreateUserReqV1 struct {
 	Name     string   `json:"user_name" form:"user_name" example:"test" valid:"required"`
 	Password string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
@@ -110,7 +44,7 @@ func CreateUser(c echo.Context) error {
 
 	var roles []*model.Role
 	if req.Roles != nil || len(req.Roles) > 0 {
-		roles, err = getAndCheckRoleExist(s, req.Roles)
+		roles, err = s.GetAndCheckRoleExist(req.Roles)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -163,7 +97,7 @@ func UpdateUser(c echo.Context) error {
 	}
 
 	if req.Roles != nil || len(req.Roles) > 0 {
-		roles, err := getAndCheckRoleExist(s, req.Roles)
+		roles, err := s.GetAndCheckRoleExist(req.Roles)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -389,7 +323,7 @@ func CreateRole(c echo.Context) error {
 
 	var users []*model.User
 	if req.Users != nil || len(req.Users) > 0 {
-		users, err = getAndCheckUserExist(s, req.Users)
+		users, err = s.GetAndCheckUserExist(req.Users)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -397,7 +331,7 @@ func CreateRole(c echo.Context) error {
 
 	var instances []*model.Instance
 	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err = getAndCheckInstanceExist(s, req.Instances)
+		instances, err = s.GetAndCheckInstanceExist(req.Instances)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -456,7 +390,7 @@ func UpdateRole(c echo.Context) error {
 	}
 
 	if req.Users != nil || len(req.Users) > 0 {
-		users, err := getAndCheckUserExist(s, req.Users)
+		users, err := s.GetAndCheckUserExist(req.Users)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -467,7 +401,7 @@ func UpdateRole(c echo.Context) error {
 	}
 
 	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err := getAndCheckInstanceExist(s, req.Instances)
+		instances, err := s.GetAndCheckInstanceExist(req.Instances)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

@@ -89,6 +89,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	// v1 admin api, just admin user can access.
 	{
+		// user
 		v1Router.GET("/test", v1.Test, AdminUserAllowed())
 		v1Router.GET("/users", v1.GetUsers, AdminUserAllowed())
 		v1Router.GET("/user_tips", v1.GetUserTips, AdminUserAllowed())
@@ -97,12 +98,25 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 		v1Router.PATCH("/users/:user_name/", v1.UpdateUser, AdminUserAllowed())
 		v1Router.DELETE("/users/:user_name/", v1.DeleteUser, AdminUserAllowed())
 
+		// role
 		v1Router.GET("/roles", v1.GetRoles, AdminUserAllowed())
 		v1Router.GET("/role_tips", v1.GetRoleTips, AdminUserAllowed())
 		v1Router.POST("/roles", v1.CreateRole, AdminUserAllowed())
-		v1Router.PATCH("/roles", v1.UpdateRole, AdminUserAllowed())
+		v1Router.PATCH("/roles/:role_name/", v1.UpdateRole, AdminUserAllowed())
 		v1Router.DELETE("/roles/:role_name/", v1.DeleteRole, AdminUserAllowed())
+
+		// instance
+		v1Router.POST("/instances", v1.CreateInstance, AdminUserAllowed())
+		v1Router.DELETE("/instances/:instance_name/", v1.DeleteInstance, AdminUserAllowed())
+		v1Router.PATCH("/instances/:instance_name/", v1.UpdateInstance, AdminUserAllowed())
 	}
+
+	// instance
+	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
+	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
+	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
+	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)
+	v1Router.GET("/instance_tips", v1.GetInstanceTips)
 
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)
