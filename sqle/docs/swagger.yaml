@@ -161,6 +161,8 @@ definitions:
     type: object
   v1.UserLoginResV1:
     properties:
+      is_admin:
+        type: boolean
       token:
         example: this is a jwt token string
         type: string

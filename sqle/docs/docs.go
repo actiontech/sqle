@@ -740,6 +740,9 @@ var doc = `{
         "v1.UserLoginResV1": {
             "type": "object",
             "properties": {
+                "is_admin": {
+                    "type": "boolean"
+                },
                 "token": {
                     "type": "string",
                     "example": "this is a jwt token string"
