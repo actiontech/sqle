@@ -163,6 +163,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetUserDetailResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.UserDetailResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetUserLoginResV1:
     properties:
       code:
@@ -319,6 +331,19 @@ definitions:
           type: string
         type: array
     type: object
+  v1.UserDetailResV1:
+    properties:
+      email:
+        type: string
+      is_admin:
+        type: boolean
+      role_name_list:
+        items:
+          type: string
+        type: array
+      user_name:
+        type: string
+    type: object
   v1.UserLoginReqV1:
     properties:
       password:
@@ -330,8 +355,6 @@ definitions:
     type: object
   v1.UserLoginResV1:
     properties:
-      is_admin:
-        type: boolean
       token:
         example: this is a jwt token string
         type: string
@@ -687,6 +710,20 @@ paths:
       summary: test
       tags:
       - user
+  /v1/user:
+    get:
+      description: get current user info
+      operationId: getCurrentUserV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetUserDetailResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - user
   /v1/user_tips:
     get:
       description: get user tip list
@@ -789,7 +826,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.UserResV1'
+            $ref: '#/definitions/v1.GetUserDetailResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取用户信息

@@ -142,15 +142,30 @@ func DeleteUser(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-type GetUserResV1 struct {
+type GetUserDetailResV1 struct {
 	controller.BaseRes
-	Data UserResV1 `json:"data"`
+	Data UserDetailResV1 `json:"data"`
 }
 
-type UserResV1 struct {
-	Name  string   `json:"user_name"`
-	Email string   `json:"email"`
-	Roles []string `json:"role_name_list,omitempty"`
+type UserDetailResV1 struct {
+	Name    string   `json:"user_name"`
+	Email   string   `json:"email"`
+	IsAdmin bool     `json:"is_admin"`
+	Roles   []string `json:"role_name_list,omitempty"`
+}
+
+func convertUserToRes(user *model.User) UserDetailResV1 {
+	userReq := UserDetailResV1{
+		Name:    user.Name,
+		Email:   user.Email,
+		IsAdmin: user.Name == defaultAdminUser,
+	}
+	roleNames := make([]string, 0, len(user.Roles))
+	for _, role := range user.Roles {
+		roleNames = append(roleNames, role.Name)
+	}
+	userReq.Roles = roleNames
+	return userReq
 }
 
 // @Summary 获取用户信息
@@ -159,7 +174,7 @@ type UserResV1 struct {
 // @Tags user
 // @Security ApiKeyAuth
 // @Param user_name path string true "user name"
-// @Success 200 {object} v1.UserResV1
+// @Success 200 {object} v1.GetUserDetailResV1
 // @router /v1/users/{user_name}/ [get]
 func GetUser(c echo.Context) error {
 	userName := c.Param("user_name")
@@ -171,20 +186,32 @@ func GetUser(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("user is not exist")))
 	}
-
-	userReq := UserResV1{
-		Name:  user.Name,
-		Email: user.Email,
-	}
-	roleNames := []string{}
-	for _, role := range user.Roles {
-		roleNames = append(roleNames, role.Name)
-	}
-	userReq.Roles = roleNames
-
-	return c.JSON(http.StatusOK, &GetUserResV1{
+	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    userReq,
+		Data:    convertUserToRes(user),
+	})
+}
+
+// @Summary 获取当前用户信息
+// @Description get current user info
+// @Id getCurrentUserV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetUserDetailResV1
+// @router /v1/user [get]
+func GetCurrentUser(c echo.Context) error {
+	userName := controller.GetUserName(c)
+	s := model.GetStorage()
+	user, exist, err := s.GetUserWithRolesByName(userName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("user is not exist")))
+	}
+	return c.JSON(http.StatusOK, &GetUserDetailResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertUserToRes(user),
 	})
 }
 
@@ -199,6 +226,12 @@ type GetUsersResV1 struct {
 	controller.BaseRes
 	Data      []UserResV1 `json:"data"`
 	TotalNums uint64      `json:"total_nums"`
+}
+
+type UserResV1 struct {
+	Name  string   `json:"user_name"`
+	Email string   `json:"email"`
+	Roles []string `json:"role_name_list,omitempty"`
 }
 
 // @Summary 获取用户信息列表
