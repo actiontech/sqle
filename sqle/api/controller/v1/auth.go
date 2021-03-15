@@ -23,8 +23,7 @@ type GetUserLoginResV1 struct {
 }
 
 type UserLoginResV1 struct {
-	Token   string `json:"token" example:"this is a jwt token string"`
-	IsAdmin bool   `json:"is_admin"`
+	Token string `json:"token" example:"this is a jwt token string"`
 }
 
 // @Summary 用户登录
@@ -61,8 +60,7 @@ func Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetUserLoginResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: UserLoginResV1{
-			Token:   t,
-			IsAdmin: req.UserName == defaultAdminUser,
+			Token: t,
 		},
 	})
 }

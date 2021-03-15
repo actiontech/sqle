@@ -111,6 +111,9 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 		v1Router.PATCH("/instances/:instance_name/", v1.UpdateInstance, AdminUserAllowed())
 	}
 
+	// user
+	v1Router.GET("/user", v1.GetCurrentUser)
+
 	// instance
 	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
 	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)

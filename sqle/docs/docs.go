@@ -544,6 +544,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/user": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get current user info",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取当前用户信息",
+                "operationId": "getCurrentUserV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetUserDetailResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user_tips": {
             "get": {
                 "security": [
@@ -680,7 +703,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.UserResV1"
+                            "$ref": "#/definitions/v1.GetUserDetailResV1"
                         }
                     }
                 }
@@ -998,6 +1021,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetUserDetailResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.UserDetailResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetUserLoginResV1": {
             "type": "object",
             "properties": {
@@ -1230,6 +1270,26 @@ var doc = `{
                 }
             }
         },
+        "v1.UserDetailResV1": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UserLoginReqV1": {
             "type": "object",
             "properties": {
@@ -1246,9 +1306,6 @@ var doc = `{
         "v1.UserLoginResV1": {
             "type": "object",
             "properties": {
-                "is_admin": {
-                    "type": "boolean"
-                },
                 "token": {
                     "type": "string",
                     "example": "this is a jwt token string"
