@@ -1,10 +1,5 @@
 package model
 
-import (
-	"bytes"
-	"text/template"
-)
-
 type UserDetail struct {
 	Id        int
 	Name      string `json:"login_name"`
@@ -50,70 +45,8 @@ AND roles.name = :filter_role_name
 {{- end }}
 `
 
-func getUsersQuery(data interface{}) (string, error) {
-	var buff bytes.Buffer
-	tpl, err := template.New("getUsersByReq").Parse(usersQueryBodyTpl)
-	if err != nil {
-		return "", err
-	}
-	_, err = tpl.Parse(usersQueryTpl)
-	if err != nil {
-		return "", err
-	}
-	err = tpl.Execute(&buff, data)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
-}
-
-func getUsersCountQuery(data interface{}) (string, error) {
-	var buff bytes.Buffer
-	tpl, err := template.New("getUsersByReq").Parse(usersQueryBodyTpl)
-	if err != nil {
-		return "", err
-	}
-	_, err = tpl.Parse(usersCountTpl)
-	if err != nil {
-		return "", err
-	}
-	err = tpl.Execute(&buff, data)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
-}
-
 func (s *Storage) GetUsersByReq(data map[string]interface{}) ([]*UserDetail, uint64, error) {
-	tasksQuery, err := getUsersQuery(data)
-	if err != nil {
-		return nil, 0, err
-	}
-	tasksCountQuery, err := getUsersCountQuery(data)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	sqlxDb := GetSqlxDb()
-	nstmtTasksQuery, err := sqlxDb.PrepareNamed(tasksQuery)
-	if err != nil {
-		return nil, 0, err
-	}
-	users := []*UserDetail{}
-
-	err = nstmtTasksQuery.Select(&users, data)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	nstmtTasksCountQuery, err := sqlxDb.PrepareNamed(tasksCountQuery)
-	if err != nil {
-		return nil, 0, err
-	}
-	var count uint64
-	err = nstmtTasksCountQuery.Get(&count, data)
-	if err != nil {
-		return nil, 0, err
-	}
-	return users, count, nil
+	result := []*UserDetail{}
+	count, err := s.getListResult(usersQueryBodyTpl, usersQueryTpl, usersCountTpl, data, &result)
+	return result, count, err
 }

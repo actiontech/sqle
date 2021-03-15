@@ -109,17 +109,30 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 		v1Router.POST("/instances", v1.CreateInstance, AdminUserAllowed())
 		v1Router.DELETE("/instances/:instance_name/", v1.DeleteInstance, AdminUserAllowed())
 		v1Router.PATCH("/instances/:instance_name/", v1.UpdateInstance, AdminUserAllowed())
+
+		// rule template
+		v1Router.POST("/rule_templates", v1.CreateRuleTemplate, AdminUserAllowed())
+		v1Router.PATCH("/rule_templates/:rule_template_name", v1.UpdateRuleTemplate, AdminUserAllowed())
+		v1Router.DELETE("/rule_templates/:rule_template_name", v1.DeleteRuleTemplate, AdminUserAllowed())
 	}
 
 	// user
 	v1Router.GET("/user", v1.GetCurrentUser)
 
 	// instance
+	v1Router.GET("/instances", v1.GetInstances)
 	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
 	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
 	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)
 	v1Router.GET("/instance_tips", v1.GetInstanceTips)
+
+	// rule template
+	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
+	v1Router.GET("/rule_templates/:rule_template_name/", v1.GetRuleTemplate)
+
+	//rule
+	v1Router.GET("/rules", v1.GetRules)
 
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)

@@ -62,29 +62,6 @@ func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
 	return 0
 }
 
-// RuleTemplateDetail use for http request and swagger docs;
-// it is same as RuleTemplate, but display Rules in json format.
-type RuleTemplateDetail struct {
-	RuleTemplate
-	Rules     []Rule     `json:"rule_list"`
-	Instances []Instance `json:"instance_list"`
-}
-
-func (r *RuleTemplate) Detail() RuleTemplateDetail {
-	data := RuleTemplateDetail{
-		RuleTemplate: *r,
-		Rules:        r.Rules,
-		Instances:    r.Instances,
-	}
-	if r.Rules == nil {
-		data.Rules = []Rule{}
-	}
-	if r.Instances == nil {
-		data.Instances = []Instance{}
-	}
-	return data
-}
-
 func (s *Storage) GetTemplateById(templateId string) (RuleTemplate, bool, error) {
 	t := RuleTemplate{}
 	err := s.db.Preload("Rules").Preload("Instances").Where("id = ?", templateId).First(&t).Error
@@ -94,9 +71,9 @@ func (s *Storage) GetTemplateById(templateId string) (RuleTemplate, bool, error)
 	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetTemplateByName(name string) (RuleTemplate, bool, error) {
-	t := RuleTemplate{}
-	err := s.db.Preload("Rules").Where("name = ?", name).First(&t).Error
+func (s *Storage) GetTemplateByName(name string) (*RuleTemplate, bool, error) {
+	t := &RuleTemplate{}
+	err := s.db.Preload("Rules").Preload("Instances").Where("name = ?", name).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
@@ -107,8 +84,8 @@ func (s *Storage) UpdateTemplateRules(tpl *RuleTemplate, rules ...Rule) error {
 	err := s.db.Model(tpl).Association("Rules").Replace(rules).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
-func (s *Storage) UpdateTemplateInst(tpl *RuleTemplate, inst ...Instance) error {
-	err := s.db.Model(tpl).Association("Instances").Replace(inst).Error
+func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*Instance) error {
+	err := s.db.Model(tpl).Association("Instances").Replace(instances).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
@@ -161,7 +138,7 @@ func (s *Storage) UpdateRuleValueByName(name, value string) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetInstancesNameByTemplate(tpl RuleTemplate) ([]string, error) {
+func (s *Storage) GetInstancesNameByTemplate(tpl *RuleTemplate) ([]string, error) {
 	names := []string{}
 	rows, err := s.db.Table("instances").Select("instances.name").
 		Joins("inner join instance_rule_template on instance_rule_template.instance_id = instances.id").
@@ -206,4 +183,32 @@ func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemp
 			fmt.Errorf("rule template %s not exist", strings.Join(notExistTemplateNames, ", ")))
 	}
 	return ruleTemplates, nil
+}
+
+func (s *Storage) GetRulesByNames(names []string) ([]Rule, error) {
+	rules := []Rule{}
+	err := s.db.Where("name in (?)", names).Find(&rules).Error
+	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetAndCheckRuleExist(ruleNames []string) (rules []Rule, err error) {
+	rules, err = s.GetRulesByNames(ruleNames)
+	if err != nil {
+		return rules, err
+	}
+	existRuleNames := map[string]struct{}{}
+	for _, user := range rules {
+		existRuleNames[user.Name] = struct{}{}
+	}
+	notExistRuleNames := []string{}
+	for _, userName := range ruleNames {
+		if _, ok := existRuleNames[userName]; !ok {
+			notExistRuleNames = append(notExistRuleNames, userName)
+		}
+	}
+	if len(notExistRuleNames) > 0 {
+		return rules, errors.New(errors.DATA_NOT_EXIST,
+			fmt.Errorf("rule %s not exist", strings.Join(notExistRuleNames, ", ")))
+	}
+	return rules, nil
 }

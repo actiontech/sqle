@@ -61,70 +61,76 @@ AND instances.name = :filter_instance_name
 {{- end }}
 `
 
-func getRolesQuery(data interface{}) (string, error) {
-	var buff bytes.Buffer
-	tpl, err := template.New("getRolesByReq").Parse(rolesQueryBodyTpl)
-	if err != nil {
-		return "", err
-	}
-	_, err = tpl.Parse(rolesQueryTpl)
-	if err != nil {
-		return "", err
-	}
-	err = tpl.Execute(&buff, data)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
-}
-
-func getRolesCountQuery(data interface{}) (string, error) {
-	var buff bytes.Buffer
-	tpl, err := template.New("getRolesByReq").Parse(rolesQueryBodyTpl)
-	if err != nil {
-		return "", err
-	}
-	_, err = tpl.Parse(rolesCountTpl)
-	if err != nil {
-		return "", err
-	}
-	err = tpl.Execute(&buff, data)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
-}
-
 func (s *Storage) GetRolesByReq(data map[string]interface{}) ([]*RoleDetail, uint64, error) {
-	tasksQuery, err := getRolesQuery(data)
+	result := []*RoleDetail{}
+	count, err := s.getListResult(rolesQueryBodyTpl, rolesQueryTpl, rolesCountTpl, data, &result)
+	return result, count, err
+}
+
+func getSelectQuery(bodyTpl, queryTpl string, data interface{}) (string, error) {
+	var buff bytes.Buffer
+	tpl, err := template.New("getQuery").Parse(bodyTpl)
 	if err != nil {
-		return nil, 0, err
+		return "", err
 	}
-	tasksCountQuery, err := getRolesCountQuery(data)
+	_, err = tpl.Parse(queryTpl)
 	if err != nil {
-		return nil, 0, err
+		return "", err
+	}
+	err = tpl.Execute(&buff, data)
+	if err != nil {
+		return "", err
+	}
+	return buff.String(), nil
+}
+
+func getCountQuery(bodyTpl, countTpl string, data interface{}) (string, error) {
+	var buff bytes.Buffer
+	tpl, err := template.New("getCount").Parse(bodyTpl)
+	if err != nil {
+		return "", err
+	}
+	_, err = tpl.Parse(countTpl)
+	if err != nil {
+		return "", err
+	}
+	err = tpl.Execute(&buff, data)
+	if err != nil {
+		return "", err
+	}
+	return buff.String(), nil
+}
+
+func (s *Storage) getListResult(bodyTpl, queryTpl, countTpl string, data map[string]interface{},
+	result interface{}) (uint64, error) {
+	selectQuery, err := getSelectQuery(bodyTpl, queryTpl, data)
+	if err != nil {
+		return 0, err
+	}
+	countQuery, err := getCountQuery(bodyTpl, countTpl, data)
+	if err != nil {
+		return 0, err
 	}
 
 	sqlxDb := GetSqlxDb()
-	nstmtTasksQuery, err := sqlxDb.PrepareNamed(tasksQuery)
+	nstmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
 	if err != nil {
-		return nil, 0, err
-	}
-	roles := []*RoleDetail{}
-
-	err = nstmtTasksQuery.Select(&roles, data)
-	if err != nil {
-		return nil, 0, err
+		return 0, err
 	}
 
-	nstmtTasksCountQuery, err := sqlxDb.PrepareNamed(tasksCountQuery)
+	err = nstmtTasksQuery.Select(result, data)
 	if err != nil {
-		return nil, 0, err
+		return 0, err
+	}
+
+	nstmtCountQuery, err := sqlxDb.PrepareNamed(countQuery)
+	if err != nil {
+		return 0, err
 	}
 	var count uint64
-	err = nstmtTasksCountQuery.Get(&count, data)
+	err = nstmtCountQuery.Get(&count, data)
 	if err != nil {
-		return nil, 0, err
+		return 0, err
 	}
-	return roles, count, nil
+	return count, nil
 }

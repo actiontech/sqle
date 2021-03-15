@@ -25,6 +25,29 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/rules": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "规则列表",
+                "operationId": "getRuleListV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRulesResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instance_connection": {
             "post": {
                 "security": [
@@ -86,6 +109,83 @@ var doc = `{
             }
         },
         "/v1/instances": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance info list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例信息列表",
+                "operationId": "getInstanceListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db host",
+                        "name": "filter_db_host",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db port",
+                        "name": "filter_db_port",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db user",
+                        "name": "filter_db_user",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter workflow rule template name",
+                        "name": "filter_workflow_template_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter rule template name",
+                        "name": "filter_rule_template_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter role name",
+                        "name": "filter_role_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstancesResV1"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -521,6 +621,185 @@ var doc = `{
                 }
             }
         },
+        "/v1/rule_templates": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "规则模板列表",
+                "operationId": "getRuleTemplateListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleTemplatesResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a rule template",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "添加规则模板",
+                "operationId": "createRuleTemplateV1",
+                "parameters": [
+                    {
+                        "description": "add rule template request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/rule_templates/{rule_template_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取规则模板信息",
+                "operationId": "getRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleTemplateResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "删除规则模板",
+                "operationId": "deleteRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "更新规则模板",
+                "operationId": "updateRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update rule template request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/test": {
             "get": {
                 "security": [
@@ -866,6 +1145,32 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateRuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "ddl_check_index_count"
+                    ]
+                },
+                "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CreateUserReqV1": {
             "type": "object",
             "properties": {
@@ -980,6 +1285,28 @@ var doc = `{
                 }
             }
         },
+        "v1.GetInstancesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetRoleTipsResV1": {
             "type": "object",
             "properties": {
@@ -1018,6 +1345,64 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetRuleTemplateResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RuleTemplateDetailResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetRuleTemplatesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleTemplateDetailResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetRulesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -1193,6 +1578,48 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "level": {
+                    "description": "notice, warn, error",
+                    "type": "string",
+                    "example": "error"
+                },
+                "rule_name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RuleTemplateDetailResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateInstanceReqV1": {
             "type": "object",
             "properties": {
@@ -1253,6 +1680,32 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.UpdateRuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "mysql-xxx"
+                    ]
+                },
+                "rule_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "ddl_check_index_count"
+                    ]
                 }
             }
         },

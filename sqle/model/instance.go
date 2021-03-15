@@ -21,19 +21,21 @@ const (
 // Instance is a table for database info
 type Instance struct {
 	Model
-	Name               string         `json:"name" gorm:"not null;index" example:""`
-	DbType             string         `json:"db_type" gorm:"not null" example:"mysql"`
-	Host               string         `json:"host" gorm:"not null" example:"10.10.10.10"`
-	Port               string         `json:"port" gorm:"not null" example:"3306"`
-	User               string         `json:"user" gorm:"not null" example:"root"`
-	Password           string         `json:"-" gorm:"-"`
-	SecretPassword     string         `json:"secret_password" gorm:"not null;column:password"`
-	Desc               string         `json:"desc" example:"this is a instance"`
-	RuleTemplates      []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
-	MycatConfig        *MycatConfig   `json:"-" gorm:"-"`
-	MycatConfigJson    string         `json:"-" gorm:"type:text;column:mycat_config"`
-	WorkflowTemplateId int            `json:"workflow_template_id"`
-	Roles              []*Role        `gorm:"many2many:instance_role;"`
+	Name               string       `json:"name" gorm:"not null;index" example:""`
+	DbType             string       `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
+	Host               string       `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
+	Port               string       `json:"port" gorm:"column:db_port; not null" example:"3306"`
+	User               string       `json:"user" gorm:"column:db_user; not null" example:"root"`
+	Password           string       `json:"-" gorm:"-"`
+	SecretPassword     string       `json:"secret_password" gorm:"column:db_password; not null"`
+	Desc               string       `json:"desc" example:"this is a instance"`
+	WorkflowTemplateId int          `json:"workflow_template_id"`
+	MycatConfig        *MycatConfig `json:"-" gorm:"-"`
+	MycatConfigJson    string       `json:"-" gorm:"type:text;column:mycat_config"`
+
+	// relation table
+	Roles         []*Role        `json:"-" gorm:"many2many:instance_role;"`
+	RuleTemplates []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
 }
 
 // BeforeSave is a hook implement gorm model before exec create
@@ -124,26 +126,6 @@ func (i *Instance) marshalMycatConfig() error {
 	}
 	i.MycatConfigJson = string(data)
 	return nil
-}
-
-// InstanceDetail use for http request and swagger docs;
-// it is same as Instance, but display RuleTemplates in json format.
-type InstanceDetail struct {
-	Instance
-	RuleTemplates []RuleTemplate `json:"rule_template_list"`
-	MycatConfig   *MycatConfig   `json:"mycat_config,omitempty"`
-}
-
-func (i *Instance) Detail() InstanceDetail {
-	data := InstanceDetail{
-		Instance:      *i,
-		RuleTemplates: i.RuleTemplates,
-		MycatConfig:   i.MycatConfig,
-	}
-	if i.RuleTemplates == nil {
-		data.RuleTemplates = []RuleTemplate{}
-	}
-	return data
 }
 
 func (s *Storage) GetInstById(id string) (*Instance, bool, error) {

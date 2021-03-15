@@ -1,134 +1,79 @@
 package model
 
-//import (
-//	"bytes"
-//	"text/template"
-//)
-//
-//type InstanceDetail struct {
-//	Id            int
-//	Name          string `json:"name"`
-//	Desc          string
-//	UserNames     string `json:"user_names"`     // is a user name list, separated by commas.
-//	InstanceNames string `json:"instance_names"` // is a instance name list, separated by commas.
-//}
-//
-//var instancesQueryTpl = `SELECT roles.id, roles.name, roles.desc,
-//GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
-//GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names
-//FROM roles
-//LEFT JOIN user_role ON roles.id = user_role.role_id
-//LEFT JOIN users ON user_role.user_id = users.id
-//LEFT JOIN instance_role ON roles.id = instance_role.role_id
-//LEFT JOIN instances ON instance_role.instance_id = instances.id
-//WHERE
-//roles.id in (SELECT DISTINCT(roles.id)
-//
-//{{- template "body" . -}}
-//)
-//GROUP BY roles.id
-//{{- if .limit }}
-//LIMIT :limit OFFSET :offset
-//{{- end -}}
-//`
-//
-//var instanceCountTpl = `SELECT COUNT(DISTINCT roles.id)
-//
-//{{- template "body" . -}}
-//`
-//
-//var rolesQueryBodyTpl = `
-//{{ define "body" }}
-//FROM roles
-//LEFT JOIN user_role ON roles.id = user_role.role_id
-//LEFT JOIN users ON user_role.user_id = users.id
-//LEFT JOIN instance_role ON roles.id = instance_role.role_id
-//LEFT JOIN instances ON instance_role.instance_id = instances.id
-//WHERE
-//roles.deleted_at IS NULL
-//
-//{{- if .filter_role_name }}
-//AND roles.name = :filter_role_name
-//{{- end }}
-//
-//{{- if .filter_user_name }}
-//AND users.login_name = :filter_user_name
-//{{- end }}
-//
-//{{- if .filter_instance_name }}
-//AND instances.name = :filter_instance_name
-//{{- end }}
-//{{- end }}
-//`
-//
-//func getSelectQuery(bodyTpl, queryTpl string, data interface{}) (string, error) {
-//	var buff bytes.Buffer
-//	tpl, err := template.New("getQuery").Parse(bodyTpl)
-//	if err != nil {
-//		return "", err
-//	}
-//	_, err = tpl.Parse(queryTpl)
-//	if err != nil {
-//		return "", err
-//	}
-//	err = tpl.Execute(&buff, data)
-//	if err != nil {
-//		return "", err
-//	}
-//	return buff.String(), nil
-//}
-//
-//func getCountQuery(bodyTpl, countTpl string, data interface{}) (string, error) {
-//	var buff bytes.Buffer
-//	tpl, err := template.New("getCount").Parse(bodyTpl)
-//	if err != nil {
-//		return "", err
-//	}
-//	_, err = tpl.Parse(countTpl)
-//	if err != nil {
-//		return "", err
-//	}
-//	err = tpl.Execute(&buff, data)
-//	if err != nil {
-//		return "", err
-//	}
-//	return buff.String(), nil
-//}
-//
-//func (s *Storage) getListResult(bodyTpl, queryTpl, countTpl string, data map[string]interface{},
-//	result interface{}) (uint64, error) {
-//	selectQuery, err := getSelectQuery(bodyTpl, queryTpl, data)
-//	if err != nil {
-//		return 0, err
-//	}
-//	countQuery, err := getCountQuery(bodyTpl, countTpl, data)
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	sqlxDb := GetSqlxDb()
-//	nstmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	err = nstmtTasksQuery.Select(&result, data)
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	nstmtCountQuery, err := sqlxDb.PrepareNamed(countQuery)
-//	if err != nil {
-//		return 0, err
-//	}
-//	var count uint64
-//	err = nstmtCountQuery.Get(&count, data)
-//	if err != nil {
-//		return 0, err
-//	}
-//	return count, nil
-//}
-//
-//func (s *Storage) GetInstancesResultByReq() (){
-//
-//}
+type InstanceDetail struct {
+	Name                 string `json:"name"`
+	Desc                 string `json:"desc"`
+	Host                 string `json:"db_host"`
+	Port                 string `json:"db_port"`
+	User                 string `json:"db_user"`
+	WorkflowTemplateName string `json:"workflow_template_name"`
+	RoleNames            string `json:"role_names"`          // is a role name list, separated by commas.
+	RuleTemplateNames    string `json:"rule_template_names"` // is a rule template name list, separated by commas.
+}
+
+var instancesQueryTpl = `SELECT instances.name, instances.desc, 
+instances.db_host, instances.db_port, instances.db_user,
+GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names,
+GROUP_CONCAT(DISTINCT COALESCE(rule_templates.name,'')) AS rule_template_names
+FROM instances
+LEFT JOIN instance_role ON instances.id = instance_role.instance_id
+LEFT JOIN roles ON instance_role.role_id = roles.id
+LEFT JOIN instance_rule_template ON instances.id = instance_rule_template.instance_id
+LEFT JOIN rule_templates ON instance_rule_template.rule_template_id = rule_templates.id
+WHERE
+instances.id in (SELECT DISTINCT(instances.id)
+
+{{- template "body" . -}}
+)
+GROUP BY instances.id
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var instancesCountTpl = `SELECT COUNT(DISTINCT instances.id)
+
+{{- template "body" . -}}
+`
+
+var instancesQueryBodyTpl = `
+{{ define "body" }}
+FROM instances
+LEFT JOIN instance_role ON instances.id = instance_role.instance_id
+LEFT JOIN roles ON instance_role.role_id = roles.id
+LEFT JOIN instance_rule_template ON instances.id = instance_rule_template.instance_id
+LEFT JOIN rule_templates ON instance_rule_template.rule_template_id = rule_templates.id
+WHERE
+instances.deleted_at IS NULL
+
+{{- if .filter_instance_name }}
+AND instances.name = :filter_instance_name
+{{- end }}
+
+{{- if .filter_db_host }}
+AND instances.db_host = :filter_db_host
+{{- end }}
+
+{{- if .filter_db_port }}
+AND instances.db_port = :filter_db_port
+{{- end }}
+
+{{- if .filter_db_user }}
+AND instances.db_user = :filter_db_user
+{{- end }}
+
+{{- if .filter_role_name }}
+AND roles.name = :filter_role_name
+{{- end }}
+
+{{- if .filter_rule_template_name }}
+AND rule_templates.name = :filter_rule_template_name
+{{- end }}
+{{- end }}
+`
+
+func (s *Storage) GetInstancesByReq(data map[string]interface{}) ([]*InstanceDetail, uint64, error) {
+	result := []*InstanceDetail{}
+	count, err := s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, instancesCountTpl, data, &result)
+	return result, count, err
+}
