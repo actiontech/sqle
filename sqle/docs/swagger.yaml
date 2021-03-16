@@ -207,6 +207,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetRuleTemplateTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RuleTemplateTipResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRuleTemplatesResV1:
     properties:
       code:
@@ -379,6 +392,11 @@ definitions:
       rule_template_name:
         type: string
     type: object
+  v1.RuleTemplateTipResV1:
+    properties:
+      rule_template_name:
+        type: string
+    type: object
   v1.UpdateInstanceReqV1:
     properties:
       db_host:
@@ -499,20 +517,6 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
-  /rules:
-    get:
-      description: get all rule template
-      operationId: getRuleListV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetRulesResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 规则列表
-      tags:
-      - rule_template
   /v1/instance_connection:
     post:
       consumes:
@@ -877,6 +881,20 @@ paths:
       summary: 更新角色信息
       tags:
       - role
+  /v1/rule_template_tips:
+    get:
+      description: get rule template tips
+      operationId: getRuleTemplateTipsV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleTemplateTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取规则模板提示
+      tags:
+      - rule_template
   /v1/rule_templates:
     get:
       description: get all rule template
@@ -988,6 +1006,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新规则模板
+      tags:
+      - rule_template
+  /v1/rules:
+    get:
+      description: get all rule template
+      operationId: getRuleListV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRulesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 规则列表
       tags:
       - rule_template
   /v1/test:

@@ -25,29 +25,6 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/rules": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get all rule template",
-                "tags": [
-                    "rule_template"
-                ],
-                "summary": "规则列表",
-                "operationId": "getRuleListV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetRulesResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/instance_connection": {
             "post": {
                 "security": [
@@ -621,6 +598,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/rule_template_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule template tips",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取规则模板提示",
+                "operationId": "getRuleTemplateTipsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleTemplateTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/rule_templates": {
             "get": {
                 "security": [
@@ -795,6 +795,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/rules": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "规则列表",
+                "operationId": "getRuleListV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRulesResV1"
                         }
                     }
                 }
@@ -1365,6 +1388,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetRuleTemplateTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleTemplateTipResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRuleTemplatesResV1": {
             "type": "object",
             "properties": {
@@ -1615,6 +1657,14 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RuleTemplateTipResV1": {
+            "type": "object",
+            "properties": {
                 "rule_template_name": {
                     "type": "string"
                 }

@@ -129,6 +129,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	// rule template
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
+	v1Router.GET("/rule_template_tips", v1.GetRuleTemplateTips)
 	v1Router.GET("/rule_templates/:rule_template_name/", v1.GetRuleTemplate)
 
 	//rule

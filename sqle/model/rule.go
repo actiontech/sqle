@@ -62,16 +62,16 @@ func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
 	return 0
 }
 
-func (s *Storage) GetTemplateById(templateId string) (RuleTemplate, bool, error) {
-	t := RuleTemplate{}
-	err := s.db.Preload("Rules").Preload("Instances").Where("id = ?", templateId).First(&t).Error
+func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error) {
+	t := &RuleTemplate{}
+	err := s.db.Where("name = ?", name).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
 	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetTemplateByName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
 	err := s.db.Preload("Rules").Preload("Instances").Where("name = ?", name).First(t).Error
 	if err == gorm.ErrRecordNotFound {
@@ -80,19 +80,13 @@ func (s *Storage) GetTemplateByName(name string) (*RuleTemplate, bool, error) {
 	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateTemplateRules(tpl *RuleTemplate, rules ...Rule) error {
+func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...Rule) error {
 	err := s.db.Model(tpl).Association("Rules").Replace(rules).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*Instance) error {
 	err := s.db.Model(tpl).Association("Instances").Replace(instances).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
-func (s *Storage) GetAllTemplate() ([]RuleTemplate, error) {
-	ts := []RuleTemplate{}
-	err := s.db.Preload("Instances").Find(&ts).Error
-	return ts, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
@@ -103,6 +97,12 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 		}
 	}
 	return ruleMap
+}
+
+func (s *Storage) GetRuleTemplateTips() ([]*RuleTemplate, error) {
+	ruleTemplates := []*RuleTemplate{}
+	err := s.db.Select("name").Find(&ruleTemplates).Error
+	return ruleTemplates, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) GetAllRule() ([]Rule, error) {

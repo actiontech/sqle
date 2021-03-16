@@ -33,7 +33,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetTemplateByName(req.Name)
+	_, exist, err := s.GetRuleTemplateByName(req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -65,7 +65,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = s.UpdateTemplateRules(ruleTemplate, rules...)
+	err = s.UpdateRuleTemplateRules(ruleTemplate, rules...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -99,7 +99,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	template, exist, err := s.GetTemplateByName(templateName)
+	template, exist, err := s.GetRuleTemplateByName(templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -130,7 +130,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 	if req.Rules != nil {
-		err = s.UpdateTemplateRules(template, rules...)
+		err = s.UpdateRuleTemplateRules(template, rules...)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -185,7 +185,7 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 func GetRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetTemplateByName(templateName)
+	template, exist, err := s.GetRuleTemplateDetailByName(templateName)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -211,7 +211,7 @@ func GetRuleTemplate(c echo.Context) error {
 func DeleteRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetTemplateByName(templateName)
+	template, exist, err := s.GetRuleTemplateByName(templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -337,5 +337,41 @@ func GetRules(c echo.Context) error {
 	return c.JSON(200, &GetRulesResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    rulesRes,
+	})
+}
+
+type RuleTemplateTipResV1 struct {
+	Name string `json:"rule_template_name"`
+}
+
+type GetRuleTemplateTipsResV1 struct {
+	controller.BaseRes
+	Data []RuleTemplateTipResV1 `json:"data"`
+}
+
+// @Summary 获取规则模板提示
+// @Description get rule template tips
+// @Id getRuleTemplateTipsV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetRuleTemplateTipsResV1
+// @router /v1/rule_template_tips [get]
+func GetRuleTemplateTips(c echo.Context) error {
+	s := model.GetStorage()
+	ruleTemplates, err := s.GetRuleTemplateTips()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ruleTemplateTipsRes := make([]RuleTemplateTipResV1, 0, len(ruleTemplates))
+
+	for _, roleTemplate := range ruleTemplates {
+		ruleTemplateTipRes := RuleTemplateTipResV1{
+			Name: roleTemplate.Name,
+		}
+		ruleTemplateTipsRes = append(ruleTemplateTipsRes, ruleTemplateTipRes)
+	}
+	return c.JSON(http.StatusOK, &GetRuleTemplateTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    ruleTemplateTipsRes,
 	})
 }
