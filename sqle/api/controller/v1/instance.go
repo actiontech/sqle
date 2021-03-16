@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"strings"
 )
 
 type CreateInstanceReqV1 struct {
@@ -84,18 +85,18 @@ func CreateInstance(c echo.Context) error {
 
 	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 
-	return c.JSON(200, controller.NewBaseReq(nil))
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type InstanceResV1 struct {
 	Name                 string   `json:"instance_name"`
-	Host                 string   `json:"db_host" gorm:"not null" example:"10.10.10.10"`
-	Port                 string   `json:"db_port" gorm:"not null" example:"3306"`
-	User                 string   `json:"db_user" gorm:"not null" example:"root"`
+	Host                 string   `json:"db_host" example:"10.10.10.10"`
+	Port                 string   `json:"db_port" example:"3306"`
+	User                 string   `json:"db_user" example:"root"`
 	Desc                 string   `json:"desc" example:"this is a instance"`
-	RuleTemplates        []string `json:"rule_template_name_list,omitempty"`
 	WorkflowTemplateName string   `json:"workflow_template_name"`
-	Roles                []string `json:"role_name_list"`
+	RuleTemplates        []string `json:"rule_template_name_list,omitempty"`
+	Roles                []string `json:"role_name_list,omitempty"`
 }
 
 type GetInstanceResV1 struct {
@@ -143,7 +144,7 @@ func GetInstance(c echo.Context) error {
 		}
 		instanceResV1.Roles = roleNames
 	}
-	return c.JSON(200, &GetInstanceResV1{
+	return c.JSON(http.StatusOK, &GetInstanceResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    instanceResV1,
 	})
@@ -173,18 +174,18 @@ func DeleteInstance(c echo.Context) error {
 	}
 
 	server.GetSqled().DeleteInstanceStatus(instance)
-	return c.JSON(200, controller.NewBaseReq(nil))
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type UpdateInstanceReqV1 struct {
-	User               *string  `json:"db_user" form:"db_user" example:"root"`
-	Host               *string  `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"ipv4"`
-	Port               *string  `json:"db_port" form:"db_port" example:"3306" valid:"range(1|65535)"`
-	Password           *string  `json:"db_password" form:"db_password" example:"123456"`
-	Desc               *string  `json:"desc" example:"this is a test instance" valid:"-"`
-	WorkflowTemplateId *string  `json:"workflow_template_name" form:"workflow_template_name"`
-	RuleTemplates      []string `json:"rule_template_name_list" form:"rule_template_name_list" example:"1" valid:"-"`
-	Roles              []string `json:"role_name_list" form:"role_name_list"`
+	User                 *string  `json:"db_user" form:"db_user" example:"root"`
+	Host                 *string  `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"ipv4"`
+	Port                 *string  `json:"db_port" form:"db_port" example:"3306" valid:"range(1|65535)"`
+	Password             *string  `json:"db_password" form:"db_password" example:"123456"`
+	Desc                 *string  `json:"desc" example:"this is a test instance" valid:"-"`
+	WorkflowTemplateName *string  `json:"workflow_template_name" form:"workflow_template_name"`
+	RuleTemplates        []string `json:"rule_template_name_list" form:"rule_template_name_list" example:"1" valid:"-"`
+	Roles                []string `json:"role_name_list" form:"role_name_list"`
 }
 
 // @Summary 更新实例
@@ -262,17 +263,19 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
-	return c.JSON(200, controller.NewBaseReq(nil))
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetInstancesReqV1 struct {
-	FilterUserName string `json:"filter_rule_template_name" query:"filter_rule_template_name"`
-	FilterRoleName string `json:"filter_role_name" query:"filter_role_name"`
-	FilterDBHost   string `json:"filter_db_host" query:"filter_db_host" valid:"ipv4"`
-	FilterDBPort   string `json:"filter_db_port" query:"filter_db_port" valid:"range(1|65535)"`
-	FilterDBUser   string `json:"filter_db_user" query:"filter_db_user"`
-	PageIndex      uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize       uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	FilterInstanceName         string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterDBHost               string `json:"filter_db_host" query:"filter_db_host"`
+	FilterDBPort               string `json:"filter_db_port" query:"filter_db_port"`
+	FilterDBUser               string `json:"filter_db_user" query:"filter_db_user"`
+	FilterWorkflowTemplateName string `json:"filter_workflow_template_name" query:"filter_workflow_template_name"`
+	FilterRuleTemplateName     string `json:"filter_rule_template_name" query:"filter_rule_template_name"`
+	FilterRoleName             string `json:"filter_role_name" query:"filter_role_name"`
+	PageIndex                  uint32 `json:"page_index" query:"page_index" valid:"required,int"`
+	PageSize                   uint32 `json:"page_size" query:"page_size" valid:"required,int"`
 }
 
 type GetInstancesResV1 struct {
@@ -281,30 +284,72 @@ type GetInstancesResV1 struct {
 	TotalNums uint64          `json:"total_nums"`
 }
 
-//// @Summary 获取实例信息列表
-//// @Description get instance info list
-//// @Id getInstanceListV1
-//// @Tags instance
-//// @Security ApiKeyAuth
-//// @Param filter_rule_template_name query string false "filter rule template name"
-//// @Param filter_role_name query string false "filter role name"
-//// @Param filter_db_host query string false "filter db host"
-//// @Param filter_db_port query string false "filter db port"
-//// @Param filter_db_user query string false "filter db user"
-//// @Success 200 {object} v1.GetInstancesResV1
-//// @router /instances [get]
-//func GetInstances(c echo.Context) error {
-//	s := model.GetStorage()
-//	util.DebugPause("pause between get storage handle and query storage")
-//	databases, err := s.GetInstances()
-//	if err != nil {
-//		return controller.JSONBaseErrorReq(c, err)
-//	}
-//	return c.JSON(http.StatusOK, &GetInstancesResV1{
-//		BaseRes: controller.NewBaseReq(nil),
-//		Data:    nil,
-//	})
-//}
+// @Summary 获取实例信息列表
+// @Description get instance info list
+// @Id getInstanceListV1
+// @Tags instance
+// @Security ApiKeyAuth
+// @Param filter_instance_name query string false "filter instance name"
+// @Param filter_db_host query string false "filter db host"
+// @Param filter_db_port query string false "filter db port"
+// @Param filter_db_user query string false "filter db user"
+// @Param filter_workflow_template_name query string false "filter workflow rule template name"
+// @Param filter_rule_template_name query string false "filter rule template name"
+// @Param filter_role_name query string false "filter role name"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Success 200 {object} v1.GetInstancesResV1
+// @router /v1/instances [get]
+func GetInstances(c echo.Context) error {
+	req := new(GetInstancesReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+	data := map[string]interface{}{
+		"filter_instance_name":      req.FilterInstanceName,
+		"filter_db_host":            req.FilterDBHost,
+		"filter_db_port":            req.FilterDBPort,
+		"filter_db_user":            req.FilterDBUser,
+		"filter_rule_template_name": req.FilterRuleTemplateName,
+		"filter_role_name":          req.FilterRoleName,
+		"limit":                     req.PageSize,
+		"offset":                    offset,
+	}
+
+	instances, count, err := s.GetInstancesByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instancesReq := []InstanceResV1{}
+	for _, instance := range instances {
+		instanceReq := InstanceResV1{
+			Name: instance.Name,
+			Desc: instance.Desc,
+			Host: instance.Host,
+			Port: instance.Port,
+			User: instance.User,
+		}
+		if instance.RoleNames != "" {
+			instanceReq.Roles = strings.Split(instance.RoleNames, ",")
+		}
+		if instance.RuleTemplateNames != "" {
+			instanceReq.RuleTemplates = strings.Split(instance.RuleTemplateNames, ",")
+		}
+		instancesReq = append(instancesReq, instanceReq)
+	}
+	return c.JSON(http.StatusOK, &GetInstancesResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      instancesReq,
+		TotalNums: count,
+	})
+}
 
 type GetInstanceConnectableResV1 struct {
 	controller.BaseRes
@@ -337,7 +382,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 	if err := executor.Ping(log.NewEntry(), instance); err != nil {
 		isInstanceConnectable = false
 	}
-	return c.JSON(200, GetInstanceConnectableResV1{
+	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
 		BaseRes: controller.NewBaseReq(err),
 		Data: InstanceConnectableResV1{
 			IsInstanceConnectable: isInstanceConnectable,
@@ -377,7 +422,7 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	if err := executor.Ping(log.NewEntry(), instance); err != nil {
 		isInstanceConnectable = false
 	}
-	return c.JSON(200, GetInstanceConnectableResV1{
+	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: InstanceConnectableResV1{
 			IsInstanceConnectable: isInstanceConnectable,
@@ -416,7 +461,7 @@ func GetInstanceSchemas(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return c.JSON(200, &GetInstanceSchemaResV1{
+	return c.JSON(http.StatusOK, &GetInstanceSchemaResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: InstanceSchemaResV1{
 			Schemas: status.Schemas,

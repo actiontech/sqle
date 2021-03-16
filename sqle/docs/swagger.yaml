@@ -55,6 +55,23 @@ definitions:
           type: string
         type: array
     type: object
+  v1.CreateRuleTemplateReqV1:
+    properties:
+      desc:
+        type: string
+      instance_name_list:
+        items:
+          type: string
+        type: array
+      rule_name_list:
+        example:
+        - ddl_check_index_count
+        items:
+          type: string
+        type: array
+      rule_template_name:
+        type: string
+    type: object
   v1.CreateUserReqV1:
     properties:
       email:
@@ -135,6 +152,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetInstancesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.GetRoleTipsResV1:
     properties:
       code:
@@ -162,6 +194,59 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetRuleTemplateResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.RuleTemplateDetailResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetRuleTemplateTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RuleTemplateTipResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetRuleTemplatesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RuleTemplateDetailResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetRulesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RuleResV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetUserDetailResV1:
     properties:
@@ -279,6 +364,39 @@ definitions:
       role_name:
         type: string
     type: object
+  v1.RuleResV1:
+    properties:
+      desc:
+        type: string
+      level:
+        description: notice, warn, error
+        example: error
+        type: string
+      rule_name:
+        type: string
+      value:
+        type: string
+    type: object
+  v1.RuleTemplateDetailResV1:
+    properties:
+      desc:
+        type: string
+      instance_name_list:
+        items:
+          type: string
+        type: array
+      rule_name_list:
+        items:
+          type: string
+        type: array
+      rule_template_name:
+        type: string
+    type: object
+  v1.RuleTemplateTipResV1:
+    properties:
+      rule_template_name:
+        type: string
+    type: object
   v1.UpdateInstanceReqV1:
     properties:
       db_host:
@@ -318,6 +436,23 @@ definitions:
       role_desc:
         type: string
       user_name_list:
+        items:
+          type: string
+        type: array
+    type: object
+  v1.UpdateRuleTemplateReqV1:
+    properties:
+      desc:
+        type: string
+      instance_name_list:
+        example:
+        - mysql-xxx
+        items:
+          type: string
+        type: array
+      rule_name_list:
+        example:
+        - ddl_check_index_count
         items:
           type: string
         type: array
@@ -421,6 +556,56 @@ paths:
       tags:
       - instance
   /v1/instances:
+    get:
+      description: get instance info list
+      operationId: getInstanceListV1
+      parameters:
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: filter db host
+        in: query
+        name: filter_db_host
+        type: string
+      - description: filter db port
+        in: query
+        name: filter_db_port
+        type: string
+      - description: filter db user
+        in: query
+        name: filter_db_user
+        type: string
+      - description: filter workflow rule template name
+        in: query
+        name: filter_workflow_template_name
+        type: string
+      - description: filter rule template name
+        in: query
+        name: filter_rule_template_name
+        type: string
+      - description: filter role name
+        in: query
+        name: filter_role_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstancesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例信息列表
+      tags:
+      - instance
     post:
       consumes:
       - application/json
@@ -696,6 +881,147 @@ paths:
       summary: 更新角色信息
       tags:
       - role
+  /v1/rule_template_tips:
+    get:
+      description: get rule template tips
+      operationId: getRuleTemplateTipsV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleTemplateTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取规则模板提示
+      tags:
+      - rule_template
+  /v1/rule_templates:
+    get:
+      description: get all rule template
+      operationId: getRuleTemplateListV1
+      parameters:
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleTemplatesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 规则模板列表
+      tags:
+      - rule_template
+    post:
+      consumes:
+      - application/json
+      description: create a rule template
+      operationId: createRuleTemplateV1
+      parameters:
+      - description: add rule template request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateRuleTemplateReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加规则模板
+      tags:
+      - rule_template
+  /v1/rule_templates/{rule_template_name}/:
+    delete:
+      description: delete rule template
+      operationId: deleteRuleTemplateV1
+      parameters:
+      - description: rule template name
+        in: path
+        name: rule_template_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除规则模板
+      tags:
+      - rule_template
+    get:
+      description: get rule template
+      operationId: getRuleTemplateV1
+      parameters:
+      - description: rule template name
+        in: path
+        name: rule_template_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleTemplateResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取规则模板信息
+      tags:
+      - rule_template
+    patch:
+      description: update rule template
+      operationId: updateRuleTemplateV1
+      parameters:
+      - description: rule template name
+        in: path
+        name: rule_template_name
+        required: true
+        type: string
+      - description: update rule template request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateRuleTemplateReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新规则模板
+      tags:
+      - rule_template
+  /v1/rules:
+    get:
+      description: get all rule template
+      operationId: getRuleListV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRulesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 规则列表
+      tags:
+      - rule_template
   /v1/test:
     get:
       description: user login

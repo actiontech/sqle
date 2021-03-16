@@ -179,7 +179,7 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 func GetUser(c echo.Context) error {
 	userName := c.Param("user_name")
 	s := model.GetStorage()
-	user, exist, err := s.GetUserWithRolesByName(userName)
+	user, exist, err := s.GetUserDetailByName(userName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -202,7 +202,7 @@ func GetUser(c echo.Context) error {
 func GetCurrentUser(c echo.Context) error {
 	userName := controller.GetUserName(c)
 	s := model.GetStorage()
-	user, exist, err := s.GetUserWithRolesByName(userName)
+	user, exist, err := s.GetUserDetailByName(userName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
