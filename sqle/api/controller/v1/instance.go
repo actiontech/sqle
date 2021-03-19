@@ -219,20 +219,20 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["desc"] = *req.Desc
 	}
 	if req.Host != nil {
-		updateMap["host"] = *req.Host
+		updateMap["db_host"] = *req.Host
 	}
 	if req.Port != nil {
-		updateMap["port"] = *req.Port
+		updateMap["db_port"] = *req.Port
 	}
 	if req.User != nil {
-		updateMap["user"] = *req.User
+		updateMap["db_user"] = *req.User
 	}
 	if req.Password != nil {
 		password, err := util.AesEncrypt(*req.Password)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		updateMap["password"] = password
+		updateMap["db_password"] = password
 	}
 
 	if req.RuleTemplates != nil {
