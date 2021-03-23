@@ -369,7 +369,11 @@ definitions:
       desc:
         type: string
       level:
-        description: notice, warn, error
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         example: error
         type: string
       rule_name:

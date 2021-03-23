@@ -309,7 +309,7 @@ type RuleResV1 struct {
 	Name  string `json:"rule_name"`
 	Desc  string `json:"desc"`
 	Value string `json:"value"`
-	Level string `json:"level" example:"error"` // notice, warn, error
+	Level string `json:"level" example:"error" enums:"normal,notice,warn,error"`
 }
 
 // @Summary 规则列表

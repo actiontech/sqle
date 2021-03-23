@@ -1627,8 +1627,13 @@ var doc = `{
                     "type": "string"
                 },
                 "level": {
-                    "description": "notice, warn, error",
                     "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ],
                     "example": "error"
                 },
                 "rule_name": {
