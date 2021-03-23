@@ -326,7 +326,7 @@ func GetRules(c echo.Context) error {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
 	rulesRes := make([]RuleResV1, 0, len(rules))
-	for _, rule := range rulesRes {
+	for _, rule := range rules {
 		rulesRes = append(rulesRes, RuleResV1{
 			Name:  rule.Name,
 			Desc:  rule.Desc,
