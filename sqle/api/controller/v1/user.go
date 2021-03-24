@@ -13,7 +13,7 @@ import (
 type CreateUserReqV1 struct {
 	Name     string   `json:"user_name" form:"user_name" example:"test" valid:"required"`
 	Password string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
-	Email    string   `json:"email" form:"email" example:"test@email.com" valid:"email"`
+	Email    string   `json:"email" form:"email" example:"test@email.com" valid:"email,optional"`
 	Roles    []string `json:"role_name_list" form:"role_name_list"`
 }
 
@@ -39,7 +39,7 @@ func CreateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_EXIST, fmt.Errorf("user is exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("user is exist")))
 	}
 
 	var roles []*model.Role
@@ -93,7 +93,7 @@ func UpdateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("user is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
 	if req.Roles != nil || len(req.Roles) > 0 {
@@ -133,7 +133,7 @@ func DeleteUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("user is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 	err = s.Delete(user)
 	if err != nil {
@@ -184,7 +184,7 @@ func GetUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("user is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -207,7 +207,7 @@ func GetCurrentUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("user is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -351,7 +351,7 @@ func CreateRole(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_EXIST, fmt.Errorf("role is exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("role is exist")))
 	}
 
 	var users []*model.User
@@ -419,7 +419,7 @@ func UpdateRole(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("role is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("role is not exist")))
 	}
 
 	if req.Users != nil || len(req.Users) > 0 {
@@ -474,7 +474,7 @@ func DeleteRole(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("role is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("role is not exist")))
 	}
 	err = s.Delete(role)
 	if err != nil {

@@ -29,13 +29,14 @@ type Instance struct {
 	Password           string       `json:"-" gorm:"-"`
 	SecretPassword     string       `json:"secret_password" gorm:"column:db_password; not null"`
 	Desc               string       `json:"desc" example:"this is a instance"`
-	WorkflowTemplateId int          `json:"workflow_template_id"`
+	WorkflowTemplateId uint         `json:"workflow_template_id"`
 	MycatConfig        *MycatConfig `json:"-" gorm:"-"`
 	MycatConfigJson    string       `json:"-" gorm:"type:text;column:mycat_config"`
 
 	// relation table
-	Roles         []*Role        `json:"-" gorm:"many2many:instance_role;"`
-	RuleTemplates []RuleTemplate `json:"-" gorm:"many2many:instance_rule_template"`
+	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
+	RuleTemplates    []RuleTemplate    `json:"-" gorm:"many2many:instance_rule_template"`
+	WorkflowTemplate *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
 // BeforeSave is a hook implement gorm model before exec create
@@ -148,7 +149,7 @@ func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
 
 func (s *Storage) GetInstanceDetailByName(name string) (*Instance, bool, error) {
 	instance := &Instance{}
-	err := s.db.Preload("Roles").Preload("RuleTemplates").
+	err := s.db.Preload("Roles").Preload("WorkflowTemplate").Preload("RuleTemplates").
 		Where("name = ?", name).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
@@ -205,8 +206,21 @@ func (s *Storage) GetAndCheckInstanceExist(instanceNames []string) (instances []
 		}
 	}
 	if len(notExistInstanceNames) > 0 {
-		return instances, errors.New(errors.DATA_NOT_EXIST,
+		return instances, errors.New(errors.DataNotExist,
 			fmt.Errorf("instance %s not exist", strings.Join(notExistInstanceNames, ", ")))
 	}
 	return instances, nil
+}
+
+func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error) {
+	var instances []*Instance
+	err := s.db.Select("name").Where("workflow_template_id = ?", id).Find(&instances).Error
+	if err != nil {
+		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	names := make([]string, 0, len(instances))
+	for _, instance := range instances {
+		names = append(names, instance.Name)
+	}
+	return names, nil
 }

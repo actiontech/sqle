@@ -12,10 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var INSTANCE_NOT_EXIST_ERROR = NewBaseReq(errors.New(errors.INSTANCE_NOT_EXIST, fmt.Errorf("instance not exist")))
-var INSTANCE_EXIST_ERROR = NewBaseReq(errors.New(errors.INSTANCE_EXIST, fmt.Errorf("inst is exist")))
-var TASK_NOT_EXIST = NewBaseReq(errors.New(errors.TASK_NOT_EXIST, fmt.Errorf("task not exist")))
-
 type BaseRes struct {
 	Code    int    `json:"code" example:"0"`
 	Message string `json:"message" example:"ok"`
@@ -59,7 +55,7 @@ func JSONBaseErrorReq(c echo.Context, err error) error {
 	return c.JSON(http.StatusOK, NewBaseReq(err))
 }
 
-func readFileToByte(c echo.Context, name string) (fileName string, data []byte, err error) {
+func ReadFileToByte(c echo.Context, name string) (fileName string, data []byte, err error) {
 	file, err := c.FormFile(name)
 	if err != nil {
 		err = errors.New(errors.READ_UPLOAD_FILE_ERROR, err)

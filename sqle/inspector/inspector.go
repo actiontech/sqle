@@ -28,23 +28,23 @@ type Inspector interface {
 
 	// Add and Do are designed to reduce duplicate code, and used to converge
 	// important processes, such as close db connection, update SQL context.
-	Add(sql *model.Sql, action func(sql *model.Sql) error) error
+	Add(sql *model.BaseSQL, action func(sql *model.BaseSQL) error) error
 	Do() error
 
 	// Advise advise task.commitSql using the given rules.
 	Advise(rules []model.Rule) error
 
 	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
-	GenerateAllRollbackSql() ([]*model.RollbackSql, error)
+	GenerateAllRollbackSql() ([]*model.RollbackSQL, error)
 
 	// GetProcedureFunctionBackupSql return backupSql for procedure & function
 	GetProcedureFunctionBackupSql(sql string) ([]string, error)
 
 	// CommitDDL commit task.commitSql(ddl).
-	CommitDDL(sql *model.Sql) error
+	CommitDDL(sql *model.BaseSQL) error
 
 	// CommitDMLs commit task.commitSql(dml) in one transaction.
-	CommitDMLs(sqls []*model.Sql) error
+	CommitDMLs(sqls []*model.BaseSQL) error
 
 	// ParseSql parser sql text to ast.
 	ParseSql(sql string) ([]ast.Node, error)
@@ -98,8 +98,8 @@ type Inspect struct {
 	counterFunction uint
 
 	// SqlArray and SqlAction is two list for Add-Do design.
-	SqlArray  []*model.Sql
-	SqlAction []func(sql *model.Sql) error
+	SqlArray  []*model.BaseSQL
+	SqlAction []func(sql *model.BaseSQL) error
 }
 
 func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
@@ -130,8 +130,8 @@ func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks
 		Task:        task,
 		RelateTasks: relateTasks,
 		log:         entry,
-		SqlArray:    []*model.Sql{},
-		SqlAction:   []func(sql *model.Sql) error{},
+		SqlArray:    []*model.BaseSQL{},
+		SqlAction:   []func(sql *model.BaseSQL) error{},
 	}
 }
 
@@ -162,7 +162,7 @@ func (i *Inspect) SqlType() string {
 }
 
 func (i *Inspect) ParseSqlType() error {
-	for _, commitSql := range i.Task.CommitSqls {
+	for _, commitSql := range i.Task.ExecuteSQLs {
 		nodes, err := i.ParseSql(commitSql.Content)
 		if err != nil {
 			return err
@@ -187,7 +187,7 @@ func (i *Inspect) SqlInvalid() bool {
 	return i.HasInvalidSql
 }
 
-func (i *Inspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
+func (i *Inspect) Add(sql *model.BaseSQL, action func(sql *model.BaseSQL) error) error {
 	nodes, err := i.ParseSql(sql.Content)
 	if err != nil {
 		return err

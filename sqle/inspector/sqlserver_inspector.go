@@ -1,11 +1,11 @@
 package inspector
 
 import (
-	"fmt"
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"actiontech.cloud/universe/sqle/v4/sqle/sqlserver/SqlserverProto"
 	"actiontech.cloud/universe/sqle/v4/sqle/sqlserverClient"
+	"fmt"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ func (i *SqlserverInspect) ParseSql(sql string) ([]ast.Node, error) {
 }
 
 func (i *SqlserverInspect) ParseSqlType() error {
-	for _, commitSql := range i.Task.CommitSqls {
+	for _, commitSql := range i.Task.ExecuteSQLs {
 		nodes, err := i.ParseSql(commitSql.Content)
 		if err != nil {
 			return err
@@ -59,7 +59,7 @@ func (i *SqlserverInspect) addNodeCounter(nodes []ast.Node) {
 	}
 }
 
-func (i *SqlserverInspect) Add(sql *model.Sql, action func(sql *model.Sql) error) error {
+func (i *SqlserverInspect) Add(sql *model.BaseSQL, action func(sql *model.BaseSQL) error) error {
 	nodes, err := i.ParseSql(sql.Content)
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	i.Logger().Info("start advise sql")
 
 	sqls := []string{}
-	for _, commitSql := range i.Task.CommitSqls {
+	for _, commitSql := range i.Task.ExecuteSQLs {
 		sqls = append(sqls, commitSql.Content)
 	}
 	ruleNames := []string{}
@@ -87,7 +87,7 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	ddlContextSqls := []*SqlserverProto.DDLContext{}
 	for _, task := range i.RelateTasks {
 		sqls := []string{}
-		for _, commitSql := range task.CommitSqls {
+		for _, commitSql := range task.ExecuteSQLs {
 			sqls = append(sqls, commitSql.Content)
 		}
 		ddlContextSql := &SqlserverProto.DDLContext{
@@ -105,7 +105,7 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	}
 
 	results := out.GetResults()
-	for idx, commitSql := range i.Task.CommitSqls {
+	for idx, commitSql := range i.Task.ExecuteSQLs {
 		result := results[idx]
 		stmt := sqlserverClient.NewSqlServerStmt(commitSql.Content, result.IsDDL, result.IsDML, result.IsProcedure, result.IsFunction)
 		if stmt.IsDDLStmt() {
@@ -117,9 +117,9 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 		} else if stmt.IsFunctionStmt() {
 			i.counterFunction += 1
 		}
-		commitSql.InspectLevel = result.AdviseLevel
-		commitSql.InspectResult = result.AdviseResultMessage
-		commitSql.InspectStatus = model.TASK_ACTION_DONE
+		commitSql.AuditLevel = result.AdviseLevel
+		commitSql.AuditResult = result.AdviseResultMessage
+		commitSql.AuditStatus = model.SQLAuditStatusFinished
 	}
 	i.HasInvalidSql = out.BaseValidatorFailed
 
@@ -133,11 +133,11 @@ func (i *SqlserverInspect) Advise(rules []model.Rule) error {
 	return err
 }
 
-func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
+func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {
 	i.Logger().Info("start generate rollback sql")
 
 	var meta = sqlserverClient.GetSqlserverMeta(i.Task.Instance.User, i.Task.Instance.Password, i.Task.Instance.Host, i.Task.Instance.Port, i.Task.Schema, "")
-	sqls, err := sqlserverClient.GetClient().GenerateAllRollbackSql(i.Task.CommitSqls, &SqlserverProto.Config{DMLRollbackMaxRows: i.config.DMLRollbackMaxRows}, meta)
+	sqls, err := sqlserverClient.GetClient().GenerateAllRollbackSql(i.Task.ExecuteSQLs, &SqlserverProto.Config{DMLRollbackMaxRows: i.config.DMLRollbackMaxRows}, meta)
 	if err != nil {
 		i.Logger().Errorf("generage t-sql rollback sqls error: %v", err)
 	} else {
@@ -148,28 +148,28 @@ func (i *SqlserverInspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error
 	}
 
 	// update reason of no rollback sql
-	if len(i.Task.CommitSqls) != len(sqls) {
+	if len(i.Task.ExecuteSQLs) != len(sqls) {
 		return nil, fmt.Errorf("don't match sql rollback result")
 	}
-	rollbackSqls := []*model.RollbackSql{}
+	rollbackSqls := []*model.RollbackSQL{}
 	for idx, val := range sqls {
-		commitSql := i.Task.CommitSqls[idx]
+		executeSQL := i.Task.ExecuteSQLs[idx]
 		if val.Sql != "" {
-			rollbackSqls = append(rollbackSqls, &model.RollbackSql{
-				Sql: model.Sql{
+			rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
+				BaseSQL: model.BaseSQL{
 					Content: val.Sql,
 				},
-				CommitSqlNumber: commitSql.Number,
+				ExecuteSQLId: executeSQL.ID,
 			})
 		}
 		if val.ErrMsg != "" {
 			result := newInspectResults()
-			if commitSql.InspectResult != "" {
-				result.add(commitSql.InspectLevel, commitSql.InspectResult)
+			if executeSQL.AuditResult != "" {
+				result.add(executeSQL.AuditLevel, executeSQL.AuditResult)
 			}
 			result.add(model.RULE_LEVEL_NOTICE, val.ErrMsg)
-			commitSql.InspectLevel = result.level()
-			commitSql.InspectResult = result.message()
+			executeSQL.AuditLevel = result.level()
+			executeSQL.AuditResult = result.message()
 		}
 	}
 

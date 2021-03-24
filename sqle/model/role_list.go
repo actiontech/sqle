@@ -111,13 +111,11 @@ func (s *Storage) getListResult(bodyTpl, queryTpl, countTpl string, data map[str
 	if err != nil {
 		return 0, err
 	}
-
 	sqlxDb := GetSqlxDb()
 	nstmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
 	if err != nil {
 		return 0, err
 	}
-
 	err = nstmtTasksQuery.Select(result, data)
 	if err != nil {
 		return 0, err

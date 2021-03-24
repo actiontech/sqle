@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"sync"
@@ -50,8 +51,8 @@ func GetSqlxDb() *sqlx.DB {
 
 type Model struct {
 	ID        uint       `json:"id" gorm:"primary_key" example:"1"`
-	CreatedAt time.Time  `json:"created_at" example:"2018-10-21T16:40:23+08:00"`
-	UpdatedAt time.Time  `json:"updated_at" example:"2018-10-21T16:40:23+08:00"`
+	CreatedAt time.Time  `json:"created_at" gorm:"default:current_timestamp" example:"2018-10-21T16:40:23+08:00"`
+	UpdatedAt time.Time  `json:"updated_at" gorm:"default:current_timestamp on update current_timestamp" example:"2018-10-21T16:40:23+08:00"`
 	DeletedAt *time.Time `json:"-" sql:"index"`
 }
 
@@ -82,11 +83,16 @@ func (s *Storage) AutoMigrate() error {
 		&RuleTemplate{},
 		&Rule{},
 		&Task{},
-		&CommitSql{},
-		&RollbackSql{},
+		&ExecuteSQL{},
+		&RollbackSQL{},
 		&SqlWhitelist{},
 		&User{},
 		&Role{},
+		&WorkflowTemplate{},
+		&WorkflowStepTemplate{},
+		&Workflow{},
+		&WorkflowRecord{},
+		&WorkflowStep{},
 	).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
@@ -172,5 +178,54 @@ func (s *Storage) Update(model interface{}, attrs ...interface{}) error {
 }
 
 func (s *Storage) Delete(model interface{}) error {
+	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(model).Error)
+}
+
+func (s *Storage) HardDelete(model interface{}) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Unscoped().Delete(model).Error)
+}
+
+func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
+	db := s.db.DB()
+	tx, err := db.Begin()
+	if err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err = fn(tx)
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	return nil
+}
+
+type RowList []string
+
+func (r *RowList) Scan(src interface{}) error {
+	var data string
+	switch src := src.(type) {
+	case nil:
+		data = ""
+	case string:
+		data = src
+	case []byte:
+		data = string(src)
+	default:
+		return fmt.Errorf("scan: unable to scan type %T into []string", src)
+	}
+	*r = []string{}
+	if data != "" {
+		l := strings.Split(data, ",")
+		for _, v := range l {
+			if v != "" {
+				*r = append(*r, v)
+			}
+		}
+	}
+	return nil
 }

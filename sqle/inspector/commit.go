@@ -11,7 +11,7 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-func (i *Inspect) CommitDDL(sql *model.Sql) error {
+func (i *Inspect) CommitDDL(sql *model.BaseSQL) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
@@ -21,16 +21,16 @@ func (i *Inspect) CommitDDL(sql *model.Sql) error {
 	}
 	_, err = conn.Db.Exec(sql.Content)
 	if err != nil {
-		sql.ExecStatus = model.TASK_ACTION_ERROR
+		sql.ExecStatus = model.SQLExecuteStatusFailed
 		sql.ExecResult = err.Error()
 	} else {
-		sql.ExecStatus = model.TASK_ACTION_DONE
+		sql.ExecStatus = model.SQLExecuteStatusSucceeded
 		sql.ExecResult = "ok"
 	}
 	return nil
 }
 
-func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
+func (i *Inspect) CommitDMLs(sqls []*model.BaseSQL) error {
 	if i.Task.Instance.DbType == model.DB_TYPE_MYCAT {
 		return i.commitMycatDMLs(sqls)
 	}
@@ -58,12 +58,12 @@ func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
 	defer func() {
 		for sqlIdx, sql := range sqls {
 			if retErr != nil {
-				sql.ExecStatus = model.TASK_ACTION_ERROR
+				sql.ExecStatus = model.SQLExecuteStatusFailed
 				sql.ExecResult = retErr.Error()
 				continue
 			}
 			if len(qsExecErrorMap) > 0 {
-				sql.ExecStatus = model.TASK_ACTION_ERROR
+				sql.ExecStatus = model.SQLExecuteStatusFailed
 				for _, qsIdx := range sqlToQsIdxes[sqlIdx] {
 					if errMsg, ok := qsExecErrorMap[qsIdx]; ok {
 						sql.ExecResult = fmt.Sprintf("sql exec error: %v ", errMsg)
@@ -82,7 +82,7 @@ func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
 				}
 				sql.RowAffects += rowAffects
 			}
-			sql.ExecStatus = model.TASK_ACTION_DONE
+			sql.ExecStatus = model.SQLExecuteStatusSucceeded
 			sql.ExecResult = "ok"
 			sql.EndBinlogFile = endBinlogFile
 			sql.EndBinlogPos = endBinlogPos
@@ -117,7 +117,7 @@ func (i *Inspect) CommitDMLs(sqls []*model.Sql) error {
 	return retErr
 }
 
-func (i *Inspect) commitMycatDDL(sql *model.Sql) error {
+func (i *Inspect) commitMycatDDL(sql *model.BaseSQL) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
@@ -169,20 +169,20 @@ func (i *Inspect) commitMycatDDL(sql *model.Sql) error {
 
 DONE:
 	if err != nil {
-		sql.ExecStatus = model.TASK_ACTION_ERROR
+		sql.ExecStatus = model.SQLExecuteStatusFailed
 		sql.ExecResult = err.Error()
 	} else {
-		sql.ExecStatus = model.TASK_ACTION_DONE
+		sql.ExecStatus = model.SQLExecuteStatusFailed
 		sql.ExecResult = "ok"
 	}
 	return nil
 }
 
-func (i *Inspect) commitMycatDMLs(sqls []*model.Sql) error {
+func (i *Inspect) commitMycatDMLs(sqls []*model.BaseSQL) error {
 	conn, err := i.getDbConn()
 	if err != nil {
 		for _, sql := range sqls {
-			sql.ExecStatus = model.TASK_ACTION_ERROR
+			sql.ExecStatus = model.SQLExecuteStatusFailed
 			sql.ExecResult = err.Error()
 		}
 		return err
@@ -191,7 +191,7 @@ func (i *Inspect) commitMycatDMLs(sqls []*model.Sql) error {
 	for _, sql := range sqls {
 		startBinlogFile, startBinlogPos, err := conn.FetchMasterBinlogPos()
 		if err != nil {
-			sql.ExecStatus = model.TASK_ACTION_ERROR
+			sql.ExecStatus = model.SQLExecuteStatusFailed
 			sql.ExecResult = err.Error()
 			return err
 		}
@@ -202,7 +202,7 @@ func (i *Inspect) commitMycatDMLs(sqls []*model.Sql) error {
 			query := stmt.Text()
 			result, err := conn.Db.Exec(query)
 			if err != nil {
-				sql.ExecStatus = model.TASK_ACTION_ERROR
+				sql.ExecStatus = model.SQLExecuteStatusFailed
 				sql.ExecResult = err.Error()
 				return err
 			}
@@ -213,7 +213,7 @@ func (i *Inspect) commitMycatDMLs(sqls []*model.Sql) error {
 				sql.RowAffects += rowAffect
 			}
 		}
-		sql.ExecStatus = model.TASK_ACTION_DONE
+		sql.ExecStatus = model.SQLExecuteStatusSucceeded
 		sql.ExecStatus = "ok"
 		sql.EndBinlogFile, sql.EndBinlogPos, _ = conn.FetchMasterBinlogPos()
 	}

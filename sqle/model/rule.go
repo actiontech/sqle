@@ -179,7 +179,7 @@ func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemp
 		}
 	}
 	if len(notExistTemplateNames) > 0 {
-		return ruleTemplates, errors.New(errors.DATA_NOT_EXIST,
+		return ruleTemplates, errors.New(errors.DataNotExist,
 			fmt.Errorf("rule template %s not exist", strings.Join(notExistTemplateNames, ", ")))
 	}
 	return ruleTemplates, nil
@@ -207,7 +207,7 @@ func (s *Storage) GetAndCheckRuleExist(ruleNames []string) (rules []Rule, err er
 		}
 	}
 	if len(notExistRuleNames) > 0 {
-		return rules, errors.New(errors.DATA_NOT_EXIST,
+		return rules, errors.New(errors.DataNotExist,
 			fmt.Errorf("rule %s not exist", strings.Join(notExistRuleNames, ", ")))
 	}
 	return rules, nil

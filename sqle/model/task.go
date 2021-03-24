@@ -1,10 +1,8 @@
 package model
 
 import (
-	"fmt"
-	"time"
-
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/parser/ast"
@@ -12,16 +10,12 @@ import (
 
 // task action
 const (
-	TASK_ACTION_INSPECT = iota + 1
-	TASK_ACTION_COMMIT
+	TASK_ACTION_AUDIT = iota + 1
+	TASK_ACTION_EXECUTE
 	TASK_ACTION_ROLLBACK
 )
 
 const (
-	TASK_ACTION_INIT                  = ""
-	TASK_ACTION_DOING                 = "doing"
-	TASK_ACTION_DONE                  = "finished"
-	TASK_ACTION_ERROR                 = "failed"
 	SQL_TYPE_DML                      = "dml"
 	SQL_TYPE_DDL                      = "ddl"
 	SQL_TYPE_MULTI                    = "dml&ddl"
@@ -29,13 +23,41 @@ const (
 	SQL_TYPE_PROCEDURE_FUNCTION_MULTI = "procedure&function&dml&ddl"
 )
 
-var ActionMap = map[int]string{
-	TASK_ACTION_INSPECT:  "",
-	TASK_ACTION_COMMIT:   "",
-	TASK_ACTION_ROLLBACK: "",
+const (
+	TaskStatusInit             = "initialized"
+	TaskStatusAudited          = "audited"
+	TaskStatusExecuting        = "executing"
+	TaskStatusExecuteSucceeded = "exec_succeeded"
+	TaskStatusExecuteFailed    = "exec_failed"
+)
+
+type Task struct {
+	Model
+	InstanceId uint    `json:"instance_id"`
+	Schema     string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
+	PassRate   float64 `json:"pass_rate"`
+	SQLType    string  `json:"sql_type" gorm:"column:sql_type"`
+	Status     string  `json:"status" gorm:"default:\"initialized\""`
+
+	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
+	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
+	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
 }
 
-type Sql struct {
+const (
+	SQLAuditStatusInitialized = "initialized"
+	SQLAuditStatusDoing       = "doing"
+	SQLAuditStatusFinished    = "finished"
+)
+
+const (
+	SQLExecuteStatusInitialized = "initialized"
+	SQLExecuteStatusDoing       = "doing"
+	SQLExecuteStatusFailed      = "failed"
+	SQLExecuteStatusSucceeded   = "succeeded"
+)
+
+type BaseSQL struct {
 	Model
 	TaskId          uint       `json:"-"`
 	Number          uint       `json:"number"`
@@ -45,78 +67,71 @@ type Sql struct {
 	EndBinlogFile   string     `json:"end_binlog_file"`
 	EndBinlogPos    int64      `json:"end_binlog_pos"`
 	RowAffects      int64      `json:"row_affects"`
-	ExecStatus      string     `json:"exec_status"`
+	ExecStatus      string     `json:"exec_status" gorm:"default:\"initialized\""`
 	ExecResult      string     `json:"exec_result"`
 	Stmts           []ast.Node `json:"-" gorm:"-"`
-	FingerPrint     string     `json:"fingerPrint" gorm:"type:text"`
+	Fingerprint     string     `json:"fingerprint" gorm:"type:text"`
 }
 
-type CommitSql struct {
-	Sql
-	InspectStatus string `json:"inspect_status"`
-	InspectResult string `json:"inspect_result" gorm:"type:text"`
-	// level: error, warn, notice, normal
-	InspectLevel string `json:"inspect_level"`
+func (s *BaseSQL) GetExecStatusDesc() string {
+	switch s.ExecStatus {
+	case SQLExecuteStatusInitialized:
+		return "准备执行"
+	case SQLExecuteStatusDoing:
+		return "正在执行"
+	case SQLExecuteStatusFailed:
+		return "执行失败"
+	case SQLExecuteStatusSucceeded:
+		return "执行成功"
+	default:
+		return "未知"
+	}
 }
 
-func (s CommitSql) TableName() string {
-	return "commit_sql_detail"
+type ExecuteSQL struct {
+	BaseSQL
+	AuditStatus string `json:"audit_status" gorm:"default:\"initialized\""`
+	AuditResult string `json:"audit_result" gorm:"type:text"`
+	AuditLevel  string `json:"audit_level"` // level: error, warn, notice, normal
 }
 
-type RollbackSql struct {
-	Sql
-	CommitSqlNumber uint `json:"commit_sql_number"`
+func (s ExecuteSQL) TableName() string {
+	return "execute_sql_detail"
 }
 
-func (s RollbackSql) TableName() string {
+func (s *ExecuteSQL) GetAuditStatusDesc() string {
+	switch s.AuditStatus {
+	case SQLAuditStatusInitialized:
+		return "未审核"
+	case SQLAuditStatusDoing:
+		return "正在审核"
+	case SQLAuditStatusFinished:
+		return "审核完成"
+	default:
+		return "未知状态"
+	}
+}
+
+func (s *ExecuteSQL) GetAuditResultDesc() string {
+	if s.AuditResult == "" {
+		return "审核通过"
+	}
+	return s.AuditResult
+}
+
+type RollbackSQL struct {
+	BaseSQL
+	ExecuteSQLId uint `gorm:"column:execute_sql_id"`
+}
+
+func (s RollbackSQL) TableName() string {
 	return "rollback_sql_detail"
 }
 
-type Task struct {
-	Model
-	Name         string         `json:"name" example:"REQ201812578"`
-	Desc         string         `json:"desc" example:"this is a task"`
-	Schema       string         `json:"schema" example:"db1"`
-	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
-	InstanceId   uint           `json:"instance_id"`
-	InstanceName string         `json:"instance_name"`
-	NormalRate   float64        `json:"normal_rate"`
-	SqlType      string         `json:"-"`
-	Action       uint           `json:"-"`
-	ExecStatus   string         `json:"-"`
-	CommitSqls   []*CommitSql   `json:"-" gorm:"foreignkey:TaskId"`
-	RollbackSqls []*RollbackSql `json:"-" gorm:"foreignkey:TaskId"`
-}
-
-type TaskDetail struct {
-	Task
-	Instance     *Instance      `json:"instance"`
-	InstanceId   uint           `json:"-"`
-	CommitSqls   []*CommitSql   `json:"commit_sql_list"`
-	RollbackSqls []*RollbackSql `json:"rollback_sql_list"`
-}
-
-func (t *Task) Detail() TaskDetail {
-	data := TaskDetail{
-		Task:         *t,
-		InstanceId:   t.InstanceId,
-		Instance:     t.Instance,
-		CommitSqls:   t.CommitSqls,
-		RollbackSqls: t.RollbackSqls,
-	}
-	if t.RollbackSqls == nil {
-		data.RollbackSqls = []*RollbackSql{}
-	}
-	if t.CommitSqls == nil {
-		data.CommitSqls = []*CommitSql{}
-	}
-	return data
-}
-
-func (t *Task) HasDoingAdvise() bool {
-	if t.CommitSqls != nil {
-		for _, commitSql := range t.CommitSqls {
-			if commitSql.InspectStatus != TASK_ACTION_INIT {
+func (t *Task) HasDoingAudit() bool {
+	if t.ExecuteSQLs != nil {
+		for _, commitSQL := range t.ExecuteSQLs {
+			if commitSQL.AuditStatus != SQLAuditStatusInitialized {
 				return true
 			}
 		}
@@ -124,10 +139,10 @@ func (t *Task) HasDoingAdvise() bool {
 	return false
 }
 
-func (t *Task) HasDoingCommit() bool {
-	if t.CommitSqls != nil {
-		for _, commitSql := range t.CommitSqls {
-			if commitSql.ExecStatus != TASK_ACTION_INIT {
+func (t *Task) HasDoingExecute() bool {
+	if t.ExecuteSQLs != nil {
+		for _, commitSQL := range t.ExecuteSQLs {
+			if commitSQL.ExecStatus != SQLExecuteStatusInitialized {
 				return true
 			}
 		}
@@ -135,10 +150,10 @@ func (t *Task) HasDoingCommit() bool {
 	return false
 }
 
-func (t *Task) IsCommitFailed() bool {
-	if t.CommitSqls != nil {
-		for _, commitSql := range t.CommitSqls {
-			if commitSql.ExecStatus == TASK_ACTION_ERROR {
+func (t *Task) IsExecuteFailed() bool {
+	if t.ExecuteSQLs != nil {
+		for _, commitSQL := range t.ExecuteSQLs {
+			if commitSQL.ExecStatus == SQLExecuteStatusFailed {
 				return true
 			}
 		}
@@ -147,9 +162,9 @@ func (t *Task) IsCommitFailed() bool {
 }
 
 func (t *Task) HasDoingRollback() bool {
-	if t.RollbackSqls != nil {
-		for _, rollbackSql := range t.RollbackSqls {
-			if rollbackSql.ExecStatus != TASK_ACTION_INIT {
+	if t.RollbackSQLs != nil {
+		for _, rollbackSQL := range t.RollbackSQLs {
+			if rollbackSQL.ExecStatus != SQLExecuteStatusInitialized {
 				return true
 			}
 		}
@@ -159,21 +174,21 @@ func (t *Task) HasDoingRollback() bool {
 
 func (t *Task) ValidAction(typ int) error {
 	switch typ {
-	case TASK_ACTION_INSPECT:
-		// inspect sql allowed at all times
+	case TASK_ACTION_AUDIT:
+		// audit sql allowed at all times
 		return nil
-	case TASK_ACTION_COMMIT:
-		if t.HasDoingCommit() {
-			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has committed"))
+	case TASK_ACTION_EXECUTE:
+		if t.HasDoingExecute() {
+			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has been executed"))
 		}
 	case TASK_ACTION_ROLLBACK:
 		if t.HasDoingRollback() {
-			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has rolled back"))
+			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has been rolled back"))
 		}
-		if t.IsCommitFailed() {
+		if t.IsExecuteFailed() {
 			return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task is commit failed, not allow rollback"))
 		}
-		if !t.HasDoingCommit() {
+		if !t.HasDoingExecute() {
 			return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task need commit first"))
 		}
 	}
@@ -182,11 +197,55 @@ func (t *Task) ValidAction(typ int) error {
 
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Preload("Instance").Preload("CommitSqls").Preload("RollbackSqls").First(&task, taskId).Error
+	err := s.db.Preload("Instance").Preload("ExecuteSQLs").Preload("RollbackSQLs").First(&task, taskId).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
 	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
+	task := &Task{}
+	err := s.db.Preload("Instance").Preload("ExecuteSQLs").Preload("RollbackSQLs").First(&task, taskId).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]string, error) {
+	var SQLContents []string
+	rows, err := s.db.Model(&ExecuteSQL{}).Select("content").
+		Where("task_id = ?", taskId).Rows()
+	if err != nil {
+		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var content string
+		rows.Scan(&content)
+		SQLContents = append(SQLContents, content)
+	}
+	return SQLContents, nil
+}
+
+func (s *Storage) GetTasksInstanceName() ([]string, error) {
+	query := `SELECT instances.name AS name FROM tasks 
+JOIN instances ON tasks.instance_id = instances.id 
+GROUP BY instances.name`
+
+	var instancesName []string
+	rows, err := s.db.Raw(query).Rows()
+	if err != nil {
+		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		rows.Scan(&name)
+		instancesName = append(instancesName, name)
+	}
+	return instancesName, nil
 }
 
 func (s *Storage) GetTasks() ([]Task, error) {
@@ -194,6 +253,24 @@ func (s *Storage) GetTasks() ([]Task, error) {
 	err := s.db.Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+
+//func (s *Storage) GetExpiredTaskIds() ([]string, error) {
+//	now := time.Now().Format(time.RFC3339)
+//	query := fmt.Sprintf(`SELECT id FROM tasks WHERE expired_at < %s`, now)
+//
+//	var ids []string
+//	rows, err := s.db.Raw(query).Rows()
+//	if err != nil {
+//		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+//	}
+//	defer rows.Close()
+//	for rows.Next() {
+//		var id string
+//		rows.Scan(&id)
+//		ids = append(ids, id)
+//	}
+//	return ids, nil
+//}
 
 func (s *Storage) GetTasksByIds(ids []string) ([]Task, error) {
 	tasks := []Task{}
@@ -206,176 +283,253 @@ func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateCommitSql(task *Task, commitSql []*CommitSql) error {
+func (s *Storage) UpdateExecuteSQLs(task *Task, ExecuteSQLs []*ExecuteSQL) error {
 	tx := s.db.Begin()
-	if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(CommitSql{}).Error; err != nil {
-		return err
-	}
+	//if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(ExecuteSQL{}).Error; err != nil {
+	//	return err
+	//}
 
-	now := time.Now().Format(time.RFC3339)
-	for _, sql := range commitSql {
-		if err := tx.Exec("INSERT commit_sql_detail(created_at, updated_at, task_id, number, content, "+
-			"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
-			"exec_status, exec_result, finger_print, inspect_status, inspect_result, inspect_level) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-			now, now, task.ID, sql.Number, sql.Content, sql.StartBinlogFile, sql.StartBinlogPos, sql.EndBinlogFile,
-			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.FingerPrint, sql.InspectStatus, sql.InspectResult,
-			sql.InspectLevel).Error; err != nil {
+	for _, executeSQL := range ExecuteSQLs {
+		currentSql := executeSQL
+		if err := tx.Save(currentSql).Error; err != nil {
 			tx.Rollback()
-			return err
+			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 		}
+		//if err := tx.Exec("INSERT execute_sql_detail(task_id, number, content, "+
+		//	"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
+		//	"exec_status, exec_result, fingerprint, audit_status, audit_result, audit_level) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+		//	task.ID, executeSQL.Number, executeSQL.Content, executeSQL.StartBinlogFile, executeSQL.StartBinlogPos,
+		//	executeSQL.EndBinlogFile, executeSQL.EndBinlogPos, executeSQL.RowAffects, executeSQL.ExecStatus,
+		//	executeSQL.ExecResult, executeSQL.Fingerprint, executeSQL.AuditStatus, executeSQL.AuditResult,
+		//	executeSQL.AuditLevel).Error; err != nil {
+		//	tx.Rollback()
+		//	return err
+		//}
 	}
-	return tx.Commit().Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateRollbackSql(task *Task, rollbackSql []*RollbackSql) error {
+func (s *Storage) UpdateRollbackSQLs(task *Task, rollbackSQLs []*RollbackSQL) error {
 	tx := s.db.Begin()
-	if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(RollbackSql{}).Error; err != nil {
-		return err
-	}
+	//if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(RollbackSQL{}).Error; err != nil {
+	//	return err
+	//}
 
-	now := time.Now().Format(time.RFC3339)
-	for _, sql := range rollbackSql {
-		if err := tx.Exec("INSERT INTO rollback_sql_detail(created_at, updated_at, task_id, number, content, "+
-			"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
-			"exec_status, exec_result, finger_print, commit_sql_number) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-			now, now, task.ID, sql.Number, sql.Content, sql.StartBinlogFile, sql.StartBinlogPos, sql.EndBinlogFile,
-			sql.EndBinlogPos, sql.RowAffects, sql.ExecStatus, sql.ExecResult, sql.FingerPrint, sql.CommitSqlNumber).Error; err != nil {
+	for _, rollbackSQL := range rollbackSQLs {
+		currentSql := rollbackSQL
+		if err := tx.Save(currentSql).Error; err != nil {
 			tx.Rollback()
-			return err
+			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 		}
+		//if err := tx.Exec("INSERT INTO rollback_sql_detail(task_id, number, content, "+
+		//	"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
+		//	"exec_status, exec_result, fingerprint, execute_sql_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+		//	task.ID, rollbackSQL.Number, rollbackSQL.Content, rollbackSQL.StartBinlogFile,
+		//	rollbackSQL.StartBinlogPos, rollbackSQL.EndBinlogFile, rollbackSQL.EndBinlogPos,
+		//	rollbackSQL.RowAffects, rollbackSQL.ExecStatus, rollbackSQL.ExecResult,
+		//	rollbackSQL.Fingerprint, rollbackSQL.ExecuteSQLId).Error; err != nil {
+		//	tx.Rollback()
+		//	return err
+		//}
 	}
-	return tx.Commit().Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateCommitSqlStatusByTaskID(task *Task, status string) error {
-	updateSql := "UPDATE commit_sql_detail SET exec_status=? , updated_at =? WHERE task_id=?"
+func (s *Storage) UpdateTaskStatusById(taskId uint, status string) error {
+	err := s.db.Model(&Task{}).Where("id = ?", taskId).Update(map[string]string{
+		"status": status,
+	}).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) UpdateExecuteSQLStatusByTaskId(task *Task, status string) error {
+	query := "UPDATE execute_sql_detail SET exec_status=? WHERE task_id=?"
 
 	tx := s.db.Begin()
-	now := time.Now().Format(time.RFC3339)
-	if err := tx.Exec(updateSql, status, now, task.ID).Error; err != nil {
+	if err := tx.Exec(query, status, task.ID).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 	return tx.Commit().Error
 }
 
-func (s *Storage) UpdateCommitSqlStatus(sql *Sql, status, result string) error {
+func (s *Storage) UpdateExecuteSqlStatus(baseSQL *BaseSQL, status, result string) error {
 	attr := map[string]interface{}{}
 	if status != "" {
-		sql.ExecStatus = status
+		baseSQL.ExecStatus = status
 		attr["exec_status"] = status
 	}
 	if result != "" {
-		sql.ExecResult = result
+		baseSQL.ExecResult = result
 		attr["exec_result"] = result
 	}
-	return s.UpdateCommitSqlById(fmt.Sprintf("%v", sql.ID), attr)
+	return s.UpdateExecuteSQLById(fmt.Sprintf("%v", baseSQL.ID), attr)
 }
 
-func (s *Storage) UpdateCommitSqlById(commitSqlId string, attrs ...interface{}) error {
-
-	err := s.db.Table(CommitSql{}.TableName()).Where("id = ?", commitSqlId).Update(attrs...).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-
-}
-
-func (s *Storage) UpdateRollbackSqlById(rollbackSqlId string, attrs ...interface{}) error {
-	err := s.db.Table(RollbackSql{}.TableName()).Where("id = ?", rollbackSqlId).Update(attrs...).Error
+func (s *Storage) UpdateExecuteSQLById(executeSQLId string, attrs ...interface{}) error {
+	err := s.db.Table(ExecuteSQL{}.TableName()).Where("id = ?", executeSQLId).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateRollbackSqlStatus(sql *Sql, status, result string) error {
+func (s *Storage) UpdateRollbackSqlStatus(baseSQL *BaseSQL, status, result string) error {
 	attr := map[string]interface{}{}
 	if status != "" {
-		sql.ExecStatus = status
+		baseSQL.ExecStatus = status
 		attr["exec_status"] = status
 	}
 	if result != "" {
-		sql.ExecResult = result
+		baseSQL.ExecResult = result
 		attr["exec_result"] = result
 	}
-	return s.UpdateRollbackSqlById(fmt.Sprintf("%v", sql.ID), attr)
+	return s.UpdateRollbackSQLById(fmt.Sprintf("%v", baseSQL.ID), attr)
 }
 
-func (s *Storage) HardDeleteRollbackSqlByTaskIds(taskIds []string) error {
-	rollbackSql := RollbackSql{}
-	err := s.db.Unscoped().Where("task_id IN (?)", taskIds).Delete(rollbackSql).Error
+func (s *Storage) UpdateRollbackSQLById(rollbackSQLId string, attrs ...interface{}) error {
+	err := s.db.Table(RollbackSQL{}.TableName()).Where("id = ?", rollbackSQLId).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetRollbackSqlByTaskId(taskId string, commitSqlNum []string) ([]RollbackSql, error) {
-	rollbackSqls := []RollbackSql{}
-	querySql := "task_id=?"
-	queryArgs := make([]interface{}, 0)
-	queryArgs = append(queryArgs, taskId)
-	if len(commitSqlNum) > 0 {
-		querySql += " AND COMMIT_SQL_NUMBER IN (?)"
-		queryArgs = append(queryArgs, commitSqlNum)
-	}
-	err := s.db.Where(querySql, queryArgs...).Find(&rollbackSqls).Error
-	return rollbackSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+func (s *Storage) HardDeleteRollbackSQLByTaskIds(taskIds []string) error {
+	rollbackSQL := RollbackSQL{}
+	err := s.db.Unscoped().Where("task_id IN (?)", taskIds).Delete(rollbackSQL).Error
+	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+
+//func (s *Storage) GetRollbackSqlByTaskId(taskId string, commitSqlNum []string) ([]RollbackSQL, error) {
+//	rollbackSqls := []RollbackSQL{}
+//	querySql := "task_id=?"
+//	queryArgs := make([]interface{}, 0)
+//	queryArgs = append(queryArgs, taskId)
+//	if len(commitSqlNum) > 0 {
+//		querySql += " AND COMMIT_SQL_NUMBER IN (?)"
+//		queryArgs = append(queryArgs, commitSqlNum)
+//	}
+//	err := s.db.Where(querySql, queryArgs...).Find(&rollbackSqls).Error
+//	return rollbackSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+//}
 
 func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Where(Task{
 		InstanceId: task.InstanceId,
 		Schema:     task.Schema,
-		NormalRate: 1,
-		SqlType:    SQL_TYPE_DDL,
-		Action:     TASK_ACTION_INSPECT,
-	}).Preload("Instance").Preload("CommitSqls").Find(&tasks).Error
+		PassRate:   1,
+		SQLType:    SQL_TYPE_DDL,
+		Status:     TaskStatusAudited,
+	}).Preload("Instance").Preload("ExecuteSQLs").Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) HardDeleteSqlCommittingResultByTaskIds(ids []string) error {
-	CommitSql := CommitSql{}
-	err := s.db.Unscoped().Where("task_id IN (?)", ids).Delete(CommitSql).Error
+func (s *Storage) HardDeleteExecuteSqlResultByTaskIds(ids []string) error {
+	executeSQL := ExecuteSQL{}
+	err := s.db.Unscoped().Where("task_id IN (?)", ids).Delete(executeSQL).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetExecErrorCommitSqlsByTaskId(taskId string) ([]CommitSql, error) {
-	CommitSqls := []CommitSql{}
-	err := s.db.Not("exec_result", []string{"ok", ""}).Where("task_id=? ", taskId).Find(&CommitSqls).Error
-	return CommitSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+func (s *Storage) GetExecErrorExecuteSQLsByTaskId(taskId string) ([]ExecuteSQL, error) {
+	executeSQLs := []ExecuteSQL{}
+	err := s.db.Not("exec_result", []string{"ok", ""}).Where("task_id=? ", taskId).Find(&executeSQLs).Error
+	return executeSQLs, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetUploadedSqls(taskId, filterSqlExecutionStatus, filterSqlAuditStatus string, pageIndex, pageSize int, noDuplicate bool) ([]CommitSql, uint32, error) {
-	var count uint32
-	CommitSqls := []CommitSql{}
-	queryFilter := "task_id=?"
-	queryArgs := make([]interface{}, 0)
-	queryArgs = append(queryArgs, taskId)
-	if filterSqlExecutionStatus != "" {
-		if filterSqlExecutionStatus == "initialized" {
-			filterSqlExecutionStatus = ""
-		}
-		queryFilter += " AND exec_status=?"
-		queryArgs = append(queryArgs, filterSqlExecutionStatus)
-	}
-	if filterSqlAuditStatus != "" {
-		queryFilter += " AND inspect_status=?"
-		queryArgs = append(queryArgs, filterSqlAuditStatus)
-	}
-	db := s.db
-	if noDuplicate {
-		db = db.Where(fmt.Sprintf("id IN (SELECT SQL_BIG_RESULT MIN(id) as id FROM commit_sql_detail WHERE task_id=? GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id) ORDER BY null)"), taskId)
-	}
-
-	if pageSize == 0 {
-		err := db.Where(queryFilter, queryArgs...).Find(&CommitSqls).Count(&count).Error
-		return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	err := db.Model(&CommitSql{}).Where(queryFilter, queryArgs...).Count(&count).Error
-	if err != nil {
-		return CommitSqls, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-
-	err = db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Where(queryFilter, queryArgs...).Find(&CommitSqls).Error
-
-	return CommitSqls, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-
+type TaskSQLDetail struct {
+	Number      uint   `json:"number"`
+	ExecSQL     string `json:"exec_sql"`
+	AuditResult string `json:"audit_result"`
+	AuditLevel  string `json:"audit_level"`
+	AuditStatus string `json:"audit_status"`
+	ExecResult  string `json:"exec_result"`
+	ExecStatus  string `json:"exec_status"`
+	RollbackSQL string `json:"rollback_sql"`
 }
+
+var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
+e_sql.audit_result, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
+
+{{- template "body" . -}}
+
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var taskSQLsCountTpl = `SELECT COUNT(*)
+
+{{- template "body" . -}}
+`
+
+var taskSQLsQueryBodyTpl = `
+{{ define "body" }}
+FROM execute_sql_detail AS e_sql
+LEFT JOIN rollback_sql_detail AS r_sql ON e_sql.id = r_sql.execute_sql_id
+WHERE
+e_sql.deleted_at IS NULL
+AND e_sql.task_id = :task_id
+
+{{- if .filter_exec_status }}
+AND e_sql.exec_status = :filter_exec_status
+{{- end }}
+
+{{- if .filter_audit_status }}
+AND e_sql.audit_status = :filter_audit_status
+{{- end }}
+
+{{- if .no_duplicate }}
+AND e_sql.id IN (
+SELECT SQL_BIG_RESULT MIN(id) AS id FROM execute_sql_detail WHERE task_id = :task_id 
+GROUP BY audit_result, IFNULL(audit_result, id), fingerprint, IFNULL(fingerprint, id) ORDER BY null
+)
+{{- end }}
+
+{{- if .filter_next_step_assignee_user_name }}
+AND ass_user.login_name = :filter_next_step_assignee_user_name
+{{- end }}
+ORDER BY e_sql.id
+{{- end }}
+`
+
+func (s *Storage) GetTaskSQLsByReq(data map[string]interface{}) ([]*TaskSQLDetail, uint64, error) {
+	result := []*TaskSQLDetail{}
+	count, err := s.getListResult(taskSQLsQueryBodyTpl, taskSQLsQueryTpl, taskSQLsCountTpl, data, &result)
+	return result, count, err
+}
+
+//func (s *Storage) GetUploadedSQLs(taskId, filterSqlExecutionStatus, filterSqlAuditStatus string, pageIndex, pageSize int, noDuplicate bool) ([]CommitSql, uint32, error) {
+//	var count uint32
+//	executeSQLs := []ExecuteSQL{}
+//	queryFilter := "task_id=?"
+//	queryArgs := make([]interface{}, 0)
+//	queryArgs = append(queryArgs, taskId)
+//	if filterSqlExecutionStatus != "" {
+//		if filterSqlExecutionStatus == "initialized" {
+//			filterSqlExecutionStatus = ""
+//		}
+//		queryFilter += " AND exec_status=?"
+//		queryArgs = append(queryArgs, filterSqlExecutionStatus)
+//	}
+//	if filterSqlAuditStatus != "" {
+//		queryFilter += " AND inspect_status=?"
+//		queryArgs = append(queryArgs, filterSqlAuditStatus)
+//	}
+//	db := s.db
+//	if noDuplicate {
+//		db = db.Where(fmt.Sprintf("id IN (SELECT SQL_BIG_RESULT MIN(id) as id FROM commit_sql_detail WHERE task_id=? GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id) ORDER BY null)"), taskId)
+//	}
+//
+//	if pageSize == 0 {
+//		err := db.Where(queryFilter, queryArgs...).Find(&executeSQLs).Count(&count).Error
+//		return executeSQLs, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+//	}
+//	err := db.Model(&ExecuteSQL{}).Where(queryFilter, queryArgs...).Count(&count).Error
+//	if err != nil {
+//		return executeSQLs, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+//	}
+//
+//	err = db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Where(queryFilter, queryArgs...).Find(&executeSQLs).Error
+//
+//	return executeSQLs, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+//
+//}
 
 func (s *Storage) DeleteTasksByIds(ids []string) error {
 	tasks := Task{}
@@ -384,7 +538,25 @@ func (s *Storage) DeleteTasksByIds(ids []string) error {
 }
 
 func (s *Storage) HardDeleteTasksByIds(ids []string) error {
-	tasks := Task{}
-	err := s.db.Unscoped().Where("id IN (?)", ids).Delete(tasks).Error
+	s.db.Begin()
+	tx, err := s.db.DB().Begin()
+	if err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	if _, err := tx.Exec("DELETE FROM task WHERE id in (?)", ids); err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	if _, err := tx.Exec("DELETE FROM commit_sql_detail WHERE task_id in (?)", ids); err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	if _, err := tx.Exec("DELETE FROM rollback_sql_detail WHERE task_id in (?)", ids); err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	err = tx.Commit()
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
