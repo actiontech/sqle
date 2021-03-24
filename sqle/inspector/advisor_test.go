@@ -123,10 +123,10 @@ func DefaultMysqlInspect() *Inspect {
 				Password: "123456",
 				DbType:   model.DB_TYPE_MYSQL,
 			},
-			CommitSqls:   []*model.CommitSql{},
-			RollbackSqls: []*model.RollbackSql{},
+			ExecuteSQLs:  []*model.ExecuteSQL{},
+			RollbackSQLs: []*model.RollbackSQL{},
 		},
-		SqlArray: []*model.Sql{},
+		SqlArray: []*model.BaseSQL{},
 		Ctx: &Context{
 			currentSchema: "exist_db",
 			schemaHasLoad: true,
@@ -178,8 +178,8 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect, sql 
 		return
 	}
 	for n, stmt := range stmts {
-		i.Task.CommitSqls = append(i.Task.CommitSqls, &model.CommitSql{
-			Sql: model.Sql{
+		i.Task.ExecuteSQLs = append(i.Task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
 				Number:  uint(n + 1),
 				Content: stmt.Text(),
 			},
@@ -194,13 +194,13 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect, sql 
 		t.Errorf("%s test failled, error: result is unknow\n", desc)
 		return
 	}
-	for n, sql := range i.Task.CommitSqls {
+	for n, sql := range i.Task.ExecuteSQLs {
 		result := results[n]
-		if sql.InspectLevel != result.level() || sql.InspectResult != result.message() {
+		if sql.AuditLevel != result.level() || sql.AuditResult != result.message() {
 			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
-				desc, sql.Content, result.level(), result.message(), sql.InspectLevel, sql.InspectResult)
+				desc, sql.Content, result.level(), result.message(), sql.AuditLevel, sql.AuditResult)
 		} else {
-			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, sql.InspectLevel, sql.InspectResult))
+			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, sql.AuditLevel, sql.AuditResult))
 		}
 	}
 }
@@ -2446,10 +2446,10 @@ func DefaultMycatInspect() *Inspect {
 					},
 				},
 			},
-			CommitSqls:   []*model.CommitSql{},
-			RollbackSqls: []*model.RollbackSql{},
+			ExecuteSQLs:  []*model.ExecuteSQL{},
+			RollbackSQLs: []*model.RollbackSQL{},
 		},
-		SqlArray: []*model.Sql{},
+		SqlArray: []*model.BaseSQL{},
 		Ctx: &Context{
 			currentSchema: "multidb",
 			schemaHasLoad: true,

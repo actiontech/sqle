@@ -1,65 +1,69 @@
 package model
 
+import "database/sql"
+
 type InstanceDetail struct {
-	Name                 string `json:"name"`
-	Desc                 string `json:"desc"`
-	Host                 string `json:"db_host"`
-	Port                 string `json:"db_port"`
-	User                 string `json:"db_user"`
-	WorkflowTemplateName string `json:"workflow_template_name"`
-	RoleNames            string `json:"role_names"`          // is a role name list, separated by commas.
-	RuleTemplateNames    string `json:"rule_template_names"` // is a rule template name list, separated by commas.
+	Name                 string         `json:"name"`
+	Desc                 string         `json:"desc"`
+	Host                 string         `json:"db_host"`
+	Port                 string         `json:"db_port"`
+	User                 string         `json:"db_user"`
+	WorkflowTemplateName sql.NullString `json:"workflow_template_name"`
+	RoleNames            RowList        `json:"role_names"`
+	RuleTemplateNames    RowList        `json:"rule_template_names"`
 }
 
-var instancesQueryTpl = `SELECT instances.name, instances.desc, 
-instances.db_host, instances.db_port, instances.db_user,
+var instancesQueryTpl = `SELECT inst.name, inst.desc, inst.db_host,
+inst.db_port, inst.db_user, wt.name AS workflow_template_name,
 GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names,
-GROUP_CONCAT(DISTINCT COALESCE(rule_templates.name,'')) AS rule_template_names
-FROM instances
-LEFT JOIN instance_role ON instances.id = instance_role.instance_id
-LEFT JOIN roles ON instance_role.role_id = roles.id
-LEFT JOIN instance_rule_template ON instances.id = instance_rule_template.instance_id
-LEFT JOIN rule_templates ON instance_rule_template.rule_template_id = rule_templates.id
+GROUP_CONCAT(DISTINCT COALESCE(rt.name,'')) AS rule_template_names
+FROM instances AS inst
+LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
+LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL
+LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
+LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
+LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
 WHERE
-instances.id in (SELECT DISTINCT(instances.id)
+inst.id in (SELECT DISTINCT(inst.id)
 
 {{- template "body" . -}}
 )
-GROUP BY instances.id
+GROUP BY inst.id
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
 {{- end -}}
 `
 
-var instancesCountTpl = `SELECT COUNT(DISTINCT instances.id)
+var instancesCountTpl = `SELECT COUNT(DISTINCT inst.id)
 
 {{- template "body" . -}}
 `
 
 var instancesQueryBodyTpl = `
 {{ define "body" }}
-FROM instances
-LEFT JOIN instance_role ON instances.id = instance_role.instance_id
-LEFT JOIN roles ON instance_role.role_id = roles.id
-LEFT JOIN instance_rule_template ON instances.id = instance_rule_template.instance_id
-LEFT JOIN rule_templates ON instance_rule_template.rule_template_id = rule_templates.id
+FROM instances AS inst
+LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
+LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL
+LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
+LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
+LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
 WHERE
-instances.deleted_at IS NULL
+inst.deleted_at IS NULL
 
 {{- if .filter_instance_name }}
-AND instances.name = :filter_instance_name
+AND inst.name = :filter_instance_name
 {{- end }}
 
 {{- if .filter_db_host }}
-AND instances.db_host = :filter_db_host
+AND inst.db_host = :filter_db_host
 {{- end }}
 
 {{- if .filter_db_port }}
-AND instances.db_port = :filter_db_port
+AND inst.db_port = :filter_db_port
 {{- end }}
 
 {{- if .filter_db_user }}
-AND instances.db_user = :filter_db_user
+AND inst.db_user = :filter_db_user
 {{- end }}
 
 {{- if .filter_role_name }}
@@ -67,7 +71,11 @@ AND roles.name = :filter_role_name
 {{- end }}
 
 {{- if .filter_rule_template_name }}
-AND rule_templates.name = :filter_rule_template_name
+AND rt.name = :filter_rule_template_name
+{{- end }}
+
+{{- if .filter_workflow_template_name }}
+AND wt.name = :filter_workflow_template_name
 {{- end }}
 {{- end }}
 `

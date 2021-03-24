@@ -1,40 +1,40 @@
 package inspector
 
 import (
+	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"database/sql"
 	"fmt"
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"strconv"
 	"strings"
 )
 
-func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
+func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {
 	i.Logger().Info("start generate rollback sql")
 
-	rollbackSqls := []*model.RollbackSql{}
-	for _, commitSql := range i.Task.CommitSqls {
-		currentSql := commitSql
-		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+	rollbackSqls := []*model.RollbackSQL{}
+	for _, executeSQL := range i.Task.ExecuteSQLs {
+		currentSql := executeSQL
+		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
 			rollbackSql, reason, err := i.GenerateRollbackSql(sql)
 			if rollbackSql != "" {
-				rollbackSqls = append(rollbackSqls, &model.RollbackSql{
-					Sql: model.Sql{
+				rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
+					BaseSQL: model.BaseSQL{
 						Content: rollbackSql,
 					},
-					CommitSqlNumber: currentSql.Number,
+					ExecuteSQLId: currentSql.ID,
 				})
 			}
 			if reason != "" {
 				result := newInspectResults()
-				if currentSql.InspectResult != "" {
-					result.add(currentSql.InspectLevel, currentSql.InspectResult)
+				if currentSql.AuditResult != "" {
+					result.add(currentSql.AuditLevel, currentSql.AuditResult)
 				}
 				result.add(model.RULE_LEVEL_NOTICE, reason)
-				currentSql.InspectLevel = result.level()
-				currentSql.InspectResult = result.message()
+				currentSql.AuditLevel = result.level()
+				currentSql.AuditResult = result.message()
 			}
 			return err
 		})
@@ -51,8 +51,8 @@ func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSql, error) {
 	return i.GetAllRollbackSqlReversed(rollbackSqls), nil
 }
 
-func (i *Inspect) GetAllRollbackSqlReversed(sqls []*model.RollbackSql) []*model.RollbackSql {
-	rollbackSqls := []*model.RollbackSql{}
+func (i *Inspect) GetAllRollbackSqlReversed(sqls []*model.RollbackSQL) []*model.RollbackSQL {
+	rollbackSqls := []*model.RollbackSQL{}
 	// Reverse order
 	var number uint = 1
 	for n := len(sqls) - 1; n >= 0; n-- {
@@ -66,7 +66,7 @@ func (i *Inspect) GetAllRollbackSqlReversed(sqls []*model.RollbackSql) []*model.
 	return rollbackSqls
 }
 
-func (i *Inspect) GenerateRollbackSql(sql *model.Sql) (string, string, error) {
+func (i *Inspect) GenerateRollbackSql(sql *model.BaseSQL) (string, string, error) {
 	node := sql.Stmts[0]
 	switch node.(type) {
 	case ast.DDLNode:

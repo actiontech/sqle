@@ -38,7 +38,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_EXIST, fmt.Errorf("rule template is exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
 	}
 	var rules []model.Rule
 	if req.Rules != nil || len(req.Rules) > 0 {
@@ -104,7 +104,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("rule template is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
 	var rules []model.Rule
 	if req.Rules != nil || len(req.Rules) > 0 {
@@ -190,7 +190,7 @@ func GetRuleTemplate(c echo.Context) error {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
 	if !exist {
-		return c.JSON(200, controller.NewBaseReq(errors.New(errors.RULE_TEMPLATE_NOT_EXIST,
+		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
 			fmt.Errorf("rule template is not exist"))))
 	}
 
@@ -216,7 +216,7 @@ func DeleteRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("rule template is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
 
 	instances, err := s.GetInstancesNameByTemplate(template)
@@ -224,7 +224,7 @@ func DeleteRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if len(instances) > 0 {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.RULE_TEMPLATE_IS_USED,
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 			fmt.Errorf(fmt.Sprintf("rule template is used by instance %s",
 				strings.Join(instances, ",")))))
 	}
@@ -309,7 +309,7 @@ type RuleResV1 struct {
 	Name  string `json:"rule_name"`
 	Desc  string `json:"desc"`
 	Value string `json:"value"`
-	Level string `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Level string `json:"level" example:"error"` // notice, warn, error
 }
 
 // @Summary 规则列表
@@ -326,7 +326,7 @@ func GetRules(c echo.Context) error {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
 	rulesRes := make([]RuleResV1, 0, len(rules))
-	for _, rule := range rules {
+	for _, rule := range rulesRes {
 		rulesRes = append(rulesRes, RuleResV1{
 			Name:  rule.Name,
 			Desc:  rule.Desc,

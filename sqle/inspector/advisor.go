@@ -28,21 +28,21 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 		return err
 	}
 
-	for _, commitSql := range i.Task.CommitSqls {
+	for _, commitSql := range i.Task.ExecuteSQLs {
 		currentSql := commitSql
-		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
+		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
 			if len(sql.Stmts) <= 0 {
 				return nil
 			}
 			if _, ok := sqlWhiltelistMD5Map[utils.Md5String(strings.ToUpper(sql.Content))]; ok {
-				currentSql.InspectStatus = model.TASK_ACTION_DONE
-				currentSql.InspectLevel = model.RULE_LEVEL_NORMAL
-				currentSql.InspectResult = "白名单"
+				currentSql.AuditStatus = model.SQLAuditStatusFinished
+				currentSql.AuditLevel = model.RULE_LEVEL_NORMAL
+				currentSql.AuditResult = "白名单"
 			} else {
 				node := sql.Stmts[0]
 
 				var err error
-				if currentSql.FingerPrint, err = i.Fingerprint(sql.Content); err != nil {
+				if currentSql.Fingerprint, err = i.Fingerprint(sql.Content); err != nil {
 					i.Logger().Warnf("sql %s generate fingerprint failed, error: %v", sql.Content, err)
 				}
 
@@ -68,9 +68,9 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 						}
 					}
 				}
-				currentSql.InspectStatus = model.TASK_ACTION_DONE
-				currentSql.InspectLevel = i.Results.level()
-				currentSql.InspectResult = i.Results.message()
+				currentSql.AuditStatus = model.SQLAuditStatusFinished
+				currentSql.AuditLevel = i.Results.level()
+				currentSql.AuditResult = i.Results.message()
 				// clean up results
 				i.Results = newInspectResults()
 
@@ -81,17 +81,17 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 				}
 				if oscCommandLine != "" {
 					results := newInspectResults()
-					if currentSql.InspectResult != "" {
-						results.add(currentSql.InspectLevel, currentSql.InspectResult)
+					if currentSql.AuditResult != "" {
+						results.add(currentSql.AuditLevel, currentSql.AuditResult)
 					}
 					results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s", oscCommandLine))
-					currentSql.InspectLevel = results.level()
-					currentSql.InspectResult = results.message()
+					currentSql.AuditLevel = results.level()
+					currentSql.AuditResult = results.message()
 				}
 			}
 
 			i.Logger().Infof("sql=%s, level=%s, result=%s",
-				currentSql.Content, currentSql.InspectLevel, currentSql.InspectResult)
+				currentSql.Content, currentSql.AuditLevel, currentSql.AuditResult)
 			return nil
 		})
 		if err != nil {

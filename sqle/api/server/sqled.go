@@ -78,7 +78,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		return action, errors.New(errors.TASK_RUNNING, fmt.Errorf("task is running"))
 	}
 
-	task, exist, err := model.GetStorage().GetTaskById(taskId)
+	task, exist, err := model.GetStorage().GetTaskDetailById(taskId)
 	if err != nil {
 		goto Error
 	}
@@ -92,12 +92,6 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		goto Error
 	}
 
-	if int(task.Action) < action.Typ {
-		err := model.GetStorage().UpdateTask(task, map[string]interface{}{"action": action.Typ})
-		if err != nil {
-			goto Error
-		}
-	}
 	action.Task = task
 	s.queue <- action
 	return action, nil
@@ -143,9 +137,9 @@ func (s *Sqled) taskLoop() {
 func (s *Sqled) do(action *Action) error {
 	var err error
 	switch action.Typ {
-	case model.TASK_ACTION_INSPECT:
-		err = s.inspect(action.Task)
-	case model.TASK_ACTION_COMMIT:
+	case model.TASK_ACTION_AUDIT:
+		err = s.audit(action.Task)
+	case model.TASK_ACTION_EXECUTE:
 		err = s.commit(action.Task)
 	case model.TASK_ACTION_ROLLBACK:
 		err = s.rollback(action.Task)
@@ -165,7 +159,7 @@ func (s *Sqled) do(action *Action) error {
 	return err
 }
 
-func (s *Sqled) inspect(task *model.Task) error {
+func (s *Sqled) audit(task *model.Task) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 
 	st := model.GetStorage()
@@ -199,7 +193,7 @@ func (s *Sqled) inspect(task *model.Task) error {
 			}
 		}
 	}
-	var rollbackSqls = []*model.RollbackSql{}
+	var rollbackSqls = []*model.RollbackSQL{}
 	// generate rollback after advise
 	if !firstSqlInvalid {
 		ctx = inspector.NewContext(nil)
@@ -212,24 +206,25 @@ func (s *Sqled) inspect(task *model.Task) error {
 		entry.Warnf("sql invalid, ignore generate rollback")
 	}
 
-	if err := st.UpdateCommitSql(task, task.CommitSqls); err != nil {
+	if err := st.UpdateExecuteSQLs(task, task.ExecuteSQLs); err != nil {
 		entry.Errorf("save commit sql to storage failed, error: %v", err)
 		return err
 	}
 
 	var normalCount float64
-	for _, sql := range task.CommitSqls {
-		if sql.InspectLevel == model.RULE_LEVEL_NORMAL {
+	for _, sql := range task.ExecuteSQLs {
+		if sql.AuditLevel == model.RULE_LEVEL_NORMAL {
 			normalCount += 1
 		}
 	}
-	if len(task.CommitSqls) != 0 {
-		task.NormalRate = round(normalCount/float64(len(task.CommitSqls)), 4)
+	if len(task.ExecuteSQLs) != 0 {
+		task.PassRate = round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 	}
 
 	err = st.UpdateTask(task, map[string]interface{}{
 		"sql_type":    sqlType,
-		"normal_rate": task.NormalRate,
+		"pass_rate": task.PassRate,
+		"status":      model.TaskStatusAudited,
 	})
 	if err != nil {
 		entry.Errorf("update task to storage failed, error: %v", err)
@@ -237,7 +232,7 @@ func (s *Sqled) inspect(task *model.Task) error {
 	}
 
 	if len(rollbackSqls) > 0 {
-		err = st.UpdateRollbackSql(task, rollbackSqls)
+		err = st.UpdateRollbackSQLs(task, rollbackSqls)
 		if err != nil {
 			entry.Errorf("save rollback sql to storage failed, error: %v", err)
 			return err
@@ -247,15 +242,15 @@ func (s *Sqled) inspect(task *model.Task) error {
 }
 
 func (s *Sqled) commit(task *model.Task) error {
-	if task.SqlType == model.SQL_TYPE_DML {
+	if task.SQLType == model.SQL_TYPE_DML {
 		return s.commitDML(task)
 	}
 
-	if task.SqlType == model.SQL_TYPE_DDL {
+	if task.SQLType == model.SQL_TYPE_DDL {
 		return s.commitDDL(task, false)
 	}
 
-	if task.SqlType == model.SQL_TYPE_PROCEDURE_FUNCTION {
+	if task.SQLType == model.SQL_TYPE_PROCEDURE_FUNCTION {
 		return s.commitDDL(task, true)
 	}
 
@@ -287,10 +282,10 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 
 	entry.Info("start commit")
 	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
-	for _, commitSql := range task.CommitSqls {
+	for _, commitSql := range task.ExecuteSQLs {
 		currentSql := commitSql
-		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
-			err := st.UpdateCommitSqlStatus(sql, model.TASK_ACTION_DOING, "")
+		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
+			err := st.UpdateExecuteSqlStatus(sql, model.SQLExecuteStatusDoing, "")
 			if err != nil {
 				i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 				return err
@@ -303,7 +298,7 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 				}
 				if backupSqls != nil {
 					for _, backupSql := range backupSqls {
-						backupSqlModel := &model.Sql{Content: backupSql}
+						backupSqlModel := &model.BaseSQL{Content: backupSql}
 						if err := i.CommitDDL(backupSqlModel); err != nil {
 							i.Logger().Errorf("create procedure function backup failed, sql: %v, error: %v", backupSql, err)
 						}
@@ -331,8 +326,7 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 		}
 	}
 
-	execStatus := model.TASK_ACTION_DOING
-	if err := updateTaskExecStatus(task, st, execStatus); nil != err {
+	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
 		return err
 	}
 
@@ -343,15 +337,14 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 		entry.Info("commit sql finish")
 	}
 
-	execStatus = model.TASK_ACTION_DONE
-	for _, sql := range task.CommitSqls {
-		if sql.ExecStatus == model.TASK_ACTION_ERROR {
-			execStatus = model.TASK_ACTION_ERROR
+	taskStatus := model.TaskStatusExecuteSucceeded
+	for _, sql := range task.ExecuteSQLs {
+		if sql.ExecStatus == model.SQLExecuteStatusFailed {
+			taskStatus = model.TaskStatusExecuteFailed
 			break
 		}
 	}
-
-	return updateTaskExecStatus(task, st, execStatus)
+	return st.UpdateTaskStatusById(task.ID, taskStatus)
 }
 
 func (s *Sqled) commitDML(task *model.Task) error {
@@ -361,45 +354,45 @@ func (s *Sqled) commitDML(task *model.Task) error {
 
 	entry.Info("start commit")
 	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
-	sqls := []*model.Sql{}
+	sqls := []*model.BaseSQL{}
 
-	err := st.UpdateCommitSqlStatusByTaskID(task, model.TASK_ACTION_DOING)
+	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
 	if err != nil {
 		i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 		return err
 	}
-	for _, commitSql := range task.CommitSqls {
-		nodes, err := i.ParseSql(commitSql.Content)
+	for _, executeSQL := range task.ExecuteSQLs {
+		nodes, err := i.ParseSql(executeSQL.Content)
 		if err != nil {
 			return err
 		}
-		commitSql.Stmts = nodes
+		executeSQL.Stmts = nodes
 
-		sqls = append(sqls, &commitSql.Sql)
+		sqls = append(sqls, &executeSQL.BaseSQL)
 	}
 
-	if err := updateTaskExecStatus(task, st, model.TASK_ACTION_DOING); nil != err {
+	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
 		return err
 	}
-	i.CommitDMLs(sqls)
-	execStatus := model.TASK_ACTION_DONE
 
-	if err := st.UpdateCommitSql(task, task.CommitSqls); err != nil {
+	i.CommitDMLs(sqls)
+
+	if err := st.UpdateExecuteSQLs(task, task.ExecuteSQLs); err != nil {
 		i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
-		execStatus = model.TASK_ACTION_ERROR
-		if err := updateTaskExecStatus(task, st, execStatus); nil != err {
+		if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuteFailed); nil != err {
 			log.Logger().Errorf("update task exec_status failed: %v", err)
 		}
 		return err
 	}
-	for _, commitSql := range task.CommitSqls {
-		if commitSql.ExecStatus == model.TASK_ACTION_ERROR {
-			execStatus = model.TASK_ACTION_ERROR
+
+	taskStatus := model.TaskStatusExecuteSucceeded
+	for _, commitSql := range task.ExecuteSQLs {
+		if commitSql.ExecStatus == model.SQLExecuteStatusFailed {
+			taskStatus = model.TaskStatusExecuteFailed
 			break
 		}
 	}
-
-	return updateTaskExecStatus(task, st, execStatus)
+	return st.UpdateTaskStatusById(task.ID, taskStatus)
 }
 
 func (s *Sqled) rollback(task *model.Task) error {
@@ -409,13 +402,13 @@ func (s *Sqled) rollback(task *model.Task) error {
 	st := model.GetStorage()
 	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
 
-	for _, rollbackSql := range task.RollbackSqls {
+	for _, rollbackSql := range task.RollbackSQLs {
 		currentSql := rollbackSql
 		if currentSql.Content == "" {
 			continue
 		}
-		err := i.Add(&currentSql.Sql, func(sql *model.Sql) error {
-			err := st.UpdateRollbackSqlStatus(sql, model.TASK_ACTION_DOING, "")
+		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
+			err := st.UpdateRollbackSqlStatus(sql, model.SQLExecuteStatusDoing, "")
 			if err != nil {
 				i.Logger().Errorf("update rollback sql status to storage failed, error: %v", err)
 				return err
@@ -424,7 +417,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 			case model.SQL_TYPE_DDL:
 				i.CommitDDL(sql)
 			case model.SQL_TYPE_DML:
-				i.CommitDMLs([]*model.Sql{sql})
+				i.CommitDMLs([]*model.BaseSQL{sql})
 			case model.SQL_TYPE_MULTI:
 				i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 				return errors.SQL_STMT_CONFLICT_ERROR
@@ -457,12 +450,4 @@ func (s *Sqled) rollback(task *model.Task) error {
 func round(f float64, n int) float64 {
 	p := math.Pow10(n)
 	return math.Trunc(f*p+0.5) / p
-}
-
-func updateTaskExecStatus(task *model.Task, st *model.Storage, execStatus string) error {
-	task.ExecStatus = execStatus
-	if err := st.UpdateTask(task, map[string]interface{}{"exec_status": execStatus}); nil != err {
-		return err
-	}
-	return nil
 }

@@ -92,7 +92,6 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 		// user
 		v1Router.GET("/test", v1.Test, AdminUserAllowed())
 		v1Router.GET("/users", v1.GetUsers, AdminUserAllowed())
-		v1Router.GET("/user_tips", v1.GetUserTips, AdminUserAllowed())
 		v1Router.POST("/users", v1.CreateUser, AdminUserAllowed())
 		v1Router.GET("/users/:user_name/", v1.GetUser, AdminUserAllowed())
 		v1Router.PATCH("/users/:user_name/", v1.UpdateUser, AdminUserAllowed())
@@ -112,12 +111,21 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 		// rule template
 		v1Router.POST("/rule_templates", v1.CreateRuleTemplate, AdminUserAllowed())
-		v1Router.PATCH("/rule_templates/:rule_template_name/", v1.UpdateRuleTemplate, AdminUserAllowed())
-		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
+		v1Router.PATCH("/rule_templates/:rule_template_name", v1.UpdateRuleTemplate, AdminUserAllowed())
+		v1Router.DELETE("/rule_templates/:rule_template_name", v1.DeleteRuleTemplate, AdminUserAllowed())
+
+		// workflow template
+		v1Router.GET("/workflow_templates", v1.GetWorkflowTemplates, AdminUserAllowed())
+		v1Router.POST("/workflow_templates", v1.CreateWorkflowTemplate, AdminUserAllowed())
+		v1Router.GET("/workflow_templates/:workflow_template_name/", v1.GetWorkflowTemplate, AdminUserAllowed())
+		v1Router.PATCH("/workflow_templates/:workflow_template_name/", v1.UpdateWorkflowTemplate, AdminUserAllowed())
+		v1Router.DELETE("/workflow_templates/:workflow_template_name/", v1.DeleteWorkflowTemplate, AdminUserAllowed())
+		v1Router.GET("/workflow_template_tips", v1.GetWorkflowTemplateTips, AdminUserAllowed())
 	}
 
 	// user
 	v1Router.GET("/user", v1.GetCurrentUser)
+	v1Router.GET("/user_tips", v1.GetUserTips)
 
 	// instance
 	v1Router.GET("/instances", v1.GetInstances)
@@ -134,6 +142,20 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	//rule
 	v1Router.GET("/rules", v1.GetRules)
+
+	// workflow
+	v1Router.POST("/workflows", v1.CreateWorkflow)
+	v1Router.GET("/workflows/:workflow_id/", v1.GetWorkflow)
+	v1Router.GET("/workflows", v1.GetWorkflows)
+
+	// task
+	v1Router.POST("/tasks", v1.CreateTask)
+	v1Router.POST("/task/audit", v1.CreateAndAuditTask)
+	v1Router.GET("/tasks/:task_id/", v1.GetTask)
+	v1Router.POST("/tasks/:task_id/audit", v1.AuditTask)
+	v1Router.GET("/tasks/:task_id/sqls", v1.GetTaskSQLs)
+	v1Router.GET("/tasks/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
+	v1Router.GET("/tasks/:task_id/sql_file", v1.DownloadTaskSQLFile)
 
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)

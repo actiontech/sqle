@@ -1,12 +1,12 @@
 package sqlserverClient
 
 import (
-	"context"
-	"fmt"
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"actiontech.cloud/universe/sqle/v4/sqle/sqlserver/SqlserverProto"
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/pingcap/parser/ast"
@@ -93,10 +93,10 @@ func (c *Client) Advise(sqls []string, ruleNames []string, meta *SqlserverProto.
 	return out, nil
 }
 
-func (c *Client) GenerateAllRollbackSql(commitSqls []*model.CommitSql, config *SqlserverProto.Config, meta *SqlserverProto.SqlserverMeta) ([]*SqlserverProto.Sql, error) {
+func (c *Client) GenerateAllRollbackSql(executeSQLs []*model.ExecuteSQL, config *SqlserverProto.Config, meta *SqlserverProto.SqlserverMeta) ([]*SqlserverProto.Sql, error) {
 	sqls := []string{}
-	for _, commitSql := range commitSqls {
-		sqls = append(sqls, commitSql.Content)
+	for _, executeSQL := range executeSQLs {
+		sqls = append(sqls, executeSQL.Content)
 	}
 	out, err := c.client.GetRollbackSqls(context.Background(), &SqlserverProto.GetRollbackSqlsInput{
 		Version:        c.version,

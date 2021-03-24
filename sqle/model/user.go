@@ -151,7 +151,7 @@ func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err e
 		}
 	}
 	if len(notExistRoleNames) > 0 {
-		return roles, errors.New(errors.DATA_NOT_EXIST,
+		return roles, errors.New(errors.DataNotExist,
 			fmt.Errorf("user role %s not exist", strings.Join(notExistRoleNames, ", ")))
 	}
 	return roles, nil
@@ -173,7 +173,7 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 		}
 	}
 	if len(notExistUserNames) > 0 {
-		return users, errors.New(errors.DATA_NOT_EXIST,
+		return users, errors.New(errors.DataNotExist,
 			fmt.Errorf("user %s not exist", strings.Join(notExistUserNames, ", ")))
 	}
 	return users, nil

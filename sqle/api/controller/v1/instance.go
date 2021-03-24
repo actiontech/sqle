@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
-	"strings"
 )
 
 type CreateInstanceReqV1 struct {
@@ -46,7 +45,7 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_EXIST, fmt.Errorf("instance is exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("instance is exist")))
 	}
 
 	instance := &model.Instance{
@@ -58,6 +57,18 @@ func CreateInstance(c echo.Context) error {
 		Password: req.Password,
 		Desc:     req.Desc,
 	}
+
+	if req.WorkflowTemplateName != "" {
+		workflowTemplate, exist, err := s.GetWorkflowTemplateByName(req.WorkflowTemplateName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("workflow template is not exist")))
+		}
+		instance.WorkflowTemplateId = workflowTemplate.ID
+	}
+
 	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -94,7 +105,7 @@ type InstanceResV1 struct {
 	Port                 string   `json:"db_port" example:"3306"`
 	User                 string   `json:"db_user" example:"root"`
 	Desc                 string   `json:"desc" example:"this is a instance"`
-	WorkflowTemplateName string   `json:"workflow_template_name"`
+	WorkflowTemplateName string   `json:"workflow_template_name,omitempty"`
 	RuleTemplates        []string `json:"rule_template_name_list,omitempty"`
 	Roles                []string `json:"role_name_list,omitempty"`
 }
@@ -120,7 +131,7 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 
 	instanceResV1 := InstanceResV1{
@@ -129,6 +140,9 @@ func GetInstance(c echo.Context) error {
 		Port: instance.Port,
 		User: instance.User,
 		Desc: instance.Desc,
+	}
+	if instance.WorkflowTemplate != nil {
+		instanceResV1.WorkflowTemplateName = instance.WorkflowTemplate.Name
 	}
 	if len(instance.RuleTemplates) > 0 {
 		ruleTemplateNames := make([]string, 0, len(instance.RuleTemplates))
@@ -166,7 +180,7 @@ func DeleteInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 	err = s.Delete(instance)
 	if err != nil {
@@ -205,7 +219,7 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 
 	req := new(UpdateInstanceReqV1)
@@ -213,7 +227,7 @@ func UpdateInstance(c echo.Context) error {
 		return err
 	}
 
-	updateMap := map[string]string{}
+	updateMap := map[string]interface{}{}
 
 	if req.Desc != nil {
 		updateMap["desc"] = *req.Desc
@@ -233,6 +247,23 @@ func UpdateInstance(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		updateMap["db_password"] = password
+	}
+
+	if req.WorkflowTemplateName != nil {
+		// Workflow template name empty is unbound instance workflow template.
+		if *req.WorkflowTemplateName == "" {
+			updateMap["workflow_template_id"] = 0
+		} else {
+			workflowTemplate, exist, err := s.GetWorkflowTemplateByName(*req.WorkflowTemplateName)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			if !exist {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+					fmt.Errorf("workflow template is not exist")))
+			}
+			updateMap["workflow_template_id"] = workflowTemplate.ID
+		}
 	}
 
 	if req.RuleTemplates != nil {
@@ -312,14 +343,15 @@ func GetInstances(c echo.Context) error {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 	data := map[string]interface{}{
-		"filter_instance_name":      req.FilterInstanceName,
-		"filter_db_host":            req.FilterDBHost,
-		"filter_db_port":            req.FilterDBPort,
-		"filter_db_user":            req.FilterDBUser,
-		"filter_rule_template_name": req.FilterRuleTemplateName,
-		"filter_role_name":          req.FilterRoleName,
-		"limit":                     req.PageSize,
-		"offset":                    offset,
+		"filter_instance_name":          req.FilterInstanceName,
+		"filter_db_host":                req.FilterDBHost,
+		"filter_db_port":                req.FilterDBPort,
+		"filter_db_user":                req.FilterDBUser,
+		"filter_workflow_template_name": req.FilterWorkflowTemplateName,
+		"filter_rule_template_name":     req.FilterRuleTemplateName,
+		"filter_role_name":              req.FilterRoleName,
+		"limit":                         req.PageSize,
+		"offset":                        offset,
 	}
 
 	instances, count, err := s.GetInstancesByReq(data)
@@ -330,17 +362,14 @@ func GetInstances(c echo.Context) error {
 	instancesReq := []InstanceResV1{}
 	for _, instance := range instances {
 		instanceReq := InstanceResV1{
-			Name: instance.Name,
-			Desc: instance.Desc,
-			Host: instance.Host,
-			Port: instance.Port,
-			User: instance.User,
-		}
-		if instance.RoleNames != "" {
-			instanceReq.Roles = strings.Split(instance.RoleNames, ",")
-		}
-		if instance.RuleTemplateNames != "" {
-			instanceReq.RuleTemplates = strings.Split(instance.RuleTemplateNames, ",")
+			Name:                 instance.Name,
+			Desc:                 instance.Desc,
+			Host:                 instance.Host,
+			Port:                 instance.Port,
+			User:                 instance.User,
+			WorkflowTemplateName: instance.WorkflowTemplateName.String,
+			Roles:                instance.RoleNames,
+			RuleTemplates:        instance.RuleTemplateNames,
 		}
 		instancesReq = append(instancesReq, instanceReq)
 	}
@@ -376,7 +405,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 	isInstanceConnectable := true
 	if err := executor.Ping(log.NewEntry(), instance); err != nil {
@@ -455,7 +484,7 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DATA_NOT_EXIST, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 	status, err := server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 	if err != nil {
