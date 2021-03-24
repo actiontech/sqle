@@ -218,17 +218,6 @@ func DeleteRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
-
-	instances, err := s.GetInstancesNameByTemplate(template)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if len(instances) > 0 {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-			fmt.Errorf(fmt.Sprintf("rule template is used by instance %s",
-				strings.Join(instances, ",")))))
-	}
-
 	err = s.Delete(template)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
