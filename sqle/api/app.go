@@ -111,8 +111,8 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 		// rule template
 		v1Router.POST("/rule_templates", v1.CreateRuleTemplate, AdminUserAllowed())
-		v1Router.PATCH("/rule_templates/:rule_template_name", v1.UpdateRuleTemplate, AdminUserAllowed())
-		v1Router.DELETE("/rule_templates/:rule_template_name", v1.DeleteRuleTemplate, AdminUserAllowed())
+		v1Router.PATCH("/rule_templates/:rule_template_name/", v1.UpdateRuleTemplate, AdminUserAllowed())
+		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
 
 		// workflow template
 		v1Router.GET("/workflow_templates", v1.GetWorkflowTemplates, AdminUserAllowed())
