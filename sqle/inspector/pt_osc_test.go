@@ -7,14 +7,7 @@ import (
 )
 
 func TestPTOSC(t *testing.T) {
-	expect := "pt-online-schema-change D=exist_db,t=%s \\" + "\n" +
-		"--alter=\"%s\" \\" + "\n" +
-		"--host=127.0.0.1 \\" + "\n" +
-		"--user=root \\" + "\n" +
-		"--port=3306 \\" + "\n" +
-		"--ask-pass \\" + "\n" +
-		"--print \\" + "\n" +
-		"--execute"
+	expect := "pt-online-schema-change D=exist_db,t=%s --alter='%s' --host=127.0.0.1 --user=root --port=3306 --ask-pass --print --execute"
 
 	runOSCCase(t, "add column not null no default",
 		"alter table exist_tb_1 add column v3 varchar(255) NOT NULL;",

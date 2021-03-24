@@ -3,24 +3,19 @@ package inspector
 import (
 	"bytes"
 	"fmt"
-	"github.com/pingcap/parser/ast"
 	"io/ioutil"
 	"os"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"strings"
 	"sync"
 	"text/template"
+
+	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
+
+	"github.com/pingcap/parser/ast"
 )
 
-var ptTemplate = `pt-online-schema-change D={{.Schema}},t={{.Table}} \
---alter="{{.Alter}}" \
---host={{.Host}} \
---user={{.User}} \
---port={{.Port}} \
---ask-pass \
---print \
---execute`
+var ptTemplate = `pt-online-schema-change D={{.Schema}},t={{.Table}} --alter='{{.Alter}}' --host={{.Host}} --user={{.User}} --port={{.Port}} --ask-pass --print --execute`
 
 var ptTemplateMutex sync.Mutex
 
