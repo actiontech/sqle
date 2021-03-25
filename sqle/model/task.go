@@ -2,6 +2,7 @@ package model
 
 import (
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"database/sql"
 	"fmt"
 
 	"github.com/jinzhu/gorm"
@@ -197,7 +198,7 @@ func (t *Task) ValidAction(typ int) error {
 
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Preload("Instance").Preload("ExecuteSQLs").Preload("RollbackSQLs").First(&task, taskId).Error
+	err := s.db.Where("id = ?", taskId).Preload("Instance").First(task).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -206,7 +207,8 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 
 func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Preload("Instance").Preload("ExecuteSQLs").Preload("RollbackSQLs").First(&task, taskId).Error
+	err := s.db.Where("id = ?", taskId).Preload("Instance").
+		Preload("ExecuteSQLs").Preload("RollbackSQLs").First(task).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -433,14 +435,14 @@ func (s *Storage) GetExecErrorExecuteSQLsByTaskId(taskId string) ([]ExecuteSQL, 
 }
 
 type TaskSQLDetail struct {
-	Number      uint   `json:"number"`
-	ExecSQL     string `json:"exec_sql"`
-	AuditResult string `json:"audit_result"`
-	AuditLevel  string `json:"audit_level"`
-	AuditStatus string `json:"audit_status"`
-	ExecResult  string `json:"exec_result"`
-	ExecStatus  string `json:"exec_status"`
-	RollbackSQL string `json:"rollback_sql"`
+	Number      uint           `json:"number"`
+	ExecSQL     string         `json:"exec_sql"`
+	AuditResult string         `json:"audit_result"`
+	AuditLevel  string         `json:"audit_level"`
+	AuditStatus string         `json:"audit_status"`
+	ExecResult  string         `json:"exec_result"`
+	ExecStatus  string         `json:"exec_status"`
+	RollbackSQL sql.NullString `json:"rollback_sql"`
 }
 
 var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
@@ -493,43 +495,6 @@ func (s *Storage) GetTaskSQLsByReq(data map[string]interface{}) ([]*TaskSQLDetai
 	count, err := s.getListResult(taskSQLsQueryBodyTpl, taskSQLsQueryTpl, taskSQLsCountTpl, data, &result)
 	return result, count, err
 }
-
-//func (s *Storage) GetUploadedSQLs(taskId, filterSqlExecutionStatus, filterSqlAuditStatus string, pageIndex, pageSize int, noDuplicate bool) ([]CommitSql, uint32, error) {
-//	var count uint32
-//	executeSQLs := []ExecuteSQL{}
-//	queryFilter := "task_id=?"
-//	queryArgs := make([]interface{}, 0)
-//	queryArgs = append(queryArgs, taskId)
-//	if filterSqlExecutionStatus != "" {
-//		if filterSqlExecutionStatus == "initialized" {
-//			filterSqlExecutionStatus = ""
-//		}
-//		queryFilter += " AND exec_status=?"
-//		queryArgs = append(queryArgs, filterSqlExecutionStatus)
-//	}
-//	if filterSqlAuditStatus != "" {
-//		queryFilter += " AND inspect_status=?"
-//		queryArgs = append(queryArgs, filterSqlAuditStatus)
-//	}
-//	db := s.db
-//	if noDuplicate {
-//		db = db.Where(fmt.Sprintf("id IN (SELECT SQL_BIG_RESULT MIN(id) as id FROM commit_sql_detail WHERE task_id=? GROUP BY inspect_result, IFNULL(inspect_result, id), finger_print, IFNULL(finger_print, id) ORDER BY null)"), taskId)
-//	}
-//
-//	if pageSize == 0 {
-//		err := db.Where(queryFilter, queryArgs...).Find(&executeSQLs).Count(&count).Error
-//		return executeSQLs, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-//	}
-//	err := db.Model(&ExecuteSQL{}).Where(queryFilter, queryArgs...).Count(&count).Error
-//	if err != nil {
-//		return executeSQLs, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-//	}
-//
-//	err = db.Offset((pageIndex-1)*pageSize).Limit(pageSize).Where(queryFilter, queryArgs...).Find(&executeSQLs).Error
-//
-//	return executeSQLs, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-//
-//}
 
 func (s *Storage) DeleteTasksByIds(ids []string) error {
 	tasks := Task{}

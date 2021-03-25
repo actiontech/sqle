@@ -730,16 +730,16 @@ definitions:
         type: string
       create_user_name:
         type: string
-      desc:
-        type: string
-      next_step_assignee_user_name_list:
+      current_step_assignee_user_name_list:
         items:
           type: string
         type: array
-      next_step_type:
+      current_step_type:
         enum:
         - sql_review
         - ' sql_execute'
+        type: string
+      desc:
         type: string
       status:
         enum:
@@ -777,8 +777,6 @@ definitions:
         type: integer
       desc:
         type: string
-      next_step_number:
-        type: integer
       status:
         enum:
         - on_process
