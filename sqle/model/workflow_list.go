@@ -1,32 +1,36 @@
 package model
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type WorkflowListDetail struct {
-	Id                   uint       `json:"workflow_id"`
-	Subject              string     `json:"subject"`
-	Desc                 string     `json:"desc"`
-	TaskPassRate         float64    `json:"task_pass_rate"`
-	TaskInstance         string     `json:"task_instance_name"`
-	TaskInstanceSchema   string     `json:"task_instance_schema"`
-	TaskStatus           string     `json:"task_status"`
-	CreateUser           string     `json:"create_user_name"`
-	CreateTime           *time.Time `json:"create_time"`
-	NextStepType         string     `json:"next_step_type" enums:"sql_review, sql_execute"`
-	NextStepAssigneeUser RowList    `json:"next_step_assignee_user_name_list"`
-	Status               string     `json:"status"`
+	Id                      uint           `json:"workflow_id"`
+	Subject                 string         `json:"subject"`
+	Desc                    string         `json:"desc"`
+	TaskPassRate            float64        `json:"task_pass_rate"`
+	TaskInstance            string         `json:"task_instance_name"`
+	TaskInstanceSchema      string         `json:"task_instance_schema"`
+	TaskStatus              string         `json:"task_status"`
+	CreateUser              string         `json:"create_user_name"`
+	CreateTime              *time.Time     `json:"create_time"`
+	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review, sql_execute"`
+	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
+	Status                  string         `json:"status"`
 }
 
-var workflowsQueryTpl = `SELECT w.id AS workflow_id, w.subject, w.desc, tasks.status AS task_status, 
-tasks.pass_rate AS task_pass_rate, tasks.status AS task_status, tasks.instance_schema AS task_instance_schema, 
-inst.name AS task_instance_name, create_user.login_name AS create_user_name, w.created_at AS create_time, wr.status, 
-wst.type AS next_step_type, GROUP_CONCAT(DISTINCT COALESCE(ass_user.login_name,'')) AS next_step_assignee_user_name_list
+var workflowsQueryTpl = `SELECT w.id AS workflow_id, w.subject, w.desc, wr.status,
+tasks.status AS task_status, tasks.pass_rate AS task_pass_rate, tasks.status AS task_status, 
+tasks.instance_schema AS task_instance_schema, inst.name AS task_instance_name, 
+create_user.login_name AS create_user_name, w.created_at AS create_time, wst.type AS current_step_type, 
+GROUP_CONCAT(DISTINCT COALESCE(ass_user.login_name,'')) AS current_step_assignee_user_name_list
 FROM workflows AS w
 LEFT JOIN tasks ON w.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN users AS create_user ON w.create_user_id = create_user.id
 LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
-LEFT JOIN workflow_steps AS ws ON wr.next_workflow_step_id = ws.id
+LEFT JOIN workflow_steps AS ws ON wr.current_workflow_step_id = ws.id
 LEFT JOIN workflow_step_templates AS wst ON ws.workflow_step_template_id = wst.id
 LEFT JOIN workflow_step_template_user AS wst_re_user ON wst.id = wst_re_user.workflow_step_template_id
 LEFT JOIN users AS ass_user ON wst_re_user.user_id = ass_user.id
@@ -53,7 +57,7 @@ LEFT JOIN tasks ON w.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN users AS create_user ON w.create_user_id = create_user.id
 LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
-LEFT JOIN workflow_steps AS ws ON wr.next_workflow_step_id = ws.id
+LEFT JOIN workflow_steps AS ws ON wr.current_workflow_step_id = ws.id
 LEFT JOIN workflow_step_templates AS wst ON ws.workflow_step_template_id = wst.id
 LEFT JOIN workflow_step_template_user AS wst_re_user ON wst.id = wst_re_user.workflow_step_template_id
 LEFT JOIN users AS ass_user ON wst_re_user.user_id = ass_user.id

@@ -2936,21 +2936,21 @@ var doc = `{
                 "create_user_name": {
                     "type": "string"
                 },
-                "desc": {
-                    "type": "string"
-                },
-                "next_step_assignee_user_name_list": {
+                "current_step_assignee_user_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "next_step_type": {
+                "current_step_type": {
                     "type": "string",
                     "enum": [
                         "sql_review",
                         " sql_execute"
                     ]
+                },
+                "desc": {
+                    "type": "string"
                 },
                 "status": {
                     "type": "string",
@@ -3002,9 +3002,6 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
-                },
-                "next_step_number": {
-                    "type": "integer"
                 },
                 "status": {
                     "type": "string",

@@ -205,105 +205,6 @@ func GetTask(c echo.Context) error {
 	})
 }
 
-//// @Summary 删除审核任务
-//// @Description delete task
-//// @Param task_id path string true "Task ID"
-//// @Success 200 {object} controller.BaseRes
-//// @router /tasks/{task_id}/ [delete]
-//func DeleteTask(c echo.Context) error {
-//	s := model.GetStorage()
-//	taskId := c.Param("task_id")
-//	task, exist, err := s.GetTaskById(taskId)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	if !exist {
-//		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
-//	}
-//
-//	// must check task not running
-//
-//	err = s.Delete(task)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
-//}
-
-//// @Summary 批量删除审核任务
-//// @Description delete tasks by ids
-//// @Accept x-www-form-urlencoded
-//// @Param task_ids formData string true "remove tasks by ids(interlaced by ',')"
-//// @Success 200 {object} controller.BaseRes
-//// @router /tasks/remove_by_task_ids [post]
-//func DeleteTasks(c echo.Context) error {
-//	s := model.GetStorage()
-//	taskIds, err := url.QueryUnescape(c.FormValue("task_ids"))
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	deleteTaskIds := strings.Split(strings.TrimRight(taskIds, ","), ",")
-//
-//	err = s.HardDeleteTasksByIds(deleteTaskIds)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	//err = s.HardDeleteRollbackSqlByTaskIds(deleteTaskIds)
-//	//if err != nil {
-//	//	return c.JSON(http.StatusOK, NewBaseReq(err))
-//	//}
-//	//err = s.HardDeleteSqlCommittingResultByTaskIds(deleteTaskIds)
-//	//if err != nil {
-//	//	return c.JSON(http.StatusOK, NewBaseReq(err))
-//	//}
-//	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
-//}
-
-//type GetAllTaskRes struct {
-//	controller.BaseRes
-//	Data GetAllTaskResult `json:"data"`
-//}
-//
-//type GetAllTaskResult struct {
-//	Tasks     []*model.TaskListDetail `json:"tasks"`
-//	TotalNums uint64                  `json:"total_nums"`
-//}
-//
-//// @Summary Sql审核列表
-//// @Description get all tasks
-//// @Param filter_task_id query uint32 false "filter instance name"
-//// @Param filter_instance_name query string false "filter instance name"
-//// @Param filter_task_type query string false "filter task type"
-//// @Param filter_task_status query string false "filter instance status"
-//// @Param filter_create_time_from query string false "filter create time from"
-//// @Param filter_create_time_to query string false "filter create time to"
-//// @Param page_index query uint32 false "page index"
-//// @Param page_size query uint32 false "size of per page"
-//// @Success 200 {object} controller.GetAllTaskRes
-//// @router /tasks [get]
-//func GetTasks(c echo.Context) error {
-//	req := new(model.GetTasksReq)
-//	if err := c.Bind(req); err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	if err := c.Validate(req); err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//
-//	s := model.GetStorage()
-//	tasks, totalNums, err := s.GetTasksByReq(req)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	return c.JSON(http.StatusOK, &GetAllTaskRes{
-//		BaseRes: controller.NewBaseReq(nil),
-//		Data: GetAllTaskResult{
-//			Tasks:     tasks,
-//			TotalNums: totalNums,
-//		},
-//	})
-//}
-
 // @Summary Sql提交审核
 // @Description audit sql
 // @Tags task
@@ -337,119 +238,6 @@ func AuditTask(c echo.Context) error {
 	})
 }
 
-//type CommitTaskRes struct {
-//	controller.BaseRes
-//	Data CommitTaskResult `json:"data"`
-//}
-//
-//type CommitTaskResult struct {
-//	TaskExecStatus string `json:"task_exec_status"`
-//}
-//
-//// @Summary Sql提交上线
-//// @Description commit sql
-//// @Accept x-www-form-urlencoded
-//// @Param task_id path string true "Task ID"
-//// @Param is_sync formData boolean false "the request is sync or async."
-//// @Success 200 {object} controller.CommitTaskRes
-//// @router /tasks/{task_id}/commit [post]
-//func CommitTask(c echo.Context) error {
-//	s := model.GetStorage()
-//	isSync := c.FormValue("is_sync")
-//	taskId := c.Param("task_id")
-//	task, exist, err := s.GetTaskDetailById(taskId)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	if !exist {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(
-//			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-//	}
-//	if task.Instance == nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(
-//			errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))))
-//	}
-//
-//	// if instance is not connectable, exec sql must be failed;
-//	// commit action unable to retry, so don't to exec it.
-//	if err := executor.Ping(log.NewEntry(), task.Instance); err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//
-//	sqledServer := server.GetSqled()
-//	taskRes := &model.Task{}
-//	if isSync == "true" {
-//		taskRes, err = sqledServer.AddTaskWaitResult(taskId, model.TASK_ACTION_COMMIT)
-//	} else {
-//		err = sqledServer.AddTask(taskId, model.TASK_ACTION_COMMIT)
-//	}
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//
-//	return c.JSON(http.StatusOK, &CommitTaskRes{
-//		BaseRes: controller.NewBaseReq(nil),
-//		Data:    CommitTaskResult{TaskExecStatus: taskRes.ExecStatus},
-//	})
-//}
-
-//// @Summary Sql提交回滚
-//// @Description rollback sql
-//// @Param task_id path string true "Task ID"
-//// @Success 200 {object} controller.BaseRes
-//// @router /tasks/{task_id}/rollback [post]
-//func RollbackTask(c echo.Context) error {
-//	s := model.GetStorage()
-//	taskId := c.Param("task_id")
-//	task, exist, err := s.GetTaskDetailById(taskId)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	if !exist {
-//		return c.JSON(http.StatusOK, TASK_NOT_EXIST)
-//	}
-//	if task.Instance == nil {
-//		return c.JSON(http.StatusOK, INSTANCE_NOT_EXIST_ERROR)
-//	}
-//	err = server.GetSqled().AddTask(taskId, model.TASK_ACTION_ROLLBACK)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
-//}
-
-//// @Summary 驳回工单
-//// @Description reject task
-//// @Param task_id path string true "Task ID"
-//// @Success 200 {object} controller.BaseRes
-//// @router /tasks/{task_id}/reject [post]
-//func RejectTask(c echo.Context) error {
-//	s := model.GetStorage()
-//	taskId := c.Param("task_id")
-//	task, exist, err := s.GetTaskDetailById(taskId)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	if !exist {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(
-//			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-//	}
-//	if task.TaskStatus == model.TaskStatusExecuting ||
-//		task.TaskStatus == model.TaskStatusSucceeded ||
-//		task.TaskStatus == model.TaskStatusFailed {
-//		return c.JSON(http.StatusOK, errors.New(errors.TASK_ACTION_INVALID,
-//			fmt.Errorf("task has been executing")))
-//	} else if task.TaskStatus == model.TaskStatusReject {
-//		return c.JSON(http.StatusOK, errors.New(errors.TASK_ACTION_INVALID,
-//			fmt.Errorf("task has been rejected")))
-//	}
-//	err = s.UpdateTask(task, map[string]interface{}{"task_status": model.TaskStatusReject})
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
-//}
-
 type GetTaskSQLsReqV1 struct {
 	FilterExecStatus  string `json:"filter_exec_status" query:"filter_exec_status"`
 	FilterAuditStatus string `json:"filter_audit_status" query:"filter_audit_status"`
@@ -472,7 +260,7 @@ type TaskSQLResV1 struct {
 	AuditStatus string `json:"audit_status"`
 	ExecResult  string `json:"exec_result"`
 	ExecStatus  string `json:"exec_status"`
-	RollbackSQL string `json:"rollback_sql"`
+	RollbackSQL string `json:"rollback_sql,omitempty"`
 }
 
 // @Summary 获取指定task的SQLs信息
@@ -533,7 +321,7 @@ func GetTaskSQLs(c echo.Context) error {
 			AuditStatus: taskSQL.AuditStatus,
 			ExecResult:  taskSQL.ExecResult,
 			ExecStatus:  taskSQL.ExecStatus,
-			RollbackSQL: taskSQL.RollbackSQL,
+			RollbackSQL: taskSQL.RollbackSQL.String,
 		}
 		taskSQLsRes = append(taskSQLsRes, taskSQLRes)
 	}
@@ -598,7 +386,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			taskSql.GetAuditResultDesc(),
 			taskSql.GetExecStatusDesc(),
 			td.ExecResult,
-			td.RollbackSQL,
+			td.RollbackSQL.String,
 		})
 	}
 	cw.Flush()
@@ -645,74 +433,3 @@ func DownloadTaskSQLFile(c echo.Context) error {
 	}
 	return c.Blob(http.StatusOK, echo.MIMETextPlain, buff.Bytes())
 }
-
-//type GetExecErrUploadedSqlsRes struct {
-//	controller.BaseRes
-//	ExecErrCommitSqls []model.ExecuteSQL `json:"exec_error_commit_sql_list"`
-//}
-//
-//// @Summary 获取指定task 执行异常的SQLs信息
-//// @Description get information of execute error SQLs belong to the specified task
-//// @Param task_id path string true "task id"
-//// @Success 200 {object} controller.GetExecErrUploadedSqlsRes
-//// @router /tasks/{task_id}/execute_error_uploaded_sqls [get]
-//func GetExecErrUploadedSqls(c echo.Context) error {
-//	s := model.GetStorage()
-//	taskId := c.Param("task_id")
-//	execErrCommitSqls, err := s.GetExecErrorCommitSqlsByTaskId(taskId)
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	return c.JSON(http.StatusOK, &GetExecErrUploadedSqlsRes{
-//		BaseRes:           controller.NewBaseReq(nil),
-//		ExecErrCommitSqls: execErrCommitSqls,
-//	})
-//}
-//
-//type GetTaskListTipsRes struct {
-//	controller.BaseRes
-//	Data GetTaskListTipsData `json:"data"`
-//}
-//
-//type GetTaskListTipsData struct {
-//	InstancesName []string `json:"instance_name_list"`
-//}
-//
-//// @Summary 获取sql审核工单的提示信息
-//// @Description show task tips for task list
-//// @Success 200 {object} controller.GetTaskListTipsRes
-//// @router /task_tips [get]
-//func GetTaskListTips(c echo.Context) error {
-//	s := model.GetStorage()
-//	names, err := s.GetTasksInstanceName()
-//	if err != nil {
-//		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-//	}
-//	return c.JSON(http.StatusOK, &GetTaskListTipsRes{
-//		BaseRes: controller.NewBaseReq(nil),
-//		Data: GetTaskListTipsData{
-//			InstancesName: names,
-//		},
-//	})
-//}
-//
-//func FormatStringToInt(s string) (ret int, err error) {
-//	if s == "" {
-//		return 0, nil
-//	} else {
-//		ret, err = strconv.Atoi(s)
-//		if err != nil {
-//			return 0, err
-//		}
-//	}
-//	return ret, nil
-//}
-//
-//func FormatStringToBoolean(s string) (ret bool) {
-//	switch s {
-//	case "TRUE", "true", "True", "1", "ON", "on", "On":
-//		return true
-//	default:
-//		return false
-//	}
-//}

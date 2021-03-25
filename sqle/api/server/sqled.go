@@ -220,11 +220,12 @@ func (s *Sqled) audit(task *model.Task) error {
 	if len(task.ExecuteSQLs) != 0 {
 		task.PassRate = round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 	}
+	task.Status = model.TaskStatusAudited
 
 	err = st.UpdateTask(task, map[string]interface{}{
-		"sql_type":    sqlType,
+		"sql_type":  sqlType,
 		"pass_rate": task.PassRate,
-		"status":      model.TaskStatusAudited,
+		"status":    task.Status,
 	})
 	if err != nil {
 		entry.Errorf("update task to storage failed, error: %v", err)
