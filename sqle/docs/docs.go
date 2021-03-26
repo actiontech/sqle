@@ -25,38 +25,6 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/tasks/{task_id}/audit": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "audit sql",
-                "tags": [
-                    "task"
-                ],
-                "summary": "Sql提交审核",
-                "operationId": "auditTaskV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetTaskResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/instance_connection": {
             "post": {
                 "security": [
@@ -855,7 +823,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/task/audit": {
+        "/v1/tasks/audits": {
             "post": {
                 "security": [
                     {
@@ -905,53 +873,13 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetTaskResV1"
+                            "$ref": "#/definitions/v1.GetAuditTaskResV1"
                         }
                     }
                 }
             }
         },
-        "/v1/tasks": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create a task",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "创建Sql审核任务",
-                "operationId": "createTaskV1",
-                "parameters": [
-                    {
-                        "description": "add task request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateTaskReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetTaskResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/tasks/{task_id}/": {
+        "/v1/tasks/audits/{task_id}/": {
             "get": {
                 "security": [
                     {
@@ -963,7 +891,7 @@ var doc = `{
                     "task"
                 ],
                 "summary": "获取Sql审核任务信息",
-                "operationId": "getTaskV1",
+                "operationId": "getAuditTaskV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -977,25 +905,25 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetTaskResV1"
+                            "$ref": "#/definitions/v1.GetAuditTaskResV1"
                         }
                     }
                 }
             }
         },
-        "/v1/tasks/{task_id}/sql_file": {
+        "/v1/tasks/audits/{task_id}/sql_file": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "download SQL file for the task",
+                "description": "download SQL file for the audit task",
                 "tags": [
                     "task"
                 ],
-                "summary": "下载指定task的SQL文件",
-                "operationId": "downloadTaskSQLFileV1",
+                "summary": "下载指定审核任务的SQL文件",
+                "operationId": "downloadAuditTaskSQLFileV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -1015,19 +943,19 @@ var doc = `{
                 }
             }
         },
-        "/v1/tasks/{task_id}/sql_report": {
+        "/v1/tasks/audits/{task_id}/sql_report": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "download report file of all SQLs information belong to the specified task",
+                "description": "download report file of all SQLs information belong to the specified audit task",
                 "tags": [
                     "task"
                 ],
-                "summary": "下载指定task的SQLs信息报告",
-                "operationId": "downloadTaskSQLReportV1",
+                "summary": "下载指定审核任务的SQLs信息报告",
+                "operationId": "downloadAuditTaskSQLReportV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -1053,19 +981,19 @@ var doc = `{
                 }
             }
         },
-        "/v1/tasks/{task_id}/sqls": {
+        "/v1/tasks/audits/{task_id}/sqls": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get information of all SQLs belong to the specified task",
+                "description": "get information of all SQLs belong to the specified audit task",
                 "tags": [
                     "task"
                 ],
-                "summary": "获取指定task的SQLs信息",
-                "operationId": "getTaskSQLsV1",
+                "summary": "获取指定审核任务的SQLs信息",
+                "operationId": "getAuditTaskSQLsV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -1120,7 +1048,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetTaskSQLsResV1"
+                            "$ref": "#/definitions/v1.GetAuditTaskSQLsResV1"
                         }
                     }
                 }
@@ -1751,13 +1679,6 @@ var doc = `{
                         "name": "workflow_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workflow step number",
-                        "name": "workflow_step_number",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -1872,6 +1793,63 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditTaskResV1": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_schema": {
+                    "type": "string",
+                    "example": "db1"
+                },
+                "pass_rate": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "initialized",
+                        " audited",
+                        " executing",
+                        " exec_success",
+                        " exec_failed"
+                    ]
+                },
+                "task_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.AuditTaskSQLResV1": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
+                "audit_result": {
+                    "type": "string"
+                },
+                "audit_status": {
+                    "type": "string"
+                },
+                "exec_result": {
+                    "type": "string"
+                },
+                "exec_sql": {
+                    "type": "string"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "rollback_sql": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CreateInstanceReqV1": {
             "type": "object",
             "properties": {
@@ -1965,23 +1943,6 @@ var doc = `{
                 }
             }
         },
-        "v1.CreateTaskReqV1": {
-            "type": "object",
-            "properties": {
-                "instance_name": {
-                    "type": "string",
-                    "example": "inst_1"
-                },
-                "instance_schema": {
-                    "type": "string",
-                    "example": "db1"
-                },
-                "sql": {
-                    "type": "string",
-                    "example": "alter table tb1 drop columns c1"
-                }
-            }
-        },
         "v1.CreateUserReqV1": {
             "type": "object",
             "properties": {
@@ -2039,6 +2000,45 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.GetAuditTaskResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetAuditTaskSQLsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditTaskSQLResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -2270,45 +2270,6 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
-                }
-            }
-        },
-        "v1.GetTaskResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TaskResV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetTaskSQLsResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.TaskSQLResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
                 }
             }
         },
@@ -2635,63 +2596,6 @@ var doc = `{
             "type": "object",
             "properties": {
                 "rule_template_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.TaskResV1": {
-            "type": "object",
-            "properties": {
-                "instance_name": {
-                    "type": "string"
-                },
-                "instance_schema": {
-                    "type": "string",
-                    "example": "db1"
-                },
-                "pass_rate": {
-                    "type": "number"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "initialized",
-                        " audited",
-                        " executing",
-                        " exec_success",
-                        " exec_failed"
-                    ]
-                },
-                "task_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v1.TaskSQLResV1": {
-            "type": "object",
-            "properties": {
-                "audit_level": {
-                    "type": "string"
-                },
-                "audit_result": {
-                    "type": "string"
-                },
-                "audit_status": {
-                    "type": "string"
-                },
-                "exec_result": {
-                    "type": "string"
-                },
-                "exec_sql": {
-                    "type": "string"
-                },
-                "exec_status": {
-                    "type": "string"
-                },
-                "number": {
-                    "type": "integer"
-                },
-                "rollback_sql": {
                     "type": "string"
                 }
             }

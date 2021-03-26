@@ -26,18 +26,18 @@ const (
 	SqlAuditTaskExpiredTime = "720h"
 )
 
-type CreateTaskReqV1 struct {
+type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1" valid:"-"`
 	Sql            string `json:"sql" example:"alter table tb1 drop columns c1" valid:"-"`
 }
 
-type GetTaskResV1 struct {
+type GetAuditTaskResV1 struct {
 	controller.BaseRes
-	Data *TaskResV1 `json:"data"`
+	Data *AuditTaskResV1 `json:"data"`
 }
 
-type TaskResV1 struct {
+type AuditTaskResV1 struct {
 	Id             uint    `json:"task_id"`
 	InstanceName   string  `json:"instance_name"`
 	InstanceSchema string  `json:"instance_schema" example:"db1"`
@@ -45,18 +45,7 @@ type TaskResV1 struct {
 	Status         string  `json:"status" enums:"initialized, audited, executing, exec_success, exec_failed"`
 }
 
-func createTask(c echo.Context) (*model.Task, controller.BaseRes) {
-	req := new(CreateTaskReqV1)
-	if err := c.Bind(req); err != nil {
-		return nil, controller.NewBaseReq(err)
-	}
-	if err := c.Validate(req); err != nil {
-		return nil, controller.NewBaseReq(err)
-	}
-	return createTaskByRequestParam(req)
-}
-
-func createTaskByRequestParam(req *CreateTaskReqV1) (*model.Task, controller.BaseRes) {
+func createTaskByRequestParam(req *CreateAuditTaskReqV1) (*model.Task, controller.BaseRes) {
 	s := model.GetStorage()
 	instance, exist, err := s.GetInstanceByName(req.InstanceName)
 	if err != nil {
@@ -101,35 +90,14 @@ func createTaskByRequestParam(req *CreateTaskReqV1) (*model.Task, controller.Bas
 	return task, controller.NewBaseReq(nil)
 }
 
-func convertTaskToRes(task *model.Task) *TaskResV1 {
-	return &TaskResV1{
+func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
+	return &AuditTaskResV1{
 		Id:             task.ID,
 		InstanceName:   task.Instance.Name,
 		InstanceSchema: task.Schema,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
 	}
-}
-
-// @Summary 创建Sql审核任务
-// @Description create a task
-// @Accept json
-// @Produce json
-// @Tags task
-// @Id createTaskV1
-// @Security ApiKeyAuth
-// @Param instance body v1.CreateTaskReqV1 true "add task request"
-// @Success 200 {object} v1.GetTaskResV1
-// @router /v1/tasks [post]
-func CreateTask(c echo.Context) error {
-	task, res := createTask(c)
-	if res.Code != 0 {
-		return c.JSON(http.StatusOK, res)
-	}
-	return c.JSON(http.StatusOK, &GetTaskResV1{
-		BaseRes: res,
-		Data:    convertTaskToRes(task),
-	})
 }
 
 // @Summary 创建Sql审核任务并提交审核
@@ -143,11 +111,11 @@ func CreateTask(c echo.Context) error {
 // @Param instance_schema formData string false "schema of instance"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
-// @Success 200 {object} v1.GetTaskResV1
-// @router /v1/task/audit [post]
+// @Success 200 {object} v1.GetAuditTaskResV1
+// @router /v1/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
 	//check params
-	req := new(CreateTaskReqV1)
+	req := new(CreateAuditTaskReqV1)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
@@ -174,7 +142,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-	return c.JSON(http.StatusOK, &GetTaskResV1{
+	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
 		BaseRes: res,
 		Data:    convertTaskToRes(task),
 	})
@@ -183,11 +151,11 @@ func CreateAndAuditTask(c echo.Context) error {
 // @Summary 获取Sql审核任务信息
 // @Description get task
 // @Tags task
-// @Id getTaskV1
+// @Id getAuditTaskV1
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
-// @Success 200 {object} v1.GetTaskResV1
-// @router /v1/tasks/{task_id}/ [get]
+// @Success 200 {object} v1.GetAuditTaskResV1
+// @router /v1/tasks/audits/{task_id}/ [get]
 func GetTask(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
@@ -199,46 +167,13 @@ func GetTask(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(
 			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
 	}
-	return c.JSON(http.StatusOK, &GetTaskResV1{
+	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
 	})
 }
 
-// @Summary Sql提交审核
-// @Description audit sql
-// @Tags task
-// @Id auditTaskV1
-// @Security ApiKeyAuth
-// @Param task_id path string true "task id"
-// @Success 200 {object} v1.GetTaskResV1
-// @router /tasks/{task_id}/audit [post]
-func AuditTask(c echo.Context) error {
-	s := model.GetStorage()
-	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(
-			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-	}
-	if task.Instance == nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(
-			errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))))
-	}
-	task, err = server.GetSqled().AddTaskWaitResult(taskId, model.TASK_ACTION_AUDIT)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-	return c.JSON(http.StatusOK, &GetTaskResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertTaskToRes(task),
-	})
-}
-
-type GetTaskSQLsReqV1 struct {
+type GetAuditTaskSQLsReqV1 struct {
 	FilterExecStatus  string `json:"filter_exec_status" query:"filter_exec_status"`
 	FilterAuditStatus string `json:"filter_audit_status" query:"filter_audit_status"`
 	NoDuplicate       bool   `json:"no_duplicate" query:"no_duplicate"`
@@ -246,13 +181,13 @@ type GetTaskSQLsReqV1 struct {
 	PageSize          uint32 `json:"page_size" query:"page_size" valid:"required,int"`
 }
 
-type GetTaskSQLsResV1 struct {
+type GetAuditTaskSQLsResV1 struct {
 	controller.BaseRes
-	Data      []*TaskSQLResV1 `json:"data"`
-	TotalNums uint64          `json:"total_nums"`
+	Data      []*AuditTaskSQLResV1 `json:"data"`
+	TotalNums uint64               `json:"total_nums"`
 }
 
-type TaskSQLResV1 struct {
+type AuditTaskSQLResV1 struct {
 	Number      uint   `json:"number"`
 	ExecSQL     string `json:"exec_sql"`
 	AuditResult string `json:"audit_result"`
@@ -263,10 +198,10 @@ type TaskSQLResV1 struct {
 	RollbackSQL string `json:"rollback_sql,omitempty"`
 }
 
-// @Summary 获取指定task的SQLs信息
-// @Description get information of all SQLs belong to the specified task
+// @Summary 获取指定审核任务的SQLs信息
+// @Description get information of all SQLs belong to the specified audit task
 // @Tags task
-// @Id getTaskSQLsV1
+// @Id getAuditTaskSQLsV1
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed)
@@ -274,8 +209,8 @@ type TaskSQLResV1 struct {
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
 // @Param page_index query string false "page index"
 // @Param page_size query string false "page size"
-// @Success 200 {object} v1.GetTaskSQLsResV1
-// @router /v1/tasks/{task_id}/sqls [get]
+// @Success 200 {object} v1.GetAuditTaskSQLsResV1
+// @router /v1/tasks/audits/{task_id}/sqls [get]
 func GetTaskSQLs(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
@@ -288,7 +223,7 @@ func GetTaskSQLs(c echo.Context) error {
 			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
 	}
 
-	req := new(GetTaskSQLsReqV1)
+	req := new(GetAuditTaskSQLsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -311,9 +246,9 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	taskSQLsRes := make([]*TaskSQLResV1, 0, len(taskSQLs))
+	taskSQLsRes := make([]*AuditTaskSQLResV1, 0, len(taskSQLs))
 	for _, taskSQL := range taskSQLs {
-		taskSQLRes := &TaskSQLResV1{
+		taskSQLRes := &AuditTaskSQLResV1{
 			Number:      taskSQL.Number,
 			ExecSQL:     taskSQL.ExecSQL,
 			AuditResult: taskSQL.AuditResult,
@@ -325,26 +260,26 @@ func GetTaskSQLs(c echo.Context) error {
 		}
 		taskSQLsRes = append(taskSQLsRes, taskSQLRes)
 	}
-	return c.JSON(http.StatusOK, &GetTaskSQLsResV1{
+	return c.JSON(http.StatusOK, &GetAuditTaskSQLsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
 		Data:      taskSQLsRes,
 		TotalNums: count,
 	})
 }
 
-type DownloadTaskSQLsFileReqV1 struct {
+type DownloadAuditTaskSQLsFileReqV1 struct {
 	NoDuplicate string `json:"no_duplicate" query:"no_duplicate"`
 }
 
-// @Summary 下载指定task的SQLs信息报告
-// @Description download report file of all SQLs information belong to the specified task
+// @Summary 下载指定审核任务的SQLs信息报告
+// @Description download report file of all SQLs information belong to the specified audit task
 // @Tags task
-// @Id downloadTaskSQLReportV1
+// @Id downloadAuditTaskSQLReportV1
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
 // @Success 200 file 1 "sql report csv file"
-// @router /v1/tasks/{task_id}/sql_report [get]
+// @router /v1/tasks/audits/{task_id}/sql_report [get]
 func DownloadTaskSQLReportFile(c echo.Context) error {
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
@@ -356,7 +291,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(
 			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
 	}
-	req := new(DownloadTaskSQLsFileReqV1)
+	req := new(DownloadAuditTaskSQLsFileReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -396,14 +331,14 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
 }
 
-// @Summary 下载指定task的SQL文件
-// @Description download SQL file for the task
+// @Summary 下载指定审核任务的SQL文件
+// @Description download SQL file for the audit task
 // @Tags task
-// @Id downloadTaskSQLFileV1
+// @Id downloadAuditTaskSQLFileV1
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Success 200 200 file 1 "sql file"
-// @router /v1/tasks/{task_id}/sql_file [get]
+// @router /v1/tasks/audits/{task_id}/sql_file [get]
 func DownloadTaskSQLFile(c echo.Context) error {
 	taskId := c.Param("task_id")
 	s := model.GetStorage()

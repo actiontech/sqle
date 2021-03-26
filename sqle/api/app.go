@@ -152,13 +152,11 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
 
 	// task
-	v1Router.POST("/tasks", v1.CreateTask)
-	v1Router.POST("/task/audit", v1.CreateAndAuditTask)
-	v1Router.GET("/tasks/:task_id/", v1.GetTask)
-	v1Router.POST("/tasks/:task_id/audit", v1.AuditTask)
-	v1Router.GET("/tasks/:task_id/sqls", v1.GetTaskSQLs)
-	v1Router.GET("/tasks/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
-	v1Router.GET("/tasks/:task_id/sql_file", v1.DownloadTaskSQLFile)
+	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
+	v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
+	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
+	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
+	v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
 
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)
