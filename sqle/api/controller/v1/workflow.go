@@ -628,9 +628,11 @@ type WorkflowDetailResV1 struct {
 // @Id getWorkflowListV1
 // @Security ApiKeyAuth
 // @Param filter_create_user_name query string false "filter create user name"
-// @Param filter_next_step_type query string false "filter next step type"
-// @Param filter_state query string false "filter workflow state"
-// @Param filter_next_step_assignee_user_name query string false "filter next step assignee user name"
+// @Param filter_current_step_type query string false "filter current step type" Enums(sql_review, sql_execute)
+// @Param filter_status query string false "filter workflow status" Enums(on_process, finished, rejected, canceled)
+// @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
+// @Param filter_task_status query string false "filter task status" Enums(initialized, audited, executing, exec_success, exec_failed)
+// @Param filter_task_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1

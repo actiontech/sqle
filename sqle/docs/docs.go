@@ -1549,21 +1549,50 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "sql_review",
+                            "sql_execute"
+                        ],
                         "type": "string",
-                        "description": "filter next step type",
-                        "name": "filter_next_step_type",
+                        "description": "filter current step type",
+                        "name": "filter_current_step_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "on_process",
+                            "finished",
+                            "rejected",
+                            "canceled"
+                        ],
+                        "type": "string",
+                        "description": "filter workflow status",
+                        "name": "filter_status",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "filter workflow state",
-                        "name": "filter_state",
+                        "description": "filter current step assignee user name",
+                        "name": "filter_current_step_assignee_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "initialized",
+                            "audited",
+                            "executing",
+                            "exec_success",
+                            "exec_failed"
+                        ],
+                        "type": "string",
+                        "description": "filter task status",
+                        "name": "filter_task_status",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "filter next step assignee user name",
-                        "name": "filter_next_step_assignee_user_name",
+                        "description": "filter instance name",
+                        "name": "filter_task_instance_name",
                         "in": "query"
                     },
                     {

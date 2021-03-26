@@ -68,16 +68,16 @@ w.deleted_at IS NULL
 AND create_user.login_name = :filter_create_user_name
 {{- end }}
 
-{{- if .filter_next_step_type }}
-AND wst.type = :filter_next_step_type
+{{- if .filter_current_step_type }}
+AND wst.type = :filter_current_step_type
 {{- end }}
 
 {{- if .filter_status }}
 AND wr.status = :filter_status
 {{- end }}
 
-{{- if .filter_next_step_assignee_user_name }}
-AND ass_user.login_name = :filter_next_step_assignee_user_name
+{{- if .filter_current_step_assignee_user_name }}
+AND ass_user.login_name = :filter_current_step_assignee_user_name
 {{- end }}
 
 {{- if .filter_task_status }}
