@@ -1805,17 +1805,39 @@ paths:
         in: query
         name: filter_create_user_name
         type: string
-      - description: filter next step type
+      - description: filter current step type
+        enum:
+        - sql_review
+        - sql_execute
         in: query
-        name: filter_next_step_type
+        name: filter_current_step_type
         type: string
-      - description: filter workflow state
+      - description: filter workflow status
+        enum:
+        - on_process
+        - finished
+        - rejected
+        - canceled
         in: query
-        name: filter_state
+        name: filter_status
         type: string
-      - description: filter next step assignee user name
+      - description: filter current step assignee user name
         in: query
-        name: filter_next_step_assignee_user_name
+        name: filter_current_step_assignee_user_name
+        type: string
+      - description: filter task status
+        enum:
+        - initialized
+        - audited
+        - executing
+        - exec_success
+        - exec_failed
+        in: query
+        name: filter_task_status
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_task_instance_name
         type: string
       - description: page index
         in: query
