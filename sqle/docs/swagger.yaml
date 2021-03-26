@@ -9,6 +9,45 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AuditTaskResV1:
+    properties:
+      instance_name:
+        type: string
+      instance_schema:
+        example: db1
+        type: string
+      pass_rate:
+        type: number
+      status:
+        enum:
+        - initialized
+        - ' audited'
+        - ' executing'
+        - ' exec_success'
+        - ' exec_failed'
+        type: string
+      task_id:
+        type: integer
+    type: object
+  v1.AuditTaskSQLResV1:
+    properties:
+      audit_level:
+        type: string
+      audit_result:
+        type: string
+      audit_status:
+        type: string
+      exec_result:
+        type: string
+      exec_sql:
+        type: string
+      exec_status:
+        type: string
+      number:
+        type: integer
+      rollback_sql:
+        type: string
+    type: object
   v1.CreateInstanceReqV1:
     properties:
       db_host:
@@ -72,18 +111,6 @@ definitions:
       rule_template_name:
         type: string
     type: object
-  v1.CreateTaskReqV1:
-    properties:
-      instance_name:
-        example: inst_1
-        type: string
-      instance_schema:
-        example: db1
-        type: string
-      sql:
-        example: alter table tb1 drop columns c1
-        type: string
-    type: object
   v1.CreateUserReqV1:
     properties:
       email:
@@ -123,6 +150,33 @@ definitions:
         type: array
       workflow_template_name:
         type: string
+    type: object
+  v1.GetAuditTaskResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditTaskResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetAuditTaskSQLsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditTaskSQLResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetInstanceConnectableReqV1:
     properties:
@@ -283,33 +337,6 @@ definitions:
       message:
         example: ok
         type: string
-    type: object
-  v1.GetTaskResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskSQLsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.TaskSQLResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
     type: object
   v1.GetUserDetailResV1:
     properties:
@@ -530,45 +557,6 @@ definitions:
   v1.RuleTemplateTipResV1:
     properties:
       rule_template_name:
-        type: string
-    type: object
-  v1.TaskResV1:
-    properties:
-      instance_name:
-        type: string
-      instance_schema:
-        example: db1
-        type: string
-      pass_rate:
-        type: number
-      status:
-        enum:
-        - initialized
-        - ' audited'
-        - ' executing'
-        - ' exec_success'
-        - ' exec_failed'
-        type: string
-      task_id:
-        type: integer
-    type: object
-  v1.TaskSQLResV1:
-    properties:
-      audit_level:
-        type: string
-      audit_result:
-        type: string
-      audit_status:
-        type: string
-      exec_result:
-        type: string
-      exec_sql:
-        type: string
-      exec_status:
-        type: string
-      number:
-        type: integer
-      rollback_sql:
         type: string
     type: object
   v1.UpdateInstanceReqV1:
@@ -854,26 +842,6 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
-  /tasks/{task_id}/audit:
-    post:
-      description: audit sql
-      operationId: auditTaskV1
-      parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTaskResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: Sql提交审核
-      tags:
-      - task
   /v1/instance_connection:
     post:
       consumes:
@@ -1379,7 +1347,7 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
-  /v1/task/audit:
+  /v1/tasks/audits:
     post:
       consumes:
       - multipart/form-data
@@ -1410,41 +1378,16 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskResV1'
+            $ref: '#/definitions/v1.GetAuditTaskResV1'
       security:
       - ApiKeyAuth: []
       summary: 创建Sql审核任务并提交审核
       tags:
       - task
-  /v1/tasks:
-    post:
-      consumes:
-      - application/json
-      description: create a task
-      operationId: createTaskV1
-      parameters:
-      - description: add task request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateTaskReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTaskResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建Sql审核任务
-      tags:
-      - task
-  /v1/tasks/{task_id}/:
+  /v1/tasks/audits/{task_id}/:
     get:
       description: get task
-      operationId: getTaskV1
+      operationId: getAuditTaskV1
       parameters:
       - description: task id
         in: path
@@ -1455,16 +1398,16 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskResV1'
+            $ref: '#/definitions/v1.GetAuditTaskResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取Sql审核任务信息
       tags:
       - task
-  /v1/tasks/{task_id}/sql_file:
+  /v1/tasks/audits/{task_id}/sql_file:
     get:
-      description: download SQL file for the task
-      operationId: downloadTaskSQLFileV1
+      description: download SQL file for the audit task
+      operationId: downloadAuditTaskSQLFileV1
       parameters:
       - description: task id
         in: path
@@ -1478,14 +1421,14 @@ paths:
             type: "200"
       security:
       - ApiKeyAuth: []
-      summary: 下载指定task的SQL文件
+      summary: 下载指定审核任务的SQL文件
       tags:
       - task
-  /v1/tasks/{task_id}/sql_report:
+  /v1/tasks/audits/{task_id}/sql_report:
     get:
       description: download report file of all SQLs information belong to the specified
-        task
-      operationId: downloadTaskSQLReportV1
+        audit task
+      operationId: downloadAuditTaskSQLReportV1
       parameters:
       - description: task id
         in: path
@@ -1503,13 +1446,13 @@ paths:
             type: file
       security:
       - ApiKeyAuth: []
-      summary: 下载指定task的SQLs信息报告
+      summary: 下载指定审核任务的SQLs信息报告
       tags:
       - task
-  /v1/tasks/{task_id}/sqls:
+  /v1/tasks/audits/{task_id}/sqls:
     get:
-      description: get information of all SQLs belong to the specified task
-      operationId: getTaskSQLsV1
+      description: get information of all SQLs belong to the specified audit task
+      operationId: getAuditTaskSQLsV1
       parameters:
       - description: task id
         in: path
@@ -1549,10 +1492,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskSQLsResV1'
+            $ref: '#/definitions/v1.GetAuditTaskSQLsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定task的SQLs信息
+      summary: 获取指定审核任务的SQLs信息
       tags:
       - task
   /v1/test:
@@ -1944,11 +1887,6 @@ paths:
       - description: workflow id
         in: path
         name: workflow_id
-        required: true
-        type: string
-      - description: workflow step number
-        in: path
-        name: workflow_step_number
         required: true
         type: string
       responses:
