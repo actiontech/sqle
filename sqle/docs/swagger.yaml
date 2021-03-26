@@ -459,6 +459,8 @@ definitions:
     type: object
   v1.InstanceConnectableResV1:
     properties:
+      connect_error_message:
+        type: string
       is_instance_connectable:
         type: boolean
     type: object

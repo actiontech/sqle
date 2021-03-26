@@ -386,7 +386,27 @@ type GetInstanceConnectableResV1 struct {
 }
 
 type InstanceConnectableResV1 struct {
-	IsInstanceConnectable bool `json:"is_instance_connectable"`
+	IsInstanceConnectable bool   `json:"is_instance_connectable"`
+	ConnectErrorMessage   string `json:"connect_error_message,omitempty"`
+}
+
+func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
+	if err := executor.Ping(log.NewEntry(), instance); err != nil {
+		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: InstanceConnectableResV1{
+				IsInstanceConnectable: false,
+				ConnectErrorMessage:   err.Error(),
+			},
+		})
+	} else {
+		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: InstanceConnectableResV1{
+				IsInstanceConnectable: true,
+			},
+		})
+	}
 }
 
 // @Summary 实例连通性测试（实例提交后）
@@ -407,16 +427,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
-	isInstanceConnectable := true
-	if err := executor.Ping(log.NewEntry(), instance); err != nil {
-		isInstanceConnectable = false
-	}
-	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
-		BaseRes: controller.NewBaseReq(err),
-		Data: InstanceConnectableResV1{
-			IsInstanceConnectable: isInstanceConnectable,
-		},
-	})
+	return checkInstanceIsConnectable(c, instance)
 }
 
 type GetInstanceConnectableReqV1 struct {
@@ -447,16 +458,7 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		Port:     req.Port,
 		Password: req.Password,
 	}
-	isInstanceConnectable := true
-	if err := executor.Ping(log.NewEntry(), instance); err != nil {
-		isInstanceConnectable = false
-	}
-	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: InstanceConnectableResV1{
-			IsInstanceConnectable: isInstanceConnectable,
-		},
-	})
+	return checkInstanceIsConnectable(c, instance)
 }
 
 type GetInstanceSchemaResV1 struct {
