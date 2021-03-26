@@ -2477,6 +2477,9 @@ var doc = `{
         "v1.InstanceConnectableResV1": {
             "type": "object",
             "properties": {
+                "connect_error_message": {
+                    "type": "string"
+                },
                 "is_instance_connectable": {
                     "type": "boolean"
                 }
