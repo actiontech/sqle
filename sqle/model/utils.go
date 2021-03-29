@@ -156,6 +156,40 @@ func (s *Storage) CreateAdminUser() error {
 	return nil
 }
 
+var DefaultWorkflowTemplate = "default"
+
+func (s *Storage) CreateDefaultWorkflowTemplate() error {
+	user, exist, err := s.GetUserByName(defaultAdminUser)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return fmt.Errorf("admin user not exist")
+	}
+	_, exist, err = s.GetWorkflowTemplateByName(DefaultWorkflowTemplate)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		wt := &WorkflowTemplate{
+			Name: DefaultWorkflowTemplate,
+			Desc: "默认模板",
+			Steps: []*WorkflowStepTemplate{
+				&WorkflowStepTemplate{
+					Number: 1,
+					Typ:    WorkflowStepTypeSQLExecute,
+					Users:  []*User{user},
+				},
+			},
+		}
+		err = s.SaveWorkflowTemplate(wt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Storage) Exist(model interface{}) (bool, error) {
 	var count int
 	err := s.db.Model(model).Where(model).Count(&count).Error

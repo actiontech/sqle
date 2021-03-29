@@ -57,8 +57,16 @@ func CreateInstance(c echo.Context) error {
 		Password: req.Password,
 		Desc:     req.Desc,
 	}
-
-	if req.WorkflowTemplateName != "" {
+	// set default workflow template
+	if req.WorkflowTemplateName == "" {
+		workflowTemplate, exist, err := s.GetWorkflowTemplateByName(model.DefaultWorkflowTemplate)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			instance.WorkflowTemplateId = workflowTemplate.ID
+		}
+	} else {
 		workflowTemplate, exist, err := s.GetWorkflowTemplateByName(req.WorkflowTemplateName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)

@@ -21,15 +21,15 @@ type GetWorkflowTemplateResV1 struct {
 
 type WorkflowTemplateDetailResV1 struct {
 	Name      string                       `json:"workflow_template_name"`
-	Desc      string                       `json:"desc"`
+	Desc      string                       `json:"desc,omitempty"`
 	Steps     []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
-	Instances []string                     `json:"instance_name_list"`
+	Instances []string                     `json:"instance_name_list,omitempty"`
 }
 
 type WorkFlowStepTemplateResV1 struct {
 	Number int      `json:"number"`
 	Typ    string   `json:"type"`
-	Desc   string   `json:"desc"`
+	Desc   string   `json:"desc,omitempty"`
 	Users  []string `json:"assignee_user_name_list"`
 }
 
