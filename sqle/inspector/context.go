@@ -8,6 +8,9 @@ type TableInfo struct {
 	Size     float64
 	sizeLoad bool
 
+	// isLoad indicate whether TableInfo load from database or not.
+	isLoad bool
+
 	// OriginalTable save parser object from db by query "show create table ...";
 	// using in inspect and generate rollback sql
 	OriginalTable *ast.CreateTableStmt
@@ -58,6 +61,7 @@ func NewContext(parent *Context) *Context {
 			newSchema.Tables[tableName] = &TableInfo{
 				Size:          table.Size,
 				sizeLoad:      table.sizeLoad,
+				isLoad:        table.isLoad,
 				OriginalTable: table.OriginalTable,
 				MergedTable:   table.MergedTable,
 				AlterTables:   table.AlterTables,
@@ -129,6 +133,7 @@ func (c *Context) LoadTables(schemaName string, tablesName []string) {
 	schema.Tables = map[string]*TableInfo{}
 	for _, name := range tablesName {
 		schema.Tables[name] = &TableInfo{
+			isLoad:      true,
 			AlterTables: []*ast.AlterTableStmt{},
 		}
 	}
@@ -196,6 +201,7 @@ func (i *Inspect) updateContext(node ast.Node) {
 			&TableInfo{
 				Size:          0, // table is empty after create
 				sizeLoad:      true,
+				isLoad:        false,
 				OriginalTable: s,
 				AlterTables:   []*ast.AlterTableStmt{},
 			})

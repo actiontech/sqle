@@ -414,11 +414,19 @@ func (i *Inspect) getSchemaCharacter(stmt *ast.TableName, schemaName string) (st
 	}
 	return character, nil
 }
+
 func (i *Inspect) getMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (string, error) {
-	_, tableExist := i.Ctx.GetTable(i.getSchemaName(stmt), stmt.Name.String())
-	if !tableExist {
+	ti, exist := i.getTableInfo(stmt)
+	if !exist || !ti.isLoad {
 		return "", nil
 	}
+
+	for _, columnName := range columnNames {
+		if !tableExistCol(ti.OriginalTable, columnName) {
+			return "", nil
+		}
+	}
+
 	conn, err := i.getDbConn()
 	if err != nil {
 		return "", err
