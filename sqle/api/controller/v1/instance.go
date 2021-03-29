@@ -543,3 +543,31 @@ func GetInstanceTips(c echo.Context) error {
 		Data:    instanceTipsResV1,
 	})
 }
+
+// @Summary 获取实例应用的规则列表
+// @Description get instance all rule
+// @Id getInstanceRuleListV1
+// @Tags instance
+// @Security ApiKeyAuth
+// @Param instance_name path string true "instance name"
+// @Success 200 {object} v1.GetRulesResV1
+// @router /v1/instances/{instance_name}/rules [get]
+func GetInstanceRules(c echo.Context) error {
+	s := model.GetStorage()
+	instanceName := c.Param("instance_name")
+	instance, exist, err := s.GetInstanceByName(instanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+	}
+	rules, err := s.GetRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetRulesResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertRulesToRes(rules),
+	})
+}

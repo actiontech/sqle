@@ -332,6 +332,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/instances/{instance_name}/rules": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance all rule",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例应用的规则列表",
+                "operationId": "getInstanceRuleListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRulesResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instances/{instance_name}/schemas": {
             "get": {
                 "security": [

@@ -126,7 +126,7 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 		templateIds[n] = fmt.Sprintf("%v", template.ID)
 	}
 
-	err = s.db.Table("rules").Select("rules.name, rules.value, rules.level").
+	err = s.db.Table("rules").
 		Joins("inner join rule_template_rule on rule_template_rule.rule_name = rules.name").
 		Where("rule_template_rule.rule_template_id in (?)", templateIds).Scan(&rules).Error
 	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
