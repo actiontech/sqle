@@ -1039,6 +1039,26 @@ paths:
       summary: 实例连通性测试（实例提交后）
       tags:
       - instance
+  /v1/instances/{instance_name}/rules:
+    get:
+      description: get instance all rule
+      operationId: getInstanceRuleListV1
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRulesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例应用的规则列表
+      tags:
+      - instance
   /v1/instances/{instance_name}/schemas:
     get:
       description: instance schema list

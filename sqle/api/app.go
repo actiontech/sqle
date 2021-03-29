@@ -134,6 +134,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
 	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)
 	v1Router.GET("/instance_tips", v1.GetInstanceTips)
+	v1Router.GET("/instances/:instance_name/rules", v1.GetInstanceRules)
 
 	// rule template
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)

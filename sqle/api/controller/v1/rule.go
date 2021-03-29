@@ -301,6 +301,19 @@ type RuleResV1 struct {
 	Level string `json:"level" example:"error"` // notice, warn, error
 }
 
+func convertRulesToRes(rules []model.Rule) []RuleResV1 {
+	rulesRes := make([]RuleResV1, 0, len(rules))
+	for _, rule := range rules {
+		rulesRes = append(rulesRes, RuleResV1{
+			Name:  rule.Name,
+			Desc:  rule.Desc,
+			Value: rule.Value,
+			Level: rule.Level,
+		})
+	}
+	return rulesRes
+}
+
 // @Summary 规则列表
 // @Description get all rule template
 // @Id getRuleListV1
@@ -312,20 +325,11 @@ func GetRules(c echo.Context) error {
 	s := model.GetStorage()
 	rules, err := s.GetAllRule()
 	if err != nil {
-		return c.JSON(200, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	rulesRes := make([]RuleResV1, 0, len(rules))
-	for _, rule := range rules {
-		rulesRes = append(rulesRes, RuleResV1{
-			Name:  rule.Name,
-			Desc:  rule.Desc,
-			Value: rule.Value,
-			Level: rule.Level,
-		})
-	}
-	return c.JSON(200, &GetRulesResV1{
+	return c.JSON(http.StatusOK, &GetRulesResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    rulesRes,
+		Data:    convertRulesToRes(rules),
 	})
 }
 
