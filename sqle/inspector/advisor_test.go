@@ -139,16 +139,19 @@ func DefaultMysqlInspect() *Inspect {
 					Tables: map[string]*TableInfo{
 						"exist_tb_1": &TableInfo{
 							sizeLoad:      true,
+							isLoad:        true,
 							Size:          1,
 							OriginalTable: getTestCreateTableStmt1(),
 						},
 						"exist_tb_2": &TableInfo{
 							sizeLoad:      true,
+							isLoad:        true,
 							Size:          1,
 							OriginalTable: getTestCreateTableStmt2(),
 						},
 						"exist_tb_3": &TableInfo{
 							sizeLoad:      true,
+							isLoad:        true,
 							Size:          1,
 							OriginalTable: getTestCreateTableStmt3(),
 						},
@@ -2422,6 +2425,37 @@ CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
 			sql,
 			newTestResult())
 	}
+}
+
+func TestCheckIndexOption_ShouldNot_QueryDB(t *testing.T) {
+	runSingleRuleInspectCase(
+		RuleHandlerMap[DDL_CHECK_INDEX_OPTION].Rule,
+		t,
+		`(1)index on new db new column`,
+		DefaultMysqlInspect(),
+		`CREATE TABLE t1(id int, name varchar(100), INDEX idx_name(name))`,
+		newTestResult())
+
+	runSingleRuleInspectCase(
+		RuleHandlerMap[DDL_CHECK_INDEX_OPTION].Rule,
+		t,
+		`(2)index on new db new column`,
+		DefaultMysqlInspect(),
+		`CREATE TABLE t1(id int, name varchar(100));
+ALTER TABLE t1 ADD INDEX idx_name(name);
+`,
+		newTestResult(), newTestResult())
+
+	runSingleRuleInspectCase(
+		RuleHandlerMap[DDL_CHECK_INDEX_OPTION].Rule,
+		t,
+		`(3)index on old db new column`,
+		DefaultMysqlInspect(),
+		`
+ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(100);
+ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
+`,
+		newTestResult(), newTestResult())
 }
 
 func DefaultMycatInspect() *Inspect {

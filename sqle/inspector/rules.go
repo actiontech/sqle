@@ -2158,7 +2158,7 @@ func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
 	if err != nil {
 		return err
 	}
-	if strings.Compare(rule.Value, maxIndexOption) > 0 {
+	if maxIndexOption != "" && strings.Compare(rule.Value, maxIndexOption) > 0 {
 		i.addResult(rule.Name, rule.Value)
 	}
 	return nil
