@@ -1871,10 +1871,10 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "initialized",
-                        " audited",
-                        " executing",
-                        " exec_success",
-                        " exec_failed"
+                        "audited",
+                        "executing",
+                        "exec_success",
+                        "exec_failed"
                     ]
                 },
                 "task_id": {
@@ -2621,8 +2621,13 @@ var doc = `{
                     "type": "string"
                 },
                 "level": {
-                    "description": "notice, warn, error",
                     "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ],
                     "example": "error"
                 },
                 "rule_name": {
@@ -2870,7 +2875,7 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "sql_review",
-                        " sql_execute"
+                        "sql_execute"
                     ]
                 }
             }
@@ -2914,7 +2919,7 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "sql_review",
-                        " sql_execute"
+                        "sql_execute"
                     ]
                 },
                 "desc": {
@@ -2924,9 +2929,9 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "on_process",
-                        " finished",
-                        " rejected",
-                        " canceled"
+                        "finished",
+                        "rejected",
+                        "canceled"
                     ]
                 },
                 "subject": {
@@ -2945,10 +2950,10 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "initialized",
-                        " audited",
-                        " executing",
-                        " exec_success",
-                        " exec_failed"
+                        "audited",
+                        "executing",
+                        "exec_success",
+                        "exec_failed"
                     ]
                 },
                 "workflow_id": {
@@ -2975,9 +2980,9 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "on_process",
-                        " finished",
-                        " rejected",
-                        " canceled"
+                        "finished",
+                        "rejected",
+                        "canceled"
                     ]
                 },
                 "subject": {
@@ -3025,8 +3030,8 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "initialized",
-                        " approved",
-                        " rejected"
+                        "approved",
+                        "rejected"
                     ]
                 },
                 "type": {

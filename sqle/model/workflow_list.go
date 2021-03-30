@@ -15,7 +15,7 @@ type WorkflowListDetail struct {
 	TaskStatus              string         `json:"task_status"`
 	CreateUser              string         `json:"create_user_name"`
 	CreateTime              *time.Time     `json:"create_time"`
-	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review, sql_execute"`
+	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
 	Status                  string         `json:"status"`
 }

@@ -99,7 +99,7 @@ type CreateWorkflowTemplateReqV1 struct {
 }
 
 type WorkFlowStepTemplateReqV1 struct {
-	Type  string   `json:"type" form:"type" valid:"in(sql_review|sql_execute)" enums:"sql_review, sql_execute"`
+	Type  string   `json:"type" form:"type" valid:"in(sql_review|sql_execute)" enums:"sql_review,sql_execute"`
 	Desc  string   `json:"desc" form:"desc"`
 	Users []string `json:"assignee_user_name_list" form:"assignee_user_name_list" valid:"required"`
 }
@@ -512,7 +512,7 @@ type WorkflowResV1 struct {
 	CreateUser        string               `json:"create_user_name"`
 	CreateTime        *time.Time           `json:"create_time"`
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
-	Status            string               `json:"status" enums:"on_process, finished, rejected, canceled"`
+	Status            string               `json:"status" enums:"on_process,finished,rejected,canceled"`
 	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
@@ -523,7 +523,7 @@ type WorkflowStepResV1 struct {
 	Users         []string   `json:"assignee_user_name_list,omitempty"`
 	OperationUser string     `json:"operation_user_name,omitempty"`
 	OperationTime *time.Time `json:"operation_time,omitempty"`
-	State         string     `json:"state" enums:"initialized, approved, rejected"`
+	State         string     `json:"state" enums:"initialized,approved,rejected"`
 	Reason        string     `json:"reason"`
 }
 
@@ -592,10 +592,10 @@ func GetWorkflow(c echo.Context) error {
 
 type GetWorkflowsReqV1 struct {
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
-	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" enums:"sql_review, sql_execute"`
-	FilterStatus                      string `json:"filter_status" query:"filter_status" enums:"on_process, finished, rejected, canceled"`
+	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" enums:"sql_review,sql_execute"`
+	FilterStatus                      string `json:"filter_status" query:"filter_status" enums:"on_process,finished,rejected,canceled"`
 	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
-	FilterTaskStatus                  string `json:"filter_task_status" query:"filter_task_status" enums:"initialized, audited, executing, exec_success, exec_failed"`
+	FilterTaskStatus                  string `json:"filter_task_status" query:"filter_task_status" enums:"initialized,audited,executing,exec_success,exec_failed"`
 	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
 	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required,int"`
 	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required,int"`
@@ -611,15 +611,15 @@ type WorkflowDetailResV1 struct {
 	Id                      uint       `json:"workflow_id"`
 	Subject                 string     `json:"subject"`
 	Desc                    string     `json:"desc"`
-	TaskStatus              string     `json:"task_status" enums:"initialized, audited, executing, exec_success, exec_failed"`
+	TaskStatus              string     `json:"task_status" enums:"initialized,audited,executing,exec_success,exec_failed"`
 	TaskPassRate            float64    `json:"task_pass_rate"`
 	TaskInstance            string     `json:"task_instance_name"`
 	TaskInstanceSchema      string     `json:"task_instance_schema"`
 	CreateUser              string     `json:"create_user_name"`
 	CreateTime              *time.Time `json:"create_time"`
-	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review, sql_execute"`
+	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string     `json:"status" enums:"on_process, finished, rejected, canceled"`
+	Status                  string     `json:"status" enums:"on_process,finished,rejected,canceled"`
 }
 
 // @Summary 获取审批流程列表

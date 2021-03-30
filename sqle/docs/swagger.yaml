@@ -21,10 +21,10 @@ definitions:
       status:
         enum:
         - initialized
-        - ' audited'
-        - ' executing'
-        - ' exec_success'
-        - ' exec_failed'
+        - audited
+        - executing
+        - exec_success
+        - exec_failed
         type: string
       task_id:
         type: integer
@@ -533,7 +533,11 @@ definitions:
       desc:
         type: string
       level:
-        description: notice, warn, error
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         example: error
         type: string
       rule_name:
@@ -698,7 +702,7 @@ definitions:
       type:
         enum:
         - sql_review
-        - ' sql_execute'
+        - sql_execute
         type: string
     type: object
   v1.WorkFlowStepTemplateResV1:
@@ -727,16 +731,16 @@ definitions:
       current_step_type:
         enum:
         - sql_review
-        - ' sql_execute'
+        - sql_execute
         type: string
       desc:
         type: string
       status:
         enum:
         - on_process
-        - ' finished'
-        - ' rejected'
-        - ' canceled'
+        - finished
+        - rejected
+        - canceled
         type: string
       subject:
         type: string
@@ -749,10 +753,10 @@ definitions:
       task_status:
         enum:
         - initialized
-        - ' audited'
-        - ' executing'
-        - ' exec_success'
-        - ' exec_failed'
+        - audited
+        - executing
+        - exec_success
+        - exec_failed
         type: string
       workflow_id:
         type: integer
@@ -770,9 +774,9 @@ definitions:
       status:
         enum:
         - on_process
-        - ' finished'
-        - ' rejected'
-        - ' canceled'
+        - finished
+        - rejected
+        - canceled
         type: string
       subject:
         type: string
@@ -804,8 +808,8 @@ definitions:
       state:
         enum:
         - initialized
-        - ' approved'
-        - ' rejected'
+        - approved
+        - rejected
         type: string
       type:
         type: string
