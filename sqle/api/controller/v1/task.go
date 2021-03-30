@@ -337,7 +337,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 // @Id downloadAuditTaskSQLFileV1
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
-// @Success 200 200 file 1 "sql file"
+// @Success 200 file 1 "sql file"
 // @router /v1/tasks/audits/{task_id}/sql_file [get]
 func DownloadTaskSQLFile(c echo.Context) error {
 	taskId := c.Param("task_id")
