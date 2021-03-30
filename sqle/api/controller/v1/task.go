@@ -42,7 +42,7 @@ type AuditTaskResV1 struct {
 	InstanceName   string  `json:"instance_name"`
 	InstanceSchema string  `json:"instance_schema" example:"db1"`
 	PassRate       float64 `json:"pass_rate"`
-	Status         string  `json:"status" enums:"initialized, audited, executing, exec_success, exec_failed"`
+	Status         string  `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
 }
 
 func createTaskByRequestParam(req *CreateAuditTaskReqV1) (*model.Task, controller.BaseRes) {
