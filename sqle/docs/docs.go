@@ -969,7 +969,7 @@ var doc = `{
                     "200": {
                         "description": "sql file",
                         "schema": {
-                            "type": "200"
+                            "type": "file"
                         }
                     }
                 }
