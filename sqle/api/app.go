@@ -125,6 +125,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	// user
 	v1Router.GET("/user", v1.GetCurrentUser)
+	v1Router.PATCH("/user", v1.UpdateCurrentUser)
 	v1Router.GET("/user_tips", v1.GetUserTips)
 
 	// instance

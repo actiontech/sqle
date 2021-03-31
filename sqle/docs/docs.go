@@ -1098,6 +1098,44 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "更新个人信息",
+                "operationId": "updateCurrentUserV1",
+                "parameters": [
+                    {
+                        "description": "update user",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateCurrentUserReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
             }
         },
         "/v1/user_tips": {
@@ -2628,6 +2666,14 @@ var doc = `{
             "type": "object",
             "properties": {
                 "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UpdateCurrentUserReqV1": {
+            "type": "object",
+            "properties": {
+                "email": {
                     "type": "string"
                 }
             }

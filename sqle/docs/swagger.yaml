@@ -561,6 +561,11 @@ definitions:
       rule_template_name:
         type: string
     type: object
+  v1.UpdateCurrentUserReqV1:
+    properties:
+      email:
+        type: string
+    type: object
   v1.UpdateInstanceReqV1:
     properties:
       db_host:
@@ -1526,6 +1531,30 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取当前用户信息
+      tags:
+      - user
+    patch:
+      consumes:
+      - application/json
+      description: update current user
+      operationId: updateCurrentUserV1
+      parameters:
+      - description: update user
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateCurrentUserReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新个人信息
       tags:
       - user
   /v1/user_tips:

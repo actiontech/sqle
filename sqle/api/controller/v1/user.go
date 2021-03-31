@@ -219,6 +219,40 @@ func GetCurrentUser(c echo.Context) error {
 	})
 }
 
+type UpdateCurrentUserReqV1 struct {
+	Email *string `json:"email"`
+}
+
+// @Summary 更新个人信息
+// @Description update current user
+// @Id updateCurrentUserV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param instance body v1.UpdateCurrentUserReqV1 true "update user"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/user [patch]
+func UpdateCurrentUser(c echo.Context) error {
+	req := new(UpdateUserReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	if req.Email != nil {
+		user.Email = *req.Email
+		err = s.Save(user)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
 type GetUsersReqV1 struct {
 	FilterUserName string `json:"filter_user_name" query:"filter_user_name"`
 	FilterRoleName string `json:"filter_role_name" query:"filter_role_name"`
