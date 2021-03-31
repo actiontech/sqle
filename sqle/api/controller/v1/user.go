@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
-	"strings"
 )
 
 type CreateUserReqV1 struct {
@@ -311,9 +310,7 @@ func GetUsers(c echo.Context) error {
 		userReq := UserResV1{
 			Name:  user.Name,
 			Email: user.Email,
-		}
-		if user.RoleNames != "" {
-			userReq.Roles = strings.Split(user.RoleNames, ",")
+			Roles: user.RoleNames,
 		}
 		usersReq = append(usersReq, userReq)
 	}
@@ -583,14 +580,10 @@ func GetRoles(c echo.Context) error {
 	rolesRes := make([]RoleResV1, 0, len(roles))
 	for _, role := range roles {
 		roleRes := RoleResV1{
-			Name: role.Name,
-			Desc: role.Desc,
-		}
-		if role.UserNames != "" {
-			roleRes.Users = strings.Split(role.UserNames, ",")
-		}
-		if role.InstanceNames != "" {
-			roleRes.Instances = strings.Split(role.InstanceNames, ",")
+			Name:      role.Name,
+			Desc:      role.Desc,
+			Users:     role.UserNames,
+			Instances: role.InstanceNames,
 		}
 		rolesRes = append(rolesRes, roleRes)
 	}

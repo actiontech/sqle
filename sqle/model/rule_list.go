@@ -1,10 +1,10 @@
 package model
 
 type RuleTemplateDetail struct {
-	Name          string `json:"name"`
-	Desc          string `json:"desc"`
-	RuleNames     string `json:"rule_names"`     // is a role name list, separated by commas.
-	InstanceNames string `json:"instance_names"` // is a rule template name list, separated by commas.
+	Name          string  `json:"name"`
+	Desc          string  `json:"desc"`
+	RuleNames     RowList `json:"rule_names"`
+	InstanceNames RowList `json:"instance_names"`
 }
 
 var ruleTemplatesQueryTpl = `SELECT rule_templates.name, rule_templates.desc,

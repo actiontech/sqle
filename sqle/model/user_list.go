@@ -4,7 +4,7 @@ type UserDetail struct {
 	Id        int
 	Name      string `json:"login_name"`
 	Email     string
-	RoleNames string `json:"role_names"` // is a role name list, separated by commas.
+	RoleNames RowList `json:"role_names"`
 }
 
 var usersQueryTpl = `SELECT users.id, users.login_name, users.email, GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
