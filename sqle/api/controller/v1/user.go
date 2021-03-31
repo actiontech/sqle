@@ -127,6 +127,10 @@ func UpdateUser(c echo.Context) error {
 // @router /v1/users/{user_name}/ [delete]
 func DeleteUser(c echo.Context) error {
 	userName := c.Param("user_name")
+	if userName == defaultAdminUser {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("admin user cannot be deleted")))
+	}
 	s := model.GetStorage()
 	user, exist, err := s.GetUserByName(userName)
 	if err != nil {
