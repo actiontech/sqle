@@ -57,12 +57,26 @@ LEFT JOIN tasks ON w.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN users AS create_user ON w.create_user_id = create_user.id
 LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
-LEFT JOIN workflow_steps AS ws ON wr.current_workflow_step_id = ws.id
-LEFT JOIN workflow_step_templates AS wst ON ws.workflow_step_template_id = wst.id
-LEFT JOIN workflow_step_template_user AS wst_re_user ON wst.id = wst_re_user.workflow_step_template_id
-LEFT JOIN users AS ass_user ON wst_re_user.user_id = ass_user.id
+LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
+LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
+LEFT JOIN workflow_step_template_user AS curr_wst_re_user ON curr_wst.id = curr_wst_re_user.workflow_step_template_id
+LEFT JOIN users AS curr_ass_user ON curr_wst_re_user.user_id = curr_ass_user.id
+
+{{- if not .is_admin }}
+LEFT JOIN workflow_steps AS all_ws ON wr.id = all_ws.workflow_record_id AND all_ws.state !="initialized"
+LEFT JOIN workflow_step_templates AS all_wst ON all_ws.workflow_step_template_id = all_wst.id
+LEFT JOIN workflow_step_template_user AS all_wst_re_user ON all_wst.id = all_wst_re_user.workflow_step_template_id
+LEFT JOIN users AS all_ass_user ON all_wst_re_user.user_id = all_ass_user.id
+{{- end }}
 WHERE
 w.deleted_at IS NULL
+
+{{- if not .is_admin }}
+AND (w.create_user_id = :current_user_id 
+OR curr_ass_user.id = :current_user_id
+OR all_ass_user.id = :current_user_id
+)
+{{- end }}
 
 {{- if .filter_create_user_name }}
 AND create_user.login_name = :filter_create_user_name

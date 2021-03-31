@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
@@ -51,6 +52,27 @@ func GetUserName(c echo.Context) string {
 	return claims["name"].(string)
 }
 
+func GetCurrentUser(c echo.Context) (*model.User, error) {
+	key := "current_user"
+	currentUser := c.Get(key)
+	if currentUser != nil {
+		if user, ok := currentUser.(*model.User); ok {
+			return user, nil
+		}
+	}
+	s := model.GetStorage()
+	user, exist, err := s.GetUserByName(GetUserName(c))
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.New(errors.DataNotExist,
+			fmt.Errorf("current user is not exist"))
+	}
+	c.Set(key, user)
+	return user, nil
+}
+
 func JSONBaseErrorReq(c echo.Context, err error) error {
 	return c.JSON(http.StatusOK, NewBaseReq(err))
 }
@@ -93,58 +115,3 @@ func unescapeParamString(params []*string) error {
 	}
 	return nil
 }
-
-const ConfigPath = "/opt/sqle/etc/sqled.yml"
-
-//// @Summary 加载数据库参数
-//// @Description reload base info
-//// @Accept x-www-form-urlencoded
-//// @Param mysql_user formData string true "mysql user"
-//// @Param mysql_password formData string true "mysql password"
-//// @Param mysql_host formData string true "mysql host"
-//// @Param mysql_port formData string true "mysql port"
-//// @Param mysql_schema formData string true "mysql schema"
-//// @Param config_path formData string false "confif path (Absolute Path)"
-//// @Success 200 {object} controller.BaseRes
-//// @router /base/reload [post]
-//func ReloadBaseInfo(c echo.Context) error {
-//	mysqlUser := c.FormValue("mysql_user")
-//	mysqlPassword := c.FormValue("mysql_password")
-//	mysqlHost := c.FormValue("mysql_host")
-//	mysqlPort := c.FormValue("mysql_port")
-//	mysqlSchema := c.FormValue("mysql_schema")
-//	configPath := c.FormValue("config_path")
-//	if configPath == "" {
-//		configPath = ConfigPath
-//	}
-//	conf := model.Config{}
-//
-//	b, err := ioutil.ReadFile(configPath)
-//	if err != nil {
-//		return c.JSON(200, NewBaseReq(fmt.Errorf("load config path: %s failed", configPath)))
-//	}
-//	err = yaml.Unmarshal(b, &conf)
-//	if err != nil {
-//		return c.JSON(200, NewBaseReq(fmt.Errorf("%v unmarshal error %v", configPath, err)))
-//
-//	}
-//	conf.Server.DBCnf.MysqlCnf.Port = mysqlPort
-//	conf.Server.DBCnf.MysqlCnf.Host = mysqlHost
-//	conf.Server.DBCnf.MysqlCnf.Schema = mysqlSchema
-//	conf.Server.DBCnf.MysqlCnf.Password = mysqlPassword
-//	conf.Server.DBCnf.MysqlCnf.User = mysqlUser
-//	data, err := yaml.Marshal(conf)
-//	if err != nil {
-//		return c.JSON(200, NewBaseReq(fmt.Errorf("%v marshal error %v", configPath, err)))
-//	}
-//	err = ioutil.WriteFile(configPath, data, 0666)
-//	if err != nil {
-//		return c.JSON(200, NewBaseReq(fmt.Errorf("update sqle config file error %v", err)))
-//	}
-//	s, err := model.NewStorage(mysqlUser, mysqlPassword, mysqlHost, mysqlPort, mysqlSchema, conf.Server.SqleCnf.DebugLog)
-//	if err != nil {
-//		return c.JSON(200, NewBaseReq(err))
-//	}
-//	model.UpdateStorage(s)
-//	return c.JSON(200, NewBaseReq(nil))
-//}

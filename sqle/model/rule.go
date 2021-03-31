@@ -113,7 +113,7 @@ func (s *Storage) GetAllRule() ([]Rule, error) {
 
 func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	rules := []Rule{}
-	instance, _, err := s.GetInstById(instanceId)
+	instance, _, err := s.GetInstanceById(instanceId)
 	if err != nil {
 		return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}

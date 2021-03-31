@@ -129,7 +129,7 @@ func (i *Instance) marshalMycatConfig() error {
 	return nil
 }
 
-func (s *Storage) GetInstById(id string) (*Instance, bool, error) {
+func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 	instance := &Instance{}
 	err := s.db.Preload("RuleTemplates").Where("id = ?", id).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
@@ -223,4 +223,16 @@ func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error
 		names = append(names, instance.Name)
 	}
 	return names, nil
+}
+
+func (s *Storage) GetInstanceRuleTemplates(instance *Instance) ([]RuleTemplate, error) {
+	ruleTemplates := []RuleTemplate{}
+	err := s.db.Joins(
+		"JOIN instance_rule_template ON rule_templates.id = instance_rule_template.rule_template_id",
+	).Joins("JOIN instances ON instance_rule_template.instance_id = instances.id").
+		Where("instances.id = ?", instance.ID).Find(&ruleTemplates).Error
+	if err != nil {
+		return []RuleTemplate{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	return ruleTemplates, nil
 }

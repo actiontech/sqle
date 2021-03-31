@@ -18,6 +18,10 @@ definitions:
         type: string
       pass_rate:
         type: number
+      rule_template_name_list:
+        items:
+          type: string
+        type: array
       status:
         enum:
         - initialized

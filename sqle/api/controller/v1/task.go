@@ -26,6 +26,8 @@ const (
 	SqlAuditTaskExpiredTime = "720h"
 )
 
+var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
+
 type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1" valid:"-"`
@@ -38,66 +40,29 @@ type GetAuditTaskResV1 struct {
 }
 
 type AuditTaskResV1 struct {
-	Id             uint    `json:"task_id"`
-	InstanceName   string  `json:"instance_name"`
-	InstanceSchema string  `json:"instance_schema" example:"db1"`
-	PassRate       float64 `json:"pass_rate"`
-	Status         string  `json:"status" enums:"initialized, audited, executing, exec_success, exec_failed"`
-}
-
-func createTaskByRequestParam(req *CreateAuditTaskReqV1) (*model.Task, controller.BaseRes) {
-	s := model.GetStorage()
-	instance, exist, err := s.GetInstanceByName(req.InstanceName)
-	if err != nil {
-		return nil, controller.NewBaseReq(err)
-	}
-	if !exist {
-		return nil, controller.NewBaseReq(errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
-	}
-	if err := executor.Ping(log.NewEntry(), instance); err != nil {
-		return nil, controller.NewBaseReq(err)
-	}
-
-	task := &model.Task{
-		Schema:      req.InstanceSchema,
-		InstanceId:  instance.ID,
-		Instance:    instance,
-		ExecuteSQLs: []*model.ExecuteSQL{},
-	}
-
-	createAt := time.Now()
-	task.CreatedAt = createAt
-
-	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil, nil).
-		ParseSql(req.Sql)
-	if err != nil {
-		return nil, controller.NewBaseReq(err)
-	}
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text(),
-			},
-		})
-	}
-	task.Instance = nil // if task instance is not nil, gorm will update instance when save task.
-	err = s.Save(task)
-	if err != nil {
-		return nil, controller.NewBaseReq(err)
-	}
-	task.Instance = instance
-	return task, controller.NewBaseReq(nil)
+	Id             uint     `json:"task_id"`
+	InstanceName   string   `json:"instance_name"`
+	InstanceSchema string   `json:"instance_schema" example:"db1"`
+	PassRate       float64  `json:"pass_rate"`
+	Status         string   `json:"status" enums:"initialized, audited, executing, exec_success, exec_failed"`
+	RuleTemplates  []string `json:"rule_template_name_list"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
-	return &AuditTaskResV1{
+	res := &AuditTaskResV1{
 		Id:             task.ID,
 		InstanceName:   task.Instance.Name,
 		InstanceSchema: task.Schema,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
+		RuleTemplates:  []string{},
 	}
+	if task.Instance.RuleTemplates != nil {
+		for _, rt := range task.Instance.RuleTemplates {
+			res.RuleTemplates = append(res.RuleTemplates, rt.Name)
+		}
+	}
+	return res
 }
 
 // @Summary 创建Sql审核任务并提交审核
@@ -114,38 +79,112 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
-	//check params
 	req := new(CreateAuditTaskReqV1)
-	if err := c.Bind(req); err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
 	}
-
-	if err := c.Validate(req); err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-
-	if "" == req.Sql {
+	if req.Sql == "" {
 		_, sqls, err := controller.ReadFileToByte(c, "input_sql_file")
 		if err != nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+			return controller.JSONBaseErrorReq(c, err)
 		}
-
 		req.Sql = string(sqls)
 	}
 
-	task, res := createTaskByRequestParam(req)
-	if res.Code != 0 {
-		return c.JSON(http.StatusOK, res)
+	s := model.GetStorage()
+	instance, exist, err := s.GetInstanceByName(req.InstanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
 	}
 
-	task, err := server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), model.TASK_ACTION_AUDIT)
+	err = checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := executor.Ping(log.NewEntry(), instance); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	instance.RuleTemplates, err = s.GetInstanceRuleTemplates(instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	task := &model.Task{
+		Schema:       req.InstanceSchema,
+		InstanceId:   instance.ID,
+		Instance:     instance,
+		CreateUserId: user.ID,
+		ExecuteSQLs:  []*model.ExecuteSQL{},
+	}
+
+	createAt := time.Now()
+	task.CreatedAt = createAt
+
+	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil, nil).
+		ParseSql(req.Sql)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	for n, node := range nodes {
+		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(n + 1),
+				Content: node.Text(),
+			},
+		})
+	}
+	// if task instance is not nil, gorm will update instance when save task.
+	task.Instance = nil
+	err = s.Save(task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	task.Instance = instance
+	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), model.TASK_ACTION_AUDIT)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
-		BaseRes: res,
+		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
 	})
+}
+
+func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
+	if controller.GetUserName(c) == defaultAdminUser {
+		return nil
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	if user.ID == task.CreateUserId {
+		return nil
+	}
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowByTaskId(fmt.Sprintf("%d", task.ID))
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return TaskNoAccessError
+	}
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if access {
+		return nil
+	}
+	return TaskNoAccessError
 }
 
 // @Summary 获取Sql审核任务信息
@@ -161,12 +200,21 @@ func GetTask(c echo.Context) error {
 	taskId := c.Param("task_id")
 	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(
-			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
+		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
 	}
+	err = checkCurrentUserCanAccessTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	task.Instance.RuleTemplates, err = s.GetInstanceRuleTemplates(task.Instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
@@ -212,20 +260,22 @@ type AuditTaskSQLResV1 struct {
 // @Success 200 {object} v1.GetAuditTaskSQLsResV1
 // @router /v1/tasks/audits/{task_id}/sqls [get]
 func GetTaskSQLs(c echo.Context) error {
-	s := model.GetStorage()
-	taskId := c.Param("task_id")
-	_, exist, err := s.GetTaskById(taskId)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(
-			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-	}
-
 	req := new(GetAuditTaskSQLsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
+	}
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+	}
+	err = checkCurrentUserCanAccessTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	var offset uint32
@@ -281,20 +331,24 @@ type DownloadAuditTaskSQLsFileReqV1 struct {
 // @Success 200 file 1 "sql report csv file"
 // @router /v1/tasks/audits/{task_id}/sql_report [get]
 func DownloadTaskSQLReportFile(c echo.Context) error {
-	s := model.GetStorage()
-	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(
-			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-	}
 	req := new(DownloadAuditTaskSQLsFileReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+	}
+	err = checkCurrentUserCanAccessTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	data := map[string]interface{}{
 		"task_id":      taskId,
 		"no_duplicate": req.NoDuplicate,
@@ -344,18 +398,19 @@ func DownloadTaskSQLFile(c echo.Context) error {
 	s := model.GetStorage()
 	task, exist, err := s.GetTaskById(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(
-			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
+		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
 	}
+	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	sqls, err := s.GetTaskExecuteSQLContent(taskId)
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	fileName := fmt.Sprintf("exec_sql_%s_%s.sql", task.Instance.Name, taskId)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
