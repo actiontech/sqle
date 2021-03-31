@@ -2,13 +2,11 @@ package v1
 
 import (
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
-	"fmt"
-	"net/http"
-	"strings"
-
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"fmt"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 type CreateRuleTemplateReqV1 struct {
@@ -158,7 +156,7 @@ type RuleTemplateDetailResV1 struct {
 }
 
 func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailResV1 {
-	ruleNames := make([]string, len(template.Rules))
+	ruleNames := make([]string, 0, len(template.Rules))
 	for _, rule := range template.Rules {
 		ruleNames = append(ruleNames, rule.Name)
 	}
@@ -271,14 +269,10 @@ func GetRuleTemplates(c echo.Context) error {
 	ruleTemplatesReq := make([]RuleTemplateDetailResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
 		ruleTemplateReq := RuleTemplateDetailResV1{
-			Name: ruleTemplate.Name,
-			Desc: ruleTemplate.Desc,
-		}
-		if ruleTemplate.RuleNames != "" {
-			ruleTemplateReq.Rules = strings.Split(ruleTemplate.RuleNames, ",")
-		}
-		if ruleTemplate.InstanceNames != "" {
-			ruleTemplateReq.Instances = strings.Split(ruleTemplate.InstanceNames, ",")
+			Name:      ruleTemplate.Name,
+			Desc:      ruleTemplate.Desc,
+			Rules:     ruleTemplate.RuleNames,
+			Instances: ruleTemplate.InstanceNames,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
 	}

@@ -9,8 +9,8 @@ type RoleDetail struct {
 	Id            int
 	Name          string `json:"name"`
 	Desc          string
-	UserNames     string `json:"user_names"`     // is a user name list, separated by commas.
-	InstanceNames string `json:"instance_names"` // is a instance name list, separated by commas.
+	UserNames     RowList `json:"user_names"`
+	InstanceNames RowList `json:"instance_names"`
 }
 
 var rolesQueryTpl = `SELECT roles.id, roles.name, roles.desc,
