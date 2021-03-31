@@ -184,9 +184,15 @@ func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetAllInstanceTip() ([]*Instance, error) {
+func (s *Storage) GetUserInstanceTip(user *User) ([]*Instance, error) {
 	instances := []*Instance{}
-	err := s.db.Select("name").Find(&instances).Error
+	db := s.db.Model(&Instance{}).Select("instances.name")
+	if user.Name != defaultAdminUser {
+		db = db.Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
+			Joins("JOIN user_role AS ur ON ir.role_id = ur.role_id").
+			Joins("JOIN users ON ur.user_id = users.id AND users.id = ?", user.ID)
+	}
+	err := db.Scan(&instances).Error
 	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
