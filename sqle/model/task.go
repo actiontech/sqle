@@ -34,12 +34,14 @@ const (
 
 type Task struct {
 	Model
-	InstanceId uint    `json:"instance_id"`
-	Schema     string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
-	PassRate   float64 `json:"pass_rate"`
-	SQLType    string  `json:"sql_type" gorm:"column:sql_type"`
-	Status     string  `json:"status" gorm:"default:\"initialized\""`
+	InstanceId   uint    `json:"instance_id"`
+	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
+	PassRate     float64 `json:"pass_rate"`
+	SQLType      string  `json:"sql_type" gorm:"column:sql_type"`
+	Status       string  `json:"status" gorm:"default:\"initialized\""`
+	CreateUserId uint
 
+	CreateUser   *User          `gorm:"foreignkey:CreateUserId"`
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`

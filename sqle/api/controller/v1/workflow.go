@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+var WorkflowNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
+
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
 	Data *WorkflowTemplateDetailResV1 `json:"data"`
@@ -465,6 +467,15 @@ func CreateWorkflow(c echo.Context) error {
 			fmt.Errorf("task has been used in other workflow")))
 	}
 
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if task.CreateUserId != user.ID {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("the task is not created by yourself")))
+	}
+
 	template, exist, err := s.GetWorkflowTemplateById(task.Instance.WorkflowTemplateId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -477,14 +488,7 @@ func CreateWorkflow(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	user, exist, err := s.GetUserByName(controller.GetUserName(c))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("current user is not exist")))
-	}
+
 	workflow := &model.Workflow{
 		Subject:      req.Subject,
 		Desc:         req.Desc,
@@ -527,6 +531,25 @@ type WorkflowStepResV1 struct {
 	Reason        string     `json:"reason"`
 }
 
+func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow) error {
+	if controller.GetUserName(c) == defaultAdminUser {
+		return nil
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if !access {
+		return WorkflowNoAccessError
+	}
+	return nil
+}
+
 // @Summary 获取审批流程详情
 // @Description get workflow detail
 // @Tags workflow
@@ -538,12 +561,23 @@ type WorkflowStepResV1 struct {
 func GetWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	s := model.GetStorage()
+
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist")))
+		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
 	workflowRes := &WorkflowResV1{
 		Id:         workflow.ID,
@@ -643,6 +677,11 @@ func GetWorkflows(c echo.Context) error {
 		return err
 	}
 
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
@@ -654,6 +693,8 @@ func GetWorkflows(c echo.Context) error {
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
 		"filter_task_status":                     req.FilterTaskStatus,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
+		"current_user_id":                        user.ID,
+		"is_admin":                               user.Name == defaultAdminUser,
 		"limit":                                  req.PageSize,
 		"offset":                                 offset,
 	}
@@ -699,6 +740,17 @@ func GetWorkflows(c echo.Context) error {
 // @router /v1/workflows/{workflow_id}/steps/{workflow_step_number}/approve [post]
 func ApproveWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	//TODO: try to using struct tag valid.
 	stepNumberStr := c.Param("workflow_step_number")
 	stepNumber, err := FormatStringToInt(stepNumberStr)
@@ -712,7 +764,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist")))
+		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusRunning {
@@ -730,13 +782,9 @@ func ApproveWorkflow(c echo.Context) error {
 			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepNumber)))
 	}
 
-	user, exist, err := s.GetUserByName(controller.GetUserName(c))
+	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("current user is not exist")))
 	}
 
 	if !workflow.IsOperationUser(user) {
@@ -812,6 +860,17 @@ func RejectWorkflow(c echo.Context) error {
 		return err
 	}
 	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	//TODO: try to using struct tag valid.
 	stepNumberStr := c.Param("workflow_step_number")
 	stepNumber, err := FormatStringToInt(stepNumberStr)
@@ -825,7 +884,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist")))
+		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusRunning {
@@ -843,15 +902,10 @@ func RejectWorkflow(c echo.Context) error {
 			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepNumber)))
 	}
 
-	user, exist, err := s.GetUserByName(controller.GetUserName(c))
+	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("current user is not exist")))
-	}
-
 	if !workflow.IsOperationUser(user) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
@@ -884,6 +938,16 @@ func RejectWorkflow(c echo.Context) error {
 // @router /v1/workflows/{workflow_id}/cancel [post]
 func CancelWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
@@ -891,7 +955,7 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist")))
+		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
 
 	if !(workflow.Record.Status == model.WorkflowStatusRunning ||
@@ -900,15 +964,10 @@ func CancelWorkflow(c echo.Context) error {
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
 	}
 
-	user, exist, err := s.GetUserByName(controller.GetUserName(c))
+	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("current user is not exist")))
-	}
-
 	if !(user.ID == workflow.CreateUserId || user.Name == defaultAdminUser) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))

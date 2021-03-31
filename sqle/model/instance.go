@@ -129,7 +129,7 @@ func (i *Instance) marshalMycatConfig() error {
 	return nil
 }
 
-func (s *Storage) GetInstById(id string) (*Instance, bool, error) {
+func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 	instance := &Instance{}
 	err := s.db.Preload("RuleTemplates").Where("id = ?", id).First(instance).Error
 	if err == gorm.ErrRecordNotFound {

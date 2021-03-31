@@ -13,6 +13,9 @@ import (
 	"net/http"
 )
 
+var instanceNotExistError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
+var instanceNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
+
 type CreateInstanceReqV1 struct {
 	Name                 string   `json:"instance_name" form:"instance_name" example:"test" valid:"required"`
 	User                 string   `json:"db_user" form:"db_user" example:"root" valid:"required"`
@@ -107,6 +110,25 @@ func CreateInstance(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) error {
+	if controller.GetUserName(c) == defaultAdminUser {
+		return nil
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	access, err := s.UserCanAccessInstance(user, instance)
+	if err != nil {
+		return err
+	}
+	if !access {
+		return instanceNoAccessError
+	}
+	return nil
+}
+
 type InstanceResV1 struct {
 	Name                 string   `json:"instance_name"`
 	Host                 string   `json:"db_host" example:"10.10.10.10"`
@@ -123,25 +145,7 @@ type GetInstanceResV1 struct {
 	Data InstanceResV1 `json:"data"`
 }
 
-// @Summary 获取实例信息
-// @Description get instance db
-// @Id getInstanceV1
-// @Tags instance
-// @Security ApiKeyAuth
-// @Param instance_name path string true "instance name"
-// @Success 200 {object} v1.GetInstanceResV1
-// @router /v1/instances/{instance_name}/ [get]
-func GetInstance(c echo.Context) error {
-	s := model.GetStorage()
-	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceDetailByName(instanceName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
-	}
-
+func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
 		Name: instance.Name,
 		Host: instance.Host,
@@ -166,9 +170,36 @@ func GetInstance(c echo.Context) error {
 		}
 		instanceResV1.Roles = roleNames
 	}
+	return instanceResV1
+}
+
+// @Summary 获取实例信息
+// @Description get instance db
+// @Id getInstanceV1
+// @Tags instance
+// @Security ApiKeyAuth
+// @Param instance_name path string true "instance name"
+// @Success 200 {object} v1.GetInstanceResV1
+// @router /v1/instances/{instance_name}/ [get]
+func GetInstance(c echo.Context) error {
+	s := model.GetStorage()
+	instanceName := c.Param("instance_name")
+	instance, exist, err := s.GetInstanceDetailByName(instanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+	}
+
+	err = checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetInstanceResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    instanceResV1,
+		Data:    convertInstanceToRes(instance),
 	})
 }
 
@@ -188,7 +219,7 @@ func DeleteInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, instanceNotExistError)
 	}
 	err = s.Delete(instance)
 	if err != nil {
@@ -227,7 +258,7 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, instanceNotExistError)
 	}
 
 	req := new(UpdateInstanceReqV1)
@@ -346,6 +377,11 @@ func GetInstances(c echo.Context) error {
 	}
 	s := model.GetStorage()
 
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
@@ -358,6 +394,8 @@ func GetInstances(c echo.Context) error {
 		"filter_workflow_template_name": req.FilterWorkflowTemplateName,
 		"filter_rule_template_name":     req.FilterRuleTemplateName,
 		"filter_role_name":              req.FilterRoleName,
+		"current_user_id":               user.ID,
+		"is_admin":                      user.Name == defaultAdminUser,
 		"limit":                         req.PageSize,
 		"offset":                        offset,
 	}
@@ -433,7 +471,11 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+	}
+	err = checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	return checkInstanceIsConnectable(c, instance)
 }
@@ -494,8 +536,13 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
 	}
+	err = checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	status, err := server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
