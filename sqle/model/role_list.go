@@ -61,9 +61,14 @@ AND instances.name = :filter_instance_name
 {{- end }}
 `
 
-func (s *Storage) GetRolesByReq(data map[string]interface{}) ([]*RoleDetail, uint64, error) {
-	result := []*RoleDetail{}
-	count, err := s.getListResult(rolesQueryBodyTpl, rolesQueryTpl, rolesCountTpl, data, &result)
+func (s *Storage) GetRolesByReq(data map[string]interface{}) (
+	result []*RoleDetail, count uint64, err error) {
+
+	err = s.getListResult(rolesQueryBodyTpl, rolesQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+	count, err = s.getCountResult(rolesQueryBodyTpl, rolesCountTpl, data)
 	return result, count, err
 }
 
@@ -101,26 +106,31 @@ func getCountQuery(bodyTpl, countTpl string, data interface{}) (string, error) {
 	return buff.String(), nil
 }
 
-func (s *Storage) getListResult(bodyTpl, queryTpl, countTpl string, data map[string]interface{},
-	result interface{}) (uint64, error) {
+func (s *Storage) getListResult(bodyTpl, queryTpl string, data map[string]interface{},
+	result interface{}) error {
 	selectQuery, err := getSelectQuery(bodyTpl, queryTpl, data)
 	if err != nil {
-		return 0, err
+		return err
 	}
+
+	sqlxDb := GetSqlxDb()
+	nstmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
+	if err != nil {
+		return err
+	}
+	err = nstmtTasksQuery.Select(result, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) getCountResult(bodyTpl, countTpl string, data map[string]interface{}) (uint64, error) {
+	sqlxDb := GetSqlxDb()
 	countQuery, err := getCountQuery(bodyTpl, countTpl, data)
 	if err != nil {
 		return 0, err
 	}
-	sqlxDb := GetSqlxDb()
-	nstmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
-	if err != nil {
-		return 0, err
-	}
-	err = nstmtTasksQuery.Select(result, data)
-	if err != nil {
-		return 0, err
-	}
-
 	nstmtCountQuery, err := sqlxDb.PrepareNamed(countQuery)
 	if err != nil {
 		return 0, err

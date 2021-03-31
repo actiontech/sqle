@@ -104,9 +104,14 @@ AND inst.name = :filter_task_instance_name
 {{- end }}
 `
 
-func (s *Storage) GetWorkflowsByReq(data map[string]interface{}) ([]*WorkflowListDetail, uint64, error) {
-	result := []*WorkflowListDetail{}
-	count, err := s.getListResult(workflowsQueryBodyTpl, workflowsQueryTpl, workflowsCountTpl, data, &result)
+func (s *Storage) GetWorkflowsByReq(data map[string]interface{}) (
+	result []*WorkflowListDetail, count uint64, err error) {
+
+	err = s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+	count, err = s.getCountResult(instancesQueryBodyTpl, instancesCountTpl, data)
 	return result, count, err
 }
 
@@ -137,9 +142,13 @@ workflow_templates.deleted_at IS NULL
 {{- end }}
 `
 
-func (s *Storage) GetWorkflowTemplatesByReq(data map[string]interface{}) ([]*WorkflowTemplateDetail, uint64, error) {
-	result := []*WorkflowTemplateDetail{}
-	count, err := s.getListResult(workflowTemplatesQueryBodyTpl, workflowTemplatesQueryTpl,
-		workflowTemplatesCountTpl, data, &result)
+func (s *Storage) GetWorkflowTemplatesByReq(data map[string]interface{}) (
+	result []*WorkflowTemplateDetail, count uint64, err error) {
+
+	err = s.getListResult(workflowTemplatesQueryBodyTpl, workflowTemplatesQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+	count, err = s.getCountResult(workflowTemplatesQueryBodyTpl, workflowTemplatesCountTpl, data)
 	return result, count, err
 }

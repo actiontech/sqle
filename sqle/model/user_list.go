@@ -45,8 +45,13 @@ AND roles.name = :filter_role_name
 {{- end }}
 `
 
-func (s *Storage) GetUsersByReq(data map[string]interface{}) ([]*UserDetail, uint64, error) {
-	result := []*UserDetail{}
-	count, err := s.getListResult(usersQueryBodyTpl, usersQueryTpl, usersCountTpl, data, &result)
+func (s *Storage) GetUsersByReq(data map[string]interface{}) (
+	result []*UserDetail, count uint64, err error) {
+
+	err = s.getListResult(usersQueryBodyTpl, usersQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+	count, err = s.getCountResult(usersQueryBodyTpl, usersCountTpl, data)
 	return result, count, err
 }

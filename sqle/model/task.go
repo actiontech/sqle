@@ -492,9 +492,14 @@ ORDER BY e_sql.id
 {{- end }}
 `
 
-func (s *Storage) GetTaskSQLsByReq(data map[string]interface{}) ([]*TaskSQLDetail, uint64, error) {
-	result := []*TaskSQLDetail{}
-	count, err := s.getListResult(taskSQLsQueryBodyTpl, taskSQLsQueryTpl, taskSQLsCountTpl, data, &result)
+func (s *Storage) GetTaskSQLsByReq(data map[string]interface{}) (
+	result []*TaskSQLDetail, count uint64, err error) {
+
+	err = s.getListResult(taskSQLsQueryBodyTpl, taskSQLsQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+	count, err = s.getCountResult(taskSQLsQueryBodyTpl, taskSQLsCountTpl, data)
 	return result, count, err
 }
 

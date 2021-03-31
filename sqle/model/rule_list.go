@@ -47,8 +47,13 @@ AND instances.name = :filter_instance_name
 {{- end }}
 `
 
-func (s *Storage) GetRuleTemplatesByReq(data map[string]interface{}) ([]*RuleTemplateDetail, uint64, error) {
-	result := []*RuleTemplateDetail{}
-	count, err := s.getListResult(ruleTemplatesQueryBodyTpl, ruleTemplatesQueryTpl, ruleTemplatesCountTpl, data, &result)
+func (s *Storage) GetRuleTemplatesByReq(data map[string]interface{}) (
+	result []*RuleTemplateDetail, count uint64, err error) {
+
+	err = s.getListResult(ruleTemplatesQueryBodyTpl, ruleTemplatesQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+	count, err = s.getCountResult(ruleTemplatesQueryBodyTpl, ruleTemplatesCountTpl, data)
 	return result, count, err
 }

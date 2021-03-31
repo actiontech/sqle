@@ -85,8 +85,13 @@ AND wt.name = :filter_workflow_template_name
 {{- end }}
 `
 
-func (s *Storage) GetInstancesByReq(data map[string]interface{}) ([]*InstanceDetail, uint64, error) {
-	result := []*InstanceDetail{}
-	count, err := s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, instancesCountTpl, data, &result)
+func (s *Storage) GetInstancesByReq(data map[string]interface{}) (
+	result []*InstanceDetail, count uint64, err error) {
+
+	err = s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+	count, err = s.getCountResult(instancesQueryBodyTpl, instancesCountTpl, data)
 	return result, count, err
 }
