@@ -1835,12 +1835,6 @@ var doc = `{
                 "pass_rate": {
                     "type": "number"
                 },
-                "rule_template_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "status": {
                     "type": "string",
                     "enum": [

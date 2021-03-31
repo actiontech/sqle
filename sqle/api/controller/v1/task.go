@@ -40,29 +40,21 @@ type GetAuditTaskResV1 struct {
 }
 
 type AuditTaskResV1 struct {
-	Id             uint     `json:"task_id"`
-	InstanceName   string   `json:"instance_name"`
-	InstanceSchema string   `json:"instance_schema" example:"db1"`
-	PassRate       float64  `json:"pass_rate"`
-	Status         string   `json:"status" enums:"initialized, audited, executing, exec_success, exec_failed"`
-	RuleTemplates  []string `json:"rule_template_name_list"`
+	Id             uint    `json:"task_id"`
+	InstanceName   string  `json:"instance_name"`
+	InstanceSchema string  `json:"instance_schema" example:"db1"`
+	PassRate       float64 `json:"pass_rate"`
+	Status         string  `json:"status" enums:"initialized, audited, executing, exec_success, exec_failed"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
-	res := &AuditTaskResV1{
+	return &AuditTaskResV1{
 		Id:             task.ID,
 		InstanceName:   task.Instance.Name,
 		InstanceSchema: task.Schema,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
-		RuleTemplates:  []string{},
 	}
-	if task.Instance.RuleTemplates != nil {
-		for _, rt := range task.Instance.RuleTemplates {
-			res.RuleTemplates = append(res.RuleTemplates, rt.Name)
-		}
-	}
-	return res
 }
 
 // @Summary 创建Sql审核任务并提交审核
@@ -106,10 +98,6 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 
 	if err := executor.Ping(log.NewEntry(), instance); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instance.RuleTemplates, err = s.GetInstanceRuleTemplates(instance)
-	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -206,11 +194,6 @@ func GetTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	task.Instance.RuleTemplates, err = s.GetInstanceRuleTemplates(task.Instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

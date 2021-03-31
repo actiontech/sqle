@@ -224,15 +224,3 @@ func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error
 	}
 	return names, nil
 }
-
-func (s *Storage) GetInstanceRuleTemplates(instance *Instance) ([]RuleTemplate, error) {
-	ruleTemplates := []RuleTemplate{}
-	err := s.db.Joins(
-		"JOIN instance_rule_template ON rule_templates.id = instance_rule_template.rule_template_id",
-	).Joins("JOIN instances ON instance_rule_template.instance_id = instances.id").
-		Where("instances.id = ?", instance.ID).Find(&ruleTemplates).Error
-	if err != nil {
-		return []RuleTemplate{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	return ruleTemplates, nil
-}
