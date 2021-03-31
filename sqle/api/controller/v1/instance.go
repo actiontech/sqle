@@ -565,7 +565,11 @@ type GetInstanceTipsResV1 struct {
 // @router /v1/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
 	s := model.GetStorage()
-	roles, err := s.GetAllInstanceTip()
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	roles, err := s.GetUserInstanceTip(user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
