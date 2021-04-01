@@ -694,7 +694,7 @@ func GetWorkflows(c echo.Context) error {
 		"filter_task_status":                     req.FilterTaskStatus,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
 		"current_user_id":                        user.ID,
-		"is_admin":                               user.Name == defaultAdminUser,
+		"check_user_can_access":                  user.Name != defaultAdminUser,
 		"limit":                                  req.PageSize,
 		"offset":                                 offset,
 	}

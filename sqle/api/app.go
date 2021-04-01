@@ -160,6 +160,9 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 	v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
 
+	// dashboard
+	v1Router.GET("/dashboard", v1.Dashboard)
+
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)
 	log.Logger().Fatal(e.Start(address))
