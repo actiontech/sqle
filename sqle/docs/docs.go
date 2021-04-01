@@ -25,6 +25,32 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/dashboard": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get dashboard info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "获取 dashboard 信息",
+                "operationId": "getDashboardV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDashboardResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instance_connection": {
             "post": {
                 "security": [
@@ -2102,6 +2128,15 @@ var doc = `{
                 }
             }
         },
+        "v1.DashboardResV1": {
+            "type": "object",
+            "properties": {
+                "workflow_statistics": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowStatisticsResV1"
+                }
+            }
+        },
         "v1.GetAuditTaskResV1": {
             "type": "object",
             "properties": {
@@ -2138,6 +2173,23 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetDashboardResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DashboardResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -3045,6 +3097,23 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.WorkflowStepResV1"
                     }
+                }
+            }
+        },
+        "v1.WorkflowStatisticsResV1": {
+            "type": "object",
+            "properties": {
+                "my_on_process_workflow_number": {
+                    "type": "integer"
+                },
+                "my_rejected_workflow_number": {
+                    "type": "integer"
+                },
+                "need_me_to_execute_workflow_number": {
+                    "type": "integer"
+                },
+                "need_me_to_review_workflow_number": {
+                    "type": "integer"
                 }
             }
         },

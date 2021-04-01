@@ -62,7 +62,7 @@ LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_
 LEFT JOIN workflow_step_template_user AS curr_wst_re_user ON curr_wst.id = curr_wst_re_user.workflow_step_template_id
 LEFT JOIN users AS curr_ass_user ON curr_wst_re_user.user_id = curr_ass_user.id
 
-{{- if not .is_admin }}
+{{- if .check_user_can_access }}
 LEFT JOIN workflow_steps AS all_ws ON wr.id = all_ws.workflow_record_id AND all_ws.state !="initialized"
 LEFT JOIN workflow_step_templates AS all_wst ON all_ws.workflow_step_template_id = all_wst.id
 LEFT JOIN workflow_step_template_user AS all_wst_re_user ON all_wst.id = all_wst_re_user.workflow_step_template_id
@@ -71,7 +71,7 @@ LEFT JOIN users AS all_ass_user ON all_wst_re_user.user_id = all_ass_user.id
 WHERE
 w.deleted_at IS NULL
 
-{{- if not .is_admin }}
+{{- if .check_user_can_access }}
 AND (w.create_user_id = :current_user_id 
 OR curr_ass_user.id = :current_user_id
 OR all_ass_user.id = :current_user_id
@@ -83,7 +83,7 @@ AND create_user.login_name = :filter_create_user_name
 {{- end }}
 
 {{- if .filter_current_step_type }}
-AND wst.type = :filter_current_step_type
+AND curr_wst.type = :filter_current_step_type
 {{- end }}
 
 {{- if .filter_status }}
@@ -91,7 +91,7 @@ AND wr.status = :filter_status
 {{- end }}
 
 {{- if .filter_current_step_assignee_user_name }}
-AND ass_user.login_name = :filter_current_step_assignee_user_name
+AND curr_ass_user.login_name = :filter_current_step_assignee_user_name
 {{- end }}
 
 {{- if .filter_task_status }}
@@ -107,12 +107,16 @@ AND inst.name = :filter_task_instance_name
 func (s *Storage) GetWorkflowsByReq(data map[string]interface{}) (
 	result []*WorkflowListDetail, count uint64, err error) {
 
-	err = s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, data, &result)
+	err = s.getListResult(workflowsQueryBodyTpl, workflowsQueryTpl, data, &result)
 	if err != nil {
 		return result, 0, err
 	}
-	count, err = s.getCountResult(instancesQueryBodyTpl, instancesCountTpl, data)
+	count, err = s.getCountResult(workflowsQueryBodyTpl, workflowsCountTpl, data)
 	return result, count, err
+}
+
+func (s *Storage) GetWorkflowCountByReq(data map[string]interface{}) (uint64, error) {
+	return s.getCountResult(workflowsQueryBodyTpl, workflowsCountTpl, data)
 }
 
 type WorkflowTemplateDetail struct {

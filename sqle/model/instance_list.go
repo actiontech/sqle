@@ -48,7 +48,7 @@ LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
 
-{{- if not .is_admin }}
+{{- if .check_user_can_access }}
 JOIN user_role AS ur ON roles.id = ur.role_id
 JOIN users ON ur.user_id = users.id AND users.id = :current_user_id
 {{- end }}
