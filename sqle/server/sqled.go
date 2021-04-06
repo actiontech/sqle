@@ -120,6 +120,7 @@ func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
 func (s *Sqled) Start() {
 	go s.taskLoop()
 	go s.statusLoop()
+	go s.cleanLoop()
 }
 
 // taskLoop is a task loop used to receive action from queue.
