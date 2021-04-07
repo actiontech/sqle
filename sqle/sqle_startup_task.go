@@ -13,10 +13,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/api"
-	"actiontech.cloud/universe/sqle/v4/sqle/api/server"
 	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/server"
 	"actiontech.cloud/universe/sqle/v4/sqle/sqlserverClient"
 	ucommonLog "actiontech.cloud/universe/ucommon/v4/log"
 	"actiontech.cloud/universe/ucommon/v4/os"

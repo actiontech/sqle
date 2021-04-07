@@ -4,6 +4,7 @@ import (
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pingcap/parser/ast"
@@ -393,11 +394,11 @@ func (s *Storage) UpdateRollbackSQLById(rollbackSQLId string, attrs ...interface
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) HardDeleteRollbackSQLByTaskIds(taskIds []string) error {
-	rollbackSQL := RollbackSQL{}
-	err := s.db.Unscoped().Where("task_id IN (?)", taskIds).Delete(rollbackSQL).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
+//func (s *Storage) HardDeleteRollbackSQLByTaskIds(taskIds []string) error {
+//	rollbackSQL := RollbackSQL{}
+//	err := s.db.Unscoped().Where("task_id IN (?)", taskIds).Delete(rollbackSQL).Error
+//	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+//}
 
 //func (s *Storage) GetRollbackSqlByTaskId(taskId string, commitSqlNum []string) ([]RollbackSQL, error) {
 //	rollbackSqls := []RollbackSQL{}
@@ -424,11 +425,11 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) HardDeleteExecuteSqlResultByTaskIds(ids []string) error {
-	executeSQL := ExecuteSQL{}
-	err := s.db.Unscoped().Where("task_id IN (?)", ids).Delete(executeSQL).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
+//func (s *Storage) HardDeleteExecuteSqlResultByTaskIds(ids []string) error {
+//	executeSQL := ExecuteSQL{}
+//	err := s.db.Unscoped().Where("task_id IN (?)", ids).Delete(executeSQL).Error
+//	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+//}
 
 func (s *Storage) GetExecErrorExecuteSQLsByTaskId(taskId string) ([]ExecuteSQL, error) {
 	executeSQLs := []ExecuteSQL{}
@@ -503,32 +504,31 @@ func (s *Storage) GetTaskSQLsByReq(data map[string]interface{}) (
 	return result, count, err
 }
 
-func (s *Storage) DeleteTasksByIds(ids []string) error {
-	tasks := Task{}
-	err := s.db.Where("id IN (?)", ids).Delete(tasks).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+func (s *Storage) DeleteTask(task *Task) error {
+	return s.TxExec(func(tx *sql.Tx) error {
+		_, err := tx.Exec("DELETE FROM tasks WHERE id = ?", task.ID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec("DELETE FROM execute_sql_detail WHERE task_id = ?", task.ID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec("DELETE FROM rollback_sql_detail WHERE task_id = ?", task.ID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
-func (s *Storage) HardDeleteTasksByIds(ids []string) error {
-	s.db.Begin()
-	tx, err := s.db.DB().Begin()
-	if err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	if _, err := tx.Exec("DELETE FROM task WHERE id in (?)", ids); err != nil {
-		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	if _, err := tx.Exec("DELETE FROM commit_sql_detail WHERE task_id in (?)", ids); err != nil {
-		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
+func (s *Storage) GetExpiredTasks(start time.Time) ([]*Task, error) {
+	tasks := []*Task{}
+	err := s.db.Model(&Task{}).Select("tasks.id").
+		Joins("LEFT JOIN workflows ON tasks.id = workflows.task_id").
+		Where("tasks.created_at < ?", start).
+		Where("workflows.id is NULL").
+		Scan(&tasks).Error
 
-	if _, err := tx.Exec("DELETE FROM rollback_sql_detail WHERE task_id in (?)", ids); err != nil {
-		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-
-	err = tx.Commit()
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

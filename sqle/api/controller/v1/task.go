@@ -13,17 +13,13 @@ import (
 
 	"actiontech.cloud/universe/sqle/v4/sqle/executor"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/api/server"
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/universe/sqle/v4/sqle/server"
 
 	"github.com/labstack/echo/v4"
-)
-
-const (
-	SqlAuditTaskExpiredTime = "720h"
 )
 
 var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
