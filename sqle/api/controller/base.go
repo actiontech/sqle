@@ -9,7 +9,6 @@ import (
 	"net/url"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
 )
 
@@ -40,8 +39,12 @@ func BindAndValidateReq(c echo.Context, i interface{}) error {
 	if err := c.Bind(i); err != nil {
 		return err
 	}
-	if err := c.Validate(i); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+	if DefaultCustomValidator == nil {
+		return nil
+	}
+	if err := DefaultCustomValidator.Validate(i); err != nil {
+		fmt.Println(err)
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return nil
 }
@@ -95,14 +98,6 @@ func ReadFileToByte(c echo.Context, name string) (fileName string, data []byte, 
 		return
 	}
 	return
-}
-
-type CustomValidator struct {
-}
-
-func (cv *CustomValidator) Validate(i interface{}) error {
-	_, err := govalidator.ValidateStruct(i)
-	return err
 }
 
 func unescapeParamString(params []*string) error {
