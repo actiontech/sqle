@@ -45,7 +45,6 @@ github.com/alecthomas/template
 github.com/alecthomas/template/parse
 # github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 ## explicit
-github.com/asaskevich/govalidator
 # github.com/cpuguy83/go-md2man/v2 v2.0.0
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/cznic/golex v0.0.0-20181122101858-9c343928389c
@@ -96,6 +95,18 @@ github.com/go-openapi/jsonreference
 github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.5
 github.com/go-openapi/swag
+# github.com/go-playground/locales v0.13.0
+## explicit
+github.com/go-playground/locales
+github.com/go-playground/locales/currency
+github.com/go-playground/locales/en
+github.com/go-playground/locales/zh
+# github.com/go-playground/universal-translator v0.17.0
+## explicit
+github.com/go-playground/universal-translator
+# github.com/go-playground/validator v9.31.0+incompatible
+## explicit
+github.com/go-playground/validator
 # github.com/go-sql-driver/mysql v1.5.0
 ## explicit
 github.com/go-sql-driver/mysql
@@ -144,6 +155,9 @@ github.com/labstack/gommon/bytes
 github.com/labstack/gommon/color
 github.com/labstack/gommon/log
 github.com/labstack/gommon/random
+# github.com/leodido/go-urn v1.2.1
+## explicit
+github.com/leodido/go-urn
 # github.com/mailru/easyjson v0.7.0
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
@@ -212,7 +226,7 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.5.1
+# github.com/stretchr/testify v1.6.1
 ## explicit
 github.com/stretchr/testify/assert
 # github.com/swaggo/echo-swagger v1.0.0
@@ -360,6 +374,8 @@ gopkg.in/natefinch/lumberjack.v2
 # gopkg.in/yaml.v2 v2.2.8
 ## explicit
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3
 # k8s.io/api v0.17.4
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
