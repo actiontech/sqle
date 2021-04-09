@@ -163,6 +163,14 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)
 
+	// UI
+	e.File("/", "ui/index.html")
+	e.Static("/static", "ui/static")
+	e.File("/favicon.png", "ui/favicon.png")
+	e.GET("/*", func(c echo.Context) error {
+		return c.File("ui/index.html")
+	})
+
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)
 	log.Logger().Fatal(e.Start(address))

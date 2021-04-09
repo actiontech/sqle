@@ -20,7 +20,7 @@ TEST_DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1
 ## Static Parameter, should not be overwrite
 PROJECT_NAME = sqle
 SUB_PROJECT_NAME = sqle_sqlserver
-override VERSION = 9.9.9.9
+override VERSION = 1.0.0-alpha
 GOBIN = ${shell pwd}/bin
 default: install
 DOTNET_TARGET = centos.7-x64
