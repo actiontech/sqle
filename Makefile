@@ -20,7 +20,7 @@ TEST_DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1
 ## Static Parameter, should not be overwrite
 PROJECT_NAME = sqle
 SUB_PROJECT_NAME = sqle_sqlserver
-override VERSION = 1.0.0-alpha
+override VERSION = 1.0.0_alpha
 GOBIN = ${shell pwd}/bin
 default: install
 DOTNET_TARGET = centos.7-x64
@@ -118,9 +118,13 @@ docker_rpm/sqle_sqlserver: pull_image docker_install
 	--target $(RPMBUILD_TARGET) -bb --with qa /universe/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && \
 	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${SUB_PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
 
-upload:
+upload:upload/sqle upload/sqle_sqlserver
+
+upload/sqle:
 	curl -T $(shell pwd)/$(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm \
 	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm --ftp-create-dirs
+
+upload/sqle_sqlserver:
 	curl -T $(shell pwd)/$(SUB_PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm \
 	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(SUB_PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm  --ftp-create-dirs
 
