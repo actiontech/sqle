@@ -2800,10 +2800,7 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "type": "string"
-                    },
-                    "example": [
-                        "1"
-                    ]
+                    }
                 },
                 "workflow_template_name": {
                     "type": "string"
