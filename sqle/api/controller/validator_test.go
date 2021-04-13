@@ -29,3 +29,15 @@ func TestValidateName(t *testing.T) {
 	assert.Equal(t, false, validateName(len61))
 	assert.Equal(t, false, validateName(len61+"*"))
 }
+
+func TestValidatePort(t *testing.T) {
+	assert.Equal(t, true, validatePort("1"))
+	assert.Equal(t, true, validatePort("3306"))
+	assert.Equal(t, true, validatePort("65535"))
+
+	assert.Equal(t, false, validatePort("0"))
+	assert.Equal(t, false, validatePort("65536"))
+	assert.Equal(t, false, validatePort(""))
+	assert.Equal(t, false, validatePort("port"))
+	assert.Equal(t, false, validatePort("_"))
+}

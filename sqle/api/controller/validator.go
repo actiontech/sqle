@@ -5,6 +5,7 @@ import (
 	"github.com/go-playground/validator"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/locales/en"
@@ -43,6 +44,10 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	err = cv.RegisterTranslation("port", "{0} is invalid port", "{0}是无效的端口")
+	if err != nil {
+		panic(err)
+	}
 	DefaultCustomValidator = cv
 }
 
@@ -69,6 +74,7 @@ func NewCustomValidator() *CustomValidator {
 	cv.validate.SetTagName("valid")
 
 	cv.validate.RegisterValidation("name", ValidateName)
+	cv.validate.RegisterValidation("port", ValidatePort)
 	return cv
 }
 
@@ -126,4 +132,17 @@ func validateName(name string) bool {
 	match, _ := regexp.MatchString(ValidateNameRegexpPattern, name)
 
 	return match
+}
+
+func ValidatePort(fl validator.FieldLevel) bool {
+	return validatePort(fl.Field().String())
+}
+
+func validatePort(port string) bool {
+	// Port must be a iny <= 65535.
+	portNum, err := strconv.ParseInt(port, 10, 32)
+	if err != nil || portNum > 65535 || portNum < 1 {
+		return false
+	}
+	return true
 }
