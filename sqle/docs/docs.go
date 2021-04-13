@@ -25,6 +25,152 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/audit_whitelist": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all whitelist",
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "获取Sql审核白名单",
+                "operationId": "getAuditWhitelistV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditWhitelistResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a sql whitelist",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "添加SQL白名单",
+                "operationId": "createAuditWhitelistV1",
+                "parameters": [
+                    {
+                        "description": "add sql whitelist req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditWhitelistReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_whitelist/{audit_whitelist_id}/": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "remove sql white",
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "删除SQL白名单信息",
+                "operationId": "deleteAuditWhitelistByIdV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit whitelist id",
+                        "name": "audit_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update sql whitelist by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "更新SQL白名单",
+                "operationId": "UpdateAuditWhitelistByIdV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sql audit whitelist id",
+                        "name": "audit_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update sql whitelist req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditWhitelistReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dashboard": {
             "get": {
                 "security": [
@@ -1975,6 +2121,33 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditWhitelistResV1": {
+            "type": "object",
+            "properties": {
+                "audit_whitelist_id": {
+                    "type": "integer"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateAuditWhitelistReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string",
+                    "example": "used for rapid release"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "create table"
+                }
+            }
+        },
         "v1.CreateInstanceReqV1": {
             "type": "object",
             "properties": {
@@ -2165,6 +2338,28 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.AuditTaskSQLResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetAuditWhitelistResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditWhitelistResV1"
                     }
                 },
                 "message": {
@@ -2756,6 +2951,19 @@ var doc = `{
             "properties": {
                 "rule_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.UpdateAuditWhitelistReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string",
+                    "example": "used for rapid release"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "create table"
                 }
             }
         },

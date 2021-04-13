@@ -21,7 +21,7 @@ func (s SqlWhitelist) TableName() string {
 	return "sql_whitelist"
 }
 
-func (s *Storage) GetSqlWhitelistItemById(sqlWhiteId string) (*SqlWhitelist, bool, error) {
+func (s *Storage) GetSqlWhitelistById(sqlWhiteId string) (*SqlWhitelist, bool, error) {
 	sqlWhitelist := &SqlWhitelist{}
 	err := s.db.Table("sql_whitelist").Where("id = ?", sqlWhiteId).First(sqlWhitelist).Error
 	if err == gorm.ErrRecordNotFound {
@@ -29,7 +29,7 @@ func (s *Storage) GetSqlWhitelistItemById(sqlWhiteId string) (*SqlWhitelist, boo
 	}
 	return sqlWhitelist, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
-func (s *Storage) GetSqlWhitelist(pageIndex, pageSize int) ([]SqlWhitelist, uint32, error) {
+func (s *Storage) GetSqlWhitelist(pageIndex, pageSize uint32) ([]SqlWhitelist, uint32, error) {
 	var count uint32
 	sqlWhitelist := []SqlWhitelist{}
 	if pageSize == 0 {
@@ -42,14 +42,12 @@ func (s *Storage) GetSqlWhitelist(pageIndex, pageSize int) ([]SqlWhitelist, uint
 	}
 	err = s.db.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Order("id desc").Find(&sqlWhitelist).Error
 	return sqlWhitelist, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-
 }
 
 func (s *Storage) GetSqlWhitelistIdAndMD5() ([]SqlWhitelist, error) {
 	sqlWhitelist := []SqlWhitelist{}
 	err := s.db.Table("sql_whitelist").Select("sql_whitelist.id, sql_whitelist.message_digest").Scan(&sqlWhitelist).Error
 	return sqlWhitelist, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-
 }
 
 var sqlWhitelistMD5Map map[string] /*whitelist id*/ string /*whitelist message digest md5Data*/
