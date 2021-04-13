@@ -1258,29 +1258,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/test": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "user login",
-                "tags": [
-                    "user"
-                ],
-                "summary": "test",
-                "operationId": "testV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/user": {
             "get": {
                 "security": [

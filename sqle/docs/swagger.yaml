@@ -1706,20 +1706,6 @@ paths:
       summary: 获取指定审核任务的SQLs信息
       tags:
       - task
-  /v1/test:
-    get:
-      description: user login
-      operationId: testV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: test
-      tags:
-      - user
   /v1/user:
     get:
       description: get current user info
