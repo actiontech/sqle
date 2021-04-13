@@ -120,6 +120,12 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 		v1Router.PATCH("/workflow_templates/:workflow_template_name/", v1.UpdateWorkflowTemplate, AdminUserAllowed())
 		v1Router.DELETE("/workflow_templates/:workflow_template_name/", v1.DeleteWorkflowTemplate, AdminUserAllowed())
 		v1Router.GET("/workflow_template_tips", v1.GetWorkflowTemplateTips, AdminUserAllowed())
+
+		// audit whitelist
+		v1Router.GET("/audit_whitelist", v1.GetSqlWhitelist, AdminUserAllowed())
+		v1Router.POST("/audit_whitelist", v1.CreateAuditWhitelist, AdminUserAllowed())
+		v1Router.PATCH("/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById, AdminUserAllowed())
+		v1Router.DELETE("/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById, AdminUserAllowed())
 	}
 
 	// user
