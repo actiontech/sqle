@@ -13,56 +13,35 @@ import (
 	ut "github.com/go-playground/universal-translator"
 )
 
-var (
-	ValidateNameRegexpPattern = `^[a-zA-Z][a-zA-Z0-9\_\-]{0,59}$`
-)
-
-type CustomValidator struct {
-	validate *validator.Validate
-	enTrans  ut.Translator
-	zhTrans  ut.Translator
+func Validate(i interface{}) error {
+	if defaultCustomValidator == nil {
+		return nil
+	}
+	cv := defaultCustomValidator
+	err := cv.validate.Struct(i)
+	if err == nil {
+		return nil
+	}
+	errs := err.(validator.ValidationErrors)
+	errMsgs := make([]string, 0, len(errs))
+	for _, err := range errs {
+		errMsgs = append(errMsgs, err.Translate(cv.enTrans))
+	}
+	if len(errMsgs) > 0 {
+		return fmt.Errorf(strings.Join(errMsgs, "; "))
+	}
+	return nil
 }
 
-var DefaultCustomValidator *CustomValidator
+var defaultCustomValidator *CustomValidator
+
+var (
+	ValidNameTag = "name"
+	ValidPortTag = "port"
+)
 
 func init() {
 	cv := NewCustomValidator()
-	err := cv.RegisterTranslation("required", "{0} is required", "{0}不能为空")
-	if err != nil {
-		panic(err)
-	}
-	err = cv.RegisterTranslation("oneof", "{0} must be one of [{1}]", "{0}必须是[{1}]其中之一")
-	if err != nil {
-		panic(err)
-	}
-	err = cv.RegisterTranslation("email", "{0} is invalid email addr", "{0}是无效的邮箱地址")
-	if err != nil {
-		panic(err)
-	}
-	err = cv.RegisterTranslation("name", "{0} must match regexp `{1}`", "{0}必须匹配正则`{1}`",
-		ValidateNameRegexpPattern)
-	if err != nil {
-		panic(err)
-	}
-	err = cv.RegisterTranslation("port", "{0} is invalid port", "{0}是无效的端口")
-	if err != nil {
-		panic(err)
-	}
-	DefaultCustomValidator = cv
-}
-
-func NewCustomValidator() *CustomValidator {
-	en := en.New()
-	zh := zh.New()
-	uni := ut.New(en, zh)
-
-	cv := &CustomValidator{
-		validate: validator.New(),
-	}
-	enTrans, _ := uni.GetTranslator("en")
-	zhTrans, _ := uni.GetTranslator("zh")
-	cv.enTrans = enTrans
-	cv.zhTrans = zhTrans
 
 	cv.validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
@@ -71,10 +50,75 @@ func NewCustomValidator() *CustomValidator {
 		}
 		return name
 	})
+
 	cv.validate.SetTagName("valid")
 
-	cv.validate.RegisterValidation("name", ValidateName)
-	cv.validate.RegisterValidation("port", ValidatePort)
+	// register custom validator
+	cv.validate.RegisterValidation(ValidNameTag, ValidateName)
+	cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
+
+	type registerTranslationArgs struct {
+		tag    string
+		enText string
+		zhText string
+		params []string
+	}
+	argsMap := []registerTranslationArgs{
+		{
+			tag:    "required",
+			enText: "{0} is required",
+			zhText: "{0}不能为空",
+		},
+		{
+			tag:    "oneof",
+			enText: "{0} must be one of [{1}]",
+			zhText: "{0}必须是[{1}]其中之一",
+		},
+		{
+			tag:    "email",
+			enText: "{0} is invalid email addr",
+			zhText: "{0}是无效的邮箱地址",
+		},
+		{
+			tag:    ValidNameTag,
+			enText: "{0} must match regexp `{1}`",
+			zhText: "{0}必须匹配正则`{1}`",
+			params: []string{ValidateNameRegexpPattern},
+		},
+		{
+			tag:    ValidPortTag,
+			enText: "{0} is invalid port",
+			zhText: "{0}是无效的端口",
+		},
+	}
+	// register custom validator error message
+	for _, args := range argsMap {
+		err := cv.RegisterTranslation(args.tag, args.enText, args.enText, args.params...)
+		if err != nil {
+			panic(err)
+		}
+	}
+	defaultCustomValidator = cv
+}
+
+type CustomValidator struct {
+	validate *validator.Validate
+	enTrans  ut.Translator
+	zhTrans  ut.Translator
+}
+
+func NewCustomValidator() *CustomValidator {
+	en := en.New()
+	zh := zh.New()
+	uni := ut.New(en, zh)
+	enTrans, _ := uni.GetTranslator(en.Locale())
+	zhTrans, _ := uni.GetTranslator(zh.Locale())
+
+	cv := &CustomValidator{
+		validate: validator.New(),
+		enTrans:  enTrans,
+		zhTrans:  zhTrans,
+	}
 	return cv
 }
 
@@ -107,23 +151,9 @@ func (cv *CustomValidator) RegisterTranslation(tag, enText, zhText string, param
 	return err
 }
 
-func (cv *CustomValidator) Validate(i interface{}) error {
-	err := cv.validate.Struct(i)
-	if err == nil {
-		return nil
-	}
-	errs := err.(validator.ValidationErrors)
-	errMsgs := make([]string, 0, len(errs))
-	for _, err := range errs {
-		errMsgs = append(errMsgs, err.Translate(cv.enTrans))
-	}
-	if len(errMsgs) > 0 {
-		return fmt.Errorf(strings.Join(errMsgs, "; "))
-	}
-	return nil
-}
+var ValidateNameRegexpPattern = `^[a-zA-Z][a-zA-Z0-9\_\-]{0,59}$`
 
-// ValidateMyVal implements validator.Func
+// ValidateName implements validator.Func
 func ValidateName(fl validator.FieldLevel) bool {
 	return validateName(fl.Field().String())
 }
@@ -134,6 +164,7 @@ func validateName(name string) bool {
 	return match
 }
 
+// ValidatePort implements validator.Func
 func ValidatePort(fl validator.FieldLevel) bool {
 	return validatePort(fl.Field().String())
 }

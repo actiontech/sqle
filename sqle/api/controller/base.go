@@ -39,11 +39,8 @@ func BindAndValidateReq(c echo.Context, i interface{}) error {
 	if err := c.Bind(i); err != nil {
 		return err
 	}
-	if DefaultCustomValidator == nil {
-		return nil
-	}
-	if err := DefaultCustomValidator.Validate(i); err != nil {
-		fmt.Println(err)
+
+	if err := Validate(i); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return nil
