@@ -610,8 +610,6 @@ definitions:
           type: string
         type: array
       rule_template_name_list:
-        example:
-        - "1"
         items:
           type: string
         type: array

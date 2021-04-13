@@ -32,7 +32,6 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	}))
 	e.HideBanner = true
 	e.HidePort = true
-	e.Validator = &controller.CustomValidator{}
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 

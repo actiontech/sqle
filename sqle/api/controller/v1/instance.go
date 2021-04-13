@@ -17,14 +17,14 @@ var instanceNotExistError = errors.New(errors.DataNotExist, fmt.Errorf("instance
 var instanceNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
 
 type CreateInstanceReqV1 struct {
-	Name                 string   `json:"instance_name" form:"instance_name" example:"test" valid:"required"`
+	Name                 string   `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
 	User                 string   `json:"db_user" form:"db_user" example:"root" valid:"required"`
 	Host                 string   `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ipv4"`
-	Port                 string   `json:"db_port" form:"db_port" example:"3306" valid:"required,range(1|65535)"`
+	Port                 string   `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
 	Password             string   `json:"db_password" form:"db_password" example:"123456" valid:"required"`
-	Desc                 string   `json:"desc" example:"this is a test instance" valid:"-"`
+	Desc                 string   `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName string   `json:"workflow_template_name" form:"workflow_template_name"`
-	RuleTemplates        []string `json:"rule_template_name_list" form:"rule_template_name_list" valid:"-"`
+	RuleTemplates        []string `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string `json:"role_name_list" form:"role_name_list"`
 }
 
@@ -232,12 +232,12 @@ func DeleteInstance(c echo.Context) error {
 
 type UpdateInstanceReqV1 struct {
 	User                 *string  `json:"db_user" form:"db_user" example:"root"`
-	Host                 *string  `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"ipv4"`
-	Port                 *string  `json:"db_port" form:"db_port" example:"3306" valid:"range(1|65535)"`
+	Host                 *string  `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ipv4"`
+	Port                 *string  `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
 	Password             *string  `json:"db_password" form:"db_password" example:"123456"`
-	Desc                 *string  `json:"desc" example:"this is a test instance" valid:"-"`
+	Desc                 *string  `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName *string  `json:"workflow_template_name" form:"workflow_template_name"`
-	RuleTemplates        []string `json:"rule_template_name_list" form:"rule_template_name_list" example:"1" valid:"-"`
+	RuleTemplates        []string `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string `json:"role_name_list" form:"role_name_list"`
 }
 
@@ -251,6 +251,11 @@ type UpdateInstanceReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/instances/{instance_name}/ [patch]
 func UpdateInstance(c echo.Context) error {
+	req := new(UpdateInstanceReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
 	instance, exist, err := s.GetInstanceByName(instanceName)
@@ -259,11 +264,6 @@ func UpdateInstance(c echo.Context) error {
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, instanceNotExistError)
-	}
-
-	req := new(UpdateInstanceReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
 	}
 
 	updateMap := map[string]interface{}{}
@@ -344,8 +344,8 @@ type GetInstancesReqV1 struct {
 	FilterWorkflowTemplateName string `json:"filter_workflow_template_name" query:"filter_workflow_template_name"`
 	FilterRuleTemplateName     string `json:"filter_rule_template_name" query:"filter_rule_template_name"`
 	FilterRoleName             string `json:"filter_role_name" query:"filter_role_name"`
-	PageIndex                  uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize                   uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	PageIndex                  uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                   uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetInstancesResV1 struct {
@@ -481,9 +481,9 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 }
 
 type GetInstanceConnectableReqV1 struct {
-	User     string `json:"user" form:"db_user" example:"root"`
-	Host     string `json:"host" form:"db_host" example:"10.10.10.10"`
-	Port     string `json:"port" form:"db_port" example:"3306"`
+	User     string `json:"user" form:"db_user" example:"root" valid:"required"`
+	Host     string `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ipv4"`
+	Port     string `json:"port" form:"db_port" example:"3306" valid:"required,port"`
 	Password string `json:"password" form:"db_password" example:"123456"`
 }
 

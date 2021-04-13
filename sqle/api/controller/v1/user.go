@@ -10,9 +10,9 @@ import (
 )
 
 type CreateUserReqV1 struct {
-	Name     string   `json:"user_name" form:"user_name" example:"test" valid:"required"`
+	Name     string   `json:"user_name" form:"user_name" example:"test" valid:"required,name"`
 	Password string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
-	Email    string   `json:"email" form:"email" example:"test@email.com" valid:"email,optional"`
+	Email    string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
 	Roles    []string `json:"role_name_list" form:"role_name_list"`
 }
 
@@ -65,7 +65,7 @@ func CreateUser(c echo.Context) error {
 }
 
 type UpdateUserReqV1 struct {
-	Email *string  `json:"email"`
+	Email *string  `json:"email" valid:"omitempty,email"`
 	Roles []string `json:"role_name_list" form:"role_name_list"`
 }
 
@@ -255,8 +255,8 @@ func UpdateCurrentUser(c echo.Context) error {
 type GetUsersReqV1 struct {
 	FilterUserName string `json:"filter_user_name" query:"filter_user_name"`
 	FilterRoleName string `json:"filter_role_name" query:"filter_role_name"`
-	PageIndex      uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize       uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	PageIndex      uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize       uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetUsersResV1 struct {
@@ -358,7 +358,7 @@ func GetUserTips(c echo.Context) error {
 }
 
 type CreateRoleReqV1 struct {
-	Name      string   `json:"role_name" form:"role_name" valid:"required"`
+	Name      string   `json:"role_name" form:"role_name" valid:"required,name"`
 	Desc      string   `json:"role_desc" form:"role_desc"`
 	Users     []string `json:"user_name_list" form:"user_name_list"`
 	Instances []string `json:"instance_name_list" form:"instance_name_list"`
@@ -522,8 +522,8 @@ type GetRolesReqV1 struct {
 	FilterRoleName     string `json:"filter_role_name" query:"filter_role_name"`
 	FilterUserName     string `json:"filter_user_name" query:"filter_user_name"`
 	FilterInstanceName string `json:"filter_instance_name" query:"filter_instance_name"`
-	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetRolesResV1 struct {

@@ -26,8 +26,8 @@ var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not 
 
 type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
-	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1" valid:"-"`
-	Sql            string `json:"sql" example:"alter table tb1 drop columns c1" valid:"-"`
+	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
+	Sql            string `json:"sql" example:"alter table tb1 drop columns c1"`
 }
 
 type GetAuditTaskResV1 struct {
@@ -204,8 +204,8 @@ type GetAuditTaskSQLsReqV1 struct {
 	FilterExecStatus  string `json:"filter_exec_status" query:"filter_exec_status"`
 	FilterAuditStatus string `json:"filter_audit_status" query:"filter_audit_status"`
 	NoDuplicate       bool   `json:"no_duplicate" query:"no_duplicate"`
-	PageIndex         uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize          uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	PageIndex         uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize          uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetAuditTaskSQLsResV1 struct {
