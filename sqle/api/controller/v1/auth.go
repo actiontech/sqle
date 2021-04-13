@@ -64,14 +64,3 @@ func Login(c echo.Context) error {
 		},
 	})
 }
-
-// @Summary test
-// @Description user login
-// @Tags user
-// @Id testV1
-// @Security ApiKeyAuth
-// @Success 200 {object} string
-// @router /v1/test [get]
-func Test(c echo.Context) error {
-	return c.String(http.StatusOK, controller.GetUserName(c))
-}
