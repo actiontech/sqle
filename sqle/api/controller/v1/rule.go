@@ -10,10 +10,10 @@ import (
 )
 
 type CreateRuleTemplateReqV1 struct {
-	Name      string   `json:"rule_template_name" valid:"required"`
-	Desc      string   `json:"desc" valid:"-"`
-	Rules     []string `json:"rule_name_list" example:"ddl_check_index_count" valid:"-"`
-	Instances []string `json:"instance_name_list" valid:"-"`
+	Name      string   `json:"rule_template_name" valid:"required,name"`
+	Desc      string   `json:"desc"`
+	Rules     []string `json:"rule_name_list" example:"ddl_check_index_count"`
+	Instances []string `json:"instance_name_list"`
 }
 
 // @Summary 添加规则模板
@@ -76,9 +76,9 @@ func CreateRuleTemplate(c echo.Context) error {
 }
 
 type UpdateRuleTemplateReqV1 struct {
-	Desc      *string  `json:"desc" valid:"-"`
-	Rules     []string `json:"rule_name_list" example:"ddl_check_index_count" valid:"-"`
-	Instances []string `json:"instance_name_list" example:"mysql-xxx" valid:"-"`
+	Desc      *string  `json:"desc"`
+	Rules     []string `json:"rule_name_list" example:"ddl_check_index_count"`
+	Instances []string `json:"instance_name_list" example:"mysql-xxx"`
 }
 
 // @Summary 更新规则模板
@@ -225,8 +225,8 @@ func DeleteRuleTemplate(c echo.Context) error {
 
 type GetRuleTemplatesReqV1 struct {
 	FilterInstanceName string `json:"filter_instance_name" query:"filter_instance_name"`
-	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetRuleTemplatesResV1 struct {

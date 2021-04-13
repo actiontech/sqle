@@ -94,14 +94,14 @@ func GetWorkflowTemplate(c echo.Context) error {
 }
 
 type CreateWorkflowTemplateReqV1 struct {
-	Name      string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required"`
+	Name      string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required,name"`
 	Desc      string                       `json:"desc" form:"desc"`
-	Steps     []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required"`
+	Steps     []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required,dive,required"`
 	Instances []string                     `json:"instance_name_list" form:"instance_name_list"`
 }
 
 type WorkFlowStepTemplateReqV1 struct {
-	Type  string   `json:"type" form:"type" valid:"in(sql_review|sql_execute)" enums:"sql_review,sql_execute"`
+	Type  string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
 	Desc  string   `json:"desc" form:"desc"`
 	Users []string `json:"assignee_user_name_list" form:"assignee_user_name_list" valid:"required"`
 }
@@ -335,8 +335,8 @@ func DeleteWorkflowTemplate(c echo.Context) error {
 }
 
 type GetWorkflowTemplatesReqV1 struct {
-	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetWorkflowTemplatesResV1 struct {
@@ -428,9 +428,9 @@ func GetWorkflowTemplateTips(c echo.Context) error {
 }
 
 type CreateWorkflowReqV1 struct {
-	Subject string `json:"workflow_subject" form:"workflow_subject"`
+	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
 	Desc    string `json:"desc" form:"desc"`
-	TaskId  string `json:"task_id" form:"task_id"`
+	TaskId  string `json:"task_id" form:"task_id" valid:"required"`
 }
 
 // @Summary 创建工单
@@ -626,13 +626,13 @@ func GetWorkflow(c echo.Context) error {
 
 type GetWorkflowsReqV1 struct {
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
-	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" enums:"sql_review,sql_execute"`
-	FilterStatus                      string `json:"filter_status" query:"filter_status" enums:"on_process,finished,rejected,canceled"`
+	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" enums:"sql_review,sql_execute" valid:"omitempty,oneof=sql_review sql_execute"`
+	FilterStatus                      string `json:"filter_status" query:"filter_status" enums:"on_process,finished,rejected,canceled" valid:"omitempty,oneof=on_process finished rejected canceled"`
 	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
-	FilterTaskStatus                  string `json:"filter_task_status" query:"filter_task_status" enums:"initialized,audited,executing,exec_success,exec_failed"`
+	FilterTaskStatus                  string `json:"filter_task_status" query:"filter_task_status" enums:"initialized,audited,executing,exec_success,exec_failed" valid:"omitempty,oneof=initialized audited executing exec_success exec_failed"`
 	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
-	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required,int"`
-	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required,int"`
+	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetWorkflowsResV1 struct {
