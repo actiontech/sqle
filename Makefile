@@ -129,12 +129,17 @@ upload/sqle_sqlserver:
 	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(SUB_PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm  --ftp-create-dirs
 
 ###################################### 5.docker start #####################################################
-docker_start: docker_rpm/sqle
+docker_start: fill_ui_dir docker_rpm/sqle
 	cd ./docker-compose && docker-compose up -d
 	./docker-compose/install.sh
 
 docker_stop:
 	cd ./docker-compose && docker-compose down
+
+###################################### 6.ui #####################################################
+fill_ui_dir:
+	# fill ui dir, it is used by rpm build.
+	mkdir -p ./ui/static
 
 .PHONY: help
 help:
