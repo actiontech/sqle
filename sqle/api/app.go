@@ -117,6 +117,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 	v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
+	v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)

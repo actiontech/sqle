@@ -1115,6 +1115,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/tasks/audits/{task_id}/sql_content": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL content for the audit task",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取指定审核任务的SQL内容",
+                "operationId": "getAuditTaskSQLContentV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditTaskSQLContentResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tasks/audits/{task_id}/sql_file": {
             "get": {
                 "security": [
@@ -2054,6 +2086,13 @@ var doc = `{
                 "pass_rate": {
                     "type": "number"
                 },
+                "sql_source": {
+                    "type": "string",
+                    "enum": [
+                        "form_data",
+                        "sql_file"
+                    ]
+                },
                 "status": {
                     "type": "string",
                     "enum": [
@@ -2066,6 +2105,15 @@ var doc = `{
                 },
                 "task_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.AuditTaskSQLContentResV1": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "example": "alter table tb1 drop columns c1"
                 }
             }
         },
@@ -2297,6 +2345,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.AuditTaskResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetAuditTaskSQLContentResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskSQLContentResV1"
                 },
                 "message": {
                     "type": "string",
