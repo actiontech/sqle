@@ -18,9 +18,11 @@ type WorkflowTemplate struct {
 }
 
 const (
-	WorkflowStepTypeSQLReview  = "sql_review"
-	WorkflowStepTypeSQLExecute = "sql_execute"
-	WorkflowStepTypeUnknown    = "unknown"
+	WorkflowStepTypeSQLReview      = "sql_review"
+	WorkflowStepTypeSQLExecute     = "sql_execute"
+	WorkflowStepTypeUnknown        = "unknown"
+	WorkflowStepTypeCreateWorkflow = "create_workflow"
+	WorkflowStepTypeUpdateWorkflow = "update_workflow"
 )
 
 type WorkflowStepTemplate struct {
@@ -146,7 +148,6 @@ type Workflow struct {
 	Desc             string
 	CreateUserId     uint
 	WorkflowRecordId uint
-	TaskId           uint
 
 	CreateUser *User           `gorm:"foreignkey:CreateUserId"`
 	Record     *WorkflowRecord `gorm:"foreignkey:WorkflowRecordId"`
@@ -161,6 +162,7 @@ const (
 
 type WorkflowRecord struct {
 	Model
+	TaskId                uint
 	CurrentWorkflowStepId uint
 	Status                string `gorm:"default:\"on_process\""`
 
@@ -200,11 +202,8 @@ func (w *Workflow) InitWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTempl
 		}
 		steps = append(steps, step)
 	}
-	workflowRecord := &WorkflowRecord{
-		Steps:       steps,
-		CurrentStep: steps[0],
-	}
-	w.Record = workflowRecord
+	w.Record.Steps = steps
+	w.Record.CurrentStep = steps[0]
 }
 
 func (w *Workflow) CurrentStep() *WorkflowStep {
@@ -312,7 +311,9 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 
 func (s *Storage) GetWorkflowByTaskId(id string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Where("task_id = ?", id).First(workflow).Error
+	err := s.db.Model(&Workflow{}).Select("workflows.id").
+		Joins("JOIN workflow_records AS wr ON workflows.workflow_record_id = wr.id").
+		Where("wr.task_id = ?", id).Scan(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
