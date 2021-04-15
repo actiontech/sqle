@@ -493,7 +493,9 @@ func CreateWorkflow(c echo.Context) error {
 		Subject:      req.Subject,
 		Desc:         req.Desc,
 		CreateUserId: user.ID,
-		TaskId:       task.ID,
+		Record: &model.WorkflowRecord{
+			TaskId: task.ID,
+		},
 	}
 	workflow.InitWorkflowStepByTemplate(stepTemplates)
 	err = s.SaveWorkflow(workflow)
@@ -509,26 +511,31 @@ type GetWorkflowResV1 struct {
 }
 
 type WorkflowResV1 struct {
-	Id                uint                 `json:"workflow_id"`
-	Subject           string               `json:"subject"`
-	Desc              string               `json:"desc"`
+	Id         uint                 `json:"workflow_id"`
+	Subject    string               `json:"subject"`
+	Desc       string               `json:"desc,omitempty"`
+	CreateUser string               `json:"create_user_name"`
+	CreateTime *time.Time           `json:"create_time"`
+	Record     *WorkflowRecordResV1 `json:"record"`
+}
+
+type WorkflowRecordResV1 struct {
 	TaskId            uint                 `json:"task_id"`
-	CreateUser        string               `json:"create_user_name"`
-	CreateTime        *time.Time           `json:"create_time"`
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
 	Status            string               `json:"status" enums:"on_process,finished,rejected,canceled"`
 	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
 type WorkflowStepResV1 struct {
+	Id            uint       `json:"-"`
 	Number        uint       `json:"number"`
 	Type          string     `json:"type"`
-	Desc          string     `json:"desc"`
+	Desc          string     `json:"desc,omitempty"`
 	Users         []string   `json:"assignee_user_name_list,omitempty"`
 	OperationUser string     `json:"operation_user_name,omitempty"`
 	OperationTime *time.Time `json:"operation_time,omitempty"`
-	State         string     `json:"state" enums:"initialized,approved,rejected"`
-	Reason        string     `json:"reason"`
+	State         string     `json:"state,omitempty" enums:"initialized,approved,rejected"`
+	Reason        string     `json:"reason,omitempty"`
 }
 
 func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow) error {
@@ -548,6 +555,70 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 		return WorkflowNoAccessError
 	}
 	return nil
+}
+
+func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV1 {
+	workflowRes := &WorkflowResV1{
+		Id:         workflow.ID,
+		Subject:    workflow.Subject,
+		Desc:       workflow.Desc,
+		CreateTime: &workflow.CreatedAt,
+	}
+	if workflow.CreateUser != nil {
+		workflowRes.CreateUser = workflow.CreateUser.Name
+	}
+
+	record := &WorkflowRecordResV1{
+		TaskId: workflow.Record.TaskId,
+		Status: workflow.Record.Status,
+		Steps:  make([]*WorkflowStepResV1, 0, len(workflow.Record.Steps)+1),
+	}
+
+	// It is filled by create user and create time;
+	// and tell others that this is a creating or updating operation.
+	firstVirtualStep := &WorkflowStepResV1{
+		Type:          model.WorkflowStepTypeCreateWorkflow,
+		OperationTime: &workflow.Record.CreatedAt,
+		OperationUser: workflow.CreateUser.Name,
+	}
+	record.Steps = append(record.Steps, firstVirtualStep)
+
+	// workflow actual step
+	for _, step := range workflow.Record.Steps {
+		stepRes := convertWorkflowStepToRes(step)
+		record.Steps = append(record.Steps, stepRes)
+	}
+	// fill step number
+	for i, step := range record.Steps {
+		number := uint(i + 1)
+		step.Number = number
+		if step.Id == workflow.Record.CurrentWorkflowStepId {
+			record.CurrentStepNumber = number
+		}
+	}
+	workflowRes.Record = record
+	return workflowRes
+}
+
+func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV1 {
+	stepRes := &WorkflowStepResV1{
+		Id:            step.ID,
+		Type:          step.Template.Typ,
+		Desc:          step.Template.Desc,
+		OperationTime: step.OperateAt,
+		State:         step.State,
+		Reason:        step.Reason,
+		Users:         []string{},
+	}
+	if step.OperationUser != nil {
+		stepRes.OperationUser = step.OperationUser.Name
+	}
+	if step.Template.Users != nil {
+		for _, user := range step.Template.Users {
+			stepRes.Users = append(stepRes.Users, user.Name)
+		}
+	}
+	return stepRes
 }
 
 // @Summary 获取审批流程详情
@@ -579,48 +650,9 @@ func GetWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
-	workflowRes := &WorkflowResV1{
-		Id:         workflow.ID,
-		Subject:    workflow.Subject,
-		Desc:       workflow.Desc,
-		TaskId:     workflow.TaskId,
-		CreateTime: &workflow.CreatedAt,
-		Status:     workflow.Record.Status,
-	}
-	if workflow.CreateUser != nil {
-		workflowRes.CreateUser = workflow.CreateUser.Name
-	}
-
-	stepsRes := make([]*WorkflowStepResV1, 0, len(workflow.Record.Steps))
-	for _, step := range workflow.Record.Steps {
-		stepRes := &WorkflowStepResV1{
-			Number:        step.Template.Number,
-			Type:          step.Template.Typ,
-			Desc:          step.Template.Desc,
-			OperationTime: step.OperateAt,
-			State:         step.State,
-			Reason:        step.Reason,
-		}
-		if step.OperationUser != nil {
-			stepRes.OperationUser = step.OperationUser.Name
-		}
-		userNames := []string{}
-		if step.Template.Users != nil {
-			for _, user := range step.Template.Users {
-				userNames = append(userNames, user.Name)
-			}
-		}
-		stepRes.Users = userNames
-		stepsRes = append(stepsRes, stepRes)
-
-		if workflow.CurrentStep() != nil {
-			workflowRes.CurrentStepNumber = workflow.CurrentStep().Template.Number
-		}
-	}
-	workflowRes.Steps = stepsRes
 	return c.JSON(http.StatusOK, &GetWorkflowResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    workflowRes,
+		Data:    convertWorkflowToRes(workflow),
 	})
 }
 
@@ -811,7 +843,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
 	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
-		taskId := fmt.Sprintf("%d", workflow.TaskId)
+		taskId := fmt.Sprintf("%d", workflow.Record.TaskId)
 		task, exist, err := s.GetTaskDetailById(taskId)
 		if err != nil {
 			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
