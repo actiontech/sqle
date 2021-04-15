@@ -149,8 +149,9 @@ type Workflow struct {
 	CreateUserId     uint
 	WorkflowRecordId uint
 
-	CreateUser *User           `gorm:"foreignkey:CreateUserId"`
-	Record     *WorkflowRecord `gorm:"foreignkey:WorkflowRecordId"`
+	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
+	Record        *WorkflowRecord   `gorm:"foreignkey:WorkflowRecordId"`
+	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history;"`
 }
 
 const (
@@ -206,6 +207,19 @@ func (w *Workflow) InitWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTempl
 	w.Record.CurrentStep = steps[0]
 }
 
+func (w *Workflow) CloneWorkflowRecord() *WorkflowRecord {
+	record := &WorkflowRecord{}
+	steps := make([]*WorkflowStep, 0, len(w.Record.Steps))
+	for _, step := range w.Record.Steps {
+		steps = append(steps, &WorkflowStep{
+			WorkflowStepTemplateId: step.Template.ID,
+		})
+	}
+	record.Steps = steps
+	record.CurrentStep = steps[0]
+	return record
+}
+
 func (w *Workflow) CurrentStep() *WorkflowStep {
 	return w.Record.CurrentStep
 }
@@ -240,6 +254,18 @@ func (w *Workflow) IsOperationUser(user *User) bool {
 	return false
 }
 
+// IsFirstRecord check the record is the first record in workflow;
+// you must load record history first and then use it.
+func (w *Workflow) IsFirstRecord(record *WorkflowRecord) bool {
+	records := []*WorkflowRecord{}
+	records = append(records, w.RecordHistory...)
+	records = append(records, w.Record)
+	if len(records) > 0 {
+		return record == records[0]
+	}
+	return false
+}
+
 func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
@@ -259,12 +285,59 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 	})
 }
 
+func (s *Storage) UpdateWorkflowRecord(w *Workflow, record *WorkflowRecord, task *Task) error {
+	return s.TxExec(func(tx *sql.Tx) error {
+		_, err := tx.Exec("UPDATE workflow_records SET task_id = ? WHERE id = ?",
+			task.ID, record.ID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec("UPDATE workflows SET workflow_record_id = ? WHERE id = ?",
+			record.ID, w.ID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec("INSERT INTO workflow_record_history (workflow_record_id, workflow_id) value (?, ?)",
+			w.Record.ID, w.ID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func (s *Storage) SaveWorkflow(workflow *Workflow) error {
 	err := s.Save(workflow)
 	if err != nil {
 		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	return nil
+}
+
+func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, error) {
+	steps := []*WorkflowStep{}
+	err := s.db.Where("workflow_record_id in (?)", ids).
+		Preload("OperationUser").Find(&steps).Error
+	if err != nil {
+		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	stepTemplateIds := make([]uint, 0, len(steps))
+	for _, step := range steps {
+		stepTemplateIds = append(stepTemplateIds, step.WorkflowStepTemplateId)
+	}
+	stepTemplates := []*WorkflowStepTemplate{}
+	err = s.db.Preload("Users").Where("id in (?)", stepTemplateIds).Find(&stepTemplates).Error
+	if err != nil {
+		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	for _, step := range steps {
+		for _, stepTemplate := range stepTemplates {
+			if step.WorkflowStepTemplateId == stepTemplate.ID {
+				step.Template = stepTemplate
+			}
+		}
+	}
+	return steps, nil
 }
 
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
@@ -280,33 +353,47 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	if workflow.Record == nil {
 		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
 	}
-	steps := []*WorkflowStep{}
-	err = s.db.Where("workflow_record_id = ?", workflow.Record.ID).
-		Preload("OperationUser").Find(&steps).Error
+	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
 	if err != nil {
 		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	workflow.Record.Steps = steps
-	stepTemplateIds := make([]uint, 0, len(steps))
 	for _, step := range steps {
-		stepTemplateIds = append(stepTemplateIds, step.WorkflowStepTemplateId)
-	}
-	stepTemplates := []*WorkflowStepTemplate{}
-	err = s.db.Preload("Users").Where("id in (?)", stepTemplateIds).Find(&stepTemplates).Error
-	if err != nil {
-		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	for _, step := range steps {
-		for _, stepTemplate := range stepTemplates {
-			if step.WorkflowStepTemplateId == stepTemplate.ID {
-				step.Template = stepTemplate
-			}
-		}
 		if step.ID == workflow.Record.CurrentWorkflowStepId {
 			workflow.Record.CurrentStep = step
 		}
 	}
 	return workflow, true, nil
+}
+
+func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
+	records := []*WorkflowRecord{}
+	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.*").
+		Joins("JOIN workflow_record_history AS wrh ON workflow_records.id = wrh.workflow_record_id").
+		Where("wrh.workflow_id = ?", id).Scan(&records).Error
+	if err != nil {
+		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	if len(records) == 0 {
+		return records, nil
+	}
+	recordIds := make([]uint, 0, len(records))
+	for _, record := range records {
+		recordIds = append(recordIds, record.ID)
+	}
+	steps, err := s.getWorkflowStepsByRecordIds(recordIds)
+	if err != nil {
+		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	for _, record := range records {
+		record.Steps = []*WorkflowStep{}
+		for _, step := range steps {
+			if step.WorkflowRecordId == record.ID {
+				record.Steps = append(record.Steps, step)
+			}
+		}
+	}
+	return records, nil
 }
 
 func (s *Storage) GetWorkflowByTaskId(id string) (*Workflow, bool, error) {

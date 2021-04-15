@@ -824,16 +824,10 @@ definitions:
       workflow_id:
         type: integer
     type: object
-  v1.WorkflowResV1:
+  v1.WorkflowRecordResV1:
     properties:
-      create_time:
-        type: string
-      create_user_name:
-        type: string
       current_step_number:
         type: integer
-      desc:
-        type: string
       status:
         enum:
         - on_process
@@ -841,16 +835,32 @@ definitions:
         - rejected
         - canceled
         type: string
-      subject:
-        type: string
       task_id:
-        type: integer
-      workflow_id:
         type: integer
       workflow_step_list:
         items:
           $ref: '#/definitions/v1.WorkflowStepResV1'
         type: array
+    type: object
+  v1.WorkflowResV1:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      desc:
+        type: string
+      record:
+        $ref: '#/definitions/v1.WorkflowRecordResV1'
+        type: object
+      record_history_list:
+        items:
+          $ref: '#/definitions/v1.WorkflowRecordResV1'
+        type: array
+      subject:
+        type: string
+      workflow_id:
+        type: integer
     type: object
   v1.WorkflowStatisticsResV1:
     properties:
@@ -887,6 +897,8 @@ definitions:
         type: string
       type:
         type: string
+      workflow_step_id:
+        type: integer
     type: object
   v1.WorkflowTemplateDetailResV1:
     properties:
@@ -2139,7 +2151,7 @@ paths:
       summary: 审批关闭（中止）
       tags:
       - workflow
-  /v1/workflows/{workflow_id}/steps/{workflow_step_number}/approve:
+  /v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve:
     post:
       description: approve workflow
       operationId: approveWorkflowV1
@@ -2149,9 +2161,9 @@ paths:
         name: workflow_id
         required: true
         type: string
-      - description: workflow step number
+      - description: workflow step id
         in: path
-        name: workflow_step_number
+        name: workflow_step_id
         required: true
         type: string
       responses:
@@ -2164,7 +2176,7 @@ paths:
       summary: 审批通过
       tags:
       - workflow
-  /v1/workflows/{workflow_id}/steps/{workflow_step_number}/reject:
+  /v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject:
     post:
       description: reject workflow
       operationId: rejectWorkflowV1
@@ -2174,9 +2186,9 @@ paths:
         name: workflow_id
         required: true
         type: string
-      - description: workflow step number
+      - description: workflow step id
         in: path
-        name: workflow_step_number
+        name: workflow_step_id
         required: true
         type: string
       - description: workflow approve request

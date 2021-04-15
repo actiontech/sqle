@@ -455,16 +455,11 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("task is not exist")))
+		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
 	}
-
-	_, exist, err = s.GetWorkflowByTaskId(req.TaskId)
+	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-			fmt.Errorf("task has been used in other workflow")))
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -474,6 +469,15 @@ func CreateWorkflow(c echo.Context) error {
 	if task.CreateUserId != user.ID {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 			fmt.Errorf("the task is not created by yourself")))
+	}
+
+	_, exist, err = s.GetWorkflowByTaskId(req.TaskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("task has been used in other workflow")))
 	}
 
 	template, exist, err := s.GetWorkflowTemplateById(task.Instance.WorkflowTemplateId)
@@ -511,12 +515,13 @@ type GetWorkflowResV1 struct {
 }
 
 type WorkflowResV1 struct {
-	Id         uint                 `json:"workflow_id"`
-	Subject    string               `json:"subject"`
-	Desc       string               `json:"desc,omitempty"`
-	CreateUser string               `json:"create_user_name"`
-	CreateTime *time.Time           `json:"create_time"`
-	Record     *WorkflowRecordResV1 `json:"record"`
+	Id            uint                   `json:"workflow_id"`
+	Subject       string                 `json:"subject"`
+	Desc          string                 `json:"desc,omitempty"`
+	CreateUser    string                 `json:"create_user_name"`
+	CreateTime    *time.Time             `json:"create_time"`
+	Record        *WorkflowRecordResV1   `json:"record"`
+	RecordHistory []*WorkflowRecordResV1 `json:"record_history_list,omitempty"`
 }
 
 type WorkflowRecordResV1 struct {
@@ -527,7 +532,7 @@ type WorkflowRecordResV1 struct {
 }
 
 type WorkflowStepResV1 struct {
-	Id            uint       `json:"-"`
+	Id            uint       `json:"workflow_step_id,omitempty"`
 	Number        uint       `json:"number"`
 	Type          string     `json:"type"`
 	Desc          string     `json:"desc,omitempty"`
@@ -568,36 +573,60 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV1 {
 		workflowRes.CreateUser = workflow.CreateUser.Name
 	}
 
-	record := &WorkflowRecordResV1{
-		TaskId: workflow.Record.TaskId,
-		Status: workflow.Record.Status,
-		Steps:  make([]*WorkflowStepResV1, 0, len(workflow.Record.Steps)+1),
-	}
-
-	// It is filled by create user and create time;
-	// and tell others that this is a creating or updating operation.
-	firstVirtualStep := &WorkflowStepResV1{
-		Type:          model.WorkflowStepTypeCreateWorkflow,
-		OperationTime: &workflow.Record.CreatedAt,
-		OperationUser: workflow.CreateUser.Name,
-	}
-	record.Steps = append(record.Steps, firstVirtualStep)
-
-	// workflow actual step
-	for _, step := range workflow.Record.Steps {
-		stepRes := convertWorkflowStepToRes(step)
-		record.Steps = append(record.Steps, stepRes)
-	}
-	// fill step number
-	for i, step := range record.Steps {
-		number := uint(i + 1)
-		step.Number = number
-		if step.Id == workflow.Record.CurrentWorkflowStepId {
-			record.CurrentStepNumber = number
+	// convert workflow record
+	recordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
+	// fill current step number
+	for _, step := range recordRes.Steps {
+		if step.Id != 0 && step.Id == workflow.Record.CurrentWorkflowStepId {
+			recordRes.CurrentStepNumber = step.Number
 		}
 	}
-	workflowRes.Record = record
+	workflowRes.Record = recordRes
+
+	// convert workflow record history
+	recordHistory := make([]*WorkflowRecordResV1, 0, len(workflow.RecordHistory))
+	for _, record := range workflow.RecordHistory {
+		recordRes := convertWorkflowRecordToRes(workflow, record)
+		recordHistory = append(recordHistory, recordRes)
+	}
+	workflowRes.RecordHistory = recordHistory
 	return workflowRes
+}
+
+func convertWorkflowRecordToRes(workflow *model.Workflow,
+	record *model.WorkflowRecord) *WorkflowRecordResV1 {
+
+	steps := make([]*WorkflowStepResV1, 0, len(record.Steps)+1)
+	// It is filled by create user and create time;
+	// and tell others that this is a creating or updating operation.
+	var stepType string
+	if workflow.IsFirstRecord(record) {
+		stepType = model.WorkflowStepTypeCreateWorkflow
+	} else {
+		stepType = model.WorkflowStepTypeUpdateWorkflow
+	}
+	firstVirtualStep := &WorkflowStepResV1{
+		Type:          stepType,
+		OperationTime: &record.CreatedAt,
+		OperationUser: workflow.CreateUser.Name,
+	}
+	steps = append(steps, firstVirtualStep)
+
+	// convert workflow actual step
+	for _, step := range record.Steps {
+		stepRes := convertWorkflowStepToRes(step)
+		steps = append(steps, stepRes)
+	}
+	// fill step number
+	for i, step := range steps {
+		number := uint(i + 1)
+		step.Number = number
+	}
+	return &WorkflowRecordResV1{
+		TaskId: record.TaskId,
+		Status: record.Status,
+		Steps:  steps,
+	}
 }
 
 func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV1 {
@@ -650,6 +679,11 @@ func GetWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
+	history, err := s.GetWorkflowHistoryById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	workflow.RecordHistory = history
 	return c.JSON(http.StatusOK, &GetWorkflowResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertWorkflowToRes(workflow),
@@ -767,9 +801,9 @@ func GetWorkflows(c echo.Context) error {
 // @Id approveWorkflowV1
 // @Security ApiKeyAuth
 // @Param workflow_id path string true "workflow id"
-// @Param workflow_step_number path string true "workflow step number"
+// @Param workflow_step_id path string true "workflow step id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/steps/{workflow_step_number}/approve [post]
+// @router /v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	id, err := FormatStringToInt(workflowId)
@@ -784,8 +818,8 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 
 	//TODO: try to using struct tag valid.
-	stepNumberStr := c.Param("workflow_step_number")
-	stepNumber, err := FormatStringToInt(stepNumberStr)
+	stepIdStr := c.Param("workflow_step_id")
+	stepId, err := FormatStringToInt(stepIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -809,9 +843,9 @@ func ApproveWorkflow(c echo.Context) error {
 			errors.DataInvalid, fmt.Errorf("workflow current step not found")))
 	}
 
-	if uint(stepNumber) != workflow.CurrentStep().Template.Number {
+	if uint(stepId) != workflow.CurrentStep().ID {
 		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepNumber)))
+			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepId)))
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -882,10 +916,10 @@ type RejectWorkflowReqV1 struct {
 // @Id rejectWorkflowV1
 // @Security ApiKeyAuth
 // @Param workflow_id path string true "workflow id"
-// @Param workflow_step_number path string true "workflow step number"
+// @Param workflow_step_id path string true "workflow step id"
 // @param workflow_approve body v1.RejectWorkflowReqV1 true "workflow approve request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/steps/{workflow_step_number}/reject [post]
+// @router /v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject [post]
 func RejectWorkflow(c echo.Context) error {
 	req := new(RejectWorkflowReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -904,8 +938,8 @@ func RejectWorkflow(c echo.Context) error {
 	}
 
 	//TODO: try to using struct tag valid.
-	stepNumberStr := c.Param("workflow_step_number")
-	stepNumber, err := FormatStringToInt(stepNumberStr)
+	stepIdStr := c.Param("workflow_step_id")
+	stepId, err := FormatStringToInt(stepIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -929,9 +963,9 @@ func RejectWorkflow(c echo.Context) error {
 			errors.DataInvalid, fmt.Errorf("workflow current step not found")))
 	}
 
-	if uint(stepNumber) != workflow.CurrentStep().Template.Number {
+	if uint(stepId) != workflow.CurrentStep().ID {
 		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepNumber)))
+			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepId)))
 	}
 
 	user, err := controller.GetCurrentUser(c)

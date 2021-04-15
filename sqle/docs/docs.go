@@ -1939,7 +1939,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflows/{workflow_id}/steps/{workflow_step_number}/approve": {
+        "/v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve": {
             "post": {
                 "security": [
                     {
@@ -1962,8 +1962,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "workflow step number",
-                        "name": "workflow_step_number",
+                        "description": "workflow step id",
+                        "name": "workflow_step_id",
                         "in": "path",
                         "required": true
                     }
@@ -1978,7 +1978,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflows/{workflow_id}/steps/{workflow_step_number}/reject": {
+        "/v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject": {
             "post": {
                 "security": [
                     {
@@ -2001,8 +2001,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "workflow step number",
-                        "name": "workflow_step_number",
+                        "description": "workflow step id",
+                        "name": "workflow_step_id",
                         "in": "path",
                         "required": true
                     },
@@ -3241,20 +3241,11 @@ var doc = `{
                 }
             }
         },
-        "v1.WorkflowResV1": {
+        "v1.WorkflowRecordResV1": {
             "type": "object",
             "properties": {
-                "create_time": {
-                    "type": "string"
-                },
-                "create_user_name": {
-                    "type": "string"
-                },
                 "current_step_number": {
                     "type": "integer"
-                },
-                "desc": {
-                    "type": "string"
                 },
                 "status": {
                     "type": "string",
@@ -3265,13 +3256,7 @@ var doc = `{
                         "canceled"
                     ]
                 },
-                "subject": {
-                    "type": "string"
-                },
                 "task_id": {
-                    "type": "integer"
-                },
-                "workflow_id": {
                     "type": "integer"
                 },
                 "workflow_step_list": {
@@ -3279,6 +3264,36 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.WorkflowStepResV1"
                     }
+                }
+            }
+        },
+        "v1.WorkflowResV1": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "record": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowRecordResV1"
+                },
+                "record_history_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowRecordResV1"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -3333,6 +3348,9 @@ var doc = `{
                 },
                 "type": {
                     "type": "string"
+                },
+                "workflow_step_id": {
+                    "type": "integer"
                 }
             }
         },
