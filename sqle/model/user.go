@@ -203,7 +203,7 @@ LEFT JOIN workflow_steps AS cur_ws ON wr.current_workflow_step_id = cur_ws.id
 LEFT JOIN workflow_step_templates AS cur_wst ON cur_ws.workflow_step_template_id = cur_wst.id
 LEFT JOIN workflow_step_template_user AS cur_wst_re_user ON cur_wst.id = cur_wst_re_user.workflow_step_template_id
 LEFT JOIN users AS cur_ass_user ON cur_wst_re_user.user_id = cur_ass_user.id
-LEFT JOIN workflow_steps AS op_ws ON wr.id = op_ws.workflow_record_id AND op_ws.state != "initialized"
+LEFT JOIN workflow_steps AS op_ws ON w.id = op_ws.workflow_id AND op_ws.state != "initialized"
 LEFT JOIN workflow_step_templates AS op_wst ON op_ws.workflow_step_template_id = op_wst.id
 LEFT JOIN workflow_step_template_user AS op_wst_re_user ON op_wst.id = op_wst_re_user.workflow_step_template_id
 LEFT JOIN users AS op_ass_user ON op_wst_re_user.user_id = op_ass_user.id
@@ -212,6 +212,28 @@ AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
 `
 	var count uint
 	err := s.db.Raw(query, workflow.ID, user.ID, user.ID, user.ID).Count(&count).Error
+	if err != nil {
+		return false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	return count > 0, nil
+}
+
+func (s *Storage) UserCanAccessTask(user *User, task *Task) (bool, error) {
+	query := `SELECT count(tasks.id) FROM tasks
+JOIN workflow_records AS wr ON tasks.id = wr.task_id AND tasks.id = ?
+LEFT JOIN workflow_steps AS cur_ws ON wr.current_workflow_step_id = cur_ws.id
+LEFT JOIN workflow_step_templates AS cur_wst ON cur_ws.workflow_step_template_id = cur_wst.id
+LEFT JOIN workflow_step_template_user AS cur_wst_re_user ON cur_wst.id = cur_wst_re_user.workflow_step_template_id
+LEFT JOIN users AS cur_ass_user ON cur_wst_re_user.user_id = cur_ass_user.id
+LEFT JOIN workflow_steps AS op_ws ON wr.id = op_ws.workflow_record_id AND op_ws.state != "initialized"
+LEFT JOIN workflow_step_templates AS op_wst ON op_ws.workflow_step_template_id = op_wst.id
+LEFT JOIN workflow_step_template_user AS op_wst_re_user ON op_wst.id = op_wst_re_user.workflow_step_template_id
+LEFT JOIN users AS op_ass_user ON op_wst_re_user.user_id = op_ass_user.id
+where tasks.deleted_at IS NULL
+AND (tasks.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
+`
+	var count uint
+	err := s.db.Raw(query, task.ID, user.ID, user.ID, user.ID).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}

@@ -63,7 +63,7 @@ LEFT JOIN workflow_step_template_user AS curr_wst_re_user ON curr_wst.id = curr_
 LEFT JOIN users AS curr_ass_user ON curr_wst_re_user.user_id = curr_ass_user.id
 
 {{- if .check_user_can_access }}
-LEFT JOIN workflow_steps AS all_ws ON wr.id = all_ws.workflow_record_id AND all_ws.state !="initialized"
+LEFT JOIN workflow_steps AS all_ws ON w.id = all_ws.workflow_id AND all_ws.state !="initialized"
 LEFT JOIN workflow_step_templates AS all_wst ON all_ws.workflow_step_template_id = all_wst.id
 LEFT JOIN workflow_step_template_user AS all_wst_re_user ON all_wst.id = all_wst_re_user.workflow_step_template_id
 LEFT JOIN users AS all_ass_user ON all_wst_re_user.user_id = all_ass_user.id

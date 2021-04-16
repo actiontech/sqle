@@ -186,6 +186,7 @@ type WorkflowStep struct {
 	Model
 	OperationUserId        uint
 	OperateAt              *time.Time
+	WorkflowId             uint   `gorm:"index; not null"`
 	WorkflowRecordId       uint   `gorm:"index; not null"`
 	WorkflowStepTemplateId uint   `gorm:"index; not null"`
 	State                  string `gorm:"default:\"initialized\""`
@@ -195,7 +196,7 @@ type WorkflowStep struct {
 	OperationUser *User                 `gorm:"foreignkey:OperationUserId"`
 }
 
-func (w *Workflow) InitWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate) {
+func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate) []*WorkflowStep {
 	steps := make([]*WorkflowStep, 0, len(stepsTemplate))
 	for _, st := range stepsTemplate {
 		step := &WorkflowStep{
@@ -203,21 +204,18 @@ func (w *Workflow) InitWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTempl
 		}
 		steps = append(steps, step)
 	}
-	w.Record.Steps = steps
-	w.Record.CurrentStep = steps[0]
+	return steps
 }
 
-func (w *Workflow) CloneWorkflowRecord() *WorkflowRecord {
-	record := &WorkflowRecord{}
+func (w *Workflow) cloneWorkflowStep() []*WorkflowStep {
 	steps := make([]*WorkflowStep, 0, len(w.Record.Steps))
 	for _, step := range w.Record.Steps {
 		steps = append(steps, &WorkflowStep{
 			WorkflowStepTemplateId: step.Template.ID,
+			WorkflowId:             w.ID,
 		})
 	}
-	record.Steps = steps
-	record.CurrentStep = steps[0]
-	return record
+	return steps
 }
 
 func (w *Workflow) CurrentStep() *WorkflowStep {
@@ -266,6 +264,101 @@ func (w *Workflow) IsFirstRecord(record *WorkflowRecord) bool {
 	return false
 }
 
+func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
+	stepTemplates []*WorkflowStepTemplate) error {
+
+	workflow := &Workflow{
+		Subject:      subject,
+		Desc:         desc,
+		CreateUserId: user.ID,
+	}
+	record := &WorkflowRecord{
+		TaskId: task.ID,
+	}
+	steps := generateWorkflowStepByTemplate(stepTemplates)
+
+	tx := s.db.Begin()
+
+	err := tx.Save(record).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	workflow.WorkflowRecordId = record.ID
+	err = tx.Save(workflow).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	for _, step := range steps {
+		currentStep := step
+		currentStep.WorkflowRecordId = record.ID
+		currentStep.WorkflowId = workflow.ID
+		err = tx.Save(currentStep).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		}
+	}
+	if len(steps) > 0 {
+		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		}
+	}
+	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
+}
+
+func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
+	record := &WorkflowRecord{
+		TaskId: task.ID,
+	}
+	steps := w.cloneWorkflowStep()
+
+	tx := s.db.Begin()
+	err := tx.Save(record).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	for _, step := range steps {
+		currentStep := step
+		currentStep.WorkflowRecordId = record.ID
+		err = tx.Save(currentStep).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		}
+	}
+	if len(steps) > 0 {
+		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		}
+	}
+	// update record history
+	err = tx.Exec("INSERT INTO workflow_record_history (workflow_record_id, workflow_id) value (?, ?)",
+		w.Record.ID, w.ID).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	// update workflow record to new
+	if err := tx.Model(&Workflow{}).Where("id = ?", w.ID).
+		Update("workflow_record_id", record.ID).Error; err != nil {
+		tx.Rollback()
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
+}
+
 func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
@@ -283,35 +376,6 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 		}
 		return nil
 	})
-}
-
-func (s *Storage) UpdateWorkflowRecord(w *Workflow, record *WorkflowRecord, task *Task) error {
-	return s.TxExec(func(tx *sql.Tx) error {
-		_, err := tx.Exec("UPDATE workflow_records SET task_id = ? WHERE id = ?",
-			task.ID, record.ID)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("UPDATE workflows SET workflow_record_id = ? WHERE id = ?",
-			record.ID, w.ID)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("INSERT INTO workflow_record_history (workflow_record_id, workflow_id) value (?, ?)",
-			w.Record.ID, w.ID)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
-func (s *Storage) SaveWorkflow(workflow *Workflow) error {
-	err := s.Save(workflow)
-	if err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	return nil
 }
 
 func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, error) {
@@ -360,7 +424,9 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow.Record.Steps = steps
 	for _, step := range steps {
 		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			workflow.Record.CurrentStep = step
+			if step.State != WorkflowStepStateInit {
+				workflow.Record.CurrentStep = step
+			}
 		}
 	}
 	return workflow, true, nil
@@ -396,20 +462,20 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 	return records, nil
 }
 
-func (s *Storage) GetWorkflowByTaskId(id string) (*Workflow, bool, error) {
-	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Select("workflows.id").
-		Joins("JOIN workflow_records AS wr ON workflows.workflow_record_id = wr.id").
-		Where("wr.task_id = ?", id).Scan(workflow).Error
+func (s *Storage) GetWorkflowRecordByTaskId(id string) (*WorkflowRecord, bool, error) {
+	record := &WorkflowRecord{}
+	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.id").
+		Where("workflow_records.task_id = ?", id).Scan(record).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
 	if err != nil {
 		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
-	return workflow, true, nil
+	return record, true, nil
 }
 
+// TODO: delete workflow record history
 func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("DELETE FROM workflows WHERE id = ?", workflow.ID)
