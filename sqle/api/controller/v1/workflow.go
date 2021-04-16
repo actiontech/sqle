@@ -471,7 +471,7 @@ func CreateWorkflow(c echo.Context) error {
 			fmt.Errorf("the task is not created by yourself")))
 	}
 
-	_, exist, err = s.GetWorkflowByTaskId(req.TaskId)
+	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1094,7 +1094,7 @@ func UpdateWorkflow(c echo.Context) error {
 			fmt.Errorf("the task is not created by yourself")))
 	}
 
-	_, exist, err = s.GetWorkflowByTaskId(req.TaskId)
+	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

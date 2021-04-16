@@ -460,18 +460,17 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 	return records, nil
 }
 
-func (s *Storage) GetWorkflowByTaskId(id string) (*Workflow, bool, error) {
-	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Select("workflows.id").
-		Joins("JOIN workflow_records AS wr ON workflows.workflow_record_id = wr.id").
-		Where("wr.task_id = ?", id).Scan(workflow).Error
+func (s *Storage) GetWorkflowRecordByTaskId(id string) (*WorkflowRecord, bool, error) {
+	record := &WorkflowRecord{}
+	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.id").
+		Where("workflow_records.task_id = ?", id).Scan(record).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
 	if err != nil {
 		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
-	return workflow, true, nil
+	return record, true, nil
 }
 
 func (s *Storage) DeleteWorkflow(workflow *Workflow) error {

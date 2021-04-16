@@ -159,14 +159,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 		return nil
 	}
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByTaskId(fmt.Sprintf("%d", task.ID))
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return TaskNoAccessError
-	}
-	access, err := s.UserCanAccessWorkflow(user, workflow)
+	access, err := s.UserCanAccessTask(user, task)
 	if err != nil {
 		return err
 	}
