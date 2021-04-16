@@ -8,7 +8,6 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"actiontech.cloud/universe/sqle/v4/sqle/executor"
@@ -41,6 +40,7 @@ type AuditTaskResV1 struct {
 	InstanceSchema string  `json:"instance_schema" example:"db1"`
 	PassRate       float64 `json:"pass_rate"`
 	Status         string  `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
+	SQLSource      string  `json:"sql_source" enums:"form_data,sql_file"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
@@ -50,6 +50,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		InstanceSchema: task.Schema,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
+		SQLSource:      task.SQLSource,
 	}
 }
 
@@ -71,11 +72,14 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+
+	source := model.TaskSQLSourceFromFormData
 	if req.Sql == "" {
 		_, sqls, err := controller.ReadFileToByte(c, "input_sql_file")
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		source = model.TaskSQLSourceFromSQLFile
 		req.Sql = string(sqls)
 	}
 
@@ -107,6 +111,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		Instance:     instance,
 		CreateUserId: user.ID,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
+		SQLSource:    source,
 	}
 
 	createAt := time.Now()
@@ -387,7 +392,7 @@ func DownloadTaskSQLFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	sqls, err := s.GetTaskExecuteSQLContent(taskId)
+	content, err := s.GetTaskExecuteSQLContent(taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -395,10 +400,49 @@ func DownloadTaskSQLFile(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
 
-	buff := &bytes.Buffer{}
-	for _, sql := range sqls {
-		buff.WriteString(strings.TrimRight(sql, ";"))
-		buff.WriteString(";\n")
+	return c.Blob(http.StatusOK, echo.MIMETextPlain, content)
+}
+
+type GetAuditTaskSQLContentResV1 struct {
+	controller.BaseRes
+	Data *AuditTaskSQLContentResV1 `json:"data"`
+}
+
+type AuditTaskSQLContentResV1 struct {
+	Sql string `json:"sql" example:"alter table tb1 drop columns c1"`
+}
+
+// @Summary 获取指定审核任务的SQL内容
+// @Description get SQL content for the audit task
+// @Tags task
+// @Id getAuditTaskSQLContentV1
+// @Security ApiKeyAuth
+// @Param task_id path string true "task id"
+// @Success 200 {object} v1.GetAuditTaskSQLContentResV1
+// @router /v1/tasks/audits/{task_id}/sql_content [get]
+func GetAuditTaskSQLContent(c echo.Context) error {
+	taskId := c.Param("task_id")
+	s := model.GetStorage()
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	return c.Blob(http.StatusOK, echo.MIMETextPlain, buff.Bytes())
+	if !exist {
+		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+	}
+	err = checkCurrentUserCanAccessTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	content, err := s.GetTaskExecuteSQLContent(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetAuditTaskSQLContentResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &AuditTaskSQLContentResV1{
+			Sql: string(content),
+		},
+	})
 }

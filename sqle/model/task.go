@@ -2,8 +2,10 @@ package model
 
 import (
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"bytes"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -33,12 +35,18 @@ const (
 	TaskStatusExecuteFailed    = "exec_failed"
 )
 
+const (
+	TaskSQLSourceFromFormData = "form_data"
+	TaskSQLSourceFromSQLFile  = "sql_file"
+)
+
 type Task struct {
 	Model
 	InstanceId   uint    `json:"instance_id"`
 	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
 	PassRate     float64 `json:"pass_rate"`
 	SQLType      string  `json:"sql_type" gorm:"column:sql_type"`
+	SQLSource    string  `json:"sql_source" gorm:"column:sql_source"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
 	CreateUserId uint
 
@@ -218,20 +226,21 @@ func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]string, error) {
-	var SQLContents []string
+func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	rows, err := s.db.Model(&ExecuteSQL{}).Select("content").
 		Where("task_id = ?", taskId).Rows()
 	if err != nil {
-		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	defer rows.Close()
+	buff := &bytes.Buffer{}
 	for rows.Next() {
 		var content string
 		rows.Scan(&content)
-		SQLContents = append(SQLContents, content)
+		buff.WriteString(strings.TrimRight(content, ";"))
+		buff.WriteString(";\n")
 	}
-	return SQLContents, nil
+	return buff.Bytes(), nil
 }
 
 func (s *Storage) GetTasksInstanceName() ([]string, error) {
@@ -525,9 +534,9 @@ func (s *Storage) DeleteTask(task *Task) error {
 func (s *Storage) GetExpiredTasks(start time.Time) ([]*Task, error) {
 	tasks := []*Task{}
 	err := s.db.Model(&Task{}).Select("tasks.id").
-		Joins("LEFT JOIN workflows ON tasks.id = workflows.task_id").
+		Joins("LEFT JOIN workflow_records ON tasks.id = workflow_records.task_id").
 		Where("tasks.created_at < ?", start).
-		Where("workflows.id is NULL").
+		Where("workflow_records.id is NULL").
 		Scan(&tasks).Error
 
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)

@@ -107,9 +107,10 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	v1Router.POST("/workflows", v1.CreateWorkflow)
 	v1Router.GET("/workflows/:workflow_id/", v1.GetWorkflow)
 	v1Router.GET("/workflows", v1.GetWorkflows)
-	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_number/approve", v1.ApproveWorkflow)
-	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_number/reject", v1.RejectWorkflow)
+	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
+	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
+	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
@@ -117,6 +118,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 	v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
+	v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)

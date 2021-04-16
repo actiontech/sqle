@@ -1115,6 +1115,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/tasks/audits/{task_id}/sql_content": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL content for the audit task",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取指定审核任务的SQL内容",
+                "operationId": "getAuditTaskSQLContentV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditTaskSQLContentResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tasks/audits/{task_id}/sql_file": {
             "get": {
                 "security": [
@@ -1905,6 +1937,51 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update workflow when it is rejected to creator.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "更新审批流程（驳回后才可更新）",
+                "operationId": "updateWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
             }
         },
         "/v1/workflows/{workflow_id}/cancel": {
@@ -1939,7 +2016,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflows/{workflow_id}/steps/{workflow_step_number}/approve": {
+        "/v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve": {
             "post": {
                 "security": [
                     {
@@ -1962,8 +2039,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "workflow step number",
-                        "name": "workflow_step_number",
+                        "description": "workflow step id",
+                        "name": "workflow_step_id",
                         "in": "path",
                         "required": true
                     }
@@ -1978,7 +2055,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflows/{workflow_id}/steps/{workflow_step_number}/reject": {
+        "/v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject": {
             "post": {
                 "security": [
                     {
@@ -2001,8 +2078,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "workflow step number",
-                        "name": "workflow_step_number",
+                        "description": "workflow step id",
+                        "name": "workflow_step_id",
                         "in": "path",
                         "required": true
                     },
@@ -2054,6 +2131,13 @@ var doc = `{
                 "pass_rate": {
                     "type": "number"
                 },
+                "sql_source": {
+                    "type": "string",
+                    "enum": [
+                        "form_data",
+                        "sql_file"
+                    ]
+                },
                 "status": {
                     "type": "string",
                     "enum": [
@@ -2066,6 +2150,15 @@ var doc = `{
                 },
                 "task_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.AuditTaskSQLContentResV1": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "example": "alter table tb1 drop columns c1"
                 }
             }
         },
@@ -2297,6 +2390,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.AuditTaskResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetAuditTaskSQLContentResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskSQLContentResV1"
                 },
                 "message": {
                     "type": "string",
@@ -3052,6 +3162,14 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateWorkflowReqV1": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateWorkflowTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -3241,20 +3359,11 @@ var doc = `{
                 }
             }
         },
-        "v1.WorkflowResV1": {
+        "v1.WorkflowRecordResV1": {
             "type": "object",
             "properties": {
-                "create_time": {
-                    "type": "string"
-                },
-                "create_user_name": {
-                    "type": "string"
-                },
                 "current_step_number": {
                     "type": "integer"
-                },
-                "desc": {
-                    "type": "string"
                 },
                 "status": {
                     "type": "string",
@@ -3265,13 +3374,7 @@ var doc = `{
                         "canceled"
                     ]
                 },
-                "subject": {
-                    "type": "string"
-                },
                 "task_id": {
-                    "type": "integer"
-                },
-                "workflow_id": {
                     "type": "integer"
                 },
                 "workflow_step_list": {
@@ -3279,6 +3382,36 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.WorkflowStepResV1"
                     }
+                }
+            }
+        },
+        "v1.WorkflowResV1": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "record": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowRecordResV1"
+                },
+                "record_history_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowRecordResV1"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -3332,7 +3465,16 @@ var doc = `{
                     ]
                 },
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "create_workflow",
+                        "update_workflow",
+                        "sql_review",
+                        "sql_execute"
+                    ]
+                },
+                "workflow_step_id": {
+                    "type": "integer"
                 }
             }
         },

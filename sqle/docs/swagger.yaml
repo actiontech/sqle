@@ -18,6 +18,11 @@ definitions:
         type: string
       pass_rate:
         type: number
+      sql_source:
+        enum:
+        - form_data
+        - sql_file
+        type: string
       status:
         enum:
         - initialized
@@ -28,6 +33,12 @@ definitions:
         type: string
       task_id:
         type: integer
+    type: object
+  v1.AuditTaskSQLContentResV1:
+    properties:
+      sql:
+        example: alter table tb1 drop columns c1
+        type: string
     type: object
   v1.AuditTaskSQLResV1:
     properties:
@@ -182,6 +193,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.AuditTaskResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetAuditTaskSQLContentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditTaskSQLContentResV1'
         type: object
       message:
         example: ok
@@ -697,6 +720,11 @@ definitions:
           type: string
         type: array
     type: object
+  v1.UpdateWorkflowReqV1:
+    properties:
+      task_id:
+        type: string
+    type: object
   v1.UpdateWorkflowTemplateReqV1:
     properties:
       desc:
@@ -824,16 +852,10 @@ definitions:
       workflow_id:
         type: integer
     type: object
-  v1.WorkflowResV1:
+  v1.WorkflowRecordResV1:
     properties:
-      create_time:
-        type: string
-      create_user_name:
-        type: string
       current_step_number:
         type: integer
-      desc:
-        type: string
       status:
         enum:
         - on_process
@@ -841,16 +863,32 @@ definitions:
         - rejected
         - canceled
         type: string
-      subject:
-        type: string
       task_id:
-        type: integer
-      workflow_id:
         type: integer
       workflow_step_list:
         items:
           $ref: '#/definitions/v1.WorkflowStepResV1'
         type: array
+    type: object
+  v1.WorkflowResV1:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      desc:
+        type: string
+      record:
+        $ref: '#/definitions/v1.WorkflowRecordResV1'
+        type: object
+      record_history_list:
+        items:
+          $ref: '#/definitions/v1.WorkflowRecordResV1'
+        type: array
+      subject:
+        type: string
+      workflow_id:
+        type: integer
     type: object
   v1.WorkflowStatisticsResV1:
     properties:
@@ -886,7 +924,14 @@ definitions:
         - rejected
         type: string
       type:
+        enum:
+        - create_workflow
+        - update_workflow
+        - sql_review
+        - sql_execute
         type: string
+      workflow_step_id:
+        type: integer
     type: object
   v1.WorkflowTemplateDetailResV1:
     properties:
@@ -1612,6 +1657,26 @@ paths:
       summary: 获取Sql审核任务信息
       tags:
       - task
+  /v1/tasks/audits/{task_id}/sql_content:
+    get:
+      description: get SQL content for the audit task
+      operationId: getAuditTaskSQLContentV1
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditTaskSQLContentResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核任务的SQL内容
+      tags:
+      - task
   /v1/tasks/audits/{task_id}/sql_file:
     get:
       description: download SQL file for the audit task
@@ -2119,6 +2184,35 @@ paths:
       summary: 获取审批流程详情
       tags:
       - workflow
+    patch:
+      consumes:
+      - application/json
+      description: update workflow when it is rejected to creator.
+      operationId: updateWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: update workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWorkflowReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新审批流程（驳回后才可更新）
+      tags:
+      - workflow
   /v1/workflows/{workflow_id}/cancel:
     post:
       description: cancel workflow
@@ -2139,7 +2233,7 @@ paths:
       summary: 审批关闭（中止）
       tags:
       - workflow
-  /v1/workflows/{workflow_id}/steps/{workflow_step_number}/approve:
+  /v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve:
     post:
       description: approve workflow
       operationId: approveWorkflowV1
@@ -2149,9 +2243,9 @@ paths:
         name: workflow_id
         required: true
         type: string
-      - description: workflow step number
+      - description: workflow step id
         in: path
-        name: workflow_step_number
+        name: workflow_step_id
         required: true
         type: string
       responses:
@@ -2164,7 +2258,7 @@ paths:
       summary: 审批通过
       tags:
       - workflow
-  /v1/workflows/{workflow_id}/steps/{workflow_step_number}/reject:
+  /v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject:
     post:
       description: reject workflow
       operationId: rejectWorkflowV1
@@ -2174,9 +2268,9 @@ paths:
         name: workflow_id
         required: true
         type: string
-      - description: workflow step number
+      - description: workflow step id
         in: path
-        name: workflow_step_number
+        name: workflow_step_id
         required: true
         type: string
       - description: workflow approve request
