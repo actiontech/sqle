@@ -492,17 +492,7 @@ func CreateWorkflow(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	workflow := &model.Workflow{
-		Subject:      req.Subject,
-		Desc:         req.Desc,
-		CreateUserId: user.ID,
-		Record: &model.WorkflowRecord{
-			TaskId: task.ID,
-		},
-	}
-	workflow.InitWorkflowStepByTemplate(stepTemplates)
-	err = s.SaveWorkflow(workflow)
+	err = s.CreateWorkflow(req.Subject, req.Desc, user, task, stepTemplates)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1131,14 +1121,7 @@ func UpdateWorkflow(c echo.Context) error {
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
 
-	record := workflow.CloneWorkflowRecord()
-
-	err = s.Save(record)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = s.UpdateWorkflowRecord(workflow, record, task)
+	err = s.UpdateWorkflowRecord(workflow, task)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
