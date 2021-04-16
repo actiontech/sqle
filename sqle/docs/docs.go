@@ -3465,7 +3465,13 @@ var doc = `{
                     ]
                 },
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "create_workflow",
+                        "update_workflow",
+                        "sql_review",
+                        "sql_execute"
+                    ]
                 },
                 "workflow_step_id": {
                     "type": "integer"

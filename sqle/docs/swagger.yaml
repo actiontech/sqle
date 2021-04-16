@@ -924,6 +924,11 @@ definitions:
         - rejected
         type: string
       type:
+        enum:
+        - create_workflow
+        - update_workflow
+        - sql_review
+        - sql_execute
         type: string
       workflow_step_id:
         type: integer

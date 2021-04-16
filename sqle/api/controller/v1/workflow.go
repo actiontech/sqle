@@ -534,7 +534,7 @@ type WorkflowRecordResV1 struct {
 type WorkflowStepResV1 struct {
 	Id            uint       `json:"workflow_step_id,omitempty"`
 	Number        uint       `json:"number"`
-	Type          string     `json:"type"`
+	Type          string     `json:"type" enums:"create_workflow,update_workflow,sql_review,sql_execute"`
 	Desc          string     `json:"desc,omitempty"`
 	Users         []string   `json:"assignee_user_name_list,omitempty"`
 	OperationUser string     `json:"operation_user_name,omitempty"`
