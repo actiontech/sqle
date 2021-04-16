@@ -424,7 +424,9 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow.Record.Steps = steps
 	for _, step := range steps {
 		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			workflow.Record.CurrentStep = step
+			if step.State != WorkflowStepStateInit {
+				workflow.Record.CurrentStep = step
+			}
 		}
 	}
 	return workflow, true, nil
@@ -473,6 +475,7 @@ func (s *Storage) GetWorkflowRecordByTaskId(id string) (*WorkflowRecord, bool, e
 	return record, true, nil
 }
 
+// TODO: delete workflow record history
 func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("DELETE FROM workflows WHERE id = ?", workflow.ID)
