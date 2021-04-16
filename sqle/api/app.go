@@ -110,6 +110,7 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
+	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)

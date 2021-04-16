@@ -720,6 +720,11 @@ definitions:
           type: string
         type: array
     type: object
+  v1.UpdateWorkflowReqV1:
+    properties:
+      task_id:
+        type: string
+    type: object
   v1.UpdateWorkflowTemplateReqV1:
     properties:
       desc:
@@ -2172,6 +2177,35 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取审批流程详情
+      tags:
+      - workflow
+    patch:
+      consumes:
+      - application/json
+      description: update workflow when it is rejected to creator.
+      operationId: updateWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: update workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWorkflowReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新审批流程（驳回后才可更新）
       tags:
       - workflow
   /v1/workflows/{workflow_id}/cancel:

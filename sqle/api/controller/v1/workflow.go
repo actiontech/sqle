@@ -1049,6 +1049,102 @@ func CancelWorkflow(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+type UpdateWorkflowReqV1 struct {
+	TaskId string `json:"task_id" form:"task_id" valid:"required"`
+}
+
+// @Summary 更新审批流程（驳回后才可更新）
+// @Description update workflow when it is rejected to creator.
+// @Tags workflow
+// @Accept json
+// @Produce json
+// @Id updateWorkflowV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Param instance body v1.UpdateWorkflowReqV1 true "update workflow request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/workflows/{workflow_id}/ [patch]
+func UpdateWorkflow(c echo.Context) error {
+	req := new(UpdateWorkflowReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	task, exist, err := s.GetTaskById(req.TaskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+	}
+	err = checkCurrentUserCanAccessTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if user.ID != task.CreateUserId {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("the task is not created by yourself")))
+	}
+
+	_, exist, err = s.GetWorkflowByTaskId(req.TaskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("task has been used in other workflow")))
+	}
+
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusReject {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
+	}
+
+	if user.ID != workflow.CreateUserId {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("you are not allow to operate the workflow")))
+	}
+
+	record := workflow.CloneWorkflowRecord()
+
+	err = s.Save(record)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.UpdateWorkflowRecord(workflow, record, task)
+	if err != nil {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
 func FormatStringToInt(s string) (ret int, err error) {
 	if s == "" {
 		return 0, nil
