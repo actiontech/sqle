@@ -79,6 +79,9 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 		v1Router.POST("/audit_whitelist", v1.CreateAuditWhitelist, AdminUserAllowed())
 		v1Router.PATCH("/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById, AdminUserAllowed())
 		v1Router.DELETE("/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById, AdminUserAllowed())
+
+		v1Router.GET("/v1/configurations/smtp", v1.GetSMTPConfiguration, AdminUserAllowed())
+		v1Router.PATCH("/v1/configurations/smtp", v1.UpdateSMTPConfiguration, AdminUserAllowed())
 	}
 
 	// user
