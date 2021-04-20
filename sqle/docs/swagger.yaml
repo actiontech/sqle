@@ -412,6 +412,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSMTPConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+      smtp_host:
+        type: string
+      smtp_port:
+        type: string
+      smtp_username:
+        type: string
+    type: object
   v1.GetUserDetailResV1:
     properties:
       code:
@@ -710,6 +725,21 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.UpdateSMTPConfigurationReqV1:
+    properties:
+      smtp_host:
+        example: smtp.exmail.qq.com
+        type: string
+      smtp_password:
+        example: "123"
+        type: string
+      smtp_port:
+        example: "465"
+        type: string
+      smtp_username:
+        example: test@qq.com
+        type: string
     type: object
   v1.UpdateUserReqV1:
     properties:
@@ -1059,6 +1089,42 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
+  /v1/configurations/smtp:
+    get:
+      description: get SMTP configuration
+      operationId: getSMTPConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSMTPConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 SMTP 配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update SMTP configuration
+      operationId: updateSMTPConfigurationV1
+      parameters:
+      - description: update SMTP configuration req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateSMTPConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加 SMTP 配置
+      tags:
+      - configuration
   /v1/dashboard:
     get:
       description: get dashboard info
