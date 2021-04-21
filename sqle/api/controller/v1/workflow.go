@@ -474,6 +474,11 @@ func CreateWorkflow(c echo.Context) error {
 			fmt.Errorf("the task is not created by yourself")))
 	}
 
+	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("the taks for audit mybatis xml file is not allow to create workflow")))
+	}
+
 	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
