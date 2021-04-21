@@ -22,6 +22,7 @@ definitions:
         enum:
         - form_data
         - sql_file
+        - mybatis_xml_file
         type: string
       status:
         enum:
@@ -1696,6 +1697,10 @@ paths:
       - description: input SQL file
         in: formData
         name: input_sql_file
+        type: file
+      - description: input mybatis XML file
+        in: formData
+        name: input_mybatis_xml_file
         type: file
       produces:
       - application/json
