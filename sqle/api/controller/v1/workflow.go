@@ -1,17 +1,20 @@
 package v1
 
 import (
+	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
 	"actiontech.cloud/universe/sqle/v4/sqle/errors"
 	"actiontech.cloud/universe/sqle/v4/sqle/executor"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/universe/sqle/v4/sqle/misc"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
 	"actiontech.cloud/universe/sqle/v4/sqle/server"
-	"fmt"
+
 	"github.com/labstack/echo/v4"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 var WorkflowNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
@@ -496,6 +499,18 @@ func CreateWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	workflow, exist, err := s.GetLastWorkflow()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
+	}
+	if err := misc.SendEmailIfConfigureSMTP(fmt.Sprintf("%v", workflow.ID)); err != nil {
+		c.Logger().Errorf("after create workflow, send email error: %v", err)
+	}
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -866,6 +881,11 @@ func ApproveWorkflow(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
+
+	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
+		c.Logger().Errorf("after approve workflow, send email error: %v", err)
+	}
+
 	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
 		taskId := fmt.Sprintf("%d", workflow.Record.TaskId)
 		task, exist, err := s.GetTaskDetailById(taskId)
@@ -1124,6 +1144,10 @@ func UpdateWorkflow(c echo.Context) error {
 	err = s.UpdateWorkflowRecord(workflow, task)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	}
+
+	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
+		c.Logger().Errorf("after update workflow, send email error: %v", err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }

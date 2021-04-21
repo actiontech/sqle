@@ -1,7 +1,11 @@
 package v1
 
 import (
+	"net/http"
+
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
+	"actiontech.cloud/universe/sqle/v4/sqle/model"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -22,11 +26,40 @@ type UpdateSMTPConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/smtp [patch]
 func UpdateSMTPConfiguration(c echo.Context) error {
-	return nil
+	req := new(UpdateSMTPConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	smtpC, _, err := s.GetSMTPConfiguration()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.Host != nil {
+		smtpC.Host = *req.Host
+	}
+	if req.Port != nil {
+		smtpC.Port = *req.Port
+	}
+	if req.Username != nil {
+		smtpC.Username = *req.Username
+	}
+	if req.Password != nil {
+		smtpC.Password = *req.Password
+	}
+
+	if err := s.Save(smtpC); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type GetSMTPConfigurationResV1 struct {
 	controller.BaseRes
+	Data SMTPConfigurationResV1 `json:"data"`
+}
+
+type SMTPConfigurationResV1 struct {
 	Host     string `json:"smtp_host"`
 	Port     string `json:"smtp_port"`
 	Username string `json:"smtp_username"`
@@ -40,5 +73,17 @@ type GetSMTPConfigurationResV1 struct {
 // @Success 200 {object} v1.GetSMTPConfigurationResV1
 // @router /v1/configurations/smtp [get]
 func GetSMTPConfiguration(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	smtpC, _, err := s.GetSMTPConfiguration()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetSMTPConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: SMTPConfigurationResV1{
+			Host:     smtpC.Host,
+			Port:     smtpC.Port,
+			Username: smtpC.Username,
+		},
+	})
 }
