@@ -77,24 +77,24 @@ func JSONBaseErrorReq(c echo.Context, err error) error {
 	return c.JSON(http.StatusOK, NewBaseReq(err))
 }
 
-func ReadFileToByte(c echo.Context, name string) (fileName string, data []byte, err error) {
+func ReadFileContent(c echo.Context, name string) (string, bool, error) {
 	file, err := c.FormFile(name)
+	if err == http.ErrMissingFile {
+		return "", false, nil
+	}
 	if err != nil {
-		err = errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
-		return
+		return "", false, errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
 	}
 	src, err := file.Open()
 	if err != nil {
-		err = errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
-		return
+		return "", false, errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
 	}
 	defer src.Close()
-	data, err = ioutil.ReadAll(src)
+	data, err := ioutil.ReadAll(src)
 	if err != nil {
-		err = errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
-		return
+		return "", false, errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
 	}
-	return
+	return string(data), true, nil
 }
 
 func unescapeParamString(params []*string) error {

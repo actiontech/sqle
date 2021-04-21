@@ -36,8 +36,9 @@ const (
 )
 
 const (
-	TaskSQLSourceFromFormData = "form_data"
-	TaskSQLSourceFromSQLFile  = "sql_file"
+	TaskSQLSourceFromFormData       = "form_data"
+	TaskSQLSourceFromSQLFile        = "sql_file"
+	TaskSQLSourceFromMyBatisXMLFile = "mybatis_xml_file"
 )
 
 type Task struct {
