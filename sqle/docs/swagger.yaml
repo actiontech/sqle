@@ -417,14 +417,11 @@ definitions:
       code:
         example: 0
         type: integer
+      data:
+        $ref: '#/definitions/v1.SMTPConfigurationResV1'
+        type: object
       message:
         example: ok
-        type: string
-      smtp_host:
-        type: string
-      smtp_port:
-        type: string
-      smtp_username:
         type: string
     type: object
   v1.GetUserDetailResV1:
@@ -652,6 +649,15 @@ definitions:
   v1.RuleTemplateTipResV1:
     properties:
       rule_template_name:
+        type: string
+    type: object
+  v1.SMTPConfigurationResV1:
+    properties:
+      smtp_host:
+        type: string
+      smtp_port:
+        type: string
+      smtp_username:
         type: string
     type: object
   v1.UpdateAuditWhitelistReqV1:

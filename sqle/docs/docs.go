@@ -2771,18 +2771,13 @@ var doc = `{
                     "type": "integer",
                     "example": 0
                 },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SMTPConfigurationResV1"
+                },
                 "message": {
                     "type": "string",
                     "example": "ok"
-                },
-                "smtp_host": {
-                    "type": "string"
-                },
-                "smtp_port": {
-                    "type": "string"
-                },
-                "smtp_username": {
-                    "type": "string"
                 }
             }
         },
@@ -3117,6 +3112,20 @@ var doc = `{
             "type": "object",
             "properties": {
                 "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SMTPConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "smtp_host": {
+                    "type": "string"
+                },
+                "smtp_port": {
+                    "type": "string"
+                },
+                "smtp_username": {
                     "type": "string"
                 }
             }
