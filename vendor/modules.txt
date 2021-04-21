@@ -216,6 +216,11 @@ github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.2.0
 ## explicit
 github.com/sirupsen/logrus
+# github.com/sjjian/mybatis-mapper-2-sql v0.1.2
+## explicit
+github.com/sjjian/mybatis-mapper-2-sql
+github.com/sjjian/mybatis-mapper-2-sql/ast
+github.com/sjjian/mybatis-mapper-2-sql/sqlfmt
 # github.com/smartystreets/goconvey v1.6.4
 ## explicit
 # github.com/spf13/cobra v0.0.7
