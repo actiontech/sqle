@@ -93,6 +93,7 @@ func (s *Storage) AutoMigrate() error {
 		&Workflow{},
 		&WorkflowRecord{},
 		&WorkflowStep{},
+		&SMTPConfiguration{},
 	).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }

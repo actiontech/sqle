@@ -25,6 +25,17 @@ const (
 	WorkflowStepTypeUpdateWorkflow = "update_workflow"
 )
 
+func GetWorkflowStepTypeDesc(s string) string {
+	switch s {
+	case WorkflowStepTypeSQLReview:
+		return "审批"
+	case WorkflowStepTypeSQLExecute:
+		return "上线"
+	default:
+		return "未知"
+	}
+}
+
 type WorkflowStepTemplate struct {
 	Model
 	Number             uint   `gorm:"index; column:step_number"`
@@ -424,9 +435,7 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow.Record.Steps = steps
 	for _, step := range steps {
 		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			if step.State != WorkflowStepStateInit {
-				workflow.Record.CurrentStep = step
-			}
+			workflow.Record.CurrentStep = step
 		}
 	}
 	return workflow, true, nil
@@ -454,7 +463,7 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 	for _, record := range records {
 		record.Steps = []*WorkflowStep{}
 		for _, step := range steps {
-			if step.WorkflowRecordId == record.ID {
+			if step.WorkflowRecordId == record.ID && step.State != WorkflowStepStateInit {
 				record.Steps = append(record.Steps, step)
 			}
 		}
@@ -473,6 +482,15 @@ func (s *Storage) GetWorkflowRecordByTaskId(id string) (*WorkflowRecord, bool, e
 		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	return record, true, nil
+}
+
+func (s *Storage) GetLastWorkflow() (*Workflow, bool, error) {
+	workflow := new(Workflow)
+	err := s.db.Last(workflow).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	return workflow, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 // TODO: delete workflow record history
