@@ -19,6 +19,7 @@ import (
 	"actiontech.cloud/universe/sqle/v4/sqle/server"
 
 	"github.com/labstack/echo/v4"
+	mybatis_parser "github.com/sjjian/mybatis-mapper-2-sql"
 )
 
 var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
@@ -40,7 +41,7 @@ type AuditTaskResV1 struct {
 	InstanceSchema string  `json:"instance_schema" example:"db1"`
 	PassRate       float64 `json:"pass_rate"`
 	Status         string  `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
-	SQLSource      string  `json:"sql_source" enums:"form_data,sql_file"`
+	SQLSource      string  `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
@@ -54,6 +55,36 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 	}
 }
 
+const (
+	InputSQLFileName        = "input_sql_file"
+	InputMyBatisXMLFileName = "input_mybatis_xml_file"
+)
+
+func getSQLFromFile(c echo.Context) (string, string, error) {
+	// Read it from sql file.
+	sql, exist, err := controller.ReadFileContent(c, InputSQLFileName)
+	if err != nil {
+		return "", model.TaskSQLSourceFromSQLFile, err
+	}
+	if exist {
+		return sql, model.TaskSQLSourceFromSQLFile, nil
+	}
+
+	// If sql_file is not exist, read it from mybatis xml file.
+	data, exist, err := controller.ReadFileContent(c, InputMyBatisXMLFileName)
+	if err != nil {
+		return "", model.TaskSQLSourceFromMyBatisXMLFile, err
+	}
+	if exist {
+		sql, err := mybatis_parser.ParseXML(data)
+		if err != nil {
+			return "", model.TaskSQLSourceFromMyBatisXMLFile, errors.New(errors.ParseMyBatisXMLFileError, err)
+		}
+		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
+	}
+	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+}
+
 // @Summary 创建Sql审核任务并提交审核
 // @Description create and audit a task. NOTE: it will create a task with sqls from "sql" if "sql" isn't empty
 // @Accept mpfd
@@ -65,6 +96,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 // @Param instance_schema formData string false "schema of instance"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
+// @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
@@ -72,17 +104,18 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	var sql string
+	var source string
+	var err error
 
-	source := model.TaskSQLSourceFromFormData
-	if req.Sql == "" {
-		_, sqls, err := controller.ReadFileToByte(c, "input_sql_file")
+	if req.Sql != "" {
+		sql, source = req.Sql, model.TaskSQLSourceFromFormData
+	} else {
+		sql, source, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		source = model.TaskSQLSourceFromSQLFile
-		req.Sql = string(sqls)
 	}
-
 	s := model.GetStorage()
 	instance, exist, err := s.GetInstanceByName(req.InstanceName)
 	if err != nil {
@@ -118,7 +151,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	task.CreatedAt = createAt
 
 	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil, nil).
-		ParseSql(req.Sql)
+		ParseSql(sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

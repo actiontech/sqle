@@ -1129,6 +1129,12 @@ var doc = `{
                         "description": "input SQL file",
                         "name": "input_sql_file",
                         "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -2193,7 +2199,8 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "form_data",
-                        "sql_file"
+                        "sql_file",
+                        "mybatis_xml_file"
                     ]
                 },
                 "status": {
