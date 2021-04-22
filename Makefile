@@ -35,6 +35,7 @@ vet: swagger
 ## Unit Test
 test: swagger parser
 	cd $(PROJECT_NAME)/inspector &&  GOOS=$(GOOS) GOARCH=amd64 go test -v ./
+	cd $(PROJECT_NAME)/model &&  GOOS=$(GOOS) GOARCH=amd64 go test -v ./
 
 
 docker_test: pull_image

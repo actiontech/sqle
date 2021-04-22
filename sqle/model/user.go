@@ -35,7 +35,7 @@ func (i *User) BeforeSave() error {
 func (i *User) AfterFind() error {
 	err := i.decryptPassword()
 	if err != nil {
-		log.NewEntry().Errorf("decrypt password for user %d failed, error: %v", i.Name, err)
+		log.NewEntry().Errorf("decrypt password for user %s failed, error: %v", i.Name, err)
 	}
 	return nil
 }

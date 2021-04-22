@@ -194,17 +194,20 @@ func (s *Sqled) audit(task *model.Task) error {
 			}
 		}
 	}
-	var rollbackSqls = []*model.RollbackSQL{}
 	// generate rollback after advise
-	if !firstSqlInvalid {
+	var rollbackSqls = []*model.RollbackSQL{}
+
+	if firstSqlInvalid {
+		entry.Warnf("sql invalid, ignore generate rollback")
+	} else if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+		entry.Warnf("task is mybatis xml file audit, ignore generate rollback")
+	} else {
 		ctx = inspector.NewContext(nil)
 		i = inspector.NewInspector(entry, ctx, task, nil, ruleMap)
 		rollbackSqls, err = i.GenerateAllRollbackSql()
 		if err != nil {
 			return err
 		}
-	} else {
-		entry.Warnf("sql invalid, ignore generate rollback")
 	}
 
 	if err := st.UpdateExecuteSQLs(task, task.ExecuteSQLs); err != nil {

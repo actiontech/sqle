@@ -1,8 +1,8 @@
 package inspector
 
 import (
-	"github.com/stretchr/testify/assert"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -13,8 +13,8 @@ func runrollbackCase(t *testing.T, desc string, i *Inspect, sql string, results 
 		return
 	}
 	for n, stmt := range stmts {
-		i.Task.CommitSqls = append(i.Task.CommitSqls, &model.CommitSql{
-			Sql: model.Sql{
+		i.Task.ExecuteSQLs = append(i.Task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
 				Number:  uint(n + 1),
 				Content: stmt.Text(),
 			},
