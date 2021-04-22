@@ -78,7 +78,7 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 	if exist {
 		sql, err := mybatis_parser.ParseXML(data)
 		if err != nil {
-			return "", model.TaskSQLSourceFromMyBatisXMLFile, errors.New(errors.ParserMyBatisXMLFileError, err)
+			return "", model.TaskSQLSourceFromMyBatisXMLFile, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}
 		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
 	}

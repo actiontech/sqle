@@ -18,7 +18,7 @@ import (
 )
 
 var WorkflowNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
-var ForbidMybatisXMLTaskError = errors.New(errors.DataConflict,
+var ForbidMyBatisXMLTaskError = errors.New(errors.DataConflict,
 	fmt.Errorf("the taks for audit mybatis xml file is not allow to create workflow"))
 
 type GetWorkflowTemplateResV1 struct {
@@ -477,7 +477,7 @@ func CreateWorkflow(c echo.Context) error {
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		return controller.JSONBaseErrorReq(c, ForbidMybatisXMLTaskError)
+		return controller.JSONBaseErrorReq(c, ForbidMyBatisXMLTaskError)
 	}
 
 	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
@@ -1120,6 +1120,10 @@ func UpdateWorkflow(c echo.Context) error {
 			fmt.Errorf("the task is not created by yourself")))
 	}
 
+	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+		return controller.JSONBaseErrorReq(c, ForbidMyBatisXMLTaskError)
+	}
+
 	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1127,10 +1131,6 @@ func UpdateWorkflow(c echo.Context) error {
 	if exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 			fmt.Errorf("task has been used in other workflow")))
-	}
-
-	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		return controller.JSONBaseErrorReq(c, ForbidMybatisXMLTaskError)
 	}
 
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
