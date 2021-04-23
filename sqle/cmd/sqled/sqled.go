@@ -1,21 +1,13 @@
 package main
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/api"
-	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
-	"actiontech.cloud/universe/sqle/v4/sqle/server"
-	"actiontech.cloud/universe/sqle/v4/sqle/sqlserverClient"
+	"actiontech.cloud/universe/sqle/v4/sqle"
 	"actiontech.cloud/universe/sqle/v4/sqle/utils"
-	"actiontech.cloud/universe/ucommon/v4/ubootstrap"
 	"fmt"
-	"github.com/facebookgo/grace/gracenet"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
-	"syscall"
 )
 
 var version string
@@ -33,21 +25,6 @@ var autoMigrateTable bool
 var logPath = "./logs"
 var sqlServerParserServerHost = "127.0.0.1"
 var sqlServerParserServerPort = "10001"
-
-type SqleTaskOptions struct {
-	ConfigPath                string
-	MysqlUser                 string
-	MysqlPass                 string
-	MysqlHost                 string
-	MysqlPort                 string
-	MysqlSchema               string
-	Port                      int
-	AutoMigrateTable          bool
-	Debug                     bool
-	LogPath                   string
-	SqlServerParserServerHost string
-	SqlServerParserServerPort string
-}
 
 func main() {
 	var rootCmd = &cobra.Command{
@@ -75,57 +52,43 @@ func main() {
 }
 
 func run(cmd *cobra.Command, _ []string) error {
+	var config *sqled.Config
 
-	mysqlPass, err := utils.DecodeString(mysqlPass)
-	if err != nil {
-		return fmt.Errorf("decode mysql password to string error : %v", err)
-	}
-
-	option := &SqleTaskOptions{
-		ConfigPath:                configPath,
-		MysqlUser:                 mysqlUser,
-		MysqlPass:                 mysqlPass,
-		MysqlHost:                 mysqlHost,
-		MysqlPort:                 mysqlPort,
-		MysqlSchema:               mysqlSchema,
-		Port:                      port,
-		AutoMigrateTable:          autoMigrateTable,
-		Debug:                     debug,
-		LogPath:                   logPath,
-		SqlServerParserServerHost: sqlServerParserServerHost,
-		SqlServerParserServerPort: sqlServerParserServerPort,
-	}
-
-	if option.ConfigPath != "" {
-		conf := model.Config{}
-		b, err := ioutil.ReadFile(option.ConfigPath)
+	// read config from file first, then read from cmd args.
+	if configPath != "" {
+		b, err := ioutil.ReadFile(configPath)
 		if err != nil {
-			return fmt.Errorf("load config path: %s failed error :%v", option.ConfigPath, err)
+			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
 		}
-		err = yaml.Unmarshal(b, &conf)
+		err = yaml.Unmarshal(b, config)
 		if err != nil {
 			return fmt.Errorf("unmarshal config file error %v", err)
 		}
-
-		option.MysqlUser = conf.Server.DBCnf.MysqlCnf.User
-		option.MysqlPass = conf.Server.DBCnf.MysqlCnf.Password
-		option.MysqlHost = conf.Server.DBCnf.MysqlCnf.Host
-		option.MysqlPort = conf.Server.DBCnf.MysqlCnf.Port
-		option.MysqlSchema = conf.Server.DBCnf.MysqlCnf.Schema
-		option.Port = conf.Server.SqleCnf.SqleServerPort
-		option.AutoMigrateTable = conf.Server.SqleCnf.AutoMigrateTable
-		option.Debug = conf.Server.SqleCnf.DebugLog
-		option.LogPath = conf.Server.SqleCnf.LogPath
-		option.SqlServerParserServerHost = conf.Server.DBCnf.SqlServerCnf.Host
-		option.SqlServerParserServerPort = conf.Server.DBCnf.SqlServerCnf.Port
+	} else {
+		mysqlPass, err := utils.DecodeString(mysqlPass)
+		if err != nil {
+			return fmt.Errorf("decode mysql password to string error : %v", err)
+		}
+		config = &sqled.Config{
+			Server: sqled.Server{
+				SqleCnf: sqled.SqleConfig{
+					SqleServerPort:   port,
+					AutoMigrateTable: autoMigrateTable,
+					DebugLog:         debug,
+					LogPath:          logPath,
+				},
+				DBCnf: sqled.DatabaseConfig{
+					MysqlCnf: sqled.MysqlConfig{
+						Host:     mysqlHost,
+						Port:     mysqlPort,
+						User:     mysqlUser,
+						Password: mysqlPass,
+						Schema:   mysqlSchema,
+					},
+				},
+			},
+		}
 	}
-
-	// init logger
-	log.InitLogger(option.LogPath)
-	defer log.ExitLogger()
-
-	log.Logger().Infoln("starting sqled server")
-
 	if pidFile != "" {
 		f, err := os.Create(pidFile)
 		if err != nil {
@@ -137,62 +100,5 @@ func run(cmd *cobra.Command, _ []string) error {
 			os.Remove(pidFile)
 		}()
 	}
-
-	err = inspector.LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template")
-	if err != nil {
-		return fmt.Errorf("load './scripts/pt-online-schema-change.template/' failed: %v", err)
-	}
-
-	s, err := model.NewStorage(option.MysqlUser, option.MysqlPass, option.MysqlHost, option.MysqlPort, option.MysqlSchema, option.Debug)
-	if err != nil {
-		return fmt.Errorf("get new storage failed: %v", err)
-	}
-	model.InitStorage(s)
-	_ = sqlserverClient.InitClient(option.SqlServerParserServerHost, option.SqlServerParserServerPort)
-
-	if option.AutoMigrateTable {
-		if err := s.AutoMigrate(); err != nil {
-			return fmt.Errorf("auto migrate table failed: %v", err)
-		}
-		if err := s.CreateRulesIfNotExist(inspector.InitRules); err != nil {
-			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateDefaultTemplate(inspector.DefaultTemplateRules); err != nil {
-			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateAdminUser(); err != nil {
-			return fmt.Errorf("create default admin user failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateDefaultWorkflowTemplate(); err != nil {
-			return fmt.Errorf("create default workflow template failed while auto migrateing table: %v", err)
-		}
-	}
-
-	exitChan := make(chan struct{}, 0)
-	server.InitSqled(exitChan)
-	go api.StartApi(option.Port, exitChan, option.LogPath)
-
-	net := gracenet.Net{}
-
-	killChan := ubootstrap.ListenKillSignal()
-	select {
-	case <-exitChan:
-		log.Logger().Infoln("sqled server will exit")
-	case sig := <-killChan:
-		switch sig {
-		case syscall.SIGUSR2:
-			if pid, err := net.StartProcess(); nil != err {
-				log.Logger().Infoln("Graceful restarted by signal SIGUSR2, but failed: %v", err)
-				return err
-			} else {
-				log.Logger().Infoln("Graceful restarted, new pid is %v", pid)
-			}
-			log.Logger().Infoln("old sqled exit")
-		default:
-			log.Logger().Infoln("Exit by signal %v", sig)
-		}
-	}
-
-	log.Logger().Info("stop sqled server")
-	return nil
+	return sqled.Run(config)
 }

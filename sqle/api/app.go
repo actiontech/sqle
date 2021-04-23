@@ -3,6 +3,7 @@ package api
 import (
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller/v1"
+	"github.com/facebookgo/grace/gracenet"
 	"net/http"
 	"strings"
 
@@ -22,7 +23,9 @@ import (
 // @in header
 // @name Authorization
 // @BasePath /
-func StartApi(port int, exitChan chan struct{}, logPath string) {
+func StartApi(net *gracenet.Net, port int, exitChan chan struct{}, logPath string) {
+	defer close(exitChan)
+
 	e := echo.New()
 	output := log.NewRotateFile(logPath, "/api.log", 1024 /*1GB*/)
 	defer output.Close()
@@ -136,8 +139,16 @@ func StartApi(port int, exitChan chan struct{}, logPath string) {
 
 	address := fmt.Sprintf(":%v", port)
 	log.Logger().Infof("starting http server on %s", address)
-	log.Logger().Fatal(e.Start(address))
-	close(exitChan)
+
+	// start http server
+	conn, err := net.Listen("tcp4", address)
+	if err != nil {
+		log.Logger().Fatal(err)
+		return
+	}
+	e.Listener = conn
+	log.Logger().Fatal(e.Start(""))
+	return
 }
 
 // JWTTokenAdapter is a `echo` middleware,　by rewriting the header, the jwt token support header
