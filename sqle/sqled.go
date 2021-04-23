@@ -2,6 +2,7 @@ package sqled
 
 import (
 	"actiontech.cloud/universe/sqle/v4/sqle/api"
+	"actiontech.cloud/universe/sqle/v4/sqle/config"
 	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
 	"actiontech.cloud/universe/sqle/v4/sqle/log"
 	"actiontech.cloud/universe/sqle/v4/sqle/model"
@@ -12,44 +13,7 @@ import (
 	"syscall"
 )
 
-type Config struct {
-	Server Server `yaml:"server"`
-}
-
-type Server struct {
-	SqleCnf SqleConfig     `yaml:"sqle_config"`
-	DBCnf   DatabaseConfig `yaml:"db_config"`
-}
-
-type SqleConfig struct {
-	SqleServerPort   int    `yaml:"server_port"`
-	EnableHttps      bool   `yaml:"enable_https"`
-	CertFilePath     string `yaml:"cert_file_path"`
-	KeyFilePath      string `yaml:"key_file_path"`
-	AutoMigrateTable bool   `yaml:"auto_migrate_table"`
-	DebugLog         bool   `yaml:"debug_log"`
-	LogPath          string `yaml:"log_path"`
-}
-
-type DatabaseConfig struct {
-	MysqlCnf     MysqlConfig     `yaml:"mysql_cnf"`
-	SqlServerCnf SqlServerConfig `yaml:"sql_server_cnf"`
-}
-
-type MysqlConfig struct {
-	Host     string `yaml:"mysql_host"`
-	Port     string `yaml:"mysql_port"`
-	User     string `yaml:"mysql_user"`
-	Password string `yaml:"mysql_password"`
-	Schema   string `yaml:"mysql_schema"`
-}
-
-type SqlServerConfig struct {
-	Host string `yaml:"sql_server_host"`
-	Port string `yaml:"sql_server_port"`
-}
-
-func Run(config *Config) error {
+func Run(config *config.Config) error {
 	// init logger
 	log.InitLogger(config.Server.SqleCnf.LogPath)
 	defer log.ExitLogger()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"actiontech.cloud/universe/sqle/v4/sqle"
+	"actiontech.cloud/universe/sqle/v4/sqle/config"
 	"actiontech.cloud/universe/sqle/v4/sqle/utils"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -59,7 +60,7 @@ func main() {
 }
 
 func run(cmd *cobra.Command, _ []string) error {
-	var config *sqled.Config
+	var cfg *config.Config
 
 	// read config from file first, then read from cmd args.
 	if configPath != "" {
@@ -67,7 +68,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
 		}
-		err = yaml.Unmarshal(b, config)
+		err = yaml.Unmarshal(b, cfg)
 		if err != nil {
 			return fmt.Errorf("unmarshal config file error %v", err)
 		}
@@ -76,9 +77,9 @@ func run(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("decode mysql password to string error : %v", err)
 		}
-		config = &sqled.Config{
-			Server: sqled.Server{
-				SqleCnf: sqled.SqleConfig{
+		cfg = &config.Config{
+			Server: config.Server{
+				SqleCnf: config.SqleConfig{
 					SqleServerPort:   port,
 					AutoMigrateTable: autoMigrateTable,
 					DebugLog:         debug,
@@ -87,8 +88,8 @@ func run(cmd *cobra.Command, _ []string) error {
 					CertFilePath:     certFilePath,
 					KeyFilePath:      keyFilePath,
 				},
-				DBCnf: sqled.DatabaseConfig{
-					MysqlCnf: sqled.MysqlConfig{
+				DBCnf: config.DatabaseConfig{
+					MysqlCnf: config.MysqlConfig{
 						Host:     mysqlHost,
 						Port:     mysqlPort,
 						User:     mysqlUser,
@@ -110,5 +111,5 @@ func run(cmd *cobra.Command, _ []string) error {
 			os.Remove(pidFile)
 		}()
 	}
-	return sqled.Run(config)
+	return sqled.Run(cfg)
 }

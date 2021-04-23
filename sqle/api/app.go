@@ -1,9 +1,9 @@
 package api
 
 import (
-	sqled "actiontech.cloud/universe/sqle/v4/sqle"
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller/v1"
+	"actiontech.cloud/universe/sqle/v4/sqle/config"
 	"crypto/tls"
 	"github.com/facebookgo/grace/gracenet"
 	"net/http"
@@ -25,7 +25,7 @@ import (
 // @in header
 // @name Authorization
 // @BasePath /
-func StartApi(net *gracenet.Net, exitChan chan struct{}, config sqled.SqleConfig) {
+func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfig) {
 	defer close(exitChan)
 
 	e := echo.New()
