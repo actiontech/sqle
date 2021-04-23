@@ -1,8 +1,10 @@
 package api
 
 import (
+	sqled "actiontech.cloud/universe/sqle/v4/sqle"
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
 	"actiontech.cloud/universe/sqle/v4/sqle/api/controller/v1"
+	"crypto/tls"
 	"github.com/facebookgo/grace/gracenet"
 	"net/http"
 	"strings"
@@ -23,11 +25,11 @@ import (
 // @in header
 // @name Authorization
 // @BasePath /
-func StartApi(net *gracenet.Net, port int, exitChan chan struct{}, logPath string) {
+func StartApi(net *gracenet.Net, exitChan chan struct{}, config sqled.SqleConfig) {
 	defer close(exitChan)
 
 	e := echo.New()
-	output := log.NewRotateFile(logPath, "/api.log", 1024 /*1GB*/)
+	output := log.NewRotateFile(config.LogPath, "/api.log", 1024 /*1GB*/)
 	defer output.Close()
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -137,17 +139,33 @@ func StartApi(net *gracenet.Net, port int, exitChan chan struct{}, logPath strin
 		return c.File("ui/index.html")
 	})
 
-	address := fmt.Sprintf(":%v", port)
+	address := fmt.Sprintf(":%v", config.SqleServerPort)
 	log.Logger().Infof("starting http server on %s", address)
 
 	// start http server
-	conn, err := net.Listen("tcp4", address)
+	l, err := net.Listen("tcp4", address)
 	if err != nil {
 		log.Logger().Fatal(err)
 		return
 	}
-	e.Listener = conn
-	log.Logger().Fatal(e.Start(""))
+	if config.EnableHttps {
+		// Usually, it is easier to create an tls server using echo#StartTLS;
+		// but I need create a graceful listener.
+		if config.CertFilePath == "" || config.KeyFilePath == "" {
+			log.Logger().Fatal("invalid tls configuration")
+			return
+		}
+		tlsConfig := new(tls.Config)
+		tlsConfig.Certificates = make([]tls.Certificate, 1)
+		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.CertFilePath, config.KeyFilePath)
+		e.TLSServer.TLSConfig = tlsConfig
+		e.TLSListener = tls.NewListener(l, tlsConfig)
+
+		log.Logger().Fatal(e.StartServer(e.TLSServer))
+	} else {
+		e.Listener = l
+		log.Logger().Fatal(e.Start(""))
+	}
 	return
 }
 

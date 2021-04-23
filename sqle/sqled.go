@@ -23,6 +23,9 @@ type Server struct {
 
 type SqleConfig struct {
 	SqleServerPort   int    `yaml:"server_port"`
+	EnableHttps      bool   `yaml:"enable_https"`
+	CertFilePath     string `yaml:"cert_file_path"`
+	KeyFilePath      string `yaml:"key_file_path"`
 	AutoMigrateTable bool   `yaml:"auto_migrate_table"`
 	DebugLog         bool   `yaml:"debug_log"`
 	LogPath          string `yaml:"log_path"`
@@ -45,7 +48,6 @@ type SqlServerConfig struct {
 	Host string `yaml:"sql_server_host"`
 	Port string `yaml:"sql_server_port"`
 }
-
 
 func Run(config *Config) error {
 	// init logger
@@ -87,10 +89,8 @@ func Run(config *Config) error {
 	exitChan := make(chan struct{}, 0)
 	server.InitSqled(exitChan)
 
-	apiConfig := config.Server.SqleCnf
-
 	net := &gracenet.Net{}
-	go api.StartApi(net, apiConfig.SqleServerPort, exitChan, apiConfig.LogPath)
+	go api.StartApi(net, exitChan, config.Server.SqleCnf)
 
 	killChan := ubootstrap.ListenKillSignal()
 	select {

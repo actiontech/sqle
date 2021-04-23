@@ -26,6 +26,10 @@ var logPath = "./logs"
 var sqlServerParserServerHost = "127.0.0.1"
 var sqlServerParserServerPort = "10001"
 
+var httpsEnable bool
+var certFilePath string
+var keyFilePath string
+
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "sqle",
@@ -48,6 +52,9 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
 	rootCmd.PersistentFlags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
+	rootCmd.PersistentFlags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
+	rootCmd.PersistentFlags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
+	rootCmd.PersistentFlags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
 	rootCmd.Execute()
 }
 
@@ -76,6 +83,9 @@ func run(cmd *cobra.Command, _ []string) error {
 					AutoMigrateTable: autoMigrateTable,
 					DebugLog:         debug,
 					LogPath:          logPath,
+					EnableHttps:      httpsEnable,
+					CertFilePath:     certFilePath,
+					KeyFilePath:      keyFilePath,
 				},
 				DBCnf: sqled.DatabaseConfig{
 					MysqlCnf: sqled.MysqlConfig{
