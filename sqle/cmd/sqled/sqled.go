@@ -60,7 +60,7 @@ func main() {
 }
 
 func run(cmd *cobra.Command, _ []string) error {
-	var cfg *config.Config
+	var cfg = &config.Config{}
 
 	// read config from file first, then read from cmd args.
 	if configPath != "" {
