@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/pingcap/parser/ast"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/log"
 	"strings"
 )
 

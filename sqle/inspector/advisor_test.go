@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"

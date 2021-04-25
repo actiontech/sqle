@@ -3,8 +3,8 @@ package model
 import (
 	"fmt"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/universe/ucommon/v4/util"
 
 	"github.com/jinzhu/gorm"

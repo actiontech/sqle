@@ -1,8 +1,8 @@
 package inspector
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 	"database/sql"
 	"fmt"
 	"github.com/pingcap/parser/ast"

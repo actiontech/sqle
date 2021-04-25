@@ -5,8 +5,8 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/sirupsen/logrus"
 )

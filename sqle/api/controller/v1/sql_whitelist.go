@@ -1,14 +1,14 @@
 package v1
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
-	"actiontech.cloud/universe/sqle/v4/sqle/utils"
+	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 

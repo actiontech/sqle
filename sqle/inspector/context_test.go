@@ -3,7 +3,7 @@ package inspector
 import (
 	"testing"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 )
 
 func TestContext(t *testing.T) {

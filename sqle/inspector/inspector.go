@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/executor"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/executor"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"

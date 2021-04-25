@@ -1,14 +1,14 @@
 package controller
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"github.com/labstack/echo/v4"
 )
 

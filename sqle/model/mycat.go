@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/universe/ucommon/v4/util"
 )
 

@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
