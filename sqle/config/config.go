@@ -1,6 +1,4 @@
-
-
-package model
+package config
 
 type Config struct {
 	Server Server `yaml:"server"`
@@ -13,6 +11,9 @@ type Server struct {
 
 type SqleConfig struct {
 	SqleServerPort   int    `yaml:"server_port"`
+	EnableHttps      bool   `yaml:"enable_https"`
+	CertFilePath     string `yaml:"cert_file_path"`
+	KeyFilePath      string `yaml:"key_file_path"`
 	AutoMigrateTable bool   `yaml:"auto_migrate_table"`
 	DebugLog         bool   `yaml:"debug_log"`
 	LogPath          string `yaml:"log_path"`
