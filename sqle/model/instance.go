@@ -7,8 +7,8 @@ import (
 
 	"actiontech.cloud/universe/ucommon/v4/util"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/log"
 	"github.com/jinzhu/gorm"
 )
 

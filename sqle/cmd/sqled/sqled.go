@@ -1,9 +1,9 @@
 package main
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle"
-	"actiontech.cloud/universe/sqle/v4/sqle/config"
-	"actiontech.cloud/universe/sqle/v4/sqle/utils"
+	"actiontech.cloud/sqle/sqle/sqle"
+	"actiontech.cloud/sqle/sqle/sqle/config"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"fmt"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"

@@ -1,12 +1,12 @@
 package v1
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/executor"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
-	"actiontech.cloud/universe/sqle/v4/sqle/server"
+	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/executor"
+	"actiontech.cloud/sqle/sqle/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/server"
 	"actiontech.cloud/universe/ucommon/v4/util"
 	"fmt"
 	"github.com/labstack/echo/v4"

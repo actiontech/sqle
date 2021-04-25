@@ -1,7 +1,7 @@
 package model
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"bytes"
 	"database/sql"
 	"fmt"

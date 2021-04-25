@@ -1,9 +1,9 @@
 package api
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/api/controller"
-	"actiontech.cloud/universe/sqle/v4/sqle/api/controller/v1"
-	"actiontech.cloud/universe/sqle/v4/sqle/config"
+	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
+	"actiontech.cloud/sqle/sqle/sqle/config"
 	"crypto/tls"
 	"github.com/facebookgo/grace/gracenet"
 	"net/http"
@@ -11,8 +11,8 @@ import (
 
 	"fmt"
 
-	_ "actiontech.cloud/universe/sqle/v4/sqle/docs"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
+	_ "actiontech.cloud/sqle/sqle/sqle/docs"
+	"actiontech.cloud/sqle/sqle/sqle/log"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"

@@ -5,10 +5,10 @@ import (
 	"math"
 	"sync"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
-	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/inspector"
+	"actiontech.cloud/sqle/sqle/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 )
 
 var sqled *Sqled

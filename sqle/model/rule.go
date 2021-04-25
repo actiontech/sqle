@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
 

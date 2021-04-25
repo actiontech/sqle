@@ -1,12 +1,12 @@
 package sqled
 
 import (
-	"actiontech.cloud/universe/sqle/v4/sqle/api"
-	"actiontech.cloud/universe/sqle/v4/sqle/config"
-	"actiontech.cloud/universe/sqle/v4/sqle/inspector"
-	"actiontech.cloud/universe/sqle/v4/sqle/log"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
-	"actiontech.cloud/universe/sqle/v4/sqle/server"
+	"actiontech.cloud/sqle/sqle/sqle/api"
+	"actiontech.cloud/sqle/sqle/sqle/config"
+	"actiontech.cloud/sqle/sqle/sqle/inspector"
+	"actiontech.cloud/sqle/sqle/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/server"
 	"actiontech.cloud/universe/ucommon/v4/ubootstrap"
 	"fmt"
 	"github.com/facebookgo/grace/gracenet"

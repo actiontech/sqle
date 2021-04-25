@@ -3,7 +3,7 @@ package inspector
 import (
 	"github.com/pingcap/parser/ast"
 	"github.com/stretchr/testify/assert"
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 	"testing"
 )
 

@@ -11,7 +11,7 @@ import (
 
 	driver "github.com/pingcap/tidb/types/parser_driver"
 
-	"actiontech.cloud/universe/sqle/v4/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 )
