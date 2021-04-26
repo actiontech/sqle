@@ -18,8 +18,8 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/server"
 
+	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/labstack/echo/v4"
-	mybatis_parser "github.com/sjjian/mybatis-mapper-2-sql"
 )
 
 var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))

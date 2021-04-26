@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	actiontech.cloud/universe/ucommon/v4 v4.2101.1-0.20210204023918-a44296eb4ef0
+	github.com/actiontech/mybatis-mapper-2-sql v0.1.3-0.20210426090447-30154a3f590e
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
@@ -32,7 +33,6 @@ require (
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340 // v3.0.12
 	github.com/sirupsen/logrus v1.2.0
-	github.com/sjjian/mybatis-mapper-2-sql v0.1.2
 	github.com/spf13/cobra v0.0.7
 	github.com/stretchr/testify v1.6.1
 	github.com/swaggo/echo-swagger v1.0.0
