@@ -33,7 +33,6 @@ require (
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340 // v3.0.12
 	github.com/sirupsen/logrus v1.2.0
-	github.com/sjjian/mybatis-mapper-2-sql v0.1.2 // indirect
 	github.com/spf13/cobra v0.0.7
 	github.com/stretchr/testify v1.6.1
 	github.com/swaggo/echo-swagger v1.0.0
