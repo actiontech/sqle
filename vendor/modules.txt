@@ -17,6 +17,11 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/StackExchange/wmi v0.0.0-20180725035823-b12b22c5341f
 github.com/StackExchange/wmi
+# github.com/actiontech/mybatis-mapper-2-sql v0.1.3-0.20210426090447-30154a3f590e
+## explicit
+github.com/actiontech/mybatis-mapper-2-sql
+github.com/actiontech/mybatis-mapper-2-sql/ast
+github.com/actiontech/mybatis-mapper-2-sql/sqlfmt
 # github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 ## explicit
 github.com/alecthomas/template
@@ -181,9 +186,6 @@ github.com/shurcooL/sanitized_anchor_name
 github.com/sirupsen/logrus
 # github.com/sjjian/mybatis-mapper-2-sql v0.1.2
 ## explicit
-github.com/sjjian/mybatis-mapper-2-sql
-github.com/sjjian/mybatis-mapper-2-sql/ast
-github.com/sjjian/mybatis-mapper-2-sql/sqlfmt
 # github.com/spf13/cobra v0.0.7
 ## explicit
 github.com/spf13/cobra
