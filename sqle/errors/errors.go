@@ -16,10 +16,11 @@ const (
 	TASK_NOT_EXIST      ErrorCode = 4006
 	TASK_ACTION_INVALID ErrorCode = 4009
 
-	DataExist    ErrorCode = 4010
-	DataNotExist ErrorCode = 4011
-	DataConflict ErrorCode = 4012
-	DataInvalid  ErrorCode = 4013
+	LoginAuthFail ErrorCode = 4001
+	DataExist     ErrorCode = 4010
+	DataNotExist  ErrorCode = 4011
+	DataConflict  ErrorCode = 4012
+	DataInvalid   ErrorCode = 4013
 
 	TASK_RUNNING     ErrorCode = 1001
 	TASK_ACTION_DONE ErrorCode = 1002
