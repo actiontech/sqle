@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
+// TODO: Using configuration to set jwt secret
 const JWTSecret = "secret"
-const defaultAdminUser = "admin"
 
 type UserLoginReqV1 struct {
 	UserName string `json:"username" form:"username" example:"test" valid:"required"`

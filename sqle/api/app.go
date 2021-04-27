@@ -4,6 +4,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
 	"actiontech.cloud/sqle/sqle/sqle/config"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 	"crypto/tls"
 	"github.com/facebookgo/grace/gracenet"
 	"net/http"
@@ -188,7 +189,7 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 func AdminUserAllowed() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if controller.GetUserName(c) == "admin" {
+			if controller.GetUserName(c) == model.DefaultAdminUser {
 				return next(c)
 			}
 			return echo.NewHTTPError(http.StatusForbidden)

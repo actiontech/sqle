@@ -141,16 +141,14 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 	return nil
 }
 
-const defaultAdminUser = "admin"
-
 func (s *Storage) CreateAdminUser() error {
-	_, exist, err := s.GetUserByName(defaultAdminUser)
+	_, exist, err := s.GetUserByName(DefaultAdminUser)
 	if err != nil {
 		return err
 	}
 	if !exist {
 		return s.Save(&User{
-			Name:     defaultAdminUser,
+			Name:     DefaultAdminUser,
 			Password: "admin",
 		})
 	}
@@ -160,7 +158,7 @@ func (s *Storage) CreateAdminUser() error {
 var DefaultWorkflowTemplate = "default"
 
 func (s *Storage) CreateDefaultWorkflowTemplate() error {
-	user, exist, err := s.GetUserByName(defaultAdminUser)
+	user, exist, err := s.GetUserByName(DefaultAdminUser)
 	if err != nil {
 		return err
 	}
