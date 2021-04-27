@@ -104,8 +104,8 @@ type ExecuteSQL struct {
 	BaseSQL
 	AuditStatus string `json:"audit_status" gorm:"default:\"initialized\""`
 	AuditResult string `json:"audit_result" gorm:"type:text"`
-	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm.
-	// It should be unique in one audit task, because it used for deduplicate.
+	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
+	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
 	AuditLevel string `json:"audit_level"`
