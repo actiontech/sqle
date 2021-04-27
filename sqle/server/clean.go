@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	SqlAuditWorkflowExpiredTime = 720
-	SqlAuditTaskExpiredTime     = 72
+	SqlAuditWorkflowExpiredTime = 30 * 24 // 30 days
+	SqlAuditTaskExpiredTime     = 3 * 24  // 3 days
 )
 
 func (s *Sqled) cleanLoop() {
