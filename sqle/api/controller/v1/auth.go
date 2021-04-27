@@ -2,7 +2,9 @@ package v1
 
 import (
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -45,7 +47,8 @@ func Login(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist || !(req.UserName == user.Name && req.Password == user.Password) {
-		return echo.ErrUnauthorized
+		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail,
+			fmt.Errorf("password is wrong or user does not exist")))
 	}
 	// Create token
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -55,7 +58,7 @@ func Login(c echo.Context) error {
 
 	t, err := token.SignedString([]byte(JWTSecret))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	return c.JSON(http.StatusOK, &GetUserLoginResV1{
 		BaseRes: controller.NewBaseReq(nil),
