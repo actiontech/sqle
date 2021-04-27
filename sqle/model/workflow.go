@@ -493,7 +493,6 @@ func (s *Storage) GetLastWorkflow() (*Workflow, bool, error) {
 	return workflow, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-// TODO: delete workflow record history
 func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("DELETE FROM workflows WHERE id = ?", workflow.ID)
@@ -504,7 +503,11 @@ func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_record_id = ?", workflow.WorkflowRecordId)
+		_, err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_id = ?", workflow.ID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec("DELETE FROM workflow_record_history WHERE workflow_id = ?", workflow.ID)
 		if err != nil {
 			return err
 		}
@@ -516,11 +519,10 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 	workflows := []*Workflow{}
 	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
-		Where("workflows.created_at < ?", start).
-		Where("workflow_records.status = \"finish\"").
-		Or("workflow_records.status = \"canceled\"").
-		Or("workflow_records.status IS NULL").
+		Where("workflows.created_at < ? "+
+			"AND (workflow_records.status = \"finished\" "+
+			"OR workflow_records.status = \"canceled\" "+
+			"OR workflow_records.status IS NULL)", start).
 		Scan(&workflows).Error
-
 	return workflows, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
