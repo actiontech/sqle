@@ -83,7 +83,6 @@ type BaseSQL struct {
 	ExecStatus      string     `json:"exec_status" gorm:"default:\"initialized\""`
 	ExecResult      string     `json:"exec_result"`
 	Stmts           []ast.Node `json:"-" gorm:"-"`
-	Fingerprint     string     `json:"fingerprint" gorm:"type:text"`
 }
 
 func (s *BaseSQL) GetExecStatusDesc() string {
@@ -105,7 +104,11 @@ type ExecuteSQL struct {
 	BaseSQL
 	AuditStatus string `json:"audit_status" gorm:"default:\"initialized\""`
 	AuditResult string `json:"audit_result" gorm:"type:text"`
-	AuditLevel  string `json:"audit_level"` // level: error, warn, notice, normal
+	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
+	// it used for deduplication in one audit task.
+	AuditFingerprint string `json:"audit_fingerprint" gorm:"type:char(32)"`
+	// AuditLevel has four level: error, warn, notice, normal.
+	AuditLevel string `json:"audit_level"`
 }
 
 func (s ExecuteSQL) TableName() string {
@@ -492,7 +495,7 @@ AND e_sql.audit_status = :filter_audit_status
 {{- if .no_duplicate }}
 AND e_sql.id IN (
 SELECT SQL_BIG_RESULT MIN(id) AS id FROM execute_sql_detail WHERE task_id = :task_id 
-GROUP BY audit_result, IFNULL(audit_result, id), fingerprint, IFNULL(fingerprint, id) ORDER BY null
+GROUP BY audit_fingerprint, IFNULL(audit_fingerprint, id) ORDER BY null
 )
 {{- end }}
 

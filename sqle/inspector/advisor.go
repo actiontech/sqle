@@ -1,12 +1,13 @@
 package inspector
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/utils"
-
 	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -40,12 +41,6 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 				currentSql.AuditResult = "白名单"
 			} else {
 				node := sql.Stmts[0]
-
-				var err error
-				if currentSql.Fingerprint, err = i.Fingerprint(sql.Content); err != nil {
-					i.Logger().Warnf("sql %s generate fingerprint failed, error: %v", sql.Content, err)
-				}
-
 				results, err := i.CheckInvalid(node)
 				if err != nil {
 					return err
@@ -89,6 +84,13 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 					currentSql.AuditResult = results.message()
 				}
 			}
+
+			sqlFP, err := i.Fingerprint(sql.Content)
+			if err != nil {
+				i.Logger().Warnf("sql %s generate fingerprint failed, error: %v", sql.Content, err)
+			}
+			md5 := md5.Sum(append([]byte(currentSql.AuditResult), []byte(sqlFP)...))
+			currentSql.AuditFingerprint = hex.EncodeToString(md5[:])
 
 			i.Logger().Infof("sql=%s, level=%s, result=%s",
 				currentSql.Content, currentSql.AuditLevel, currentSql.AuditResult)
