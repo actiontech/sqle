@@ -20,7 +20,6 @@ type WorkflowTemplate struct {
 const (
 	WorkflowStepTypeSQLReview      = "sql_review"
 	WorkflowStepTypeSQLExecute     = "sql_execute"
-	WorkflowStepTypeUnknown        = "unknown"
 	WorkflowStepTypeCreateWorkflow = "create_workflow"
 	WorkflowStepTypeUpdateWorkflow = "update_workflow"
 )
@@ -186,11 +185,6 @@ const (
 	WorkflowStepStateInit    = "initialized"
 	WorkflowStepStateApprove = "approved"
 	WorkflowStepStateReject  = "rejected"
-)
-
-const (
-	WorkflowStepActionApprove = "approve"
-	WorkflowStepActionReject  = "reject"
 )
 
 type WorkflowStep struct {
