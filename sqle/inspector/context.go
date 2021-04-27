@@ -104,7 +104,9 @@ func (c *Context) AddSchema(name string) {
 	if c.HasSchema(name) {
 		return
 	}
-	c.schemas[name] = &SchemaInfo{}
+	c.schemas[name] = &SchemaInfo{
+		Tables: map[string]*TableInfo{},
+	}
 }
 
 func (c *Context) DelSchema(name string) {

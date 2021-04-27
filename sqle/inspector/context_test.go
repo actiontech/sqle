@@ -175,3 +175,5 @@ insert into not_exist_tb_1 (id,v2,v3) values (1,"1","1");
 		newTestResult(),
 	)
 }
+
+// TODO: add more test for relation audit, like create a database and create a table in it.
