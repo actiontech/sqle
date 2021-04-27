@@ -22,6 +22,7 @@ func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {
 			if rollbackSql != "" {
 				rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
 					BaseSQL: model.BaseSQL{
+						TaskId:  i.Task.ID,
 						Content: rollbackSql,
 					},
 					ExecuteSQLId: currentSql.ID,

@@ -301,54 +301,26 @@ func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateExecuteSQLs(task *Task, ExecuteSQLs []*ExecuteSQL) error {
+func (s *Storage) UpdateExecuteSQLs(ExecuteSQLs []*ExecuteSQL) error {
 	tx := s.db.Begin()
-	//if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(ExecuteSQL{}).Error; err != nil {
-	//	return err
-	//}
-
 	for _, executeSQL := range ExecuteSQLs {
 		currentSql := executeSQL
 		if err := tx.Save(currentSql).Error; err != nil {
 			tx.Rollback()
 			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 		}
-		//if err := tx.Exec("INSERT execute_sql_detail(task_id, number, content, "+
-		//	"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
-		//	"exec_status, exec_result, fingerprint, audit_status, audit_result, audit_level) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-		//	task.ID, executeSQL.Number, executeSQL.Content, executeSQL.StartBinlogFile, executeSQL.StartBinlogPos,
-		//	executeSQL.EndBinlogFile, executeSQL.EndBinlogPos, executeSQL.RowAffects, executeSQL.ExecStatus,
-		//	executeSQL.ExecResult, executeSQL.Fingerprint, executeSQL.AuditStatus, executeSQL.AuditResult,
-		//	executeSQL.AuditLevel).Error; err != nil {
-		//	tx.Rollback()
-		//	return err
-		//}
 	}
 	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateRollbackSQLs(task *Task, rollbackSQLs []*RollbackSQL) error {
+func (s *Storage) UpdateRollbackSQLs(rollbackSQLs []*RollbackSQL) error {
 	tx := s.db.Begin()
-	//if err := tx.Unscoped().Where("task_id=?", task.ID).Delete(RollbackSQL{}).Error; err != nil {
-	//	return err
-	//}
-
 	for _, rollbackSQL := range rollbackSQLs {
 		currentSql := rollbackSQL
 		if err := tx.Save(currentSql).Error; err != nil {
 			tx.Rollback()
 			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 		}
-		//if err := tx.Exec("INSERT INTO rollback_sql_detail(task_id, number, content, "+
-		//	"start_binlog_file, start_binlog_pos, end_binlog_file, end_binlog_pos, row_affects, "+
-		//	"exec_status, exec_result, fingerprint, execute_sql_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-		//	task.ID, rollbackSQL.Number, rollbackSQL.Content, rollbackSQL.StartBinlogFile,
-		//	rollbackSQL.StartBinlogPos, rollbackSQL.EndBinlogFile, rollbackSQL.EndBinlogPos,
-		//	rollbackSQL.RowAffects, rollbackSQL.ExecStatus, rollbackSQL.ExecResult,
-		//	rollbackSQL.Fingerprint, rollbackSQL.ExecuteSQLId).Error; err != nil {
-		//	tx.Rollback()
-		//	return err
-		//}
 	}
 	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
 }
@@ -407,25 +379,6 @@ func (s *Storage) UpdateRollbackSQLById(rollbackSQLId string, attrs ...interface
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-//func (s *Storage) HardDeleteRollbackSQLByTaskIds(taskIds []string) error {
-//	rollbackSQL := RollbackSQL{}
-//	err := s.db.Unscoped().Where("task_id IN (?)", taskIds).Delete(rollbackSQL).Error
-//	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-//}
-
-//func (s *Storage) GetRollbackSqlByTaskId(taskId string, commitSqlNum []string) ([]RollbackSQL, error) {
-//	rollbackSqls := []RollbackSQL{}
-//	querySql := "task_id=?"
-//	queryArgs := make([]interface{}, 0)
-//	queryArgs = append(queryArgs, taskId)
-//	if len(commitSqlNum) > 0 {
-//		querySql += " AND COMMIT_SQL_NUMBER IN (?)"
-//		queryArgs = append(queryArgs, commitSqlNum)
-//	}
-//	err := s.db.Where(querySql, queryArgs...).Find(&rollbackSqls).Error
-//	return rollbackSqls, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-//}
-
 func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Where(Task{
@@ -437,12 +390,6 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	}).Preload("Instance").Preload("ExecuteSQLs").Find(&tasks).Error
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
-
-//func (s *Storage) HardDeleteExecuteSqlResultByTaskIds(ids []string) error {
-//	executeSQL := ExecuteSQL{}
-//	err := s.db.Unscoped().Where("task_id IN (?)", ids).Delete(executeSQL).Error
-//	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-//}
 
 func (s *Storage) GetExecErrorExecuteSQLsByTaskId(taskId string) ([]ExecuteSQL, error) {
 	executeSQLs := []ExecuteSQL{}

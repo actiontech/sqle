@@ -40,6 +40,7 @@ w.id in (SELECT DISTINCT(w.id)
 {{- template "body" . -}}
 )
 GROUP BY w.id
+ORDER BY w.id DESC
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
 {{- end -}}

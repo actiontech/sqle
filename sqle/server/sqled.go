@@ -210,7 +210,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		}
 	}
 
-	if err := st.UpdateExecuteSQLs(task, task.ExecuteSQLs); err != nil {
+	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
 		entry.Errorf("save commit sql to storage failed, error: %v", err)
 		return err
 	}
@@ -237,7 +237,7 @@ func (s *Sqled) audit(task *model.Task) error {
 	}
 
 	if len(rollbackSqls) > 0 {
-		err = st.UpdateRollbackSQLs(task, rollbackSqls)
+		err = st.UpdateRollbackSQLs(rollbackSqls)
 		if err != nil {
 			entry.Errorf("save rollback sql to storage failed, error: %v", err)
 			return err
@@ -382,7 +382,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 
 	i.CommitDMLs(sqls)
 
-	if err := st.UpdateExecuteSQLs(task, task.ExecuteSQLs); err != nil {
+	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
 		i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
 		if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuteFailed); nil != err {
 			log.Logger().Errorf("update task exec_status failed: %v", err)
