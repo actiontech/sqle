@@ -111,7 +111,7 @@ func CreateInstance(c echo.Context) error {
 }
 
 func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) error {
-	if controller.GetUserName(c) == defaultAdminUser {
+	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
 	user, err := controller.GetCurrentUser(c)
@@ -395,7 +395,7 @@ func GetInstances(c echo.Context) error {
 		"filter_rule_template_name":     req.FilterRuleTemplateName,
 		"filter_role_name":              req.FilterRoleName,
 		"current_user_id":               user.ID,
-		"check_user_can_access":         user.Name != defaultAdminUser,
+		"check_user_can_access":         user.Name != model.DefaultAdminUser,
 		"limit":                         req.PageSize,
 		"offset":                        offset,
 	}

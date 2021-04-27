@@ -555,7 +555,7 @@ type WorkflowStepResV1 struct {
 }
 
 func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow) error {
-	if controller.GetUserName(c) == defaultAdminUser {
+	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
 	user, err := controller.GetCurrentUser(c)
@@ -771,7 +771,7 @@ func GetWorkflows(c echo.Context) error {
 		"filter_task_status":                     req.FilterTaskStatus,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
 		"current_user_id":                        user.ID,
-		"check_user_can_access":                  user.Name != defaultAdminUser,
+		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
 		"limit":                                  req.PageSize,
 		"offset":                                 offset,
 	}
@@ -1050,7 +1050,7 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !(user.ID == workflow.CreateUserId || user.Name == defaultAdminUser) {
+	if !(user.ID == workflow.CreateUserId || user.Name == model.DefaultAdminUser) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}

@@ -126,7 +126,7 @@ func UpdateUser(c echo.Context) error {
 // @router /v1/users/{user_name}/ [delete]
 func DeleteUser(c echo.Context) error {
 	userName := c.Param("user_name")
-	if userName == defaultAdminUser {
+	if userName == model.DefaultAdminUser {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 			fmt.Errorf("admin user cannot be deleted")))
 	}
@@ -161,7 +161,7 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 	userReq := UserDetailResV1{
 		Name:    user.Name,
 		Email:   user.Email,
-		IsAdmin: user.Name == defaultAdminUser,
+		IsAdmin: user.Name == model.DefaultAdminUser,
 	}
 	roleNames := make([]string, 0, len(user.Roles))
 	for _, role := range user.Roles {

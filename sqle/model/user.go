@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const DefaultAdminUser = "admin"
+
 type User struct {
 	Model
 	Name           string `gorm:"column:login_name"`

@@ -181,7 +181,7 @@ func CreateAndAuditTask(c echo.Context) error {
 }
 
 func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
-	if controller.GetUserName(c) == defaultAdminUser {
+	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
 	user, err := controller.GetCurrentUser(c)
