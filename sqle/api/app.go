@@ -4,6 +4,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
 	"actiontech.cloud/sqle/sqle/sqle/config"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"crypto/tls"
 	"github.com/facebookgo/grace/gracenet"
@@ -38,6 +39,15 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	}))
 	e.HideBanner = true
 	e.HidePort = true
+
+	// custom handler http error
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		if _, ok := err.(*errors.CodeError); ok {
+			controller.JSONBaseErrorReq(c, err)
+		} else {
+			e.DefaultHTTPErrorHandler(err, c)
+		}
+	}
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
