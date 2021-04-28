@@ -13,7 +13,8 @@ const DefaultAdminUser = "admin"
 
 type User struct {
 	Model
-	Name           string `gorm:"column:login_name"`
+	// has created composite index: [id, login_name] by gorm#AddIndex
+	Name           string `gorm:"index;column:login_name"`
 	Email          string
 	Password       string  `json:"-" gorm:"-"`
 	SecretPassword string  `json:"secret_password" gorm:"not null;column:password"`
@@ -22,7 +23,7 @@ type User struct {
 
 type Role struct {
 	Model
-	Name      string
+	Name      string `gorm:"index"`
 	Desc      string
 	Users     []*User     `gorm:"many2many:user_role;"`
 	Instances []*Instance `gorm:"many2many:instance_role;"`

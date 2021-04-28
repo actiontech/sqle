@@ -72,7 +72,7 @@ const (
 
 type BaseSQL struct {
 	Model
-	TaskId          uint       `json:"-"`
+	TaskId          uint       `json:"-" gorm:"index"`
 	Number          uint       `json:"number"`
 	Content         string     `json:"sql" gorm:"type:text"`
 	StartBinlogFile string     `json:"start_binlog_file"`
@@ -106,7 +106,7 @@ type ExecuteSQL struct {
 	AuditResult string `json:"audit_result" gorm:"type:text"`
 	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
 	// it used for deduplication in one audit task.
-	AuditFingerprint string `json:"audit_fingerprint" gorm:"type:char(32)"`
+	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
 	AuditLevel string `json:"audit_level"`
 }
@@ -137,7 +137,7 @@ func (s *ExecuteSQL) GetAuditResultDesc() string {
 
 type RollbackSQL struct {
 	BaseSQL
-	ExecuteSQLId uint `gorm:"column:execute_sql_id"`
+	ExecuteSQLId uint `gorm:"index;column:execute_sql_id"`
 }
 
 func (s RollbackSQL) TableName() string {

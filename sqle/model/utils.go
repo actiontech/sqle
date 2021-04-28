@@ -95,7 +95,18 @@ func (s *Storage) AutoMigrate() error {
 		&WorkflowStep{},
 		&SMTPConfiguration{},
 	).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	if err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err = s.db.Model(&User{}).AddIndex("idx_users_id_name", "id", "login_name").Error
+	if err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err = s.db.Model(&Instance{}).AddIndex("idx_instances_id_name", "id", "name").Error
+	if err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	return nil
 }
 
 func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
