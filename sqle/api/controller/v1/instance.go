@@ -6,7 +6,6 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/server"
 	"actiontech.cloud/universe/ucommon/v4/util"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -104,9 +103,6 @@ func CreateInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
-
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -225,8 +221,6 @@ func DeleteInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	server.GetSqled().DeleteInstanceStatus(instance)
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -331,8 +325,6 @@ func UpdateInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	go server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -543,14 +535,14 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	status, err := server.GetSqled().UpdateAndGetInstanceStatus(log.NewEntry(), instance)
+	schemas, err := executor.ShowDatabases(log.NewEntry(), instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, &GetInstanceSchemaResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: InstanceSchemaResV1{
-			Schemas: status.Schemas,
+			Schemas: schemas,
 		},
 	})
 }

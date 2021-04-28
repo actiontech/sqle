@@ -168,12 +168,6 @@ func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) erro
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetInstances() ([]Instance, error) {
-	instances := []Instance{}
-	err := s.db.Find(&instances).Error
-	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
 	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)

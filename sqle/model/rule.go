@@ -133,31 +133,6 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateRuleValueByName(name, value string) error {
-	err := s.db.Table("rules").Where("name = ?", name).
-		Update(map[string]string{"value": value}).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
-func (s *Storage) GetInstancesNameByTemplate(tpl *RuleTemplate) ([]string, error) {
-	names := []string{}
-	rows, err := s.db.Table("instances").Select("instances.name").
-		Joins("inner join instance_rule_template on instance_rule_template.instance_id = instances.id").
-		Where("instances.deleted_at IS NULL and instance_rule_template.rule_template_id = ?", tpl.ID).Rows()
-	if err != nil {
-		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	for rows.Next() {
-		var name string
-		err = rows.Scan(&name)
-		if err != nil {
-			return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-		}
-		names = append(names, name)
-	}
-	return names, nil
-}
-
 func (s *Storage) GetRuleTemplatesByNames(names []string) ([]*RuleTemplate, error) {
 	templates := []*RuleTemplate{}
 	err := s.db.Where("name in (?)", names).Find(&templates).Error
