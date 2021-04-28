@@ -29,8 +29,6 @@ type Sqled struct {
 	currentTask map[string]struct{}
 	// queue is a chan used to receive tasks.
 	queue chan *Action
-	// instancesStatus save schemas info for all db instance.
-	instancesStatus map[string]*InstanceStatus
 }
 
 // Action is an action for the task;
@@ -119,7 +117,6 @@ func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
 
 func (s *Sqled) Start() {
 	go s.taskLoop()
-	go s.statusLoop()
 	go s.cleanLoop()
 }
 

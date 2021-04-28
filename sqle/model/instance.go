@@ -21,6 +21,7 @@ const (
 // Instance is a table for database info
 type Instance struct {
 	Model
+	// has created composite index: [id, name] by gorm#AddIndex
 	Name               string       `json:"name" gorm:"not null;index" example:""`
 	DbType             string       `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
 	Host               string       `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
@@ -166,12 +167,6 @@ func (s *Storage) GetInstancesByNames(names []string) ([]*Instance, error) {
 func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) error {
 	err := s.db.Table("instances").Where("id = ?", InstanceId).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
-func (s *Storage) GetInstances() ([]Instance, error) {
-	instances := []Instance{}
-	err := s.db.Find(&instances).Error
-	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {

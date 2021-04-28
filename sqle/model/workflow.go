@@ -173,7 +173,7 @@ const (
 
 type WorkflowRecord struct {
 	Model
-	TaskId                uint
+	TaskId                uint `gorm:"index"`
 	CurrentWorkflowStepId uint
 	Status                string `gorm:"default:\"on_process\""`
 

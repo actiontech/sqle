@@ -72,7 +72,7 @@ const (
 
 type BaseSQL struct {
 	Model
-	TaskId          uint       `json:"-"`
+	TaskId          uint       `json:"-" gorm:"index"`
 	Number          uint       `json:"number"`
 	Content         string     `json:"sql" gorm:"type:text"`
 	StartBinlogFile string     `json:"start_binlog_file"`
@@ -106,7 +106,7 @@ type ExecuteSQL struct {
 	AuditResult string `json:"audit_result" gorm:"type:text"`
 	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
 	// it used for deduplication in one audit task.
-	AuditFingerprint string `json:"audit_fingerprint" gorm:"type:char(32)"`
+	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
 	AuditLevel string `json:"audit_level"`
 }
@@ -137,7 +137,7 @@ func (s *ExecuteSQL) GetAuditResultDesc() string {
 
 type RollbackSQL struct {
 	BaseSQL
-	ExecuteSQLId uint `gorm:"column:execute_sql_id"`
+	ExecuteSQLId uint `gorm:"index;column:execute_sql_id"`
 }
 
 func (s RollbackSQL) TableName() string {
@@ -247,55 +247,6 @@ func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	return buff.Bytes(), nil
 }
 
-func (s *Storage) GetTasksInstanceName() ([]string, error) {
-	query := `SELECT instances.name AS name FROM tasks 
-JOIN instances ON tasks.instance_id = instances.id 
-GROUP BY instances.name`
-
-	var instancesName []string
-	rows, err := s.db.Raw(query).Rows()
-	if err != nil {
-		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var name string
-		rows.Scan(&name)
-		instancesName = append(instancesName, name)
-	}
-	return instancesName, nil
-}
-
-func (s *Storage) GetTasks() ([]Task, error) {
-	tasks := []Task{}
-	err := s.db.Find(&tasks).Error
-	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
-//func (s *Storage) GetExpiredTaskIds() ([]string, error) {
-//	now := time.Now().Format(time.RFC3339)
-//	query := fmt.Sprintf(`SELECT id FROM tasks WHERE expired_at < %s`, now)
-//
-//	var ids []string
-//	rows, err := s.db.Raw(query).Rows()
-//	if err != nil {
-//		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-//	}
-//	defer rows.Close()
-//	for rows.Next() {
-//		var id string
-//		rows.Scan(&id)
-//		ids = append(ids, id)
-//	}
-//	return ids, nil
-//}
-
-func (s *Storage) GetTasksByIds(ids []string) ([]Task, error) {
-	tasks := []Task{}
-	err := s.db.Where("id IN (?)", ids).Find(&tasks).Error
-	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
 func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
 	err := s.db.Table("tasks").Where("id = ?", task.ID).Update(attrs...).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
@@ -391,12 +342,6 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) GetExecErrorExecuteSQLsByTaskId(taskId string) ([]ExecuteSQL, error) {
-	executeSQLs := []ExecuteSQL{}
-	err := s.db.Not("exec_result", []string{"ok", ""}).Where("task_id=? ", taskId).Find(&executeSQLs).Error
-	return executeSQLs, errors.New(errors.CONNECT_STORAGE_ERROR, err)
-}
-
 type TaskSQLDetail struct {
 	Number      uint           `json:"number"`
 	ExecSQL     string         `json:"exec_sql"`
@@ -444,10 +389,6 @@ AND e_sql.id IN (
 SELECT SQL_BIG_RESULT MIN(id) AS id FROM execute_sql_detail WHERE task_id = :task_id 
 GROUP BY audit_fingerprint, IFNULL(audit_fingerprint, id) ORDER BY null
 )
-{{- end }}
-
-{{- if .filter_next_step_assignee_user_name }}
-AND ass_user.login_name = :filter_next_step_assignee_user_name
 {{- end }}
 ORDER BY e_sql.id
 {{- end }}
