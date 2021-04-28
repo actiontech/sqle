@@ -41,7 +41,7 @@ func BindAndValidateReq(c echo.Context, i interface{}) error {
 	}
 
 	if err := Validate(i); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return errors.New(errors.DataInvalid, err)
 	}
 	return nil
 }
