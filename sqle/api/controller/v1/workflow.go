@@ -514,7 +514,7 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
 	}
 	if err := misc.SendEmailIfConfigureSMTP(fmt.Sprintf("%v", workflow.ID)); err != nil {
-		c.Logger().Errorf("after create workflow, send email error: %v", err)
+		log.Logger().Errorf("after create workflow, send email error: %v", err)
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
@@ -889,7 +889,7 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 
 	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
-		c.Logger().Errorf("after approve workflow, send email error: %v", err)
+		log.Logger().Errorf("after approve workflow, send email error: %v", err)
 	}
 
 	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
@@ -1157,7 +1157,7 @@ func UpdateWorkflow(c echo.Context) error {
 	}
 
 	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
-		c.Logger().Errorf("after update workflow, send email error: %v", err)
+		log.Logger().Errorf("after update workflow, send email error: %v", err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }

@@ -227,6 +227,17 @@ func (w *Workflow) CurrentStep() *WorkflowStep {
 	return w.Record.CurrentStep
 }
 
+func (w *Workflow) CurrentAssigneeUser() []*User {
+	currentStep := w.CurrentStep()
+	if currentStep == nil {
+		return []*User{}
+	}
+	if currentStep.Template == nil {
+		return []*User{}
+	}
+	return currentStep.Template.Users
+}
+
 func (w *Workflow) NextStep() *WorkflowStep {
 	var nextIndex int
 	for i, step := range w.Record.Steps {
