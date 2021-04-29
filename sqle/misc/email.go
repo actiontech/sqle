@@ -28,11 +28,22 @@ func SendEmailIfConfigureSMTP(workflowId string) error {
 	if !exist {
 		return fmt.Errorf("workflow not exits")
 	}
-	var emails []string
-	for _, user := range workflow.CurrentStep().Template.Users {
-		emails = append(emails, user.Email)
-	}
 
+	users := workflow.CurrentAssigneeUser()
+	// workflow has been finished.
+	if len(users) == 0 {
+		return nil
+	}
+	var emails []string
+	for _, user := range users {
+		if user.Email != "" {
+			emails = append(emails, user.Email)
+		}
+	}
+	// no user has configured email, don't send.
+	if len(emails) == 0 {
+		return nil
+	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", smtpC.Username)
 	message.SetHeader("To", emails...)
