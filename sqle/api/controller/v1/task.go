@@ -192,14 +192,21 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 		return nil
 	}
 	s := model.GetStorage()
-	access, err := s.UserCanAccessTask(user, task)
+	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
 	if err != nil {
 		return err
 	}
-	if access {
-		return nil
+	if !exist {
+		return TaskNoAccessError
 	}
-	return TaskNoAccessError
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if !access {
+		return TaskNoAccessError
+	}
+	return nil
 }
 
 // @Summary 获取Sql审核任务信息
