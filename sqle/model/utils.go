@@ -137,7 +137,7 @@ func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
 var DefaultRuleTemplate = "default"
 
 func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
-	_, exist, err := s.GetRuleTemplateByName("all")
+	_, exist, err := s.GetRuleTemplateByName(DefaultRuleTemplate)
 	if err != nil {
 		return err
 	}
