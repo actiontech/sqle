@@ -26,6 +26,8 @@ default: install
 DOTNET_TARGET = centos.7-x64
 PARSER_PATH   = ${shell pwd}/vendor/github.com/pingcap/parser
 
+override LDFLAGS = -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
+
 ######################################## 2.Code Check ####################################################
 ## Static Code Analysis
 vet: swagger
@@ -65,7 +67,7 @@ docker_clean:
 docker_install:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(DOCKER_IMAGE) -c "cd /universe && make install $(MAKEFLAGS)"
 install: swagger parser
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
 
 build_sqlserver:
 	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
