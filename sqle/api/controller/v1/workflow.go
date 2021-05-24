@@ -738,6 +738,9 @@ type WorkflowDetailResV1 struct {
 // @Tags workflow
 // @Id getWorkflowListV1
 // @Security ApiKeyAuth
+// @Param filter_subject query string false "filter subject"
+// @Param filter_create_time_from query string false "filter create time from"
+// @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_create_user_name query string false "filter create user name"
 // @Param filter_current_step_type query string false "filter current step type" Enums(sql_review, sql_execute)
 // @Param filter_status query string false "filter workflow status" Enums(on_process, finished, rejected, canceled)
