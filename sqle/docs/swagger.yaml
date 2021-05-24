@@ -2161,6 +2161,18 @@ paths:
       description: get workflow list
       operationId: getWorkflowListV1
       parameters:
+      - description: filter subject
+        in: query
+        name: filter_subject
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
       - description: filter create user name
         in: query
         name: filter_create_user_name
