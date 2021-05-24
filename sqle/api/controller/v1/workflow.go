@@ -702,6 +702,9 @@ func GetWorkflow(c echo.Context) error {
 }
 
 type GetWorkflowsReqV1 struct {
+	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
+	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
 	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" enums:"sql_review,sql_execute" valid:"omitempty,oneof=sql_review sql_execute"`
 	FilterStatus                      string `json:"filter_status" query:"filter_status" enums:"on_process,finished,rejected,canceled" valid:"omitempty,oneof=on_process finished rejected canceled"`
@@ -767,6 +770,9 @@ func GetWorkflows(c echo.Context) error {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 	data := map[string]interface{}{
+		"filter_subject":                         req.FilterSubject,
+		"filter_create_time_from":                req.FilterCreateTimeFrom,
+		"filter_create_time_to":                  req.FilterCreateTimeTo,
 		"filter_create_user_name":                req.FilterCreateUserName,
 		"filter_status":                          req.FilterStatus,
 		"filter_current_step_type":               req.FilterCurrentStepType,
