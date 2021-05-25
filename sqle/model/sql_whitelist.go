@@ -10,11 +10,21 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const (
+	SQLWhitelistExactMatch = "exact_match"
+	SQLWhitelistFPMatch    = "fp_match"
+)
+
 type SqlWhitelist struct {
 	Model
-	Value         string `json:"value" gorm:"not null;type:text"`
-	Desc          string `json:"desc"`
+	// Value store SQL text.
+	Value string `json:"value" gorm:"not null;type:text"`
+	Desc  string `json:"desc"`
+	// MessageDigest store Value or SQL fingerprint of Value with MD5 algorithm.
+	// If MatchType is equal to SQLWhitelistExactMatch, MessageDigest store MD5 of Value,
+	// otherwise it store MD5 of SQL fingerprint of Value.
 	MessageDigest string `json:"message_digest" gorm:"type:char(32) not null comment 'md5 data';" `
+	MatchType     string `json:"match_type"`
 }
 
 func (s SqlWhitelist) TableName() string {

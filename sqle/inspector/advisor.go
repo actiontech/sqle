@@ -35,10 +35,22 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 			if len(sql.Stmts) <= 0 {
 				return nil
 			}
-			if _, ok := sqlWhiltelistMD5Map[utils.Md5String(strings.ToUpper(sql.Content))]; ok {
+
+			uppedSQL := strings.ToUpper(sql.Content)
+			sqlFP, err := Fingerprint(uppedSQL)
+			if err != nil {
+				i.Logger().Warnf("sql %s generate fingerprint failed, error: %v", sql.Content, err)
+				return err
+			}
+
+			_, fpMatch := sqlWhiltelistMD5Map[utils.Md5String(sqlFP)]
+			_, exactMatch := sqlWhiltelistMD5Map[utils.Md5String(uppedSQL)]
+			if fpMatch || exactMatch {
+				var irs InspectResults
+				irs.add(model.RULE_LEVEL_NORMAL, "白名单")
 				currentSql.AuditStatus = model.SQLAuditStatusFinished
-				currentSql.AuditLevel = model.RULE_LEVEL_NORMAL
-				currentSql.AuditResult = "白名单"
+				currentSql.AuditLevel = irs.level()
+				currentSql.AuditResult = irs.message()
 			} else {
 				node := sql.Stmts[0]
 				results, err := i.CheckInvalid(node)
@@ -85,10 +97,6 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 				}
 			}
 
-			sqlFP, err := i.Fingerprint(sql.Content)
-			if err != nil {
-				i.Logger().Warnf("sql %s generate fingerprint failed, error: %v", sql.Content, err)
-			}
 			md5 := md5.Sum(append([]byte(currentSql.AuditResult), []byte(sqlFP)...))
 			currentSql.AuditFingerprint = hex.EncodeToString(md5[:])
 

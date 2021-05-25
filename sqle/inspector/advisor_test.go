@@ -2,14 +2,17 @@ package inspector
 
 import (
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
@@ -2661,7 +2664,6 @@ WHERE exist_db.exist_tb_1.v1 = ? AND exist_db.exist_tb_1.v2 = ?
 	}
 }
 
-
 func TestCheckIsAfterUnionDistinct(t *testing.T) {
 	for desc, sql := range map[string]string{
 		`select table should error`: `
@@ -2821,6 +2823,86 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(100);
 ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 `,
 		newTestResult(), newTestResult())
+}
+
+func TestSQLWhitelist(t *testing.T) {
+	// copy from actiontech.cloud/sqle/api/controller/v1 fillMD5ByMatchType
+	fillMD5ByMatchType := func(s *model.SqlWhitelist) error {
+		uppedValue := strings.ToUpper(s.Value)
+		switch s.MatchType {
+		case model.SQLWhitelistFPMatch:
+			fp, err := Fingerprint(uppedValue)
+			if err != nil {
+				return err
+			}
+			s.MessageDigest = utils.Md5String(fp)
+		case model.SQLWhitelistExactMatch:
+			s.MessageDigest = utils.Md5String(uppedValue)
+		default:
+			return fmt.Errorf("unknown SQL whitelist match type")
+		}
+		return nil
+	}
+
+	(&model.SqlWhitelist{
+		Value:         "for unit test",
+		Desc:          "for unit test",
+		MessageDigest: "",
+		MatchType:     model.SQLWhitelistExactMatch,
+	}).PutSqlWhitelistMD5()
+	time.Sleep(1 * time.Second)
+
+	// test exact match
+	{
+		sw1 := &model.SqlWhitelist{
+			Value:     "select * from exist_db.exist_tb_1 where id = 1",
+			MatchType: model.SQLWhitelistExactMatch,
+		}
+		assert.NoError(t, fillMD5ByMatchType(sw1))
+		sw1.PutSqlWhitelistMD5()
+
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_DISABE_SELECT_ALL_COLUMN].Rule,
+			t,
+			"",
+			DefaultMysqlInspect(),
+			"select * from exist_db.exist_tb_1 where id = 1",
+			newTestResult().add(model.RULE_LEVEL_NORMAL, "白名单"))
+
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_DISABE_SELECT_ALL_COLUMN].Rule,
+			t,
+			"",
+			DefaultMysqlInspect(),
+			"select * from exist_db.exist_tb_1 where id = 2",
+			newTestResult().addResult(DML_DISABE_SELECT_ALL_COLUMN))
+	}
+
+	// test fingerprint match
+	{
+		sw2 := &model.SqlWhitelist{
+			Value:     "select * from exist_db.exist_tb_1 where v1 = 2",
+			MatchType: model.SQLWhitelistFPMatch,
+		}
+		assert.NoError(t, fillMD5ByMatchType(sw2))
+		sw2.PutSqlWhitelistMD5()
+
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_DISABE_SELECT_ALL_COLUMN].Rule,
+			t,
+			"",
+			DefaultMysqlInspect(),
+			"select * from exist_db.exist_tb_1 where v1 = 3",
+			newTestResult().add(model.RULE_LEVEL_NORMAL, "白名单"))
+
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DML_DISABE_SELECT_ALL_COLUMN].Rule,
+			t,
+			"",
+			DefaultMysqlInspect(),
+			"select * from exist_db.exist_tb_1 where v2 = 1",
+			newTestResult().addResult(DML_DISABE_SELECT_ALL_COLUMN))
+	}
 }
 
 func DefaultMycatInspect() *Inspect {
