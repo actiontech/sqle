@@ -1,19 +1,25 @@
 package inspector
 
 import (
+	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
-func (i *Inspect) Fingerprint(oneSql string) (fingerprint string, err error) {
-	node, err := parseOneSql(i.Task.Instance.DbType, oneSql)
-	node.Accept(&FingerprintVisitor{})
-	q, err := restoreToSqlWithFlag(format.RestoreKeyWordUppercase|format.RestoreNameBackQuotes, node)
+func Fingerprint(oneSql string) (fingerprint string, err error) {
+	p := parser.New()
+	stmt, err := p.ParseOneStmt(oneSql, "", "")
 	if err != nil {
 		return "", err
 	}
-	return q, nil
+
+	stmt.Accept(&FingerprintVisitor{})
+	fingerprint, err = restoreToSqlWithFlag(format.RestoreKeyWordUppercase|format.RestoreNameBackQuotes, stmt)
+	if err != nil {
+		return "", err
+	}
+	return
 }
 
 type FingerprintVisitor struct{}
