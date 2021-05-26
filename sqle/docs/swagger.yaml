@@ -66,6 +66,8 @@ definitions:
         type: integer
       desc:
         type: string
+      match_type:
+        type: string
       value:
         type: string
     type: object
@@ -73,6 +75,12 @@ definitions:
     properties:
       desc:
         example: used for rapid release
+        type: string
+      match_type:
+        enum:
+        - exact_match
+        - fp_match
+        example: exact_match
         type: string
       value:
         example: create table
@@ -665,6 +673,12 @@ definitions:
     properties:
       desc:
         example: used for rapid release
+        type: string
+      match_type:
+        enum:
+        - exact_match
+        - fp_match
+        example: exact_match
         type: string
       value:
         example: create table

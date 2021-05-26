@@ -2283,6 +2283,9 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "match_type": {
+                    "type": "string"
+                },
                 "value": {
                     "type": "string"
                 }
@@ -2294,6 +2297,14 @@ var doc = `{
                 "desc": {
                     "type": "string",
                     "example": "used for rapid release"
+                },
+                "match_type": {
+                    "type": "string",
+                    "enum": [
+                        "exact_match",
+                        "fp_match"
+                    ],
+                    "example": "exact_match"
                 },
                 "value": {
                     "type": "string",
@@ -3161,6 +3172,14 @@ var doc = `{
                 "desc": {
                     "type": "string",
                     "example": "used for rapid release"
+                },
+                "match_type": {
+                    "type": "string",
+                    "enum": [
+                        "exact_match",
+                        "fp_match"
+                    ],
+                    "example": "exact_match"
                 },
                 "value": {
                     "type": "string",

@@ -1,20 +1,21 @@
 package v1
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"fmt"
+
 	"net/http"
-	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+
 	"github.com/labstack/echo/v4"
 )
 
 type CreateAuditWhitelistReqV1 struct {
-	Value string `json:"value" example:"create table" valid:"required"`
-	Desc  string `json:"desc" example:"used for rapid release"`
+	Value     string `json:"value" example:"create table" valid:"required"`
+	MatchType string `json:"match_type" example:"exact_match" enums:"exact_match,fp_match" valid:"omitempty,oneof=exact_match fp_match"`
+	Desc      string `json:"desc" example:"used for rapid release"`
 }
 
 // @Summary 添加SQL白名单
@@ -34,21 +35,23 @@ func CreateAuditWhitelist(c echo.Context) error {
 
 	s := model.GetStorage()
 	sqlWhitelist := &model.SqlWhitelist{
-		Value:         req.Value,
-		Desc:          req.Desc,
-		MessageDigest: utils.Md5String(strings.ToUpper(req.Value)),
+		Value:     req.Value,
+		Desc:      req.Desc,
+		MatchType: req.MatchType,
 	}
+
 	err := s.Save(sqlWhitelist)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-	sqlWhitelist.PutSqlWhitelistMD5()
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type UpdateAuditWhitelistReqV1 struct {
-	Value *string `json:"value" example:"create table"`
-	Desc  *string `json:"desc" example:"used for rapid release"`
+	Value     *string `json:"value" example:"create table"`
+	MatchType *string `json:"match_type" example:"exact_match" enums:"exact_match,fp_match"`
+	Desc      *string `json:"desc" example:"used for rapid release"`
 }
 
 // @Summary 更新SQL白名单
@@ -78,22 +81,25 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 			fmt.Errorf("sql audit whitelist is not exist")))
 	}
 	// nothing to update
-	if req.Value == nil && req.Desc == nil {
+	if req.Value == nil && req.Desc == nil && req.MatchType == nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 	}
 
 	if req.Value != nil {
 		sqlWhitelist.Value = *req.Value
-		sqlWhitelist.MessageDigest = utils.Md5String(strings.ToUpper(*req.Value))
 	}
-	if req.Value != nil {
+	if req.MatchType != nil {
+		sqlWhitelist.MatchType = *req.MatchType
+	}
+	if req.Desc != nil {
 		sqlWhitelist.Desc = *req.Desc
 	}
+
 	err = s.Save(sqlWhitelist)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-	sqlWhitelist.PutSqlWhitelistMD5()
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -120,7 +126,6 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlWhitelist.RemoveSqlWhitelistMD5()
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -136,9 +141,10 @@ type GetAuditWhitelistResV1 struct {
 }
 
 type AuditWhitelistResV1 struct {
-	Id    uint   `json:"audit_whitelist_id"`
-	Value string `json:"value"`
-	Desc  string `json:"desc"`
+	Id        uint   `json:"audit_whitelist_id"`
+	Value     string `json:"value"`
+	MatchType string `json:"match_type"`
+	Desc      string `json:"desc"`
 }
 
 // @Summary 获取Sql审核白名单
@@ -164,9 +170,10 @@ func GetSqlWhitelist(c echo.Context) error {
 	whitelistRes := make([]*AuditWhitelistResV1, 0, len(sqlWhitelist))
 	for _, v := range sqlWhitelist {
 		whitelistRes = append(whitelistRes, &AuditWhitelistResV1{
-			Id:    v.ID,
-			Value: v.Value,
-			Desc:  v.Desc,
+			Id:        v.ID,
+			Value:     v.Value,
+			Desc:      v.Desc,
+			MatchType: v.MatchType,
 		})
 	}
 	return c.JSON(http.StatusOK, &GetAuditWhitelistResV1{

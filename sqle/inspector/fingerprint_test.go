@@ -64,7 +64,7 @@ func TestFingerprint(t *testing.T) {
 }
 
 func testFingerprint(t *testing.T, input, expect string) {
-	acutal, err := DefaultMysqlInspect().Fingerprint(input)
+	acutal, err := Fingerprint(input)
 	assert.NoError(t, err)
 	if err != nil {
 		return

@@ -1,15 +1,13 @@
 package inspector
 
 import (
-	"fmt"
-	"testing"
-
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-
+	"fmt"
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
+	"testing"
 )
 
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
@@ -2660,7 +2658,6 @@ WHERE exist_db.exist_tb_1.v1 = ? AND exist_db.exist_tb_1.v2 = ?
 			newTestResult())
 	}
 }
-
 
 func TestCheckIsAfterUnionDistinct(t *testing.T) {
 	for desc, sql := range map[string]string{
