@@ -2,20 +2,19 @@ package v1
 
 import (
 	"fmt"
+
 	"net/http"
-	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/inspector"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+
 	"github.com/labstack/echo/v4"
 )
 
 type CreateAuditWhitelistReqV1 struct {
 	Value     string `json:"value" example:"create table" valid:"required"`
-	MatchType string `json:"match_type" example:"exact_match" enums:"exact_match,fp_match" valid:"required"`
+	MatchType string `json:"match_type" example:"exact_match" enums:"exact_match,fp_match" valid:"omitempty,oneof=exact_match fp_match"`
 	Desc      string `json:"desc" example:"used for rapid release"`
 }
 
@@ -40,16 +39,11 @@ func CreateAuditWhitelist(c echo.Context) error {
 		Desc:      req.Desc,
 		MatchType: req.MatchType,
 	}
-	if err := fillMD5ByMatchType(sqlWhitelist); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	err := s.Save(sqlWhitelist)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-
-	sqlWhitelist.PutSqlWhitelistMD5()
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -93,15 +87,9 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 
 	if req.Value != nil {
 		sqlWhitelist.Value = *req.Value
-		if err = fillMD5ByMatchType(sqlWhitelist); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
 	}
 	if req.MatchType != nil {
 		sqlWhitelist.MatchType = *req.MatchType
-		if err = fillMD5ByMatchType(sqlWhitelist); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
 	}
 	if req.Desc != nil {
 		sqlWhitelist.Desc = *req.Desc
@@ -111,7 +99,6 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-	sqlWhitelist.PutSqlWhitelistMD5()
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -139,7 +126,6 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlWhitelist.RemoveSqlWhitelistMD5()
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -195,21 +181,4 @@ func GetSqlWhitelist(c echo.Context) error {
 		Data:      whitelistRes,
 		TotalNums: count,
 	})
-}
-
-func fillMD5ByMatchType(s *model.SqlWhitelist) error {
-	uppedValue := strings.ToUpper(s.Value)
-	switch s.MatchType {
-	case model.SQLWhitelistFPMatch:
-		fp, err := inspector.Fingerprint(uppedValue)
-		if err != nil {
-			return err
-		}
-		s.MessageDigest = utils.Md5String(fp)
-	case model.SQLWhitelistExactMatch:
-		s.MessageDigest = utils.Md5String(uppedValue)
-	default:
-		return fmt.Errorf("unknown SQL whitelist match type")
-	}
-	return nil
 }

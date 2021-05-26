@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 )
 
 func (i *Inspect) Advise(rules []model.Rule) error {
 	i.Logger().Info("start advise sql")
-	err := i.advise(rules, model.GetSqlWhitelistMD5Map())
+	err := i.advise(rules)
 	if err != nil {
 		i.Logger().Error("advise sql failed")
 	} else {
@@ -23,15 +22,20 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 	return err
 }
 
-func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]struct{}) error {
+func (i *Inspect) advise(rules []model.Rule) error {
 	err := i.adviseRelateTask(i.RelateTasks)
+	if err != nil {
+		return err
+	}
+
+	whitelist, _, err := model.GetStorage().GetSqlWhitelist(0, 0)
 	if err != nil {
 		return err
 	}
 
 	for _, commitSql := range i.Task.ExecuteSQLs {
 		currentSql := commitSql
-		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
+		if err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) (err error) {
 			if len(sql.Stmts) <= 0 {
 				return nil
 			}
@@ -39,72 +43,90 @@ func (i *Inspect) advise(rules []model.Rule, sqlWhiltelistMD5Map map[string]stru
 			uppedSQL := strings.ToUpper(sql.Content)
 			sqlFP, err := Fingerprint(uppedSQL)
 			if err != nil {
-				i.Logger().Warnf("sql %s generate fingerprint failed, error: %v", sql.Content, err)
 				return err
 			}
 
-			_, fpMatch := sqlWhiltelistMD5Map[utils.Md5String(sqlFP)]
-			_, exactMatch := sqlWhiltelistMD5Map[utils.Md5String(uppedSQL)]
-			if fpMatch || exactMatch {
+			defer func() {
+				if err == nil {
+					md5 := md5.Sum(append([]byte(currentSql.AuditResult), []byte(sqlFP)...))
+					currentSql.AuditFingerprint = hex.EncodeToString(md5[:])
+
+					i.Logger().Infof("sql=%s, level=%s, result=%s", currentSql.Content, currentSql.AuditLevel, currentSql.AuditResult)
+				}
+			}()
+
+			var whitelistMatch bool
+			for _, wl := range whitelist {
+				if wl.MatchType == model.SQLWhitelistFPMatch {
+					whitelistFP, err := Fingerprint(wl.UppedValue)
+					if err != nil {
+						return err
+					}
+					if whitelistFP == sqlFP {
+						whitelistMatch = true
+						break
+					}
+				} else {
+					if wl.UppedValue == uppedSQL {
+						whitelistMatch = true
+						break
+					}
+				}
+			}
+			if whitelistMatch {
 				var irs InspectResults
 				irs.add(model.RULE_LEVEL_NORMAL, "白名单")
 				currentSql.AuditStatus = model.SQLAuditStatusFinished
 				currentSql.AuditLevel = irs.level()
 				currentSql.AuditResult = irs.message()
-			} else {
-				node := sql.Stmts[0]
-				results, err := i.CheckInvalid(node)
-				if err != nil {
-					return err
-				}
-				if results.level() == model.RULE_LEVEL_ERROR {
-					i.HasInvalidSql = true
-					i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
-				}
-				i.Results = results
-				if rules != nil {
-					for _, rule := range rules {
-						i.currentRule = rule
-						handler, ok := RuleHandlerMap[rule.Name]
-						if !ok || handler.Func == nil {
-							continue
-						}
-						err := handler.Func(rule, i, node)
-						if err != nil {
-							return err
-						}
-					}
-				}
-				currentSql.AuditStatus = model.SQLAuditStatusFinished
-				currentSql.AuditLevel = i.Results.level()
-				currentSql.AuditResult = i.Results.message()
-				// clean up results
-				i.Results = newInspectResults()
-
-				// print osc
-				oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
-				if err != nil {
-					return err
-				}
-				if oscCommandLine != "" {
-					results := newInspectResults()
-					if currentSql.AuditResult != "" {
-						results.add(currentSql.AuditLevel, currentSql.AuditResult)
-					}
-					results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s", oscCommandLine))
-					currentSql.AuditLevel = results.level()
-					currentSql.AuditResult = results.message()
-				}
+				return nil
 			}
 
-			md5 := md5.Sum(append([]byte(currentSql.AuditResult), []byte(sqlFP)...))
-			currentSql.AuditFingerprint = hex.EncodeToString(md5[:])
+			node := sql.Stmts[0]
+			results, err := i.CheckInvalid(node)
+			if err != nil {
+				return err
+			}
+			if results.level() == model.RULE_LEVEL_ERROR {
+				i.HasInvalidSql = true
+				i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
+			}
+			i.Results = results
+			if rules != nil {
+				for _, rule := range rules {
+					i.currentRule = rule
+					handler, ok := RuleHandlerMap[rule.Name]
+					if !ok || handler.Func == nil {
+						continue
+					}
+					err := handler.Func(rule, i, node)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			currentSql.AuditStatus = model.SQLAuditStatusFinished
+			currentSql.AuditLevel = i.Results.level()
+			currentSql.AuditResult = i.Results.message()
+			// clean up results
+			i.Results = newInspectResults()
 
-			i.Logger().Infof("sql=%s, level=%s, result=%s",
-				currentSql.Content, currentSql.AuditLevel, currentSql.AuditResult)
+			// print osc
+			oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
+			if err != nil {
+				return err
+			}
+			if oscCommandLine != "" {
+				results := newInspectResults()
+				if currentSql.AuditResult != "" {
+					results.add(currentSql.AuditLevel, currentSql.AuditResult)
+				}
+				results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s", oscCommandLine))
+				currentSql.AuditLevel = results.level()
+				currentSql.AuditResult = results.message()
+			}
 			return nil
-		})
-		if err != nil {
+		}); err != nil {
 			i.Logger().Error("add commit sql to task failed")
 			return err
 		}
@@ -124,7 +146,7 @@ func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
 	currentCtx := NewContext(i.Context())
 	for _, task := range relateTasks {
 		ri := NewInspect(i.Logger(), currentCtx, &task, nil, nil)
-		err := ri.advise(nil, nil)
+		err := ri.advise(nil)
 		if err != nil {
 			return err
 		}
