@@ -1,17 +1,18 @@
 package server
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
+
+	"actiontech.cloud/sqle/sqle/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/model"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
-	SqlAuditWorkflowExpiredTime = 30 * 24 // 30 days
-	SqlAuditTaskExpiredTime     = 3 * 24  // 3 days
+	SqlAuditTaskExpiredTime = 3 * 24 // 3 days
 )
 
 func (s *Sqled) cleanLoop() {
@@ -32,7 +33,14 @@ func (s *Sqled) cleanLoop() {
 
 func (s *Sqled) CleanExpiredWorkflows(entry *logrus.Entry) {
 	st := model.GetStorage()
-	start := time.Now().Add(-SqlAuditWorkflowExpiredTime * time.Hour)
+
+	expiredHours, err := st.GetWorkflowExpiredHoursOrDefault()
+	if err != nil {
+		entry.Error("get workflow expired hours error: %v", err)
+		return
+	}
+
+	start := time.Now().Add(-expiredHours * time.Hour)
 	workflows, err := st.GetExpiredWorkflows(start)
 	if err != nil {
 		entry.Errorf("get workflows from storage error: %v", err)
