@@ -98,6 +98,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		v1Router.GET("/configurations/smtp", v1.GetSMTPConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/smtp", v1.UpdateSMTPConfiguration, AdminUserAllowed())
+		v1Router.GET("/configurations/system_variables", v1.GetSystemVariables, AdminUserAllowed())
+		v1Router.PATCH("/configurations/system_variables", v1.UpdateSystemVariables, AdminUserAllowed())
 	}
 
 	// user

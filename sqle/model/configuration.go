@@ -2,6 +2,8 @@ package model
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
@@ -75,4 +77,34 @@ func (s *Storage) GetSMTPConfiguration() (*SMTPConfiguration, bool, error) {
 		return smtpC, false, nil
 	}
 	return smtpC, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+const (
+	SystemVariableWorkflowExpiredHours = "system_variable_workflow_expired_hours"
+)
+
+// SystemVariable store misc K-V.
+type SystemVariable struct {
+	Key   string `gorm:"primary_key"`
+	Value string `gorm:"not null"`
+}
+
+func (s *Storage) GetWorkflowExpiredHoursOrDefault() (time.Duration, error) {
+	var svs []SystemVariable
+	err := s.db.Find(&svs).Error
+	if err != nil {
+		return 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+
+	for _, sv := range svs {
+		if sv.Key == SystemVariableWorkflowExpiredHours {
+			wfExpiredHs, err := strconv.Atoi(sv.Value)
+			if err != nil {
+				return 0, err
+			}
+			return time.Duration(wfExpiredHs), nil
+		}
+	}
+
+	return time.Duration(30 * 24), nil
 }

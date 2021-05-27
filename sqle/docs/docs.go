@@ -229,6 +229,64 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/system_variables": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get system variables",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取系统变量",
+                "operationId": "getSystemVariablesV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSystemVariablesResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update system variables",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "修改系统变量",
+                "operationId": "updateSystemVariablesV1",
+                "parameters": [
+                    {
+                        "description": "update system variables request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateSystemVariablesReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dashboard": {
             "get": {
                 "security": [
@@ -2817,6 +2875,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSystemVariablesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SystemVariablesResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetUserDetailResV1": {
             "type": "object",
             "properties": {
@@ -3166,6 +3241,14 @@ var doc = `{
                 }
             }
         },
+        "v1.SystemVariablesResV1": {
+            "type": "object",
+            "properties": {
+                "workflow_expired_hours": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.UpdateAuditWhitelistReqV1": {
             "type": "object",
             "properties": {
@@ -3299,6 +3382,15 @@ var doc = `{
                 "smtp_username": {
                     "type": "string",
                     "example": "test@qq.com"
+                }
+            }
+        },
+        "v1.UpdateSystemVariablesReqV1": {
+            "type": "object",
+            "properties": {
+                "workflow_expired_hours": {
+                    "type": "integer",
+                    "example": 720
                 }
             }
         },

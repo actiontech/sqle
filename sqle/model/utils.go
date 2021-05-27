@@ -9,6 +9,7 @@ import (
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
+
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -94,6 +95,7 @@ func (s *Storage) AutoMigrate() error {
 		&WorkflowRecord{},
 		&WorkflowStep{},
 		&SMTPConfiguration{},
+		&SystemVariable{},
 	).Error
 	if err != nil {
 		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
