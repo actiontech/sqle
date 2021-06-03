@@ -33,45 +33,46 @@ var (
 
 // List scalar function names.
 const (
-	LogicAnd   = "and"
-	Cast       = "cast"
-	LeftShift  = "leftshift"
-	RightShift = "rightshift"
-	LogicOr    = "or"
-	GE         = "ge"
-	LE         = "le"
-	EQ         = "eq"
-	NE         = "ne"
-	LT         = "lt"
-	GT         = "gt"
-	Plus       = "plus"
-	Minus      = "minus"
-	And        = "bitand"
-	Or         = "bitor"
-	Mod        = "mod"
-	Xor        = "bitxor"
-	Div        = "div"
-	Mul        = "mul"
-	UnaryNot   = "not" // Avoid name conflict with Not in github/pingcap/check.
-	BitNeg     = "bitneg"
-	IntDiv     = "intdiv"
-	LogicXor   = "xor"
-	NullEQ     = "nulleq"
-	UnaryPlus  = "unaryplus"
-	UnaryMinus = "unaryminus"
-	In         = "in"
-	Like       = "like"
-	Case       = "case"
-	Regexp     = "regexp"
-	IsNull     = "isnull"
-	IsTruth    = "istrue"  // Avoid name conflict with IsTrue in github/pingcap/check.
-	IsFalsity  = "isfalse" // Avoid name conflict with IsFalse in github/pingcap/check.
-	RowFunc    = "row"
-	SetVar     = "setvar"
-	GetVar     = "getvar"
-	Values     = "values"
-	BitCount   = "bit_count"
-	GetParam   = "getparam"
+	LogicAnd           = "and"
+	Cast               = "cast"
+	LeftShift          = "leftshift"
+	RightShift         = "rightshift"
+	LogicOr            = "or"
+	GE                 = "ge"
+	LE                 = "le"
+	EQ                 = "eq"
+	NE                 = "ne"
+	LT                 = "lt"
+	GT                 = "gt"
+	Plus               = "plus"
+	Minus              = "minus"
+	And                = "bitand"
+	Or                 = "bitor"
+	Mod                = "mod"
+	Xor                = "bitxor"
+	Div                = "div"
+	Mul                = "mul"
+	UnaryNot           = "not" // Avoid name conflict with Not in github/pingcap/check.
+	BitNeg             = "bitneg"
+	IntDiv             = "intdiv"
+	LogicXor           = "xor"
+	NullEQ             = "nulleq"
+	UnaryPlus          = "unaryplus"
+	UnaryMinus         = "unaryminus"
+	In                 = "in"
+	Like               = "like"
+	Case               = "case"
+	Regexp             = "regexp"
+	IsNull             = "isnull"
+	IsTruthWithoutNull = "istrue" // Avoid name conflict with IsTrue in github/pingcap/check.
+	IsTruthWithNull    = "istrue_with_null"
+	IsFalsity          = "isfalse" // Avoid name conflict with IsFalse in github/pingcap/check.
+	RowFunc            = "row"
+	SetVar             = "setvar"
+	GetVar             = "getvar"
+	Values             = "values"
+	BitCount           = "bit_count"
+	GetParam           = "getparam"
 
 	// common functions
 	Coalesce = "coalesce"
@@ -622,7 +623,7 @@ const (
 	AggFuncVarPop = "var_pop"
 	// AggFuncVarSamp is the name of var_samp function
 	AggFuncVarSamp = "var_samp"
-	// AggFuncStddevPop is the name of stddev_pop function
+	// AggFuncStddevPop is the name of stddev_pop/std/stddev function
 	AggFuncStddevPop = "stddev_pop"
 	// AggFuncStddevSamp is the name of stddev_samp function
 	AggFuncStddevSamp = "stddev_samp"
@@ -639,6 +640,8 @@ type AggregateFuncExpr struct {
 	// For example, column c1 values are "1", "2", "2",  "sum(c1)" is "5",
 	// but "sum(distinct c1)" is "3".
 	Distinct bool
+	// Order is only used in GROUP_CONCAT
+	Order *OrderByClause
 }
 
 // Restore implements Node interface.
@@ -656,6 +659,12 @@ func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
 			}
 			if err := n.Args[i].Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args[%d]", i)
+			}
+		}
+		if n.Order != nil {
+			ctx.WritePlain(" ")
+			if err := n.Order.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occur while restore AggregateFuncExpr.Args Order")
 			}
 		}
 		ctx.WriteKeyWord(" SEPARATOR ")
@@ -694,6 +703,13 @@ func (n *AggregateFuncExpr) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Args[i] = node.(ExprNode)
+	}
+	if n.Order != nil {
+		node, ok := n.Order.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Order = node.(*OrderByClause)
 	}
 	return v.Leave(n)
 }

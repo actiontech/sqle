@@ -1295,6 +1295,106 @@ func (n *DropIndexStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// LockTablesStmt is a statement to lock tables.
+type LockTablesStmt struct {
+	ddlNode
+
+	TableLocks []TableLock
+}
+
+// TableLock contains the table name and lock type.
+type TableLock struct {
+	Table *TableName
+	Type  model.TableLockType
+}
+
+// Accept implements Node Accept interface.
+func (n *LockTablesStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*LockTablesStmt)
+	for i := range n.TableLocks {
+		node, ok := n.TableLocks[i].Table.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.TableLocks[i].Table = node.(*TableName)
+	}
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *LockTablesStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("LOCK TABLES ")
+	for i, tl := range n.TableLocks {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := tl.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while add index")
+		}
+		ctx.WriteKeyWord(" " + tl.Type.String())
+	}
+	return nil
+}
+
+// UnlockTablesStmt is a statement to unlock tables.
+type UnlockTablesStmt struct {
+	ddlNode
+}
+
+// Accept implements Node Accept interface.
+func (n *UnlockTablesStmt) Accept(v Visitor) (Node, bool) {
+	_, _ = v.Enter(n)
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *UnlockTablesStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("UNLOCK TABLES")
+	return nil
+}
+
+// CleanupTableLockStmt is a statement to cleanup table lock.
+type CleanupTableLockStmt struct {
+	ddlNode
+
+	Tables []*TableName
+}
+
+// Accept implements Node Accept interface.
+func (n *CleanupTableLockStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*CleanupTableLockStmt)
+	for i := range n.Tables {
+		node, ok := n.Tables[i].Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Tables[i] = node.(*TableName)
+	}
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *CleanupTableLockStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("ADMIN CLEANUP TABLE LOCK ")
+	for i, v := range n.Tables {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CleanupTableLockStmt.Tables[%d]", i)
+		}
+	}
+	return nil
+}
+
 // TableOptionType is the type for TableOption
 type TableOptionType int
 
@@ -1304,6 +1404,7 @@ const (
 	TableOptionEngine
 	TableOptionCharset
 	TableOptionCollate
+	TableOptionAutoIdCache
 	TableOptionAutoIncrement
 	TableOptionComment
 	TableOptionAvgRowLength
@@ -1383,6 +1484,10 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionAutoIdCache:
+		ctx.WriteKeyWord("AUTO_ID_CACHE ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionComment:

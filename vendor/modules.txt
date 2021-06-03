@@ -144,7 +144,7 @@ github.com/mattn/go-isatty
 github.com/pingcap/errors
 # github.com/pingcap/log v0.0.0-20190715063458-479153f07ebd
 github.com/pingcap/log
-# github.com/pingcap/parser v3.0.12+incompatible
+# github.com/pingcap/parser v3.0.12+incompatible => github.com/sjjian/parser v3.0.17+incompatible
 ## explicit
 github.com/pingcap/parser
 github.com/pingcap/parser/ast
@@ -184,8 +184,6 @@ github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.2.0
 ## explicit
 github.com/sirupsen/logrus
-# github.com/sjjian/mybatis-mapper-2-sql v0.1.2
-## explicit
 # github.com/spf13/cobra v0.0.7
 ## explicit
 github.com/spf13/cobra
@@ -329,3 +327,4 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 gopkg.in/yaml.v3
 # github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
+# github.com/pingcap/parser => github.com/sjjian/parser v3.0.17+incompatible

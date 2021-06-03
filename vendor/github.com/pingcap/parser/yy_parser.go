@@ -58,10 +58,12 @@ var (
 	// ErrUnknownAlterAlgorithm returns for no alter algorithm found error.
 	ErrUnknownAlterAlgorithm = terror.ClassParser.New(codeErrUnknownAlterAlgorithm, mysql.MySQLErrName[mysql.ErrUnknownAlterAlgorithm])
 	// SpecFieldPattern special result field pattern
-	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
-	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
-	specCodeStart    = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
-	specCodeEnd      = regexp.MustCompile(`[ \t]*\*\/$`)
+	SpecFieldPattern    = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
+	specCodePattern     = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
+	specCodeStart       = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
+	specCodeEnd         = regexp.MustCompile(`[ \t]*\*\/$`)
+	specTiDBCodePattern = regexp.MustCompile(`^\/\*T!\[[a-zA-Z0-9,_]+\]([^*]|\*+[^*/])*\*+\/`)
+	specTiDBCodeStart   = regexp.MustCompile(`^\/\*T!\[[a-zA-Z0-9,_]+\][ \t]*`)
 )
 
 func init() {
@@ -82,6 +84,12 @@ func init() {
 // TrimComment trim comment for special comment code of MySQL.
 func TrimComment(txt string) string {
 	txt = specCodeStart.ReplaceAllString(txt, "")
+	return specCodeEnd.ReplaceAllString(txt, "")
+}
+
+// TrimTiDBSpecialComment trim comment for special comment code of TiDB.
+func TrimTiDBSpecialComment(txt string) string {
+	txt = specTiDBCodeStart.ReplaceAllString(txt, "")
 	return specCodeEnd.ReplaceAllString(txt, "")
 }
 

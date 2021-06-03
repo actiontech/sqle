@@ -898,6 +898,7 @@ const (
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
 	ErrInvalidJSONPathArrayCell                                     = 3165
+	ErrSecureTransportRequired                                      = 3159
 	ErrBadUser                                                      = 3162
 	ErrRoleNotGranted                                               = 3530
 	ErrLockAcquireFailAndNoWaitSet                                  = 3572
@@ -944,6 +945,7 @@ const (
 	ErrRequireVersionCheckFail    = 8107
 	ErrUnsupportedReloadPlugin    = 8018
 	ErrUnsupportedReloadPluginVar = 8019
+	ErrTableLocked                = 8020
 	ErrInfoSchemaExpired          = 8027
 	ErrInfoSchemaChanged          = 8028
 	ErrInvalidIncrementAndOffset  = 8060
@@ -957,4 +959,5 @@ const (
 	ErrGCTooEarly         = 9006
 	ErrWriteConflict      = 9007
 	ErrTiKVStoreLimit     = 9008
+	ErrTiKVStaleCommand   = 9010
 )
