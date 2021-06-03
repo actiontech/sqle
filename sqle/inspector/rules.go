@@ -55,7 +55,7 @@ const (
 	DDL_CHECK_TABLE_PARTITION                        = "ddl_check_table_partition"
 	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
 	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
-	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
+	DDLCheckObjectNameUsingEnAndUnderscore           = "ddl_check_object_name_using_en_and_underscore"
 )
 
 // inspector DML rules
@@ -235,11 +235,11 @@ var RuleHandlers = []RuleHandler{
 		IsDefaultRule: true,
 	}, RuleHandler{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_OBJECT_NAME_USING_CN,
-			Desc:  "数据库对象命名禁止使用中文",
+			Name:  DDLCheckObjectNameUsingEnAndUnderscore,
+			Desc:  "数据库对象命名不能使用英文、下划线、数字之外的字符",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message:       "数据库对象命名禁止使用中文",
+		Message:       "数据库对象命名不能使用英文、下划线、数字之外的字符",
 		Func:          checkNewObjectName,
 		IsDefaultRule: true,
 	},
@@ -1036,8 +1036,6 @@ func disableAddIndexForColumnsTypeBlob(rule model.Rule, i *Inspect, node ast.Nod
 
 func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 	names := []string{}
-	invalidNames := []string{}
-
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		// schema
@@ -1094,17 +1092,26 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 			break
 		}
 	}
-	// check  exist cn
+
+	// check exist non-latin and underscore
 	for _, name := range names {
-		for _, v := range name {
-			if unicode.Is(unicode.Han, v) {
-				i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
-				break
-			}
+		if bytes.IndexFunc([]byte(name), func(r rune) bool {
+			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+		}) != -1 {
+			i.addResult(DDLCheckObjectNameUsingEnAndUnderscore)
+			break
+		}
+
+		if idx := bytes.IndexFunc([]byte(name), func(r rune) bool {
+			return string(r) == "_"
+		}); idx == -1 || idx == 0 || idx == len(name)-1 {
+			i.addResult(DDLCheckObjectNameUsingEnAndUnderscore)
+			break
 		}
 	}
 
 	// check keyword
+	invalidNames := []string{}
 	for _, name := range names {
 		if IsMysqlReservedKeyword(name) {
 			invalidNames = append(invalidNames, name)
@@ -2165,4 +2172,8 @@ func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
 		i.addResult(rule.Name, rule.Value)
 	}
 	return nil
+}
+
+func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
+
 }

@@ -10,6 +10,10 @@ import (
 	"testing"
 )
 
+func init() {
+	model.UTSkipWhitelist = true
+}
+
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_1 (
@@ -2745,42 +2749,44 @@ SELECT * FROM exist_db.exist_tb_1 LIMIT 5`,
 	}
 }
 
-func TestCheckObjectNameUseCn(t *testing.T) {
+func Test_DDLCheckNameUseENAndUnderline_ShouldError(t *testing.T) {
 	for desc, sql := range map[string]string{
-		`create database should error`: `
-CREATE DATABASE 应用1;`,
-		`(1)create table should error`: `
-CREATE TABLE 服务1(id int);`,
-		`(2)create table should error`: `
-CREATE TABLE app(字段 int);`,
-		`alter table should error`: `
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN 字段 int;`,
-		`create index should error`: `
-CREATE INDEX 索引_1 ON exist_db.exist_tb_1(v1)`,
+		`(0)create database`: `CREATE DATABASE 应用1;`,
+		`(1)create database`: `CREATE DATABASE ®®;`,
+		`(2)create database`: `CREATE DATABASE _app;`,
+		`(3)create database`: `CREATE DATABASE app_;`,
+		`(0)create table`:    `CREATE TABLE 应用1(字段1 int);`,
+		`(1)create table`:    `CREATE TABLE ®®(®® int);`,
+		`(2)create table`:    `CREATE TABLE _app(_col int);`,
+		`(3)create table`:    `CREATE TABLE _app(col_ int);`,
+		`(0)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN 字段 int;`,
+		`(1)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN _col int;`,
+		`(2)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN col_ int;`,
+		`(3)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN ®® int;`,
+		`(0)create index`:    `CREATE INDEX 索引1 ON exist_db.exist_tb_1(v1)`,
+		`(1)create index`:    `CREATE INDEX _idx ON exist_db.exist_tb_1(v1)`,
+		`(2)create index`:    `CREATE INDEX idx_ ON exist_db.exist_tb_1(v1)`,
+		`(3)create index`:    `CREATE INDEX ®® ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
+			RuleHandlerMap[DDLCheckObjectNameUsingEnAndUnderscore].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_OBJECT_NAME_USING_CN))
+			newTestResult().addResult(DDLCheckObjectNameUsingEnAndUnderscore))
 	}
+}
 
+func Test_DDLCheckNameUseENAndUnderline_ShouldNotError(t *testing.T) {
 	for desc, sql := range map[string]string{
-		`create database should error`: `
-CREATE DATABASE app1;`,
-		`(1)create table should error`: `
-CREATE TABLE service1(id int);`,
-		`(2)create table should error`: `
-CREATE TABLE app(id int);`,
-		`alter table should error`: `
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v4 int;`,
-		`create index should error`: `
-CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
+		`(0)create database`: `CREATE DATABASE db_app1;`,
+		`(0)create table`:    `CREATE TABLE tb_service1(pk_id int);`,
+		`(0)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v4_col4 int;`,
+		`(0)create index`:    `CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
+			RuleHandlerMap[DDLCheckObjectNameUsingEnAndUnderscore].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
