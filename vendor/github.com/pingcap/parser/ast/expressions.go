@@ -153,19 +153,27 @@ type BinaryOperationExpr struct {
 	R ExprNode
 }
 
+func restoreBinaryOpWithSpacesAround(ctx *RestoreCtx, op opcode.Op) error {
+	shouldInsertSpace := ctx.Flags.HasSpacesAroundBinaryOperationFlag() || op.IsKeyword()
+	if shouldInsertSpace {
+		ctx.WritePlain(" ")
+	}
+	if err := op.Restore(ctx); err != nil {
+		return err // no need to annotate, the caller will annotate.
+	}
+	if shouldInsertSpace {
+		ctx.WritePlain(" ")
+	}
+	return nil
+}
+
 // Restore implements Node interface.
 func (n *BinaryOperationExpr) Restore(ctx *RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.L")
 	}
-	if ctx.Flags.HasSpacesAroundBinaryOperationFlag() {
-		ctx.WritePlain(" ")
-	}
-	if err := n.Op.Restore(ctx); err != nil {
+	if err := restoreBinaryOpWithSpacesAround(ctx, n.Op); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.Op")
-	}
-	if ctx.Flags.HasSpacesAroundBinaryOperationFlag() {
-		ctx.WritePlain(" ")
 	}
 	if err := n.R.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.R")
@@ -403,7 +411,7 @@ func (n *CompareSubqueryExpr) Restore(ctx *RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore CompareSubqueryExpr.L")
 	}
-	if err := n.Op.Restore(ctx); err != nil {
+	if err := restoreBinaryOpWithSpacesAround(ctx, n.Op); err != nil {
 		return errors.Annotate(err, "An error occurred while restore CompareSubqueryExpr.Op")
 	}
 	if n.All {

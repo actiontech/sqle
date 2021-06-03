@@ -46,4 +46,7 @@ require (
 	gopkg.in/yaml.v2 v2.2.8
 )
 
-replace github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
+replace (
+	github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
+	github.com/pingcap/parser => github.com/sjjian/parser v3.0.17+incompatible
+)

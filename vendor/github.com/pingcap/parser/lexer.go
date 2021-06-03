@@ -429,6 +429,22 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			return
 		}
 
+		// Convert "/*T![feature_id1,feature_id2] TiDB-specific-code */" to "TiDB-specific-code".
+		if strings.HasPrefix(comment, "/*T!") {
+			features := scanFeatureIDs(comment)
+			if SpecialCommentsController.ContainsAll(features) {
+				sql := specTiDBCodePattern.ReplaceAllStringFunc(comment, TrimTiDBSpecialComment)
+				s.specialComment = &mysqlSpecificCodeScanner{
+					Scanner: s.InheritScanner(sql),
+					Pos: Pos{
+						pos.Line,
+						pos.Col,
+						pos.Offset + sqlOffsetInComment(comment),
+					},
+				}
+			}
+		}
+
 		// See http://dev.mysql.com/doc/refman/5.7/en/comments.html
 		// Convert "/*!VersionNumber MySQL-specific-code */" to "MySQL-specific-code".
 		if strings.HasPrefix(comment, "/*!") {
@@ -465,6 +481,50 @@ func sqlOffsetInComment(comment string) int {
 		}
 	}
 	return offset
+}
+
+func scanFeatureIDs(comment string) (featureIDs []string) {
+	// strip the starting '/*T!'
+	comment = comment[len("/*T!"):]
+	idx := 0
+	const init, expectChar, obtainChar = 0, 1, 2
+	state := init
+	var b strings.Builder
+	for idx < len(comment) {
+		ch := rune(comment[idx])
+		idx++
+		switch state {
+		case init:
+			if ch == '[' {
+				state = expectChar
+				break
+			}
+			return nil
+		case expectChar:
+			if isIdentChar(ch) {
+				b.WriteRune(ch)
+				state = obtainChar
+				break
+			}
+			return nil
+		case obtainChar:
+			if isIdentChar(ch) {
+				b.WriteRune(ch)
+				state = obtainChar
+				break
+			} else if ch == ',' {
+				featureIDs = append(featureIDs, b.String())
+				b.Reset()
+				state = expectChar
+				break
+			} else if ch == ']' {
+				featureIDs = append(featureIDs, b.String())
+				return featureIDs
+			}
+			return nil
+		}
+	}
+	return nil
 }
 
 func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {

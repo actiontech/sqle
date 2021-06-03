@@ -15,6 +15,7 @@ package model
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -80,18 +81,19 @@ const (
 
 // ColumnInfo provides meta data describing of a table column.
 type ColumnInfo struct {
-	ID                  int64               `json:"id"`
-	Name                CIStr               `json:"name"`
-	Offset              int                 `json:"offset"`
-	OriginDefaultValue  interface{}         `json:"origin_default"`
-	DefaultValue        interface{}         `json:"default"`
-	DefaultValueBit     []byte              `json:"default_bit"`
-	GeneratedExprString string              `json:"generated_expr_string"`
-	GeneratedStored     bool                `json:"generated_stored"`
-	Dependences         map[string]struct{} `json:"dependences"`
-	types.FieldType     `json:"type"`
-	State               SchemaState `json:"state"`
-	Comment             string      `json:"comment"`
+	ID                    int64               `json:"id"`
+	Name                  CIStr               `json:"name"`
+	Offset                int                 `json:"offset"`
+	OriginDefaultValue    interface{}         `json:"origin_default"`
+	OriginDefaultValueBit []byte              `json:"origin_default_bit"`
+	DefaultValue          interface{}         `json:"default"`
+	DefaultValueBit       []byte              `json:"default_bit"`
+	GeneratedExprString   string              `json:"generated_expr_string"`
+	GeneratedStored       bool                `json:"generated_stored"`
+	Dependences           map[string]struct{} `json:"dependences"`
+	types.FieldType       `json:"type"`
+	State                 SchemaState `json:"state"`
+	Comment               string      `json:"comment"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
 	//              That is a bug if multiple TiDB servers in different system time zone.
@@ -109,6 +111,35 @@ func (c *ColumnInfo) Clone() *ColumnInfo {
 // IsGenerated returns true if the column is generated column.
 func (c *ColumnInfo) IsGenerated() bool {
 	return len(c.GeneratedExprString) != 0
+}
+
+// SetOriginalDefaultValue sets the origin default value.
+// For mysql.TypeBit type, the default value storage format must be a string.
+// Other value such as int must convert to string format first.
+// The mysql.TypeBit type supports the null default value.
+func (c *ColumnInfo) SetOriginDefaultValue(value interface{}) error {
+	c.OriginDefaultValue = value
+	if c.Tp == mysql.TypeBit {
+		if value == nil {
+			return nil
+		}
+		if v, ok := value.(string); ok {
+			c.OriginDefaultValueBit = []byte(v)
+			return nil
+		}
+		return types.ErrInvalidDefault.GenWithStackByArgs(c.Name)
+	}
+	return nil
+}
+
+// GetOriginalDefaultValue gets the origin default value.
+func (c *ColumnInfo) GetOriginDefaultValue() interface{} {
+	if c.Tp == mysql.TypeBit && c.OriginDefaultValueBit != nil {
+		// If the column type is BIT, both `OriginDefaultValue` and `DefaultValue` of ColumnInfo are corrupted,
+		// because the content before json.Marshal is INCONSISTENT with the content after json.Unmarshal.
+		return string(c.OriginDefaultValueBit)
+	}
+	return c.OriginDefaultValue
 }
 
 // SetDefaultValue sets the default value.
@@ -203,6 +234,7 @@ type TableInfo struct {
 	PKIsHandle  bool          `json:"pk_is_handle"`
 	Comment     string        `json:"comment"`
 	AutoIncID   int64         `json:"auto_inc_id"`
+	AutoIdCache int64         `json:"auto_id_cache"`
 	MaxColumnID int64         `json:"max_col_id"`
 	MaxIndexID  int64         `json:"max_idx_id"`
 	// UpdateTS is used to record the timestamp of updating the table's schema information.
@@ -230,9 +262,96 @@ type TableInfo struct {
 	Compression string `json:"compression"`
 
 	View *ViewInfo `json:"view"`
+	// Lock represent the table lock info.
+	Lock *TableLockInfo `json:"Lock"`
 
 	// Version means the version of the table info.
 	Version uint16 `json:"version"`
+}
+
+// TableLockInfo provides meta data describing a table lock.
+type TableLockInfo struct {
+	Tp TableLockType
+	// Use array because there may be multiple sessions holding the same read lock.
+	Sessions []SessionInfo
+	State    TableLockState
+	// TS is used to record the timestamp this table lock been locked.
+	TS uint64
+}
+
+// SessionInfo contain the session ID and the server ID.
+type SessionInfo struct {
+	ServerID  string
+	SessionID uint64
+}
+
+func (s SessionInfo) String() string {
+	return "server: " + s.ServerID + "_session: " + strconv.FormatUint(s.SessionID, 10)
+}
+
+// TableLockTpInfo is composed by schema ID, table ID and table lock type.
+type TableLockTpInfo struct {
+	SchemaID int64
+	TableID  int64
+	Tp       TableLockType
+}
+
+// TableLockState is the state for table lock.
+type TableLockState byte
+
+const (
+	// TableLockStateNone means this table lock is absent.
+	TableLockStateNone TableLockState = iota
+	// TableLockStatePreLock means this table lock is pre-lock state. Other session doesn't hold this lock should't do corresponding operation according to the lock type.
+	TableLockStatePreLock
+	// TableLockStatePublic means this table lock is public state.
+	TableLockStatePublic
+)
+
+// String implements fmt.Stringer interface.
+func (t TableLockState) String() string {
+	switch t {
+	case TableLockStatePreLock:
+		return "pre-lock"
+	case TableLockStatePublic:
+		return "public"
+	default:
+		return "none"
+	}
+}
+
+// TableLockType is the type of the table lock.
+type TableLockType byte
+
+const (
+	TableLockNone TableLockType = iota
+	// TableLockRead means the session with this lock can read the table (but not write it).
+	// Multiple sessions can acquire a READ lock for the table at the same time.
+	// Other sessions can read the table without explicitly acquiring a READ lock.
+	TableLockRead
+	// TableLockReadLocal is not supported.
+	TableLockReadLocal
+	// TableLockWrite means only the session with this lock has write/read permission.
+	// Only the session that holds the lock can access the table. No other session can access it until the lock is released.
+	TableLockWrite
+	// TableLockWriteLocal means the session with this lock has write/read permission, and the other session still has read permission.
+	TableLockWriteLocal
+)
+
+func (t TableLockType) String() string {
+	switch t {
+	case TableLockNone:
+		return "NONE"
+	case TableLockRead:
+		return "READ"
+	case TableLockReadLocal:
+		return "READ LOCAL"
+	case TableLockWriteLocal:
+		return "WRITE LOCAL"
+	case TableLockWrite:
+		return "WRITE"
+	}
+	return ""
 }
 
 // GetPartitionInfo returns the partition information.
@@ -343,6 +462,11 @@ func (t *TableInfo) FindIndexByName(idxName string) *IndexInfo {
 		}
 	}
 	return nil
+}
+
+// IsLocked checks whether the table was locked.
+func (t *TableInfo) IsLocked() bool {
+	return t.Lock != nil && len(t.Lock.Sessions) > 0
 }
 
 // NewExtraHandleColInfo mocks a column info for extra handle column.
