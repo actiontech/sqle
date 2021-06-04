@@ -1,6 +1,7 @@
 package inspector
 
 import (
+	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"fmt"
@@ -128,6 +129,7 @@ func DefaultMysqlInspect() *Inspect {
 		Ctx: &Context{
 			currentSchema: "exist_db",
 			schemaHasLoad: true,
+			executionPlan: map[string][]*executor.ExplainRecord{},
 			schemas: map[string]*SchemaInfo{
 				"exist_db": &SchemaInfo{
 					DefaultEngine:    "InnoDB",
@@ -2827,6 +2829,54 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(100);
 ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 `,
 		newTestResult(), newTestResult())
+}
+
+func Test_CheckExplain_ShouldNotError(t *testing.T) {
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule, t, "", inspect1, "select * from exist_tb_1", newTestResult())
+
+	inspect2 := DefaultMysqlInspect()
+	inspect2.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect2, "select * from exist_tb_1", newTestResult())
+
+	inspect3 := DefaultMysqlInspect()
+	inspect3.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult())
+}
+
+func Test_CheckExplain_ShouldError(t *testing.T) {
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10001,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule, t, "", inspect1, "select * from exist_tb_1", newTestResult().addResult(DMLCheckExplainAccessTypeAll, 10001))
+
+	inspect2 := DefaultMysqlInspect()
+	inspect2.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type:  "ALL",
+		Rows:  10,
+		Extra: executor.ExplainRecordExtraUsingTemporary,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, t, "", inspect2, "select * from exist_tb_1", newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
+
+	inspect3 := DefaultMysqlInspect()
+	inspect3.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type:  "ALL",
+		Rows:  10,
+		Extra: executor.ExplainRecordExtraUsingFilesort,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult().addResult(DMLCheckExplainExtraUsingFilesort))
 }
 
 func DefaultMycatInspect() *Inspect {

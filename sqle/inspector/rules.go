@@ -641,28 +641,28 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DMLCheckExplainAccessTypeAll,
 			Value: "10000",
-			Desc:  "存在超过指定扫描行数（默认值：10000）的全表查询",
+			Desc:  "查询的扫描不建议超过指定行数（默认值：10000）",
 			Level: model.RULE_LEVEL_WARN,
 		},
-		Message: "存在扫描行数为%v的全表查询",
+		Message: "该查询的扫描行数为%v",
 		Func:    checkExplain,
 	},
 	{
 		Rule: model.Rule{
 			Name:  DMLCheckExplainExtraUsingFilesort,
-			Desc:  "存在使用文件排序的查询",
+			Desc:  "该查询使用了文件排序",
 			Level: model.RULE_LEVEL_WARN,
 		},
-		Message: "存在使用文件排序的查询",
+		Message: "该查询使用了文件排序",
 		Func:    checkExplain,
 	},
 	{
 		Rule: model.Rule{
 			Name:  DMLCheckExplainExtraUsingTemporary,
-			Desc:  "存在使用临时表的查询",
+			Desc:  "该查询使用了临时表",
 			Level: model.RULE_LEVEL_WARN,
 		},
-		Message: "存在使用临时表的查询",
+		Message: "该查询使用了临时表",
 		Func:    checkExplain,
 	},
 }
