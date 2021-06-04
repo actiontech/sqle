@@ -56,7 +56,7 @@ const (
 	DDL_CHECK_TABLE_PARTITION                        = "ddl_check_table_partition"
 	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
 	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
-	DDLCheckObjectNameUsingEnAndUnderscore           = "ddl_check_object_name_using_en_and_underscore"
+	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
 )
 
 // inspector DML rules
@@ -239,7 +239,7 @@ var RuleHandlers = []RuleHandler{
 		IsDefaultRule: true,
 	}, RuleHandler{
 		Rule: model.Rule{
-			Name:  DDLCheckObjectNameUsingEnAndUnderscore,
+			Name:  DDL_CHECK_OBJECT_NAME_USING_CN,
 			Desc:  "数据库对象命名不能使用英文、下划线、数字之外的字符",
 			Level: model.RULE_LEVEL_ERROR,
 		},
@@ -1130,14 +1130,14 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 		if bytes.IndexFunc([]byte(name), func(r rune) bool {
 			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
 		}) != -1 {
-			i.addResult(DDLCheckObjectNameUsingEnAndUnderscore)
+			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
 			break
 		}
 
 		if idx := bytes.IndexFunc([]byte(name), func(r rune) bool {
 			return string(r) == "_"
 		}); idx == -1 || idx == 0 || idx == len(name)-1 {
-			i.addResult(DDLCheckObjectNameUsingEnAndUnderscore)
+			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
 			break
 		}
 	}

@@ -8,9 +8,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// UTSkipWhitelist is temp solution, maybe need MySQL integration test. todo
-var UTSkipWhitelist = false
-
 const (
 	SQLWhitelistExactMatch = "exact_match"
 	SQLWhitelistFPMatch    = "fp_match"
@@ -53,9 +50,6 @@ func (s *Storage) GetSqlWhitelistById(sqlWhiteId string) (*SqlWhitelist, bool, e
 }
 
 func (s *Storage) GetSqlWhitelist(pageIndex, pageSize uint32) ([]SqlWhitelist, uint32, error) {
-	if UTSkipWhitelist {
-		return nil, 0, nil
-	}
 	var count uint32
 	sqlWhitelist := []SqlWhitelist{}
 	if pageSize == 0 {

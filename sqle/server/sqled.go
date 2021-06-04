@@ -167,10 +167,15 @@ func (s *Sqled) audit(task *model.Task) error {
 		entry.Logger.Errorf("get instance rule from storage failed, error: %v", err)
 		return err
 	}
+	whitelist, _, err := st.GetSqlWhitelist(0, 0)
+	if err != nil {
+		return err
+	}
+
 	ruleMap := model.GetRuleMapFromAllArray(rules)
 	ctx := inspector.NewContext(nil)
 	i := inspector.NewInspector(entry, ctx, task, nil, ruleMap)
-	err = i.Advise(rules)
+	err = i.Advise(rules, whitelist)
 	if err != nil {
 		return err
 	}
@@ -185,7 +190,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		if len(relateTasks) > 0 {
 			entry.Warnf("dml sql invalid, retry advise with relate ddl")
 			i = inspector.NewInspector(entry, ctx, task, relateTasks, ruleMap)
-			err = i.Advise(rules)
+			err = i.Advise(rules, whitelist)
 			if err != nil {
 				return err
 			}

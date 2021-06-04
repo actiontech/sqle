@@ -10,10 +10,6 @@ import (
 	"testing"
 )
 
-func init() {
-	model.UTSkipWhitelist = true
-}
-
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_1 (
@@ -173,6 +169,13 @@ func runSingleRuleInspectCase(rule model.Rule, t *testing.T, desc string, i *Ins
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+	// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
+	for idx, dr := range DefaultTemplateRules {
+		if dr.Name == DDL_CHECK_OBJECT_NAME_USING_CN {
+			DefaultTemplateRules = append(DefaultTemplateRules[:idx], DefaultTemplateRules[idx+1:]...)
+			break
+		}
+	}
 	inspectCase(DefaultTemplateRules, t, desc, i, sql, results...)
 }
 
@@ -190,7 +193,7 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect, sql 
 			},
 		})
 	}
-	err = i.Advise(rules)
+	err = i.Advise(rules, nil)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
@@ -2769,12 +2772,12 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldError(t *testing.T) {
 		`(3)create index`:    `CREATE INDEX ®® ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDLCheckObjectNameUsingEnAndUnderscore].Rule,
+			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDLCheckObjectNameUsingEnAndUnderscore))
+			newTestResult().addResult(DDL_CHECK_OBJECT_NAME_USING_CN))
 	}
 }
 
@@ -2786,7 +2789,7 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldNotError(t *testing.T) {
 		`(0)create index`:    `CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDLCheckObjectNameUsingEnAndUnderscore].Rule,
+			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
