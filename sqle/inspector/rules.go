@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode"
 
+	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/universe/ucommon/v4/util"
 
 	driver "github.com/pingcap/tidb/types/parser_driver"
@@ -77,6 +78,9 @@ const (
 	DML_CHECK_FUZZY_SEARCH                    = "dml_check_fuzzy_search"
 	DML_CHECK_NUMBER_OF_JOIN_TABLES           = "dml_check_number_of_join_tables"
 	DML_CHECK_IS_AFTER_UNION_DISTINCT         = "dml_check_is_after_union_distinct"
+	DMLCheckExplainAccessTypeAll              = "dml_check_explain_access_type_all"
+	DMLCheckExplainExtraUsingFilesort         = "dml_check_explain_extra_using_filesort"
+	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
 )
 
 // inspector config code
@@ -632,6 +636,34 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "不建议使用 BLOB 或 TEXT 类型",
 		Func:    checkColumnBlobNotice,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DMLCheckExplainAccessTypeAll,
+			Value: "10000",
+			Desc:  "存在超过指定扫描行数（默认值：10000）的全表查询",
+			Level: model.RULE_LEVEL_WARN,
+		},
+		Message: "存在扫描行数为%v的全表查询",
+		Func:    checkExplain,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DMLCheckExplainExtraUsingFilesort,
+			Desc:  "存在使用文件排序的查询",
+			Level: model.RULE_LEVEL_WARN,
+		},
+		Message: "存在使用文件排序的查询",
+		Func:    checkExplain,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DMLCheckExplainExtraUsingTemporary,
+			Desc:  "存在使用临时表的查询",
+			Level: model.RULE_LEVEL_WARN,
+		},
+		Message: "存在使用临时表的查询",
+		Func:    checkExplain,
 	},
 }
 
@@ -2175,5 +2207,28 @@ func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
 }
 
 func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
 
+	epRecords, err := i.getExecutionPlan(node.Text())
+	if err != nil {
+		return err
+	}
+	for _, record := range epRecords {
+		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingFilesort) {
+			i.addResult(DMLCheckExplainExtraUsingFilesort)
+		}
+		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingTemporary) {
+			i.addResult(DMLCheckExplainExtraUsingTemporary)
+		}
+
+		defaultRule := RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule
+		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
+			i.addResult(DMLCheckExplainAccessTypeAll, record.Rows)
+		}
+	}
+	return nil
 }
