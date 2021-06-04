@@ -32,7 +32,7 @@ type Inspector interface {
 	Do() error
 
 	// Advise advise task.commitSql using the given rules.
-	Advise(rules []model.Rule) error
+	Advise(rules []model.Rule, wl []model.SqlWhitelist) error
 
 	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
 	GenerateAllRollbackSql() ([]*model.RollbackSQL, error)
@@ -557,6 +557,19 @@ func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{},
 		}
 	}
 	return pkColumnsName, hasPk, nil
+}
+
+func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
+	if ep, ok := i.Ctx.GetExecutionPlan(sql); ok {
+		return ep, nil
+	}
+
+	records, err := i.dbConn.Explain(sql)
+	if err != nil {
+		return nil, err
+	}
+	i.Ctx.AddExecutionPlan(sql, records)
+	return records, nil
 }
 
 func (i *Inspect) GetProcedureFunctionBackupSql(sql string) ([]string, error) {

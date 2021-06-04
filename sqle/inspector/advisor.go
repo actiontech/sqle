@@ -11,9 +11,9 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-func (i *Inspect) Advise(rules []model.Rule) error {
+func (i *Inspect) Advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 	i.Logger().Info("start advise sql")
-	err := i.advise(rules)
+	err := i.advise(rules, wl)
 	if err != nil {
 		i.Logger().Error("advise sql failed")
 	} else {
@@ -22,13 +22,8 @@ func (i *Inspect) Advise(rules []model.Rule) error {
 	return err
 }
 
-func (i *Inspect) advise(rules []model.Rule) error {
+func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 	err := i.adviseRelateTask(i.RelateTasks)
-	if err != nil {
-		return err
-	}
-
-	whitelist, _, err := model.GetStorage().GetSqlWhitelist(0, 0)
 	if err != nil {
 		return err
 	}
@@ -56,9 +51,9 @@ func (i *Inspect) advise(rules []model.Rule) error {
 			}()
 
 			var whitelistMatch bool
-			for _, wl := range whitelist {
-				if wl.MatchType == model.SQLWhitelistFPMatch {
-					whitelistFP, err := Fingerprint(wl.UppedValue)
+			for _, sqlInWL := range wl {
+				if sqlInWL.MatchType == model.SQLWhitelistFPMatch {
+					whitelistFP, err := Fingerprint(sqlInWL.UppedValue)
 					if err != nil {
 						return err
 					}
@@ -67,7 +62,7 @@ func (i *Inspect) advise(rules []model.Rule) error {
 						break
 					}
 				} else {
-					if wl.UppedValue == uppedSQL {
+					if sqlInWL.UppedValue == uppedSQL {
 						whitelistMatch = true
 						break
 					}
@@ -146,7 +141,7 @@ func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
 	currentCtx := NewContext(i.Context())
 	for _, task := range relateTasks {
 		ri := NewInspect(i.Logger(), currentCtx, &task, nil, nil)
-		err := ri.advise(nil)
+		err := ri.advise(nil, nil)
 		if err != nil {
 			return err
 		}

@@ -72,7 +72,7 @@ func (i *SqlserverInspect) Add(sql *model.BaseSQL, action func(sql *model.BaseSQ
 	return nil
 }
 
-func (i *SqlserverInspect) Advise(rules []model.Rule) error {
+func (i *SqlserverInspect) Advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 	i.Logger().Info("start advise sql")
 
 	sqls := []string{}

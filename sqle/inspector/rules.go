@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode"
 
+	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/universe/ucommon/v4/util"
 
 	driver "github.com/pingcap/tidb/types/parser_driver"
@@ -16,72 +17,76 @@ import (
 	"github.com/pingcap/parser/mysql"
 )
 
-// inspector rule code
+// inspector DDL rules
 const (
-	DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST       = "ddl_check_table_without_if_not_exists"
-	DDL_CHECK_OBJECT_NAME_LENGTH               = "ddl_check_object_name_length"
-	DDL_CHECK_OBJECT_NAME_USING_KEYWORD        = "ddl_check_object_name_using_keyword"
-	DDL_CHECK_PK_NOT_EXIST                     = "ddl_check_pk_not_exist"
-	DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED       = "ddl_check_pk_without_bigint_unsigned"
-	DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT        = "ddl_check_pk_without_auto_increment"
-	DDL_CHECK_COLUMN_VARCHAR_MAX               = "ddl_check_column_varchar_max"
-	DDL_CHECK_COLUMN_CHAR_LENGTH               = "ddl_check_column_char_length"
-	DDL_DISABLE_FK                             = "ddl_disable_fk"
-	DDL_CHECK_INDEX_COUNT                      = "ddl_check_index_count"
-	DDL_CHECK_COMPOSITE_INDEX_MAX              = "ddl_check_composite_index_max"
-	DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4     = "ddl_check_table_without_innodb_utf8mb4"
-	DDL_CHECK_INDEX_COLUMN_WITH_BLOB           = "ddl_check_index_column_with_blob"
-	DDL_CHECK_ALTER_TABLE_NEED_MERGE           = "ddl_check_alter_table_need_merge"
-	DDL_DISABLE_DROP_STATEMENT                 = "ddl_disable_drop_statement"
-	DML_CHECK_WHERE_IS_INVALID                 = "all_check_where_is_invalid"
-	DML_DISABE_SELECT_ALL_COLUMN               = "dml_disable_select_all_column"
-	DDL_CHECK_TABLE_WITHOUT_COMMENT            = "ddl_check_table_without_comment"
-	DDL_CHECK_COLUMN_WITHOUT_COMMENT           = "ddl_check_column_without_comment"
-	DDL_CHECK_INDEX_PREFIX                     = "ddl_check_index_prefix"
-	DDL_CHECK_UNIQUE_INDEX_PRIFIX              = "ddl_check_unique_index_prefix"
-	DDL_CHECK_UNIQUE_INDEX                     = "ddl_check_unique_index"
-	DDL_CHECK_COLUMN_WITHOUT_DEFAULT           = "ddl_check_column_without_default"
-	DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT = "ddl_check_column_timestamp_without_default"
-	DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL        = "ddl_check_column_blob_with_not_null"
-	DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL  = "ddl_check_column_blob_default_is_not_null"
-	DDL_CHECK_COLUMN_ENUM_NOTICE               = "ddl_check_column_enum_notice"
-	DDL_CHECK_COLUMN_SET_NOTICE                = "ddl_check_column_set_notice"
-	DDL_CHECK_COLUMN_BLOB_NOTICE               = "ddl_check_column_blob_notice"
-	DML_CHECK_WITH_LIMIT                       = "dml_check_with_limit"
-	DML_CHECK_WITH_ORDER_BY                    = "dml_check_with_order_by"
+	DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST             = "ddl_check_table_without_if_not_exists"
+	DDL_CHECK_OBJECT_NAME_LENGTH                     = "ddl_check_object_name_length"
+	DDL_CHECK_OBJECT_NAME_USING_KEYWORD              = "ddl_check_object_name_using_keyword"
+	DDL_CHECK_PK_NOT_EXIST                           = "ddl_check_pk_not_exist"
+	DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED             = "ddl_check_pk_without_bigint_unsigned"
+	DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT              = "ddl_check_pk_without_auto_increment"
+	DDL_CHECK_COLUMN_VARCHAR_MAX                     = "ddl_check_column_varchar_max"
+	DDL_CHECK_COLUMN_CHAR_LENGTH                     = "ddl_check_column_char_length"
+	DDL_DISABLE_FK                                   = "ddl_disable_fk"
+	DDL_CHECK_INDEX_COUNT                            = "ddl_check_index_count"
+	DDL_CHECK_COMPOSITE_INDEX_MAX                    = "ddl_check_composite_index_max"
+	DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4           = "ddl_check_table_without_innodb_utf8mb4"
+	DDL_CHECK_INDEX_COLUMN_WITH_BLOB                 = "ddl_check_index_column_with_blob"
+	DDL_CHECK_ALTER_TABLE_NEED_MERGE                 = "ddl_check_alter_table_need_merge"
+	DDL_DISABLE_DROP_STATEMENT                       = "ddl_disable_drop_statement"
+	DDL_CHECK_TABLE_WITHOUT_COMMENT                  = "ddl_check_table_without_comment"
+	DDL_CHECK_COLUMN_WITHOUT_COMMENT                 = "ddl_check_column_without_comment"
+	DDL_CHECK_INDEX_PREFIX                           = "ddl_check_index_prefix"
+	DDL_CHECK_UNIQUE_INDEX_PRIFIX                    = "ddl_check_unique_index_prefix"
+	DDL_CHECK_UNIQUE_INDEX                           = "ddl_check_unique_index"
+	DDL_CHECK_COLUMN_WITHOUT_DEFAULT                 = "ddl_check_column_without_default"
+	DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT       = "ddl_check_column_timestamp_without_default"
+	DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL              = "ddl_check_column_blob_with_not_null"
+	DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL        = "ddl_check_column_blob_default_is_not_null"
+	DDL_CHECK_COLUMN_ENUM_NOTICE                     = "ddl_check_column_enum_notice"
+	DDL_CHECK_COLUMN_SET_NOTICE                      = "ddl_check_column_set_notice"
+	DDL_CHECK_COLUMN_BLOB_NOTICE                     = "ddl_check_column_blob_notice"
+	DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT             = "ddl_check_pk_prohibit_auto_increment"
+	DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS = "ddl_check_indexes_exist_before_creat_constraints"
+	DDL_CHECK_COLLATION_DATABASE                     = "ddl_check_collation_database"
+	DDL_CHECK_DECIMAL_TYPE_COLUMN                    = "ddl_check_decimal_type_column"
+	DDL_CHECK_DATABASE_SUFFIX                        = "ddl_check_database_suffix"
+	DDL_CHECK_PK_NAME                                = "ddl_check_pk_name"
+	DDL_CHECK_TRANSACTION_ISOLATION_LEVEL            = "ddl_check_transaction_isolation_level"
+	DDL_CHECK_TABLE_PARTITION                        = "ddl_check_table_partition"
+	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
+	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
+	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
+)
+
+// inspector DML rules
+const (
+	DML_CHECK_WITH_LIMIT                      = "dml_check_with_limit"
+	DML_CHECK_WITH_ORDER_BY                   = "dml_check_with_order_by"
+	DML_CHECK_WHERE_IS_INVALID                = "all_check_where_is_invalid"
+	DML_DISABE_SELECT_ALL_COLUMN              = "dml_disable_select_all_column"
+	DML_CHECK_INSERT_COLUMNS_EXIST            = "dml_check_insert_columns_exist"
+	DML_CHECK_BATCH_INSERT_LISTS_MAX          = "dml_check_batch_insert_lists_max"
+	DML_CHECK_WHERE_EXIST_FUNC                = "dml_check_where_exist_func"
+	DML_CHECK_WHERE_EXIST_NOT                 = "dml_check_where_exist_not"
+	DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION = "dml_check_where_exist_implicit_conversion"
+	DML_CHECK_LIMIT_MUST_EXIST                = "dml_check_limit_must_exist"
+	DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES  = "dml_check_where_exist_scalar_sub_queries"
+	DML_CHECK_WHERE_EXIST_NULL                = "dml_check_where_exist_null"
+	DML_CHECK_SELECT_FOR_UPDATE               = "dml_check_select_for_update"
+	DML_CHECK_NEEDLESS_FUNC                   = "dml_check_needless_func"
+	DML_CHECK_FUZZY_SEARCH                    = "dml_check_fuzzy_search"
+	DML_CHECK_NUMBER_OF_JOIN_TABLES           = "dml_check_number_of_join_tables"
+	DML_CHECK_IS_AFTER_UNION_DISTINCT         = "dml_check_is_after_union_distinct"
+	DMLCheckExplainAccessTypeAll              = "dml_check_explain_access_type_all"
+	DMLCheckExplainExtraUsingFilesort         = "dml_check_explain_extra_using_filesort"
+	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
 )
 
 // inspector config code
 const (
 	CONFIG_DML_ROLLBACK_MAX_ROWS = "dml_rollback_max_rows"
 	CONFIG_DDL_OSC_MIN_SIZE      = "ddl_osc_min_size"
-)
-
-const (
-	DML_CHECK_INSERT_COLUMNS_EXIST                   = "dml_check_insert_columns_exist"
-	DML_CHECK_BATCH_INSERT_LISTS_MAX                 = "dml_check_batch_insert_lists_max"
-	DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT             = "ddl_check_pk_prohibit_auto_increment"
-	DML_CHECK_WHERE_EXIST_FUNC                       = "dml_check_where_exist_func"
-	DML_CHECK_WHERE_EXIST_NOT                        = "dml_check_where_exist_not"
-	DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION        = "dml_check_where_exist_implicit_conversion"
-	DML_CHECK_LIMIT_MUST_EXIST                       = "dml_check_limit_must_exist"
-	DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES         = "dml_check_where_exist_scalar_sub_queries"
-	DML_CHECK_WHERE_EXIST_NULL                       = "dml_check_where_exist_null"
-	DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS = "ddl_check_indexes_exist_before_creat_constraints"
-	DML_CHECK_SELECT_FOR_UPDATE                      = "dml_check_select_for_update"
-	DDL_CHECK_COLLATION_DATABASE                     = "ddl_check_collation_database"
-	DDL_CHECK_DECIMAL_TYPE_COLUMN                    = "ddl_check_decimal_type_column"
-	DML_CHECK_NEEDLESS_FUNC                          = "dml_check_needless_func"
-	DDL_CHECK_DATABASE_SUFFIX                        = "ddl_check_database_suffix"
-	DDL_CHECK_PK_NAME                                = "ddl_check_pk_name"
-	DDL_CHECK_TRANSACTION_ISOLATION_LEVEL            = "ddl_check_transaction_isolation_level"
-	DML_CHECK_FUZZY_SEARCH                           = "dml_check_fuzzy_search"
-	DDL_CHECK_TABLE_PARTITION                        = "ddl_check_table_partition"
-	DML_CHECK_NUMBER_OF_JOIN_TABLES                  = "dml_check_number_of_join_tables"
-	DML_CHECK_IS_AFTER_UNION_DISTINCT                = "dml_check_is_after_union_distinct"
-	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
-	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
-	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
 )
 
 type RuleHandler struct {
@@ -235,10 +240,10 @@ var RuleHandlers = []RuleHandler{
 	}, RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_OBJECT_NAME_USING_CN,
-			Desc:  "数据库对象命名禁止使用中文",
+			Desc:  "数据库对象命名不能使用英文、下划线、数字之外的字符",
 			Level: model.RULE_LEVEL_ERROR,
 		},
-		Message:       "数据库对象命名禁止使用中文",
+		Message:       "数据库对象命名不能使用英文、下划线、数字之外的字符",
 		Func:          checkNewObjectName,
 		IsDefaultRule: true,
 	},
@@ -631,6 +636,34 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "不建议使用 BLOB 或 TEXT 类型",
 		Func:    checkColumnBlobNotice,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DMLCheckExplainAccessTypeAll,
+			Value: "10000",
+			Desc:  "查询的扫描不建议超过指定行数（默认值：10000）",
+			Level: model.RULE_LEVEL_WARN,
+		},
+		Message: "该查询的扫描行数为%v",
+		Func:    checkExplain,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DMLCheckExplainExtraUsingFilesort,
+			Desc:  "该查询使用了文件排序",
+			Level: model.RULE_LEVEL_WARN,
+		},
+		Message: "该查询使用了文件排序",
+		Func:    checkExplain,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DMLCheckExplainExtraUsingTemporary,
+			Desc:  "该查询使用了临时表",
+			Level: model.RULE_LEVEL_WARN,
+		},
+		Message: "该查询使用了临时表",
+		Func:    checkExplain,
 	},
 }
 
@@ -1035,8 +1068,6 @@ func disableAddIndexForColumnsTypeBlob(rule model.Rule, i *Inspect, node ast.Nod
 
 func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 	names := []string{}
-	invalidNames := []string{}
-
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		// schema
@@ -1093,17 +1124,26 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 			break
 		}
 	}
-	// check  exist cn
+
+	// check exist non-latin and underscore
 	for _, name := range names {
-		for _, v := range name {
-			if unicode.Is(unicode.Han, v) {
-				i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
-				break
-			}
+		if bytes.IndexFunc([]byte(name), func(r rune) bool {
+			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+		}) != -1 {
+			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
+			break
+		}
+
+		if idx := bytes.IndexFunc([]byte(name), func(r rune) bool {
+			return string(r) == "_"
+		}); idx == -1 || idx == 0 || idx == len(name)-1 {
+			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
+			break
 		}
 	}
 
 	// check keyword
+	invalidNames := []string{}
 	for _, name := range names {
 		if IsMysqlReservedKeyword(name) {
 			invalidNames = append(invalidNames, name)
@@ -2162,6 +2202,33 @@ func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	if maxIndexOption != "" && strings.Compare(rule.Value, maxIndexOption) > 0 {
 		i.addResult(rule.Name, rule.Value)
+	}
+	return nil
+}
+
+func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
+
+	epRecords, err := i.getExecutionPlan(node.Text())
+	if err != nil {
+		return err
+	}
+	for _, record := range epRecords {
+		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingFilesort) {
+			i.addResult(DMLCheckExplainExtraUsingFilesort)
+		}
+		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingTemporary) {
+			i.addResult(DMLCheckExplainExtraUsingTemporary)
+		}
+
+		defaultRule := RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule
+		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
+			i.addResult(DMLCheckExplainAccessTypeAll, record.Rows)
+		}
 	}
 	return nil
 }

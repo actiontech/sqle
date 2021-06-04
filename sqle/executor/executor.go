@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -338,27 +337,58 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	return tables, nil
 }
 
-type ExecutionPlanJson struct {
-	QueryBlock struct {
-		CostInfo struct {
-			QueryCost string `json:"query_cost"`
-		} `json:"cost_info"`
-		TABLE struct {
-			Rows int `json:"rows_examined_per_scan"`
-		}
-	} `json:"query_block"`
+type ExplainRecord struct {
+	Id           string `json:"id"`
+	SelectType   string `json:"select_type"`
+	Table        string `json:"table"`
+	Partitions   string `json:"partitions"`
+	Type         string `json:"type"`
+	PossibleKeys string `json:"possible_keys"`
+	Key          string `json:"key"`
+	KeyLen       string `json:"key_len"`
+	Ref          string `json:"ref"`
+	Rows         int64  `json:"rows"`
+	Filtered     string `json:"filtered"`
+	Extra        string `json:"extra"`
 }
 
-func (c *Executor) Explain(query string) (ExecutionPlanJson, error) {
-	ep := ExecutionPlanJson{}
-	result, err := c.Db.Query(fmt.Sprintf("EXPLAIN FORMAT=\"json\" %s", query))
+// https://dev.mysql.com/doc/refman/5.7/en/explain-output.html#explain_rows
+const (
+	ExplainRecordExtraUsingFilesort  = "Using filesort"
+	ExplainRecordExtraUsingTemporary = "Using temporary"
+
+	ExplainRecordAccessTypeAll = "ALL"
+)
+
+func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
+	records, err := c.Db.Query(fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
-		return ep, err
+		return nil, err
 	}
-	if len(result) == 1 {
-		json.Unmarshal([]byte(result[0]["EXPLAIN"].String), &ep)
+
+	if len(records) == 0 {
+		return nil, fmt.Errorf("no explain record for sql %v", query)
 	}
-	return ep, nil
+
+	var ret []*ExplainRecord
+	for _, record := range records {
+		rows, _ := strconv.ParseInt(record["rows"].String, 10, 64)
+		ret = append(ret, &ExplainRecord{
+			Id:           record["id"].String,
+			SelectType:   record["select_type"].String,
+			Table:        record["table"].String,
+			Partitions:   record["partitions"].String,
+			Type:         record["type"].String,
+			PossibleKeys: record["possible_keys"].String,
+			Key:          record["key"].String,
+			KeyLen:       record["key_len"].String,
+			Ref:          record["ref"].String,
+			Rows:         rows,
+			Filtered:     record["filtered"].String,
+			Extra:        record["Extra"].String,
+		})
+	}
+	return ret, nil
 }
 
 func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {

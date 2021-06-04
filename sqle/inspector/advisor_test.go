@@ -1,12 +1,14 @@
 package inspector
 
 import (
+	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"fmt"
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"testing"
 )
 
@@ -128,6 +130,7 @@ func DefaultMysqlInspect() *Inspect {
 		Ctx: &Context{
 			currentSchema: "exist_db",
 			schemaHasLoad: true,
+			executionPlan: map[string][]*executor.ExplainRecord{},
 			schemas: map[string]*SchemaInfo{
 				"exist_db": &SchemaInfo{
 					DefaultEngine:    "InnoDB",
@@ -169,6 +172,13 @@ func runSingleRuleInspectCase(rule model.Rule, t *testing.T, desc string, i *Ins
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+	// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
+	for idx, dr := range DefaultTemplateRules {
+		if dr.Name == DDL_CHECK_OBJECT_NAME_USING_CN {
+			DefaultTemplateRules = append(DefaultTemplateRules[:idx], DefaultTemplateRules[idx+1:]...)
+			break
+		}
+	}
 	inspectCase(DefaultTemplateRules, t, desc, i, sql, results...)
 }
 
@@ -186,7 +196,7 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect, sql 
 			},
 		})
 	}
-	err = i.Advise(rules)
+	err = i.Advise(rules, nil)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
@@ -2745,18 +2755,24 @@ SELECT * FROM exist_db.exist_tb_1 LIMIT 5`,
 	}
 }
 
-func TestCheckObjectNameUseCn(t *testing.T) {
+func Test_DDLCheckNameUseENAndUnderline_ShouldError(t *testing.T) {
 	for desc, sql := range map[string]string{
-		`create database should error`: `
-CREATE DATABASE 应用1;`,
-		`(1)create table should error`: `
-CREATE TABLE 服务1(id int);`,
-		`(2)create table should error`: `
-CREATE TABLE app(字段 int);`,
-		`alter table should error`: `
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN 字段 int;`,
-		`create index should error`: `
-CREATE INDEX 索引_1 ON exist_db.exist_tb_1(v1)`,
+		`(0)create database`: `CREATE DATABASE 应用1;`,
+		`(1)create database`: `CREATE DATABASE ®®;`,
+		`(2)create database`: `CREATE DATABASE _app;`,
+		`(3)create database`: `CREATE DATABASE app_;`,
+		`(0)create table`:    `CREATE TABLE 应用1(字段1 int);`,
+		`(1)create table`:    `CREATE TABLE ®®(®® int);`,
+		`(2)create table`:    `CREATE TABLE _app(_col int);`,
+		`(3)create table`:    `CREATE TABLE _app(col_ int);`,
+		`(0)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN 字段 int;`,
+		`(1)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN _col int;`,
+		`(2)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN col_ int;`,
+		`(3)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN ®® int;`,
+		`(0)create index`:    `CREATE INDEX 索引1 ON exist_db.exist_tb_1(v1)`,
+		`(1)create index`:    `CREATE INDEX _idx ON exist_db.exist_tb_1(v1)`,
+		`(2)create index`:    `CREATE INDEX idx_ ON exist_db.exist_tb_1(v1)`,
+		`(3)create index`:    `CREATE INDEX ®® ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
 			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
@@ -2766,18 +2782,14 @@ CREATE INDEX 索引_1 ON exist_db.exist_tb_1(v1)`,
 			sql,
 			newTestResult().addResult(DDL_CHECK_OBJECT_NAME_USING_CN))
 	}
+}
 
+func Test_DDLCheckNameUseENAndUnderline_ShouldNotError(t *testing.T) {
 	for desc, sql := range map[string]string{
-		`create database should error`: `
-CREATE DATABASE app1;`,
-		`(1)create table should error`: `
-CREATE TABLE service1(id int);`,
-		`(2)create table should error`: `
-CREATE TABLE app(id int);`,
-		`alter table should error`: `
-ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v4 int;`,
-		`create index should error`: `
-CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
+		`(0)create database`: `CREATE DATABASE db_app1;`,
+		`(0)create table`:    `CREATE TABLE tb_service1(pk_id int);`,
+		`(0)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v4_col4 int;`,
+		`(0)create index`:    `CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
 			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
@@ -2818,6 +2830,79 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(100);
 ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 `,
 		newTestResult(), newTestResult())
+}
+
+func Test_CheckExplain_ShouldNotError(t *testing.T) {
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule, t, "", inspect1, "select * from exist_tb_1", newTestResult())
+
+	inspect2 := DefaultMysqlInspect()
+	inspect2.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect2, "select * from exist_tb_1", newTestResult())
+
+	inspect3 := DefaultMysqlInspect()
+	inspect3.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult())
+}
+
+func Test_CheckExplain_ShouldError(t *testing.T) {
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 10001,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule, t, "", inspect1, "select * from exist_tb_1", newTestResult().addResult(DMLCheckExplainAccessTypeAll, 10001))
+
+	inspect2 := DefaultMysqlInspect()
+	inspect2.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type:  "ALL",
+		Rows:  10,
+		Extra: executor.ExplainRecordExtraUsingTemporary,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, t, "", inspect2, "select * from exist_tb_1", newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
+
+	inspect3 := DefaultMysqlInspect()
+	inspect3.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type:  "ALL",
+		Rows:  10,
+		Extra: executor.ExplainRecordExtraUsingFilesort,
+	}})
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult().addResult(DMLCheckExplainExtraUsingFilesort))
+
+	inspect4 := DefaultMysqlInspect()
+	inspect4.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type:  "ALL",
+		Rows:  100001,
+		Extra: strings.Join([]string{executor.ExplainRecordExtraUsingFilesort, executor.ExplainRecordExtraUsingTemporary}, ";"),
+	}})
+	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
+		t, "", inspect4, "select * from exist_tb_1",
+		newTestResult().addResult(DMLCheckExplainExtraUsingFilesort).addResult(DMLCheckExplainExtraUsingTemporary).addResult(DMLCheckExplainAccessTypeAll, 100001))
+
+	inspect5 := DefaultMysqlInspect()
+	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1;", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 100001,
+	}})
+	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1 where id = 1;", []*executor.ExplainRecord{{
+		Extra: executor.ExplainRecordExtraUsingFilesort,
+	}})
+	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1 where id = 2;", []*executor.ExplainRecord{{
+		Extra: executor.ExplainRecordExtraUsingTemporary,
+	}})
+	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
+		t, "", inspect5, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
+		newTestResult().addResult(DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
 }
 
 func DefaultMycatInspect() *Inspect {

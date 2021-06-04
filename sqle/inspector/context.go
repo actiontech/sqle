@@ -1,6 +1,8 @@
 package inspector
 
 import (
+	"actiontech.cloud/sqle/sqle/sqle/executor"
+
 	"github.com/pingcap/parser/ast"
 )
 
@@ -39,11 +41,15 @@ type Context struct {
 	schemas map[string]*SchemaInfo
 	// if schemas info has collected, set true
 	schemaHasLoad bool
+
+	// executionPlan store batch SQLs' execution plan during one inspect context.
+	executionPlan map[string][]*executor.ExplainRecord
 }
 
 func NewContext(parent *Context) *Context {
 	ctx := &Context{
-		schemas: map[string]*SchemaInfo{},
+		schemas:       map[string]*SchemaInfo{},
+		executionPlan: map[string][]*executor.ExplainRecord{},
 	}
 	if parent == nil {
 		return ctx
@@ -179,6 +185,15 @@ func (c *Context) DelTable(schemaName, tableName string) {
 
 func (c *Context) UseSchema(schema string) {
 	c.currentSchema = schema
+}
+
+func (c *Context) AddExecutionPlan(sql string, records []*executor.ExplainRecord) {
+	c.executionPlan[sql] = records
+}
+
+func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, bool) {
+	records, ok := c.executionPlan[sql]
+	return records, ok
 }
 
 func (i *Inspect) updateContext(node ast.Node) {
