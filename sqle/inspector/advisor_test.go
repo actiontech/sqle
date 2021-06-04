@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"testing"
 )
 
@@ -2877,6 +2878,31 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		Extra: executor.ExplainRecordExtraUsingFilesort,
 	}})
 	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult().addResult(DMLCheckExplainExtraUsingFilesort))
+
+	inspect4 := DefaultMysqlInspect()
+	inspect4.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
+		Type:  "ALL",
+		Rows:  100001,
+		Extra: strings.Join([]string{executor.ExplainRecordExtraUsingFilesort, executor.ExplainRecordExtraUsingTemporary}, ";"),
+	}})
+	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
+		t, "", inspect4, "select * from exist_tb_1",
+		newTestResult().addResult(DMLCheckExplainExtraUsingFilesort).addResult(DMLCheckExplainExtraUsingTemporary).addResult(DMLCheckExplainAccessTypeAll, 100001))
+
+	inspect5 := DefaultMysqlInspect()
+	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1;", []*executor.ExplainRecord{{
+		Type: "ALL",
+		Rows: 100001,
+	}})
+	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1 where id = 1;", []*executor.ExplainRecord{{
+		Extra: executor.ExplainRecordExtraUsingFilesort,
+	}})
+	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1 where id = 2;", []*executor.ExplainRecord{{
+		Extra: executor.ExplainRecordExtraUsingTemporary,
+	}})
+	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
+		t, "", inspect5, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
+		newTestResult().addResult(DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
 }
 
 func DefaultMycatInspect() *Inspect {
