@@ -76,7 +76,7 @@ func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 	switch dbType {
 	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
 		p := parser.New()
-		stmts, _, err := p.Parse(sql, "", "")
+		stmts, _, err := p.PerfectParse(sql, "", "")
 		if err != nil {
 			return nil, err
 		}

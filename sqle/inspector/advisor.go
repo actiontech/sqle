@@ -35,6 +35,17 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				return nil
 			}
 
+			var irs InspectResults
+			var node = sql.Stmts[0]
+
+			if _, ok := node.(*ast.UnparsedStmt); ok {
+				irs.add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持")
+				currentSql.AuditStatus = model.SQLAuditStatusFinished
+				currentSql.AuditLevel = irs.level()
+				currentSql.AuditResult = irs.message()
+				return nil
+			}
+
 			uppedSQL := strings.ToUpper(sql.Content)
 			sqlFP, err := Fingerprint(uppedSQL)
 			if err != nil {
@@ -69,7 +80,6 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				}
 			}
 			if whitelistMatch {
-				var irs InspectResults
 				irs.add(model.RULE_LEVEL_NORMAL, "白名单")
 				currentSql.AuditStatus = model.SQLAuditStatusFinished
 				currentSql.AuditLevel = irs.level()
@@ -77,7 +87,6 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				return nil
 			}
 
-			node := sql.Stmts[0]
 			results, err := i.CheckInvalid(node)
 			if err != nil {
 				return err
@@ -107,7 +116,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 			i.Results = newInspectResults()
 
 			// print osc
-			oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
+			oscCommandLine, err := i.generateOSCCommandLine(node)
 			if err != nil {
 				return err
 			}
