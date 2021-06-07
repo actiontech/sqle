@@ -9,13 +9,15 @@ import (
 
 func Fingerprint(oneSql string) (fingerprint string, err error) {
 	p := parser.New()
-	stmt, err := p.ParseOneStmt(oneSql, "", "")
+	stmts, _, err := p.PerfectParse(oneSql, "", "")
 	if err != nil {
 		return "", err
 	}
-
-	stmt.Accept(&FingerprintVisitor{})
-	fingerprint, err = restoreToSqlWithFlag(format.RestoreKeyWordUppercase|format.RestoreNameBackQuotes, stmt)
+	if len(stmts) != 1 {
+		return "", parser.ErrSyntax
+	}
+	stmts[0].Accept(&FingerprintVisitor{})
+	fingerprint, err = restoreToSqlWithFlag(format.RestoreKeyWordUppercase|format.RestoreNameBackQuotes, stmts[0])
 	if err != nil {
 		return "", err
 	}
@@ -35,4 +37,3 @@ func (f *FingerprintVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool
 func (f *FingerprintVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
 }
-
