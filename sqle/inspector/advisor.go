@@ -38,14 +38,6 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 			var irs InspectResults
 			var node = sql.Stmts[0]
 
-			if _, ok := node.(*ast.UnparsedStmt); ok {
-				irs.add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持")
-				currentSql.AuditStatus = model.SQLAuditStatusFinished
-				currentSql.AuditLevel = irs.level()
-				currentSql.AuditResult = irs.message()
-				return nil
-			}
-
 			uppedSQL := strings.ToUpper(sql.Content)
 			sqlFP, err := Fingerprint(uppedSQL)
 			if err != nil {
@@ -215,6 +207,8 @@ func (i *Inspect) CheckInvalid(node ast.Node) (*InspectResults, error) {
 		err = i.checkInvalidDelete(stmt, results)
 	case *ast.SelectStmt:
 		err = i.checkInvalidSelect(stmt, results)
+	case *ast.UnparsedStmt:
+		err = i.checkUnparsedStmt(stmt, results)
 	}
 	return results, err
 }
@@ -1110,5 +1104,11 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResul
 		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsTablesName), ","))
 	}
+	return nil
+}
+
+// checkUnparsedStmt might add more check in future.
+func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt, results *InspectResults) error {
+	results.add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持")
 	return nil
 }
