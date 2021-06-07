@@ -19,7 +19,7 @@ import (
 
 var WorkflowNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
 var ForbidMyBatisXMLTaskError = errors.New(errors.DataConflict,
-	fmt.Errorf("the taks for audit mybatis xml file is not allow to create workflow"))
+	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
 
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
