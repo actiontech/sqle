@@ -35,6 +35,9 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				return nil
 			}
 
+			var irs InspectResults
+			var node = sql.Stmts[0]
+
 			uppedSQL := strings.ToUpper(sql.Content)
 			sqlFP, err := Fingerprint(uppedSQL)
 			if err != nil {
@@ -69,7 +72,6 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				}
 			}
 			if whitelistMatch {
-				var irs InspectResults
 				irs.add(model.RULE_LEVEL_NORMAL, "白名单")
 				currentSql.AuditStatus = model.SQLAuditStatusFinished
 				currentSql.AuditLevel = irs.level()
@@ -77,7 +79,6 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				return nil
 			}
 
-			node := sql.Stmts[0]
 			results, err := i.CheckInvalid(node)
 			if err != nil {
 				return err
@@ -107,7 +108,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 			i.Results = newInspectResults()
 
 			// print osc
-			oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
+			oscCommandLine, err := i.generateOSCCommandLine(node)
 			if err != nil {
 				return err
 			}
@@ -206,6 +207,8 @@ func (i *Inspect) CheckInvalid(node ast.Node) (*InspectResults, error) {
 		err = i.checkInvalidDelete(stmt, results)
 	case *ast.SelectStmt:
 		err = i.checkInvalidSelect(stmt, results)
+	case *ast.UnparsedStmt:
+		err = i.checkUnparsedStmt(stmt, results)
 	}
 	return results, err
 }
@@ -1101,5 +1104,11 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResul
 		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsTablesName), ","))
 	}
+	return nil
+}
+
+// checkUnparsedStmt might add more check in future.
+func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt, results *InspectResults) error {
+	results.add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持")
 	return nil
 }

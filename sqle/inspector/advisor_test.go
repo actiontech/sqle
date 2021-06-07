@@ -2905,6 +2905,16 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		newTestResult().addResult(DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
 }
 
+func Test_PerfectParse(t *testing.T) {
+	runSingleRuleInspectCase(RuleHandlerMap[DML_CHECK_WHERE_IS_INVALID].Rule, t, "", DefaultMysqlInspect(), `
+SELECT * FROM exist_db.exist_tb_1;
+OPTIMIZE TABLE exist_db.exist_tb_1;
+SELECT * FROM exist_db.exist_tb_2;
+`, newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+		newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持"),
+		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+}
+
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
 		log:     log.NewEntry(),
