@@ -86,7 +86,10 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 }
 
 // @Summary 创建Sql审核任务并提交审核
-// @Description create and audit a task. NOTE: it will create a task with sqls from "sql" if "sql" isn't empty
+// @Description create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
+// @Description 1. formData[sql]: sql content;
+// @Description 2. file[input_sql_file]: it is a sql file;
+// @Description 3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
 // @Accept mpfd
 // @Produce json
 // @Tags task

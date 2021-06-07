@@ -77,7 +77,9 @@ func JSONBaseErrorReq(c echo.Context, err error) error {
 	return c.JSON(http.StatusOK, NewBaseReq(err))
 }
 
-func ReadFileContent(c echo.Context, name string) (string, bool, error) {
+// ReadFileContent read content from http body by name if file exist,
+// the name is a http form data key, not file name.
+func ReadFileContent(c echo.Context, name string) (content string, fileExist bool, err error) {
 	file, err := c.FormFile(name)
 	if err == http.ErrMissingFile {
 		return "", false, nil

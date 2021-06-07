@@ -1150,7 +1150,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "create and audit a task. NOTE: it will create a task with sqls from \"sql\" if \"sql\" isn't empty",
+                "description": "create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
                 "consumes": [
                     "multipart/form-data"
                 ],
