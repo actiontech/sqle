@@ -46,19 +46,21 @@ func main() {
 			}
 		},
 	}
-	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 10000, "http server port")
-	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql-user", "", "sqle", "mysql user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql-password", "", "sqle", "mysql password")
-	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
-	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
-	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "", "", "config file path")
-	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
-	rootCmd.PersistentFlags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
-	rootCmd.PersistentFlags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
-	rootCmd.PersistentFlags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
-	rootCmd.PersistentFlags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
+	rootCmd.Flags().IntVarP(&port, "port", "p", 10000, "http server port")
+	rootCmd.Flags().StringVarP(&mysqlUser, "mysql-user", "", "sqle", "mysql user")
+	rootCmd.Flags().StringVarP(&mysqlPass, "mysql-password", "", "sqle", "mysql password")
+	rootCmd.Flags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
+	rootCmd.Flags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
+	rootCmd.Flags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
+	rootCmd.Flags().StringVarP(&configPath, "config", "", "", "config file path")
+	rootCmd.Flags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
+	rootCmd.Flags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
+	rootCmd.Flags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
+	rootCmd.Flags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
+	rootCmd.Flags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
+	rootCmd.Flags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
+
+	rootCmd.AddCommand(genSecretPasswordCmd())
 	rootCmd.Execute()
 }
 
