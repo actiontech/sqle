@@ -338,7 +338,7 @@ func GetTaskSQLs(c echo.Context) error {
 }
 
 type DownloadAuditTaskSQLsFileReqV1 struct {
-	NoDuplicate string `json:"no_duplicate" query:"no_duplicate"`
+	NoDuplicate bool `json:"no_duplicate" query:"no_duplicate"`
 }
 
 // @Summary 下载指定审核任务的SQLs信息报告
