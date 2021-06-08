@@ -864,6 +864,48 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 				}
 			}
 		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			switch spec.Tp {
+			case ast.AlterTableAddColumns:
+				for _, newColumn := range spec.NewColumns {
+					if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
+						hasPk = true
+						pkColumnExist = true
+						if IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
+							pkIsAutoIncrement = true
+						}
+					}
+				}
+			}
+		}
+
+		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
+			if originPK, exist := getPrimaryKey(originTable); exist {
+
+				hasPk = true
+				pkColumnExist = true
+				for _, spec := range stmt.Specs {
+					switch spec.Tp {
+					case ast.AlterTableModifyColumn:
+						for _, newColumn := range spec.NewColumns {
+							if _, exist := originPK[newColumn.Name.Name.L]; exist &&
+								IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
+								pkIsAutoIncrement = true
+							}
+						}
+					case ast.AlterTableChangeColumn:
+						if _, exist = originPK[spec.OldColumnName.Name.L]; exist {
+							for _, newColumn := range spec.NewColumns {
+								if IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
+									pkIsAutoIncrement = true
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	default:
 		return nil
 	}
