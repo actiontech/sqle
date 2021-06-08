@@ -1878,6 +1878,44 @@ ALTER TABLE exist_db.not_exist_tb_1 change COLUMN id new_id bigint unsigned NOT 
 			newTestResult(),
 			newTestResult())
 	}
+
+	{
+		inspect := DefaultMysqlInspect()
+		runSingleRuleInspectCase(rule, t, "create_table", inspect,
+			`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB CHARSET=utf8mb4 COMMENT="unit test";
+`,
+			newTestResult())
+
+		inspect1 := DefaultMysqlInspect()
+		inspect1.Ctx = inspect.Ctx
+		runSingleRuleInspectCase(rule, t, "alter table: add column should error", inspect1,
+			`
+ALTER TABLE exist_db.not_exist_tb_1 add COLUMN id bigint unsigned PRIMARY KEY NOT NULL;
+`,
+			newTestResult())
+	}
+
+	{
+		inspect := DefaultMysqlInspect()
+		runSingleRuleInspectCase(rule, t, "create_table", inspect,
+			`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB CHARSET=utf8mb4 COMMENT="unit test";
+`,
+			newTestResult())
+
+		inspect1 := DefaultMysqlInspect()
+		inspect1.Ctx = inspect.Ctx
+		runSingleRuleInspectCase(rule, t, "alter table: add column should error", inspect1,
+			`
+ALTER TABLE exist_db.not_exist_tb_1 add COLUMN id bigint unsigned PRIMARY KEY NOT NULL AUTO_INCREMENT;
+`,
+			newTestResult().addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT))
+	}
 }
 
 func TestCheckWhereExistFunc(t *testing.T) {

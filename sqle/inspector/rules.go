@@ -865,6 +865,21 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			switch spec.Tp {
+			case ast.AlterTableAddColumns:
+				for _, newColumn := range spec.NewColumns {
+					if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
+						hasPk = true
+						pkColumnExist = true
+						if IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
+							pkIsAutoIncrement = true
+						}
+					}
+				}
+			}
+		}
+
 		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
 			if originPK, exist := getPrimaryKey(originTable); exist {
 
