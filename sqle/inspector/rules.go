@@ -900,6 +900,10 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 								}
 							}
 						}
+					case ast.AlterTableAddConstraint:
+						if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
+							hasPk = true
+						}
 					}
 				}
 			}
