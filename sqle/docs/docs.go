@@ -1972,7 +1972,7 @@ var doc = `{
                             "initialized",
                             "audited",
                             "executing",
-                            "exec_success",
+                            "exec_succeeded",
                             "exec_failed"
                         ],
                         "type": "string",
@@ -3596,7 +3596,7 @@ var doc = `{
                         "initialized",
                         "audited",
                         "executing",
-                        "exec_success",
+                        "exec_succeeded",
                         "exec_failed"
                     ]
                 },
