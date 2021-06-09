@@ -706,13 +706,16 @@ type GetWorkflowsReqV1 struct {
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
-	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" enums:"sql_review,sql_execute" valid:"omitempty,oneof=sql_review sql_execute"`
-	FilterStatus                      string `json:"filter_status" query:"filter_status" enums:"on_process,finished,rejected,canceled" valid:"omitempty,oneof=on_process finished rejected canceled"`
+	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" valid:"omitempty,oneof=sql_review sql_execute"`
+	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=on_process finished rejected canceled"`
 	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
-	FilterTaskStatus                  string `json:"filter_task_status" query:"filter_task_status" enums:"initialized,audited,executing,exec_success,exec_failed" valid:"omitempty,oneof=initialized audited executing exec_success exec_failed"`
-	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
-	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required"`
+
+	// the task status include (initialized, audited, executing, exec_succeeded, exec_failed);
+	// Note: exec_success is invalid enum, and define in old api, you will get empty result if filter it.
+	FilterTaskStatus       string `json:"filter_task_status" query:"filter_task_status" valid:"omitempty,oneof=initialized audited executing exec_success exec_succeeded exec_failed"`
+	FilterTaskInstanceName string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	PageIndex              uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize               uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetWorkflowsResV1 struct {
@@ -725,7 +728,7 @@ type WorkflowDetailResV1 struct {
 	Id                      uint       `json:"workflow_id"`
 	Subject                 string     `json:"subject"`
 	Desc                    string     `json:"desc"`
-	TaskStatus              string     `json:"task_status" enums:"initialized,audited,executing,exec_success,exec_failed"`
+	TaskStatus              string     `json:"task_status" enums:"initialized,audited,executing,exec_succeeded,exec_failed"`
 	TaskPassRate            float64    `json:"task_pass_rate"`
 	TaskInstance            string     `json:"task_instance_name"`
 	TaskInstanceSchema      string     `json:"task_instance_schema"`
@@ -748,7 +751,7 @@ type WorkflowDetailResV1 struct {
 // @Param filter_current_step_type query string false "filter current step type" Enums(sql_review, sql_execute)
 // @Param filter_status query string false "filter workflow status" Enums(on_process, finished, rejected, canceled)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
-// @Param filter_task_status query string false "filter task status" Enums(initialized, audited, executing, exec_success, exec_failed)
+// @Param filter_task_status query string false "filter task status" Enums(initialized, audited, executing, exec_succeeded, exec_failed)
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
