@@ -15,7 +15,7 @@ import (
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_1 (
-id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "v1" COMMENT "unit test",
 v2 varchar(255) COMMENT "unit test",
 PRIMARY KEY (id) USING BTREE,
@@ -494,7 +494,7 @@ ALTER TABLE exist_db.exist_tb_2 add primary key(id);
 		`
 ALTER TABLE exist_db.exist_tb_1 add primary key(v1);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG),
+		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG).addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT).addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: add pk but key column not exist", DefaultMysqlInspect(),
