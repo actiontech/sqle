@@ -8,13 +8,13 @@ import (
 	"unicode"
 
 	"actiontech.cloud/sqle/sqle/sqle/executor"
+	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"actiontech.cloud/universe/ucommon/v4/util"
 
-	driver "github.com/pingcap/tidb/types/parser_driver"
-
-	"actiontech.cloud/sqle/sqle/sqle/model"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 // inspector DDL rules
@@ -1443,7 +1443,7 @@ func checkIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	for _, name := range indexesName {
-		if !strings.HasPrefix(name, "idx_") {
+		if !utils.HasPrefix(name, "idx_", false) {
 			i.addResult(DDL_CHECK_INDEX_PREFIX)
 			return nil
 		}
@@ -1453,7 +1453,7 @@ func checkIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 
 func checkUniqIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 	return checkIfUniqIndexSatisfy(rule, i, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
-		return strings.HasPrefix(uniqIndexName, "uniq_")
+		return utils.HasPrefix(uniqIndexName, "uniq_", false)
 	})
 }
 
@@ -2099,7 +2099,7 @@ func checkDatabaseSuffix(rule model.Rule, i *Inspect, node ast.Node) error {
 	default:
 		return nil
 	}
-	if databaseName != "" && !strings.HasSuffix(strings.ToUpper(databaseName), "_DB") {
+	if databaseName != "" && !utils.HasSuffix(databaseName, "_DB", false) {
 		i.addResult(DDL_CHECK_DATABASE_SUFFIX)
 		return nil
 	}

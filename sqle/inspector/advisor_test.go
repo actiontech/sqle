@@ -1549,6 +1549,17 @@ CREATE INDEX index_1 ON exist_db.exist_tb_1(v1);
 `,
 		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
 	)
+
+	for _, sql := range []string{
+		`create table exist_db.t1(id int, c1 varchar(10), index idx_c1(c1))`,
+		`create table exist_db.t1(id int, c1 varchar(10), index IDX_C1(c1))`,
+		`create index IDX_v1 ON exist_db.exist_tb_1(v1);`,
+		`create index idx_V1 ON exist_db.exist_tb_1(v1);`,
+		`alter table exist_db.exist_tb_1 add index idx_v1(v1);`,
+		`alter table exist_db.exist_tb_1 add index IDX_V1(v1);`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_INDEX_PREFIX].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+	}
 }
 
 func TestCheckUniqueIndexPrefix(t *testing.T) {
@@ -1578,6 +1589,17 @@ CREATE UNIQUE INDEX index_1 ON exist_db.exist_tb_1(v1);
 `,
 		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
 	)
+
+	for _, sql := range []string{
+		`create table exist_db.t1(id int, c1 varchar(10), unique index uniq_c1(c1))`,
+		`create table exist_db.t1(id int, c1 varchar(10), unique index UNIQ_C1(c1))`,
+		`create unique index uniq_v1 ON exist_db.exist_tb_1(v1);`,
+		`create unique index UNIQ_V1 ON exist_db.exist_tb_1(v1);`,
+		`alter table exist_db.exist_tb_1 add unique index uniq_v1(v1);`,
+		`alter table exist_db.exist_tb_1 add unique index UNIQ_V1(v1);`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_UNIQUE_INDEX_PRIFIX].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+	}
 }
 
 func TestCheckColumnDefault(t *testing.T) {
@@ -2482,7 +2504,8 @@ func TestCheckDatabaseSuffix(t *testing.T) {
 	}
 
 	for desc, sql := range map[string]string{
-		`create database`: `CREATE DATABASE app_service_db;`,
+		`(0)create database`: `CREATE DATABASE app_service_db;`,
+		`(1)create database`: `CREATE DATABASE APP_SERVICE_DB;`,
 	} {
 		runSingleRuleInspectCase(
 			RuleHandlerMap[DDL_CHECK_DATABASE_SUFFIX].Rule,
@@ -2979,6 +3002,23 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
 		t, "", inspect5, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
 		newTestResult().addResult(DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
+}
+
+func Test_DDL_CHECK_PK_NAME(t *testing.T) {
+	for _, sql := range []string{
+		`create table t1(id int, primary key pk_t1(id))`,
+		`create table t1(id int, primary key PK_T1(id))`,
+		`create table t1(id int, primary key(id))`,
+		`alter table exist_db.exist_tb_2 add primary key(id)`,
+		`alter table exist_db.exist_tb_2 add primary key PK_EXIST_TB_2(id)`} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_PK_NAME].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+	for _, sql := range []string{
+		`create table t1(id int, primary key wrongPK(id))`,
+		`alter table exist_db.exist_tb_2 add primary key wrongPK(id)`} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_PK_NAME].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDL_CHECK_PK_NAME))
+	}
 }
 
 func Test_PerfectParse(t *testing.T) {
