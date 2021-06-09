@@ -810,8 +810,18 @@ func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node a
 func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 	var hasPk = false
 	var pkColumnExist = false
+	var alteredTableExist = false
+
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
+	inspectCol := func(col *ast.ColumnDef) {
+		if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+			pkIsAutoIncrement = true
+		}
+		if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
+			pkIsBigIntUnsigned = true
+		}
+	}
 
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -830,12 +840,7 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 				hasPk = true
 				pkColumnExist = true
-				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
-					pkIsBigIntUnsigned = true
-				}
-				if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-					pkIsAutoIncrement = true
-				}
+				inspectCol(col)
 			}
 		}
 		/*
@@ -853,53 +858,54 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 					for _, col := range stmt.Cols {
 						if col.Name.Name.String() == columnName {
 							pkColumnExist = true
-							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
-								pkIsBigIntUnsigned = true
-							}
-							if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrement = true
-							}
+							inspectCol(col)
 						}
 					}
 				}
 			}
 		}
 	case *ast.AlterTableStmt:
-		for _, spec := range stmt.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, newColumn := range spec.NewColumns {
-					if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
-						hasPk = true
-						pkColumnExist = true
-						if IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
-							pkIsAutoIncrement = true
+		var err error
+		var originTable *ast.CreateTableStmt
+		if originTable, alteredTableExist, err = i.getCreateTableStmt(stmt.Table); err == nil && alteredTableExist {
+			for _, spec := range stmt.Specs {
+				switch spec.Tp {
+				case ast.AlterTableAddColumns:
+					for _, newColumn := range spec.NewColumns {
+						if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
+							hasPk = true
+							pkColumnExist = true
+							inspectCol(newColumn)
 						}
+					}
+				case ast.AlterTableAddConstraint:
+					if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
+						hasPk = true
 					}
 				}
 			}
-		}
 
-		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
 			if originPK, exist := getPrimaryKey(originTable); exist {
-
 				hasPk = true
 				pkColumnExist = true
+
+				for _, col := range originTable.Cols {
+					if _, exist := originPK[col.Name.Name.L]; exist {
+						inspectCol(col)
+					}
+				}
 				for _, spec := range stmt.Specs {
 					switch spec.Tp {
 					case ast.AlterTableModifyColumn:
 						for _, newColumn := range spec.NewColumns {
-							if _, exist := originPK[newColumn.Name.Name.L]; exist &&
-								IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrement = true
+							if _, exist := originPK[newColumn.Name.Name.L]; exist {
+								inspectCol(newColumn)
 							}
 						}
 					case ast.AlterTableChangeColumn:
 						if _, exist = originPK[spec.OldColumnName.Name.L]; exist {
 							for _, newColumn := range spec.NewColumns {
-								if IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
-									pkIsAutoIncrement = true
-								}
+								inspectCol(newColumn)
 							}
 						}
 					}
@@ -907,6 +913,10 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 	default:
+		return nil
+	}
+
+	if _, ok := node.(*ast.AlterTableStmt); ok && !alteredTableExist {
 		return nil
 	}
 
