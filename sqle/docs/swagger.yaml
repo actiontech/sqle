@@ -920,7 +920,7 @@ definitions:
         - initialized
         - audited
         - executing
-        - exec_success
+        - exec_succeeded
         - exec_failed
         type: string
       workflow_id:
@@ -2278,7 +2278,7 @@ paths:
         - initialized
         - audited
         - executing
-        - exec_success
+        - exec_succeeded
         - exec_failed
         in: query
         name: filter_task_status
