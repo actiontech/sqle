@@ -1956,7 +1956,7 @@
                             "initialized",
                             "audited",
                             "executing",
-                            "exec_success",
+                            "exec_succeeded",
                             "exec_failed"
                         ],
                         "type": "string",
@@ -3580,7 +3580,7 @@
                         "initialized",
                         "audited",
                         "executing",
-                        "exec_success",
+                        "exec_succeeded",
                         "exec_failed"
                     ]
                 },

@@ -808,10 +808,6 @@ func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node a
 }
 
 func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
-	var hasPk = false
-	var pkColumnExist = false
-	var alteredTableExist = false
-
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
 	inspectCol := func(col *ast.ColumnDef) {
@@ -825,6 +821,9 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
+		var hasPk = false
+		var pkColumnExist = false
+
 		if stmt.ReferTable != nil {
 			return nil
 		}
@@ -864,47 +863,58 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 				}
 			}
 		}
+		if !hasPk {
+			i.addResult(DDL_CHECK_PK_NOT_EXIST)
+		}
+		if hasPk && pkColumnExist && !pkIsAutoIncrement {
+			i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
+		}
+		if hasPk && pkColumnExist && pkIsAutoIncrement {
+			i.addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT)
+		}
+		if hasPk && pkColumnExist && !pkIsBigIntUnsigned {
+			i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
+		}
 	case *ast.AlterTableStmt:
-		var err error
-		var originTable *ast.CreateTableStmt
-		if originTable, alteredTableExist, err = i.getCreateTableStmt(stmt.Table); err == nil && alteredTableExist {
+		var alterPK bool
+		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
 			for _, spec := range stmt.Specs {
 				switch spec.Tp {
 				case ast.AlterTableAddColumns:
 					for _, newColumn := range spec.NewColumns {
 						if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
-							hasPk = true
-							pkColumnExist = true
+							alterPK = true
 							inspectCol(newColumn)
 						}
 					}
 				case ast.AlterTableAddConstraint:
 					if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
-						hasPk = true
+						if len(spec.Constraint.Keys) == 1 {
+							for _, col := range originTable.Cols {
+								if col.Name.Name.L == spec.Constraint.Keys[0].Column.Name.L {
+									alterPK = true
+									inspectCol(col)
+								}
+							}
+						}
 					}
 				}
 			}
 
 			if originPK, exist := getPrimaryKey(originTable); exist {
-				hasPk = true
-				pkColumnExist = true
-
-				for _, col := range originTable.Cols {
-					if _, exist := originPK[col.Name.Name.L]; exist {
-						inspectCol(col)
-					}
-				}
 				for _, spec := range stmt.Specs {
 					switch spec.Tp {
 					case ast.AlterTableModifyColumn:
 						for _, newColumn := range spec.NewColumns {
 							if _, exist := originPK[newColumn.Name.Name.L]; exist {
+								alterPK = true
 								inspectCol(newColumn)
 							}
 						}
 					case ast.AlterTableChangeColumn:
 						if _, exist = originPK[spec.OldColumnName.Name.L]; exist {
 							for _, newColumn := range spec.NewColumns {
+								alterPK = true
 								inspectCol(newColumn)
 							}
 						}
@@ -912,27 +922,18 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 				}
 			}
 		}
+		if alterPK && !pkIsAutoIncrement {
+			i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
+		}
+		if alterPK && pkIsAutoIncrement {
+			i.addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT)
+		}
+		if alterPK && !pkIsBigIntUnsigned {
+			i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
+		}
 	default:
 		return nil
 	}
-
-	if _, ok := node.(*ast.AlterTableStmt); ok && !alteredTableExist {
-		return nil
-	}
-
-	if !hasPk {
-		i.addResult(DDL_CHECK_PK_NOT_EXIST)
-	}
-	if hasPk && pkColumnExist && !pkIsAutoIncrement {
-		i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
-	}
-	if hasPk && pkColumnExist && pkIsAutoIncrement {
-		i.addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT)
-	}
-	if hasPk && pkColumnExist && !pkIsBigIntUnsigned {
-		i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
-	}
-
 	return nil
 }
 

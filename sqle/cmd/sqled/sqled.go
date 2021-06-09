@@ -1,14 +1,17 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+
 	"actiontech.cloud/sqle/sqle/sqle"
 	"actiontech.cloud/sqle/sqle/sqle/config"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
-	"fmt"
+	"actiontech.cloud/universe/ucommon/v4/util"
+
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
-	"io/ioutil"
-	"os"
 )
 
 var version string
@@ -43,19 +46,21 @@ func main() {
 			}
 		},
 	}
-	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 10000, "http server port")
-	rootCmd.PersistentFlags().StringVarP(&mysqlUser, "mysql-user", "", "sqle", "mysql user")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPass, "mysql-password", "", "sqle", "mysql password")
-	rootCmd.PersistentFlags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
-	rootCmd.PersistentFlags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
-	rootCmd.PersistentFlags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
-	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "", "", "config file path")
-	rootCmd.PersistentFlags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
-	rootCmd.PersistentFlags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
-	rootCmd.PersistentFlags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
-	rootCmd.PersistentFlags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
-	rootCmd.PersistentFlags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
+	rootCmd.Flags().IntVarP(&port, "port", "p", 10000, "http server port")
+	rootCmd.Flags().StringVarP(&mysqlUser, "mysql-user", "", "sqle", "mysql user")
+	rootCmd.Flags().StringVarP(&mysqlPass, "mysql-password", "", "sqle", "mysql password")
+	rootCmd.Flags().StringVarP(&mysqlHost, "mysql-host", "", "localhost", "mysql host")
+	rootCmd.Flags().StringVarP(&mysqlPort, "mysql-port", "", "3306", "mysql port")
+	rootCmd.Flags().StringVarP(&mysqlSchema, "mysql-schema", "", "sqle", "mysql schema")
+	rootCmd.Flags().StringVarP(&configPath, "config", "", "", "config file path")
+	rootCmd.Flags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
+	rootCmd.Flags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
+	rootCmd.Flags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
+	rootCmd.Flags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
+	rootCmd.Flags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
+	rootCmd.Flags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
+
+	rootCmd.AddCommand(genSecretPasswordCmd())
 	rootCmd.Execute()
 }
 
@@ -72,6 +77,18 @@ func run(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("unmarshal config file error %v", err)
 		}
+
+		// Support using secret mysql password in sqled config, read secret_mysql_password first,
+		// but you can still use mysql_password to be compatible with older versions.
+		secretPassword := cfg.Server.DBCnf.MysqlCnf.SecretPassword
+		if secretPassword != "" {
+			password, err := util.AesDecrypt(secretPassword)
+			if err != nil {
+				return fmt.Errorf("read db info from config file error, %d", err)
+			}
+			cfg.Server.DBCnf.MysqlCnf.Password = password
+		}
+
 	} else {
 		mysqlPass, err := utils.DecodeString(mysqlPass)
 		if err != nil {
