@@ -878,9 +878,14 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 
 		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
 			if originPK, exist := getPrimaryKey(originTable); exist {
-
 				hasPk = true
 				pkColumnExist = true
+
+				for _, col := range originTable.Cols {
+					if _, exist := originPK[col.Name.Name.L]; exist {
+						inspectCol(col)
+					}
+				}
 				for _, spec := range stmt.Specs {
 					switch spec.Tp {
 					case ast.AlterTableModifyColumn:
