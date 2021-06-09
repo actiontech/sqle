@@ -870,9 +870,7 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 					if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
 						hasPk = true
 						pkColumnExist = true
-						if IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
-							pkIsAutoIncrement = true
-						}
+						inspectCol(newColumn)
 					}
 				}
 			}
@@ -887,17 +885,14 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 					switch spec.Tp {
 					case ast.AlterTableModifyColumn:
 						for _, newColumn := range spec.NewColumns {
-							if _, exist := originPK[newColumn.Name.Name.L]; exist &&
-								IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrement = true
+							if _, exist := originPK[newColumn.Name.Name.L]; exist {
+								inspectCol(newColumn)
 							}
 						}
 					case ast.AlterTableChangeColumn:
 						if _, exist = originPK[spec.OldColumnName.Name.L]; exist {
 							for _, newColumn := range spec.NewColumns {
-								if IsAllInOptions(newColumn.Options, ast.ColumnOptionAutoIncrement) {
-									pkIsAutoIncrement = true
-								}
+								inspectCol(newColumn)
 							}
 						}
 					case ast.AlterTableAddConstraint:
