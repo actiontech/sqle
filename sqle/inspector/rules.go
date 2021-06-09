@@ -812,6 +812,14 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 	var pkColumnExist = false
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
+	inspectCol := func(col *ast.ColumnDef) {
+		if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+			pkIsAutoIncrement = true
+		}
+		if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
+			pkIsBigIntUnsigned = true
+		}
+	}
 
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -830,12 +838,7 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 				hasPk = true
 				pkColumnExist = true
-				if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
-					pkIsBigIntUnsigned = true
-				}
-				if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-					pkIsAutoIncrement = true
-				}
+				inspectCol(col)
 			}
 		}
 		/*
@@ -853,12 +856,7 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 					for _, col := range stmt.Cols {
 						if col.Name.Name.String() == columnName {
 							pkColumnExist = true
-							if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
-								pkIsBigIntUnsigned = true
-							}
-							if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
-								pkIsAutoIncrement = true
-							}
+							inspectCol(col)
 						}
 					}
 				}
