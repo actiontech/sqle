@@ -810,6 +810,8 @@ func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node a
 func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 	var hasPk = false
 	var pkColumnExist = false
+	var alteredTableExist = false
+
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
 	inspectCol := func(col *ast.ColumnDef) {
@@ -863,20 +865,26 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 	case *ast.AlterTableStmt:
-		for _, spec := range stmt.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, newColumn := range spec.NewColumns {
-					if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
+		var err error
+		var originTable *ast.CreateTableStmt
+		if originTable, alteredTableExist, err = i.getCreateTableStmt(stmt.Table); err == nil && alteredTableExist {
+			for _, spec := range stmt.Specs {
+				switch spec.Tp {
+				case ast.AlterTableAddColumns:
+					for _, newColumn := range spec.NewColumns {
+						if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
+							hasPk = true
+							pkColumnExist = true
+							inspectCol(newColumn)
+						}
+					}
+				case ast.AlterTableAddConstraint:
+					if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
 						hasPk = true
-						pkColumnExist = true
-						inspectCol(newColumn)
 					}
 				}
 			}
-		}
 
-		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
 			if originPK, exist := getPrimaryKey(originTable); exist {
 				hasPk = true
 				pkColumnExist = true
@@ -900,15 +908,15 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 								inspectCol(newColumn)
 							}
 						}
-					case ast.AlterTableAddConstraint:
-						if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
-							hasPk = true
-						}
 					}
 				}
 			}
 		}
 	default:
+		return nil
+	}
+
+	if _, ok := node.(*ast.AlterTableStmt); ok && !alteredTableExist {
 		return nil
 	}
 
