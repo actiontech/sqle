@@ -709,13 +709,10 @@ type GetWorkflowsReqV1 struct {
 	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" valid:"omitempty,oneof=sql_review sql_execute"`
 	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=on_process finished rejected canceled"`
 	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
-
-	// the task status include (initialized, audited, executing, exec_succeeded, exec_failed);
-	// Note: exec_success is invalid enum, and define in old api, you will get empty result if filter it.
-	FilterTaskStatus       string `json:"filter_task_status" query:"filter_task_status" valid:"omitempty,oneof=initialized audited executing exec_success exec_succeeded exec_failed"`
-	FilterTaskInstanceName string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
-	PageIndex              uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize               uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FilterTaskStatus                  string `json:"filter_task_status" query:"filter_task_status" valid:"omitempty,oneof=initialized audited executing exec_succeeded exec_failed"`
+	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetWorkflowsResV1 struct {
