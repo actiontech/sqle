@@ -34,9 +34,6 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				return nil
 			}
 
-			var irs InspectResults
-			var node = sql.Stmts[0]
-
 			sqlFP, err := Fingerprint(sql.Content)
 			if err != nil {
 				return err
@@ -61,18 +58,19 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				}
 			}
 			if whitelistMatch {
-				irs.add(model.RULE_LEVEL_NORMAL, "白名单")
+				var results InspectResults
+				results.add(model.RULE_LEVEL_NORMAL, "白名单")
 				currentSql.AuditStatus = model.SQLAuditStatusFinished
-				currentSql.AuditLevel = irs.level()
-				currentSql.AuditResult = irs.message()
+				currentSql.AuditLevel = results.level()
+				currentSql.AuditResult = results.message()
 			} else {
-				results, err := i.CheckInvalid(node)
+				results, err := i.CheckInvalid(sql.Stmts[0])
 				if err != nil {
 					return err
 				}
 				if results.level() == model.RULE_LEVEL_ERROR {
 					i.HasInvalidSql = true
-					i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
+					i.Logger().Warnf("sql %s invalid, %s", sql.Stmts[0].Text(), results.message())
 				}
 				i.Results = results
 				if rules != nil {
@@ -82,7 +80,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 						if !ok || handler.Func == nil {
 							continue
 						}
-						err := handler.Func(rule, i, node)
+						err := handler.Func(rule, i, sql.Stmts[0])
 						if err != nil {
 							return err
 						}
@@ -95,7 +93,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				i.Results = newInspectResults()
 
 				// print osc
-				oscCommandLine, err := i.generateOSCCommandLine(node)
+				oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
 				if err != nil {
 					return err
 				}
