@@ -1,12 +1,11 @@
 package inspector
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -111,8 +110,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				}
 			}
 
-			md5 := md5.Sum(append([]byte(currentSql.AuditResult), []byte(sqlFP)...))
-			currentSql.AuditFingerprint = hex.EncodeToString(md5[:])
+			currentSql.AuditFingerprint = utils.Md5String(string(append([]byte(currentSql.AuditResult), []byte(sqlFP)...)))
 
 			i.Logger().Infof("sql=%s, level=%s, result=%s", currentSql.Content, currentSql.AuditLevel, currentSql.AuditResult)
 			return nil
