@@ -38,8 +38,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 			var irs InspectResults
 			var node = sql.Stmts[0]
 
-			uppedSQL := strings.ToUpper(sql.Content)
-			sqlFP, err := Fingerprint(uppedSQL)
+			sqlFP, err := Fingerprint(sql.Content)
 			if err != nil {
 				return err
 			}
@@ -65,7 +64,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 						break
 					}
 				} else {
-					if sqlInWL.CapitalizedValue == uppedSQL {
+					if sqlInWL.CapitalizedValue == strings.ToUpper(sql.Content) {
 						whitelistMatch = true
 						break
 					}
