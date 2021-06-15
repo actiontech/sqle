@@ -3031,6 +3031,20 @@ SELECT * FROM exist_db.exist_tb_2;
 		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
 }
 
+func Test_DDLCheckCreateView(t *testing.T) {
+	for _, sql := range []string{
+		`create view v as select * from t1`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateView].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDLCheckCreateView))
+	}
+
+	for _, sql := range []string{
+		`create table t1(id int)`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateView].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+	}
+}
+
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
 		log:     log.NewEntry(),

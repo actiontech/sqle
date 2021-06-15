@@ -57,6 +57,7 @@ const (
 	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
 	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
 	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
+	DDLCheckCreateView                               = "ddl_check_create_view"
 )
 
 // inspector DML rules
@@ -664,6 +665,15 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "该查询使用了临时表",
 		Func:    checkExplain,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDLCheckCreateView,
+			Desc:  "禁止使用视图",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止使用视图",
+		Func:    checkCreateView,
 	},
 }
 
@@ -2282,6 +2292,14 @@ func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
 		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
 			i.addResult(DMLCheckExplainAccessTypeAll, record.Rows)
 		}
+	}
+	return nil
+}
+
+func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch node.(type) {
+	case *ast.CreateViewStmt:
+		i.addResult(rule.Name)
 	}
 	return nil
 }
