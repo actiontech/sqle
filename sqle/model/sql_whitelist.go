@@ -16,9 +16,9 @@ const (
 type SqlWhitelist struct {
 	Model
 	// Value store SQL text.
-	Value      string `json:"value" gorm:"not null;type:text"`
-	UppedValue string `json:"-" gorm:"-"`
-	Desc       string `json:"desc"`
+	Value            string `json:"value" gorm:"not null;type:text"`
+	CapitalizedValue string `json:"-" gorm:"-"`
+	Desc             string `json:"desc"`
 	// MessageDigest deprecated after 1.1.0, keep it for compatibility.
 	MessageDigest string `json:"message_digest" gorm:"type:char(32) not null comment 'md5 data';" `
 	MatchType     string `json:"match_type" gorm:"default:\"exact_match\""`
@@ -32,7 +32,7 @@ func (s *SqlWhitelist) BeforeSave() error {
 
 // AfterFind is a hook implement gorm model after query, ignore err if query from db
 func (s *SqlWhitelist) AfterFind() error {
-	s.UppedValue = strings.ToUpper(s.Value)
+	s.CapitalizedValue = strings.ToUpper(s.Value)
 	return nil
 }
 
