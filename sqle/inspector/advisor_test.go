@@ -3058,7 +3058,7 @@ CREATE
 	BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');
 `,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDLCheckCreateTrigger))
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持").addResult(DDLCheckCreateTrigger))
 	}
 
 	for _, sql := range []string{
@@ -3084,7 +3084,7 @@ CREATE
 	RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');
 `,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDLCheckCreateFunction))
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持").addResult(DDLCheckCreateFunction))
 	}
 
 	for _, sql := range []string{
