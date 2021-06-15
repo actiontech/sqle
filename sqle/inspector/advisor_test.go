@@ -3031,6 +3031,71 @@ SELECT * FROM exist_db.exist_tb_2;
 		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
 }
 
+func Test_DDLCheckCreateView(t *testing.T) {
+	for _, sql := range []string{
+		`create view v as select * from t1`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateView].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDLCheckCreateView))
+	}
+
+	for _, sql := range []string{
+		`create table t1(id int)`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateView].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+	}
+}
+
+func Test_DDLCheckCreateTrigger(t *testing.T) {
+	for _, sql := range []string{
+		`create trigger my_trigger before insert on t1 for each row insert into t2(id, c1) values(1, '2');`,
+		`CREATE TRIGGER my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`CREATE DEFINER='sqle_op'@'localhost' TRIGGER my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`CREATE DEFINER = 'sqle_op'@'localhost' TRIGGER my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`
+CREATE
+	DEFINER = 'sqle_op'@'localhost' 
+	TRIGGER my_trigger 
+	BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');
+`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持").addResult(DDLCheckCreateTrigger))
+	}
+
+	for _, sql := range []string{
+		`CREATE my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`CREATE trigger_1 BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`CREATE TRIGGER BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`CREATE TRIGGER my_trigger BEEEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持"))
+	}
+}
+
+func Test_DDLCheckCreateFunction(t *testing.T) {
+	for _, sql := range []string{
+		`create function hello_function (s CHAR(20)) returns CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`CREATE FUNCTION hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`CREATE DEFINER='sqle_op'@'localhost' FUNCTION hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`CREATE DEFINER = 'sqle_op'@'localhost' FUNCTION hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`
+CREATE
+	DEFINER = 'sqle_op'@'localhost' 
+	FUNCTION hello_function (s CHAR(20)) 
+	RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');
+`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持").addResult(DDLCheckCreateFunction))
+	}
+
+	for _, sql := range []string{
+		`create function_hello (s CHAR(20)) returns CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`CREATE hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`CREATE DEFINER='sqle_op'@'localhost' hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+	} {
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持"))
+	}
+}
+
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{
 		log:     log.NewEntry(),

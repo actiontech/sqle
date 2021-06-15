@@ -3,6 +3,7 @@ package inspector
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -57,6 +58,9 @@ const (
 	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
 	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
 	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
+	DDLCheckCreateView                               = "ddl_check_create_view"
+	DDLCheckCreateTrigger                            = "ddl_check_create_trigger"
+	DDLCheckCreateFunction                           = "ddl_check_create_function"
 )
 
 // inspector DML rules
@@ -664,6 +668,33 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "该查询使用了临时表",
 		Func:    checkExplain,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDLCheckCreateView,
+			Desc:  "禁止使用视图",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止使用视图",
+		Func:    checkCreateView,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDLCheckCreateTrigger,
+			Desc:  "禁止使用触发器",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止使用触发器",
+		Func:    checkCreateTrigger,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDLCheckCreateFunction,
+			Desc:  "禁止使用自定义函数",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止使用自定义函数",
+		Func:    checkCreateFunction,
 	},
 }
 
@@ -2282,6 +2313,53 @@ func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
 		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
 			i.addResult(DMLCheckExplainAccessTypeAll, record.Rows)
 		}
+	}
+	return nil
+}
+
+func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
+	switch node.(type) {
+	case *ast.CreateViewStmt:
+		i.addResult(rule.Name)
+	}
+	return nil
+}
+
+// CREATE
+//    [DEFINER = user]
+//    TRIGGER trigger_name
+//    trigger_time trigger_event
+//    ON tbl_name FOR EACH ROW
+//    [trigger_order]
+//    trigger_body
+//
+// ref:https://dev.mysql.com/doc/refman/8.0/en/create-trigger.html
+//
+// For now, we do character matching for CREATE TRIGGER Statement. Maybe we need
+// more accurate match by adding such syntax support to parser.
+var createTriggerRegex = regexp.MustCompile(`(?i)create[\S\s]*[ \t]trigger [\S\s]+before|after`)
+
+func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
+	if createTriggerRegex.MatchString(node.Text()) {
+		i.addResult(rule.Name)
+	}
+	return nil
+}
+
+// CREATE
+//    [DEFINER = user]
+//    FUNCTION sp_name ([func_parameter[,...]])
+//    RETURNS type
+//    [characteristic ...] routine_body
+//
+// ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
+// For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
+// more accurate match by adding such syntax support to parser.
+var createFunctionRegex = regexp.MustCompile(`(?i)create[\S\s]*[ \t]function [\S\s]+returns`)
+
+func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
+	if createFunctionRegex.MatchString(node.Text()) {
+		i.addResult(rule.Name)
 	}
 	return nil
 }
