@@ -3,6 +3,7 @@ package inspector
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -58,6 +59,7 @@ const (
 	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
 	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
 	DDLCheckCreateView                               = "ddl_check_create_view"
+	DDLCheckCreateTrigger                            = "ddl_check_create_trigger"
 )
 
 // inspector DML rules
@@ -674,6 +676,15 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "禁止使用视图",
 		Func:    checkCreateView,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDLCheckCreateTrigger,
+			Desc:  "禁止使用触发器",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止使用触发器",
+		Func:    checkCreateTrigger,
 	},
 }
 
@@ -2299,6 +2310,27 @@ func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
 func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.CreateViewStmt:
+		i.addResult(rule.Name)
+	}
+	return nil
+}
+
+// CREATE
+//    [DEFINER = user]
+//    TRIGGER trigger_name
+//    trigger_time trigger_event
+//    ON tbl_name FOR EACH ROW
+//    [trigger_order]
+//    trigger_body
+//
+// ref:https://dev.mysql.com/doc/refman/8.0/en/create-trigger.html
+//
+// For now, we do character matching for CREATE TRIGGER Statement. Maybe we need
+// more accurate match by adding such syntax support to parser.
+var createTriggerRegex = regexp.MustCompile(`(?i)create.* trigger .+ before|after`)
+
+func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
+	if createTriggerRegex.MatchString(node.Text()) {
 		i.addResult(rule.Name)
 	}
 	return nil

@@ -1099,6 +1099,10 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResul
 
 // checkUnparsedStmt might add more check in future.
 func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt, results *InspectResults) error {
+	if createTriggerRegex.MatchString(stmt.Text()) {
+		return nil
+	}
+
 	results.add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持")
 	return nil
 }
