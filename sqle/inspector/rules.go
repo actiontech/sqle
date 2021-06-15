@@ -2337,7 +2337,7 @@ func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
 //
 // For now, we do character matching for CREATE TRIGGER Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-var createTriggerRegex = regexp.MustCompile(`(?i)create.* trigger .+ before|after`)
+var createTriggerRegex = regexp.MustCompile(`(?i)create[\S\s]*[ \t]trigger [\S\s]+before|after`)
 
 func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 	if createTriggerRegex.MatchString(node.Text()) {
@@ -2355,7 +2355,7 @@ func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 // ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-var createFunctionRegex = regexp.MustCompile(`(?i)create.* function .+ returns `)
+var createFunctionRegex = regexp.MustCompile(`(?i)create[\S\s]*[ \t]function [\S\s]+returns`)
 
 func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
 	if createFunctionRegex.MatchString(node.Text()) {

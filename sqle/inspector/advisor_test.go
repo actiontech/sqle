@@ -3051,6 +3051,12 @@ func Test_DDLCheckCreateTrigger(t *testing.T) {
 		`CREATE TRIGGER my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE DEFINER='sqle_op'@'localhost' TRIGGER my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE DEFINER = 'sqle_op'@'localhost' TRIGGER my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`
+CREATE
+	DEFINER = 'sqle_op'@'localhost' 
+	TRIGGER my_trigger 
+	BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');
+`,
 	} {
 		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDLCheckCreateTrigger))
 	}
@@ -3071,6 +3077,12 @@ func Test_DDLCheckCreateFunction(t *testing.T) {
 		`CREATE FUNCTION hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 		`CREATE DEFINER='sqle_op'@'localhost' FUNCTION hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 		`CREATE DEFINER = 'sqle_op'@'localhost' FUNCTION hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`
+CREATE
+	DEFINER = 'sqle_op'@'localhost' 
+	FUNCTION hello_function (s CHAR(20)) 
+	RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');
+`,
 	} {
 		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDLCheckCreateFunction))
 	}
