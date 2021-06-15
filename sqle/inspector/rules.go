@@ -60,6 +60,7 @@ const (
 	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
 	DDLCheckCreateView                               = "ddl_check_create_view"
 	DDLCheckCreateTrigger                            = "ddl_check_create_trigger"
+	DDLCheckCreateFunction                           = "ddl_check_create_function"
 )
 
 // inspector DML rules
@@ -685,6 +686,15 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "禁止使用触发器",
 		Func:    checkCreateTrigger,
+	},
+	{
+		Rule: model.Rule{
+			Name:  DDLCheckCreateFunction,
+			Desc:  "禁止使用自定义函数",
+			Level: model.RULE_LEVEL_ERROR,
+		},
+		Message: "禁止使用自定义函数",
+		Func:    checkCreateFunction,
 	},
 }
 
@@ -2331,6 +2341,24 @@ var createTriggerRegex = regexp.MustCompile(`(?i)create.* trigger .+ before|afte
 
 func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 	if createTriggerRegex.MatchString(node.Text()) {
+		i.addResult(rule.Name)
+	}
+	return nil
+}
+
+// CREATE
+//    [DEFINER = user]
+//    FUNCTION sp_name ([func_parameter[,...]])
+//    RETURNS type
+//    [characteristic ...] routine_body
+//
+// ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
+// For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
+// more accurate match by adding such syntax support to parser.
+var createFunctionRegex = regexp.MustCompile(`(?i)create.* function .+ returns `)
+
+func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
+	if createFunctionRegex.MatchString(node.Text()) {
 		i.addResult(rule.Name)
 	}
 	return nil

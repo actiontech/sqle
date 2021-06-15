@@ -1099,7 +1099,9 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResul
 
 // checkUnparsedStmt might add more check in future.
 func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt, results *InspectResults) error {
-	if createTriggerRegex.MatchString(stmt.Text()) {
+	sqlText := stmt.Text()
+	if createTriggerRegex.MatchString(sqlText) ||
+		createFunctionRegex.MatchString(sqlText) {
 		return nil
 	}
 
