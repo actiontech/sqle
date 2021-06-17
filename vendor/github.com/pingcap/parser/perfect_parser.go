@@ -39,15 +39,37 @@ func (parser *Parser) PerfectParse(sql, charset, collation string) (stmt []ast.S
 	l := NewScanner(remainingSql)
 	var v yySymType
 	var endOffset int
+	var scanEnd = 0
+	var defaultDelimiter int = ';'
+	delimiter := defaultDelimiter
+ScanLoop:
 	for {
 		result := l.Lex(&v)
-		if result == 0 {
+		switch result {
+		case scanEnd:
 			endOffset = l.lastScanOffset - 1
-			break
-		}
-		if result == ';' {
+			break ScanLoop
+		case delimiter:
 			endOffset = l.lastScanOffset
-			break
+			break ScanLoop
+		case begin:
+			// ref: https://dev.mysql.com/doc/refman/8.0/en/begin-end.html
+			// ref: https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
+			// Support match:
+			// BEGIN
+			// ...
+			// END;
+			//
+			delimiter = scanEnd
+		case end:
+			// match `end;`
+			var ny yySymType
+			next := l.Lex(&ny)
+			if next == defaultDelimiter {
+				delimiter = defaultDelimiter
+				endOffset = l.lastScanOffset
+				break ScanLoop
+			}
 		}
 	}
 	unparsedStmtBuf := bytes.Buffer{}
@@ -61,17 +83,15 @@ func (parser *Parser) PerfectParse(sql, charset, collation string) (stmt []ast.S
 		stmt = append(stmt, un)
 	}
 
-	if len(remainingSql) <= endOffset {
-		return stmt, warns, nil
-	}
-
-	cStmt, cWarn, cErr := parser.PerfectParse(remainingSql[endOffset+1:], charset, collation)
-	warns = append(warns, cWarn...)
-	if len(cStmt) > 0 {
-		stmt = append(stmt, cStmt...)
-	}
-	if cErr == nil {
-		return stmt, warns, cErr
+	if len(remainingSql) > endOffset {
+		cStmt, cWarn, cErr := parser.PerfectParse(remainingSql[endOffset+1:], charset, collation)
+		warns = append(warns, cWarn...)
+		if len(cStmt) > 0 {
+			stmt = append(stmt, cStmt...)
+		}
+		if cErr == nil {
+			return stmt, warns, cErr
+		}
 	}
 	return stmt, warns, nil
 }

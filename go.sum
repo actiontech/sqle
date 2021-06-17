@@ -432,8 +432,8 @@ github.com/shurcooL/vfsgen v0.0.0-20181020040650-a97a25d856ca/go.mod h1:TrYk7fJV
 github.com/sirupsen/logrus v1.0.5/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjMPG0dEzc=
 github.com/sirupsen/logrus v1.2.0 h1:juTguoYk5qI21pwyTXY3B3Y5cOTH3ZUyZCg1v/mihuo=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
-github.com/sjjian/parser v3.0.17+incompatible h1:eG+ty/yM0TgZpPxOOL3xjuPahIyuMPO75+CaEYwUP4o=
-github.com/sjjian/parser v3.0.17+incompatible/go.mod h1:3jJIh5KPaToCa2zJ/ZTXsPLZ7qTnTxgd2cj+c9uXCfU=
+github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible h1:7VDqsIELbvZwjoSRQ9hlORjjrercxu2nm8f82I2bddM=
+github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible/go.mod h1:3jJIh5KPaToCa2zJ/ZTXsPLZ7qTnTxgd2cj+c9uXCfU=
 github.com/soheilhy/cmux v0.1.4 h1:0HKaf1o97UwFjHH9o5XsHUOF+tqmdA7KEzXLpiyaw0E=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
