@@ -168,7 +168,7 @@ func DefaultMysqlInspect() *Inspect {
 }
 
 func runSingleRuleInspectCase(rule model.Rule, t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
-	inspectCase([]model.Rule{rule}, t, desc, i, sql, results...)
+	inspectCase([]model.Rule{rule}, t, desc, i, nil, sql, results...)
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
@@ -179,10 +179,11 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 			break
 		}
 	}
-	inspectCase(DefaultTemplateRules, t, desc, i, sql, results...)
+	inspectCase(DefaultTemplateRules, t, desc, i, nil, sql, results...)
 }
 
-func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect,
+	wl []model.SqlWhitelist, sql string, results ...*testResult) {
 	stmts, err := parseSql(i.Task.Instance.DbType, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
@@ -196,7 +197,7 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect, sql 
 			},
 		})
 	}
-	err = i.Advise(rules, nil)
+	err = i.Advise(rules, wl)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
@@ -2985,7 +2986,7 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		Extra: strings.Join([]string{executor.ExplainRecordExtraUsingFilesort, executor.ExplainRecordExtraUsingTemporary}, ";"),
 	}})
 	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
-		t, "", inspect4, "select * from exist_tb_1",
+		t, "", inspect4, nil, "select * from exist_tb_1",
 		newTestResult().addResult(DMLCheckExplainExtraUsingFilesort).addResult(DMLCheckExplainExtraUsingTemporary).addResult(DMLCheckExplainAccessTypeAll, 100001))
 
 	inspect5 := DefaultMysqlInspect()
@@ -3000,7 +3001,7 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		Extra: executor.ExplainRecordExtraUsingTemporary,
 	}})
 	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
-		t, "", inspect5, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
+		t, "", inspect5, nil, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
 		newTestResult().addResult(DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
 }
 
@@ -3180,56 +3181,74 @@ end;`,
 	}
 }
 
-
-func DefaultMycatInspect() *Inspect {
-	return &Inspect{
-		log:     log.NewEntry(),
-		Results: newInspectResults(),
-		Task: &model.Task{
-			Instance: &model.Instance{
-				DbType: model.DB_TYPE_MYCAT,
-				MycatConfig: &model.MycatConfig{
-					AlgorithmSchemas: map[string]*model.AlgorithmSchema{
-						"multidb": &model.AlgorithmSchema{
-							AlgorithmTables: map[string]*model.AlgorithmTable{
-								"exist_tb_1": &model.AlgorithmTable{
-									ShardingColumn: "v1",
-								},
-								"exist_tb_2": &model.AlgorithmTable{
-									ShardingColumn: "v1",
-								},
-							},
-						},
-					},
+func TestWhitelist(t *testing.T) {
+	for _, sql := range []string{
+		"select v1 from exist_tb_1 where id =2",
+		"select v1 from exist_tb_1 where id =\"2\"",
+		"select v1 from exist_tb_1 where id =100000",
+	} {
+		runDefaultRulesInspectCaseWithWL(t, "match fp whitelist", DefaultMysqlInspect(),
+			[]model.SqlWhitelist{
+				model.SqlWhitelist{
+					Value:     "select v1 from exist_tb_1 where id =2",
+					MatchType: model.SQLWhitelistFPMatch,
 				},
-			},
-			ExecuteSQLs:  []*model.ExecuteSQL{},
-			RollbackSQLs: []*model.RollbackSQL{},
-		},
-		SqlArray: []*model.BaseSQL{},
-		Ctx: &Context{
-			currentSchema: "multidb",
-			schemaHasLoad: true,
-			schemas: map[string]*SchemaInfo{
-				"multidb": &SchemaInfo{
-					Tables: map[string]*TableInfo{
-						"exist_tb_1": &TableInfo{
-							sizeLoad:      true,
-							Size:          1,
-							OriginalTable: getTestCreateTableStmt1(),
-						},
-						"exist_tb_2": &TableInfo{
-							sizeLoad:      true,
-							Size:          1,
-							OriginalTable: getTestCreateTableStmt2(),
-						},
-					},
-				},
-			},
-		},
-		config: &Config{
-			DDLOSCMinSize:      16,
-			DMLRollbackMaxRows: 1000,
-		},
+			}, sql, newTestResult().add(model.RULE_LEVEL_NORMAL, "白名单"))
 	}
+
+	for _, sql := range []string{
+		"select v1 from exist_tb_1 where ID =2",
+		"select v1 from exist_tb_1 where id =2 and v2 = \"test\"",
+	} {
+		runDefaultRulesInspectCaseWithWL(t, "don't match fp whitelist", DefaultMysqlInspect(),
+			[]model.SqlWhitelist{
+				model.SqlWhitelist{
+					Value:     "select v1 from exist_tb_1 where id =2",
+					MatchType: model.SQLWhitelistFPMatch,
+				},
+			}, sql, newTestResult())
+	}
+
+	for _, sql := range []string{
+		"select v1 from exist_tb_1 where id = 1",
+		"SELECT V1 FROM exist_tb_1 WHERE ID = 1",
+	} {
+		runDefaultRulesInspectCaseWithWL(t, "match exact whitelist", DefaultMysqlInspect(),
+			[]model.SqlWhitelist{
+				model.SqlWhitelist{
+					CapitalizedValue: "SELECT V1 FROM EXIST_TB_1 WHERE ID = 1",
+					MatchType:        model.SQLWhitelistExactMatch,
+				},
+			}, sql,
+			newTestResult().add(model.RULE_LEVEL_NORMAL, "白名单"))
+	}
+
+	for _, sql := range []string{
+		"select v1 from exist_tb_1 where id = 2",
+		"SELECT V1 FROM exist_tb_1 WHERE ID = 2",
+	} {
+		runDefaultRulesInspectCaseWithWL(t, "don't match exact whitelist", DefaultMysqlInspect(),
+			[]model.SqlWhitelist{
+				model.SqlWhitelist{
+					CapitalizedValue: "SELECT V1 FROM EXIST_TB_1 WHERE ID = 1",
+					MatchType:        model.SQLWhitelistExactMatch,
+				},
+			},sql,
+			newTestResult())
+	}
+
+
+
+}
+
+func runDefaultRulesInspectCaseWithWL(t *testing.T, desc string, i *Inspect,
+	wl []model.SqlWhitelist, sql string, results ...*testResult) {
+	// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
+	for idx, dr := range DefaultTemplateRules {
+		if dr.Name == DDL_CHECK_OBJECT_NAME_USING_CN {
+			DefaultTemplateRules = append(DefaultTemplateRules[:idx], DefaultTemplateRules[idx+1:]...)
+			break
+		}
+	}
+	inspectCase(DefaultTemplateRules, t, desc, i, wl, sql, results...)
 }

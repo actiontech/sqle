@@ -42,7 +42,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 			var whitelistMatch bool
 			for _, sqlInWL := range wl {
 				if sqlInWL.MatchType == model.SQLWhitelistFPMatch {
-					whitelistFP, err := Fingerprint(sqlInWL.CapitalizedValue)
+					whitelistFP, err := Fingerprint(sqlInWL.Value)
 					if err != nil {
 						return err
 					}
