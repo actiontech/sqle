@@ -3063,6 +3063,7 @@ CREATE
 
 	for _, sql := range []string{
 		`CREATE my_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
+		`CREATEmy_trigger BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE trigger_1 BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE TRIGGER BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE TRIGGER my_trigger BEEEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
@@ -3089,12 +3090,96 @@ CREATE
 
 	for _, sql := range []string{
 		`create function_hello (s CHAR(20)) returns CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
+		`create123 function_hello (s CHAR(20)) returns CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 		`CREATE hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 		`CREATE DEFINER='sqle_op'@'localhost' hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 	} {
 		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持"))
 	}
 }
+
+func Test_DDLCheckCreateProcedure(t *testing.T) {
+	for _, sql := range []string{
+		`
+CREATE DEFINER='sqle_op'@'localhost'
+PROCEDURE proc1(OUT s int) COMMENT 'test'
+BEGIN
+SELECT * FROM t1;
+SELECT * FROM t2;
+END;`,
+		`
+create definer='sqle_op'@'localhost'
+procedure proc1(out s int) comment 'test'
+begin
+select * from t1;
+select * from t2;
+end;`,
+		`
+create procedure proc1()
+begin
+select * from t1;
+select * from t2;
+end;`,
+		`
+create procedure proc1()
+begin
+end;`,
+		`
+create procedure proc1()
+select * from t1;`,
+		`
+create 
+procedure
+proc1()
+select * from t1;`,
+		`
+create 
+	procedure
+proc1()
+select * from t1;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDLCheckCreateProcedure].Rule, t, "",
+			DefaultMysqlInspect(), sql,
+			newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持").
+				addResult(DDLCheckCreateProcedure))
+	}
+
+	for _, sql := range []string{
+		`
+CREATE DEFINER='sqle_op'@'localhost'PROCEDURE proc1(OUT s int) COMMENT 'test'
+BEGIN
+SELECT * FROM t1;
+SELECT * FROM t2;
+END;`,
+		`
+createdefiner='sqle_op'@'localhost' procedure proc1(out s int) comment 'test'
+begin
+select * from t1;
+select * from t2;
+end;`,
+		`
+create procedureproc1()
+begin
+select * from t1;
+select * from t2;
+end;`,
+		`
+createprocedure proc1()
+begin
+end;`,
+		`
+create123 procedure proc1()
+begin
+end;`,
+	} {
+		runSingleRuleInspectCase(
+			RuleHandlerMap[DDLCheckCreateProcedure].Rule, t, "",
+			DefaultMysqlInspect(), sql,
+			newTestResult().add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持"))
+	}
+}
+
 
 func DefaultMycatInspect() *Inspect {
 	return &Inspect{

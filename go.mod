@@ -48,5 +48,5 @@ require (
 
 replace (
 	github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
-	github.com/pingcap/parser => github.com/sjjian/parser v3.0.17+incompatible
+	github.com/pingcap/parser => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
 )
