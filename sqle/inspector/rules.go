@@ -2301,6 +2301,10 @@ func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
 }
 
 func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
+	// sql from MyBatis XML file is not the executable sql. so can't do explain for it.
+	if i.Task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+		return nil
+	}
 	switch node.(type) {
 	case *ast.SelectStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UpdateStmt:
 	default:
@@ -2309,7 +2313,9 @@ func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
 
 	epRecords, err := i.getExecutionPlan(node.Text())
 	if err != nil {
-		return err
+		// TODO: check dml related table or database is created, if not exist, explain will executed failure.
+		i.Logger().Errorf("do explain error: %v, sql: %s", err, node.Text())
+		return nil
 	}
 	for _, record := range epRecords {
 		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingFilesort) {
@@ -2349,7 +2355,7 @@ func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
 // more accurate match by adding such syntax support to parser.
 func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 	if regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) ||
-		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()){
+		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) {
 		i.addResult(rule.Name)
 	}
 	return nil
@@ -2366,7 +2372,7 @@ func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 // more accurate match by adding such syntax support to parser.
 func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
 	if regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) ||
-		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()){
+		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) {
 		i.addResult(rule.Name)
 	}
 	return nil
@@ -2382,7 +2388,7 @@ func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
 // more accurate match by adding such syntax support to parser.
 func checkCreateProcedure(rule model.Rule, i *Inspect, node ast.Node) error {
 	if regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) ||
-		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()){
+		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) {
 		i.addResult(rule.Name)
 	}
 	return nil
