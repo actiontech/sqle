@@ -145,6 +145,52 @@ func DeleteUser(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
+type ChangePasswordReqV1 struct {
+	Password string `json:"password"  valid:"required"`
+}
+
+// @Summary admin修改其他用户密码
+// @Description admin modifies the passwords of other users
+// @Id ChangePasswordV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param user_name path string true "user name"
+// @Param instance body v1.ChangePasswordReqV1 true "change user's password"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/users/:user_name/password [patch]
+func ChangePassword(c echo.Context) error {
+	req := new(ChangePasswordReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	userName := c.Param("user_name")
+	if userName == model.DefaultAdminUser {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("admin user's password cannot be changed in this page")))
+	}
+
+	s := model.GetStorage()
+	user, exist, err := s.GetUserByName(userName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
+	}
+
+	user.Password = req.Password
+	// model.User{}.encryptPassword(): SecretPassword为空时才会对密码进行加密操作
+	user.SecretPassword = ""
+	err = s.Save(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
 type GetUserDetailResV1 struct {
 	controller.BaseRes
 	Data UserDetailResV1 `json:"data"`
@@ -248,6 +294,47 @@ func UpdateCurrentUser(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+	}
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+type UpdatePasswordReqV1 struct {
+	Password    string `json:"password" valid:"required"`
+	NewPassword string `json:"new_password"  valid:"required"`
+}
+
+// @Summary 用户修改密码
+// @Description update current user's password
+// @Id UpdatePasswordV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param instance body v1.UpdatePasswordReqV1 true "update user's password"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/user/password [put]
+func UpdatePassword(c echo.Context) error {
+	req := new(UpdatePasswordReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if user.Password != req.Password {
+		return controller.JSONBaseErrorReq(c,
+			errors.New(errors.LoginAuthFail, fmt.Errorf("password is wrong")))
+	}
+
+	s := model.GetStorage()
+	user.Password = req.NewPassword
+	// model.User{}.encryptPassword(): SecretPassword为空时才会对密码进行加密操作
+	user.SecretPassword = ""
+	err = s.Save(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
 }
