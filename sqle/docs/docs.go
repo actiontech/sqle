@@ -1473,6 +1473,46 @@ var doc = `{
                 }
             }
         },
+        "/v1/user/password": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update current user's password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "用户修改密码",
+                "operationId": "UpdateCurrentUserPasswordV1",
+                "parameters": [
+                    {
+                        "description": "update user's password",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateCurrentUserPasswordReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user_tips": {
             "get": {
                 "security": [
@@ -1570,6 +1610,53 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.CreateUserReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/:user_name/password": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "admin modifies the passwords of other users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "admin修改其他用户密码",
+                "operationId": "UpdateOtherUserPasswordV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "change user's password",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordReqV1"
                         }
                     }
                 ],
@@ -3270,6 +3357,17 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateCurrentUserPasswordReqV1": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateCurrentUserReqV1": {
             "type": "object",
             "properties": {
@@ -3314,6 +3412,14 @@ var doc = `{
                     }
                 },
                 "workflow_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UpdateOtherUserPasswordReqV1": {
+            "type": "object",
+            "properties": {
+                "password": {
                     "type": "string"
                 }
             }

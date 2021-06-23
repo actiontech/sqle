@@ -701,6 +701,13 @@ definitions:
         example: create table
         type: string
     type: object
+  v1.UpdateCurrentUserPasswordReqV1:
+    properties:
+      new_password:
+        type: string
+      password:
+        type: string
+    type: object
   v1.UpdateCurrentUserReqV1:
     properties:
       email:
@@ -732,6 +739,11 @@ definitions:
           type: string
         type: array
       workflow_template_name:
+        type: string
+    type: object
+  v1.UpdateOtherUserPasswordReqV1:
+    properties:
+      password:
         type: string
     type: object
   v1.UpdateRoleReqV1:
@@ -1962,6 +1974,31 @@ paths:
       summary: 更新个人信息
       tags:
       - user
+  /v1/user/password:
+    put:
+      consumes:
+      - application/json
+      description: update current user's password
+      operationId: UpdateCurrentUserPasswordV1
+      parameters:
+      - description: update user's password
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateCurrentUserPasswordReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 用户修改密码
+      tags:
+      - user
   /v1/user_tips:
     get:
       description: get user tip list
@@ -2029,6 +2066,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 创建用户
+      tags:
+      - user
+  /v1/users/:user_name/password:
+    patch:
+      consumes:
+      - application/json
+      description: admin modifies the passwords of other users
+      operationId: UpdateOtherUserPasswordV1
+      parameters:
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      - description: change user's password
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: admin修改其他用户密码
       tags:
       - user
   /v1/users/{user_name}/:
