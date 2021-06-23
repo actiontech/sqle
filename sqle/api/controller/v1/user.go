@@ -180,7 +180,6 @@ func ChangePassword(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
-	user.Password = req.Password
 	err = s.UpdatePassword(user, req.Password)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
