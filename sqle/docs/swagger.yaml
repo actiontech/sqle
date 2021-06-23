@@ -1979,7 +1979,7 @@ paths:
       consumes:
       - application/json
       description: update current user's password
-      operationId: UpdatePasswordV1
+      operationId: UpdateCurrentUserPasswordV1
       parameters:
       - description: update user's password
         in: body
@@ -2073,7 +2073,7 @@ paths:
       consumes:
       - application/json
       description: admin modifies the passwords of other users
-      operationId: ChangePasswordV1
+      operationId: UpdateOtherUserPasswordV1
       parameters:
       - description: user name
         in: path

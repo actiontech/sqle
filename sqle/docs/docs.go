@@ -1491,7 +1491,7 @@ var doc = `{
                     "user"
                 ],
                 "summary": "用户修改密码",
-                "operationId": "UpdatePasswordV1",
+                "operationId": "UpdateCurrentUserPasswordV1",
                 "parameters": [
                     {
                         "description": "update user's password",
@@ -1641,7 +1641,7 @@ var doc = `{
                     "user"
                 ],
                 "summary": "admin修改其他用户密码",
-                "operationId": "ChangePasswordV1",
+                "operationId": "UpdateOtherUserPasswordV1",
                 "parameters": [
                     {
                         "type": "string",

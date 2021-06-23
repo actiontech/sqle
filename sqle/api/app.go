@@ -64,7 +64,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/users/:user_name/", v1.GetUser, AdminUserAllowed())
 		v1Router.PATCH("/users/:user_name/", v1.UpdateUser, AdminUserAllowed())
 		v1Router.DELETE("/users/:user_name/", v1.DeleteUser, AdminUserAllowed())
-		v1Router.PATCH("/users/:user_name/password", v1.ChangePassword, AdminUserAllowed())
+		v1Router.PATCH("/users/:user_name/password", v1.UpdateOtherUserPassword, AdminUserAllowed())
 
 		// role
 		v1Router.GET("/roles", v1.GetRoles, AdminUserAllowed())
@@ -107,7 +107,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/user", v1.GetCurrentUser)
 	v1Router.PATCH("/user", v1.UpdateCurrentUser)
 	v1Router.GET("/user_tips", v1.GetUserTips)
-	v1Router.PUT("/user/password", v1.UpdatePassword)
+	v1Router.PUT("/user/password", v1.UpdateCurrentUserPassword)
 
 	// instance
 	v1Router.GET("/instances", v1.GetInstances)

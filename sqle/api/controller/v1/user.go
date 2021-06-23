@@ -151,7 +151,7 @@ type ChangePasswordReqV1 struct {
 
 // @Summary admin修改其他用户密码
 // @Description admin modifies the passwords of other users
-// @Id ChangePasswordV1
+// @Id UpdateOtherUserPasswordV1
 // @Tags user
 // @Security ApiKeyAuth
 // @Accept json
@@ -160,7 +160,7 @@ type ChangePasswordReqV1 struct {
 // @Param instance body v1.ChangePasswordReqV1 true "change user's password"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/users/:user_name/password [patch]
-func ChangePassword(c echo.Context) error {
+func UpdateOtherUserPassword(c echo.Context) error {
 	req := new(ChangePasswordReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
@@ -302,7 +302,7 @@ type UpdatePasswordReqV1 struct {
 
 // @Summary 用户修改密码
 // @Description update current user's password
-// @Id UpdatePasswordV1
+// @Id UpdateCurrentUserPasswordV1
 // @Tags user
 // @Security ApiKeyAuth
 // @Accept json
@@ -310,7 +310,7 @@ type UpdatePasswordReqV1 struct {
 // @Param instance body v1.UpdatePasswordReqV1 true "update user's password"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user/password [put]
-func UpdatePassword(c echo.Context) error {
+func UpdateCurrentUserPassword(c echo.Context) error {
 	req := new(UpdatePasswordReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
