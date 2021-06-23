@@ -145,7 +145,7 @@ func DeleteUser(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-type UpdateOtherUserPasswordV1ReqV1 struct {
+type UpdateOtherUserPasswordReqV1 struct {
 	Password string `json:"password"  valid:"required"`
 }
 
@@ -157,11 +157,11 @@ type UpdateOtherUserPasswordV1ReqV1 struct {
 // @Accept json
 // @Produce json
 // @Param user_name path string true "user name"
-// @Param instance body v1.UpdateOtherUserPasswordV1ReqV1 true "change user's password"
+// @Param instance body v1.UpdateOtherUserPasswordReqV1 true "change user's password"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/users/:user_name/password [patch]
 func UpdateOtherUserPassword(c echo.Context) error {
-	req := new(UpdateOtherUserPasswordV1ReqV1)
+	req := new(UpdateOtherUserPasswordReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}

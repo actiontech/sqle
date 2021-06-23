@@ -741,7 +741,7 @@ definitions:
       workflow_template_name:
         type: string
     type: object
-  v1.UpdateOtherUserPasswordV1ReqV1:
+  v1.UpdateOtherUserPasswordReqV1:
     properties:
       password:
         type: string
@@ -2085,7 +2085,7 @@ paths:
         name: instance
         required: true
         schema:
-          $ref: '#/definitions/v1.UpdateOtherUserPasswordV1ReqV1'
+          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
       produces:
       - application/json
       responses:

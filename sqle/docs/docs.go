@@ -1656,7 +1656,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordV1ReqV1"
+                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordReqV1"
                         }
                     }
                 ],
@@ -3416,7 +3416,7 @@ var doc = `{
                 }
             }
         },
-        "v1.UpdateOtherUserPasswordV1ReqV1": {
+        "v1.UpdateOtherUserPasswordReqV1": {
             "type": "object",
             "properties": {
                 "password": {
