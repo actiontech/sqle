@@ -71,11 +71,6 @@ definitions:
       value:
         type: string
     type: object
-  v1.ChangePasswordReqV1:
-    properties:
-      password:
-        type: string
-    type: object
   v1.CreateAuditWhitelistReqV1:
     properties:
       desc:
@@ -706,6 +701,13 @@ definitions:
         example: create table
         type: string
     type: object
+  v1.UpdateCurrentUserPasswordReqV1:
+    properties:
+      new_password:
+        type: string
+      password:
+        type: string
+    type: object
   v1.UpdateCurrentUserReqV1:
     properties:
       email:
@@ -739,10 +741,8 @@ definitions:
       workflow_template_name:
         type: string
     type: object
-  v1.UpdatePasswordReqV1:
+  v1.UpdateOtherUserPasswordV1ReqV1:
     properties:
-      new_password:
-        type: string
       password:
         type: string
     type: object
@@ -1986,7 +1986,7 @@ paths:
         name: instance
         required: true
         schema:
-          $ref: '#/definitions/v1.UpdatePasswordReqV1'
+          $ref: '#/definitions/v1.UpdateCurrentUserPasswordReqV1'
       produces:
       - application/json
       responses:
@@ -2085,7 +2085,7 @@ paths:
         name: instance
         required: true
         schema:
-          $ref: '#/definitions/v1.ChangePasswordReqV1'
+          $ref: '#/definitions/v1.UpdateOtherUserPasswordV1ReqV1'
       produces:
       - application/json
       responses:

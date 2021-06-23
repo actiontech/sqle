@@ -145,7 +145,7 @@ func DeleteUser(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-type ChangePasswordReqV1 struct {
+type UpdateOtherUserPasswordV1ReqV1 struct {
 	Password string `json:"password"  valid:"required"`
 }
 
@@ -157,11 +157,11 @@ type ChangePasswordReqV1 struct {
 // @Accept json
 // @Produce json
 // @Param user_name path string true "user name"
-// @Param instance body v1.ChangePasswordReqV1 true "change user's password"
+// @Param instance body v1.UpdateOtherUserPasswordV1ReqV1 true "change user's password"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/users/:user_name/password [patch]
 func UpdateOtherUserPassword(c echo.Context) error {
-	req := new(ChangePasswordReqV1)
+	req := new(UpdateOtherUserPasswordV1ReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func UpdateCurrentUser(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-type UpdatePasswordReqV1 struct {
+type UpdateCurrentUserPasswordReqV1 struct {
 	Password    string `json:"password" valid:"required"`
 	NewPassword string `json:"new_password"  valid:"required"`
 }
@@ -307,11 +307,11 @@ type UpdatePasswordReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param instance body v1.UpdatePasswordReqV1 true "update user's password"
+// @Param instance body v1.UpdateCurrentUserPasswordReqV1 true "update user's password"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user/password [put]
 func UpdateCurrentUserPassword(c echo.Context) error {
-	req := new(UpdatePasswordReqV1)
+	req := new(UpdateCurrentUserPasswordReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}

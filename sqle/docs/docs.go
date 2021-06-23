@@ -1499,7 +1499,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdatePasswordReqV1"
+                            "$ref": "#/definitions/v1.UpdateCurrentUserPasswordReqV1"
                         }
                     }
                 ],
@@ -1656,7 +1656,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.ChangePasswordReqV1"
+                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordV1ReqV1"
                         }
                     }
                 ],
@@ -2432,14 +2432,6 @@ var doc = `{
                     "type": "string"
                 },
                 "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ChangePasswordReqV1": {
-            "type": "object",
-            "properties": {
-                "password": {
                     "type": "string"
                 }
             }
@@ -3365,6 +3357,17 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateCurrentUserPasswordReqV1": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateCurrentUserReqV1": {
             "type": "object",
             "properties": {
@@ -3413,12 +3416,9 @@ var doc = `{
                 }
             }
         },
-        "v1.UpdatePasswordReqV1": {
+        "v1.UpdateOtherUserPasswordV1ReqV1": {
             "type": "object",
             "properties": {
-                "new_password": {
-                    "type": "string"
-                },
                 "password": {
                     "type": "string"
                 }
