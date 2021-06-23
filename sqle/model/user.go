@@ -220,3 +220,10 @@ AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
 	}
 	return count > 0, nil
 }
+
+func (s *Storage) UpdatePassword(user *User, password string) error {
+	user.Password = password
+	// User{}.encryptPassword(): SecretPassword为空时才会对密码进行加密操作
+	user.SecretPassword = ""
+	return s.Save(user)
+}

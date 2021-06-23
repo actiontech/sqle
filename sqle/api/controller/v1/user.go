@@ -181,9 +181,7 @@ func ChangePassword(c echo.Context) error {
 	}
 
 	user.Password = req.Password
-	// model.User{}.encryptPassword(): SecretPassword为空时才会对密码进行加密操作
-	user.SecretPassword = ""
-	err = s.Save(user)
+	err = s.UpdatePassword(user, req.Password)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -329,10 +327,7 @@ func UpdatePassword(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	user.Password = req.NewPassword
-	// model.User{}.encryptPassword(): SecretPassword为空时才会对密码进行加密操作
-	user.SecretPassword = ""
-	err = s.Save(user)
+	err = s.UpdatePassword(user, req.NewPassword)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
