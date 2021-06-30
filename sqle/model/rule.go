@@ -36,6 +36,7 @@ type Rule struct {
 	Desc  string `json:"desc"`
 	Value string `json:"value"`
 	Level string `json:"level" example:"error"` // notice, warn, error
+	Typ   string `gorm:"column:type; not null" json:"type"`
 }
 
 func (r Rule) TableName() string {
