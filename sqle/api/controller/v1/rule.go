@@ -293,6 +293,7 @@ type RuleResV1 struct {
 	Desc  string `json:"desc"`
 	Value string `json:"value"`
 	Level string `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Typ   string `json:"type" example:"全局配置" `
 }
 
 func convertRulesToRes(rules []model.Rule) []RuleResV1 {
@@ -303,6 +304,7 @@ func convertRulesToRes(rules []model.Rule) []RuleResV1 {
 			Desc:  rule.Desc,
 			Value: rule.Value,
 			Level: rule.Level,
+			Typ:   rule.Typ,
 		})
 	}
 	return rulesRes
