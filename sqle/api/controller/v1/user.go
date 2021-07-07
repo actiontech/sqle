@@ -159,7 +159,7 @@ type UpdateOtherUserPasswordReqV1 struct {
 // @Param user_name path string true "user name"
 // @Param instance body v1.UpdateOtherUserPasswordReqV1 true "change user's password"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/users/:user_name/password [patch]
+// @router /v1/users/{user_name}/password [patch]
 func UpdateOtherUserPassword(c echo.Context) error {
 	req := new(UpdateOtherUserPasswordReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
