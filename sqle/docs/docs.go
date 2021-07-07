@@ -1623,53 +1623,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/users/:user_name/password": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "admin modifies the passwords of other users",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "admin修改其他用户密码",
-                "operationId": "UpdateOtherUserPasswordV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "user name",
-                        "name": "user_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "change user's password",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/users/{user_name}/": {
             "get": {
                 "security": [
@@ -1764,6 +1717,53 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.UpdateUserReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/{user_name}/password": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "admin modifies the passwords of other users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "admin修改其他用户密码",
+                "operationId": "UpdateOtherUserPasswordV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "change user's password",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordReqV1"
                         }
                     }
                 ],
@@ -3277,6 +3277,10 @@ var doc = `{
                 },
                 "rule_name": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "全局配置"
                 },
                 "value": {
                     "type": "string"

@@ -649,6 +649,9 @@ definitions:
         type: string
       rule_name:
         type: string
+      type:
+        example: 全局配置
+        type: string
       value:
         type: string
     type: object
@@ -2068,36 +2071,6 @@ paths:
       summary: 创建用户
       tags:
       - user
-  /v1/users/:user_name/password:
-    patch:
-      consumes:
-      - application/json
-      description: admin modifies the passwords of other users
-      operationId: UpdateOtherUserPasswordV1
-      parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      - description: change user's password
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: admin修改其他用户密码
-      tags:
-      - user
   /v1/users/{user_name}/:
     delete:
       description: delete user
@@ -2164,6 +2137,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新用户信息
+      tags:
+      - user
+  /v1/users/{user_name}/password:
+    patch:
+      consumes:
+      - application/json
+      description: admin modifies the passwords of other users
+      operationId: UpdateOtherUserPasswordV1
+      parameters:
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      - description: change user's password
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: admin修改其他用户密码
       tags:
       - user
   /v1/workflow_template_tips:
