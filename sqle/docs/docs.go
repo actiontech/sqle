@@ -171,6 +171,43 @@ var doc = `{
                 }
             }
         },
+        "/v1/clone/rule_templates": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "clone a rule template",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "克隆规则模板",
+                "operationId": "CloneRuleTemplateV1",
+                "parameters": [
+                    {
+                        "description": "clone rule template request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CloneRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -2436,6 +2473,26 @@ var doc = `{
                 }
             }
         },
+        "v1.CloneRuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_template_name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.CreateAuditWhitelistReqV1": {
             "type": "object",
             "properties": {
@@ -2534,6 +2591,12 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "rule_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleTemplateReqV1"
                     }
                 },
                 "rule_name_list": {
@@ -3278,6 +3341,10 @@ var doc = `{
                 "rule_name": {
                     "type": "string"
                 },
+                "type": {
+                    "type": "string",
+                    "example": "全局配置"
+                },
                 "value": {
                     "type": "string"
                 }
@@ -3295,6 +3362,13 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "rtr": {
+                    "description": "todo res",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleResV1"
+                    }
+                },
                 "rule_name_list": {
                     "type": "array",
                     "items": {
@@ -3302,6 +3376,20 @@ var doc = `{
                     }
                 },
                 "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }
@@ -3458,6 +3546,12 @@ var doc = `{
                     "example": [
                         "mysql-xxx"
                     ]
+                },
+                "rule_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleTemplateReqV1"
+                    }
                 },
                 "rule_name_list": {
                     "type": "array",
