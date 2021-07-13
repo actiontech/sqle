@@ -76,7 +76,7 @@ func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error
 
 func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
-	err := s.db.Preload("Rules").Preload("Instances").Where("name = ?", name).First(t).Error
+	err := s.db.Preload("RTR").Preload("Rules").Preload("Instances").Where("name = ?", name).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}

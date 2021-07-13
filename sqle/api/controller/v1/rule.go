@@ -213,13 +213,11 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 	}
 	// todo res
 	rtr := make([]RuleResV1, 0, len(template.Rules))
-	for _, r := range template.Rules {
+	for _, r := range template.RTR {
 		rtr = append(rtr, RuleResV1{
-			Name:  r.Name,
-			Value: r.Value,
-			Level: r.Level,
-			Typ:   r.Typ,
-			Desc:  r.Desc,
+			Name:  r.RuleName,
+			Value: r.RuleValue,
+			Level: r.RuleLevel,
 		})
 	}
 	return &RuleTemplateDetailResV1{
@@ -427,7 +425,7 @@ func GetRuleTemplateTips(c echo.Context) error {
 type CloneRuleTemplateReqV1 struct {
 	Name      string   `json:"rule_template_name" valid:"required,name"`
 	Desc      string   `json:"desc"`
-	Source    uint     `json:"source" valid:"required,source"`
+	Source    uint     `json:"source" valid:"required"`
 	Instances []string `json:"instance_name_list"`
 }
 
