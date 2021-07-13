@@ -33,6 +33,7 @@ func Run(config *config.Config) error {
 	model.InitStorage(s)
 
 	if config.Server.SqleCnf.AutoMigrateTable {
+		s.SetJoinTable()
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
 		}

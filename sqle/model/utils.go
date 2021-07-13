@@ -111,6 +111,11 @@ func (s *Storage) AutoMigrate() error {
 	return nil
 }
 
+func (s *Storage) SetJoinTable() {
+	// todo 放置位置
+	s.db.SetJoinTableHandler(&RuleTemplate{}, "Rules", &RuleTemplateRule{})
+}
+
 func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
 	allRules, err := s.GetAllRule()
 	if err != nil {
