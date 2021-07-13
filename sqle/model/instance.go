@@ -169,6 +169,29 @@ func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) erro
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
+func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*Instance) error {
+	//需求: 限制一个数据源只能绑定一个规则模版
+	//创建/更新 数据源：	保证len(ruleTemplates)=1即可
+	//创建/更新 规则模版：1.数据源已绑定模版数量=0
+	//					2.数据源已绑定模版名==更新的模版名
+	//					3.其余情况 return err
+	if len(ruleTemplates) > 1 {
+		return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+	}
+
+	for _, inst := range instances {
+		associationRT := make([]RuleTemplate, 0)
+		count := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT).Count()
+		if count > 1 {
+			return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+		}
+		if count == 1 && associationRT[0].Name != ruleTemplates[0] {
+			return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+		}
+	}
+	return nil
+}
+
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
 	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)

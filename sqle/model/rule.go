@@ -29,6 +29,8 @@ type RuleTemplate struct {
 	Desc      string     `json:"desc"`
 	Rules     []Rule     `json:"-" gorm:"many2many:rule_template_rule"`
 	Instances []Instance `json:"instance_list" gorm:"many2many:instance_rule_template"`
+
+	RTR []RuleTemplateRule `json:"rtr" gorm:"foreignkey:RuleTemplateId"`
 }
 
 type Rule struct {
@@ -88,6 +90,17 @@ func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...Rule) erro
 func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*Instance) error {
 	err := s.db.Model(tpl).Association("Instances").Replace(instances).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) CloneRuleTemplateRules(tpl *RuleTemplate, source uint) error {
+	t := &RuleTemplate{Model: Model{ID: source}}
+	if err := s.db.Preload("RTR").Preload("Rules").Where(source).Find(t).Error; err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	if err := s.UpdateRuleTemplateRules(tpl, t.Rules...); err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	return s.AfterUpdateRuleTemplateRules(tpl, t.RTR...)
 }
 
 func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
