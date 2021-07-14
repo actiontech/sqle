@@ -92,15 +92,11 @@ func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*I
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) CloneRuleTemplateRules(tpl *RuleTemplate, source uint) error {
-	t := &RuleTemplate{Model: Model{ID: source}}
-	if err := s.db.Preload("RTR").Preload("Rules").Where(source).Find(t).Error; err != nil {
+func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) error {
+	if err := s.UpdateRuleTemplateRules(destination, source.Rules...); err != nil {
 		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
-	if err := s.UpdateRuleTemplateRules(tpl, t.Rules...); err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	}
-	return s.AfterUpdateRuleTemplateRules(tpl, t.RTR...)
+	return s.AfterUpdateRuleTemplateRules(destination, source.RTR...)
 }
 
 func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
