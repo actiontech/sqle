@@ -2134,6 +2134,40 @@ var doc = `{
                 }
             }
         },
+        "/v1/workflows/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch cancel workflows",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "批量取消工单",
+                "operationId": "batchCancelWorkflowsV1",
+                "parameters": [
+                    {
+                        "description": "batch cancel workflows request",
+                        "name": "BatchCancelWorkflowsReqV1",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCancelWorkflowsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/workflows/{workflow_id}/": {
             "get": {
                 "security": [
@@ -2433,6 +2467,17 @@ var doc = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.BatchCancelWorkflowsReqV1": {
+            "type": "object",
+            "properties": {
+                "workflow_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
