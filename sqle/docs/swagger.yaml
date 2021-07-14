@@ -71,6 +71,13 @@ definitions:
       value:
         type: string
     type: object
+  v1.BatchCancelWorkflowsReqV1:
+    properties:
+      workflow_ids:
+        items:
+          type: string
+        type: array
+    type: object
   v1.CreateAuditWhitelistReqV1:
     properties:
       desc:
@@ -2522,6 +2529,27 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 审批驳回
+      tags:
+      - workflow
+  /v1/workflows/cancel:
+    post:
+      description: batch cancel workflows
+      operationId: batchCancelWorkflowsV1
+      parameters:
+      - description: batch cancel workflows request
+        in: body
+        name: BatchCancelWorkflowsReqV1
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCancelWorkflowsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量取消工单
       tags:
       - workflow
 securityDefinitions:
