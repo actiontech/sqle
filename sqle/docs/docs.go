@@ -1660,53 +1660,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/users/:user_name/password": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "admin modifies the passwords of other users",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "admin修改其他用户密码",
-                "operationId": "UpdateOtherUserPasswordV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "user name",
-                        "name": "user_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "change user's password",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/users/{user_name}/": {
             "get": {
                 "security": [
@@ -1801,6 +1754,53 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.UpdateUserReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/{user_name}/password": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "admin modifies the passwords of other users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "admin修改其他用户密码",
+                "operationId": "UpdateOtherUserPasswordV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "change user's password",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateOtherUserPasswordReqV1"
                         }
                     }
                 ],
@@ -2171,6 +2171,40 @@ var doc = `{
                 }
             }
         },
+        "/v1/workflows/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch cancel workflows",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "批量取消工单",
+                "operationId": "batchCancelWorkflowsV1",
+                "parameters": [
+                    {
+                        "description": "batch cancel workflows request",
+                        "name": "BatchCancelWorkflowsReqV1",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCancelWorkflowsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/workflows/{workflow_id}/": {
             "get": {
                 "security": [
@@ -2473,6 +2507,17 @@ var doc = `{
                 }
             }
         },
+        "v1.BatchCancelWorkflowsReqV1": {
+            "type": "object",
+            "properties": {
+                "workflow_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "v1.CloneRuleTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -2480,6 +2525,7 @@ var doc = `{
                     "type": "string"
                 },
                 "instance_name_list": {
+                    "description": "todo remove?",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -2488,8 +2534,8 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string"
                 },
-                "source": {
-                    "type": "integer"
+                "source_tpl_name": {
+                    "type": "string"
                 }
             }
         },
@@ -2596,7 +2642,7 @@ var doc = `{
                 "rule_list": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.RuleTemplateReqV1"
+                        "$ref": "#/definitions/v1.RuleReqV1"
                     }
                 },
                 "rule_name_list": {
@@ -3322,6 +3368,23 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleReqV1": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string",
+                    "example": "error"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "ddl_check_index_count"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "1"
+                }
+            }
+        },
         "v1.RuleResV1": {
             "type": "object",
             "properties": {
@@ -3376,20 +3439,6 @@ var doc = `{
                     }
                 },
                 "rule_template_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.RuleTemplateReqV1": {
-            "type": "object",
-            "properties": {
-                "level": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "value": {
                     "type": "string"
                 }
             }
@@ -3550,7 +3599,7 @@ var doc = `{
                 "rule_list": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.RuleTemplateReqV1"
+                        "$ref": "#/definitions/v1.RuleReqV1"
                     }
                 },
                 "rule_name_list": {

@@ -1040,19 +1040,9 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	workflow, err := checkCancelWorkflow(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
-	}
-
-	if !(workflow.Record.Status == model.WorkflowStatusRunning ||
-		workflow.Record.Status == model.WorkflowStatusReject) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -1067,11 +1057,66 @@ func CancelWorkflow(c echo.Context) error {
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
 
-	err = s.UpdateWorkflowStatus(workflow, nil)
+	err = model.GetStorage().UpdateWorkflowStatus(workflow, nil)
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+type BatchCancelWorkflowsReqV1 struct {
+	WorkflowIds []string `json:"workflow_ids" form:"workflow_ids"`
+}
+
+// BatchCancelWorkflows batch cancel workflows.
+// @Summary 批量取消工单
+// @Description batch cancel workflows
+// @Tags workflow
+// @Id batchCancelWorkflowsV1
+// @Security ApiKeyAuth
+// @Param BatchCancelWorkflowsReqV1 body v1.BatchCancelWorkflowsReqV1 true "batch cancel workflows request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/workflows/cancel [post]
+func BatchCancelWorkflows(c echo.Context) error {
+	req := new(BatchCancelWorkflowsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	var workflows []*model.Workflow
+	for _, workflowId := range req.WorkflowIds {
+		workflow, err := checkCancelWorkflow(workflowId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		workflows = append(workflows, workflow)
+
+		workflow.Record.Status = model.WorkflowStatusCancel
+		workflow.Record.CurrentWorkflowStepId = 0
+	}
+
+	for _, workflow := range workflows {
+		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+func checkCancelWorkflow(id string) (*model.Workflow, error) {
+	workflow, exist, err := model.GetStorage().GetWorkflowDetailById(id)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, WorkflowNoAccessError
+	}
+	if !(workflow.Record.Status == model.WorkflowStatusRunning ||
+		workflow.Record.Status == model.WorkflowStatusReject) {
+		return nil, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
+	}
+	return workflow, nil
 }
 
 type UpdateWorkflowReqV1 struct {

@@ -71,18 +71,26 @@ definitions:
       value:
         type: string
     type: object
+  v1.BatchCancelWorkflowsReqV1:
+    properties:
+      workflow_ids:
+        items:
+          type: string
+        type: array
+    type: object
   v1.CloneRuleTemplateReqV1:
     properties:
       desc:
         type: string
       instance_name_list:
+        description: todo remove?
         items:
           type: string
         type: array
       rule_template_name:
         type: string
-      source:
-        type: integer
+      source_tpl_name:
+        type: string
     type: object
   v1.CreateAuditWhitelistReqV1:
     properties:
@@ -155,7 +163,7 @@ definitions:
         type: array
       rule_list:
         items:
-          $ref: '#/definitions/v1.RuleTemplateReqV1'
+          $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_name_list:
         example:
@@ -652,6 +660,18 @@ definitions:
       role_name:
         type: string
     type: object
+  v1.RuleReqV1:
+    properties:
+      level:
+        example: error
+        type: string
+      name:
+        example: ddl_check_index_count
+        type: string
+      value:
+        example: "1"
+        type: string
+    type: object
   v1.RuleResV1:
     properties:
       desc:
@@ -690,15 +710,6 @@ definitions:
           type: string
         type: array
       rule_template_name:
-        type: string
-    type: object
-  v1.RuleTemplateReqV1:
-    properties:
-      level:
-        type: string
-      name:
-        type: string
-      value:
         type: string
     type: object
   v1.RuleTemplateTipResV1:
@@ -805,7 +816,7 @@ definitions:
         type: array
       rule_list:
         items:
-          $ref: '#/definitions/v1.RuleTemplateReqV1'
+          $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_name_list:
         example:
@@ -2129,36 +2140,6 @@ paths:
       summary: 创建用户
       tags:
       - user
-  /v1/users/:user_name/password:
-    patch:
-      consumes:
-      - application/json
-      description: admin modifies the passwords of other users
-      operationId: UpdateOtherUserPasswordV1
-      parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      - description: change user's password
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: admin修改其他用户密码
-      tags:
-      - user
   /v1/users/{user_name}/:
     delete:
       description: delete user
@@ -2225,6 +2206,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新用户信息
+      tags:
+      - user
+  /v1/users/{user_name}/password:
+    patch:
+      consumes:
+      - application/json
+      description: admin modifies the passwords of other users
+      operationId: UpdateOtherUserPasswordV1
+      parameters:
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      - description: change user's password
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: admin修改其他用户密码
       tags:
       - user
   /v1/workflow_template_tips:
@@ -2580,6 +2591,27 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 审批驳回
+      tags:
+      - workflow
+  /v1/workflows/cancel:
+    post:
+      description: batch cancel workflows
+      operationId: batchCancelWorkflowsV1
+      parameters:
+      - description: batch cancel workflows request
+        in: body
+        name: BatchCancelWorkflowsReqV1
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCancelWorkflowsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量取消工单
       tags:
       - workflow
 securityDefinitions:
