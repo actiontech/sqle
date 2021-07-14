@@ -71,6 +71,19 @@ definitions:
       value:
         type: string
     type: object
+  v1.CloneRuleTemplateReqV1:
+    properties:
+      desc:
+        type: string
+      instance_name_list:
+        items:
+          type: string
+        type: array
+      rule_template_name:
+        type: string
+      source:
+        type: integer
+    type: object
   v1.CreateAuditWhitelistReqV1:
     properties:
       desc:
@@ -139,6 +152,10 @@ definitions:
       instance_name_list:
         items:
           type: string
+        type: array
+      rule_list:
+        items:
+          $ref: '#/definitions/v1.RuleTemplateReqV1'
         type: array
       rule_name_list:
         example:
@@ -649,6 +666,9 @@ definitions:
         type: string
       rule_name:
         type: string
+      type:
+        example: 全局配置
+        type: string
       value:
         type: string
     type: object
@@ -660,11 +680,25 @@ definitions:
         items:
           type: string
         type: array
+      rtr:
+        description: todo res
+        items:
+          $ref: '#/definitions/v1.RuleResV1'
+        type: array
       rule_name_list:
         items:
           type: string
         type: array
       rule_template_name:
+        type: string
+    type: object
+  v1.RuleTemplateReqV1:
+    properties:
+      level:
+        type: string
+      name:
+        type: string
+      value:
         type: string
     type: object
   v1.RuleTemplateTipResV1:
@@ -768,6 +802,10 @@ definitions:
         - mysql-xxx
         items:
           type: string
+        type: array
+      rule_list:
+        items:
+          $ref: '#/definitions/v1.RuleTemplateReqV1'
         type: array
       rule_name_list:
         example:
@@ -1145,6 +1183,29 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
+  /v1/clone/rule_templates:
+    post:
+      consumes:
+      - application/json
+      description: clone a rule template
+      operationId: CloneRuleTemplateV1
+      parameters:
+      - description: clone rule template request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CloneRuleTemplateReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 克隆规则模板
+      tags:
+      - rule_template
   /v1/configurations/smtp:
     get:
       description: get SMTP configuration
