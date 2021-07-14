@@ -180,7 +180,7 @@ func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*I
 	}
 
 	for _, inst := range instances {
-		associationRT := make([]RuleTemplate, 0)
+		var associationRT []RuleTemplate
 		count := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT).Count()
 		if count > 1 {
 			return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
