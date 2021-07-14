@@ -76,13 +76,14 @@ definitions:
       desc:
         type: string
       instance_name_list:
+        description: todo remove?
         items:
           type: string
         type: array
       rule_template_name:
         type: string
-      source:
-        type: integer
+      source_tpl_name:
+        type: string
     type: object
   v1.CreateAuditWhitelistReqV1:
     properties:
@@ -155,7 +156,7 @@ definitions:
         type: array
       rule_list:
         items:
-          $ref: '#/definitions/v1.RuleTemplateReqV1'
+          $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_name_list:
         example:
@@ -652,6 +653,18 @@ definitions:
       role_name:
         type: string
     type: object
+  v1.RuleReqV1:
+    properties:
+      level:
+        example: error
+        type: string
+      name:
+        example: ddl_check_index_count
+        type: string
+      value:
+        example: "1"
+        type: string
+    type: object
   v1.RuleResV1:
     properties:
       desc:
@@ -690,15 +703,6 @@ definitions:
           type: string
         type: array
       rule_template_name:
-        type: string
-    type: object
-  v1.RuleTemplateReqV1:
-    properties:
-      level:
-        type: string
-      name:
-        type: string
-      value:
         type: string
     type: object
   v1.RuleTemplateTipResV1:
@@ -805,7 +809,7 @@ definitions:
         type: array
       rule_list:
         items:
-          $ref: '#/definitions/v1.RuleTemplateReqV1'
+          $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_name_list:
         example:
