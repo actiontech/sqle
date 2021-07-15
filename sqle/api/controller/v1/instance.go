@@ -88,6 +88,10 @@ func CreateInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	err = s.CheckInstanceBindCount(req.RuleTemplates)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	err = s.Save(instance)
 	if err != nil {
@@ -99,10 +103,6 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = s.CheckInstanceBindCount(req.RuleTemplates, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	err = s.UpdateInstanceRuleTemplates(instance, templates...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -264,6 +264,11 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, instanceNotExistError)
 	}
 
+	err = s.CheckInstanceBindCount(req.RuleTemplates)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	updateMap := map[string]interface{}{}
 
 	if req.Desc != nil {
@@ -305,10 +310,6 @@ func UpdateInstance(c echo.Context) error {
 
 	if req.RuleTemplates != nil {
 		ruleTemplates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		err = s.CheckInstanceBindCount(req.RuleTemplates, instance)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

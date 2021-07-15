@@ -170,11 +170,6 @@ func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) erro
 }
 
 func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*Instance) error {
-	//需求: 限制一个数据源只能绑定一个规则模版
-	//创建/更新 数据源：	保证len(ruleTemplates)=1即可
-	//创建/更新 规则模版：1.数据源已绑定模版数量=0
-	//					2.数据源已绑定模版名==更新的模版名
-	//					3.其余情况 return err
 	if len(ruleTemplates) > 1 {
 		return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 	}

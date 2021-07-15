@@ -80,6 +80,7 @@ type Storage struct {
 
 func (s *Storage) AutoMigrate() error {
 	err := s.db.AutoMigrate(
+		&RuleTemplateRule{},
 		&Instance{},
 		&RuleTemplate{},
 		&Rule{},
@@ -109,11 +110,6 @@ func (s *Storage) AutoMigrate() error {
 		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	return nil
-}
-
-func (s *Storage) SetJoinTable() {
-	// todo 放置位置
-	s.db.SetJoinTableHandler(&RuleTemplate{}, "Rules", &RuleTemplateRule{})
 }
 
 func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
@@ -156,7 +152,17 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 		if err := s.Save(t); err != nil {
 			return err
 		}
-		return s.UpdateRuleTemplateRules(t, rules...)
+
+		ruleList := make([]RuleTemplateRule, 0, len(rules))
+		for _, rule := range rules {
+			ruleList = append(ruleList, RuleTemplateRule{
+				RuleTemplateId: t.ID,
+				RuleName:       rule.Name,
+				RuleLevel:      rule.Level,
+				RuleValue:      rule.Value,
+			})
+		}
+		return s.UpdateRuleTemplateRules(t, ruleList...)
 	}
 	return nil
 }
