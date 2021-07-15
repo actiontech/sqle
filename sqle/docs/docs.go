@@ -3358,6 +3358,10 @@ var doc = `{
         "v1.RuleResV1": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
                 "desc": {
                     "type": "string"
                 },

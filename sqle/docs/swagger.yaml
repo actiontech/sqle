@@ -663,6 +663,9 @@ definitions:
     type: object
   v1.RuleResV1:
     properties:
+      db_type:
+        example: mysql
+        type: string
       desc:
         type: string
       level:
