@@ -289,11 +289,12 @@ type GetRulesResV1 struct {
 }
 
 type RuleResV1 struct {
-	Name  string `json:"rule_name"`
-	Desc  string `json:"desc"`
-	Value string `json:"value"`
-	Level string `json:"level" example:"error" enums:"normal,notice,warn,error"`
-	Typ   string `json:"type" example:"全局配置" `
+	Name   string `json:"rule_name"`
+	Desc   string `json:"desc"`
+	Value  string `json:"value"`
+	Level  string `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Typ    string `json:"type" example:"全局配置" `
+	DBType string `json:"db_type" example:"mysql"`
 }
 
 func convertRulesToRes(rules []model.Rule) []RuleResV1 {
