@@ -28,6 +28,7 @@ type CreateInstanceReqV1 struct {
 	Roles                []string `json:"role_name_list" form:"role_name_list"`
 }
 
+// CreateInstance create instance
 // @Summary 添加实例
 // @Description create a instance
 // @Id createInstanceV1
@@ -171,6 +172,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	return instanceResV1
 }
 
+// GetInstance get instance
 // @Summary 获取实例信息
 // @Description get instance db
 // @Id getInstanceV1
@@ -239,6 +241,7 @@ type UpdateInstanceReqV1 struct {
 	Roles                []string `json:"role_name_list" form:"role_name_list"`
 }
 
+// UpdateInstance update instance
 // @Summary 更新实例
 // @Description update instance
 // @Id updateInstanceV1
@@ -351,6 +354,7 @@ type GetInstancesResV1 struct {
 	TotalNums uint64          `json:"total_nums"`
 }
 
+// GetInstances get instances
 // @Summary 获取实例信息列表
 // @Description get instance info list
 // @Id getInstanceListV1
@@ -453,6 +457,7 @@ func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error 
 	}
 }
 
+// CheckInstanceIsConnectableByName test instance db connection
 // @Summary 实例连通性测试（实例提交后）
 // @Description test instance db connection
 // @Id checkInstanceIsConnectableByNameV1
@@ -485,6 +490,7 @@ type GetInstanceConnectableReqV1 struct {
 	Password string `json:"password" form:"db_password" example:"123456"`
 }
 
+// CheckInstanceIsConnectable test instance db connection
 // @Summary 实例连通性测试（实例提交前）
 // @Description test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集
 // @Accept json
@@ -518,6 +524,7 @@ type InstanceSchemaResV1 struct {
 	Schemas []string `json:"schema_name_list"`
 }
 
+// GetInstanceSchemas get instance schema list
 // @Summary 实例 Schema 列表
 // @Description instance schema list
 // @Id getInstanceSchemasV1
@@ -562,6 +569,7 @@ type GetInstanceTipsResV1 struct {
 	Data []InstanceTipResV1 `json:"data"`
 }
 
+// GetInstanceTips get instance tip list
 // @Summary 获取实例提示列表
 // @Description get instance tip list
 // @Tags instance
@@ -593,6 +601,7 @@ func GetInstanceTips(c echo.Context) error {
 	})
 }
 
+// GetInstanceRules get instance all rule
 // @Summary 获取实例应用的规则列表
 // @Description get instance all rule
 // @Id getInstanceRuleListV1
