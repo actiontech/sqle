@@ -104,6 +104,9 @@ definitions:
       db_port:
         example: "3306"
         type: string
+      db_type:
+        example: mysql
+        type: string
       db_user:
         example: root
         type: string
@@ -605,6 +608,9 @@ definitions:
       db_port:
         example: "3306"
         type: string
+      db_type:
+        example: mysql
+        type: string
       db_user:
         example: root
         type: string
@@ -755,6 +761,9 @@ definitions:
         type: string
       db_port:
         example: "3306"
+        type: string
+      db_type:
+        example: mysql
         type: string
       db_user:
         example: root
@@ -1325,6 +1334,10 @@ paths:
       - description: filter instance name
         in: query
         name: filter_instance_name
+        type: string
+      - description: filter db type
+        in: query
+        name: filter_db_type
         type: string
       - description: filter db host
         in: query

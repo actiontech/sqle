@@ -418,6 +418,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "filter db host",
                         "name": "filter_db_host",
                         "in": "query"
@@ -2540,6 +2546,10 @@ var doc = `{
                     "type": "string",
                     "example": "3306"
                 },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
                 "db_user": {
                     "type": "string",
                     "example": "root"
@@ -3269,6 +3279,10 @@ var doc = `{
                     "type": "string",
                     "example": "3306"
                 },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
                 "db_user": {
                     "type": "string",
                     "example": "root"
@@ -3494,6 +3508,10 @@ var doc = `{
                 "db_port": {
                     "type": "string",
                     "example": "3306"
+                },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
                 },
                 "db_user": {
                     "type": "string",

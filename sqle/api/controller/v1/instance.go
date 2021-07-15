@@ -17,6 +17,7 @@ var instanceNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("instance
 
 type CreateInstanceReqV1 struct {
 	Name                 string   `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
+	DBType               string   `json:"db_type" form:"db_type" example:"mysql"`
 	User                 string   `json:"db_user" form:"db_user" example:"root" valid:"required"`
 	Host                 string   `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ipv4"`
 	Port                 string   `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
@@ -127,6 +128,7 @@ func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance)
 
 type InstanceResV1 struct {
 	Name                 string   `json:"instance_name"`
+	DBType               string   `json:"db_type" example:"mysql"`
 	Host                 string   `json:"db_host" example:"10.10.10.10"`
 	Port                 string   `json:"db_port" example:"3306"`
 	User                 string   `json:"db_user" example:"root"`
@@ -199,6 +201,7 @@ func GetInstance(c echo.Context) error {
 	})
 }
 
+// DeleteInstance delete instance
 // @Summary 删除实例
 // @Description delete instance db
 // @Id deleteInstanceV1
@@ -225,6 +228,7 @@ func DeleteInstance(c echo.Context) error {
 }
 
 type UpdateInstanceReqV1 struct {
+	DBType               *string  `json:"db_type" form:"db_type" example:"mysql"`
 	User                 *string  `json:"db_user" form:"db_user" example:"root"`
 	Host                 *string  `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ipv4"`
 	Port                 *string  `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
@@ -330,6 +334,7 @@ func UpdateInstance(c echo.Context) error {
 
 type GetInstancesReqV1 struct {
 	FilterInstanceName         string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterDBType               string `json:"filter_db_type" query:"filter_db_type"`
 	FilterDBHost               string `json:"filter_db_host" query:"filter_db_host"`
 	FilterDBPort               string `json:"filter_db_port" query:"filter_db_port"`
 	FilterDBUser               string `json:"filter_db_user" query:"filter_db_user"`
@@ -352,6 +357,7 @@ type GetInstancesResV1 struct {
 // @Tags instance
 // @Security ApiKeyAuth
 // @Param filter_instance_name query string false "filter instance name"
+// @Param filter_db_type query string false "filter db type"
 // @Param filter_db_host query string false "filter db host"
 // @Param filter_db_port query string false "filter db port"
 // @Param filter_db_user query string false "filter db user"
