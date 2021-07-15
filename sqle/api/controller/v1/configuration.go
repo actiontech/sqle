@@ -151,3 +151,24 @@ func GetSystemVariables(c echo.Context) error {
 		},
 	})
 }
+
+type GetDriversResV1 struct {
+	controller.BaseRes
+	Data DriversResV1 `json:"data"`
+}
+
+type DriversResV1 struct {
+	Drivers []string `json:"driver_name_list"`
+}
+
+// GetDrivers get support Driver list.
+// @Summary 获取当前 server 支持的审核类型
+// @Description get drivers
+// @Id getDriversV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetDriversResV1
+// @router /v1/configurations/drivers [get]
+func GetDrivers(c echo.Context) error {
+	return nil
+}

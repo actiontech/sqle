@@ -202,6 +202,13 @@ definitions:
         $ref: '#/definitions/v1.WorkflowStatisticsResV1'
         type: object
     type: object
+  v1.DriversResV1:
+    properties:
+      driver_name_list:
+        items:
+          type: string
+        type: array
+    type: object
   v1.GetAuditTaskResV1:
     properties:
       code:
@@ -263,6 +270,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.DashboardResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetDriversResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.DriversResV1'
         type: object
       message:
         example: ok
@@ -1155,6 +1174,20 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
+  /v1/configurations/drivers:
+    get:
+      description: get drivers
+      operationId: getDriversV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDriversResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取当前 server 支持的审核类型
+      tags:
+      - configuration
   /v1/configurations/smtp:
     get:
       description: get SMTP configuration

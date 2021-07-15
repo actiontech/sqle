@@ -100,6 +100,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById, AdminUserAllowed())
 		v1Router.DELETE("/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById, AdminUserAllowed())
 
+		// configurations
 		v1Router.GET("/configurations/smtp", v1.GetSMTPConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/smtp", v1.UpdateSMTPConfiguration, AdminUserAllowed())
 		v1Router.GET("/configurations/system_variables", v1.GetSystemVariables, AdminUserAllowed())
@@ -148,6 +149,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)
+
+	// configurations
+	v1Router.GET("/configurations/drivers", v1.GetDrivers)
 
 	// UI
 	e.File("/", "ui/index.html")

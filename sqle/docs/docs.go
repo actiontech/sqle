@@ -171,6 +171,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/drivers": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get drivers",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取当前 server 支持的审核类型",
+                "operationId": "getDriversV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDriversResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -2664,6 +2687,17 @@ var doc = `{
                 }
             }
         },
+        "v1.DriversResV1": {
+            "type": "object",
+            "properties": {
+                "driver_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "v1.GetAuditTaskResV1": {
             "type": "object",
             "properties": {
@@ -2752,6 +2786,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DashboardResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetDriversResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DriversResV1"
                 },
                 "message": {
                     "type": "string",
