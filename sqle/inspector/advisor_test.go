@@ -2551,43 +2551,42 @@ func TestCheckTransactionIsolationLevel(t *testing.T) {
 }
 
 func TestCheckFuzzySearch(t *testing.T) {
-	for desc, sql := range map[string]string{
-		`(1)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
-		`(2)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
-		`(3)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
-		`(4)select table should error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
+	for _, sql := range []string{
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '_a';`,
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a';`,
 
-		`(1)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a%';`,
-		`(2)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a';`,
-		`(3)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a';`,
-		`(4)update table should error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a%';`,
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a%';`,
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a';`,
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '_a';`,
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a';`,
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a%';`,
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '_a';`,
 
-		`(1)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
-		`(2)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
-		`(3)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
-		`(4)delete table should error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '_a';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a';`,
 	} {
-		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule,
-			t,
-			desc,
-			DefaultMysqlInspect(),
-			sql,
-			newTestResult().addResult(DML_CHECK_FUZZY_SEARCH))
+		runSingleRuleInspectCase(RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DML_CHECK_FUZZY_SEARCH))
 	}
 
-	for desc, sql := range map[string]string{
-		`select table should not error`: `SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
-		`update table should not error`: `UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a%';`,
-		`delete table should not error`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
+	for _, sql := range []string{
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
+		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a___';`,
+
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a%';`,
+		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a___';`,
+
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a____';`,
 	} {
-		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule,
-			t,
-			desc,
-			DefaultMysqlInspect(),
-			sql,
-			newTestResult())
+		runSingleRuleInspectCase(RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
 }
 
@@ -3233,11 +3232,9 @@ func TestWhitelist(t *testing.T) {
 					CapitalizedValue: "SELECT V1 FROM EXIST_TB_1 WHERE ID = 1",
 					MatchType:        model.SQLWhitelistExactMatch,
 				},
-			},sql,
+			}, sql,
 			newTestResult())
 	}
-
-
 
 }
 

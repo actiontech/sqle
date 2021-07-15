@@ -424,7 +424,8 @@ func checkWhereFuzzySearch(where ast.ExprNode) bool {
 		case *ast.PatternLikeExpr:
 			switch pattern := x.Pattern.(type) {
 			case *driver.ValueExpr:
-				if strings.HasPrefix(pattern.Datum.GetString(), "%") {
+				datum := pattern.Datum.GetString()
+				if strings.HasPrefix(datum, "%") || strings.HasPrefix(datum, "_") {
 					isExist = true
 					return true
 				}
