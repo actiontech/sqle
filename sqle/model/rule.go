@@ -82,15 +82,11 @@ func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool,
 }
 
 func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...RuleTemplateRule) error {
-	//err := s.db.Model(tpl).Association("RuleList").Replace(rules).Error
-	//return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-	// 更新时 有需要delete表数据的情况会报 Error 1048: Column 'rule_template_id' cannot be null
 	if err := s.db.Where(&RuleTemplateRule{RuleTemplateId: tpl.ID}).Delete(&RuleTemplateRule{}).Error; err != nil {
 		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 	err := s.db.Model(tpl).Association("RuleList").Append(rules).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
-
 }
 
 func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*Instance) error {

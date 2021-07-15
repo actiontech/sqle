@@ -196,7 +196,6 @@ type RuleTemplateResV1 struct {
 type RuleTemplateDetailResV1 struct {
 	Name      string      `json:"rule_template_name"`
 	Desc      string      `json:"desc"`
-	Rules     []string    `json:"rule_name_list,omitempty"`
 	Instances []string    `json:"instance_name_list,omitempty"`
 	RuleList  []RuleResV1 `json:"rule_list,omitempty"`
 }
