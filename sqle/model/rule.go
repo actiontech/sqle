@@ -141,20 +141,13 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	}
 
 	for _, r := range tpl.RuleList {
-		level, value := r.RuleLevel, r.RuleValue
-		if level == "" {
-			level = r.Rule.Level
+		if r.RuleLevel != "" {
+			r.Rule.Level = r.RuleLevel
 		}
-		if value == "" {
-			value = r.Rule.Value
+		if r.RuleValue != "" {
+			r.Rule.Value = r.RuleValue
 		}
-		rules = append(rules, Rule{
-			Name:  r.RuleName,
-			Value: value,
-			Level: level,
-			Typ:   r.Rule.Typ,
-			Desc:  r.Rule.Desc,
-		})
+		rules = append(rules, r.Rule)
 	}
 	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
