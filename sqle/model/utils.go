@@ -80,6 +80,7 @@ type Storage struct {
 
 func (s *Storage) AutoMigrate() error {
 	err := s.db.AutoMigrate(
+		&RuleTemplateRule{},
 		&Instance{},
 		&RuleTemplate{},
 		&Rule{},
@@ -151,7 +152,17 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 		if err := s.Save(t); err != nil {
 			return err
 		}
-		return s.UpdateRuleTemplateRules(t, rules...)
+
+		ruleList := make([]RuleTemplateRule, 0, len(rules))
+		for _, rule := range rules {
+			ruleList = append(ruleList, RuleTemplateRule{
+				RuleTemplateId: t.ID,
+				RuleName:       rule.Name,
+				RuleLevel:      rule.Level,
+				RuleValue:      rule.Value,
+			})
+		}
+		return s.UpdateRuleTemplateRules(t, ruleList...)
 	}
 	return nil
 }

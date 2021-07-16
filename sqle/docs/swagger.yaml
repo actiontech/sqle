@@ -78,6 +78,17 @@ definitions:
           type: string
         type: array
     type: object
+  v1.CloneRuleTemplateReqV1:
+    properties:
+      desc:
+        type: string
+      instance_name_list:
+        items:
+          type: string
+        type: array
+      rule_template_name:
+        type: string
+    type: object
   v1.CreateAuditWhitelistReqV1:
     properties:
       desc:
@@ -150,11 +161,9 @@ definitions:
         items:
           type: string
         type: array
-      rule_name_list:
-        example:
-        - ddl_check_index_count
+      rule_list:
         items:
-          type: string
+          $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_template_name:
         type: string
@@ -432,7 +441,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/v1.RuleTemplateDetailResV1'
+          $ref: '#/definitions/v1.RuleTemplateResV1'
         type: array
       message:
         example: ok
@@ -670,6 +679,18 @@ definitions:
       role_name:
         type: string
     type: object
+  v1.RuleReqV1:
+    properties:
+      level:
+        example: error
+        type: string
+      name:
+        example: ddl_check_index_count
+        type: string
+      value:
+        example: "1"
+        type: string
+    type: object
   v1.RuleResV1:
     properties:
       db_type:
@@ -701,7 +722,22 @@ definitions:
         items:
           type: string
         type: array
+      rule_list:
+        items:
+          $ref: '#/definitions/v1.RuleResV1'
+        type: array
       rule_name_list:
+        items:
+          type: string
+        type: array
+      rule_template_name:
+        type: string
+    type: object
+  v1.RuleTemplateResV1:
+    properties:
+      desc:
+        type: string
+      instance_name_list:
         items:
           type: string
         type: array
@@ -813,11 +849,9 @@ definitions:
         items:
           type: string
         type: array
-      rule_name_list:
-        example:
-        - ddl_check_index_count
+      rule_list:
         items:
-          type: string
+          $ref: '#/definitions/v1.RuleReqV1'
         type: array
     type: object
   v1.UpdateSMTPConfigurationReqV1:
@@ -1804,6 +1838,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新规则模板
+      tags:
+      - rule_template
+  /v1/rule_templates/{rule_template_name}/clone:
+    post:
+      consumes:
+      - application/json
+      description: clone a rule template
+      operationId: CloneRuleTemplateV1
+      parameters:
+      - description: clone rule template request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CloneRuleTemplateReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 克隆规则模板
       tags:
       - rule_template
   /v1/rules:

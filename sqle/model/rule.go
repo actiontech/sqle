@@ -25,10 +25,10 @@ var RuleLevelMap = map[string]int{
 
 type RuleTemplate struct {
 	Model
-	Name      string     `json:"name"`
-	Desc      string     `json:"desc"`
-	Rules     []Rule     `json:"-" gorm:"many2many:rule_template_rule"`
-	Instances []Instance `json:"instance_list" gorm:"many2many:instance_rule_template"`
+	Name      string             `json:"name"`
+	Desc      string             `json:"desc"`
+	Instances []Instance         `json:"instance_list" gorm:"many2many:instance_rule_template"`
+	RuleList  []RuleTemplateRule `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
 
 type Rule struct {
@@ -73,21 +73,29 @@ func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error
 }
 
 func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
-	t := &RuleTemplate{}
-	err := s.db.Preload("Rules").Preload("Instances").Where("name = ?", name).First(t).Error
+	t := &RuleTemplate{Name: name}
+	err := s.db.Preload("RuleList").Preload("RuleList.Rule").Preload("Instances").Where(t).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
 	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
-func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...Rule) error {
-	err := s.db.Model(tpl).Association("Rules").Replace(rules).Error
+func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...RuleTemplateRule) error {
+	if err := s.db.Where(&RuleTemplateRule{RuleTemplateId: tpl.ID}).Delete(&RuleTemplateRule{}).Error; err != nil {
+		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	}
+	err := s.db.Model(tpl).Association("RuleList").Append(rules).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+
 func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*Instance) error {
 	err := s.db.Model(tpl).Association("Instances").Replace(instances).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
+
+func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) error {
+	return s.UpdateRuleTemplateRules(destination, source.RuleList...)
 }
 
 func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
@@ -122,15 +130,32 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	if len(templates) <= 0 {
 		return rules, nil
 	}
-	templateIds := make([]string, len(templates))
-	for n, template := range templates {
-		templateIds[n] = fmt.Sprintf("%v", template.ID)
+
+	tplName := templates[0].Name
+	tpl, exist, err := s.GetRuleTemplateDetailByName(tplName)
+	if !exist {
+		return rules, errors.New(errors.DataNotExist, err)
+	}
+	if err != nil {
+		return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 
-	err = s.db.Table("rules").
-		Joins("inner join rule_template_rule on rule_template_rule.rule_name = rules.name").
-		Where("rule_template_rule.rule_template_id in (?)", templateIds).
-		Group("rules.name").Scan(&rules).Error
+	for _, r := range tpl.RuleList {
+		level, value := r.RuleLevel, r.RuleLevel
+		if level == "" {
+			level = r.Rule.Level
+		}
+		if value == "" {
+			value = r.Rule.Value
+		}
+		rules = append(rules, Rule{
+			Name:  r.RuleName,
+			Value: value,
+			Level: level,
+			Typ:   r.Rule.Typ,
+			Desc:  r.Rule.Desc,
+		})
+	}
 	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 

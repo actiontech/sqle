@@ -169,6 +169,24 @@ func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) erro
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
+func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*Instance) error {
+	if len(ruleTemplates) > 1 {
+		return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+	}
+
+	for _, inst := range instances {
+		var associationRT []RuleTemplate
+		count := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT).Count()
+		if count > 1 {
+			return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+		}
+		if count == 1 && associationRT[0].Name != ruleTemplates[0] {
+			return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+		}
+	}
+	return nil
+}
+
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
 	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.CONNECT_STORAGE_ERROR, err)

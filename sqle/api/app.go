@@ -80,6 +80,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// rule template
 		v1Router.POST("/rule_templates", v1.CreateRuleTemplate, AdminUserAllowed())
+		v1Router.POST("/rule_templates/:rule_template_name/clone", v1.CloneRuleTemplate, AdminUserAllowed())
 		v1Router.PATCH("/rule_templates/:rule_template_name/", v1.UpdateRuleTemplate, AdminUserAllowed())
 		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
 

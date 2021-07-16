@@ -1149,6 +1149,43 @@ var doc = `{
                 }
             }
         },
+        "/v1/rule_templates/{rule_template_name}/clone": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "clone a rule template",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "克隆规则模板",
+                "operationId": "CloneRuleTemplateV1",
+                "parameters": [
+                    {
+                        "description": "clone rule template request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CloneRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/rules": {
             "get": {
                 "security": [
@@ -2510,6 +2547,23 @@ var doc = `{
                 }
             }
         },
+        "v1.CloneRuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CreateAuditWhitelistReqV1": {
             "type": "object",
             "properties": {
@@ -2614,14 +2668,11 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "rule_name_list": {
+                "rule_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "ddl_check_index_count"
-                    ]
+                        "$ref": "#/definitions/v1.RuleReqV1"
+                    }
                 },
                 "rule_template_name": {
                     "type": "string"
@@ -3024,7 +3075,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.RuleTemplateDetailResV1"
+                        "$ref": "#/definitions/v1.RuleTemplateResV1"
                     }
                 },
                 "message": {
@@ -3373,6 +3424,23 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleReqV1": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string",
+                    "example": "error"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "ddl_check_index_count"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "1"
+                }
+            }
+        },
         "v1.RuleResV1": {
             "type": "object",
             "properties": {
@@ -3417,7 +3485,30 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "rule_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleResV1"
+                    }
+                },
                 "rule_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RuleTemplateResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "instance_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -3585,14 +3676,11 @@ var doc = `{
                         "mysql-xxx"
                     ]
                 },
-                "rule_name_list": {
+                "rule_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "ddl_check_index_count"
-                    ]
+                        "$ref": "#/definitions/v1.RuleReqV1"
+                    }
                 }
             }
         },
