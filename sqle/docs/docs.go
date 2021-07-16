@@ -3491,12 +3491,6 @@ var doc = `{
                         "$ref": "#/definitions/v1.RuleResV1"
                     }
                 },
-                "rule_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "rule_template_name": {
                     "type": "string"
                 }
