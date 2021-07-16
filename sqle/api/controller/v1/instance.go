@@ -484,6 +484,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 }
 
 type GetInstanceConnectableReqV1 struct {
+	DBType   string `json:"db_type" form:"db_type" example:"mysql"`
 	User     string `json:"user" form:"db_user" example:"root" valid:"required"`
 	Host     string `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ipv4"`
 	Port     string `json:"port" form:"db_port" example:"3306" valid:"required,port"`

@@ -292,6 +292,9 @@ definitions:
     type: object
   v1.GetInstanceConnectableReqV1:
     properties:
+      db_type:
+        example: mysql
+        type: string
       host:
         example: 10.10.10.10
         type: string
