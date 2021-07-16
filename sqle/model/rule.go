@@ -141,7 +141,7 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	}
 
 	for _, r := range tpl.RuleList {
-		level, value := r.RuleLevel, r.RuleLevel
+		level, value := r.RuleLevel, r.RuleValue
 		if level == "" {
 			level = r.Rule.Level
 		}
