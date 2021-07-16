@@ -19,7 +19,7 @@ type CreateRuleTemplateReqV1 struct {
 type RuleReqV1 struct {
 	Name  string `json:"name" form:"name" valid:"required" example:"ddl_check_index_count"`
 	Level string `json:"level" form:"level" valid:"required" example:"error"`
-	Value string `json:"value" form:"value" valid:"required" example:"1"`
+	Value string `json:"value" form:"value" example:"1"`
 }
 
 // @Summary 添加规则模板
