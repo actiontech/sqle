@@ -2823,6 +2823,10 @@ var doc = `{
         "v1.GetInstanceConnectableReqV1": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
                 "host": {
                     "type": "string",
                     "example": "10.10.10.10"
