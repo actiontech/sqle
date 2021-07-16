@@ -130,15 +130,32 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	if len(templates) <= 0 {
 		return rules, nil
 	}
-	templateIds := make([]string, len(templates))
-	for n, template := range templates {
-		templateIds[n] = fmt.Sprintf("%v", template.ID)
+
+	tplName := templates[0].Name
+	tpl, exist, err := s.GetRuleTemplateDetailByName(tplName)
+	if !exist {
+		return rules, errors.New(errors.DataNotExist, err)
+	}
+	if err != nil {
+		return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 	}
 
-	err = s.db.Table("rules").
-		Joins("inner join rule_template_rule on rule_template_rule.rule_name = rules.name").
-		Where("rule_template_rule.rule_template_id in (?)", templateIds).
-		Group("rules.name").Scan(&rules).Error
+	for _, r := range tpl.RuleList {
+		level, value := r.RuleLevel, r.RuleLevel
+		if level == "" {
+			level = r.Rule.Level
+		}
+		if value == "" {
+			value = r.Rule.Value
+		}
+		rules = append(rules, Rule{
+			Name:  r.RuleName,
+			Value: value,
+			Level: level,
+			Typ:   r.Rule.Typ,
+			Desc:  r.Rule.Desc,
+		})
+	}
 	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
 
