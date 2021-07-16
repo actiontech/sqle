@@ -695,10 +695,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.RuleResV1'
         type: array
-      rule_name_list:
-        items:
-          type: string
-        type: array
       rule_template_name:
         type: string
     type: object
