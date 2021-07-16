@@ -73,13 +73,11 @@ func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error
 }
 
 func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
-	t := &RuleTemplate{Name: name}
-	orderFunc := func(db *gorm.DB) *gorm.DB {
+	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
-	err := s.db.Preload("RuleList", orderFunc).
-		Preload("RuleList.Rule").
-		Preload("Instances").
+	t := &RuleTemplate{Name: name}
+	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("Instances").
 		Where(t).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
