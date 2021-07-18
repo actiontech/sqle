@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -45,18 +44,6 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
 		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
 			instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
-	case model.DB_TYPE_SQLSERVER:
-		query := url.Values{}
-		query.Add("database", schema)
-		query.Add("dial timeout", fmt.Sprintf("%.0f", DAIL_TIMEOUT.Seconds()))
-		source := &url.URL{
-			Scheme:   "sqlserver",
-			User:     url.UserPassword(instance.User, instance.Password),
-			Host:     fmt.Sprintf("%s:%s", instance.Host, instance.Port),
-			RawQuery: query.Encode(),
-		}
-		db, err = sql.Open("mssql", source.String())
-
 	default:
 		err := fmt.Errorf("db type is not support")
 		entry.Error(err)
@@ -285,18 +272,10 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 
 func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 	var query string
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		if ignoreSysDatabase {
-			query = "select name from sys.databases where name not in ('master','tempdb','model','msdb','distribution')"
-		} else {
-			query = "select name from sys.databases"
-		}
+	if ignoreSysDatabase {
+		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
 	} else {
-		if ignoreSysDatabase {
-			query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
-		} else {
-			query = "show databases"
-		}
+		query = "show databases"
 	}
 	result, err := c.Db.Query(query)
 	if err != nil {
@@ -392,9 +371,6 @@ func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
 }
 
 func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		return []map[string]sql.NullString{}, nil
-	}
 	result, err := c.Db.Query(fmt.Sprintf("show master status"))
 	if err != nil {
 		return nil, err
@@ -409,9 +385,6 @@ func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
 }
 
 func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		return "", 0, nil
-	}
 	result, err := c.ShowMasterStatus()
 	if err != nil {
 		return "", 0, err
@@ -429,9 +402,6 @@ func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 }
 
 func (c *Executor) ShowTableSizeMB(schema, table string) (float64, error) {
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		return 0, nil
-	}
 	sql := fmt.Sprintf(`select (DATA_LENGTH + INDEX_LENGTH)/1024/1024 as Size from information_schema.tables 
 where table_schema = '%s' and table_name = '%s'`, schema, table)
 	result, err := c.Db.Query(sql)

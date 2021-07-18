@@ -27,9 +27,6 @@ var pidFile string
 var debug bool
 var autoMigrateTable bool
 var logPath = "./logs"
-var sqlServerParserServerHost = "127.0.0.1"
-var sqlServerParserServerPort = "10001"
-
 var httpsEnable bool
 var certFilePath string
 var keyFilePath string

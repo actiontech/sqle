@@ -9,7 +9,6 @@ const (
 	CONNECT_STORAGE_ERROR       ErrorCode = 5001
 	CONNECT_REMOTE_DB_ERROR     ErrorCode = 5002
 	READ_UPLOAD_FILE_ERROR      ErrorCode = 5003
-	CONNECT_SQLSERVER_RPC_ERROR ErrorCode = 5004
 	PARSER_MYCAT_CONFIG_ERROR   ErrorCode = 5005
 	ParseMyBatisXMLFileError    ErrorCode = 5006
 

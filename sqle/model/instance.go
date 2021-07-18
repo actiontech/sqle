@@ -15,7 +15,6 @@ import (
 const (
 	DB_TYPE_MYSQL     = "mysql"
 	DB_TYPE_MYCAT     = "mycat"
-	DB_TYPE_SQLSERVER = "sqlserver"
 )
 
 // Instance is a table for database info

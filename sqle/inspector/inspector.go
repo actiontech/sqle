@@ -54,11 +54,7 @@ type Inspector interface {
 
 func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
 	rules map[string]model.Rule) Inspector {
-	if task.Instance.DbType == model.DB_TYPE_SQLSERVER {
-		return NeSqlserverInspect(entry, ctx, task, relateTasks, rules)
-	} else {
-		return NewInspect(entry, ctx, task, relateTasks, rules)
-	}
+	return NewInspect(entry, ctx, task, relateTasks, rules)
 }
 
 type Config struct {
