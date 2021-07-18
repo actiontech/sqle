@@ -34,7 +34,12 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				return nil
 			}
 
-			sqlFP, err := Fingerprint(sql.Content)
+			lowerCaseTableNames, err := i.getSystemVariable("lower_case_table_names")
+			if err != nil {
+				return err
+			}
+
+			sqlFP, err := Fingerprint(sql.Content, lowerCaseTableNames == "0")
 			if err != nil {
 				return err
 			}
@@ -42,7 +47,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 			var whitelistMatch bool
 			for _, sqlInWL := range wl {
 				if sqlInWL.MatchType == model.SQLWhitelistFPMatch {
-					whitelistFP, err := Fingerprint(sqlInWL.Value)
+					whitelistFP, err := Fingerprint(sqlInWL.Value, lowerCaseTableNames == "0")
 					if err != nil {
 						return err
 					}

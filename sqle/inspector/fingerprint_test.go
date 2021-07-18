@@ -64,11 +64,10 @@ func TestFingerprint(t *testing.T) {
 }
 
 func testFingerprint(t *testing.T, input, expect string) {
-	acutal, err := Fingerprint(input)
+	acutal, err := Fingerprint(input, true)
 	assert.NoError(t, err)
 	if err != nil {
 		return
 	}
 	assert.Equal(t, expect, acutal)
 }
-

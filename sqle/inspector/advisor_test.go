@@ -131,6 +131,9 @@ func DefaultMysqlInspect() *Inspect {
 			currentSchema: "exist_db",
 			schemaHasLoad: true,
 			executionPlan: map[string][]*executor.ExplainRecord{},
+			sysVars: map[string]string{
+				"lower_case_table_names": "0",
+			},
 			schemas: map[string]*SchemaInfo{
 				"exist_db": &SchemaInfo{
 					DefaultEngine:    "InnoDB",
@@ -3188,7 +3191,7 @@ func TestWhitelist(t *testing.T) {
 	} {
 		runDefaultRulesInspectCaseWithWL(t, "match fp whitelist", DefaultMysqlInspect(),
 			[]model.SqlWhitelist{
-				model.SqlWhitelist{
+				{
 					Value:     "select v1 from exist_tb_1 where id =2",
 					MatchType: model.SQLWhitelistFPMatch,
 				},
@@ -3201,7 +3204,7 @@ func TestWhitelist(t *testing.T) {
 	} {
 		runDefaultRulesInspectCaseWithWL(t, "don't match fp whitelist", DefaultMysqlInspect(),
 			[]model.SqlWhitelist{
-				model.SqlWhitelist{
+				{
 					Value:     "select v1 from exist_tb_1 where id =2",
 					MatchType: model.SQLWhitelistFPMatch,
 				},
@@ -3235,6 +3238,36 @@ func TestWhitelist(t *testing.T) {
 			}, sql,
 			newTestResult())
 	}
+
+	parentInspect := DefaultMysqlInspect()
+	runDefaultRulesInspectCase(t, "", parentInspect, `
+CREATE TABLE if not exists exist_db.t1 (
+id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+PRIMARY KEY (id) USING BTREE
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`, newTestResult())
+
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx = parentInspect.Ctx
+
+	runDefaultRulesInspectCaseWithWL(t, "4", inspect1,
+		[]model.SqlWhitelist{
+			{
+				Value:     "select * from t1 where id = 2",
+				MatchType: model.SQLWhitelistFPMatch,
+			},
+		}, `select id from T1 where id = 4`, newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.T1"))
+
+	inspect2 := DefaultMysqlInspect()
+	inspect2.Ctx = parentInspect.Ctx
+	inspect2.Ctx.AddSysVar("lower_case_table_names", "1")
+	runDefaultRulesInspectCaseWithWL(t, "", inspect2,
+		[]model.SqlWhitelist{
+			{
+				Value:     "select * from t1 where id = 2",
+				MatchType: model.SQLWhitelistFPMatch,
+			},
+		}, `select * from T1 where id = 3`, newTestResult().add(model.RULE_LEVEL_NORMAL, "白名单"))
 
 }
 
