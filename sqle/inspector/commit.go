@@ -32,20 +32,13 @@ func (i *Inspect) CommitDMLs(sqls []*model.BaseSQL) error {
 	var startBinlogFile, endBinlogFile string
 	var startBinlogPos, endBinlogPos int64
 	var results []driver.Result
-	qs := []string{}
-	sqlToQsIdxes := make([][]int, len(sqls), len(sqls))
-	qsIndex := 0
-	for sqlIdx, sql := range sqls {
-		qsIdxes := []int{}
-		for _, stmt := range sql.Stmts {
-			qs = append(qs, stmt.Text())
-			qsIdxes = append(qsIdxes, qsIndex)
-			qsIndex += 1
-		}
-		sqlToQsIdxes[sqlIdx] = qsIdxes
+	qs := make([]string, 0, len(sqls))
+	for _, sql := range sqls {
+		qs = append(qs, sql.Stmts[0].Text())
 	}
+
 	defer func() {
-		for sqlIdx, sql := range sqls {
+		for idx, sql := range sqls {
 			if retErr != nil {
 				sql.ExecStatus = model.SQLExecuteStatusFailed
 				sql.ExecResult = retErr.Error()
@@ -53,14 +46,11 @@ func (i *Inspect) CommitDMLs(sqls []*model.BaseSQL) error {
 			}
 			sql.StartBinlogFile = startBinlogFile
 			sql.StartBinlogPos = startBinlogPos
-			for _, qsIdx := range sqlToQsIdxes[sqlIdx] {
-				rowAffects, err := results[qsIdx].RowsAffected()
-				if err != nil {
-					log.Warnf("get rows affect failed, error: %v", err)
-					continue
-				}
-				sql.RowAffects += rowAffects
+			rowAffects, err := results[idx].RowsAffected()
+			if err != nil {
+				log.Warnf("get rows affect failed, error: %v", err)
 			}
+			sql.RowAffects = rowAffects
 			sql.ExecStatus = model.SQLExecuteStatusSucceeded
 			sql.ExecResult = "ok"
 			sql.EndBinlogFile = endBinlogFile
