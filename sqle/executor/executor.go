@@ -22,7 +22,7 @@ type Db interface {
 	Close()
 	Ping() error
 	Exec(query string) (driver.Result, error)
-	Transact(qs ...string) ([]driver.Result, map[int]string, error)
+	Transact(qs ...string) ([]driver.Result, error)
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	Logger() *logrus.Entry
 }
@@ -103,15 +103,14 @@ func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
-func (c *BaseConn) Transact(qs ...string) ([]driver.Result, map[int] /*sql index*/ string /*exec result*/, error) {
+func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 	var err error
 	var tx *sql.Tx
 	var results []driver.Result
-	qsExecResultMap := make(map[int] /*sql index*/ string /*exec result*/)
 	c.Logger().Infof("doing sql transact, host: %s, port: %s, user: %s", c.host, c.port, c.user)
 	tx, err = c.conn.BeginTx(context.Background(), nil)
 	if err != nil {
-		return results, qsExecResultMap, err
+		return results, err
 	}
 	defer func() {
 		if p := recover(); p != nil {
@@ -131,20 +130,18 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, map[int] /*sql index
 			c.Logger().Info("done sql transact")
 		}
 	}()
-	for index, query := range qs {
+	for _, query := range qs {
 		var txResult driver.Result
 		txResult, err = tx.Exec(query)
 		if err != nil {
-			qsExecResultMap[index] = err.Error()
 			c.Logger().Errorf("exec sql failed, error: %s, query: %s", err, query)
-			return results, qsExecResultMap, nil
+			return results, err
 		} else {
-			qsExecResultMap[index] = "ok"
 			results = append(results, txResult)
 			c.Logger().Infof("exec sql success, query: %s", query)
 		}
 	}
-	return results, qsExecResultMap, nil
+	return results, nil
 }
 
 func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
