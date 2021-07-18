@@ -23,7 +23,6 @@ type Db interface {
 	Ping() error
 	Exec(query string) (driver.Result, error)
 	Transact(qs ...string) ([]driver.Result, map[int]string, error)
-	ExecDDL(query, schema, table string) error
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	Logger() *logrus.Entry
 }
@@ -148,11 +147,6 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, map[int] /*sql index
 	return results, qsExecResultMap, nil
 }
 
-func (c *BaseConn) ExecDDL(query, schema, table string) error {
-	_, err := c.Exec(query)
-	return err
-}
-
 func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	rows, err := c.conn.QueryContext(context.Background(), query, args...)
 	if err != nil {
@@ -231,19 +225,6 @@ func ShowDatabases(entry *logrus.Entry, instance *model.Instance) ([]string, err
 	}
 	defer conn.Db.Close()
 	return conn.ShowDatabases(true)
-}
-
-func OpenDbWithTask(entry *logrus.Entry, task *model.Task) (*Executor, error) {
-	return NewExecutor(entry, task.Instance, task.Schema)
-}
-
-func Exec(entry *logrus.Entry, task *model.Task, sql string) (driver.Result, error) {
-	conn, err := OpenDbWithTask(entry, task)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Db.Close()
-	return conn.Db.Exec(sql)
 }
 
 func (c *Executor) ShowCreateTable(tableName string) (string, error) {
