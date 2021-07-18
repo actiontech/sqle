@@ -254,11 +254,7 @@ func (s *Sqled) commit(task *model.Task) error {
 	}
 
 	if task.SQLType == model.SQL_TYPE_DDL {
-		return s.commitDDL(task, false)
-	}
-
-	if task.SQLType == model.SQL_TYPE_PROCEDURE_FUNCTION {
-		return s.commitDDL(task, true)
+		return s.commitDDL(task)
 	}
 
 	// if task is not inspected, parse task SQL type and commit it.
@@ -271,18 +267,14 @@ func (s *Sqled) commit(task *model.Task) error {
 	case model.SQL_TYPE_DML:
 		return s.commitDML(task)
 	case model.SQL_TYPE_DDL:
-		return s.commitDDL(task, false)
+		return s.commitDDL(task)
 	case model.SQL_TYPE_MULTI:
 		return errors.SQL_STMT_CONFLICT_ERROR
-	case model.SQL_TYPE_PROCEDURE_FUNCTION:
-		return s.commitDDL(task, true)
-	case model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI:
-		return errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR
 	}
 	return nil
 }
 
-func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
+func (s *Sqled) commitDDL(task *model.Task) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 
 	st := model.GetStorage()
@@ -296,21 +288,6 @@ func (s *Sqled) commitDDL(task *model.Task, isProcedureFunction bool) error {
 			if err != nil {
 				i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 				return err
-			}
-			if isProcedureFunction {
-				backupSqls, err := i.GetProcedureFunctionBackupSql(sql.Content)
-				if err != nil {
-					i.Logger().Errorf("get procedure function backup sql failed, error: %v", err)
-					return err
-				}
-				if backupSqls != nil {
-					for _, backupSql := range backupSqls {
-						backupSqlModel := &model.BaseSQL{Content: backupSql}
-						if err := i.CommitDDL(backupSqlModel); err != nil {
-							i.Logger().Errorf("create procedure function backup failed, sql: %v, error: %v", backupSql, err)
-						}
-					}
-				}
 			}
 			i.CommitDDL(sql)
 			if sql.ExecResult != "ok" {
@@ -428,11 +405,6 @@ func (s *Sqled) rollback(task *model.Task) error {
 			case model.SQL_TYPE_MULTI:
 				i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 				return errors.SQL_STMT_CONFLICT_ERROR
-			case model.SQL_TYPE_PROCEDURE_FUNCTION:
-				// need not rollback procedure and function
-			case model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI:
-				i.Logger().Error((errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR))
-				return errors.SQL_STMT_PROCEUDRE_FUNCTION_ERROR
 			}
 			err = st.Save(currentSql)
 			if err != nil {

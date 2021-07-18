@@ -20,11 +20,9 @@ const (
 )
 
 const (
-	SQL_TYPE_DML                      = "dml"
-	SQL_TYPE_DDL                      = "ddl"
-	SQL_TYPE_MULTI                    = "dml&ddl"
-	SQL_TYPE_PROCEDURE_FUNCTION       = "procedure&function"
-	SQL_TYPE_PROCEDURE_FUNCTION_MULTI = "procedure&function&dml&ddl"
+	SQL_TYPE_DML   = "dml"
+	SQL_TYPE_DDL   = "ddl"
+	SQL_TYPE_MULTI = "dml&ddl"
 )
 
 const (

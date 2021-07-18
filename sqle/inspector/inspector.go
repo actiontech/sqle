@@ -37,9 +37,6 @@ type Inspector interface {
 	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
 	GenerateAllRollbackSql() ([]*model.RollbackSQL, error)
 
-	// GetProcedureFunctionBackupSql return backupSql for procedure & function
-	GetProcedureFunctionBackupSql(sql string) ([]string, error)
-
 	// CommitDDL commit task.commitSql(ddl).
 	CommitDDL(sql *model.BaseSQL) error
 
@@ -88,10 +85,6 @@ type Inspect struct {
 	counterDDL uint
 	// counterDML is a counter for all dml sql.
 	counterDML uint
-	// counterProcedure is a counter for all procedure sql.
-	counterProcedure uint
-	// counterFunction is a counter for all function sql.
-	counterFunction uint
 
 	// SqlArray and SqlAction is two list for Add-Do design.
 	SqlArray  []*model.BaseSQL
@@ -136,7 +129,6 @@ func (i *Inspect) Context() *Context {
 }
 
 func (i *Inspect) SqlType() string {
-	hasProcedureFunction := i.counterProcedure > 0 || i.counterFunction > 0
 	hasDML := i.counterDML > 0
 	hasDDL := i.counterDDL > 0
 
@@ -144,16 +136,12 @@ func (i *Inspect) SqlType() string {
 		return model.SQL_TYPE_MULTI
 	}
 
-	if hasProcedureFunction && (hasDML || hasDDL) {
-		return model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI
-	}
-
 	if hasDML {
 		return model.SQL_TYPE_DML
 	} else if hasDDL {
 		return model.SQL_TYPE_DDL
 	} else {
-		return model.SQL_TYPE_PROCEDURE_FUNCTION
+		return ""
 	}
 }
 
