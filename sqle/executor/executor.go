@@ -41,7 +41,7 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	var db *sql.DB
 	var err error
 	switch instance.DbType {
-	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
+	case model.DB_TYPE_MYSQL:
 		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
 			instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
 	default:
@@ -207,12 +207,7 @@ func NewExecutor(entry *logrus.Entry, instance *model.Instance, schema string) (
 	}
 	var conn Db
 	var err error
-	switch instance.DbType {
-	case model.DB_TYPE_MYCAT:
-		conn, err = newMycatConn(entry, instance, schema)
-	default:
-		conn, err = newConn(entry, instance, schema)
-	}
+	conn, err = newConn(entry, instance, schema)
 	if err != nil {
 		return nil, err
 	}

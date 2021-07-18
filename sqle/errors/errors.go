@@ -5,12 +5,11 @@ import "fmt"
 type ErrorCode int
 
 const (
-	STATUS_OK                   ErrorCode = 0
-	CONNECT_STORAGE_ERROR       ErrorCode = 5001
-	CONNECT_REMOTE_DB_ERROR     ErrorCode = 5002
-	READ_UPLOAD_FILE_ERROR      ErrorCode = 5003
-	PARSER_MYCAT_CONFIG_ERROR   ErrorCode = 5005
-	ParseMyBatisXMLFileError    ErrorCode = 5006
+	STATUS_OK                ErrorCode = 0
+	CONNECT_STORAGE_ERROR    ErrorCode = 5001
+	CONNECT_REMOTE_DB_ERROR  ErrorCode = 5002
+	READ_UPLOAD_FILE_ERROR   ErrorCode = 5003
+	ParseMyBatisXMLFileError ErrorCode = 5006
 
 	TASK_NOT_EXIST      ErrorCode = 4006
 	TASK_ACTION_INVALID ErrorCode = 4009

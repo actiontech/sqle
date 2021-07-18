@@ -62,7 +62,7 @@ type Config struct {
 	DDLOSCMinSize      int64
 }
 
-// Inspect implements Inspector interface for MySQL and MyCat.
+// Inspect implements Inspector interface for MySQL.
 type Inspect struct {
 	// Ctx is SQL context.
 	Ctx *Context
@@ -80,7 +80,7 @@ type Inspect struct {
 	RelateTasks []model.Task
 
 	log *logrus.Entry
-	// dbConn is a SQL driver for MySQL, MyCat, SQL Server.
+	// dbConn is a SQL driver for MySQL.
 	dbConn *executor.Executor
 	// isConnected represent dbConn has Connected.
 	isConnected bool
@@ -528,29 +528,9 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 
 // getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
-	var pkColumnsName = map[string]struct{}{}
-	schemaName := i.getSchemaName(stmt.Table)
-	tableName := stmt.Table.Name.String()
-
 	pkColumnsName, hasPk := getPrimaryKey(stmt)
 	if !hasPk {
 		return pkColumnsName, hasPk, nil
-	}
-	// for mycat, while schema is a sharding schema, primary key is not a unique column
-	// the primary key add the sharding column looks like a primary key
-	if i.Task.Instance.DbType == model.DB_TYPE_MYCAT {
-		mycatConfig := i.Task.Instance.MycatConfig
-		ok, err := mycatConfig.IsShardingSchema(schemaName)
-		if err != nil {
-			return pkColumnsName, hasPk, err
-		}
-		if ok {
-			shardingColumn, err := mycatConfig.GetShardingColumn(schemaName, tableName)
-			if err != nil {
-				return pkColumnsName, false, err
-			}
-			pkColumnsName[shardingColumn] = struct{}{}
-		}
 	}
 	return pkColumnsName, hasPk, nil
 }

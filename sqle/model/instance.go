@@ -1,7 +1,6 @@
 package model
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -13,25 +12,22 @@ import (
 )
 
 const (
-	DB_TYPE_MYSQL     = "mysql"
-	DB_TYPE_MYCAT     = "mycat"
+	DB_TYPE_MYSQL = "mysql"
 )
 
 // Instance is a table for database info
 type Instance struct {
 	Model
 	// has created composite index: [id, name] by gorm#AddIndex
-	Name               string       `json:"name" gorm:"not null;index" example:""`
-	DbType             string       `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
-	Host               string       `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
-	Port               string       `json:"port" gorm:"column:db_port; not null" example:"3306"`
-	User               string       `json:"user" gorm:"column:db_user; not null" example:"root"`
-	Password           string       `json:"-" gorm:"-"`
-	SecretPassword     string       `json:"secret_password" gorm:"column:db_password; not null"`
-	Desc               string       `json:"desc" example:"this is a instance"`
-	WorkflowTemplateId uint         `json:"workflow_template_id"`
-	MycatConfig        *MycatConfig `json:"-" gorm:"-"`
-	MycatConfigJson    string       `json:"-" gorm:"type:text;column:mycat_config"`
+	Name               string `json:"name" gorm:"not null;index" example:""`
+	DbType             string `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
+	Host               string `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
+	Port               string `json:"port" gorm:"column:db_port; not null" example:"3306"`
+	User               string `json:"user" gorm:"column:db_user; not null" example:"root"`
+	Password           string `json:"-" gorm:"-"`
+	SecretPassword     string `json:"secret_password" gorm:"column:db_password; not null"`
+	Desc               string `json:"desc" example:"this is a instance"`
+	WorkflowTemplateId uint   `json:"workflow_template_id"`
 
 	// relation table
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
@@ -41,11 +37,7 @@ type Instance struct {
 
 // BeforeSave is a hook implement gorm model before exec create
 func (i *Instance) BeforeSave() error {
-	err := i.encryptPassword()
-	if err != nil {
-		return err
-	}
-	return i.marshalMycatConfig()
+	return i.encryptPassword()
 }
 
 // AfterFind is a hook implement gorm model after query, ignore err if query from db
@@ -53,10 +45,6 @@ func (i *Instance) AfterFind() error {
 	err := i.decryptPassword()
 	if err != nil {
 		log.NewEntry().Errorf("decrypt password for instance %d failed, error: %v", i.ID, err)
-	}
-	err = i.unmarshalMycatConfig()
-	if err != nil {
-		log.NewEntry().Errorf("unmarshal mycat config for instance %d failed, error: %v", i.ID, err)
 	}
 	return nil
 }
@@ -87,45 +75,6 @@ func (i *Instance) encryptPassword() error {
 		}
 		i.SecretPassword = string(data)
 	}
-	return nil
-}
-
-func (i *Instance) unmarshalMycatConfig() error {
-	if i == nil {
-		return nil
-	}
-	if i.MycatConfigJson == "" {
-		return nil
-	}
-	if i.MycatConfig == nil {
-		i.MycatConfig = &MycatConfig{}
-	}
-	err := json.Unmarshal([]byte(i.MycatConfigJson), i.MycatConfig)
-	if err != nil {
-		return err
-	}
-	for _, dataHost := range i.MycatConfig.DataHosts {
-		password, err := util.AesDecrypt(string(dataHost.Password))
-		if err != nil {
-			return err
-		}
-		dataHost.Password = util.Password(password)
-	}
-	return nil
-}
-
-func (i *Instance) marshalMycatConfig() error {
-	if i == nil {
-		return nil
-	}
-	if i.MycatConfig == nil {
-		return nil
-	}
-	data, err := json.Marshal(i.MycatConfig)
-	if err != nil {
-		return err
-	}
-	i.MycatConfigJson = string(data)
 	return nil
 }
 
