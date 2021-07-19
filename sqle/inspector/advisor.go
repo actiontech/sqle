@@ -34,7 +34,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				return nil
 			}
 
-			lowerCaseTableNames, err := i.getSystemVariable("lower_case_table_names")
+			lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
 			if err != nil {
 				return err
 			}

@@ -292,6 +292,20 @@ func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 		}
 		i.Ctx.LoadSchemas(schemas)
 	}
+
+	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return false, err
+	}
+
+	if lowerCaseTableNames != "0" {
+		capitalizedSchema := make(map[string]struct{})
+		for name := range i.Ctx.schemas {
+			capitalizedSchema[strings.ToUpper(name)] = struct{}{}
+		}
+		_, exist := capitalizedSchema[strings.ToUpper(schemaName)]
+		return exist, nil
+	}
 	return i.Ctx.HasSchema(schemaName), nil
 }
 
@@ -331,6 +345,20 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 			return false, err
 		}
 		i.Ctx.LoadTables(schemaName, tables)
+	}
+
+	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return false, err
+	}
+
+	if lowerCaseTableNames != "0" {
+		capitalizedTable := make(map[string]struct{})
+		for name := range i.Ctx.schemas[schemaName].Tables {
+			capitalizedTable[strings.ToUpper(name)] = struct{}{}
+		}
+		_, exist := capitalizedTable[strings.ToUpper(stmt.Name.String())]
+		return exist, nil
 	}
 	return i.Ctx.HasTable(schemaName, stmt.Name.String()), nil
 }
@@ -575,6 +603,10 @@ func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 	i.Ctx.AddExecutionPlan(sql, records)
 	return records, nil
 }
+
+const (
+	SysVarLowerCaseTableNames = "lower_case_table_names"
+)
 
 func (i *Inspect) getSystemVariable(name string) (string, error) {
 	v, exist := i.Ctx.GetSysVar(name)
