@@ -79,6 +79,10 @@ func NewContext(parent *Context) *Context {
 		}
 		ctx.schemas[schemaName] = newSchema
 	}
+
+	for k, v := range parent.sysVars {
+		ctx.sysVars[k] = v
+	}
 	return ctx
 }
 
