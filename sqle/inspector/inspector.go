@@ -563,8 +563,12 @@ func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 	if ep, ok := i.Ctx.GetExecutionPlan(sql); ok {
 		return ep, nil
 	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
 
-	records, err := i.dbConn.Explain(sql)
+	records, err := conn.Explain(sql)
 	if err != nil {
 		return nil, err
 	}
@@ -578,7 +582,11 @@ func (i *Inspect) getSystemVariable(name string) (string, error) {
 		return v, nil
 	}
 
-	results, err := i.dbConn.Db.Query(`SHOW GLOBAL VARIABLES LIKE '%v'`, name)
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+	results, err := conn.Db.Query(fmt.Sprintf(`SHOW GLOBAL VARIABLES LIKE '%v'`, name))
 	if err != nil {
 		return "", err
 	}
