@@ -69,8 +69,13 @@ const (
 
 type BaseSQL struct {
 	Model
-	TaskId          uint   `json:"-" gorm:"index"`
-	Number          uint   `json:"number"`
+	TaskId uint `json:"-" gorm:"index"`
+	Number uint `json:"number"`
+
+	// Content store single SQL or batch SQLs
+	//
+	// Content may store batch SQLs When BaseSQL embed to RollbackSQL.
+	// Split Content to single SQL before execute RollbackSQL.
 	Content         string `json:"sql" gorm:"type:text"`
 	StartBinlogFile string `json:"start_binlog_file"`
 	StartBinlogPos  int64  `json:"start_binlog_pos"`
