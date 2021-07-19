@@ -7,16 +7,23 @@ import (
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
-func Fingerprint(oneSql string) (fingerprint string, err error) {
-	p := parser.New()
-	stmts, _, err := p.PerfectParse(oneSql, "", "")
+func Fingerprint(oneSql string, isCaseSensitive bool) (fingerprint string, err error) {
+	stmts, _, err := parser.New().PerfectParse(oneSql, "", "")
 	if err != nil {
 		return "", err
 	}
 	if len(stmts) != 1 {
 		return "", parser.ErrSyntax
 	}
+
 	stmts[0].Accept(&FingerprintVisitor{})
+	if !isCaseSensitive {
+		stmts[0].Accept(&CapitalizeProcessor{
+			capitalizeTableName:      true,
+			capitalizeTableAliasName: true,
+			capitalizeDatabaseName:   true,
+		})
+	}
 	fingerprint, err = restoreToSqlWithFlag(format.RestoreKeyWordUppercase|format.RestoreNameBackQuotes, stmts[0])
 	if err != nil {
 		return "", err
