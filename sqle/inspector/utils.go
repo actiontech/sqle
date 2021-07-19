@@ -816,3 +816,48 @@ func restoreToSqlWithFlag(restoreFlag format.RestoreFlags, node ast.Node) (sqlSt
 	}
 	return buf.String(), nil
 }
+
+// CapitalizeProcessor capitalize identifiers as needed.
+//
+// format.RestoreNameUppercase can not control name comparisons accurate.
+// CASE:
+// Database/Table/Table-alias names are case-insensitive when lower_case_table_names equals 1.
+// Some identifiers, such as Tablespace names are case-sensitive which not affected by lower_case_table_names.
+// ref: https://dev.mysql.com/doc/refman/5.7/en/identifier-case-sensitivity.html
+type CapitalizeProcessor struct {
+	capitalizeTableName      bool
+	capitalizeTableAliasName bool
+	capitalizeDatabaseName   bool
+}
+
+func (cp *CapitalizeProcessor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.TableSource:
+		if cp.capitalizeTableAliasName {
+			stmt.AsName.O = strings.ToUpper(stmt.AsName.O)
+		}
+	case *ast.TableName:
+		if cp.capitalizeTableName {
+			stmt.Name.O = strings.ToUpper(stmt.Name.O)
+		}
+		if cp.capitalizeDatabaseName {
+			stmt.Schema.O = strings.ToUpper(stmt.Schema.O)
+		}
+	}
+
+	if cp.capitalizeDatabaseName {
+		switch stmt := in.(type) {
+		case *ast.DropDatabaseStmt:
+			stmt.Name = strings.ToUpper(stmt.Name)
+		case *ast.CreateDatabaseStmt:
+			stmt.Name = strings.ToUpper(stmt.Name)
+		case *ast.AlterDatabaseStmt:
+			stmt.Name = strings.ToUpper(stmt.Name)
+		}
+	}
+	return in, false
+}
+
+func (cp *CapitalizeProcessor) Leave(in ast.Node) (node ast.Node, skipChildren bool) {
+	return in, false
+}

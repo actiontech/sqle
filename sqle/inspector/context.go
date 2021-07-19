@@ -44,12 +44,16 @@ type Context struct {
 
 	// executionPlan store batch SQLs' execution plan during one inspect context.
 	executionPlan map[string][]*executor.ExplainRecord
+
+	// sysVars keep some MySQL global system variables during one inspect context.
+	sysVars map[string]string
 }
 
 func NewContext(parent *Context) *Context {
 	ctx := &Context{
 		schemas:       map[string]*SchemaInfo{},
 		executionPlan: map[string][]*executor.ExplainRecord{},
+		sysVars:       map[string]string{},
 	}
 	if parent == nil {
 		return ctx
@@ -76,6 +80,16 @@ func NewContext(parent *Context) *Context {
 		ctx.schemas[schemaName] = newSchema
 	}
 	return ctx
+}
+
+func (c *Context) GetSysVar(name string) (string, bool) {
+	v, exist := c.sysVars[name]
+	return v, exist
+}
+
+func (c *Context) AddSysVar(name, value string) {
+	c.sysVars[name] = value
+	return
 }
 
 func (c *Context) HasLoadSchemas() bool {
