@@ -552,3 +552,12 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 		Scan(&workflows).Error
 	return workflows, errors.New(errors.CONNECT_STORAGE_ERROR, err)
 }
+
+func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) {
+	workflow := &Workflow{Subject: subject}
+	err := s.db.Where(*workflow).First(workflow).Error
+	if err == gorm.ErrRecordNotFound {
+		return workflow, false, nil
+	}
+	return workflow, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+}
