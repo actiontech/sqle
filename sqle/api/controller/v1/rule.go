@@ -101,7 +101,7 @@ func CreateRuleTemplate(c echo.Context) error {
 type UpdateRuleTemplateReqV1 struct {
 	Desc      *string     `json:"desc"`
 	Instances []string    `json:"instance_name_list" example:"mysql-xxx"`
-	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
+	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"dive,required"`
 }
 
 // @Summary 更新规则模板
