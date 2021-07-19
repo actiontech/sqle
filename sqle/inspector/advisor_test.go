@@ -240,6 +240,30 @@ func TestCheckInvalidUse(t *testing.T) {
 		newTestResult().add(model.RULE_LEVEL_ERROR,
 			SCHEMA_NOT_EXIST_MSG, "no_exist_db"),
 	)
+
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx.AddSysVar(SysVarLowerCaseTableNames, "1")
+	runDefaultRulesInspectCase(t, "", inspect1,
+		"use EXIST_DB",
+		newTestResult(),
+	)
+}
+
+func TestCaseSensitive(t *testing.T) {
+	runDefaultRulesInspectCase(t, "", DefaultMysqlInspect(),
+		`
+select id from exist_db.EXIST_TB_1 where id = 1;
+`,
+		newTestResult().add(model.RULE_LEVEL_ERROR,
+			TABLE_NOT_EXIST_MSG, "exist_db.EXIST_TB_1"))
+
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx.AddSysVar(SysVarLowerCaseTableNames, "1")
+	runDefaultRulesInspectCase(t, "", inspect1,
+		`
+select id from exist_db.EXIST_TB_1 where id = 1;
+`,
+		newTestResult())
 }
 
 func TestCheckInvalidCreateTable(t *testing.T) {
