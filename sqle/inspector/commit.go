@@ -34,7 +34,7 @@ func (i *Inspect) CommitDMLs(sqls []*model.BaseSQL) error {
 	var results []driver.Result
 	qs := make([]string, 0, len(sqls))
 	for _, sql := range sqls {
-		qs = append(qs, sql.Stmts[0].Text())
+		qs = append(qs, sql.Content)
 	}
 
 	defer func() {

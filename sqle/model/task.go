@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/pingcap/parser/ast"
 )
 
 // task action
@@ -70,17 +69,16 @@ const (
 
 type BaseSQL struct {
 	Model
-	TaskId          uint       `json:"-" gorm:"index"`
-	Number          uint       `json:"number"`
-	Content         string     `json:"sql" gorm:"type:text"`
-	StartBinlogFile string     `json:"start_binlog_file"`
-	StartBinlogPos  int64      `json:"start_binlog_pos"`
-	EndBinlogFile   string     `json:"end_binlog_file"`
-	EndBinlogPos    int64      `json:"end_binlog_pos"`
-	RowAffects      int64      `json:"row_affects"`
-	ExecStatus      string     `json:"exec_status" gorm:"default:\"initialized\""`
-	ExecResult      string     `json:"exec_result"`
-	Stmts           []ast.Node `json:"-" gorm:"-"`
+	TaskId          uint   `json:"-" gorm:"index"`
+	Number          uint   `json:"number"`
+	Content         string `json:"sql" gorm:"type:text"`
+	StartBinlogFile string `json:"start_binlog_file"`
+	StartBinlogPos  int64  `json:"start_binlog_pos"`
+	EndBinlogFile   string `json:"end_binlog_file"`
+	EndBinlogPos    int64  `json:"end_binlog_pos"`
+	RowAffects      int64  `json:"row_affects"`
+	ExecStatus      string `json:"exec_status" gorm:"default:\"initialized\""`
+	ExecResult      string `json:"exec_result"`
 }
 
 func (s *BaseSQL) GetExecStatusDesc() string {

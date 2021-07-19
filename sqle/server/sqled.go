@@ -9,6 +9,8 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/inspector"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
+
+	"github.com/pingcap/parser/ast"
 )
 
 var sqled *Sqled
@@ -283,14 +285,14 @@ func (s *Sqled) commitDDL(task *model.Task) error {
 	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
 	for _, commitSql := range task.ExecuteSQLs {
 		currentSql := commitSql
-		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
-			err := st.UpdateExecuteSqlStatus(sql, model.SQLExecuteStatusDoing, "")
+		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
+			err := st.UpdateExecuteSqlStatus(&currentSql.BaseSQL, model.SQLExecuteStatusDoing, "")
 			if err != nil {
 				i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 				return err
 			}
-			i.CommitDDL(sql)
-			if sql.ExecResult != "ok" {
+			i.CommitDDL(&currentSql.BaseSQL)
+			if currentSql.ExecResult != "ok" {
 				err = st.Save(currentSql)
 				if err != nil {
 					i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
@@ -338,27 +340,21 @@ func (s *Sqled) commitDML(task *model.Task) error {
 
 	entry.Info("start commit")
 	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
-	sqls := []*model.BaseSQL{}
 
 	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
 	if err != nil {
 		i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
 		return err
 	}
-	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := i.ParseSql(executeSQL.Content)
-		if err != nil {
-			return err
-		}
-		executeSQL.Stmts = nodes
-
-		sqls = append(sqls, &executeSQL.BaseSQL)
-	}
 
 	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
 		return err
 	}
 
+	sqls := []*model.BaseSQL{}
+	for _, executeSQL := range task.ExecuteSQLs {
+		sqls = append(sqls, &executeSQL.BaseSQL)
+	}
 	i.CommitDMLs(sqls)
 
 	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
@@ -391,17 +387,17 @@ func (s *Sqled) rollback(task *model.Task) error {
 		if currentSql.Content == "" {
 			continue
 		}
-		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
-			err := st.UpdateRollbackSqlStatus(sql, model.SQLExecuteStatusDoing, "")
+		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
+			err := st.UpdateRollbackSqlStatus(&currentSql.BaseSQL, model.SQLExecuteStatusDoing, "")
 			if err != nil {
 				i.Logger().Errorf("update rollback sql status to storage failed, error: %v", err)
 				return err
 			}
 			switch i.SqlType() {
 			case model.SQL_TYPE_DDL:
-				i.CommitDDL(sql)
+				i.CommitDDL(&currentSql.BaseSQL)
 			case model.SQL_TYPE_DML:
-				i.CommitDMLs([]*model.BaseSQL{sql})
+				i.CommitDMLs([]*model.BaseSQL{&currentSql.BaseSQL})
 			case model.SQL_TYPE_MULTI:
 				i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 				return errors.SQL_STMT_CONFLICT_ERROR

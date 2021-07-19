@@ -28,7 +28,7 @@ type Inspector interface {
 
 	// Add and Do are designed to reduce duplicate code, and used to converge
 	// important processes, such as close db connection, update SQL context.
-	Add(sql *model.BaseSQL, action func(sql *model.BaseSQL) error) error
+	Add(sql *model.BaseSQL, action func(node ast.Node) error) error
 	Do() error
 
 	// Advise advise task.commitSql using the given rules.
@@ -87,8 +87,8 @@ type Inspect struct {
 	counterDML uint
 
 	// SqlArray and SqlAction is two list for Add-Do design.
-	SqlArray  []*model.BaseSQL
-	SqlAction []func(sql *model.BaseSQL) error
+	SqlArray  []ast.Node
+	SqlAction []func(node ast.Node) error
 }
 
 func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
@@ -119,8 +119,6 @@ func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks
 		Task:        task,
 		RelateTasks: relateTasks,
 		log:         entry,
-		SqlArray:    []*model.BaseSQL{},
-		SqlAction:   []func(sql *model.BaseSQL) error{},
 	}
 }
 
@@ -171,14 +169,13 @@ func (i *Inspect) SqlInvalid() bool {
 	return i.HasInvalidSql
 }
 
-func (i *Inspect) Add(sql *model.BaseSQL, action func(sql *model.BaseSQL) error) error {
+func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) error {
 	nodes, err := i.ParseSql(sql.Content)
 	if err != nil {
 		return err
 	}
 	i.addNodeCounter(nodes)
-	sql.Stmts = nodes
-	i.SqlArray = append(i.SqlArray, sql)
+	i.SqlArray = append(i.SqlArray, nodes[0])
 	i.SqlAction = append(i.SqlAction, action)
 	return nil
 }
@@ -190,15 +187,13 @@ func (i *Inspect) Do() error {
 		i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 		return errors.SQL_STMT_CONFLICT_ERROR
 	}
-	for n, sql := range i.SqlArray {
-		err := i.SqlAction[n](sql)
+	for idx, node := range i.SqlArray {
+		err := i.SqlAction[idx](node)
 		if err != nil {
 			return err
 		}
 		// update schema info
-		for _, node := range sql.Stmts {
-			i.updateContext(node)
-		}
+		i.updateContext(node)
 	}
 	return nil
 }

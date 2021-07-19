@@ -126,7 +126,6 @@ func DefaultMysqlInspect() *Inspect {
 			ExecuteSQLs:  []*model.ExecuteSQL{},
 			RollbackSQLs: []*model.RollbackSQL{},
 		},
-		SqlArray: []*model.BaseSQL{},
 		Ctx: &Context{
 			currentSchema: "exist_db",
 			schemaHasLoad: true,

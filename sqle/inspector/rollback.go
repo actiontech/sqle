@@ -17,8 +17,8 @@ func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {
 	rollbackSqls := []*model.RollbackSQL{}
 	for _, executeSQL := range i.Task.ExecuteSQLs {
 		currentSql := executeSQL
-		err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) error {
-			rollbackSql, reason, err := i.GenerateRollbackSql(sql)
+		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
+			rollbackSql, reason, err := i.GenerateRollbackSql(node)
 			if rollbackSql != "" {
 				rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
 					BaseSQL: model.BaseSQL{
@@ -67,8 +67,7 @@ func (i *Inspect) GetAllRollbackSqlReversed(sqls []*model.RollbackSQL) []*model.
 	return rollbackSqls
 }
 
-func (i *Inspect) GenerateRollbackSql(sql *model.BaseSQL) (string, string, error) {
-	node := sql.Stmts[0]
+func (i *Inspect) GenerateRollbackSql(node ast.Node) (string, string, error) {
 	switch node.(type) {
 	case ast.DDLNode:
 		return i.GenerateDDLStmtRollbackSql(node)
