@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -23,8 +22,7 @@ type Db interface {
 	Close()
 	Ping() error
 	Exec(query string) (driver.Result, error)
-	Transact(qs ...string) ([]driver.Result, map[int]string, error)
-	ExecDDL(query, schema, table string) error
+	Transact(qs ...string) ([]driver.Result, error)
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	Logger() *logrus.Entry
 }
@@ -42,21 +40,9 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	var db *sql.DB
 	var err error
 	switch instance.DbType {
-	case model.DB_TYPE_MYSQL, model.DB_TYPE_MYCAT:
+	case model.DB_TYPE_MYSQL:
 		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
 			instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
-	case model.DB_TYPE_SQLSERVER:
-		query := url.Values{}
-		query.Add("database", schema)
-		query.Add("dial timeout", fmt.Sprintf("%.0f", DAIL_TIMEOUT.Seconds()))
-		source := &url.URL{
-			Scheme:   "sqlserver",
-			User:     url.UserPassword(instance.User, instance.Password),
-			Host:     fmt.Sprintf("%s:%s", instance.Host, instance.Port),
-			RawQuery: query.Encode(),
-		}
-		db, err = sql.Open("mssql", source.String())
-
 	default:
 		err := fmt.Errorf("db type is not support")
 		entry.Error(err)
@@ -117,15 +103,14 @@ func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
 }
 
-func (c *BaseConn) Transact(qs ...string) ([]driver.Result, map[int] /*sql index*/ string /*exec result*/, error) {
+func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 	var err error
 	var tx *sql.Tx
 	var results []driver.Result
-	qsExecResultMap := make(map[int] /*sql index*/ string /*exec result*/)
 	c.Logger().Infof("doing sql transact, host: %s, port: %s, user: %s", c.host, c.port, c.user)
 	tx, err = c.conn.BeginTx(context.Background(), nil)
 	if err != nil {
-		return results, qsExecResultMap, err
+		return results, err
 	}
 	defer func() {
 		if p := recover(); p != nil {
@@ -145,25 +130,18 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, map[int] /*sql index
 			c.Logger().Info("done sql transact")
 		}
 	}()
-	for index, query := range qs {
+	for _, query := range qs {
 		var txResult driver.Result
 		txResult, err = tx.Exec(query)
 		if err != nil {
-			qsExecResultMap[index] = err.Error()
 			c.Logger().Errorf("exec sql failed, error: %s, query: %s", err, query)
-			return results, qsExecResultMap, nil
+			return results, err
 		} else {
-			qsExecResultMap[index] = "ok"
 			results = append(results, txResult)
 			c.Logger().Infof("exec sql success, query: %s", query)
 		}
 	}
-	return results, qsExecResultMap, nil
-}
-
-func (c *BaseConn) ExecDDL(query, schema, table string) error {
-	_, err := c.Exec(query)
-	return err
+	return results, nil
 }
 
 func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
@@ -220,12 +198,7 @@ func NewExecutor(entry *logrus.Entry, instance *model.Instance, schema string) (
 	}
 	var conn Db
 	var err error
-	switch instance.DbType {
-	case model.DB_TYPE_MYCAT:
-		conn, err = newMycatConn(entry, instance, schema)
-	default:
-		conn, err = newConn(entry, instance, schema)
-	}
+	conn, err = newConn(entry, instance, schema)
 	if err != nil {
 		return nil, err
 	}
@@ -251,19 +224,6 @@ func ShowDatabases(entry *logrus.Entry, instance *model.Instance) ([]string, err
 	return conn.ShowDatabases(true)
 }
 
-func OpenDbWithTask(entry *logrus.Entry, task *model.Task) (*Executor, error) {
-	return NewExecutor(entry, task.Instance, task.Schema)
-}
-
-func Exec(entry *logrus.Entry, task *model.Task, sql string) (driver.Result, error) {
-	conn, err := OpenDbWithTask(entry, task)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Db.Close()
-	return conn.Db.Exec(sql)
-}
-
 func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 	result, err := c.Db.Query(fmt.Sprintf("show create table %s", tableName))
 	if err != nil {
@@ -285,18 +245,10 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 
 func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 	var query string
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		if ignoreSysDatabase {
-			query = "select name from sys.databases where name not in ('master','tempdb','model','msdb','distribution')"
-		} else {
-			query = "select name from sys.databases"
-		}
+	if ignoreSysDatabase {
+		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
 	} else {
-		if ignoreSysDatabase {
-			query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
-		} else {
-			query = "show databases"
-		}
+		query = "show databases"
 	}
 	result, err := c.Db.Query(query)
 	if err != nil {
@@ -392,9 +344,6 @@ func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
 }
 
 func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		return []map[string]sql.NullString{}, nil
-	}
 	result, err := c.Db.Query(fmt.Sprintf("show master status"))
 	if err != nil {
 		return nil, err
@@ -409,9 +358,6 @@ func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
 }
 
 func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		return "", 0, nil
-	}
 	result, err := c.ShowMasterStatus()
 	if err != nil {
 		return "", 0, err
@@ -429,9 +375,6 @@ func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 }
 
 func (c *Executor) ShowTableSizeMB(schema, table string) (float64, error) {
-	if c.dbType == model.DB_TYPE_SQLSERVER {
-		return 0, nil
-	}
 	sql := fmt.Sprintf(`select (DATA_LENGTH + INDEX_LENGTH)/1024/1024 as Size from information_schema.tables 
 where table_schema = '%s' and table_name = '%s'`, schema, table)
 	result, err := c.Db.Query(sql)

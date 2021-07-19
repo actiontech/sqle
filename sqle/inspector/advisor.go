@@ -29,17 +29,13 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 
 	for _, commitSql := range i.Task.ExecuteSQLs {
 		currentSql := commitSql
-		if err := i.Add(&currentSql.BaseSQL, func(sql *model.BaseSQL) (err error) {
-			if len(sql.Stmts) <= 0 {
-				return nil
-			}
-
+		if err := i.Add(&currentSql.BaseSQL, func(node ast.Node) (err error) {
 			lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
 			if err != nil {
 				return err
 			}
 
-			sqlFP, err := Fingerprint(sql.Content, lowerCaseTableNames == "0")
+			sqlFP, err := Fingerprint(currentSql.BaseSQL.Content, lowerCaseTableNames == "0")
 			if err != nil {
 				return err
 			}
@@ -56,7 +52,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 						break
 					}
 				} else {
-					if sqlInWL.CapitalizedValue == strings.ToUpper(sql.Content) {
+					if sqlInWL.CapitalizedValue == strings.ToUpper(currentSql.BaseSQL.Content) {
 						whitelistMatch = true
 						break
 					}
@@ -69,13 +65,13 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				currentSql.AuditLevel = results.level()
 				currentSql.AuditResult = results.message()
 			} else {
-				results, err := i.CheckInvalid(sql.Stmts[0])
+				results, err := i.CheckInvalid(node)
 				if err != nil {
 					return err
 				}
 				if results.level() == model.RULE_LEVEL_ERROR {
 					i.HasInvalidSql = true
-					i.Logger().Warnf("sql %s invalid, %s", sql.Stmts[0].Text(), results.message())
+					i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
 				}
 				i.Results = results
 				if rules != nil {
@@ -85,7 +81,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 						if !ok || handler.Func == nil {
 							continue
 						}
-						err := handler.Func(rule, i, sql.Stmts[0])
+						err := handler.Func(rule, i, node)
 						if err != nil {
 							return err
 						}
@@ -98,7 +94,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				i.Results = newInspectResults()
 
 				// print osc
-				oscCommandLine, err := i.generateOSCCommandLine(sql.Stmts[0])
+				oscCommandLine, err := i.generateOSCCommandLine(node)
 				if err != nil {
 					return err
 				}

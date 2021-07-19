@@ -28,7 +28,7 @@ type Inspector interface {
 
 	// Add and Do are designed to reduce duplicate code, and used to converge
 	// important processes, such as close db connection, update SQL context.
-	Add(sql *model.BaseSQL, action func(sql *model.BaseSQL) error) error
+	Add(sql *model.BaseSQL, action func(node ast.Node) error) error
 	Do() error
 
 	// Advise advise task.commitSql using the given rules.
@@ -36,9 +36,6 @@ type Inspector interface {
 
 	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
 	GenerateAllRollbackSql() ([]*model.RollbackSQL, error)
-
-	// GetProcedureFunctionBackupSql return backupSql for procedure & function
-	GetProcedureFunctionBackupSql(sql string) ([]string, error)
 
 	// CommitDDL commit task.commitSql(ddl).
 	CommitDDL(sql *model.BaseSQL) error
@@ -54,11 +51,7 @@ type Inspector interface {
 
 func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
 	rules map[string]model.Rule) Inspector {
-	if task.Instance.DbType == model.DB_TYPE_SQLSERVER {
-		return NeSqlserverInspect(entry, ctx, task, relateTasks, rules)
-	} else {
-		return NewInspect(entry, ctx, task, relateTasks, rules)
-	}
+	return NewInspect(entry, ctx, task, relateTasks, rules)
 }
 
 type Config struct {
@@ -66,7 +59,7 @@ type Config struct {
 	DDLOSCMinSize      int64
 }
 
-// Inspect implements Inspector interface for MySQL and MyCat.
+// Inspect implements Inspector interface for MySQL.
 type Inspect struct {
 	// Ctx is SQL context.
 	Ctx *Context
@@ -84,7 +77,7 @@ type Inspect struct {
 	RelateTasks []model.Task
 
 	log *logrus.Entry
-	// dbConn is a SQL driver for MySQL, MyCat, SQL Server.
+	// dbConn is a SQL driver for MySQL.
 	dbConn *executor.Executor
 	// isConnected represent dbConn has Connected.
 	isConnected bool
@@ -92,14 +85,10 @@ type Inspect struct {
 	counterDDL uint
 	// counterDML is a counter for all dml sql.
 	counterDML uint
-	// counterProcedure is a counter for all procedure sql.
-	counterProcedure uint
-	// counterFunction is a counter for all function sql.
-	counterFunction uint
 
 	// SqlArray and SqlAction is two list for Add-Do design.
-	SqlArray  []*model.BaseSQL
-	SqlAction []func(sql *model.BaseSQL) error
+	SqlArray  []ast.Node
+	SqlAction []func(node ast.Node) error
 }
 
 func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
@@ -130,8 +119,6 @@ func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks
 		Task:        task,
 		RelateTasks: relateTasks,
 		log:         entry,
-		SqlArray:    []*model.BaseSQL{},
-		SqlAction:   []func(sql *model.BaseSQL) error{},
 	}
 }
 
@@ -140,7 +127,6 @@ func (i *Inspect) Context() *Context {
 }
 
 func (i *Inspect) SqlType() string {
-	hasProcedureFunction := i.counterProcedure > 0 || i.counterFunction > 0
 	hasDML := i.counterDML > 0
 	hasDDL := i.counterDDL > 0
 
@@ -148,16 +134,12 @@ func (i *Inspect) SqlType() string {
 		return model.SQL_TYPE_MULTI
 	}
 
-	if hasProcedureFunction && (hasDML || hasDDL) {
-		return model.SQL_TYPE_PROCEDURE_FUNCTION_MULTI
-	}
-
 	if hasDML {
 		return model.SQL_TYPE_DML
 	} else if hasDDL {
 		return model.SQL_TYPE_DDL
 	} else {
-		return model.SQL_TYPE_PROCEDURE_FUNCTION
+		return ""
 	}
 }
 
@@ -187,14 +169,13 @@ func (i *Inspect) SqlInvalid() bool {
 	return i.HasInvalidSql
 }
 
-func (i *Inspect) Add(sql *model.BaseSQL, action func(sql *model.BaseSQL) error) error {
+func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) error {
 	nodes, err := i.ParseSql(sql.Content)
 	if err != nil {
 		return err
 	}
 	i.addNodeCounter(nodes)
-	sql.Stmts = nodes
-	i.SqlArray = append(i.SqlArray, sql)
+	i.SqlArray = append(i.SqlArray, nodes[0])
 	i.SqlAction = append(i.SqlAction, action)
 	return nil
 }
@@ -206,15 +187,13 @@ func (i *Inspect) Do() error {
 		i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
 		return errors.SQL_STMT_CONFLICT_ERROR
 	}
-	for n, sql := range i.SqlArray {
-		err := i.SqlAction[n](sql)
+	for idx, node := range i.SqlArray {
+		err := i.SqlAction[idx](node)
 		if err != nil {
 			return err
 		}
 		// update schema info
-		for _, node := range sql.Stmts {
-			i.updateContext(node)
-		}
+		i.updateContext(node)
 	}
 	return nil
 }
@@ -560,29 +539,9 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 
 // getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
-	var pkColumnsName = map[string]struct{}{}
-	schemaName := i.getSchemaName(stmt.Table)
-	tableName := stmt.Table.Name.String()
-
 	pkColumnsName, hasPk := getPrimaryKey(stmt)
 	if !hasPk {
 		return pkColumnsName, hasPk, nil
-	}
-	// for mycat, while schema is a sharding schema, primary key is not a unique column
-	// the primary key add the sharding column looks like a primary key
-	if i.Task.Instance.DbType == model.DB_TYPE_MYCAT {
-		mycatConfig := i.Task.Instance.MycatConfig
-		ok, err := mycatConfig.IsShardingSchema(schemaName)
-		if err != nil {
-			return pkColumnsName, hasPk, err
-		}
-		if ok {
-			shardingColumn, err := mycatConfig.GetShardingColumn(schemaName, tableName)
-			if err != nil {
-				return pkColumnsName, false, err
-			}
-			pkColumnsName[shardingColumn] = struct{}{}
-		}
 	}
 	return pkColumnsName, hasPk, nil
 }

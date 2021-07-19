@@ -21,7 +21,6 @@ type SqleConfig struct {
 
 type DatabaseConfig struct {
 	MysqlCnf     MysqlConfig     `yaml:"mysql_cnf"`
-	SqlServerCnf SqlServerConfig `yaml:"sql_server_cnf,omitempty"` // Deprecated
 }
 
 type MysqlConfig struct {
@@ -31,9 +30,4 @@ type MysqlConfig struct {
 	Password       string `yaml:"mysql_password,omitempty"`
 	SecretPassword string `yaml:"secret_mysql_password,omitempty"`
 	Schema         string `yaml:"mysql_schema"`
-}
-
-type SqlServerConfig struct {
-	Host string `yaml:"sql_server_host"`
-	Port string `yaml:"sql_server_port"`
 }
