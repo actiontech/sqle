@@ -39,7 +39,7 @@ func newInspectResults() *InspectResults {
 
 // level find highest level in result
 func (rs *InspectResults) level() string {
-	level := model.RULE_LEVEL_NORMAL
+	level := model.RuleLevelNormal
 	for _, result := range rs.results {
 		if model.RuleLevelMap[level] < model.RuleLevelMap[result.Level] {
 			level = result.Level
@@ -53,7 +53,7 @@ func (rs *InspectResults) message() string {
 	for n, result := range rs.results {
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
-			model.RULE_LEVEL_ERROR, model.RULE_LEVEL_WARN, model.RULE_LEVEL_NOTICE, model.RULE_LEVEL_NORMAL, "osc"),
+			model.RuleLevelError, model.RuleLevelWarn, model.RuleLevelNotice, model.RuleLevelNormal, "osc"),
 			result.Message)
 		if match {
 			message = result.Message

@@ -35,7 +35,7 @@ func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {
 				if currentSql.AuditResult != "" {
 					result.add(currentSql.AuditLevel, currentSql.AuditResult)
 				}
-				result.add(model.RULE_LEVEL_NOTICE, reason)
+				result.add(model.RuleLevelNotice, reason)
 				currentSql.AuditLevel = result.level()
 				currentSql.AuditResult = result.message()
 			}

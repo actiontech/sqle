@@ -206,7 +206,7 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	var normalCount float64
 	for _, sql := range task.ExecuteSQLs {
-		if sql.AuditLevel == model.RULE_LEVEL_NORMAL {
+		if sql.AuditLevel == model.RuleLevelNormal {
 			normalCount += 1
 		}
 	}

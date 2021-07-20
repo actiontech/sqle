@@ -124,7 +124,7 @@ var RuleHandlers = []RuleHandler{
 			Name:  CONFIG_DML_ROLLBACK_MAX_ROWS,
 			Desc:  "在 DML 语句中预计影响行数超过指定值则不回滚",
 			Value: "1000",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeGlobalConfig,
 		},
 		Func:          nil,
@@ -135,7 +135,7 @@ var RuleHandlers = []RuleHandler{
 			Name:  CONFIG_DDL_OSC_MIN_SIZE,
 			Desc:  "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
 			Value: "16",
-			Level: model.RULE_LEVEL_NORMAL,
+			Level: model.RuleLevelNormal,
 			Typ:   RuleTypeGlobalConfig,
 		},
 		Func:          nil,
@@ -147,7 +147,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST,
 			Desc:  "新建表必须加入if not exists create，保证重复执行不报错",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message:       "新建表必须加入if not exists create，保证重复执行不报错",
@@ -158,7 +158,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_OBJECT_NAME_LENGTH,
 			Desc:  "表名、列名、索引名的长度不能大于64字节",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message:       "表名、列名、索引名的长度不能大于64字节",
@@ -169,7 +169,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_PK_NOT_EXIST,
 			Desc:  "表必须有主键",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
 		},
 		Message:       "表必须有主键",
@@ -180,7 +180,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
 			Desc:  "主键建议使用自增",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
 		},
 		Message:       "主键建议使用自增",
@@ -191,7 +191,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED,
 			Desc:  "主键建议使用 bigint 无符号类型，即 bigint unsigned",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
 		},
 		Message:       "主键建议使用 bigint 无符号类型，即 bigint unsigned",
@@ -202,7 +202,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_VARCHAR_MAX,
 			Desc:  "禁止使用 varchar(max)",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "禁止使用 varchar(max)",
@@ -213,7 +213,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_CHAR_LENGTH,
 			Desc:  "char长度大于20时，必须使用varchar类型",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "char长度大于20时，必须使用varchar类型",
@@ -224,7 +224,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_DISABLE_FK,
 			Desc:  "禁止使用外键",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
 		},
 		Message:       "禁止使用外键",
@@ -235,7 +235,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_INDEX_COUNT,
 			Desc:  "索引个数建议不超过阈值",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Value: "5",
 			Typ:   RuleTypeIndexingConvention,
 		},
@@ -247,7 +247,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COMPOSITE_INDEX_MAX,
 			Desc:  "复合索引的列数量不建议超过阈值",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Value: "3",
 			Typ:   RuleTypeIndexingConvention,
 		},
@@ -259,7 +259,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
 			Desc:  "数据库对象命名禁止使用关键字",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message:       "数据库对象命名禁止使用关键字 %s",
@@ -269,7 +269,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_OBJECT_NAME_USING_CN,
 			Desc:  "数据库对象命名不能使用英文、下划线、数字之外的字符",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message:       "数据库对象命名不能使用英文、下划线、数字之外的字符",
@@ -280,7 +280,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4,
 			Desc:  "建议使用Innodb引擎,utf8mb4字符集",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "建议使用Innodb引擎,utf8mb4字符集",
@@ -291,7 +291,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_INDEX_COLUMN_WITH_BLOB,
 			Desc:  "禁止将blob类型的列加入索引",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
 		},
 		Message:       "禁止将blob类型的列加入索引",
@@ -302,7 +302,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WHERE_IS_INVALID,
 			Desc:  "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message:       "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
@@ -313,7 +313,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_ALTER_TABLE_NEED_MERGE,
 			Desc:  "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message:       "已存在对该表的修改语句，建议合并成一个ALTER语句",
@@ -324,7 +324,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_DISABE_SELECT_ALL_COLUMN,
 			Desc:  "不建议使用select *",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message:       "不建议使用select *",
@@ -335,7 +335,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_DISABLE_DROP_STATEMENT,
 			Desc:  "禁止除索引外的drop操作",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message:       "禁止除索引外的drop操作",
@@ -346,7 +346,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_TABLE_WITHOUT_COMMENT,
 			Desc:  "表建议添加注释",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "表建议添加注释",
@@ -357,7 +357,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_WITHOUT_COMMENT,
 			Desc:  "列建议添加注释",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "列建议添加注释",
@@ -368,7 +368,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_INDEX_PREFIX,
 			Desc:  "普通索引必须要以\"idx_\"为前缀",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message:       "普通索引必须要以\"idx_\"为前缀",
@@ -379,7 +379,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_UNIQUE_INDEX_PRIFIX,
 			Desc:  "unique索引必须要以\"uniq_\"为前缀",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message:       "unique索引必须要以\"uniq_\"为前缀",
@@ -390,7 +390,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_UNIQUE_INDEX,
 			Desc:  "unique索引名必须使用 IDX_UK_表名_字段名",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message: "unique索引名必须使用 IDX_UK_表名_字段名",
@@ -400,7 +400,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
 			Desc:  "除了自增列及大字段列之外，每个列都必须添加默认值",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "除了自增列及大字段列之外，每个列都必须添加默认值",
@@ -411,7 +411,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
 			Desc:  "timestamp 类型的列必须添加默认值",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "timestamp 类型的列必须添加默认值",
@@ -422,7 +422,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
 			Desc:  "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
@@ -433,7 +433,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
 			Desc:  "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message:       "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
@@ -444,7 +444,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WITH_LIMIT,
 			Desc:  "delete/update 语句不能有limit条件",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message:       "delete/update 语句不能有limit条件",
@@ -455,7 +455,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WITH_ORDER_BY,
 			Desc:  "delete/update 语句不能有order by",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message:       "delete/update 语句不能有order by",
@@ -465,7 +465,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_INSERT_COLUMNS_EXIST,
 			Desc:  "insert 语句必须指定column",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "insert 语句必须指定column",
@@ -474,7 +474,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_BATCH_INSERT_LISTS_MAX,
 			Desc:  "单条insert语句，建议批量插入不超过阈值",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Value: "5000",
 			Typ:   RuleTypeDMLConvention,
 		},
@@ -485,7 +485,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT,
 			Desc:  "主键禁止使用自增",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
 		},
 		Message: "主键禁止使用自增",
@@ -494,7 +494,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WHERE_EXIST_FUNC,
 			Desc:  "避免对条件字段使用函数操作",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "避免对条件字段使用函数操作",
@@ -503,7 +503,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WHERE_EXIST_NOT,
 			Desc:  "不建议对条件字段使用负向查询",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "不建议对条件字段使用负向查询",
@@ -512,7 +512,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WHERE_EXIST_NULL,
 			Desc:  "不建议对条件字段使用 NULL 值判断",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "不建议对条件字段使用 NULL 值判断",
@@ -521,7 +521,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION,
 			Desc:  "条件字段存在数值和字符的隐式转换",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "条件字段存在数值和字符的隐式转换",
@@ -530,7 +530,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_LIMIT_MUST_EXIST,
 			Desc:  "delete/update 语句必须有limit条件",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "delete/update 语句必须有limit条件",
@@ -539,7 +539,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES,
 			Desc:  "避免使用标量子查询",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "避免使用标量子查询",
@@ -548,7 +548,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS,
 			Desc:  "建议创建约束前,先行创建索引",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeIndexingConvention,
 		},
 		Message: "建议创建约束前,先行创建索引",
@@ -557,7 +557,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_SELECT_FOR_UPDATE,
 			Desc:  "建议避免使用select for update",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "建议避免使用select for update",
@@ -566,7 +566,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLLATION_DATABASE,
 			Desc:  "建议使用规定的数据库排序规则",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Value: "utf8mb4_0900_ai_ci",
 			Typ:   RuleTypeDDLConvention,
 		},
@@ -576,7 +576,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_DECIMAL_TYPE_COLUMN,
 			Desc:  "精确浮点数建议使用DECIMAL",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message: "精确浮点数建议使用DECIMAL",
@@ -585,7 +585,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_NEEDLESS_FUNC,
 			Desc:  "避免使用不必要的内置函数",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Value: "sha(),sqrt(),md5()",
 			Typ:   RuleTypeDMLConvention,
 		},
@@ -595,7 +595,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_DATABASE_SUFFIX,
 			Desc:  "数据库名称建议以\"_DB\"结尾",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message: "数据库名称建议以\"_DB\"结尾",
@@ -605,7 +605,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_PK_NAME,
 			Desc:  "建议主键命名为\"PK_表名\"",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeNamingConvention,
 		},
 		Message: "建议主键命名为\"PK_表名\"",
@@ -615,7 +615,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_TRANSACTION_ISOLATION_LEVEL,
 			Desc:  "事物隔离级别建议设置成RC",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message: "事物隔离级别建议设置成RC",
@@ -625,7 +625,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_FUZZY_SEARCH,
 			Desc:  "禁止使用全模糊搜索或左模糊搜索",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "禁止使用全模糊搜索或左模糊搜索",
@@ -635,7 +635,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_TABLE_PARTITION,
 			Desc:  "不建议使用分区表相关功能",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message: "不建议使用分区表相关功能",
@@ -644,7 +644,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_NUMBER_OF_JOIN_TABLES,
 			Desc:  "使用JOIN连接表查询建议不超过阈值",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Value: "3",
 			Typ:   RuleTypeDMLConvention,
 		},
@@ -654,7 +654,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DML_CHECK_IS_AFTER_UNION_DISTINCT,
 			Desc:  "建议使用UNION ALL,替代UNION",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "建议使用UNION ALL,替代UNION",
@@ -663,7 +663,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_IS_EXIST_LIMIT_OFFSET,
 			Desc:  "使用LIMIT分页时,避免使用LIMIT M,N",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "使用LIMIT分页时,避免使用LIMIT M,N",
@@ -672,7 +672,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_INDEX_OPTION,
 			Desc:  "建议选择可选性超过阈值字段作为索引",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Value: "0.7",
 			Typ:   RuleTypeDMLConvention,
 		},
@@ -683,7 +683,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_ENUM_NOTICE,
 			Desc:  "不建议使用 ENUM 类型",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message: "不建议使用 ENUM 类型",
@@ -693,7 +693,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_SET_NOTICE,
 			Desc:  "不建议使用 SET 类型",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message: "不建议使用 SET 类型",
@@ -703,7 +703,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_COLUMN_BLOB_NOTICE,
 			Desc:  "不建议使用 BLOB 或 TEXT 类型",
-			Level: model.RULE_LEVEL_NOTICE,
+			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
 		Message: "不建议使用 BLOB 或 TEXT 类型",
@@ -714,7 +714,7 @@ var RuleHandlers = []RuleHandler{
 			Name:  DMLCheckExplainAccessTypeAll,
 			Value: "10000",
 			Desc:  "查询的扫描不建议超过指定行数（默认值：10000）",
-			Level: model.RULE_LEVEL_WARN,
+			Level: model.RuleLevelWarn,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "该查询的扫描行数为%v",
@@ -724,7 +724,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DMLCheckExplainExtraUsingFilesort,
 			Desc:  "该查询使用了文件排序",
-			Level: model.RULE_LEVEL_WARN,
+			Level: model.RuleLevelWarn,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "该查询使用了文件排序",
@@ -734,7 +734,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DMLCheckExplainExtraUsingTemporary,
 			Desc:  "该查询使用了临时表",
-			Level: model.RULE_LEVEL_WARN,
+			Level: model.RuleLevelWarn,
 			Typ:   RuleTypeDMLConvention,
 		},
 		Message: "该查询使用了临时表",
@@ -744,7 +744,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDLCheckCreateView,
 			Desc:  "禁止使用视图",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message: "禁止使用视图",
@@ -754,7 +754,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDLCheckCreateTrigger,
 			Desc:  "禁止使用触发器",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message: "禁止使用触发器",
@@ -764,7 +764,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDLCheckCreateFunction,
 			Desc:  "禁止使用自定义函数",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message: "禁止使用自定义函数",
@@ -774,7 +774,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:  DDLCheckCreateProcedure,
 			Desc:  "禁止使用存储过程",
-			Level: model.RULE_LEVEL_ERROR,
+			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
 		Message: "禁止使用存储过程",

@@ -55,7 +55,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 			}
 			if whitelistMatch {
 				var results InspectResults
-				results.add(model.RULE_LEVEL_NORMAL, "白名单")
+				results.add(model.RuleLevelNormal, "白名单")
 				currentSql.AuditStatus = model.SQLAuditStatusFinished
 				currentSql.AuditLevel = results.level()
 				currentSql.AuditResult = results.message()
@@ -64,7 +64,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 				if err != nil {
 					return err
 				}
-				if results.level() == model.RULE_LEVEL_ERROR {
+				if results.level() == model.RuleLevelError {
 					i.HasInvalidSql = true
 					i.Logger().Warnf("sql %s invalid, %s", node.Text(), results.message())
 				}
@@ -98,7 +98,7 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 					if currentSql.AuditResult != "" {
 						results.add(currentSql.AuditLevel, currentSql.AuditResult)
 					}
-					results.add(model.RULE_LEVEL_NOTICE, fmt.Sprintf("[osc]%s", oscCommandLine))
+					results.add(model.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 					currentSql.AuditLevel = results.level()
 					currentSql.AuditResult = results.message()
 				}
@@ -191,14 +191,14 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 		return err
 	}
 	if !schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG, schemaName)
 	} else {
 		tableExist, err := i.isTableExist(stmt.Table)
 		if err != nil {
 			return err
 		}
 		if tableExist && !stmt.IfNotExists {
-			results.add(model.RULE_LEVEL_ERROR, TABLE_EXIST_MSG,
+			results.add(model.RuleLevelError, TABLE_EXIST_MSG,
 				i.getTableName(stmt.Table))
 		}
 		if stmt.ReferTable != nil {
@@ -207,7 +207,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 				return err
 			}
 			if !referTableExist {
-				results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+				results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 					i.getTableName(stmt.ReferTable))
 			}
 		}
@@ -237,7 +237,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 			}
 			duplicateName := getDuplicate(names)
 			if len(duplicateName) > 0 {
-				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+				results.add(model.RuleLevelError, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
 					strings.Join(duplicateName, ","))
 			}
 		case ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintFulltext:
@@ -255,23 +255,23 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 			}
 			duplicateName := getDuplicate(names)
 			if len(duplicateName) > 0 {
-				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, constraintName,
+				results.add(model.RuleLevelError, DUPLICATE_INDEX_COLUMN_MSG, constraintName,
 					strings.Join(duplicateName, ","))
 			}
 		}
 	}
 	if d := getDuplicate(colsName); len(d) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG,
+		results.add(model.RuleLevelError, DUPLICATE_COLUMN_ERROR_MSG,
 			strings.Join(d, ","))
 	}
 
 	if d := getDuplicate(indexesName); len(d) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_ERROR_MSG,
+		results.add(model.RuleLevelError, DUPLICATE_INDEX_ERROR_MSG,
 			strings.Join(d, ","))
 	}
 
 	if pkCounter > 1 {
-		results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG)
+		results.add(model.RuleLevelError, PRIMARY_KEY_MULTI_ERROR_MSG)
 	}
 	notExistKeyColsName := []string{}
 	for _, colName := range keyColsName {
@@ -280,7 +280,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 		}
 	}
 	if len(notExistKeyColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, KEY_COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(notExistKeyColsName), ","))
 	}
 	return nil
@@ -309,7 +309,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 		return err
 	}
 	if !schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
@@ -317,7 +317,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 		return err
 	}
 	if !tableExist {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -386,7 +386,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 			} else {
 				colNameMap[colName] = struct{}{}
 				if hasPk && HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-					results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
+					results.add(model.RuleLevelError, PRIMARY_KEY_EXIST_MSG)
 				} else {
 					hasPk = true
 				}
@@ -410,7 +410,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 
 	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
 		// primary key not exist, can not drop primary key
-		results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_NOT_EXIST_MSG)
+		results.add(model.RuleLevelError, PRIMARY_KEY_NOT_EXIST_MSG)
 	}
 
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
@@ -442,7 +442,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
 				// primary key has exist, can not add primary key
-				results.add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG)
+				results.add(model.RuleLevelError, PRIMARY_KEY_EXIST_MSG)
 			} else {
 				hasPk = true
 			}
@@ -456,7 +456,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 			}
 			duplicateColumn := getDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+				results.add(model.RuleLevelError, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
@@ -480,30 +480,30 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 			}
 			duplicateColumn := getDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, indexName,
+				results.add(model.RuleLevelError, DUPLICATE_INDEX_COLUMN_MSG, indexName,
 					strings.Join(duplicateColumn, ","))
 			}
 		}
 	}
 
 	if len(needExistsColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsColsName), ","))
 	}
 	if len(needNotExistsColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+		results.add(model.RuleLevelError, COLUMN_EXIST_MSG,
 			strings.Join(removeDuplicate(needNotExistsColsName), ","))
 	}
 	if len(needExistsIndexesName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, INDEX_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsIndexesName), ","))
 	}
 	if len(needNotExistsIndexesName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG,
+		results.add(model.RuleLevelError, INDEX_EXIST_MSG,
 			strings.Join(removeDuplicate(needNotExistsIndexesName), ","))
 	}
 	if len(needExistsKeyColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, KEY_COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsKeyColsName), ","))
 	}
 	return nil
@@ -542,11 +542,11 @@ func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt, results *Inspec
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsTablesName), ","))
 	}
 	return nil
@@ -565,7 +565,7 @@ func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt, results *InspectResults) er
 		return err
 	}
 	if !schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, stmt.DBName)
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG, stmt.DBName)
 	}
 	return nil
 }
@@ -588,7 +588,7 @@ func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt,
 		return err
 	}
 	if schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_EXIST_MSG, schemaName)
+		results.add(model.RuleLevelError, SCHEMA_EXIST_MSG, schemaName)
 	}
 	return nil
 }
@@ -611,7 +611,7 @@ func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt,
 		return err
 	}
 	if !schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG, schemaName)
 	}
 	return nil
 }
@@ -634,7 +634,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 		return err
 	}
 	if !schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
@@ -642,7 +642,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 		return err
 	}
 	if !tableExist {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -657,7 +657,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; ok {
-		results.add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG, stmt.IndexName)
+		results.add(model.RuleLevelError, INDEX_EXIST_MSG, stmt.IndexName)
 	}
 	keyColsName := []string{}
 	keyColNeedExist := []string{}
@@ -670,12 +670,12 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 	}
 	duplicateName := getDuplicate(keyColsName)
 	if len(duplicateName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, stmt.IndexName,
+		results.add(model.RuleLevelError, DUPLICATE_INDEX_COLUMN_MSG, stmt.IndexName,
 			strings.Join(duplicateName, ","))
 	}
 
 	if len(keyColNeedExist) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, KEY_COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(keyColNeedExist), ","))
 	}
 	return nil
@@ -701,7 +701,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 		return err
 	}
 	if !schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
@@ -709,7 +709,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 		return err
 	}
 	if !tableExist {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -720,7 +720,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; !ok {
-		results.add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG, stmt.IndexName)
+		results.add(model.RuleLevelError, INDEX_NOT_EXIST_MSG, stmt.IndexName)
 	}
 	return nil
 }
@@ -744,7 +744,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 		return err
 	}
 	if !schemaExist {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, schemaName)
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(table)
@@ -752,7 +752,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 		return err
 	}
 	if !tableExist {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			i.getTableName(table))
 		return nil
 	}
@@ -778,7 +778,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 		}
 	}
 	if d := getDuplicate(insertColsName); len(d) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, strings.Join(d, ","))
+		results.add(model.RuleLevelError, DUPLICATE_COLUMN_ERROR_MSG, strings.Join(d, ","))
 	}
 
 	needExistColsName := []string{}
@@ -788,14 +788,14 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 		}
 	}
 	if len(needExistColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistColsName), ","))
 	}
 
 	if stmt.Lists != nil {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
-				results.add(model.RULE_LEVEL_ERROR, NOT_MATCH_VALUES_AND_COLUMNS)
+				results.add(model.RuleLevelError, NOT_MATCH_VALUES_AND_COLUMNS)
 				break
 			}
 		}
@@ -851,11 +851,11 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsTablesName), ","))
 	}
 
@@ -910,12 +910,12 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS,
+		results.add(model.RuleLevelError, COLUMN_IS_AMBIGUOUS,
 			strings.Join(removeDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -953,11 +953,11 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResul
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsTablesName), ","))
 	}
 	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
@@ -996,12 +996,12 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResul
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, COLUMN_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS,
+		results.add(model.RuleLevelError, COLUMN_IS_AMBIGUOUS,
 			strings.Join(removeDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -1055,11 +1055,11 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResul
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, SCHEMA_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		results.add(model.RuleLevelError, TABLE_NOT_EXIST_MSG,
 			strings.Join(removeDuplicate(needExistsTablesName), ","))
 	}
 	return nil
@@ -1067,6 +1067,6 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResul
 
 // checkUnparsedStmt might add more check in future.
 func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt, results *InspectResults) error {
-	results.add(model.RULE_LEVEL_ERROR, "语法错误或者解析器不支持")
+	results.add(model.RuleLevelError, "语法错误或者解析器不支持")
 	return nil
 }
