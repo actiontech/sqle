@@ -235,7 +235,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 				names = append(names, colName)
 				keyColsName = append(keyColsName, colName)
 			}
-			duplicateName := getDuplicate(names)
+			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
 				results.add(model.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 					strings.Join(duplicateName, ","))
@@ -253,19 +253,19 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 				names = append(names, colName)
 				keyColsName = append(keyColsName, colName)
 			}
-			duplicateName := getDuplicate(names)
+			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
 				results.add(model.RuleLevelError, DuplicateIndexedColumnMessage, constraintName,
 					strings.Join(duplicateName, ","))
 			}
 		}
 	}
-	if d := getDuplicate(colsName); len(d) > 0 {
+	if d := utils.GetDuplicate(colsName); len(d) > 0 {
 		results.add(model.RuleLevelError, DuplicateColumnsMessage,
 			strings.Join(d, ","))
 	}
 
-	if d := getDuplicate(indexesName); len(d) > 0 {
+	if d := utils.GetDuplicate(indexesName); len(d) > 0 {
 		results.add(model.RuleLevelError, DuplicateIndexesMessage,
 			strings.Join(d, ","))
 	}
@@ -281,7 +281,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *In
 	}
 	if len(notExistKeyColsName) > 0 {
 		results.add(model.RuleLevelError, KeyedColumnNotExistMessage,
-			strings.Join(removeDuplicate(notExistKeyColsName), ","))
+			strings.Join(utils.RemoveDuplicate(notExistKeyColsName), ","))
 	}
 	return nil
 }
@@ -454,7 +454,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 					needExistsKeyColsName = append(needExistsKeyColsName, colName)
 				}
 			}
-			duplicateColumn := getDuplicate(names)
+			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
 				results.add(model.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 					strings.Join(duplicateColumn, ","))
@@ -478,7 +478,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 					needExistsKeyColsName = append(needExistsKeyColsName, colName)
 				}
 			}
-			duplicateColumn := getDuplicate(names)
+			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
 				results.add(model.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
 					strings.Join(duplicateColumn, ","))
@@ -488,23 +488,23 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *Insp
 
 	if len(needExistsColsName) > 0 {
 		results.add(model.RuleLevelError, ColumnNotExistMessage,
-			strings.Join(removeDuplicate(needExistsColsName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsColsName), ","))
 	}
 	if len(needNotExistsColsName) > 0 {
 		results.add(model.RuleLevelError, ColumnExistMessage,
-			strings.Join(removeDuplicate(needNotExistsColsName), ","))
+			strings.Join(utils.RemoveDuplicate(needNotExistsColsName), ","))
 	}
 	if len(needExistsIndexesName) > 0 {
 		results.add(model.RuleLevelError, IndexNotExistMessage,
-			strings.Join(removeDuplicate(needExistsIndexesName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsIndexesName), ","))
 	}
 	if len(needNotExistsIndexesName) > 0 {
 		results.add(model.RuleLevelError, IndexExistMessage,
-			strings.Join(removeDuplicate(needNotExistsIndexesName), ","))
+			strings.Join(utils.RemoveDuplicate(needNotExistsIndexesName), ","))
 	}
 	if len(needExistsKeyColsName) > 0 {
 		results.add(model.RuleLevelError, KeyedColumnNotExistMessage,
-			strings.Join(removeDuplicate(needExistsKeyColsName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsKeyColsName), ","))
 	}
 	return nil
 }
@@ -543,11 +543,11 @@ func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt, results *Inspec
 	}
 	if len(needExistsSchemasName) > 0 {
 		results.add(model.RuleLevelError, SchemaNotExistMessage,
-			strings.Join(removeDuplicate(needExistsSchemasName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
 		results.add(model.RuleLevelError, TableNotExistMessage,
-			strings.Join(removeDuplicate(needExistsTablesName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
 }
@@ -668,7 +668,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 			keyColNeedExist = append(keyColNeedExist, colName)
 		}
 	}
-	duplicateName := getDuplicate(keyColsName)
+	duplicateName := utils.GetDuplicate(keyColsName)
 	if len(duplicateName) > 0 {
 		results.add(model.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
 			strings.Join(duplicateName, ","))
@@ -676,7 +676,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 
 	if len(keyColNeedExist) > 0 {
 		results.add(model.RuleLevelError, KeyedColumnNotExistMessage,
-			strings.Join(removeDuplicate(keyColNeedExist), ","))
+			strings.Join(utils.RemoveDuplicate(keyColNeedExist), ","))
 	}
 	return nil
 }
@@ -777,7 +777,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 			insertColsName = append(insertColsName, col.Name.Name.L)
 		}
 	}
-	if d := getDuplicate(insertColsName); len(d) > 0 {
+	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
 		results.add(model.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
 	}
 
@@ -789,7 +789,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *InspectResul
 	}
 	if len(needExistColsName) > 0 {
 		results.add(model.RuleLevelError, ColumnNotExistMessage,
-			strings.Join(removeDuplicate(needExistColsName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if stmt.Lists != nil {
@@ -852,11 +852,11 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 	}
 	if len(needExistsSchemasName) > 0 {
 		results.add(model.RuleLevelError, SchemaNotExistMessage,
-			strings.Join(removeDuplicate(needExistsSchemasName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
 		results.add(model.RuleLevelError, TableNotExistMessage,
-			strings.Join(removeDuplicate(needExistsTablesName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 
 	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
@@ -911,12 +911,12 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *InspectResul
 
 	if len(needExistColsName) > 0 {
 		results.add(model.RuleLevelError, ColumnNotExistMessage,
-			strings.Join(removeDuplicate(needExistColsName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
 		results.add(model.RuleLevelError, ColumnIsAmbiguousMessage,
-			strings.Join(removeDuplicate(ambiguousColsName), ","))
+			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
 }
@@ -954,11 +954,11 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResul
 	}
 	if len(needExistsSchemasName) > 0 {
 		results.add(model.RuleLevelError, SchemaNotExistMessage,
-			strings.Join(removeDuplicate(needExistsSchemasName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
 		results.add(model.RuleLevelError, TableNotExistMessage,
-			strings.Join(removeDuplicate(needExistsTablesName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
 		return nil
@@ -997,12 +997,12 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *InspectResul
 
 	if len(needExistColsName) > 0 {
 		results.add(model.RuleLevelError, ColumnNotExistMessage,
-			strings.Join(removeDuplicate(needExistColsName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
 		results.add(model.RuleLevelError, ColumnIsAmbiguousMessage,
-			strings.Join(removeDuplicate(ambiguousColsName), ","))
+			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
 }
@@ -1056,11 +1056,11 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *InspectResul
 	}
 	if len(needExistsSchemasName) > 0 {
 		results.add(model.RuleLevelError, SchemaNotExistMessage,
-			strings.Join(removeDuplicate(needExistsSchemasName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
 		results.add(model.RuleLevelError, TableNotExistMessage,
-			strings.Join(removeDuplicate(needExistsTablesName), ","))
+			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
 }

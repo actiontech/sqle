@@ -538,35 +538,6 @@ func getLimitCount(limit *ast.Limit, _default int64) (int64, error) {
 	return strconv.ParseInt(exprFormat(limit.Count), 0, 64)
 }
 
-func getDuplicate(c []string) []string {
-	d := []string{}
-	for i, v1 := range c {
-		for j, v2 := range c {
-			if i >= j {
-				continue
-			}
-			if v1 == v2 {
-				d = append(d, v1)
-			}
-		}
-	}
-	return removeDuplicate(d)
-}
-
-func removeDuplicate(c []string) []string {
-	var tmpMap = map[string]struct{}{}
-	var result = []string{}
-	for _, v := range c {
-		beforeLen := len(tmpMap)
-		tmpMap[v] = struct{}{}
-		AfterLen := len(tmpMap)
-		if beforeLen != AfterLen {
-			result = append(result, v)
-		}
-	}
-	return result
-}
-
 func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTableStmt) (*ast.CreateTableStmt, error) {
 	newTable := &ast.CreateTableStmt{
 		Table:       oldTable.Table,

@@ -38,3 +38,32 @@ func HasSuffix(s, suffix string, caseSensitive bool) bool {
 	}
 	return strings.HasSuffix(strings.ToLower(s), strings.ToLower(suffix))
 }
+
+func GetDuplicate(c []string) []string {
+	d := []string{}
+	for i, v1 := range c {
+		for j, v2 := range c {
+			if i >= j {
+				continue
+			}
+			if v1 == v2 {
+				d = append(d, v1)
+			}
+		}
+	}
+	return RemoveDuplicate(d)
+}
+
+func RemoveDuplicate(c []string) []string {
+	var tmpMap = map[string]struct{}{}
+	var result = []string{}
+	for _, v := range c {
+		beforeLen := len(tmpMap)
+		tmpMap[v] = struct{}{}
+		AfterLen := len(tmpMap)
+		if beforeLen != AfterLen {
+			result = append(result, v)
+		}
+	}
+	return result
+}

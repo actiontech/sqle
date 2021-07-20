@@ -53,18 +53,6 @@ func TestReplaceSchemaName(t *testing.T) {
 	assert.Equal(t, replaceTableName(input, "db1", "tb1"), output)
 }
 
-func TestGetDuplicate(t *testing.T) {
-	assert.Equal(t, []string{}, getDuplicate([]string{"1", "2", "3"}))
-	assert.Equal(t, []string{"2"}, getDuplicate([]string{"1", "2", "2"}))
-	assert.Equal(t, []string{"2", "3"}, getDuplicate([]string{"1", "2", "2", "3", "3", "3"}))
-}
-
-func TestRemoveDuplicate(t *testing.T) {
-	assert.Equal(t, []string{"1", "2", "3"}, removeDuplicate([]string{"1", "2", "3"}))
-	assert.Equal(t, []string{"1", "2", "3"}, removeDuplicate([]string{"1", "2", "2", "3"}))
-	assert.Equal(t, []string{"1", "2", "3"}, removeDuplicate([]string{"1", "2", "2", "3", "3", "3"}))
-}
-
 func TestInspectResults(t *testing.T) {
 	results := newInspectResults()
 	handler := RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST]
