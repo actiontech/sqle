@@ -238,7 +238,7 @@ func TestCheckInvalidUse(t *testing.T) {
 	runDefaultRulesInspectCase(t, "use_database: database not exist", DefaultMysqlInspect(),
 		"use no_exist_db",
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			SCHEMA_NOT_EXIST_MSG, "no_exist_db"),
+			SchemaNotExistMessage, "no_exist_db"),
 	)
 
 	inspect1 := DefaultMysqlInspect()
@@ -255,7 +255,7 @@ func TestCaseSensitive(t *testing.T) {
 select id from exist_db.EXIST_TB_1 where id = 1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			TABLE_NOT_EXIST_MSG, "exist_db.EXIST_TB_1"))
+			TableNotExistMessage, "exist_db.EXIST_TB_1"))
 
 	inspect1 := DefaultMysqlInspect()
 	inspect1.Ctx.AddSysVar(SysVarLowerCaseTableNames, "1")
@@ -277,7 +277,7 @@ PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+			SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table is exist(1)", DefaultMysqlInspect(),
@@ -306,7 +306,7 @@ PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			TABLE_EXIST_MSG, "exist_db.exist_tb_1"),
+			TableExistMessage, "exist_db.exist_tb_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: refer table not exist", DefaultMysqlInspect(),
@@ -314,7 +314,7 @@ PRIMARY KEY (id)
 CREATE TABLE exist_db.not_exist_tb_1 like exist_db.not_exist_tb_2;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb_2"),
+			TableNotExistMessage, "exist_db.not_exist_tb_2"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: multi pk(1)", DefaultMysqlInspect(),
@@ -326,7 +326,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG))
+		newTestResult().add(model.RULE_LEVEL_ERROR, MultiPrimaryKeyMessage))
 
 	runDefaultRulesInspectCase(t, "create_table: multi pk(2)", DefaultMysqlInspect(),
 		`
@@ -338,7 +338,7 @@ PRIMARY KEY (id),
 PRIMARY KEY (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_MULTI_ERROR_MSG))
+		newTestResult().add(model.RULE_LEVEL_ERROR, MultiPrimaryKeyMessage))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate column", DefaultMysqlInspect(),
 		`
@@ -349,7 +349,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateColumnsMessage,
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate index", DefaultMysqlInspect(),
@@ -363,7 +363,7 @@ INDEX idx_1 (v1),
 INDEX idx_1 (v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_ERROR_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexesMessage,
 			"idx_1"))
 
 	runDefaultRulesInspectCase(t, "create_table: key column not exist", DefaultMysqlInspect(),
@@ -377,7 +377,7 @@ INDEX idx_1 (v3),
 INDEX idx_2 (v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KeyedColumnNotExistMessage,
 			"v3,v4,v5"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column not exist", DefaultMysqlInspect(),
@@ -389,7 +389,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id11)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KeyedColumnNotExistMessage,
 			"id11"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
@@ -401,7 +401,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id,id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicatePrimaryKeyedColumnMessage,
 			"id"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate", DefaultMysqlInspect(),
@@ -414,7 +414,7 @@ PRIMARY KEY (id),
 INDEX idx_1 (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_1",
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "idx_1",
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(2)", DefaultMysqlInspect(),
@@ -427,7 +427,7 @@ PRIMARY KEY (id),
 INDEX (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "(匿名)",
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "(匿名)",
 			"v1").addResult(DDL_CHECK_INDEX_PREFIX))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
@@ -441,8 +441,8 @@ INDEX idx_1 (v1,v1),
 INDEX idx_2 (v1,v2,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_1",
-			"v1").add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2", "v2"))
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "idx_1",
+			"v1").add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "idx_2", "v2"))
 }
 
 func TestCheckInvalidAlterTable(t *testing.T) {
@@ -452,7 +452,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, SchemaNotExistMessage,
 			"not_exist_db"),
 	)
 
@@ -460,7 +460,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 		`
 ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage,
 			"exist_db.not_exist_tb_1"),
 	)
 
@@ -468,7 +468,7 @@ ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT 
 		`
 ALTER TABLE exist_db.exist_tb_1 add column v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnExistMessage,
 			"v1"),
 	)
 
@@ -476,7 +476,7 @@ ALTER TABLE exist_db.exist_tb_1 add column v1 varchar(255) NOT NULL DEFAULT "uni
 		`
 ALTER TABLE exist_db.exist_tb_1 drop column v5;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage,
 			"v5"),
 	)
 
@@ -484,7 +484,7 @@ ALTER TABLE exist_db.exist_tb_1 drop column v5;
 		`
 ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage,
 			"v5"),
 	)
 
@@ -499,7 +499,7 @@ ALTER TABLE exist_db.exist_tb_1 change column v1 v1 varchar(255) NOT NULL DEFAUL
 		`
 ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage,
 			"v5"),
 	)
 
@@ -507,7 +507,7 @@ ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAUL
 		`
 ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnExistMessage,
 			"v1"),
 	)
 
@@ -522,14 +522,14 @@ ALTER TABLE exist_db.exist_tb_2 add primary key(id);
 		`
 ALTER TABLE exist_db.exist_tb_1 add primary key(v1);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, PRIMARY_KEY_EXIST_MSG).addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT).addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
+		newTestResult().add(model.RULE_LEVEL_ERROR, PrimaryKeyExistMessage).addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT).addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: add pk but key column not exist", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_2 add primary key(id11);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KeyedColumnNotExistMessage,
 			"id11"),
 	)
 
@@ -537,7 +537,7 @@ ALTER TABLE exist_db.exist_tb_2 add primary key(id11);
 		`
 ALTER TABLE exist_db.exist_tb_2 add primary key(id,id);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_PRIMARY_KEY_COLUMN_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicatePrimaryKeyedColumnMessage,
 			"id"),
 	)
 
@@ -545,7 +545,7 @@ ALTER TABLE exist_db.exist_tb_2 add primary key(id,id);
 		`
 ALTER TABLE exist_db.exist_tb_1 add index idx_1 (v1);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, IndexExistMessage,
 			"idx_1"),
 	)
 
@@ -553,7 +553,7 @@ ALTER TABLE exist_db.exist_tb_1 add index idx_1 (v1);
 		`
 ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, IndexNotExistMessage,
 			"idx_2"),
 	)
 
@@ -561,7 +561,7 @@ ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 		`
 ALTER TABLE exist_db.exist_tb_1 add index idx_2 (v3);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG,
+		newTestResult().add(model.RULE_LEVEL_ERROR, KeyedColumnNotExistMessage,
 			"v3"),
 	)
 
@@ -569,7 +569,7 @@ ALTER TABLE exist_db.exist_tb_1 add index idx_2 (v3);
 		`
 ALTER TABLE exist_db.exist_tb_1 add index idx_2 (id,id);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2",
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "idx_2",
 			"id"),
 	)
 
@@ -577,7 +577,7 @@ ALTER TABLE exist_db.exist_tb_1 add index idx_2 (id,id);
 		`
 ALTER TABLE exist_db.exist_tb_1 add index (id,id);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "(匿名)",
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "(匿名)",
 			"id").addResult(DDL_CHECK_INDEX_PREFIX),
 	)
 }
@@ -594,7 +594,7 @@ CREATE DATABASE if not exists exist_db;
 		`
 CREATE DATABASE exist_db;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_EXIST_MSG, "exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, SchemaExistMessage, "exist_db"),
 	)
 }
 
@@ -603,42 +603,42 @@ func TestCheckInvalidCreateIndex(t *testing.T) {
 		`
 CREATE INDEX idx_1 ON not_exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: table not exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_1 ON exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: index exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_1 ON exist_db.exist_tb_1(v1);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_EXIST_MSG, "idx_1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, IndexExistMessage, "idx_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column not exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(v3);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, KEY_COLUMN_NOT_EXIST_MSG, "v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, KeyedColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2", "id"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "idx_2", "id"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id,v1);
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_INDEX_COLUMN_MSG, "idx_2", "id"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateIndexedColumnMessage, "idx_2", "id"),
 	)
 }
 
@@ -667,7 +667,7 @@ DROP DATABASE if exists not_exist_db;
 DROP DATABASE not_exist_db;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+			SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_table: ok", DefaultMysqlInspect(),
@@ -689,7 +689,7 @@ DROP TABLE if exists not_exist_db.not_exist_tb_1;
 DROP TABLE not_exist_db.not_exist_tb_1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+			SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_table: table not exist", DefaultMysqlInspect(),
@@ -697,7 +697,7 @@ DROP TABLE not_exist_db.not_exist_tb_1;
 DROP TABLE exist_db.not_exist_tb_1;
 `,
 		newTestResult().add(model.RULE_LEVEL_ERROR,
-			TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb_1"),
+			TableNotExistMessage, "exist_db.not_exist_tb_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_index: ok", DefaultMysqlInspect(),
@@ -711,7 +711,7 @@ DROP INDEX idx_1 ON exist_db.exist_tb_1;
 		`
 DROP INDEX idx_2 ON exist_db.exist_tb_1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, INDEX_NOT_EXIST_MSG, "idx_2"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, IndexNotExistMessage, "idx_2"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_index: if exists and index not exist", DefaultMysqlInspect(),
@@ -727,49 +727,49 @@ func TestCheckInvalidInsert(t *testing.T) {
 		`
 insert into not_exist_db.not_exist_tb values (1,"1","1");
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: table not exist", DefaultMysqlInspect(),
 		`
 insert into exist_db.not_exist_tb values (1,"1","1");
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column not exist(1)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v3) values (1,"1","1");
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column not exist(2)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 set id=1,v1="1",v3="1";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column is duplicate(1)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v1) values (1,"1","1");
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateColumnsMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column is duplicate(2)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 set id=1,v1="1",v1="1";
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, DUPLICATE_COLUMN_ERROR_MSG, "v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, DuplicateColumnsMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: do not match values and columns", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, NOT_MATCH_VALUES_AND_COLUMNS),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnsValuesNotMatchMessage),
 	)
 }
 
@@ -792,28 +792,28 @@ update exist_tb_1 set v1="2" where exist_db.exist_tb_1.id=1;
 		`
 update not_exist_db.not_exist_tb set v1="2" where id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: table not exist", DefaultMysqlInspect(),
 		`
 update exist_db.not_exist_tb set v1="2" where id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v3="2" where id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: where column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v1="2" where v3=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: ok", DefaultMysqlInspect(),
@@ -826,28 +826,28 @@ update exist_tb_1 as t set t.v1 = "1" where t.id = 1;
 		`
 update exist_db.not_exist_tb as t set t.v3 = "1" where t.id = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set t.v3 = "1" where t.id = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "t.v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "t.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set t.v1 = "1" where t.v3 = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "t.v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "t.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -868,42 +868,42 @@ update exist_tb_1 inner join exist_tb_2 on exist_tb_1.id = exist_tb_2.id set exi
 		`
 update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_2.v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3,exist_tb_2.v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_3.v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "exist_tb_3.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "not_exist_db.exist_tb_1.v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
@@ -917,21 +917,21 @@ update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS, "v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS, "v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_IS_AMBIGUOUS, "v1"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnIsAmbiguousMessage, "v1"),
 	)
 }
 
@@ -947,35 +947,35 @@ delete from exist_db.exist_tb_1 where id=1;
 		`
 delete from not_exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where v3=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where exist_tb_1.v3=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_1.v3"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where exist_tb_2.id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, COLUMN_NOT_EXIST_MSG, "exist_tb_2.id"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, ColumnNotExistMessage, "exist_tb_2.id"),
 	)
 }
 
@@ -984,14 +984,14 @@ func TestCheckInvalidSelect(t *testing.T) {
 		`
 select id from not_exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, SCHEMA_NOT_EXIST_MSG, "not_exist_db"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "select: table not exist", DefaultMysqlInspect(),
 		`
 select id from exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.not_exist_tb"),
+		newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 }
 
@@ -3280,7 +3280,7 @@ PRIMARY KEY (id) USING BTREE
 				Value:     "select * from t1 where id = 2",
 				MatchType: model.SQLWhitelistFPMatch,
 			},
-		}, `select id from T1 where id = 4`, newTestResult().add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "exist_db.T1"))
+		}, `select id from T1 where id = 4`, newTestResult().add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "exist_db.T1"))
 
 	inspect2 := DefaultMysqlInspect()
 	inspect2.Ctx = parentInspect.Ctx

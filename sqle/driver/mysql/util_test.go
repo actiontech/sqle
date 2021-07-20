@@ -72,7 +72,7 @@ func TestInspectResults(t *testing.T) {
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.message())
 
-	results.add(model.RULE_LEVEL_ERROR, TABLE_NOT_EXIST_MSG, "not_exist_tb")
+	results.add(model.RULE_LEVEL_ERROR, TableNotExistMessage, "not_exist_tb")
 	assert.Equal(t, "error", results.level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
