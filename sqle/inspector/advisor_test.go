@@ -2909,9 +2909,12 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldError(t *testing.T) {
 func Test_DDLCheckNameUseENAndUnderline_ShouldNotError(t *testing.T) {
 	for desc, sql := range map[string]string{
 		`(0)create database`: `CREATE DATABASE db_app1;`,
+		`(1)create database`: `CREATE DATABASE app_;`,
 		`(0)create table`:    `CREATE TABLE tb_service1(pk_id int);`,
 		`(0)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v4_col4 int;`,
+		`(1)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN col_ int;`,
 		`(0)create index`:    `CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
+		`(1)create index`:    `CREATE INDEX idx_ ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
 			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
