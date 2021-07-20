@@ -49,9 +49,9 @@ type Inspector interface {
 	Logger() *logrus.Entry
 }
 
-func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
+func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task,
 	rules map[string]model.Rule) Inspector {
-	return NewInspect(entry, ctx, task, relateTasks, rules)
+	return NewInspect(entry, ctx, task, rules)
 }
 
 type Config struct {
@@ -73,8 +73,6 @@ type Inspect struct {
 	currentRule model.Rule
 
 	Task *model.Task
-	// RelateTasks is relate ddl tasks for the dml task.
-	RelateTasks []model.Task
 
 	log *logrus.Entry
 	// dbConn is a SQL driver for MySQL.
@@ -91,7 +89,7 @@ type Inspect struct {
 	SqlAction []func(node ast.Node) error
 }
 
-func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks []model.Task,
+func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task,
 	rules map[string]model.Rule) *Inspect {
 	ctx.UseSchema(task.Schema)
 
@@ -113,12 +111,11 @@ func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task, relateTasks
 		}
 	}
 	return &Inspect{
-		Ctx:         ctx,
-		config:      config,
-		Results:     newInspectResults(),
-		Task:        task,
-		RelateTasks: relateTasks,
-		log:         entry,
+		Ctx:     ctx,
+		config:  config,
+		Results: newInspectResults(),
+		Task:    task,
+		log:     entry,
 	}
 }
 

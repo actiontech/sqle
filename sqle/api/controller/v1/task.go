@@ -153,7 +153,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil, nil).
+	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil).
 		ParseSql(sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

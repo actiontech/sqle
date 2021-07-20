@@ -176,28 +176,13 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	ruleMap := model.GetRuleMapFromAllArray(rules)
 	ctx := inspector.NewContext(nil)
-	i := inspector.NewInspector(entry, ctx, task, nil, ruleMap)
+	i := inspector.NewInspector(entry, ctx, task, ruleMap)
 	err = i.Advise(rules, whitelist)
 	if err != nil {
 		return err
 	}
 	firstSqlInvalid := i.SqlInvalid()
 	sqlType := i.SqlType()
-	// if sql type is DML and sql invalid, try to advise with other DDL.
-	if sqlType == model.SQL_TYPE_DML && i.SqlInvalid() {
-		relateTasks, err := st.GetRelatedDDLTask(task)
-		if err != nil {
-			return err
-		}
-		if len(relateTasks) > 0 {
-			entry.Warnf("dml sql invalid, retry advise with relate ddl")
-			i = inspector.NewInspector(entry, ctx, task, relateTasks, ruleMap)
-			err = i.Advise(rules, whitelist)
-			if err != nil {
-				return err
-			}
-		}
-	}
 	// generate rollback after advise
 	var rollbackSqls = []*model.RollbackSQL{}
 
@@ -207,7 +192,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		entry.Warnf("task is mybatis xml file audit, ignore generate rollback")
 	} else {
 		ctx = inspector.NewContext(nil)
-		i = inspector.NewInspector(entry, ctx, task, nil, ruleMap)
+		i = inspector.NewInspector(entry, ctx, task, ruleMap)
 		rollbackSqls, err = i.GenerateAllRollbackSql()
 		if err != nil {
 			return err
@@ -261,7 +246,7 @@ func (s *Sqled) commit(task *model.Task) error {
 
 	// if task is not inspected, parse task SQL type and commit it.
 	entry := log.NewEntry().WithField("task_id", task.ID)
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 	if err := i.ParseSqlType(); err != nil {
 		return err
 	}
@@ -282,7 +267,7 @@ func (s *Sqled) commitDDL(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 	for _, commitSql := range task.ExecuteSQLs {
 		currentSql := commitSql
 		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
@@ -339,7 +324,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 
 	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
 	if err != nil {
@@ -380,7 +365,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 	entry.Info("start rollback sql")
 
 	st := model.GetStorage()
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 
 	for _, rollbackSql := range task.RollbackSQLs {
 		currentSql := rollbackSql

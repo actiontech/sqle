@@ -22,11 +22,6 @@ func (i *Inspect) Advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 }
 
 func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
-	err := i.adviseRelateTask(i.RelateTasks)
-	if err != nil {
-		return err
-	}
-
 	for _, commitSql := range i.Task.ExecuteSQLs {
 		currentSql := commitSql
 		if err := i.Add(&currentSql.BaseSQL, func(node ast.Node) (err error) {
@@ -119,34 +114,6 @@ func (i *Inspect) advise(rules []model.Rule, wl []model.SqlWhitelist) error {
 		}
 	}
 	return i.Do()
-}
-
-func (i *Inspect) adviseRelateTask(relateTasks []model.Task) error {
-	if relateTasks == nil || len(relateTasks) == 0 {
-		return nil
-	}
-	taskIdList := []string{}
-	for _, task := range relateTasks {
-		taskIdList = append(taskIdList, fmt.Sprintf("%d", task.ID))
-	}
-	i.Logger().Infof("relate advise tasks: %s", strings.Join(taskIdList, ", "))
-	currentCtx := NewContext(i.Context())
-	for _, task := range relateTasks {
-		ri := NewInspect(i.Logger(), currentCtx, &task, nil, nil)
-		err := ri.advise(nil, nil)
-		if err != nil {
-			return err
-		}
-		if ri.SqlInvalid() {
-			i.Logger().Warnf("relate tasks failed, because task %d invalid in tasks", task.ID)
-			return i.adviseRelateTask(relateTasks[1:])
-		}
-	}
-
-	i.Logger().Infof("relate tasks success")
-
-	i.Ctx = currentCtx
-	return nil
 }
 
 var (
