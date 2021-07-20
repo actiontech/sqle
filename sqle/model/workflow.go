@@ -559,5 +559,5 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	if err == gorm.ErrRecordNotFound {
 		return workflow, false, nil
 	}
-	return workflow, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
