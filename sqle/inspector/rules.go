@@ -1306,13 +1306,6 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
 			break
 		}
-
-		if idx := bytes.IndexFunc([]byte(name), func(r rune) bool {
-			return string(r) == "_"
-		}); idx == -1 || idx == 0 || idx == len(name)-1 {
-			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
-			break
-		}
 	}
 
 	// check keyword
