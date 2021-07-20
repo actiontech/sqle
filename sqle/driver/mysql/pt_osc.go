@@ -37,10 +37,10 @@ func LoadPtTemplateFromFile(fileName string) error {
 }
 
 const (
-	OSC_NO_UNIQUE_INDEX_AND_PRIMARY_KEY      = "至少要包含主键或者唯一键索引才能使用 pt-online-schema-change"
-	OSC_AVOID_ADD_UNIQUE_INDEX               = "添加唯一键使用 pt-online-schema-change，可能会导致数据丢失，在数据迁移到新表时使用了insert ignore"
-	OSC_AVOID_RENAME_TABLE                   = "pt-online-schema-change 不支持使用rename table 来重命名表"
-	OSC_AVOID_ADD_NOT_NULL_NO_DEFAULT_COLUMN = "非空字段必须设置默认值，不然 pt-online-schema-change 会执行失败"
+	PTOSCNoUniqueIndexOrPrimaryKey          = "至少要包含主键或者唯一键索引才能使用 pt-online-schema-change"
+	PTOSCAvoidUniqueIndex                   = "添加唯一键使用 pt-online-schema-change，可能会导致数据丢失，在数据迁移到新表时使用了insert ignore"
+	PTOSCAvoidRenameTable                   = "pt-online-schema-change 不支持使用rename table 来重命名表"
+	PTOSCAvoidNoDefaultValueOnNotNullColumn = "非空字段必须设置默认值，不然 pt-online-schema-change 会执行失败"
 )
 
 // generateOSCCommandLine generate pt-online-schema-change command-line statement;
@@ -77,12 +77,12 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	// This is necessary because the tool creates a DELETE trigger to keep the new table
 	// updated while the process is running.
 	if !hasPrimaryKey(createTableStmt) && !hasUniqIndex(createTableStmt) {
-		return OSC_NO_UNIQUE_INDEX_AND_PRIMARY_KEY, nil
+		return PTOSCNoUniqueIndexOrPrimaryKey, nil
 	}
 
 	// The RENAME clause cannot be used to rename the table.
 	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable)) > 0 {
-		return OSC_AVOID_RENAME_TABLE, nil
+		return PTOSCAvoidRenameTable, nil
 	}
 
 	// If you add a column without a default value and make it NOT NULL, the tool will fail,
@@ -91,7 +91,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		for _, col := range spec.NewColumns {
 			if HasOneInOptions(col.Options, ast.ColumnOptionNotNull) {
 				if !HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
-					return OSC_AVOID_ADD_NOT_NULL_NO_DEFAULT_COLUMN, nil
+					return PTOSCAvoidNoDefaultValueOnNotNullColumn, nil
 				}
 			}
 		}
@@ -103,7 +103,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintUniq:
-			return OSC_AVOID_ADD_UNIQUE_INDEX, nil
+			return PTOSCAvoidUniqueIndex, nil
 		}
 	}
 

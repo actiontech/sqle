@@ -12,19 +12,19 @@ func TestPTOSC(t *testing.T) {
 
 	runOSCCase(t, "add column not null no default",
 		"alter table exist_tb_1 add column v3 varchar(255) NOT NULL;",
-		OSC_AVOID_ADD_NOT_NULL_NO_DEFAULT_COLUMN)
+		PTOSCAvoidNoDefaultValueOnNotNullColumn)
 
 	runOSCCase(t, "not pk and unique key",
 		"alter table exist_tb_3 add column v3 varchar(255);",
-		OSC_NO_UNIQUE_INDEX_AND_PRIMARY_KEY)
+		PTOSCNoUniqueIndexOrPrimaryKey)
 
 	runOSCCase(t, "rename table",
 		"alter table exist_tb_1 rename as not_exist_tb_1;",
-		OSC_AVOID_RENAME_TABLE)
+		PTOSCAvoidRenameTable)
 
 	runOSCCase(t, "add unique index",
 		"alter table exist_tb_1 add unique index u_1 (v1) ",
-		OSC_AVOID_ADD_UNIQUE_INDEX)
+		PTOSCAvoidUniqueIndex)
 
 	runOSCCase(t, "add column ok",
 		"alter table exist_tb_1 add column v3 varchar(255);",
