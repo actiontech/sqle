@@ -2885,18 +2885,15 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldError(t *testing.T) {
 		`(0)create database`: `CREATE DATABASE 应用1;`,
 		`(1)create database`: `CREATE DATABASE ®®;`,
 		`(2)create database`: `CREATE DATABASE _app;`,
-		`(3)create database`: `CREATE DATABASE app_;`,
 		`(0)create table`:    `CREATE TABLE 应用1(字段1 int);`,
 		`(1)create table`:    `CREATE TABLE ®®(®® int);`,
 		`(2)create table`:    `CREATE TABLE _app(_col int);`,
 		`(3)create table`:    `CREATE TABLE _app(col_ int);`,
 		`(0)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN 字段 int;`,
 		`(1)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN _col int;`,
-		`(2)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN col_ int;`,
 		`(3)alter table`:     `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN ®® int;`,
 		`(0)create index`:    `CREATE INDEX 索引1 ON exist_db.exist_tb_1(v1)`,
 		`(1)create index`:    `CREATE INDEX _idx ON exist_db.exist_tb_1(v1)`,
-		`(2)create index`:    `CREATE INDEX idx_ ON exist_db.exist_tb_1(v1)`,
 		`(3)create index`:    `CREATE INDEX ®® ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
