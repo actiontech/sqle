@@ -46,11 +46,11 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	default:
 		err := fmt.Errorf("db type is not support")
 		entry.Error(err)
-		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 	if err != nil {
 		entry.Error(err)
-		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 
 	db.SetMaxOpenConns(1)
@@ -60,7 +60,7 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	conn, err := db.Conn(context.Background())
 	if err != nil {
 		entry.Error(err)
-		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 	entry.Infof("connected to %s %s:%s", instance.DbType, instance.Host, instance.Port)
 	return &BaseConn{
@@ -88,7 +88,7 @@ func (c *BaseConn) Ping() error {
 	} else {
 		c.Logger().Infof("ping %s:%s success", c.host, c.port)
 	}
-	return errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+	return errors.New(errors.ConnectRemoteDatabaseError, err)
 }
 
 func (c *BaseConn) Exec(query string) (driver.Result, error) {
@@ -100,7 +100,7 @@ func (c *BaseConn) Exec(query string) (driver.Result, error) {
 		c.Logger().Infof("exec sql success; host: %s, port: %s, user: %s, query: %s",
 			c.host, c.port, c.user, query)
 	}
-	return result, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+	return result, errors.New(errors.ConnectRemoteDatabaseError, err)
 }
 
 func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
@@ -149,7 +149,7 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 	if err != nil {
 		c.Logger().Errorf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
 			c.host, c.port, c.user, query, err.Error())
-		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	} else {
 		c.Logger().Infof("query sql success; host: %s, port: %s, user: %s, query: %s\n",
 			c.host, c.port, c.user, query)
@@ -232,12 +232,12 @@ func (c *Executor) ShowCreateTable(tableName string) (string, error) {
 	if len(result) != 1 {
 		err := fmt.Errorf("show create table error, result is %v", result)
 		c.Db.Logger().Error(err)
-		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 	if query, ok := result[0]["Create Table"]; !ok {
 		err := fmt.Errorf("show create table error, column \"Create Table\" not found")
 		c.Db.Logger().Error(err)
-		return "", errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
 	} else {
 		return query.String, nil
 	}
@@ -259,7 +259,7 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 		if len(v) != 1 {
 			err := fmt.Errorf("show databases error, result not match")
 			c.Db.Logger().Error(err)
-			return dbs, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+			return dbs, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
 		for _, db := range v {
 			dbs[n] = db.String
@@ -279,7 +279,7 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 		if len(v) != 1 {
 			err := fmt.Errorf("show tables error, result not match")
 			c.Db.Logger().Error(err)
-			return tables, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+			return tables, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
 		for _, table := range v {
 			tables[n] = table.String
@@ -352,7 +352,7 @@ func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
 	if len(result) != 1 && len(result) != 0 {
 		err := fmt.Errorf("show master status error, result is %v", result)
 		c.Db.Logger().Error(err)
-		return nil, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 	return result, nil
 }
@@ -392,7 +392,7 @@ where table_schema = '%s' and table_name = '%s'`, schema, table)
 	size, err := strconv.ParseFloat(sizeStr, 10)
 	if err != nil {
 		c.Db.Logger().Error(err)
-		return 0, errors.New(errors.CONNECT_REMOTE_DB_ERROR, err)
+		return 0, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 	return size, nil
 }

@@ -69,7 +69,7 @@ func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
-	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
@@ -82,20 +82,20 @@ func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool,
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
-	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...RuleTemplateRule) error {
 	if err := s.db.Where(&RuleTemplateRule{RuleTemplateId: tpl.ID}).Delete(&RuleTemplateRule{}).Error; err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 	err := s.db.Model(tpl).Association("RuleList").Append(rules).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*Instance) error {
 	err := s.db.Model(tpl).Association("Instances").Replace(instances).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) error {
@@ -115,20 +115,20 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 func (s *Storage) GetRuleTemplateTips() ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 	err := s.db.Select("name").Find(&ruleTemplates).Error
-	return ruleTemplates, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return ruleTemplates, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAllRule() ([]Rule, error) {
 	rules := []Rule{}
 	err := s.db.Find(&rules).Error
-	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	rules := []Rule{}
 	instance, _, err := s.GetInstanceById(instanceId)
 	if err != nil {
-		return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return rules, errors.New(errors.ConnectStorageError, err)
 	}
 	templates := instance.RuleTemplates
 	if len(templates) <= 0 {
@@ -141,7 +141,7 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 		return rules, errors.New(errors.DataNotExist, err)
 	}
 	if err != nil {
-		return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return rules, errors.New(errors.ConnectStorageError, err)
 	}
 
 	for _, r := range tpl.RuleList {
@@ -153,13 +153,13 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 		}
 		rules = append(rules, r.Rule)
 	}
-	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRuleTemplatesByNames(names []string) ([]*RuleTemplate, error) {
 	templates := []*RuleTemplate{}
 	err := s.db.Where("name in (?)", names).Find(&templates).Error
-	return templates, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return templates, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemplates []*RuleTemplate, err error) {
@@ -187,7 +187,7 @@ func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemp
 func (s *Storage) GetRulesByNames(names []string) ([]Rule, error) {
 	rules := []Rule{}
 	err := s.db.Where("name in (?)", names).Find(&rules).Error
-	return rules, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAndCheckRuleExist(ruleNames []string) (rules []Rule, err error) {

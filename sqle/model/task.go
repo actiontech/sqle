@@ -196,17 +196,17 @@ func (t *Task) ValidAction(typ int) error {
 		return nil
 	case TASK_ACTION_EXECUTE:
 		if t.HasDoingExecute() {
-			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has been executed"))
+			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been executed"))
 		}
 	case TASK_ACTION_ROLLBACK:
 		if t.HasDoingRollback() {
-			return errors.New(errors.TASK_ACTION_DONE, fmt.Errorf("task has been rolled back"))
+			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been rolled back"))
 		}
 		if t.IsExecuteFailed() {
-			return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task is commit failed, not allow rollback"))
+			return errors.New(errors.TaskActionInvalid, fmt.Errorf("task is commit failed, not allow rollback"))
 		}
 		if !t.HasDoingExecute() {
-			return errors.New(errors.TASK_ACTION_INVALID, fmt.Errorf("task need commit first"))
+			return errors.New(errors.TaskActionInvalid, fmt.Errorf("task need commit first"))
 		}
 	}
 	return nil
@@ -218,7 +218,7 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
-	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return task, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
@@ -228,14 +228,14 @@ func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
-	return task, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return task, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	rows, err := s.db.Model(&ExecuteSQL{}).Select("content").
 		Where("task_id = ?", taskId).Rows()
 	if err != nil {
-		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	defer rows.Close()
 	buff := &bytes.Buffer{}
@@ -250,7 +250,7 @@ func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 
 func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
 	err := s.db.Table("tasks").Where("id = ?", task.ID).Update(attrs...).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateExecuteSQLs(ExecuteSQLs []*ExecuteSQL) error {
@@ -259,10 +259,10 @@ func (s *Storage) UpdateExecuteSQLs(ExecuteSQLs []*ExecuteSQL) error {
 		currentSql := executeSQL
 		if err := tx.Save(currentSql).Error; err != nil {
 			tx.Rollback()
-			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
-	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
+	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
 func (s *Storage) UpdateRollbackSQLs(rollbackSQLs []*RollbackSQL) error {
@@ -271,17 +271,17 @@ func (s *Storage) UpdateRollbackSQLs(rollbackSQLs []*RollbackSQL) error {
 		currentSql := rollbackSQL
 		if err := tx.Save(currentSql).Error; err != nil {
 			tx.Rollback()
-			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
-	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
+	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
 func (s *Storage) UpdateTaskStatusById(taskId uint, status string) error {
 	err := s.db.Model(&Task{}).Where("id = ?", taskId).Update(map[string]string{
 		"status": status,
 	}).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateExecuteSQLStatusByTaskId(task *Task, status string) error {
@@ -310,7 +310,7 @@ func (s *Storage) UpdateExecuteSqlStatus(baseSQL *BaseSQL, status, result string
 
 func (s *Storage) UpdateExecuteSQLById(executeSQLId string, attrs ...interface{}) error {
 	err := s.db.Table(ExecuteSQL{}.TableName()).Where("id = ?", executeSQLId).Update(attrs...).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateRollbackSqlStatus(baseSQL *BaseSQL, status, result string) error {
@@ -328,7 +328,7 @@ func (s *Storage) UpdateRollbackSqlStatus(baseSQL *BaseSQL, status, result strin
 
 func (s *Storage) UpdateRollbackSQLById(rollbackSQLId string, attrs ...interface{}) error {
 	err := s.db.Table(RollbackSQL{}.TableName()).Where("id = ?", rollbackSQLId).Update(attrs...).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
@@ -340,7 +340,7 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 		SQLType:    SQL_TYPE_DDL,
 		Status:     TaskStatusAudited,
 	}).Preload("Instance").Preload("ExecuteSQLs").Find(&tasks).Error
-	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return tasks, errors.New(errors.ConnectStorageError, err)
 }
 
 type TaskSQLDetail struct {
@@ -432,5 +432,5 @@ func (s *Storage) GetExpiredTasks(start time.Time) ([]*Task, error) {
 		Where("workflow_records.id is NULL").
 		Scan(&tasks).Error
 
-	return tasks, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return tasks, errors.New(errors.ConnectStorageError, err)
 }

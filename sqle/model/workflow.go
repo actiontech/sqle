@@ -51,7 +51,7 @@ func (s *Storage) GetWorkflowTemplateByName(name string) (*WorkflowTemplate, boo
 	if err == gorm.ErrRecordNotFound {
 		return workflowTemplate, false, nil
 	}
-	return workflowTemplate, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetWorkflowTemplateById(id uint) (*WorkflowTemplate, bool, error) {
@@ -60,19 +60,19 @@ func (s *Storage) GetWorkflowTemplateById(id uint) (*WorkflowTemplate, bool, err
 	if err == gorm.ErrRecordNotFound {
 		return workflowTemplate, false, nil
 	}
-	return workflowTemplate, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetWorkflowStepsByTemplateId(id uint) ([]*WorkflowStepTemplate, error) {
 	steps := []*WorkflowStepTemplate{}
 	err := s.db.Where("workflow_template_id = ?", id).Find(&steps).Error
-	return steps, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return steps, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetWorkflowStepsDetailByTemplateId(id uint) ([]*WorkflowStepTemplate, error) {
 	steps := []*WorkflowStepTemplate{}
 	err := s.db.Preload("Users").Where("workflow_template_id = ?", id).Find(&steps).Error
-	return steps, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return steps, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
@@ -143,13 +143,13 @@ func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*Workflow
 func (s *Storage) UpdateWorkflowTemplateInstances(workflowTemplate *WorkflowTemplate,
 	instances ...*Instance) error {
 	err := s.db.Model(workflowTemplate).Association("Instances").Replace(instances).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetWorkflowTemplateTip() ([]*WorkflowTemplate, error) {
 	templates := []*WorkflowTemplate{}
 	err := s.db.Select("name").Find(&templates).Error
-	return templates, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return templates, errors.New(errors.ConnectStorageError, err)
 }
 
 type Workflow struct {
@@ -298,14 +298,14 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 	err := tx.Save(record).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	workflow.WorkflowRecordId = record.ID
 	err = tx.Save(workflow).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	for _, step := range steps {
@@ -315,17 +315,17 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 		err = tx.Save(currentStep).Error
 		if err != nil {
 			tx.Rollback()
-			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
 	if len(steps) > 0 {
 		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
 		if err != nil {
 			tx.Rollback()
-			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
-	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
+	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
 func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
@@ -338,7 +338,7 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 	err := tx.Save(record).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	for _, step := range steps {
@@ -347,14 +347,14 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 		err = tx.Save(currentStep).Error
 		if err != nil {
 			tx.Rollback()
-			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
 	if len(steps) > 0 {
 		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
 		if err != nil {
 			tx.Rollback()
-			return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
 	// update record history
@@ -362,17 +362,17 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 		w.Record.ID, w.ID).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	// update workflow record to new
 	if err := tx.Model(&Workflow{}).Where("id = ?", w.ID).
 		Update("workflow_record_id", record.ID).Error; err != nil {
 		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 
-	return errors.New(errors.CONNECT_STORAGE_ERROR, tx.Commit().Error)
+	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
 func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) error {
@@ -399,7 +399,7 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 	err := s.db.Where("workflow_record_id in (?)", ids).
 		Preload("OperationUser").Find(&steps).Error
 	if err != nil {
-		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	stepTemplateIds := make([]uint, 0, len(steps))
 	for _, step := range steps {
@@ -408,7 +408,7 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 	stepTemplates := []*WorkflowStepTemplate{}
 	err = s.db.Preload("Users").Where("id in (?)", stepTemplateIds).Find(&stepTemplates).Error
 	if err != nil {
-		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	for _, step := range steps {
 		for _, stepTemplate := range stepTemplates {
@@ -428,14 +428,14 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 		return nil, false, nil
 	}
 	if err != nil {
-		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
 	if workflow.Record == nil {
 		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
 	}
 	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
 	if err != nil {
-		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
 	workflow.Record.Steps = steps
 	for _, step := range steps {
@@ -452,7 +452,7 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 		Joins("JOIN workflow_record_history AS wrh ON workflow_records.id = wrh.workflow_record_id").
 		Where("wrh.workflow_id = ?", id).Scan(&records).Error
 	if err != nil {
-		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	if len(records) == 0 {
 		return records, nil
@@ -463,7 +463,7 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 	}
 	steps, err := s.getWorkflowStepsByRecordIds(recordIds)
 	if err != nil {
-		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	for _, record := range records {
 		record.Steps = []*WorkflowStep{}
@@ -485,7 +485,7 @@ func (s *Storage) GetWorkflowRecordByTaskId(id string) (*WorkflowRecord, bool, e
 		return nil, false, nil
 	}
 	if err != nil {
-		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
 	return record, true, nil
 }
@@ -505,7 +505,7 @@ func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
 		return nil, false, nil
 	}
 	if err != nil {
-		return nil, false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
 	return workflow, true, nil
 }
@@ -516,7 +516,7 @@ func (s *Storage) GetLastWorkflow() (*Workflow, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
-	return workflow, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
@@ -550,5 +550,5 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 			"OR workflow_records.status = \"canceled\" "+
 			"OR workflow_records.status IS NULL)", start).
 		Scan(&workflows).Error
-	return workflows, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return workflows, errors.New(errors.ConnectStorageError, err)
 }

@@ -75,7 +75,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 	}
 	s.Unlock()
 	if taskRunning {
-		return action, errors.New(errors.TASK_RUNNING, fmt.Errorf("task is running"))
+		return action, errors.New(errors.TaskRunning, fmt.Errorf("task is running"))
 	}
 
 	task, exist, err := model.GetStorage().GetTaskDetailById(taskId)
@@ -83,7 +83,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		goto Error
 	}
 	if !exist {
-		err = errors.New(errors.TASK_NOT_EXIST, fmt.Errorf("task not exist"))
+		err = errors.New(errors.TaskNotExist, fmt.Errorf("task not exist"))
 		goto Error
 	}
 
@@ -256,7 +256,7 @@ func (s *Sqled) commit(task *model.Task) error {
 	case model.SQL_TYPE_DDL:
 		return s.commitDDL(task)
 	case model.SQL_TYPE_MULTI:
-		return errors.SQL_STMT_CONFLICT_ERROR
+		return errors.ErrSQLTypeConflict
 	}
 	return nil
 }
@@ -384,8 +384,8 @@ func (s *Sqled) rollback(task *model.Task) error {
 			case model.SQL_TYPE_DML:
 				i.CommitDMLs([]*model.BaseSQL{&currentSql.BaseSQL})
 			case model.SQL_TYPE_MULTI:
-				i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
-				return errors.SQL_STMT_CONFLICT_ERROR
+				i.Logger().Error(errors.ErrSQLTypeConflict)
+				return errors.ErrSQLTypeConflict
 			}
 			err = st.Save(currentSql)
 			if err != nil {

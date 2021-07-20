@@ -78,7 +78,7 @@ func (s *Storage) GetUserByName(name string) (*User, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
-	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
@@ -87,24 +87,24 @@ func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
-	return t, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateUserRoles(user *User, rs ...*Role) error {
 	err := s.db.Model(user).Association("Roles").Replace(rs).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	users := []*User{}
 	err := s.db.Where("login_name in (?)", names).Find(&users).Error
-	return users, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return users, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAllUserTip() ([]*User, error) {
 	users := []*User{}
 	err := s.db.Select("login_name").Find(&users).Error
-	return users, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return users, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRoleByName(name string) (*Role, bool, error) {
@@ -113,29 +113,29 @@ func (s *Storage) GetRoleByName(name string) (*Role, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return role, false, nil
 	}
-	return role, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return role, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRolesByNames(names []string) ([]*Role, error) {
 	roles := []*Role{}
 	err := s.db.Where("name in (?)", names).Find(&roles).Error
-	return roles, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return roles, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateRoleUsers(role *Role, users ...*User) error {
 	err := s.db.Model(role).Association("Users").Replace(users).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateRoleInstances(role *Role, instances ...*Instance) error {
 	err := s.db.Model(role).Association("Instances").Replace(instances).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAllRoleTip() ([]*Role, error) {
 	roles := []*Role{}
 	err := s.db.Select("name").Find(&roles).Error
-	return roles, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return roles, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err error) {
@@ -194,7 +194,7 @@ LIMIT 1
 	var count uint
 	err := s.db.Raw(query, user.ID, instance.ID).Count(&count).Error
 	if err != nil {
-		return false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return false, errors.New(errors.ConnectStorageError, err)
 	}
 	return count > 0, nil
 }
@@ -216,7 +216,7 @@ AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
 	var count uint
 	err := s.db.Raw(query, workflow.ID, user.ID, user.ID, user.ID).Count(&count).Error
 	if err != nil {
-		return false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return false, errors.New(errors.ConnectStorageError, err)
 	}
 	return count > 0, nil
 }

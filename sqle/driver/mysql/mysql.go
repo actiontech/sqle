@@ -138,8 +138,8 @@ func (i *Inspect) Do() error {
 	defer i.closeDbConn()
 
 	if i.SqlType() == model.SQL_TYPE_MULTI {
-		i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
-		return errors.SQL_STMT_CONFLICT_ERROR
+		i.Logger().Error(errors.ErrSQLTypeConflict)
+		return errors.ErrSQLTypeConflict
 	}
 	for idx, node := range i.SqlArray {
 		err := i.SqlAction[idx](node)

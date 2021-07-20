@@ -714,7 +714,7 @@ func (i *Inspect) getRecordCount(tableName *ast.TableName, tableAlias string, wh
 	return count, nil
 
 ERROR:
-	return 0, errors.New(errors.CONNECT_REMOTE_DB_ERROR, fmt.Errorf("do not match records for select count(*)"))
+	return 0, errors.New(errors.ConnectRemoteDatabaseError, fmt.Errorf("do not match records for select count(*)"))
 }
 
 // generateGetRecordsSql generate select SQL.

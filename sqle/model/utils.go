@@ -64,14 +64,14 @@ func NewStorage(user, password, host, port, schema string, debug bool) (*Storage
 		user, password, host, port, schema))
 	if err != nil {
 		log.Logger().Errorf("connect to storage failed, error: %v", err)
-		return nil, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	if debug {
 		db.SetLogger(log.Logger().WithField("type", "sql"))
 		db.LogMode(true)
 	}
 	log.Logger().Info("connected to storage")
-	return &Storage{db: db}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return &Storage{db: db}, errors.New(errors.ConnectStorageError, err)
 }
 
 type Storage struct {
@@ -99,15 +99,15 @@ func (s *Storage) AutoMigrate() error {
 		&SystemVariable{},
 	).Error
 	if err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 	err = s.db.Model(&User{}).AddIndex("idx_users_id_name", "id", "login_name").Error
 	if err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 	err = s.db.Model(&Instance{}).AddIndex("idx_instances_id_name", "id", "name").Error
 	if err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 	return nil
 }
@@ -219,46 +219,46 @@ func (s *Storage) Exist(model interface{}) (bool, error) {
 	var count int
 	err := s.db.Model(model).Where(model).Count(&count).Error
 	if err != nil {
-		return false, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return false, errors.New(errors.ConnectStorageError, err)
 	}
 	return count > 0, nil
 }
 
 func (s *Storage) Create(model interface{}) error {
-	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Create(model).Error)
+	return errors.New(errors.ConnectStorageError, s.db.Create(model).Error)
 }
 
 func (s *Storage) Save(model interface{}) error {
-	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Save(model).Error)
+	return errors.New(errors.ConnectStorageError, s.db.Save(model).Error)
 }
 
 func (s *Storage) Update(model interface{}, attrs ...interface{}) error {
-	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Model(model).UpdateColumns(attrs).Error)
+	return errors.New(errors.ConnectStorageError, s.db.Model(model).UpdateColumns(attrs).Error)
 }
 
 func (s *Storage) Delete(model interface{}) error {
-	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Delete(model).Error)
+	return errors.New(errors.ConnectStorageError, s.db.Delete(model).Error)
 }
 
 func (s *Storage) HardDelete(model interface{}) error {
-	return errors.New(errors.CONNECT_STORAGE_ERROR, s.db.Unscoped().Delete(model).Error)
+	return errors.New(errors.ConnectStorageError, s.db.Unscoped().Delete(model).Error)
 }
 
 func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
 	db := s.db.DB()
 	tx, err := db.Begin()
 	if err != nil {
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 	err = fn(tx)
 	if err != nil {
 		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
-		return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return errors.New(errors.ConnectStorageError, err)
 	}
 	return nil
 }

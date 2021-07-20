@@ -5,28 +5,27 @@ import "fmt"
 type ErrorCode int
 
 const (
-	STATUS_OK                ErrorCode = 0
-	CONNECT_STORAGE_ERROR    ErrorCode = 5001
-	CONNECT_REMOTE_DB_ERROR  ErrorCode = 5002
-	READ_UPLOAD_FILE_ERROR   ErrorCode = 5003
-	ParseMyBatisXMLFileError ErrorCode = 5006
+	StatusOK                   ErrorCode = 0
+	ConnectStorageError        ErrorCode = 5001
+	ConnectRemoteDatabaseError ErrorCode = 5002
+	ReadUploadFileError        ErrorCode = 5003
+	ParseMyBatisXMLFileError   ErrorCode = 5006
 
-	TASK_NOT_EXIST      ErrorCode = 4006
-	TASK_ACTION_INVALID ErrorCode = 4009
+	TaskNotExist      ErrorCode = 4006
+	TaskActionInvalid ErrorCode = 4009
+
+	TaskRunning    ErrorCode = 1001
+	TaskActionDone ErrorCode = 1002
 
 	LoginAuthFail ErrorCode = 4001
 	DataExist     ErrorCode = 4010
 	DataNotExist  ErrorCode = 4011
 	DataConflict  ErrorCode = 4012
 	DataInvalid   ErrorCode = 4013
-
-	TASK_RUNNING     ErrorCode = 1001
-	TASK_ACTION_DONE ErrorCode = 1002
 )
 
 var (
-	SQL_STMT_CONFLICT_ERROR           = New(-1, fmt.Errorf("不能同时提交 DDL 和 DML 语句"))
-	SQL_STMT_PROCEUDRE_FUNCTION_ERROR = New(-1, fmt.Errorf("包含存储过程或者函数的任务不能包含其他DDL、DML语句"))
+	ErrSQLTypeConflict = New(-1, fmt.Errorf("不能同时提交 DDL 和 DML 语句"))
 )
 
 type CodeError struct {
@@ -43,7 +42,7 @@ func (e *CodeError) Error() string {
 
 func (e *CodeError) Code() int {
 	if e.err == nil {
-		return int(STATUS_OK)
+		return int(StatusOK)
 	}
 	return int(e.code)
 }
