@@ -121,7 +121,7 @@ func DefaultMysqlInspect() *Inspect {
 				Port:     "3306",
 				User:     "root",
 				Password: "123456",
-				DbType:   model.DB_TYPE_MYSQL,
+				DbType:   model.DBTypeMySQL,
 			},
 			ExecuteSQLs:  []*model.ExecuteSQL{},
 			RollbackSQLs: []*model.RollbackSQL{},

@@ -72,7 +72,7 @@ func (rs *InspectResults) add(level, message string, args ...interface{}) {
 
 func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 	switch dbType {
-	case model.DB_TYPE_MYSQL:
+	case model.DBTypeMySQL:
 		p := parser.New()
 		stmts, _, err := p.PerfectParse(sql, "", "")
 		if err != nil {
@@ -86,7 +86,7 @@ func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 
 func parseOneSql(dbType, sql string) (ast.StmtNode, error) {
 	switch dbType {
-	case model.DB_TYPE_MYSQL:
+	case model.DBTypeMySQL:
 		p := parser.New()
 		stmt, err := p.ParseOneStmt(sql, "", "")
 		if err != nil {

@@ -47,7 +47,7 @@ const (
 // see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
 func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	// just support mysql
-	if i.Task.Instance.DbType != model.DB_TYPE_MYSQL {
+	if i.Task.Instance.DbType != model.DBTypeMySQL {
 		return "", nil
 	}
 

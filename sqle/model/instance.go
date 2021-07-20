@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	DB_TYPE_MYSQL = "mysql"
+	DBTypeMySQL      = "mysql"
+	DBTypePostgreSQL = "PostgreSQL"
 )
 
 // Instance is a table for database info

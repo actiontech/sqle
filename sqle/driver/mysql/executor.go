@@ -40,7 +40,7 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	var db *sql.DB
 	var err error
 	switch instance.DbType {
-	case model.DB_TYPE_MYSQL:
+	case model.DBTypeMySQL:
 		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
 			instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
 	default:
@@ -397,7 +397,7 @@ where table_schema = '%s' and table_name = '%s'`, schema, table)
 	return size, nil
 }
 func (c *Executor) ShowDefaultConfiguration(sql, column string) (string, error) {
-	if c.dbType != model.DB_TYPE_MYSQL {
+	if c.dbType != model.DBTypeMySQL {
 		return "", nil
 	}
 	result, err := c.Db.Query(sql)
