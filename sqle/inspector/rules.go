@@ -1295,12 +1295,12 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 
 	// check exist non-latin and underscore
 	for _, name := range names {
-		if !(unicode.IsLetter(rune(name[0]))) {
+		if len(name) != 0 && !(unicode.IsLetter(rune(name[0]))) {
 			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
 			break
 		}
 
-		if bytes.IndexFunc([]byte(name[1:]), func(r rune) bool {
+		if bytes.IndexFunc([]byte(name), func(r rune) bool {
 			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
 		}) != -1 {
 			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
