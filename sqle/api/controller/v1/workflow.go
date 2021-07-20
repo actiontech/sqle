@@ -455,6 +455,14 @@ func CreateWorkflow(c echo.Context) error {
 	}
 	s := model.GetStorage()
 
+	_, exist, err := s.GetWorkflowBySubject(req.Subject)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow is exist")))
+	}
+
 	task, exist, err := s.GetTaskById(req.TaskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
