@@ -18,6 +18,7 @@ import (
 func init() {
 	var allRules []*model.Rule
 	for _, ruleHandler := range RuleHandlerMap {
+		ruleHandler.Rule.DBType = model.DBTypeMySQL
 		allRules = append(allRules, &ruleHandler.Rule)
 	}
 

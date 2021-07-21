@@ -37,6 +37,7 @@ type Rule struct {
 	Value     string `json:"value"`
 	Level     string `json:"level" example:"error"` // notice, warn, error
 	Typ       string `json:"type" gorm:"column:type; not null"`
+	DBType    string `json:"db_type" gorm:"default:\"mysql\"; not null"`
 	IsDefault bool   `json:"is_default" gorm:"default:false; not null"`
 }
 
