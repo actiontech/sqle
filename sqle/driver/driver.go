@@ -70,6 +70,6 @@ type Driver interface {
 
 type Node interface {
 	Text() string
-	Type() (string, error)
-	Fingerprint(caseSensitive bool) (string, error)
+	Type() string
+	Fingerprint() (string, error)
 }

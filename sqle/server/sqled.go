@@ -2,8 +2,10 @@ package server
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/inspector"
 	"actiontech.cloud/sqle/sqle/sqle/log"
@@ -166,7 +168,6 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
 	if err != nil {
-		entry.Logger.Errorf("get instance rule from storage failed, error: %v", err)
 		return err
 	}
 	whitelist, _, err := st.GetSqlWhitelist(0, 0)
@@ -174,33 +175,66 @@ func (s *Sqled) audit(task *model.Task) error {
 		return err
 	}
 
-	ruleMap := model.GetRuleMapFromAllArray(rules)
-	ctx := inspector.NewContext(nil)
-	i := inspector.NewInspector(entry, ctx, task, ruleMap)
-	err = i.Advise(rules, whitelist)
+	var ptrRules []*model.Rule
+	for _, rule := range rules {
+		ptrRules = append(ptrRules, &rule)
+	}
+
+	var baseSQLs []*model.BaseSQL
+	for _, executeSQL := range task.ExecuteSQLs {
+		baseSQLs = append(baseSQLs, &executeSQL.BaseSQL)
+	}
+
+	d, err := driver.NewDriver(entry, task.Instance)
 	if err != nil {
 		return err
 	}
-	firstSqlInvalid := i.SqlInvalid()
-	sqlType := i.SqlType()
-	// generate rollback after advise
-	var rollbackSqls = []*model.RollbackSQL{}
 
-	if firstSqlInvalid {
-		entry.Warnf("sql invalid, ignore generate rollback")
-	} else if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		entry.Warnf("task is mybatis xml file audit, ignore generate rollback")
-	} else {
-		ctx = inspector.NewContext(nil)
-		i = inspector.NewInspector(entry, ctx, task, ruleMap)
-		rollbackSqls, err = i.GenerateAllRollbackSql()
+	var executeSQLs []*model.ExecuteSQL
+	var rollbackSQLs []*model.RollbackSQL
+	if executeSQLs, rollbackSQLs, err = d.Audit(ptrRules, baseSQLs, func(node driver.Node) bool {
+		sourceFP, err := node.Fingerprint()
 		if err != nil {
-			return err
+			entry.Errorf("generate fingerprint for SQL(%v) error:%v", node.Text(), err)
+			return false
 		}
+
+		for _, wl := range whitelist {
+			if wl.MatchType == model.SQLWhitelistFPMatch {
+				wlNodes, err := d.Parse(wl.Value)
+				if err != nil {
+					entry.Errorf("parse SQL(%v) error:%v", node.Text(), err)
+					return false
+				}
+				if len(wlNodes) != 1 {
+					entry.Errorf("expected single SQL, but got %v", len(wlNodes))
+					return false
+				}
+				wlFP, err := wlNodes[0].Fingerprint()
+				if err != nil {
+					entry.Errorf("generate fingerprint for SQL(%v) error:%v", wlNodes[0].Text(), err)
+					return false
+				}
+				if sourceFP == wlFP {
+					return true
+				}
+			} else {
+				if wl.CapitalizedValue == strings.ToUpper(node.Text()) {
+					return true
+				}
+			}
+		}
+		return false
+	}); err != nil {
+		return err
 	}
 
-	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
-		entry.Errorf("save commit sql to storage failed, error: %v", err)
+	if err = st.UpdateExecuteSQLs(executeSQLs); err != nil {
+		entry.Errorf("save SQLs error:%v", err)
+		return err
+	}
+	if err = st.UpdateRollbackSQLs(rollbackSQLs); err != nil {
+		entry.Errorf("save rollback SQLs error:%v", err)
 		return err
 	}
 
@@ -210,27 +244,44 @@ func (s *Sqled) audit(task *model.Task) error {
 			normalCount += 1
 		}
 	}
-	if len(task.ExecuteSQLs) != 0 {
-		task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
-	}
-	task.Status = model.TaskStatusAudited
 
-	err = st.UpdateTask(task, map[string]interface{}{
-		"sql_type":  sqlType,
-		"pass_rate": task.PassRate,
-		"status":    task.Status,
-	})
-	if err != nil {
-		entry.Errorf("update task to storage failed, error: %v", err)
-		return err
-	}
-
-	if len(rollbackSqls) > 0 {
-		err = st.UpdateRollbackSQLs(rollbackSqls)
+	var hasDDL bool
+	var hasDML bool
+	for _, executeSQL := range task.ExecuteSQLs {
+		nodes, err := d.Parse(executeSQL.Content)
 		if err != nil {
-			entry.Errorf("save rollback sql to storage failed, error: %v", err)
-			return err
+			entry.Error(err.Error())
+			continue
 		}
+		if len(nodes) != 1 {
+			entry.Errorf("expected single SQL, but got %v", len(nodes))
+			continue
+		}
+
+		switch nodes[0].Type() {
+		case model.SQL_TYPE_DDL:
+			hasDDL = true
+		case model.SQL_TYPE_DML:
+			hasDML = true
+		}
+	}
+
+	var sqlType string
+	if hasDML && hasDDL {
+		sqlType = model.SQL_TYPE_MULTI
+	} else if hasDDL {
+		sqlType = model.SQL_TYPE_DDL
+	} else if hasDML {
+		sqlType = model.SQL_TYPE_DML
+	}
+
+	if err = st.UpdateTask(task, map[string]interface{}{
+		"sql_type":  sqlType,
+		"pass_rate": utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4),
+		"status":    model.TaskStatusAudited,
+	}); err != nil {
+		entry.Errorf("update task error:%v", err)
+		return err
 	}
 	return nil
 }

@@ -75,8 +75,68 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 	return nil, nil
 }
 
-func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, isSkip func(node driver.Node) bool) ([]*model.ExecuteSQL, []*model.RollbackSQL, error) {
-	return nil, nil, nil
+func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, skipAudit func(node driver.Node) bool) ([]*model.ExecuteSQL, []*model.RollbackSQL, error) {
+	for _, rule := range rules {
+		if rule.Name == CONFIG_DML_ROLLBACK_MAX_ROWS {
+			defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
+			i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+		} else {
+			i.config.DMLRollbackMaxRows = -1
+		}
+
+		if rule.Name == CONFIG_DDL_OSC_MIN_SIZE {
+			defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
+			i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+		} else {
+			i.config.DDLOSCMinSize = -1
+		}
+	}
+
+	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var executeSQLs []*model.ExecuteSQL
+	for _, baseSQL := range baseSQLs {
+		nodes, err := i.ParseSql(baseSQL.Content)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		node := &node{
+			innerNode:       nodes[0],
+			isCaseSensitive: lowerCaseTableNames == "0",
+		}
+
+		if skipAudit(node) {
+			executeSQL := &model.ExecuteSQL{BaseSQL: *baseSQL}
+			var results InspectResults
+			results.add(model.RuleLevelNormal, "白名单")
+			executeSQL.AuditStatus = model.SQLAuditStatusFinished
+			executeSQL.AuditLevel = results.level()
+			executeSQL.AuditResult = results.message()
+			executeSQLs = append(executeSQLs, executeSQL)
+			continue
+		}
+
+		executeSQL, err := i.audit(node, baseSQL, rules)
+		if err != nil {
+			return nil, nil, err
+		}
+		executeSQLs = append(executeSQLs, executeSQL)
+	}
+
+	var rollbackSQLs []*model.RollbackSQL
+	// TODO(@wy) ignore rollback when audit Mybatis file
+	if !i.HasInvalidSql {
+		rollbackSQLs, err = i.GenerateAllRollbackSql()
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return executeSQLs, rollbackSQLs, nil
 }
 
 func (i *Inspect) Close() {
@@ -85,6 +145,30 @@ func (i *Inspect) Close() {
 
 func (i *Inspect) Ping(ctx context.Context) error {
 	return nil
+}
+
+type node struct {
+	innerNode       ast.Node
+	isCaseSensitive bool
+}
+
+func (n *node) Text() string {
+	return n.innerNode.Text()
+}
+
+func (n *node) Type() string {
+	switch n.innerNode.(type) {
+	case ast.DDLNode:
+		return model.SQL_TYPE_DDL
+	case ast.DMLNode:
+		return model.SQL_TYPE_DML
+	}
+
+	return ""
+}
+
+func (n *node) Fingerprint() (string, error) {
+	return Fingerprint(n.innerNode.Text(), n.isCaseSensitive)
 }
 
 type Config struct {
