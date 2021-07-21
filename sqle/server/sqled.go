@@ -2,13 +2,13 @@ package server
 
 import (
 	"fmt"
-	"math"
 	"sync"
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/inspector"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -211,7 +211,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		}
 	}
 	if len(task.ExecuteSQLs) != 0 {
-		task.PassRate = round(normalCount/float64(len(task.ExecuteSQLs)), 4)
+		task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 	}
 	task.Status = model.TaskStatusAudited
 
@@ -405,9 +405,4 @@ func (s *Sqled) rollback(task *model.Task) error {
 		entry.Info("rollback sql finish")
 	}
 	return err
-}
-
-func round(f float64, n int) float64 {
-	p := math.Pow10(n)
-	return math.Trunc(f*p+0.5) / p
 }

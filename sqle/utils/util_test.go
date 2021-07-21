@@ -66,3 +66,10 @@ func TestRemoveDuplicate(t *testing.T) {
 	assert.Equal(t, []string{"1", "2", "3"}, RemoveDuplicate([]string{"1", "2", "2", "3"}))
 	assert.Equal(t, []string{"1", "2", "3"}, RemoveDuplicate([]string{"1", "2", "2", "3", "3", "3"}))
 }
+
+func TestRound(t *testing.T) {
+	assert.Equal(t, float64(1), Round(1.11, 0))
+	assert.Equal(t, float64(0), Round(1.111117, -2))
+	assert.Equal(t, 1.1, Round(1.11, 1))
+	assert.Equal(t, 1.11112, Round(1.111117, 5))
+}

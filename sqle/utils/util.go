@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"math"
 	"strings"
 	"unsafe"
 )
@@ -64,6 +65,21 @@ func RemoveDuplicate(c []string) []string {
 		if beforeLen != AfterLen {
 			result = append(result, v)
 		}
+	}
+	return result
+}
+
+// Round rounds the argument f to dec decimal places.
+func Round(f float64, dec int) float64 {
+	shift := math.Pow10(dec)
+	tmp := f * shift
+	if math.IsInf(tmp, 0) {
+		return f
+	}
+
+	result := math.RoundToEven(tmp) / shift
+	if math.IsNaN(result) {
+		return 0
 	}
 	return result
 }
