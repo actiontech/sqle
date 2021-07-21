@@ -1,15 +1,28 @@
 package mysql
 
 import (
+	"context"
+	"database/sql"
+	_driver "database/sql/driver"
 	"fmt"
 	"strings"
 
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
 )
+
+func init() {
+	var allRules []*model.Rule
+	for _, ruleHandler := range RuleHandlerMap {
+		allRules = append(allRules, &ruleHandler.Rule)
+	}
+
+	driver.Register(model.DBTypeMySQL, newInspect, allRules)
+}
 
 // Inspect implements Inspector interface for MySQL.
 type Inspect struct {
@@ -39,6 +52,38 @@ type Inspect struct {
 	// SqlArray and SqlAction is two list for Add-Do design.
 	SqlArray  []ast.Node
 	SqlAction []func(node ast.Node) error
+}
+
+func newInspect(log *logrus.Entry, inst *model.Instance) driver.Driver {
+	return &Inspect{}
+}
+
+func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
+	return nil, nil
+}
+
+func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+	return nil, nil
+}
+
+func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+	return nil, nil
+}
+
+func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
+	return nil, nil
+}
+
+func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, isSkip func(node driver.Node) bool) ([]*model.ExecuteSQL, []*model.RollbackSQL, error) {
+	return nil, nil, nil
+}
+
+func (i *Inspect) Close() {
+
+}
+
+func (i *Inspect) Ping(ctx context.Context) error {
+	return nil
 }
 
 type Config struct {
