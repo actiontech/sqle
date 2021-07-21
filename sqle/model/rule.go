@@ -32,11 +32,12 @@ type RuleTemplate struct {
 }
 
 type Rule struct {
-	Name  string `json:"name" gorm:"primary_key"`
-	Desc  string `json:"desc"`
-	Value string `json:"value"`
-	Level string `json:"level" example:"error"` // notice, warn, error
-	Typ   string `gorm:"column:type; not null" json:"type"`
+	Name      string `json:"name" gorm:"primary_key"`
+	Desc      string `json:"desc"`
+	Value     string `json:"value"`
+	Level     string `json:"level" example:"error"` // notice, warn, error
+	Typ       string `json:"type" gorm:"column:type; not null"`
+	IsDefault bool   `json:"is_default" gorm:"default:false; not null"`
 }
 
 func (r Rule) TableName() string {
