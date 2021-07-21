@@ -2,13 +2,13 @@ package server
 
 import (
 	"fmt"
-	"math"
 	"sync"
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/inspector"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -75,7 +75,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 	}
 	s.Unlock()
 	if taskRunning {
-		return action, errors.New(errors.TASK_RUNNING, fmt.Errorf("task is running"))
+		return action, errors.New(errors.TaskRunning, fmt.Errorf("task is running"))
 	}
 
 	task, exist, err := model.GetStorage().GetTaskDetailById(taskId)
@@ -83,7 +83,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		goto Error
 	}
 	if !exist {
-		err = errors.New(errors.TASK_NOT_EXIST, fmt.Errorf("task not exist"))
+		err = errors.New(errors.TaskNotExist, fmt.Errorf("task not exist"))
 		goto Error
 	}
 
@@ -176,28 +176,13 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	ruleMap := model.GetRuleMapFromAllArray(rules)
 	ctx := inspector.NewContext(nil)
-	i := inspector.NewInspector(entry, ctx, task, nil, ruleMap)
+	i := inspector.NewInspector(entry, ctx, task, ruleMap)
 	err = i.Advise(rules, whitelist)
 	if err != nil {
 		return err
 	}
 	firstSqlInvalid := i.SqlInvalid()
 	sqlType := i.SqlType()
-	// if sql type is DML and sql invalid, try to advise with other DDL.
-	if sqlType == model.SQL_TYPE_DML && i.SqlInvalid() {
-		relateTasks, err := st.GetRelatedDDLTask(task)
-		if err != nil {
-			return err
-		}
-		if len(relateTasks) > 0 {
-			entry.Warnf("dml sql invalid, retry advise with relate ddl")
-			i = inspector.NewInspector(entry, ctx, task, relateTasks, ruleMap)
-			err = i.Advise(rules, whitelist)
-			if err != nil {
-				return err
-			}
-		}
-	}
 	// generate rollback after advise
 	var rollbackSqls = []*model.RollbackSQL{}
 
@@ -207,7 +192,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		entry.Warnf("task is mybatis xml file audit, ignore generate rollback")
 	} else {
 		ctx = inspector.NewContext(nil)
-		i = inspector.NewInspector(entry, ctx, task, nil, ruleMap)
+		i = inspector.NewInspector(entry, ctx, task, ruleMap)
 		rollbackSqls, err = i.GenerateAllRollbackSql()
 		if err != nil {
 			return err
@@ -221,12 +206,12 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	var normalCount float64
 	for _, sql := range task.ExecuteSQLs {
-		if sql.AuditLevel == model.RULE_LEVEL_NORMAL {
+		if sql.AuditLevel == model.RuleLevelNormal {
 			normalCount += 1
 		}
 	}
 	if len(task.ExecuteSQLs) != 0 {
-		task.PassRate = round(normalCount/float64(len(task.ExecuteSQLs)), 4)
+		task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 	}
 	task.Status = model.TaskStatusAudited
 
@@ -261,7 +246,7 @@ func (s *Sqled) commit(task *model.Task) error {
 
 	// if task is not inspected, parse task SQL type and commit it.
 	entry := log.NewEntry().WithField("task_id", task.ID)
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 	if err := i.ParseSqlType(); err != nil {
 		return err
 	}
@@ -271,7 +256,7 @@ func (s *Sqled) commit(task *model.Task) error {
 	case model.SQL_TYPE_DDL:
 		return s.commitDDL(task)
 	case model.SQL_TYPE_MULTI:
-		return errors.SQL_STMT_CONFLICT_ERROR
+		return errors.ErrSQLTypeConflict
 	}
 	return nil
 }
@@ -282,7 +267,7 @@ func (s *Sqled) commitDDL(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 	for _, commitSql := range task.ExecuteSQLs {
 		currentSql := commitSql
 		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
@@ -339,7 +324,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 
 	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
 	if err != nil {
@@ -380,7 +365,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 	entry.Info("start rollback sql")
 
 	st := model.GetStorage()
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil, nil)
+	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 
 	for _, rollbackSql := range task.RollbackSQLs {
 		currentSql := rollbackSql
@@ -399,8 +384,8 @@ func (s *Sqled) rollback(task *model.Task) error {
 			case model.SQL_TYPE_DML:
 				i.CommitDMLs([]*model.BaseSQL{&currentSql.BaseSQL})
 			case model.SQL_TYPE_MULTI:
-				i.Logger().Error(errors.SQL_STMT_CONFLICT_ERROR)
-				return errors.SQL_STMT_CONFLICT_ERROR
+				i.Logger().Error(errors.ErrSQLTypeConflict)
+				return errors.ErrSQLTypeConflict
 			}
 			err = st.Save(currentSql)
 			if err != nil {
@@ -420,9 +405,4 @@ func (s *Sqled) rollback(task *model.Task) error {
 		entry.Info("rollback sql finish")
 	}
 	return err
-}
-
-func round(f float64, n int) float64 {
-	p := math.Pow10(n)
-	return math.Trunc(f*p+0.5) / p
 }

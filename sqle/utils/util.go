@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"math"
 	"strings"
 	"unsafe"
 )
@@ -37,4 +38,48 @@ func HasSuffix(s, suffix string, caseSensitive bool) bool {
 		return strings.HasSuffix(s, suffix)
 	}
 	return strings.HasSuffix(strings.ToLower(s), strings.ToLower(suffix))
+}
+
+func GetDuplicate(c []string) []string {
+	d := []string{}
+	for i, v1 := range c {
+		for j, v2 := range c {
+			if i >= j {
+				continue
+			}
+			if v1 == v2 {
+				d = append(d, v1)
+			}
+		}
+	}
+	return RemoveDuplicate(d)
+}
+
+func RemoveDuplicate(c []string) []string {
+	var tmpMap = map[string]struct{}{}
+	var result = []string{}
+	for _, v := range c {
+		beforeLen := len(tmpMap)
+		tmpMap[v] = struct{}{}
+		AfterLen := len(tmpMap)
+		if beforeLen != AfterLen {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+// Round rounds the argument f to dec decimal places.
+func Round(f float64, dec int) float64 {
+	shift := math.Pow10(dec)
+	tmp := f * shift
+	if math.IsInf(tmp, 0) {
+		return f
+	}
+
+	result := math.RoundToEven(tmp) / shift
+	if math.IsNaN(result) {
+		return 0
+	}
+	return result
 }

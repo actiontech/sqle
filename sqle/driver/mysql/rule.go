@@ -1,4 +1,4 @@
-package inspector
+package mysql
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"strings"
 	"unicode"
 
-	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"actiontech.cloud/universe/ucommon/v4/util"
@@ -268,11 +267,11 @@ var RuleHandlers = []RuleHandler{
 	}, RuleHandler{
 		Rule: model.Rule{
 			Name:  DDL_CHECK_OBJECT_NAME_USING_CN,
-			Desc:  "数据库对象命名首字符必须为英文字母且不能使用英文、下划线、数字之外的字符",
+			Desc:  "数据库对象命名不能使用英文、下划线、数字之外的字符",
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
-		Message:       "数据库对象命名首字符必须为英文字母且不能使用英文、下划线、数字之外的字符",
+		Message:       "数据库对象命名不能使用英文、下划线、数字之外的字符",
 		Func:          checkNewObjectName,
 		IsDefaultRule: true,
 	},
@@ -1295,14 +1294,16 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 
 	// check exist non-latin and underscore
 	for _, name := range names {
-		if len(name) != 0 && !(unicode.IsLetter(rune(name[0]))) {
+		if bytes.IndexFunc([]byte(name), func(r rune) bool {
+			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+		}) != -1 {
 			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
 			break
 		}
 
-		if bytes.IndexFunc([]byte(name), func(r rune) bool {
-			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
-		}) != -1 {
+		if idx := bytes.IndexFunc([]byte(name), func(r rune) bool {
+			return string(r) == "_"
+		}); idx == -1 || idx == 0 || idx == len(name)-1 {
 			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
 			break
 		}
@@ -2390,15 +2391,15 @@ func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	for _, record := range epRecords {
-		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingFilesort) {
+		if strings.Contains(record.Extra, ExplainRecordExtraUsingFilesort) {
 			i.addResult(DMLCheckExplainExtraUsingFilesort)
 		}
-		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingTemporary) {
+		if strings.Contains(record.Extra, ExplainRecordExtraUsingTemporary) {
 			i.addResult(DMLCheckExplainExtraUsingTemporary)
 		}
 
 		defaultRule := RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule
-		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
+		if record.Type == ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
 			i.addResult(DMLCheckExplainAccessTypeAll, record.Rows)
 		}
 	}

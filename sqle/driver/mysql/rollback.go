@@ -1,14 +1,16 @@
-package inspector
+package mysql
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/model"
 	"database/sql"
 	"fmt"
-	"github.com/pingcap/parser/ast"
-	_model "github.com/pingcap/parser/model"
 	"strconv"
 	"strings"
+
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/model"
+
+	"github.com/pingcap/parser/ast"
+	_model "github.com/pingcap/parser/model"
 )
 
 func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {

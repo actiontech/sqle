@@ -46,7 +46,7 @@ func (s *Storage) GetSqlWhitelistById(sqlWhiteId string) (*SqlWhitelist, bool, e
 	if err == gorm.ErrRecordNotFound {
 		return sqlWhitelist, false, nil
 	}
-	return sqlWhitelist, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return sqlWhitelist, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetSqlWhitelist(pageIndex, pageSize uint32) ([]SqlWhitelist, uint32, error) {
@@ -54,12 +54,12 @@ func (s *Storage) GetSqlWhitelist(pageIndex, pageSize uint32) ([]SqlWhitelist, u
 	sqlWhitelist := []SqlWhitelist{}
 	if pageSize == 0 {
 		err := s.db.Order("id desc").Find(&sqlWhitelist).Count(&count).Error
-		return sqlWhitelist, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 	}
 	err := s.db.Model(&SqlWhitelist{}).Count(&count).Error
 	if err != nil {
-		return sqlWhitelist, 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return sqlWhitelist, 0, errors.New(errors.ConnectStorageError, err)
 	}
 	err = s.db.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Order("id desc").Find(&sqlWhitelist).Error
-	return sqlWhitelist, count, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 }

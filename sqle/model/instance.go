@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	DB_TYPE_MYSQL = "mysql"
+	DBTypeMySQL      = "mysql"
+	DBTypePostgreSQL = "PostgreSQL"
 )
 
 // Instance is a table for database info
@@ -84,7 +85,7 @@ func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
-	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
@@ -93,7 +94,7 @@ func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
-	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetInstanceDetailByName(name string) (*Instance, bool, error) {
@@ -103,18 +104,18 @@ func (s *Storage) GetInstanceDetailByName(name string) (*Instance, bool, error) 
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
-	return instance, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetInstancesByNames(names []string) ([]*Instance, error) {
 	instances := []*Instance{}
 	err := s.db.Where("name in (?)", names).Find(&instances).Error
-	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) error {
 	err := s.db.Table("instances").Where("id = ?", InstanceId).Update(attrs...).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*Instance) error {
@@ -137,12 +138,12 @@ func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*I
 
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
 	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 	err := s.db.Model(instance).Association("Roles").Replace(rs).Error
-	return errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetUserInstanceTip(user *User) ([]*Instance, error) {
@@ -154,7 +155,7 @@ func (s *Storage) GetUserInstanceTip(user *User) ([]*Instance, error) {
 			Joins("JOIN users ON ur.user_id = users.id AND users.id = ?", user.ID)
 	}
 	err := db.Scan(&instances).Error
-	return instances, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAndCheckInstanceExist(instanceNames []string) (instances []*Instance, err error) {
@@ -183,7 +184,7 @@ func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error
 	var instances []*Instance
 	err := s.db.Select("name").Where("workflow_template_id = ?", id).Find(&instances).Error
 	if err != nil {
-		return []string{}, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return []string{}, errors.New(errors.ConnectStorageError, err)
 	}
 	names := make([]string, 0, len(instances))
 	for _, instance := range instances {

@@ -1,63 +1,15 @@
-package inspector
+package mysql
 
 import (
 	"fmt"
 	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
 )
-
-// The Inspector is a interface for inspect, commit, rollback task.
-type Inspector interface {
-	// Context return SQL context, you can use it as parent context for next.
-	Context() *Context
-
-	// SqlType get task SQL type, result is "DDL" or "DML".
-	SqlType() string
-
-	// ParseSqlType parse task SQL type
-	ParseSqlType() error
-
-	// SqlInvalid represents one of task's commit sql base-validation failed.
-	SqlInvalid() bool
-
-	// Add and Do are designed to reduce duplicate code, and used to converge
-	// important processes, such as close db connection, update SQL context.
-	Add(sql *model.BaseSQL, action func(node ast.Node) error) error
-	Do() error
-
-	// Advise advise task.commitSql using the given rules.
-	Advise(rules []model.Rule, wl []model.SqlWhitelist) error
-
-	// GenerateAllRollbackSql generate task.rollbackSql by task.commitSql.
-	GenerateAllRollbackSql() ([]*model.RollbackSQL, error)
-
-	// CommitDDL commit task.commitSql(ddl).
-	CommitDDL(sql *model.BaseSQL) error
-
-	// CommitDMLs commit task.commitSql(dml) in one transaction.
-	CommitDMLs(sqls []*model.BaseSQL) error
-
-	// ParseSql parser sql text to ast.
-	ParseSql(sql string) ([]ast.Node, error)
-
-	Logger() *logrus.Entry
-}
-
-func NewInspector(entry *logrus.Entry, ctx *Context, task *model.Task,
-	rules map[string]model.Rule) Inspector {
-	return NewInspect(entry, ctx, task, rules)
-}
-
-type Config struct {
-	DMLRollbackMaxRows int64
-	DDLOSCMinSize      int64
-}
 
 // Inspect implements Inspector interface for MySQL.
 type Inspect struct {
@@ -76,7 +28,7 @@ type Inspect struct {
 
 	log *logrus.Entry
 	// dbConn is a SQL driver for MySQL.
-	dbConn *executor.Executor
+	dbConn *Executor
 	// isConnected represent dbConn has Connected.
 	isConnected bool
 	// counterDDL is a counter for all ddl sql.
@@ -87,6 +39,11 @@ type Inspect struct {
 	// SqlArray and SqlAction is two list for Add-Do design.
 	SqlArray  []ast.Node
 	SqlAction []func(node ast.Node) error
+}
+
+type Config struct {
+	DMLRollbackMaxRows int64
+	DDLOSCMinSize      int64
 }
 
 func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task,
@@ -224,11 +181,11 @@ func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 }
 
 // getDbConn get db conn and just connect once.
-func (i *Inspect) getDbConn() (*executor.Executor, error) {
+func (i *Inspect) getDbConn() (*Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := executor.NewExecutor(i.log, i.Task.Instance, i.Ctx.currentSchema)
+	conn, err := NewExecutor(i.log, i.Task.Instance, i.Ctx.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -543,7 +500,7 @@ func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{},
 	return pkColumnsName, hasPk, nil
 }
 
-func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
+func (i *Inspect) getExecutionPlan(sql string) ([]*ExplainRecord, error) {
 	if ep, ok := i.Ctx.GetExecutionPlan(sql); ok {
 		return ep, nil
 	}

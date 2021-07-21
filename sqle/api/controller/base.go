@@ -85,16 +85,16 @@ func ReadFileContent(c echo.Context, name string) (content string, fileExist boo
 		return "", false, nil
 	}
 	if err != nil {
-		return "", false, errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
+		return "", false, errors.New(errors.ReadUploadFileError, err)
 	}
 	src, err := file.Open()
 	if err != nil {
-		return "", false, errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
+		return "", false, errors.New(errors.ReadUploadFileError, err)
 	}
 	defer src.Close()
 	data, err := ioutil.ReadAll(src)
 	if err != nil {
-		return "", false, errors.New(errors.READ_UPLOAD_FILE_ERROR, err)
+		return "", false, errors.New(errors.ReadUploadFileError, err)
 	}
 	return string(data), true, nil
 }

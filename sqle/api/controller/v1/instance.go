@@ -53,7 +53,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	instance := &model.Instance{
-		DbType:   model.DB_TYPE_MYSQL,
+		DbType:   model.DBTypeMySQL,
 		Name:     req.Name,
 		User:     req.User,
 		Host:     req.Host,
@@ -515,7 +515,7 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		return err
 	}
 	instance := &model.Instance{
-		DbType:   model.DB_TYPE_MYSQL,
+		DbType:   model.DBTypeMySQL,
 		User:     req.User,
 		Host:     req.Host,
 		Port:     req.Port,

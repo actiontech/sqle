@@ -76,7 +76,7 @@ func (s *Storage) GetSMTPConfiguration() (*SMTPConfiguration, bool, error) {
 	if err == gorm.ErrRecordNotFound {
 		return smtpC, false, nil
 	}
-	return smtpC, true, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+	return smtpC, true, errors.New(errors.ConnectStorageError, err)
 }
 
 const (
@@ -93,7 +93,7 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (time.Duration, error) {
 	var svs []SystemVariable
 	err := s.db.Find(&svs).Error
 	if err != nil {
-		return 0, errors.New(errors.CONNECT_STORAGE_ERROR, err)
+		return 0, errors.New(errors.ConnectStorageError, err)
 	}
 
 	for _, sv := range svs {
