@@ -51,6 +51,12 @@ func NewDriver(log *logrus.Entry, inst *model.Instance) (Driver, error) {
 	return d(log, inst), nil
 }
 
+func AllRules() []*model.Rule {
+	rulesMu.RLock()
+	defer rulesMu.RUnlock()
+	return rules
+}
+
 type Driver interface {
 	Close()
 	Ping(ctx context.Context) error

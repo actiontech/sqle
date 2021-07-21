@@ -112,7 +112,7 @@ func (s *Storage) AutoMigrate() error {
 	return nil
 }
 
-func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
+func (s *Storage) CreateRulesIfNotExist(rules []*Rule) error {
 	allRules, err := s.GetAllRule()
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func (s *Storage) CreateRulesIfNotExist(rules []Rule) error {
 
 var DefaultRuleTemplate = "default"
 
-func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
+func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
 	_, exist, err := s.GetRuleTemplateByName(DefaultRuleTemplate)
 	if err != nil {
 		return err
@@ -155,12 +155,14 @@ func (s *Storage) CreateDefaultTemplate(rules []Rule) error {
 
 		ruleList := make([]RuleTemplateRule, 0, len(rules))
 		for _, rule := range rules {
-			ruleList = append(ruleList, RuleTemplateRule{
-				RuleTemplateId: t.ID,
-				RuleName:       rule.Name,
-				RuleLevel:      rule.Level,
-				RuleValue:      rule.Value,
-			})
+			if rule.IsDefault && rule.DBType == DBTypeMySQL {
+				ruleList = append(ruleList, RuleTemplateRule{
+					RuleTemplateId: t.ID,
+					RuleName:       rule.Name,
+					RuleLevel:      rule.Level,
+					RuleValue:      rule.Value,
+				})
+			}
 		}
 		return s.UpdateRuleTemplateRules(t, ruleList...)
 	}
