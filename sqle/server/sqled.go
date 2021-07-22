@@ -189,6 +189,7 @@ func (s *Sqled) audit(task *model.Task) error {
 	if err != nil {
 		return err
 	}
+	defer d.Close()
 
 	var executeSQLs []*model.ExecuteSQL
 	var rollbackSQLs []*model.RollbackSQL

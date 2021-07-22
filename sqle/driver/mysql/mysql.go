@@ -161,7 +161,7 @@ func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, skipAudi
 }
 
 func (i *Inspect) Close() {
-
+	i.closeDbConn()
 }
 
 func (i *Inspect) Ping(ctx context.Context) error {
