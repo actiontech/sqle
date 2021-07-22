@@ -197,35 +197,6 @@ type Config struct {
 	DDLOSCMinSize      int64
 }
 
-func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task,
-	rules map[string]model.Rule) *Inspect {
-	ctx.UseSchema(task.Schema)
-
-	// load config
-	config := &Config{}
-	if rules != nil {
-		if r, ok := rules[CONFIG_DML_ROLLBACK_MAX_ROWS]; ok {
-			defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
-			config.DMLRollbackMaxRows = r.GetValueInt(&defaultRule)
-		} else {
-			config.DMLRollbackMaxRows = -1
-		}
-
-		if r, ok := rules[CONFIG_DDL_OSC_MIN_SIZE]; ok {
-			defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
-			config.DDLOSCMinSize = r.GetValueInt(&defaultRule)
-		} else {
-			config.DDLOSCMinSize = -1
-		}
-	}
-	return &Inspect{
-		Ctx:     ctx,
-		config:  config,
-		Results: newInspectResults(),
-		log:     entry,
-	}
-}
-
 func (i *Inspect) Context() *Context {
 	return i.Ctx
 }
@@ -256,10 +227,6 @@ func (i *Inspect) addNodeCounter(nodes []ast.Node) {
 			i.counterDML += 1
 		}
 	}
-}
-
-func (i *Inspect) SqlInvalid() bool {
-	return i.HasInvalidSql
 }
 
 func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) error {
