@@ -68,6 +68,7 @@ type Driver interface {
 
 	Parse(sqlText string) ([]Node, error)
 	Audit(rules []*model.Rule, sql string) (*AuditResult, error)
+	GenRollbackSQL(sql string) (string, string, error)
 }
 
 type Node interface {
@@ -120,6 +121,10 @@ func (rs *AuditResult) Message() string {
 }
 
 func (rs *AuditResult) Add(level, message string, args ...interface{}) {
+	if level == "" || message == "" {
+		return
+	}
+
 	rs.results = append(rs.results, &auditResult{
 		level:   level,
 		message: fmt.Sprintf(message, args...),

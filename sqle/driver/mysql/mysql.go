@@ -156,6 +156,19 @@ func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, e
 	return result, nil
 }
 
+func (i *Inspect) GenRollbackSQL(sql string) (string, string, error) {
+	if i.HasInvalidSql {
+		return "", "", nil
+	}
+
+	nodes, err := i.ParseSql(sql)
+	if err != nil {
+		return "", "", err
+	}
+
+	return i.GenerateRollbackSql(nodes[0])
+}
+
 func (i *Inspect) Close() {
 	i.closeDbConn()
 }

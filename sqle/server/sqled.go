@@ -225,7 +225,7 @@ func (s *Sqled) audit(task *model.Task) error {
 			}
 		}
 
-		var result *driver.AuditResult
+		result := driver.NewInspectResults()
 		if whitelistMatch {
 			result.Add(model.RuleLevelNormal, "白名单")
 		} else {
@@ -242,12 +242,38 @@ func (s *Sqled) audit(task *model.Task) error {
 		entry.Infof("SQL=%s, level=%s, result=%s", executeSQL.Content, executeSQL.AuditLevel, executeSQL.AuditResult)
 	}
 
+	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+		entry.Warn("skip generate rollback SQLs")
+	} else {
+		var rollbackSQLs []*model.RollbackSQL
+		for _, executeSQL := range task.ExecuteSQLs {
+			rollbackSQL, reason, err := d.GenRollbackSQL(executeSQL.Content)
+			if err != nil {
+				return err
+			}
+			result := driver.NewInspectResults()
+			result.Add(executeSQL.AuditLevel, executeSQL.AuditResult)
+			result.Add(model.RuleLevelNotice, reason)
+			executeSQL.AuditLevel = result.Level()
+			executeSQL.AuditResult = result.Message()
+
+			rollbackSQLs = append(rollbackSQLs, &model.RollbackSQL{
+				BaseSQL: model.BaseSQL{
+					TaskId:  executeSQL.TaskId,
+					Content: rollbackSQL,
+				},
+				ExecuteSQLId: executeSQL.ID,
+			})
+		}
+
+		if err = st.UpdateRollbackSQLs(rollbackSQLs); err != nil {
+			entry.Errorf("save rollback SQLs error:%v", err)
+			return err
+		}
+	}
+
 	if err = st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
 		entry.Errorf("save SQLs error:%v", err)
-		return err
-	}
-	if err = st.UpdateRollbackSQLs(task.RollbackSQLs); err != nil {
-		entry.Errorf("save rollback SQLs error:%v", err)
 		return err
 	}
 
@@ -288,6 +314,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		sqlType = model.SQL_TYPE_DML
 	}
 
+	task.Status = model.TaskStatusAudited
 	if err = st.UpdateTask(task, map[string]interface{}{
 		"sql_type":  sqlType,
 		"pass_rate": utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4),
