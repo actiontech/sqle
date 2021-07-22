@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -392,13 +393,6 @@ func (s *Sqled) commitDDL(task *model.Task) error {
 		return err
 	}
 
-	err := i.Do()
-	if err != nil {
-		entry.Error("commit sql failed")
-	} else {
-		entry.Info("commit sql finish")
-	}
-
 	taskStatus := model.TaskStatusExecuteSucceeded
 	for _, sql := range task.ExecuteSQLs {
 		if sql.ExecStatus == model.SQLExecuteStatusFailed {
@@ -415,11 +409,10 @@ func (s *Sqled) commitDML(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry.Info("start commit")
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 
 	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
 	if err != nil {
-		i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
+		entry.Errorf("update commit SQL status to storage failed, error: %v", err)
 		return err
 	}
 
@@ -427,14 +420,38 @@ func (s *Sqled) commitDML(task *model.Task) error {
 		return err
 	}
 
-	sqls := []*model.BaseSQL{}
-	for _, executeSQL := range task.ExecuteSQLs {
-		sqls = append(sqls, &executeSQL.BaseSQL)
+	d, err := driver.NewDriver(entry, task.Instance, "")
+	if err != nil {
+		return err
 	}
-	i.CommitDMLs(sqls)
+	defer d.Close()
+
+	var sqls []string
+	for _, executeSQL := range task.ExecuteSQLs {
+		sqls = append(sqls, executeSQL.BaseSQL.Content)
+	}
+	results, txErr := d.Tx(context.TODO(), sqls...)
+	if len(results) != len(sqls) {
+		txErr = fmt.Errorf("number of transaction result does not match number of SQLs")
+	}
+
+	for idx, executeSQL := range task.ExecuteSQLs {
+		if txErr != nil {
+			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+			executeSQL.ExecResult = txErr.Error()
+			continue
+		}
+		rowAffects, err := results[idx].RowsAffected()
+		if err != nil {
+			entry.Warnf("get rows affect failed, error: %v", err)
+		}
+		executeSQL.RowAffects = rowAffects
+		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+		executeSQL.ExecResult = "ok"
+	}
 
 	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
-		i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
+		entry.Errorf("save commit sql to storage failed, error: %v", err)
 		if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuteFailed); nil != err {
 			log.Logger().Errorf("update task exec_status failed: %v", err)
 		}

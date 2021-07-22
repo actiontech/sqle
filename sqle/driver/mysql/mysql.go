@@ -73,7 +73,11 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 }
 
 func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
-	return nil, nil
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.Db.Transact(queries...)
 }
 
 func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
