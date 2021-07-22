@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"bytes"
 	"encoding/csv"
 	"fmt"
@@ -10,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/executor"
-
+	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/inspector"
+	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/server"
@@ -153,8 +152,11 @@ func CreateAndAuditTask(c echo.Context) error {
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	nodes, err := inspector.NewInspector(log.NewEntry(), inspector.NewContext(nil), task, nil).
-		ParseSql(sql)
+	d, err := driver.NewDriver(log.NewEntry(), instance, "")
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	nodes, err := d.Parse(sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
