@@ -60,8 +60,10 @@ func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.D
 	ctx.UseSchema(schema)
 	return &Inspect{
 		Ctx:     ctx,
-		Results: newInspectResults(),
+		inst:    inst,
 		log:     log,
+		config:  &Config{},
+		Results: newInspectResults(),
 	}
 }
 
