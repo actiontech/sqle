@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"testing"
 
 	"actiontech.cloud/sqle/sqle/sqle/model"
@@ -54,52 +55,52 @@ func TestReplaceSchemaName(t *testing.T) {
 }
 
 func TestInspectResults(t *testing.T) {
-	results := newInspectResults()
+	results := driver.NewInspectResults()
 	handler := RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST]
-	results.add(handler.Rule.Level, handler.Message)
-	assert.Equal(t, "error", results.level())
-	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.message())
+	results.Add(handler.Rule.Level, handler.Message)
+	assert.Equal(t, "error", results.Level())
+	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.Message())
 
-	results.add(model.RuleLevelError, TableNotExistMessage, "not_exist_tb")
-	assert.Equal(t, "error", results.level())
+	results.Add(model.RuleLevelError, TableNotExistMessage, "not_exist_tb")
+	assert.Equal(t, "error", results.Level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
-[error]表 not_exist_tb 不存在`, results.message())
+[error]表 not_exist_tb 不存在`, results.Message())
 
-	results2 := newInspectResults()
-	results2.add(results.level(), results.message())
-	results2.add("notice", "test")
-	assert.Equal(t, "error", results2.level())
+	results2 := driver.NewInspectResults()
+	results2.Add(results.Level(), results.Message())
+	results2.Add("notice", "test")
+	assert.Equal(t, "error", results2.Level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
 [error]表 not_exist_tb 不存在
-[notice]test`, results2.message())
+[notice]test`, results2.Message())
 
-	results3 := newInspectResults()
-	results3.add(results2.level(), results2.message())
-	results3.add("notice", "[osc]test")
-	assert.Equal(t, "error", results3.level())
+	results3 := driver.NewInspectResults()
+	results3.Add(results2.Level(), results2.Message())
+	results3.Add("notice", "[osc]test")
+	assert.Equal(t, "error", results3.Level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
 [error]表 not_exist_tb 不存在
 [notice]test
-[osc]test`, results3.message())
+[osc]test`, results3.Message())
 
-	results4 := newInspectResults()
-	results4.add("notice", "[notice]test")
-	results4.add("error", "[osc]test")
-	assert.Equal(t, "error", results4.level())
+	results4 := driver.NewInspectResults()
+	results4.Add("notice", "[notice]test")
+	results4.Add("error", "[osc]test")
+	assert.Equal(t, "error", results4.Level())
 	assert.Equal(t,
 		`[notice]test
-[osc]test`, results4.message())
+[osc]test`, results4.Message())
 
-	results5 := newInspectResults()
-	results5.add("warn", "[warn]test")
-	results5.add("notice", "[osc]test")
-	assert.Equal(t, "warn", results5.level())
+	results5 := driver.NewInspectResults()
+	results5.Add("warn", "[warn]test")
+	results5.Add("notice", "[osc]test")
+	assert.Equal(t, "warn", results5.Level())
 	assert.Equal(t,
 		`[warn]test
-[osc]test`, results5.message())
+[osc]test`, results5.Message())
 }
 
 type VisitorTestCase struct {

@@ -32,7 +32,7 @@ type Inspect struct {
 	// config is task config, config variables record in rules.
 	config *Config
 	// Results is inspect result for commit sql.
-	Results *InspectResults
+	Results *driver.AuditResult
 	// HasInvalidSql represent one of the commit sql base-validation failed.
 	HasInvalidSql bool
 	// currentRule is instance's rules.
@@ -63,7 +63,7 @@ func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.D
 		inst:    inst,
 		log:     log,
 		config:  &Config{},
-		Results: newInspectResults(),
+		Results: driver.NewInspectResults(),
 	}
 }
 
@@ -133,11 +133,11 @@ func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, skipAudi
 
 		if skipAudit(node) {
 			executeSQL := &model.ExecuteSQL{BaseSQL: *baseSQL}
-			var results InspectResults
-			results.add(model.RuleLevelNormal, "白名单")
+			var results driver.AuditResult
+			results.Add(model.RuleLevelNormal, "白名单")
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
-			executeSQL.AuditLevel = results.level()
-			executeSQL.AuditResult = results.message()
+			executeSQL.AuditLevel = results.Level()
+			executeSQL.AuditResult = results.Message()
 			executeSQLs = append(executeSQLs, executeSQL)
 			continue
 		}
@@ -285,7 +285,7 @@ func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 	}
 	level := i.currentRule.Level
 	message := RuleHandlerMap[ruleName].Message
-	i.Results.add(level, message, args...)
+	i.Results.Add(level, message, args...)
 }
 
 // getDbConn get db conn and just connect once.

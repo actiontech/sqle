@@ -72,11 +72,11 @@ alter table exist_tb_1 drop column v1;
 		newTestResult().add(model.RuleLevelError, ColumnNotExistMessage, "v1"),
 	)
 
-	runDefaultRulesInspectCase(t, "add column twice: column exists", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "Add column twice: column exists", DefaultMysqlInspect(),
 		`
 use exist_db;
-alter table exist_tb_1 add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
-alter table exist_tb_1 add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
+alter table exist_tb_1 Add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
+alter table exist_tb_1 Add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
 `,
 		newTestResult(),
 		newTestResult(),
@@ -150,9 +150,9 @@ alter table not_exist_tb_1 drop column v1;
 
 	inspect4 := DefaultMysqlInspect()
 	inspect4.Ctx = NewContext(inspect2.Ctx)
-	runDefaultRulesInspectCase(t, "ddl 4: add column, ok", inspect4,
+	runDefaultRulesInspectCase(t, "ddl 4: Add column, ok", inspect4,
 		`
-alter table not_exist_tb_1 add column v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+alter table not_exist_tb_1 Add column v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult(),
 	)
@@ -176,4 +176,4 @@ insert into not_exist_tb_1 (id,v2,v3) values (1,"1","1");
 	)
 }
 
-// TODO: add more test for relation audit, like create a database and create a table in it.
+// TODO: Add more test for relation audit, like create a database and create a table in it.

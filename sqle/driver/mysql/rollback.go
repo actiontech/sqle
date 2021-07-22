@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"database/sql"
 	"fmt"
 	"strconv"
@@ -31,18 +32,18 @@ func (i *Inspect) GenerateAllRollbackSql(executeSQLs []*model.ExecuteSQL) ([]*mo
 				})
 			}
 			if reason != "" {
-				result := newInspectResults()
+				result := driver.NewInspectResults()
 				if currentSql.AuditResult != "" {
-					result.add(currentSql.AuditLevel, currentSql.AuditResult)
+					result.Add(currentSql.AuditLevel, currentSql.AuditResult)
 				}
-				result.add(model.RuleLevelNotice, reason)
-				currentSql.AuditLevel = result.level()
-				currentSql.AuditResult = result.message()
+				result.Add(model.RuleLevelNotice, reason)
+				currentSql.AuditLevel = result.Level()
+				currentSql.AuditResult = result.Message()
 			}
 			return err
 		})
 		if err != nil {
-			i.Logger().Error("add rollback sql failed")
+			i.Logger().Error("Add rollback sql failed")
 			return nil, err
 		}
 	}
@@ -144,7 +145,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			NewTable: newTableName(schemaName, tableName),
 		})
 	}
-	// add columns need drop columns
+	// Add columns need drop columns
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		if spec.NewColumns == nil {
 			continue
@@ -156,7 +157,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			})
 		}
 	}
-	// drop columns need add columns
+	// drop columns need Add columns
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
 		colName := spec.OldColumnName.String()
 		for _, col := range createTableStmt.Cols {
@@ -247,7 +248,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			}
 		}
 	}
-	// drop index need add
+	// drop index need Add
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
 		for _, constraint := range createTableStmt.Constraints {
 			if constraint.Name == spec.Name {
@@ -258,7 +259,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			}
 		}
 	}
-	// drop primary key need add
+	// drop primary key need Add
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey) {
 		_ = spec
 		for _, constraint := range createTableStmt.Constraints {
@@ -271,7 +272,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		}
 	}
 
-	// drop foreign key need add
+	// drop foreign key need Add
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropForeignKey) {
 		for _, constraint := range createTableStmt.Constraints {
 			if constraint.Name == spec.Name {
@@ -289,11 +290,11 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		rollbackStmt.Specs = append(rollbackStmt.Specs, spec)
 	}
 
-	// add constraint (index key, primary key ...) need drop
+	// Add constraint (index key, primary key ...) need drop
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintIndex, ast.ConstraintUniq:
-			// add index without index name, index name will be created by db
+			// Add index without index name, index name will be created by db
 			if spec.Constraint.Name == "" {
 				continue
 			}
