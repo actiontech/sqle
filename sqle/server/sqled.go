@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"actiontech.cloud/sqle/sqle/sqle/driver"
+	_ "actiontech.cloud/sqle/sqle/sqle/driver/mysql"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/inspector"
 	"actiontech.cloud/sqle/sqle/sqle/log"
