@@ -2377,9 +2377,10 @@ func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
 
 func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
 	// sql from MyBatis XML file is not the executable sql. so can't do explain for it.
-	if i.Task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		return nil
-	}
+	// TODO(@wy) ignore explain when audit Mybatis file
+	//if i.Task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+	//	return nil
+	//}
 	switch node.(type) {
 	case *ast.SelectStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UpdateStmt:
 	default:

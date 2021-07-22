@@ -10,8 +10,6 @@ import (
 	"text/template"
 
 	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
-
 	"github.com/pingcap/parser/ast"
 )
 
@@ -46,11 +44,6 @@ const (
 // generateOSCCommandLine generate pt-online-schema-change command-line statement;
 // see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
 func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
-	// just support mysql
-	if i.Task.Instance.DbType != model.DBTypeMySQL {
-		return "", nil
-	}
-
 	if i.config.DDLOSCMinSize < 0 {
 		return "", nil
 	}
@@ -140,9 +133,9 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	buff := bytes.NewBufferString("")
 	err = tp.Execute(buff, map[string]interface{}{
 		"Alter":  strings.Join(changes, ","),
-		"Host":   i.Task.Instance.Host,
-		"Port":   i.Task.Instance.Port,
-		"User":   i.Task.Instance.User,
+		"Host":   i.inst.Host,
+		"Port":   i.inst.Port,
+		"User":   i.inst.User,
 		"Schema": i.getSchemaName(stmt.Table),
 		"Table":  stmt.Table.Name.String(),
 	})

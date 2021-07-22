@@ -9,27 +9,28 @@ import (
 )
 
 func runrollbackCase(t *testing.T, desc string, i *Inspect, sql string, results ...string) {
-	stmts, err := parseSql(i.Task.Instance.DbType, sql)
+	stmts, err := parseSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
+	var executeSQLs []*model.ExecuteSQL
 	for n, stmt := range stmts {
-		i.Task.ExecuteSQLs = append(i.Task.ExecuteSQLs, &model.ExecuteSQL{
+		executeSQLs = append(executeSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(n + 1),
 				Content: stmt.Text(),
 			},
 		})
 	}
-	rollbackSqls, err := i.GenerateAllRollbackSql()
+	rollbackSqls, err := i.GenerateAllRollbackSql(executeSQLs)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
 	sqls := []string{}
 	for _, sql := range rollbackSqls {
-		if _, err := parseSql(i.Task.Instance.DbType, sql.Content); err != nil {
+		if _, err := parseSql(model.DBTypeMySQL, sql.Content); err != nil {
 			t.Error(err)
 		}
 		sqls = append(sqls, sql.Content)

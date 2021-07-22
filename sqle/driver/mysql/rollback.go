@@ -13,18 +13,18 @@ import (
 	_model "github.com/pingcap/parser/model"
 )
 
-func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {
+func (i *Inspect) GenerateAllRollbackSql(executeSQLs []*model.ExecuteSQL) ([]*model.RollbackSQL, error) {
 	i.Logger().Info("start generate rollback sql")
 
 	rollbackSqls := []*model.RollbackSQL{}
-	for _, executeSQL := range i.Task.ExecuteSQLs {
+	for _, executeSQL := range executeSQLs {
 		currentSql := executeSQL
 		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
 			rollbackSql, reason, err := i.GenerateRollbackSql(node)
 			if rollbackSql != "" {
 				rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
 					BaseSQL: model.BaseSQL{
-						TaskId:  i.Task.ID,
+						TaskId:  currentSql.TaskId,
 						Content: rollbackSql,
 					},
 					ExecuteSQLId: currentSql.ID,

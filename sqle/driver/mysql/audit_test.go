@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
@@ -116,16 +117,12 @@ func DefaultMysqlInspect() *Inspect {
 	return &Inspect{
 		log:     log.NewEntry(),
 		Results: newInspectResults(),
-		Task: &model.Task{
-			Instance: &model.Instance{
-				Host:     "127.0.0.1",
-				Port:     "3306",
-				User:     "root",
-				Password: "123456",
-				DbType:   model.DBTypeMySQL,
-			},
-			ExecuteSQLs:  []*model.ExecuteSQL{},
-			RollbackSQLs: []*model.RollbackSQL{},
+		inst: &model.Instance{
+			Host:     "127.0.0.1",
+			Port:     "3306",
+			User:     "root",
+			Password: "123456",
+			DbType:   model.DBTypeMySQL,
 		},
 		Ctx: &Context{
 			currentSchema: "exist_db",
@@ -186,30 +183,63 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 }
 
 func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect,
-	wl []model.SqlWhitelist, sql string, results ...*testResult) {
-	stmts, err := parseSql(i.Task.Instance.DbType, sql)
+	wls []model.SqlWhitelist, sql string, results ...*testResult) {
+	stmts, err := parseSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
+	var baseSQLs []*model.BaseSQL
 	for n, stmt := range stmts {
-		i.Task.ExecuteSQLs = append(i.Task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: stmt.Text(),
-			},
+		baseSQLs = append(baseSQLs, &model.BaseSQL{
+			Number:  uint(n + 1),
+			Content: stmt.Text(),
 		})
 	}
-	err = i.Advise(rules, wl)
+
+	var ptrRules []*model.Rule
+	for i := range rules {
+		ptrRules = append(ptrRules, &rules[i])
+	}
+	executeSQLs, _, err := i.Audit(ptrRules, baseSQLs, func(node driver.Node) bool {
+		sourceFP, err := node.Fingerprint()
+		if err != nil {
+			return false
+		}
+
+		for _, wl := range wls {
+			if wl.MatchType == model.SQLWhitelistFPMatch {
+				wlNodes, err := i.Parse(wl.Value)
+				if err != nil {
+					return false
+				}
+				if len(wlNodes) != 1 {
+					return false
+				}
+				wlFP, err := wlNodes[0].Fingerprint()
+				if err != nil {
+					return false
+				}
+				if sourceFP == wlFP {
+					return true
+				}
+			} else {
+				if wl.CapitalizedValue == strings.ToUpper(node.Text()) {
+					return true
+				}
+			}
+		}
+		return false
+	})
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
-	if len(i.SqlArray) != len(results) {
+	if len(results) != len(baseSQLs) {
 		t.Errorf("%s test failled, error: result is unknow\n", desc)
 		return
 	}
-	for n, sql := range i.Task.ExecuteSQLs {
+	for n, sql := range executeSQLs {
 		result := results[n]
 		if sql.AuditLevel != result.level() || sql.AuditResult != result.message() {
 			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",

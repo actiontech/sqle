@@ -38,7 +38,7 @@ type Inspect struct {
 	// currentRule is instance's rules.
 	currentRule model.Rule
 
-	Task *model.Task
+	inst *model.Instance
 
 	log *logrus.Entry
 	// dbConn is a SQL driver for MySQL.
@@ -55,8 +55,14 @@ type Inspect struct {
 	SqlAction []func(node ast.Node) error
 }
 
-func newInspect(log *logrus.Entry, inst *model.Instance) driver.Driver {
-	return &Inspect{}
+func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.Driver {
+	ctx := NewContext(nil)
+	ctx.UseSchema(schema)
+	return &Inspect{
+		Ctx:     ctx,
+		Results: newInspectResults(),
+		log:     log,
+	}
 }
 
 func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
@@ -283,7 +289,7 @@ func (i *Inspect) Do() error {
 }
 
 func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
-	stmts, err := parseSql(i.Task.Instance.DbType, sql)
+	stmts, err := parseSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql)
 		return nil, err
@@ -315,7 +321,7 @@ func (i *Inspect) getDbConn() (*Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := NewExecutor(i.log, i.Task.Instance, i.Ctx.currentSchema)
+	conn, err := NewExecutor(i.log, i.inst, i.Ctx.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -573,7 +579,7 @@ func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (
 
 // parseCreateTableStmt parse create table sql text to CreateTableStmt ast.
 func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
-	t, err := parseOneSql(i.Task.Instance.DbType, sql)
+	t, err := parseOneSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
 		return nil, err

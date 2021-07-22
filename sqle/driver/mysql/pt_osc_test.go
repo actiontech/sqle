@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"actiontech.cloud/sqle/sqle/sqle/model"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,7 +48,7 @@ func TestPTOSC(t *testing.T) {
 func runOSCCase(t *testing.T, desc string, sql, expect string) {
 	i := DefaultMysqlInspect()
 	i.config.DDLOSCMinSize = 0
-	stmt, err := parseOneSql(i.Task.Instance.DbType, sql)
+	stmt, err := parseOneSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		t.Error(err)
 		return

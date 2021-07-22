@@ -20,7 +20,7 @@ var (
 	rulesMu sync.RWMutex
 )
 
-type handler func(log *logrus.Entry, inst *model.Instance) Driver
+type handler func(log *logrus.Entry, inst *model.Instance, schema string) Driver
 
 func Register(name string, h handler, rs []*model.Rule) {
 	_, exist := drivers[name]
@@ -39,7 +39,7 @@ func Register(name string, h handler, rs []*model.Rule) {
 	rulesMu.Unlock()
 }
 
-func NewDriver(log *logrus.Entry, inst *model.Instance) (Driver, error) {
+func NewDriver(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error) {
 	driversMu.RLock()
 	defer driversMu.RUnlock()
 
@@ -48,7 +48,7 @@ func NewDriver(log *logrus.Entry, inst *model.Instance) (Driver, error) {
 		return nil, fmt.Errorf("driver type %v is not supported", inst.DbType)
 	}
 
-	return d(log, inst), nil
+	return d(log, inst, schema), nil
 }
 
 func AllRules() []*model.Rule {

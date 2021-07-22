@@ -185,7 +185,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		baseSQLs = append(baseSQLs, &executeSQL.BaseSQL)
 	}
 
-	d, err := driver.NewDriver(entry, task.Instance)
+	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
 	if err != nil {
 		return err
 	}
