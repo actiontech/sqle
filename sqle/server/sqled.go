@@ -163,85 +163,96 @@ func (s *Sqled) do(action *Action) error {
 }
 
 func (s *Sqled) audit(task *model.Task) error {
-	entry := log.NewEntry().WithField("task_id", task.ID)
-
 	st := model.GetStorage()
 
 	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
 	if err != nil {
 		return err
 	}
-	whitelist, _, err := st.GetSqlWhitelist(0, 0)
-	if err != nil {
-		return err
-	}
-
 	var ptrRules []*model.Rule
 	for i := range rules {
 		ptrRules = append(ptrRules, &rules[i])
 	}
-
-	var baseSQLs []*model.BaseSQL
-	for _, executeSQL := range task.ExecuteSQLs {
-		baseSQLs = append(baseSQLs, &executeSQL.BaseSQL)
-	}
-
+	entry := log.NewEntry().WithField("task_id", task.ID)
 	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
 	if err != nil {
 		return err
 	}
 	defer d.Close()
 
-	var executeSQLs []*model.ExecuteSQL
-	var rollbackSQLs []*model.RollbackSQL
-	if executeSQLs, rollbackSQLs, err = d.Audit(ptrRules, baseSQLs, func(node driver.Node) bool {
-		sourceFP, err := node.Fingerprint()
+	whitelist, _, err := st.GetSqlWhitelist(0, 0)
+	if err != nil {
+		return err
+	}
+	for _, executeSQL := range task.ExecuteSQLs {
+		nodes, err := d.Parse(executeSQL.Content)
 		if err != nil {
-			entry.Errorf("generate fingerprint for SQL(%v) error:%v", node.Text(), err)
-			return false
+			return err
 		}
 
+		if len(nodes) != 1 {
+			return fmt.Errorf("want get single node, but got %v", len(nodes))
+		}
+
+		sourceFP, err := nodes[0].Fingerprint()
+		if err != nil {
+			return err
+		}
+
+		var whitelistMatch bool
 		for _, wl := range whitelist {
 			if wl.MatchType == model.SQLWhitelistFPMatch {
 				wlNodes, err := d.Parse(wl.Value)
 				if err != nil {
-					entry.Errorf("parse SQL(%v) error:%v", node.Text(), err)
-					return false
+					return err
 				}
 				if len(wlNodes) != 1 {
-					entry.Errorf("expected single SQL, but got %v", len(wlNodes))
-					return false
+					return fmt.Errorf("want get single node, but got %v", len(nodes))
 				}
+
 				wlFP, err := wlNodes[0].Fingerprint()
 				if err != nil {
-					entry.Errorf("generate fingerprint for SQL(%v) error:%v", wlNodes[0].Text(), err)
-					return false
+					return err
 				}
+
 				if sourceFP == wlFP {
-					return true
+					whitelistMatch = true
 				}
 			} else {
-				if wl.CapitalizedValue == strings.ToUpper(node.Text()) {
-					return true
+				if wl.CapitalizedValue == strings.ToUpper(nodes[0].Text()) {
+					whitelistMatch = true
 				}
 			}
 		}
-		return false
-	}); err != nil {
-		return err
+
+		var result *driver.AuditResult
+		if whitelistMatch {
+			result.Add(model.RuleLevelNormal, "白名单")
+		} else {
+			result, err = d.Audit(ptrRules, executeSQL.Content)
+			if err != nil {
+				return err
+			}
+		}
+
+		executeSQL.AuditStatus = model.SQLAuditStatusFinished
+		executeSQL.AuditLevel = result.Level()
+		executeSQL.AuditResult = result.Message()
+		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(sourceFP)...)))
+		entry.Infof("SQL=%s, level=%s, result=%s", executeSQL.Content, executeSQL.AuditLevel, executeSQL.AuditResult)
 	}
 
-	if err = st.UpdateExecuteSQLs(executeSQLs); err != nil {
+	if err = st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
 		entry.Errorf("save SQLs error:%v", err)
 		return err
 	}
-	if err = st.UpdateRollbackSQLs(rollbackSQLs); err != nil {
+	if err = st.UpdateRollbackSQLs(task.RollbackSQLs); err != nil {
 		entry.Errorf("save rollback SQLs error:%v", err)
 		return err
 	}
 
 	var normalCount float64
-	for _, executeSQL := range executeSQLs {
+	for _, executeSQL := range task.ExecuteSQLs {
 		if executeSQL.AuditLevel == model.RuleLevelNormal {
 			normalCount += 1
 		}
@@ -249,7 +260,7 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	var hasDDL bool
 	var hasDML bool
-	for _, executeSQL := range executeSQLs {
+	for _, executeSQL := range task.ExecuteSQLs {
 		nodes, err := d.Parse(executeSQL.Content)
 		if err != nil {
 			entry.Error(err.Error())
@@ -279,7 +290,7 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	if err = st.UpdateTask(task, map[string]interface{}{
 		"sql_type":  sqlType,
-		"pass_rate": utils.Round(normalCount/float64(len(executeSQLs)), 4),
+		"pass_rate": utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4),
 		"status":    model.TaskStatusAudited,
 	}); err != nil {
 		entry.Errorf("update task error:%v", err)

@@ -1,70 +1,14 @@
 package mysql
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/driver"
-	"fmt"
 	"strings"
 
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 )
-
-func (i *Inspect) audit(node *node, baseSQL *model.BaseSQL, rules []*model.Rule) (*model.ExecuteSQL, error) {
-	executeSQL := &model.ExecuteSQL{BaseSQL: *baseSQL}
-
-	results, err := i.CheckInvalid(node.innerNode)
-	if err != nil {
-		return nil, err
-	}
-	if results.Level() == model.RuleLevelError {
-		i.HasInvalidSql = true
-		i.Logger().Warnf("SQL %s invalid, %s", node.Text(), results.Message())
-	}
-	i.Results = results
-	for _, rule := range rules {
-		i.currentRule = *rule
-		handler, ok := RuleHandlerMap[rule.Name]
-		if !ok || handler.Func == nil {
-			continue
-		}
-		err := handler.Func(*rule, i, node.innerNode)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	executeSQL.AuditStatus = model.SQLAuditStatusFinished
-	executeSQL.AuditLevel = i.Results.Level()
-	executeSQL.AuditResult = i.Results.Message()
-	// clean up results
-	i.Results = driver.NewInspectResults()
-
-	// print osc
-	oscCommandLine, err := i.generateOSCCommandLine(node.innerNode)
-	if err != nil {
-		return nil, err
-	}
-	if oscCommandLine != "" {
-		results := driver.NewInspectResults()
-		if executeSQL.AuditResult != "" {
-			results.Add(executeSQL.AuditLevel, executeSQL.AuditResult)
-		}
-		results.Add(model.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
-		executeSQL.AuditLevel = results.Level()
-		executeSQL.AuditResult = results.Message()
-	}
-
-	sqlFP, err := node.Fingerprint()
-	if err != nil {
-		i.Logger().Errorf("generate fingerprint error:%v", err)
-	}
-
-	executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(executeSQL.AuditResult), []byte(sqlFP)...)))
-	i.Logger().Infof("sql=%s, level=%s, result=%s", executeSQL.Content, executeSQL.AuditLevel, executeSQL.AuditResult)
-	return executeSQL, nil
-}
 
 const (
 	SchemaNotExistMessage              = "schema %s 不存在"

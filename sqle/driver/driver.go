@@ -67,7 +67,7 @@ type Driver interface {
 	Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error)
 
 	Parse(sqlText string) ([]Node, error)
-	Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, isSkip func(node Node) bool) ([]*model.ExecuteSQL, []*model.RollbackSQL, error)
+	Audit(rules []*model.Rule, sql string) (*AuditResult, error)
 }
 
 type Node interface {

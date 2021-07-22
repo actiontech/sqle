@@ -189,63 +189,28 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect,
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
 	}
-	var baseSQLs []*model.BaseSQL
-	for n, stmt := range stmts {
-		baseSQLs = append(baseSQLs, &model.BaseSQL{
-			Number:  uint(n + 1),
-			Content: stmt.Text(),
-		})
+
+	if len(stmts) != len(results) {
+		t.Errorf("%s test failled, error: result is unknow\n", desc)
+		return
 	}
 
 	var ptrRules []*model.Rule
 	for i := range rules {
 		ptrRules = append(ptrRules, &rules[i])
 	}
-	executeSQLs, _, err := i.Audit(ptrRules, baseSQLs, func(node driver.Node) bool {
-		sourceFP, err := node.Fingerprint()
-		if err != nil {
-			return false
-		}
 
-		for _, wl := range wls {
-			if wl.MatchType == model.SQLWhitelistFPMatch {
-				wlNodes, err := i.Parse(wl.Value)
-				if err != nil {
-					return false
-				}
-				if len(wlNodes) != 1 {
-					return false
-				}
-				wlFP, err := wlNodes[0].Fingerprint()
-				if err != nil {
-					return false
-				}
-				if sourceFP == wlFP {
-					return true
-				}
-			} else {
-				if wl.CapitalizedValue == strings.ToUpper(node.Text()) {
-					return true
-				}
-			}
+	for idx, stmt := range stmts {
+		result, err := i.Audit(ptrRules, stmt.Text())
+		if err != nil {
+			t.Error(err)
+			return
 		}
-		return false
-	})
-	if err != nil {
-		t.Errorf("%s test failled, error: %v\n", desc, err)
-		return
-	}
-	if len(results) != len(baseSQLs) {
-		t.Errorf("%s test failled, error: result is unknow\n", desc)
-		return
-	}
-	for n, sql := range executeSQLs {
-		result := results[n]
-		if sql.AuditLevel != result.level() || sql.AuditResult != result.message() {
+		if result.Level() != results[idx].level() || result.Message() != results[idx].message() {
 			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
-				desc, sql.Content, result.level(), result.message(), sql.AuditLevel, sql.AuditResult)
+				desc, stmt.Text(), results[idx].level(), results[idx].message(), result.Level(), result.Message())
 		} else {
-			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, sql.AuditLevel, sql.AuditResult))
+			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, result.Level(), result.Message()))
 		}
 	}
 }
@@ -3228,92 +3193,93 @@ end;`,
 	}
 }
 
+// todo(@wy): move to auto test
 func TestWhitelist(t *testing.T) {
-	for _, sql := range []string{
-		"select v1 from exist_tb_1 where id =2",
-		"select v1 from exist_tb_1 where id =\"2\"",
-		"select v1 from exist_tb_1 where id =100000",
-	} {
-		runDefaultRulesInspectCaseWithWL(t, "match fp whitelist", DefaultMysqlInspect(),
-			[]model.SqlWhitelist{
-				{
-					Value:     "select v1 from exist_tb_1 where id =2",
-					MatchType: model.SQLWhitelistFPMatch,
-				},
-			}, sql, newTestResult().add(model.RuleLevelNormal, "白名单"))
-	}
-
-	for _, sql := range []string{
-		"select v1 from exist_tb_1 where ID =2",
-		"select v1 from exist_tb_1 where id =2 and v2 = \"test\"",
-	} {
-		runDefaultRulesInspectCaseWithWL(t, "don't match fp whitelist", DefaultMysqlInspect(),
-			[]model.SqlWhitelist{
-				{
-					Value:     "select v1 from exist_tb_1 where id =2",
-					MatchType: model.SQLWhitelistFPMatch,
-				},
-			}, sql, newTestResult())
-	}
-
-	for _, sql := range []string{
-		"select v1 from exist_tb_1 where id = 1",
-		"SELECT V1 FROM exist_tb_1 WHERE ID = 1",
-	} {
-		runDefaultRulesInspectCaseWithWL(t, "match exact whitelist", DefaultMysqlInspect(),
-			[]model.SqlWhitelist{
-				model.SqlWhitelist{
-					CapitalizedValue: "SELECT V1 FROM EXIST_TB_1 WHERE ID = 1",
-					MatchType:        model.SQLWhitelistExactMatch,
-				},
-			}, sql,
-			newTestResult().add(model.RuleLevelNormal, "白名单"))
-	}
-
-	for _, sql := range []string{
-		"select v1 from exist_tb_1 where id = 2",
-		"SELECT V1 FROM exist_tb_1 WHERE ID = 2",
-	} {
-		runDefaultRulesInspectCaseWithWL(t, "don't match exact whitelist", DefaultMysqlInspect(),
-			[]model.SqlWhitelist{
-				model.SqlWhitelist{
-					CapitalizedValue: "SELECT V1 FROM EXIST_TB_1 WHERE ID = 1",
-					MatchType:        model.SQLWhitelistExactMatch,
-				},
-			}, sql,
-			newTestResult())
-	}
-
-	parentInspect := DefaultMysqlInspect()
-	runDefaultRulesInspectCase(t, "", parentInspect, `
-CREATE TABLE if not exists exist_db.t1 (
-id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-PRIMARY KEY (id) USING BTREE
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
-`, newTestResult())
-
-	inspect1 := DefaultMysqlInspect()
-	inspect1.Ctx = parentInspect.Ctx
-
-	runDefaultRulesInspectCaseWithWL(t, "4", inspect1,
-		[]model.SqlWhitelist{
-			{
-				Value:     "select * from t1 where id = 2",
-				MatchType: model.SQLWhitelistFPMatch,
-			},
-		}, `select id from T1 where id = 4`, newTestResult().add(model.RuleLevelError, TableNotExistMessage, "exist_db.T1"))
-
-	inspect2 := DefaultMysqlInspect()
-	inspect2.Ctx = parentInspect.Ctx
-	inspect2.Ctx.AddSysVar("lower_case_table_names", "1")
-	runDefaultRulesInspectCaseWithWL(t, "", inspect2,
-		[]model.SqlWhitelist{
-			{
-				Value:     "select * from t1 where id = 2",
-				MatchType: model.SQLWhitelistFPMatch,
-			},
-		}, `select * from T1 where id = 3`, newTestResult().add(model.RuleLevelNormal, "白名单"))
-
+	//	for _, sql := range []string{
+	//		"select v1 from exist_tb_1 where id =2",
+	//		"select v1 from exist_tb_1 where id =\"2\"",
+	//		"select v1 from exist_tb_1 where id =100000",
+	//	} {
+	//		runDefaultRulesInspectCaseWithWL(t, "match fp whitelist", DefaultMysqlInspect(),
+	//			[]model.SqlWhitelist{
+	//				{
+	//					Value:     "select v1 from exist_tb_1 where id =2",
+	//					MatchType: model.SQLWhitelistFPMatch,
+	//				},
+	//			}, sql, newTestResult().add(model.RuleLevelNormal, "白名单"))
+	//	}
+	//
+	//	for _, sql := range []string{
+	//		"select v1 from exist_tb_1 where ID =2",
+	//		"select v1 from exist_tb_1 where id =2 and v2 = \"test\"",
+	//	} {
+	//		runDefaultRulesInspectCaseWithWL(t, "don't match fp whitelist", DefaultMysqlInspect(),
+	//			[]model.SqlWhitelist{
+	//				{
+	//					Value:     "select v1 from exist_tb_1 where id =2",
+	//					MatchType: model.SQLWhitelistFPMatch,
+	//				},
+	//			}, sql, newTestResult())
+	//	}
+	//
+	//	for _, sql := range []string{
+	//		"select v1 from exist_tb_1 where id = 1",
+	//		"SELECT V1 FROM exist_tb_1 WHERE ID = 1",
+	//	} {
+	//		runDefaultRulesInspectCaseWithWL(t, "match exact whitelist", DefaultMysqlInspect(),
+	//			[]model.SqlWhitelist{
+	//				model.SqlWhitelist{
+	//					CapitalizedValue: "SELECT V1 FROM EXIST_TB_1 WHERE ID = 1",
+	//					MatchType:        model.SQLWhitelistExactMatch,
+	//				},
+	//			}, sql,
+	//			newTestResult().add(model.RuleLevelNormal, "白名单"))
+	//	}
+	//
+	//	for _, sql := range []string{
+	//		"select v1 from exist_tb_1 where id = 2",
+	//		"SELECT V1 FROM exist_tb_1 WHERE ID = 2",
+	//	} {
+	//		runDefaultRulesInspectCaseWithWL(t, "don't match exact whitelist", DefaultMysqlInspect(),
+	//			[]model.SqlWhitelist{
+	//				model.SqlWhitelist{
+	//					CapitalizedValue: "SELECT V1 FROM EXIST_TB_1 WHERE ID = 1",
+	//					MatchType:        model.SQLWhitelistExactMatch,
+	//				},
+	//			}, sql,
+	//			newTestResult())
+	//	}
+	//
+	//	parentInspect := DefaultMysqlInspect()
+	//	runDefaultRulesInspectCase(t, "", parentInspect, `
+	//CREATE TABLE if not exists exist_db.t1 (
+	//id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	//PRIMARY KEY (id) USING BTREE
+	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+	//`, newTestResult())
+	//
+	//	inspect1 := DefaultMysqlInspect()
+	//	inspect1.Ctx = parentInspect.Ctx
+	//
+	//	runDefaultRulesInspectCaseWithWL(t, "4", inspect1,
+	//		[]model.SqlWhitelist{
+	//			{
+	//				Value:     "select * from t1 where id = 2",
+	//				MatchType: model.SQLWhitelistFPMatch,
+	//			},
+	//		}, `select id from T1 where id = 4`, newTestResult().add(model.RuleLevelError, TableNotExistMessage, "exist_db.T1"))
+	//
+	//	inspect2 := DefaultMysqlInspect()
+	//	inspect2.Ctx = parentInspect.Ctx
+	//	inspect2.Ctx.AddSysVar("lower_case_table_names", "1")
+	//	runDefaultRulesInspectCaseWithWL(t, "", inspect2,
+	//		[]model.SqlWhitelist{
+	//			{
+	//				Value:     "select * from t1 where id = 2",
+	//				MatchType: model.SQLWhitelistFPMatch,
+	//			},
+	//		}, `select * from T1 where id = 3`, newTestResult().add(model.RuleLevelNormal, "白名单"))
+	//
 }
 
 func runDefaultRulesInspectCaseWithWL(t *testing.T, desc string, i *Inspect,

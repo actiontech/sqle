@@ -30,7 +30,8 @@ type Inspect struct {
 	// Ctx is SQL context.
 	Ctx *Context
 	// config is task config, config variables record in rules.
-	config *Config
+	configInit bool
+	config     *Config
 	// Results is inspect result for commit sql.
 	Results *driver.AuditResult
 	// HasInvalidSql represent one of the commit sql base-validation failed.
@@ -97,69 +98,62 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 	return ns, nil
 }
 
-func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, skipAudit func(node driver.Node) bool) ([]*model.ExecuteSQL, []*model.RollbackSQL, error) {
-	for _, rule := range rules {
-		if rule.Name == CONFIG_DML_ROLLBACK_MAX_ROWS {
-			defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
-			i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
-		} else {
-			i.config.DMLRollbackMaxRows = -1
-		}
+func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
+	if !i.configInit {
+		for _, rule := range rules {
+			if rule.Name == CONFIG_DML_ROLLBACK_MAX_ROWS {
+				defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
+				i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+			} else {
+				i.config.DMLRollbackMaxRows = -1
+			}
 
-		if rule.Name == CONFIG_DDL_OSC_MIN_SIZE {
-			defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
-			i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
-		} else {
-			i.config.DDLOSCMinSize = -1
+			if rule.Name == CONFIG_DDL_OSC_MIN_SIZE {
+				defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
+				i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+			} else {
+				i.config.DDLOSCMinSize = -1
+			}
 		}
+		i.configInit = true
 	}
 
-	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	result := driver.NewInspectResults()
+	nodes, err := i.ParseSql(sql)
 	if err != nil {
-		return nil, nil, err
+		return result, err
+	}
+	result, err = i.CheckInvalid(nodes[0])
+	if err != nil {
+		return result, err
+	}
+	if result.Level() == model.RuleLevelError {
+		i.HasInvalidSql = true
+		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), result.Message())
 	}
 
-	var executeSQLs []*model.ExecuteSQL
-	for _, baseSQL := range baseSQLs {
-		nodes, err := i.ParseSql(baseSQL.Content)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		node := &node{
-			innerNode:       nodes[0],
-			isCaseSensitive: lowerCaseTableNames == "0",
-		}
-
-		if skipAudit(node) {
-			executeSQL := &model.ExecuteSQL{BaseSQL: *baseSQL}
-			var results driver.AuditResult
-			results.Add(model.RuleLevelNormal, "白名单")
-			executeSQL.AuditStatus = model.SQLAuditStatusFinished
-			executeSQL.AuditLevel = results.Level()
-			executeSQL.AuditResult = results.Message()
-			executeSQLs = append(executeSQLs, executeSQL)
+	i.Results = result
+	for _, rule := range rules {
+		i.currentRule = *rule
+		handler, ok := RuleHandlerMap[rule.Name]
+		if !ok || handler.Func == nil {
 			continue
 		}
-
-		executeSQL, err := i.audit(node, baseSQL, rules)
-		if err != nil {
-			return nil, nil, err
-		}
-		executeSQLs = append(executeSQLs, executeSQL)
-		i.updateContext(node.innerNode)
-	}
-
-	var rollbackSQLs []*model.RollbackSQL
-	// TODO(@wy) ignore rollback when audit Mybatis file
-	if !i.HasInvalidSql {
-		rollbackSQLs, err = i.GenerateAllRollbackSql(executeSQLs)
-		if err != nil {
-			return nil, nil, err
+		if err := handler.Func(*rule, i, nodes[0]); err != nil {
+			return result, err
 		}
 	}
 
-	return executeSQLs, rollbackSQLs, nil
+	// print osc
+	oscCommandLine, err := i.generateOSCCommandLine(nodes[0])
+	if err != nil {
+		return result, err
+	}
+	if oscCommandLine != "" {
+		result.Add(model.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
+	}
+	i.updateContext(nodes[0])
+	return result, nil
 }
 
 func (i *Inspect) Close() {
