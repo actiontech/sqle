@@ -78,7 +78,21 @@ func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) 
 }
 
 func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
-	return nil, nil
+	nodes, err := i.ParseSql(sqlText)
+	if err != nil {
+		return nil, err
+	}
+
+	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return nil, err
+	}
+
+	var ns []driver.Node
+	for i := range nodes {
+		ns = append(ns, &node{innerNode: nodes[i], isCaseSensitive: lowerCaseTableNames == "0"})
+	}
+	return ns, nil
 }
 
 func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, skipAudit func(node driver.Node) bool) ([]*model.ExecuteSQL, []*model.RollbackSQL, error) {
@@ -131,12 +145,13 @@ func (i *Inspect) Audit(rules []*model.Rule, baseSQLs []*model.BaseSQL, skipAudi
 			return nil, nil, err
 		}
 		executeSQLs = append(executeSQLs, executeSQL)
+		i.updateContext(node.innerNode)
 	}
 
 	var rollbackSQLs []*model.RollbackSQL
 	// TODO(@wy) ignore rollback when audit Mybatis file
 	if !i.HasInvalidSql {
-		rollbackSQLs, err = i.GenerateAllRollbackSql()
+		rollbackSQLs, err = i.GenerateAllRollbackSql(executeSQLs)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -207,7 +222,6 @@ func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task,
 		Ctx:     ctx,
 		config:  config,
 		Results: newInspectResults(),
-		Task:    task,
 		log:     entry,
 	}
 }
@@ -231,17 +245,6 @@ func (i *Inspect) SqlType() string {
 	} else {
 		return ""
 	}
-}
-
-func (i *Inspect) ParseSqlType() error {
-	for _, commitSql := range i.Task.ExecuteSQLs {
-		nodes, err := i.ParseSql(commitSql.Content)
-		if err != nil {
-			return err
-		}
-		i.addNodeCounter(nodes)
-	}
-	return nil
 }
 
 func (i *Inspect) addNodeCounter(nodes []ast.Node) {
