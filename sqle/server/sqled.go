@@ -177,8 +177,8 @@ func (s *Sqled) audit(task *model.Task) error {
 	}
 
 	var ptrRules []*model.Rule
-	for _, rule := range rules {
-		ptrRules = append(ptrRules, &rule)
+	for i := range rules {
+		ptrRules = append(ptrRules, &rules[i])
 	}
 
 	var baseSQLs []*model.BaseSQL
@@ -241,15 +241,15 @@ func (s *Sqled) audit(task *model.Task) error {
 	}
 
 	var normalCount float64
-	for _, sql := range task.ExecuteSQLs {
-		if sql.AuditLevel == model.RuleLevelNormal {
+	for _, executeSQL := range executeSQLs {
+		if executeSQL.AuditLevel == model.RuleLevelNormal {
 			normalCount += 1
 		}
 	}
 
 	var hasDDL bool
 	var hasDML bool
-	for _, executeSQL := range task.ExecuteSQLs {
+	for _, executeSQL := range executeSQLs {
 		nodes, err := d.Parse(executeSQL.Content)
 		if err != nil {
 			entry.Error(err.Error())
@@ -279,7 +279,7 @@ func (s *Sqled) audit(task *model.Task) error {
 
 	if err = st.UpdateTask(task, map[string]interface{}{
 		"sql_type":  sqlType,
-		"pass_rate": utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4),
+		"pass_rate": utils.Round(normalCount/float64(len(executeSQLs)), 4),
 		"status":    model.TaskStatusAudited,
 	}); err != nil {
 		entry.Errorf("update task error:%v", err)

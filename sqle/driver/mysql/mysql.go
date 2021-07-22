@@ -17,9 +17,9 @@ import (
 
 func init() {
 	var allRules []*model.Rule
-	for _, ruleHandler := range RuleHandlers {
-		ruleHandler.Rule.DBType = model.DBTypeMySQL
-		allRules = append(allRules, &ruleHandler.Rule)
+	for i := range RuleHandlers {
+		RuleHandlers[i].Rule.DBType = model.DBTypeMySQL
+		allRules = append(allRules, &RuleHandlers[i].Rule)
 	}
 
 	driver.Register(model.DBTypeMySQL, newInspect, allRules)
