@@ -85,7 +85,11 @@ func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, 
 }
 
 func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
-	return nil, nil
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.Db.Query(query, args)
 }
 
 func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {

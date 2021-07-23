@@ -8,7 +8,6 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/universe/ucommon/v4/util"
@@ -455,6 +454,7 @@ func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error 
 	if err != nil {
 		return err
 	}
+	defer d.Close()
 	if err := d.Ping(context.TODO()); err != nil {
 		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -565,9 +565,31 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	schemas, err := executor.ShowDatabases(log.NewEntry(), instance)
+	d, err := driver.NewDriver(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	defer d.Close()
+
+	var query string
+	if instance.DbType == model.DBTypeMySQL {
+		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
+	} else if instance.DbType == model.DBTypePostgreSQL {
+		// todo
+	}
+
+	result, err := d.Query(context.TODO(), query)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	schemas := make([]string, 0, len(result))
+	for _, column := range result {
+		if len(column) != 1 {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("show databases error, result not match"))
+		}
+		for _, v := range column {
+			schemas = append(schemas, v.String)
+		}
 	}
 	return c.JSON(http.StatusOK, &GetInstanceSchemaResV1{
 		BaseRes: controller.NewBaseReq(nil),
