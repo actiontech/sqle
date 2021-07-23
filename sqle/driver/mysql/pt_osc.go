@@ -73,7 +73,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		return PTOSCAvoidRenameTable, nil
 	}
 
-	// If you Add a column without a default value and make it NOT NULL, the tool will fail,
+	// If you add a column without a default value and make it NOT NULL, the tool will fail,
 	// as it will not try to guess a default value for you; You must specify the default.
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		for _, col := range spec.NewColumns {
@@ -85,7 +85,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		}
 	}
 
-	// Avoid pt-online-schema-change to run if the specified statement for --alter is trying to Add an unique index.
+	// Avoid pt-online-schema-change to run if the specified statement for --alter is trying to add an unique index.
 	// Since pt-online-schema-change uses INSERT IGNORE to copy rows to the new table, if the row being written
 	// produces a duplicate key, it will fail silently and data will be lost.
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {

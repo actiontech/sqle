@@ -24,14 +24,14 @@ func runRollbackCase(t *testing.T, desc string, i *Inspect, sql string, results 
 }
 
 func TestAlterTableRollbackSql(t *testing.T) {
-	runRollbackCase(t, "drop column need Add", DefaultMysqlInspect(),
+	runRollbackCase(t, "drop column need add", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 DROP COLUMN v1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"ADD COLUMN `v1` varchar(255) NOT NULL DEFAULT \"v1\" COMMENT \"unit test\";",
 	)
 
-	runRollbackCase(t, "Add column need drop", DefaultMysqlInspect(),
+	runRollbackCase(t, "add column need drop", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ADD COLUMN v3 varchar(255) DEFAULT NULL COMMENT "unit test";`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
@@ -86,68 +86,68 @@ ALTER COLUMN v2 DROP DEFAULT;`,
 		"",
 	)
 
-	runRollbackCase(t, "alter column Add index need drop(1)", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column add index need drop(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ADD INDEX idx_2(v1);`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"DROP INDEX `idx_2`;",
 	)
 
-	runRollbackCase(t, "alter column Add index need drop(2)", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column add index need drop(2)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ADD KEY idx_2(v1);`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"DROP INDEX `idx_2`;",
 	)
 
-	runRollbackCase(t, "alter column drop index need Add(1)", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column drop index need add(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 DROP INDEX idx_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"ADD INDEX `idx_1` (`v1`);",
 	)
 
-	runRollbackCase(t, "alter column drop index need Add(2)", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column drop index need add(2)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 DROP INDEX uniq_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"ADD UNIQUE INDEX `uniq_1` (`v1`,`v2`);",
 	)
 
-	runRollbackCase(t, "alter column Add unique index need drop", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column add unique index need drop", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ADD UNIQUE INDEX uniq_2(v1,v2);`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"DROP INDEX `uniq_2`;",
 	)
 
-	runRollbackCase(t, "alter column drop unique index need Add(1)", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column drop unique index need add(1)", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 DROP INDEX uniq_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"ADD UNIQUE INDEX `uniq_1` (`v1`,`v2`);",
 	)
 
-	runRollbackCase(t, "alter column Add primary key need drop", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column add primary key need drop", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 ADD PRIMARY KEY (id) USING BTREE;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"DROP PRIMARY KEY;",
 	)
 
-	runRollbackCase(t, "alter column drop primary key need Add", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column drop primary key need add", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
 DROP PRIMARY KEY;`,
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"ADD PRIMARY KEY (`id`) USING BTREE;",
 	)
-	runRollbackCase(t, "alter column Add foreign key need drop", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column add foreign key need drop", DefaultMysqlInspect(),
 		"ALTER TABLE exist_db.exist_tb_1"+"\n"+
 			"ADD FOREIGN KEY pk_1 (user_id) REFERENCES exist_db.exist_tb_2 (id) ON DELETE NO ACTION;",
 		"ALTER TABLE `exist_db`.`exist_tb_1`"+"\n"+
 			"DROP FOREIGN KEY `pk_1`;",
 	)
-	runRollbackCase(t, "alter column drop foreign key need Add", DefaultMysqlInspect(),
+	runRollbackCase(t, "alter column drop foreign key need add", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_2
 DROP FOREIGN KEY pk_test_1;`,
 		"ALTER TABLE `exist_db`.`exist_tb_2`"+"\n"+

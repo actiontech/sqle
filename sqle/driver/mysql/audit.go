@@ -186,11 +186,11 @@ alter table ...
 ------------------------------------------------------------------
 1. schema must exist;
 2. table must exist;
-3. Add/update column, name can't duplicated;
+3. add/update column, name can't duplicated;
 4. delete column, name must exist;
-5. Add/update pk, pk can only be set once;
+5. add/update pk, pk can only be set once;
 6. delete pk, pk must exist;
-7. Add/update index, name can't be duplicated;
+7. add/update index, name can't be duplicated;
 8. delete index, name must exist;
 9. index column must exist;
 10. index column can't duplicated.
@@ -271,7 +271,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 		}
 	}
 
-	// check Add column
+	// check add column
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		for _, col := range spec.NewColumns {
 			colName := col.Name.Name.L
@@ -335,7 +335,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 		switch spec.Constraint.Tp {
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
-				// primary key has exist, can not Add primary key
+				// primary key has exist, can not add primary key
 				results.Add(model.RuleLevelError, PrimaryKeyExistMessage)
 			} else {
 				hasPk = true

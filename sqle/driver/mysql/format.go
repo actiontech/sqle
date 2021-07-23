@@ -82,11 +82,11 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 		if indexColums := indexColumnsFormat(constraint.Keys); indexColums != "" {
 			format = fmt.Sprintf("%s %s", format, indexColums)
 		}
-		// if refer is not nil, this is Add foreign key stmt.
+		// if refer is not nil, this is add foreign key stmt.
 		if constraint.Refer != nil {
 			format = fmt.Sprintf("%s %s", format, referDefFormat(constraint.Refer))
 		}
-		// if option is not nil, this is Add index/primary key stmt.
+		// if option is not nil, this is add index/primary key stmt.
 		if constraint.Option != nil {
 			format = fmt.Sprintf("%s %s", format, indexOptionFormat(constraint.Option))
 		}

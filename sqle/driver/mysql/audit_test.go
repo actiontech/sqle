@@ -436,7 +436,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 	// elegant method: unit test support MySQL.
 	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
-		`ALTER TABLE not_exist_db.exist_tb_1 Add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult().add(model.RuleLevelError, SchemaNotExistMessage,
 			"not_exist_db"),
@@ -444,7 +444,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "alter_table: table not exist", DefaultMysqlInspect(),
 		`
-ALTER TABLE exist_db.not_exist_tb_1 Add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
+ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult().add(model.RuleLevelError, TableNotExistMessage,
 			"exist_db.not_exist_tb_1"),
