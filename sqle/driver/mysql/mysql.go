@@ -197,6 +197,14 @@ func (i *Inspect) Ping(ctx context.Context) error {
 	return conn.Db.Ping()
 }
 
+func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.ShowDatabases(true)
+}
+
 type node struct {
 	innerNode       ast.Node
 	isCaseSensitive bool

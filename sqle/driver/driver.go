@@ -80,6 +80,11 @@ type Driver interface {
 	Tx(ctx context.Context, queries ...string) ([]driver.Result, error)
 	Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error)
 
+	// Schemas export all supported schemas.
+	//
+	// For example, performance_schema/performance_schema... in MySQL is not allowed for Auditing.
+	Schemas(ctx context.Context) ([]string, error)
+
 	Parse(sqlText string) ([]Node, error)
 	Audit(rules []*model.Rule, sql string) (*AuditResult, error)
 	GenRollbackSQL(sql string) (string, string, error)
