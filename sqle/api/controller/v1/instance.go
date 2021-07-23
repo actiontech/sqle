@@ -530,6 +530,9 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	if req.DBType == "" {
+		req.DBType = model.DBTypeMySQL
+	}
 	instance := &model.Instance{
 		DbType:   req.DBType,
 		User:     req.User,
