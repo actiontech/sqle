@@ -93,7 +93,7 @@ func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) 
 	if err != nil {
 		return nil, err
 	}
-	return conn.Db.Query(query, args)
+	return conn.Db.Query(query, args...)
 }
 
 func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {

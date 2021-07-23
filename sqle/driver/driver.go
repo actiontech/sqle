@@ -24,6 +24,9 @@ var (
 
 type handler func(log *logrus.Entry, inst *model.Instance, schema string) Driver
 
+// Register like sql.Register.
+//
+//
 func Register(name string, h handler, rs []*model.Rule) {
 	_, exist := drivers[name]
 	if exist {
