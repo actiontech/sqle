@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"mime"
@@ -12,7 +13,6 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/server"
@@ -132,7 +132,12 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if err := executor.Ping(log.NewEntry(), instance); err != nil {
+	d, err := driver.NewDriver(log.NewEntry(), instance, "")
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	if err := d.Ping(context.TODO()); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -152,10 +157,6 @@ func CreateAndAuditTask(c echo.Context) error {
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	d, err := driver.NewDriver(log.NewEntry(), instance, "")
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	nodes, err := d.Parse(sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

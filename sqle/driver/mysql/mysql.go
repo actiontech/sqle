@@ -182,7 +182,11 @@ func (i *Inspect) Close() {
 }
 
 func (i *Inspect) Ping(ctx context.Context) error {
-	return nil
+	conn, err := i.getDbConn()
+	if err != nil {
+		return err
+	}
+	return conn.Db.Ping()
 }
 
 type node struct {

@@ -1,15 +1,19 @@
 package v1
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/universe/ucommon/v4/util"
-	"fmt"
+
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 var instanceNotExistError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
@@ -447,7 +451,11 @@ type InstanceConnectableResV1 struct {
 }
 
 func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
-	if err := executor.Ping(log.NewEntry(), instance); err != nil {
+	d, err := driver.NewDriver(log.NewEntry(), instance, "")
+	if err != nil {
+		return err
+	}
+	if err := d.Ping(context.TODO()); err != nil {
 		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: InstanceConnectableResV1{
