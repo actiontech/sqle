@@ -23,6 +23,10 @@ func init() {
 	}
 
 	driver.Register(model.DBTypeMySQL, newInspect, allRules)
+
+	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
+		panic(err)
+	}
 }
 
 // Inspect implements Inspector interface for MySQL.

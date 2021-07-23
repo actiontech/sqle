@@ -9,20 +9,16 @@ import (
 	"sync"
 	"text/template"
 
-	"actiontech.cloud/sqle/sqle/sqle/log"
 	"github.com/pingcap/parser/ast"
 )
 
 var ptTemplate = `pt-online-schema-change D={{.Schema}},t={{.Table}} --alter='{{.Alter}}' --host={{.Host}} --user={{.User}} --port={{.Port}} --ask-pass --print --execute`
-
 var ptTemplateMutex sync.Mutex
 
 func LoadPtTemplateFromFile(fileName string) error {
-	log.Logger().Info("loading pt-online-schema-change template")
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Logger().Infof("file %s not found, skip", fileName)
 			return nil
 		}
 		return err
@@ -30,7 +26,6 @@ func LoadPtTemplateFromFile(fileName string) error {
 	ptTemplateMutex.Lock()
 	ptTemplate = string(b)
 	ptTemplateMutex.Unlock()
-	log.Logger().Info("loaded pt-online-schema-change template")
 	return nil
 }
 
