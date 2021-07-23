@@ -69,7 +69,11 @@ func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.D
 }
 
 func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
-	return nil, nil
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.Db.Exec(query)
 }
 
 func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {

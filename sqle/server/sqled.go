@@ -329,11 +329,11 @@ func (s *Sqled) audit(task *model.Task) error {
 
 func (s *Sqled) commit(task *model.Task) error {
 	if task.SQLType == model.SQL_TYPE_DML {
-		return s.commitDML(task)
+		return s.executeDMLs(task)
 	}
 
 	if task.SQLType == model.SQL_TYPE_DDL {
-		return s.commitDDL(task)
+		return s.executeDDLs(task)
 	}
 
 	// if task is not inspected, parse task SQL type and commit it.
@@ -344,53 +344,50 @@ func (s *Sqled) commit(task *model.Task) error {
 	}
 	switch i.SqlType() {
 	case model.SQL_TYPE_DML:
-		return s.commitDML(task)
+		return s.executeDMLs(task)
 	case model.SQL_TYPE_DDL:
-		return s.commitDDL(task)
+		return s.executeDDLs(task)
 	case model.SQL_TYPE_MULTI:
 		return errors.ErrSQLTypeConflict
 	}
 	return nil
 }
 
-func (s *Sqled) commitDDL(task *model.Task) error {
-	entry := log.NewEntry().WithField("task_id", task.ID)
-
+func (s *Sqled) executeDDLs(task *model.Task) error {
 	st := model.GetStorage()
 
-	entry.Info("start commit")
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
-	for _, commitSql := range task.ExecuteSQLs {
-		currentSql := commitSql
-		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
-			err := st.UpdateExecuteSqlStatus(&currentSql.BaseSQL, model.SQLExecuteStatusDoing, "")
-			if err != nil {
-				i.Logger().Errorf("update commit sql status to storage failed, error: %v", err)
-				return err
-			}
-			i.CommitDDL(&currentSql.BaseSQL)
-			if currentSql.ExecResult != "ok" {
-				err = st.Save(currentSql)
-				if err != nil {
-					i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
-				}
-				return fmt.Errorf("exec ddl commit sql failed")
-			}
-
-			err = st.Save(currentSql)
-			if err != nil {
-				i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
-			}
-			return err
-		})
-		if err != nil {
-			entry.Error("add commit sql to task failed")
-			return err
-		}
+	entry := log.NewEntry().WithField("task_id", task.ID)
+	d, err := driver.NewDriver(entry, task.Instance, "")
+	if err != nil {
+		return err
 	}
+
+	entry.Info("start execute")
 
 	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
 		return err
+	}
+
+	for _, executeSQL := range task.ExecuteSQLs {
+		if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
+			return err
+		}
+
+		_, execErr := d.Exec(context.TODO(), executeSQL.Content)
+		if execErr != nil {
+			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+			executeSQL.ExecResult = execErr.Error()
+		} else {
+			executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+			executeSQL.ExecResult = "ok"
+		}
+		if err := st.Save(executeSQL); err != nil {
+			entry.Errorf("save SQL to storage error:%v", err)
+		}
+		if execErr != nil {
+			entry.Errorf("execute SQL(%v) error:%v", executeSQL.Content, execErr)
+			break
+		}
 	}
 
 	taskStatus := model.TaskStatusExecuteSucceeded
@@ -403,7 +400,7 @@ func (s *Sqled) commitDDL(task *model.Task) error {
 	return st.UpdateTaskStatusById(task.ID, taskStatus)
 }
 
-func (s *Sqled) commitDML(task *model.Task) error {
+func (s *Sqled) executeDMLs(task *model.Task) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 
 	st := model.GetStorage()
@@ -435,6 +432,7 @@ func (s *Sqled) commitDML(task *model.Task) error {
 		txErr = fmt.Errorf("number of transaction result does not match number of SQLs")
 	}
 
+	// todo(@wy): missing binlog fields of BaseSQL
 	for idx, executeSQL := range task.ExecuteSQLs {
 		if txErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
