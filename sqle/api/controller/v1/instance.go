@@ -55,8 +55,11 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("instance is exist")))
 	}
 
+	if req.DBType == "" {
+		req.DBType = model.DBTypeMySQL
+	}
 	instance := &model.Instance{
-		DbType:   model.DBTypeMySQL,
+		DbType:   req.DBType,
 		Name:     req.Name,
 		User:     req.User,
 		Host:     req.Host,
@@ -153,11 +156,12 @@ type GetInstanceResV1 struct {
 
 func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
-		Name: instance.Name,
-		Host: instance.Host,
-		Port: instance.Port,
-		User: instance.User,
-		Desc: instance.Desc,
+		Name:   instance.Name,
+		Host:   instance.Host,
+		Port:   instance.Port,
+		User:   instance.User,
+		Desc:   instance.Desc,
+		DBType: instance.DbType,
 	}
 	if instance.WorkflowTemplate != nil {
 		instanceResV1.WorkflowTemplateName = instance.WorkflowTemplate.Name
@@ -300,6 +304,9 @@ func UpdateInstance(c echo.Context) error {
 		}
 		updateMap["db_password"] = password
 	}
+	if req.DBType != nil {
+		updateMap["db_type"] = *req.DBType
+	}
 
 	if req.WorkflowTemplateName != nil {
 		// Workflow template name empty is unbound instance workflow template.
@@ -407,6 +414,7 @@ func GetInstances(c echo.Context) error {
 		"filter_workflow_template_name": req.FilterWorkflowTemplateName,
 		"filter_rule_template_name":     req.FilterRuleTemplateName,
 		"filter_role_name":              req.FilterRoleName,
+		"filter_db_type":                req.FilterDBType,
 		"current_user_id":               user.ID,
 		"check_user_can_access":         user.Name != model.DefaultAdminUser,
 		"limit":                         req.PageSize,
@@ -523,7 +531,7 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		return err
 	}
 	instance := &model.Instance{
-		DbType:   model.DBTypeMySQL,
+		DbType:   req.DBType,
 		User:     req.User,
 		Host:     req.Host,
 		Port:     req.Port,

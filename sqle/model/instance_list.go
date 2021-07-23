@@ -71,6 +71,10 @@ AND inst.db_port = :filter_db_port
 AND inst.db_user = :filter_db_user
 {{- end }}
 
+{{- if .filter_db_type }}
+AND inst.db_type = :filter_db_type
+{{- end }}
+
 {{- if .filter_role_name }}
 AND roles.name = :filter_role_name
 {{- end }}
