@@ -24,7 +24,7 @@ func GetSqled() *Sqled {
 }
 
 // Sqled is an async task scheduling service.
-// receive tasks from queue, the tasks include inspect, commit, rollback;
+// receive tasks from queue, the tasks include inspect, execute, rollback;
 // and the task will only be executed once.
 type Sqled struct {
 	sync.Mutex
@@ -38,11 +38,11 @@ type Sqled struct {
 }
 
 // Action is an action for the task;
-// when you want to commit a task, you can define an action whose type is rollback.
+// when you want to execute a task, you can define an action whose type is rollback.
 type Action struct {
 	sync.Mutex
 	Task *model.Task
-	// Typ is task type, include inspect, commit, rollback.
+	// Typ is task type, include inspect, execute, rollback.
 	Typ   int
 	Error error
 	Done  chan struct{}
@@ -144,7 +144,7 @@ func (s *Sqled) do(action *Action) error {
 	case model.TASK_ACTION_AUDIT:
 		err = s.audit(action.Task)
 	case model.TASK_ACTION_EXECUTE:
-		err = s.commit(action.Task)
+		err = s.execute(action.Task)
 	case model.TASK_ACTION_ROLLBACK:
 		err = s.rollback(action.Task)
 	}
@@ -327,7 +327,7 @@ func (s *Sqled) audit(task *model.Task) error {
 	return nil
 }
 
-func (s *Sqled) commit(task *model.Task) error {
+func (s *Sqled) execute(task *model.Task) error {
 	if task.SQLType == model.SQL_TYPE_DML {
 		return s.executeDMLs(task)
 	}
@@ -336,7 +336,7 @@ func (s *Sqled) commit(task *model.Task) error {
 		return s.executeDDLs(task)
 	}
 
-	// if task is not inspected, parse task SQL type and commit it.
+	// if task is not inspected, parse task SQL type and execute it.
 	entry := log.NewEntry().WithField("task_id", task.ID)
 	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
 	if err := i.ParseSqlType(); err != nil {
@@ -405,11 +405,11 @@ func (s *Sqled) executeDMLs(task *model.Task) error {
 
 	st := model.GetStorage()
 
-	entry.Info("start commit")
+	entry.Info("start execute")
 
 	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
 	if err != nil {
-		entry.Errorf("update commit SQL status to storage failed, error: %v", err)
+		entry.Errorf("update execute SQL status to storage failed, error: %v", err)
 		return err
 	}
 
@@ -449,7 +449,7 @@ func (s *Sqled) executeDMLs(task *model.Task) error {
 	}
 
 	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
-		entry.Errorf("save commit sql to storage failed, error: %v", err)
+		entry.Errorf("save execute sql to storage failed, error: %v", err)
 		if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuteFailed); nil != err {
 			log.Logger().Errorf("update task exec_status failed: %v", err)
 		}
@@ -495,7 +495,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 			}
 			err = st.Save(currentSql)
 			if err != nil {
-				i.Logger().Errorf("save commit sql to storage failed, error: %v", err)
+				i.Logger().Errorf("save execute sql to storage failed, error: %v", err)
 			}
 			return err
 		})
