@@ -338,7 +338,7 @@ func (s *Sqled) executeDDLs(task *model.Task) error {
 	st := model.GetStorage()
 
 	entry := log.NewEntry().WithField("task_id", task.ID)
-	d, err := driver.NewDriver(entry, task.Instance, "")
+	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
 	if err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func (s *Sqled) executeDMLs(task *model.Task) error {
 		return err
 	}
 
-	d, err := driver.NewDriver(entry, task.Instance, "")
+	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
 	if err != nil {
 		return err
 	}
@@ -425,7 +425,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 	entry.Info("start rollback SQL")
 
-	d, err := driver.NewDriver(entry, task.Instance, "")
+	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
 	if err != nil {
 		return err
 	}
