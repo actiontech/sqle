@@ -71,6 +71,51 @@ type Driver interface {
 	GenRollbackSQL(sql string) (string, string, error)
 }
 
+func Tx(d Driver, baseSQLs []*model.BaseSQL) error {
+	var retErr error
+	var results []driver.Result
+	qs := make([]string, 0, len(baseSQLs))
+
+	for _, baseSQL := range baseSQLs {
+		qs = append(qs, baseSQL.Content)
+	}
+
+	// todo(@wy): missing binlog fields of BaseSQL
+	defer func() {
+		for idx, baseSQL := range baseSQLs {
+			if retErr != nil {
+				baseSQL.ExecStatus = model.SQLExecuteStatusFailed
+				baseSQL.ExecResult = retErr.Error()
+				continue
+			}
+			rowAffects, _ := results[idx].RowsAffected()
+			baseSQL.RowAffects = rowAffects
+			baseSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+			baseSQL.ExecResult = "ok"
+		}
+	}()
+
+	results, err := d.Tx(context.TODO(), qs...)
+	if err != nil {
+		retErr = err
+	} else if len(results) != len(qs) {
+		retErr = fmt.Errorf("number of transaction result does not match number of SQLs")
+	}
+	return retErr
+}
+
+func Exec(d Driver, baseSQL *model.BaseSQL) error {
+	_, err := d.Exec(context.TODO(), baseSQL.Content)
+	if err != nil {
+		baseSQL.ExecStatus = model.SQLExecuteStatusFailed
+		baseSQL.ExecResult = err.Error()
+	} else {
+		baseSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+		baseSQL.ExecResult = "ok"
+	}
+	return err
+}
+
 type Node interface {
 	Text() string
 	Type() string

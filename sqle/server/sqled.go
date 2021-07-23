@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -13,8 +12,6 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
-
-	"github.com/pingcap/parser/ast"
 )
 
 var sqled *Sqled
@@ -361,6 +358,7 @@ func (s *Sqled) executeDDLs(task *model.Task) error {
 	if err != nil {
 		return err
 	}
+	defer d.Close()
 
 	entry.Info("start execute")
 
@@ -373,19 +371,10 @@ func (s *Sqled) executeDDLs(task *model.Task) error {
 			return err
 		}
 
-		_, execErr := d.Exec(context.TODO(), executeSQL.Content)
-		if execErr != nil {
-			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
-			executeSQL.ExecResult = execErr.Error()
-		} else {
-			executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
-			executeSQL.ExecResult = "ok"
-		}
-		if err := st.Save(executeSQL); err != nil {
+		err := driver.Exec(d, &executeSQL.BaseSQL)
+		err = st.Save(executeSQL)
+		if err != nil {
 			entry.Errorf("save SQL to storage error:%v", err)
-		}
-		if execErr != nil {
-			entry.Errorf("execute SQL(%v) error:%v", executeSQL.Content, execErr)
 			break
 		}
 	}
@@ -423,30 +412,12 @@ func (s *Sqled) executeDMLs(task *model.Task) error {
 	}
 	defer d.Close()
 
-	var sqls []string
+	var baseSQLs []*model.BaseSQL
 	for _, executeSQL := range task.ExecuteSQLs {
-		sqls = append(sqls, executeSQL.BaseSQL.Content)
-	}
-	results, txErr := d.Tx(context.TODO(), sqls...)
-	if len(results) != len(sqls) {
-		txErr = fmt.Errorf("number of transaction result does not match number of SQLs")
+		baseSQLs = append(baseSQLs, &executeSQL.BaseSQL)
 	}
 
-	// todo(@wy): missing binlog fields of BaseSQL
-	for idx, executeSQL := range task.ExecuteSQLs {
-		if txErr != nil {
-			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
-			executeSQL.ExecResult = txErr.Error()
-			continue
-		}
-		rowAffects, err := results[idx].RowsAffected()
-		if err != nil {
-			entry.Warnf("get rows affect failed, error: %v", err)
-		}
-		executeSQL.RowAffects = rowAffects
-		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
-		executeSQL.ExecResult = "ok"
-	}
+	driver.Tx(d, baseSQLs)
 
 	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
 		entry.Errorf("save execute sql to storage failed, error: %v", err)
@@ -468,47 +439,47 @@ func (s *Sqled) executeDMLs(task *model.Task) error {
 
 func (s *Sqled) rollback(task *model.Task) error {
 	entry := log.NewEntry().WithField("task_id", task.ID)
-	entry.Info("start rollback sql")
+	entry.Info("start rollback SQL")
 
+	d, err := driver.NewDriver(entry, task.Instance, "")
+	if err != nil {
+		return err
+	}
+
+	var execErr error
 	st := model.GetStorage()
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
-
-	for _, rollbackSql := range task.RollbackSQLs {
-		currentSql := rollbackSql
-		if currentSql.Content == "" {
+ExecSQLs:
+	for _, rollbackSQL := range task.RollbackSQLs {
+		if rollbackSQL.Content == "" {
 			continue
 		}
-		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
-			err := st.UpdateRollbackSqlStatus(&currentSql.BaseSQL, model.SQLExecuteStatusDoing, "")
-			if err != nil {
-				i.Logger().Errorf("update rollback sql status to storage failed, error: %v", err)
-				return err
-			}
-			switch i.SqlType() {
-			case model.SQLTypeDDL:
-				i.CommitDDL(&currentSql.BaseSQL)
-			case model.SQLTypeDML:
-				i.CommitDMLs([]*model.BaseSQL{&currentSql.BaseSQL})
-			case model.SQLTypeMulti:
-				i.Logger().Error(errors.ErrSQLTypeConflict)
-				return errors.ErrSQLTypeConflict
-			}
-			err = st.Save(currentSql)
-			if err != nil {
-				i.Logger().Errorf("save execute sql to storage failed, error: %v", err)
-			}
-			return err
-		})
-		if err != nil {
-			entry.Error("add rollback sql to task failed")
+		if err = st.UpdateRollbackSqlStatus(&rollbackSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
 			return err
 		}
+
+		nodes, err := d.Parse(rollbackSQL.Content)
+		if err != nil {
+			return err
+		}
+		// todo: execute in transaction
+		for _, node := range nodes {
+			currentSQL := model.RollbackSQL{BaseSQL: model.BaseSQL{
+				TaskId:  rollbackSQL.TaskId,
+				Content: node.Text(),
+			}, ExecuteSQLId: rollbackSQL.ExecuteSQLId}
+
+			execErr = driver.Exec(d, &currentSQL.BaseSQL)
+			execErr = st.Save(currentSQL)
+			if execErr != nil {
+				break ExecSQLs
+			}
+		}
 	}
-	err := i.Do()
-	if err != nil {
-		entry.Error("rollback sql failed")
+
+	if execErr != nil {
+		entry.Errorf("rollback SQL error:%v", execErr)
 	} else {
-		entry.Info("rollback sql finish")
+		entry.Error("rollback SQL finished")
 	}
-	return err
+	return execErr
 }
