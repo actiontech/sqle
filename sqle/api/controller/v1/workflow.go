@@ -1,14 +1,15 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/misc"
 	"actiontech.cloud/sqle/sqle/sqle/model"
@@ -926,12 +927,17 @@ func ApproveWorkflow(c echo.Context) error {
 
 		// if instance is not connectable, exec sql must be failed;
 		// commit action unable to retry, so don't to exec it.
-		if err := executor.Ping(log.NewEntry(), task.Instance); err != nil {
+		d, err := driver.NewDriver(log.NewEntry(), task.Instance, "")
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+		if err := d.Ping(context.TODO()); err != nil {
 			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 		}
 
 		sqledServer := server.GetSqled()
-		err = sqledServer.AddTask(taskId, model.TASK_ACTION_EXECUTE)
+		err = sqledServer.AddTask(taskId, model.TaskActionExecute)
 		if err != nil {
 			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 		}

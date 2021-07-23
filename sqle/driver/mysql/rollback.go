@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"database/sql"
 	"fmt"
 	"strconv"
@@ -13,31 +14,31 @@ import (
 	_model "github.com/pingcap/parser/model"
 )
 
-func (i *Inspect) GenerateAllRollbackSql() ([]*model.RollbackSQL, error) {
+func (i *Inspect) GenerateAllRollbackSql(executeSQLs []*model.ExecuteSQL) ([]*model.RollbackSQL, error) {
 	i.Logger().Info("start generate rollback sql")
 
 	rollbackSqls := []*model.RollbackSQL{}
-	for _, executeSQL := range i.Task.ExecuteSQLs {
+	for _, executeSQL := range executeSQLs {
 		currentSql := executeSQL
 		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
 			rollbackSql, reason, err := i.GenerateRollbackSql(node)
 			if rollbackSql != "" {
 				rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
 					BaseSQL: model.BaseSQL{
-						TaskId:  i.Task.ID,
+						TaskId:  currentSql.TaskId,
 						Content: rollbackSql,
 					},
 					ExecuteSQLId: currentSql.ID,
 				})
 			}
 			if reason != "" {
-				result := newInspectResults()
+				result := driver.NewInspectResults()
 				if currentSql.AuditResult != "" {
-					result.add(currentSql.AuditLevel, currentSql.AuditResult)
+					result.Add(currentSql.AuditLevel, currentSql.AuditResult)
 				}
-				result.add(model.RuleLevelNotice, reason)
-				currentSql.AuditLevel = result.level()
-				currentSql.AuditResult = result.message()
+				result.Add(model.RuleLevelNotice, reason)
+				currentSql.AuditLevel = result.Level()
+				currentSql.AuditResult = result.Message()
 			}
 			return err
 		})
@@ -144,7 +145,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			NewTable: newTableName(schemaName, tableName),
 		})
 	}
-	// add columns need drop columns
+	// Add columns need drop columns
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		if spec.NewColumns == nil {
 			continue
@@ -289,11 +290,11 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		rollbackStmt.Specs = append(rollbackStmt.Specs, spec)
 	}
 
-	// add constraint (index key, primary key ...) need drop
+	// Add constraint (index key, primary key ...) need drop
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintIndex, ast.ConstraintUniq:
-			// add index without index name, index name will be created by db
+			// Add index without index name, index name will be created by db
 			if spec.Constraint.Name == "" {
 				continue
 			}

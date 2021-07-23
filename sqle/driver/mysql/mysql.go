@@ -1,9 +1,13 @@
 package mysql
 
 import (
+	"context"
+	"database/sql"
+	_driver "database/sql/driver"
 	"fmt"
 	"strings"
 
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
@@ -11,20 +15,35 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func init() {
+	var allRules []*model.Rule
+	for i := range RuleHandlers {
+		RuleHandlers[i].Rule.DBType = model.DBTypeMySQL
+		allRules = append(allRules, &RuleHandlers[i].Rule)
+	}
+
+	driver.Register(model.DBTypeMySQL, newInspect, allRules)
+
+	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
+		panic(err)
+	}
+}
+
 // Inspect implements Inspector interface for MySQL.
 type Inspect struct {
 	// Ctx is SQL context.
 	Ctx *Context
 	// config is task config, config variables record in rules.
-	config *Config
+	configInit bool
+	config     *Config
 	// Results is inspect result for commit sql.
-	Results *InspectResults
+	Results *driver.AuditResult
 	// HasInvalidSql represent one of the commit sql base-validation failed.
 	HasInvalidSql bool
 	// currentRule is instance's rules.
 	currentRule model.Rule
 
-	Task *model.Task
+	inst *model.Instance
 
 	log *logrus.Entry
 	// dbConn is a SQL driver for MySQL.
@@ -41,39 +60,178 @@ type Inspect struct {
 	SqlAction []func(node ast.Node) error
 }
 
+func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.Driver {
+	ctx := NewContext(nil)
+	ctx.UseSchema(schema)
+	return &Inspect{
+		Ctx:     ctx,
+		inst:    inst,
+		log:     log,
+		config:  &Config{},
+		Results: driver.NewInspectResults(),
+	}
+}
+
+func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.Db.Exec(query)
+}
+
+func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.Db.Transact(queries...)
+}
+
+func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.Db.Query(query, args...)
+}
+
+func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
+	nodes, err := i.ParseSql(sqlText)
+	if err != nil {
+		return nil, err
+	}
+
+	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return nil, err
+	}
+
+	var ns []driver.Node
+	for i := range nodes {
+		ns = append(ns, &node{innerNode: nodes[i], isCaseSensitive: lowerCaseTableNames == "0"})
+	}
+	return ns, nil
+}
+
+func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
+	if !i.configInit {
+		for _, rule := range rules {
+			if rule.Name == CONFIG_DML_ROLLBACK_MAX_ROWS {
+				defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
+				i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+			} else {
+				i.config.DMLRollbackMaxRows = -1
+			}
+
+			if rule.Name == CONFIG_DDL_OSC_MIN_SIZE {
+				defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
+				i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+			} else {
+				i.config.DDLOSCMinSize = -1
+			}
+		}
+		i.configInit = true
+	}
+
+	result := driver.NewInspectResults()
+	nodes, err := i.ParseSql(sql)
+	if err != nil {
+		return result, err
+	}
+	result, err = i.CheckInvalid(nodes[0])
+	if err != nil {
+		return result, err
+	}
+	if result.Level() == model.RuleLevelError {
+		i.HasInvalidSql = true
+		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), result.Message())
+	}
+
+	i.Results = result
+	for _, rule := range rules {
+		i.currentRule = *rule
+		handler, ok := RuleHandlerMap[rule.Name]
+		if !ok || handler.Func == nil {
+			continue
+		}
+		if err := handler.Func(*rule, i, nodes[0]); err != nil {
+			return result, err
+		}
+	}
+
+	// print osc
+	oscCommandLine, err := i.generateOSCCommandLine(nodes[0])
+	if err != nil {
+		return result, err
+	}
+	if oscCommandLine != "" {
+		result.Add(model.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
+	}
+	i.updateContext(nodes[0])
+	return result, nil
+}
+
+func (i *Inspect) GenRollbackSQL(sql string) (string, string, error) {
+	if i.HasInvalidSql {
+		return "", "", nil
+	}
+
+	nodes, err := i.ParseSql(sql)
+	if err != nil {
+		return "", "", err
+	}
+
+	return i.GenerateRollbackSql(nodes[0])
+}
+
+func (i *Inspect) Close() {
+	i.closeDbConn()
+}
+
+func (i *Inspect) Ping(ctx context.Context) error {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return err
+	}
+	return conn.Db.Ping()
+}
+
+func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.ShowDatabases(true)
+}
+
+type node struct {
+	innerNode       ast.Node
+	isCaseSensitive bool
+}
+
+func (n *node) Text() string {
+	return n.innerNode.Text()
+}
+
+func (n *node) Type() string {
+	switch n.innerNode.(type) {
+	case ast.DDLNode:
+		return model.SQLTypeDDL
+	case ast.DMLNode:
+		return model.SQLTypeDML
+	}
+
+	return ""
+}
+
+func (n *node) Fingerprint() (string, error) {
+	return Fingerprint(n.innerNode.Text(), n.isCaseSensitive)
+}
+
 type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
-}
-
-func NewInspect(entry *logrus.Entry, ctx *Context, task *model.Task,
-	rules map[string]model.Rule) *Inspect {
-	ctx.UseSchema(task.Schema)
-
-	// load config
-	config := &Config{}
-	if rules != nil {
-		if r, ok := rules[CONFIG_DML_ROLLBACK_MAX_ROWS]; ok {
-			defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
-			config.DMLRollbackMaxRows = r.GetValueInt(&defaultRule)
-		} else {
-			config.DMLRollbackMaxRows = -1
-		}
-
-		if r, ok := rules[CONFIG_DDL_OSC_MIN_SIZE]; ok {
-			defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
-			config.DDLOSCMinSize = r.GetValueInt(&defaultRule)
-		} else {
-			config.DDLOSCMinSize = -1
-		}
-	}
-	return &Inspect{
-		Ctx:     ctx,
-		config:  config,
-		Results: newInspectResults(),
-		Task:    task,
-		log:     entry,
-	}
 }
 
 func (i *Inspect) Context() *Context {
@@ -85,27 +243,16 @@ func (i *Inspect) SqlType() string {
 	hasDDL := i.counterDDL > 0
 
 	if hasDML && hasDDL {
-		return model.SQL_TYPE_MULTI
+		return model.SQLTypeMulti
 	}
 
 	if hasDML {
-		return model.SQL_TYPE_DML
+		return model.SQLTypeDML
 	} else if hasDDL {
-		return model.SQL_TYPE_DDL
+		return model.SQLTypeDDL
 	} else {
 		return ""
 	}
-}
-
-func (i *Inspect) ParseSqlType() error {
-	for _, commitSql := range i.Task.ExecuteSQLs {
-		nodes, err := i.ParseSql(commitSql.Content)
-		if err != nil {
-			return err
-		}
-		i.addNodeCounter(nodes)
-	}
-	return nil
 }
 
 func (i *Inspect) addNodeCounter(nodes []ast.Node) {
@@ -117,10 +264,6 @@ func (i *Inspect) addNodeCounter(nodes []ast.Node) {
 			i.counterDML += 1
 		}
 	}
-}
-
-func (i *Inspect) SqlInvalid() bool {
-	return i.HasInvalidSql
 }
 
 func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) error {
@@ -137,7 +280,7 @@ func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) erro
 func (i *Inspect) Do() error {
 	defer i.closeDbConn()
 
-	if i.SqlType() == model.SQL_TYPE_MULTI {
+	if i.SqlType() == model.SQLTypeMulti {
 		i.Logger().Error(errors.ErrSQLTypeConflict)
 		return errors.ErrSQLTypeConflict
 	}
@@ -153,7 +296,7 @@ func (i *Inspect) Do() error {
 }
 
 func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
-	stmts, err := parseSql(i.Task.Instance.DbType, sql)
+	stmts, err := parseSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql)
 		return nil, err
@@ -177,7 +320,7 @@ func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 	}
 	level := i.currentRule.Level
 	message := RuleHandlerMap[ruleName].Message
-	i.Results.add(level, message, args...)
+	i.Results.Add(level, message, args...)
 }
 
 // getDbConn get db conn and just connect once.
@@ -185,7 +328,7 @@ func (i *Inspect) getDbConn() (*Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := NewExecutor(i.log, i.Task.Instance, i.Ctx.currentSchema)
+	conn, err := NewExecutor(i.log, i.inst, i.Ctx.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -443,7 +586,7 @@ func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (
 
 // parseCreateTableStmt parse create table sql text to CreateTableStmt ast.
 func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
-	t, err := parseOneSql(i.Task.Instance.DbType, sql)
+	t, err := parseOneSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
 		return nil, err

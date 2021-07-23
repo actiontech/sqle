@@ -36,7 +36,7 @@ func (s *Sqled) CleanExpiredWorkflows(entry *logrus.Entry) {
 
 	expiredHours, err := st.GetWorkflowExpiredHoursOrDefault()
 	if err != nil {
-		entry.Error("get workflow expired hours error: %v", err)
+		entry.Errorf("get workflow expired hours error: %v", err)
 		return
 	}
 

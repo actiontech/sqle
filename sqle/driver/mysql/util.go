@@ -20,56 +20,6 @@ import (
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
-type InspectResult struct {
-	Level   string
-	Message string
-}
-
-type InspectResults struct {
-	results []*InspectResult
-}
-
-func newInspectResults() *InspectResults {
-	return &InspectResults{
-		results: []*InspectResult{},
-	}
-}
-
-// level find highest level in result
-func (rs *InspectResults) level() string {
-	level := model.RuleLevelNormal
-	for _, result := range rs.results {
-		if model.RuleLevelMap[level] < model.RuleLevelMap[result.Level] {
-			level = result.Level
-		}
-	}
-	return level
-}
-
-func (rs *InspectResults) message() string {
-	messages := make([]string, len(rs.results))
-	for n, result := range rs.results {
-		var message string
-		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
-			model.RuleLevelError, model.RuleLevelWarn, model.RuleLevelNotice, model.RuleLevelNormal, "osc"),
-			result.Message)
-		if match {
-			message = result.Message
-		} else {
-			message = fmt.Sprintf("[%s]%s", result.Level, result.Message)
-		}
-		messages[n] = message
-	}
-	return strings.Join(messages, "\n")
-}
-
-func (rs *InspectResults) add(level, message string, args ...interface{}) {
-	rs.results = append(rs.results, &InspectResult{
-		Level:   level,
-		Message: fmt.Sprintf(message, args...),
-	})
-}
-
 func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
 	switch dbType {
 	case model.DBTypeMySQL:

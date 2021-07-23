@@ -351,11 +351,12 @@ func convertRulesToRes(rules []model.Rule) []RuleResV1 {
 	rulesRes := make([]RuleResV1, 0, len(rules))
 	for _, rule := range rules {
 		rulesRes = append(rulesRes, RuleResV1{
-			Name:  rule.Name,
-			Desc:  rule.Desc,
-			Value: rule.Value,
-			Level: rule.Level,
-			Typ:   rule.Typ,
+			Name:   rule.Name,
+			Desc:   rule.Desc,
+			Value:  rule.Value,
+			Level:  rule.Level,
+			Typ:    rule.Typ,
+			DBType: rule.DBType,
 		})
 	}
 	return rulesRes

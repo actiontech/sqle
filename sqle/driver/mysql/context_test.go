@@ -72,7 +72,7 @@ alter table exist_tb_1 drop column v1;
 		newTestResult().add(model.RuleLevelError, ColumnNotExistMessage, "v1"),
 	)
 
-	runDefaultRulesInspectCase(t, "add column twice: column exists", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "Add column twice: column exists", DefaultMysqlInspect(),
 		`
 use exist_db;
 alter table exist_tb_1 add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
@@ -176,4 +176,4 @@ insert into not_exist_tb_1 (id,v2,v3) values (1,"1","1");
 	)
 }
 
-// TODO: add more test for relation audit, like create a database and create a table in it.
+// TODO: Add more test for relation audit, like create a database and create a table in it.

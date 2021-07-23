@@ -1,15 +1,18 @@
 package v1
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/executor"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/universe/ucommon/v4/util"
-	"fmt"
+
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 var instanceNotExistError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
@@ -52,8 +55,11 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("instance is exist")))
 	}
 
+	if req.DBType == "" {
+		req.DBType = model.DBTypeMySQL
+	}
 	instance := &model.Instance{
-		DbType:   model.DBTypeMySQL,
+		DbType:   req.DBType,
 		Name:     req.Name,
 		User:     req.User,
 		Host:     req.Host,
@@ -150,11 +156,12 @@ type GetInstanceResV1 struct {
 
 func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
-		Name: instance.Name,
-		Host: instance.Host,
-		Port: instance.Port,
-		User: instance.User,
-		Desc: instance.Desc,
+		Name:   instance.Name,
+		Host:   instance.Host,
+		Port:   instance.Port,
+		User:   instance.User,
+		Desc:   instance.Desc,
+		DBType: instance.DbType,
 	}
 	if instance.WorkflowTemplate != nil {
 		instanceResV1.WorkflowTemplateName = instance.WorkflowTemplate.Name
@@ -297,6 +304,9 @@ func UpdateInstance(c echo.Context) error {
 		}
 		updateMap["db_password"] = password
 	}
+	if req.DBType != nil {
+		updateMap["db_type"] = *req.DBType
+	}
 
 	if req.WorkflowTemplateName != nil {
 		// Workflow template name empty is unbound instance workflow template.
@@ -404,6 +414,7 @@ func GetInstances(c echo.Context) error {
 		"filter_workflow_template_name": req.FilterWorkflowTemplateName,
 		"filter_rule_template_name":     req.FilterRuleTemplateName,
 		"filter_role_name":              req.FilterRoleName,
+		"filter_db_type":                req.FilterDBType,
 		"current_user_id":               user.ID,
 		"check_user_can_access":         user.Name != model.DefaultAdminUser,
 		"limit":                         req.PageSize,
@@ -447,7 +458,12 @@ type InstanceConnectableResV1 struct {
 }
 
 func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
-	if err := executor.Ping(log.NewEntry(), instance); err != nil {
+	d, err := driver.NewDriver(log.NewEntry(), instance, "")
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	if err := d.Ping(context.TODO()); err != nil {
 		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: InstanceConnectableResV1{
@@ -514,8 +530,11 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	if req.DBType == "" {
+		req.DBType = model.DBTypeMySQL
+	}
 	instance := &model.Instance{
-		DbType:   model.DBTypeMySQL,
+		DbType:   req.DBType,
 		User:     req.User,
 		Host:     req.Host,
 		Port:     req.Port,
@@ -557,9 +576,14 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	schemas, err := executor.ShowDatabases(log.NewEntry(), instance)
+	d, err := driver.NewDriver(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	defer d.Close()
+	schemas, err := d.Schemas(context.TODO())
+	if err != nil {
+		return err
 	}
 	return c.JSON(http.StatusOK, &GetInstanceSchemaResV1{
 		BaseRes: controller.NewBaseReq(nil),

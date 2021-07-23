@@ -1,16 +1,18 @@
 package sqled
 
 import (
+	"fmt"
+	"syscall"
+
 	"actiontech.cloud/sqle/sqle/sqle/api"
 	"actiontech.cloud/sqle/sqle/sqle/config"
-	"actiontech.cloud/sqle/sqle/sqle/inspector"
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/server"
 	"actiontech.cloud/universe/ucommon/v4/ubootstrap"
-	"fmt"
+
 	"github.com/facebookgo/grace/gracenet"
-	"syscall"
 )
 
 func Run(config *config.Config) error {
@@ -20,10 +22,6 @@ func Run(config *config.Config) error {
 
 	log.Logger().Infoln("starting sqled server")
 
-	err := inspector.LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template")
-	if err != nil {
-		return fmt.Errorf("load './scripts/pt-online-schema-change.template/' failed: %v", err)
-	}
 	dbConfig := config.Server.DBCnf.MysqlCnf
 	s, err := model.NewStorage(dbConfig.User, dbConfig.Password,
 		dbConfig.Host, dbConfig.Port, dbConfig.Schema, config.Server.SqleCnf.DebugLog)
@@ -36,10 +34,10 @@ func Run(config *config.Config) error {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
 		}
-		if err := s.CreateRulesIfNotExist(inspector.InitRules); err != nil {
+		if err := s.CreateRulesIfNotExist(driver.AllRules()); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.CreateDefaultTemplate(inspector.DefaultTemplateRules); err != nil {
+		if err := s.CreateDefaultTemplate(driver.AllRules()); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
 		if err := s.CreateAdminUser(); err != nil {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -170,5 +171,8 @@ type DriversResV1 struct {
 // @Success 200 {object} v1.GetDriversResV1
 // @router /v1/configurations/drivers [get]
 func GetDrivers(c echo.Context) error {
-	return nil
+	return c.JSON(http.StatusOK, &GetDriversResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    DriversResV1{Drivers: driver.AllDrivers()},
+	})
 }

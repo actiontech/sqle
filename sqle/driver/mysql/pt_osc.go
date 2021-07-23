@@ -9,22 +9,16 @@ import (
 	"sync"
 	"text/template"
 
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
-
 	"github.com/pingcap/parser/ast"
 )
 
 var ptTemplate = `pt-online-schema-change D={{.Schema}},t={{.Table}} --alter='{{.Alter}}' --host={{.Host}} --user={{.User}} --port={{.Port}} --ask-pass --print --execute`
-
 var ptTemplateMutex sync.Mutex
 
 func LoadPtTemplateFromFile(fileName string) error {
-	log.Logger().Info("loading pt-online-schema-change template")
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Logger().Infof("file %s not found, skip", fileName)
 			return nil
 		}
 		return err
@@ -32,7 +26,6 @@ func LoadPtTemplateFromFile(fileName string) error {
 	ptTemplateMutex.Lock()
 	ptTemplate = string(b)
 	ptTemplateMutex.Unlock()
-	log.Logger().Info("loaded pt-online-schema-change template")
 	return nil
 }
 
@@ -46,11 +39,6 @@ const (
 // generateOSCCommandLine generate pt-online-schema-change command-line statement;
 // see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
 func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
-	// just support mysql
-	if i.Task.Instance.DbType != model.DBTypeMySQL {
-		return "", nil
-	}
-
 	if i.config.DDLOSCMinSize < 0 {
 		return "", nil
 	}
@@ -140,9 +128,9 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	buff := bytes.NewBufferString("")
 	err = tp.Execute(buff, map[string]interface{}{
 		"Alter":  strings.Join(changes, ","),
-		"Host":   i.Task.Instance.Host,
-		"Port":   i.Task.Instance.Port,
-		"User":   i.Task.Instance.User,
+		"Host":   i.inst.Host,
+		"Port":   i.inst.Port,
+		"User":   i.inst.User,
 		"Schema": i.getSchemaName(stmt.Table),
 		"Table":  stmt.Table.Name.String(),
 	})

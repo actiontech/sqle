@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"actiontech.cloud/sqle/sqle/sqle/model"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,15 +40,15 @@ func TestPTOSC(t *testing.T) {
 		`alter table exist_tb_1 add column(v4 varchar(255),v5 varchar(255) not null default "1")`,
 		fmt.Sprintf(expect, "exist_tb_1", "ADD COLUMN (`v4` varchar(255), `v5` varchar(255) NOT NULL DEFAULT \"1\")"))
 
-	runOSCCase(t, "add multi column(2)",
-		`alter table exist_tb_1 add column v4 varchar(255),add column v5 varchar(255) not null default "1"`,
+	runOSCCase(t, "Add multi column(2)",
+		`alter table exist_tb_1 Add column v4 varchar(255),Add column v5 varchar(255) not null default "1"`,
 		fmt.Sprintf(expect, "exist_tb_1", "ADD COLUMN `v4` varchar(255),ADD COLUMN `v5` varchar(255) NOT NULL DEFAULT \"1\""))
 }
 
 func runOSCCase(t *testing.T, desc string, sql, expect string) {
 	i := DefaultMysqlInspect()
 	i.config.DDLOSCMinSize = 0
-	stmt, err := parseOneSql(i.Task.Instance.DbType, sql)
+	stmt, err := parseOneSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		t.Error(err)
 		return
