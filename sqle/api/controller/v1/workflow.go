@@ -931,7 +931,7 @@ func ApproveWorkflow(c echo.Context) error {
 		}
 
 		sqledServer := server.GetSqled()
-		err = sqledServer.AddTask(taskId, model.TASK_ACTION_EXECUTE)
+		err = sqledServer.AddTask(taskId, model.TaskActionExecute)
 		if err != nil {
 			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 		}

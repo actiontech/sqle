@@ -128,13 +128,13 @@ func (i *Inspect) SqlType() string {
 	hasDDL := i.counterDDL > 0
 
 	if hasDML && hasDDL {
-		return model.SQL_TYPE_MULTI
+		return model.SQLTypeMulti
 	}
 
 	if hasDML {
-		return model.SQL_TYPE_DML
+		return model.SQLTypeDML
 	} else if hasDDL {
-		return model.SQL_TYPE_DDL
+		return model.SQLTypeDDL
 	} else {
 		return ""
 	}
@@ -180,7 +180,7 @@ func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) erro
 func (i *Inspect) Do() error {
 	defer i.closeDbConn()
 
-	if i.SqlType() == model.SQL_TYPE_MULTI {
+	if i.SqlType() == model.SQLTypeMulti {
 		i.Logger().Error(errors.ErrSQLTypeConflict)
 		return errors.ErrSQLTypeConflict
 	}

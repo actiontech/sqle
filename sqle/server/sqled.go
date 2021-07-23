@@ -141,11 +141,11 @@ func (s *Sqled) taskLoop() {
 func (s *Sqled) do(action *Action) error {
 	var err error
 	switch action.Typ {
-	case model.TASK_ACTION_AUDIT:
+	case model.TaskActionAudit:
 		err = s.audit(action.Task)
-	case model.TASK_ACTION_EXECUTE:
+	case model.TaskActionExecute:
 		err = s.execute(action.Task)
-	case model.TASK_ACTION_ROLLBACK:
+	case model.TaskActionRollback:
 		err = s.rollback(action.Task)
 	}
 	if err != nil {
@@ -299,20 +299,20 @@ func (s *Sqled) audit(task *model.Task) error {
 		}
 
 		switch nodes[0].Type() {
-		case model.SQL_TYPE_DDL:
+		case model.SQLTypeDDL:
 			hasDDL = true
-		case model.SQL_TYPE_DML:
+		case model.SQLTypeDML:
 			hasDML = true
 		}
 	}
 
 	var sqlType string
 	if hasDML && hasDDL {
-		sqlType = model.SQL_TYPE_MULTI
+		sqlType = model.SQLTypeMulti
 	} else if hasDDL {
-		sqlType = model.SQL_TYPE_DDL
+		sqlType = model.SQLTypeDDL
 	} else if hasDML {
-		sqlType = model.SQL_TYPE_DML
+		sqlType = model.SQLTypeDML
 	}
 
 	task.Status = model.TaskStatusAudited
@@ -328,11 +328,11 @@ func (s *Sqled) audit(task *model.Task) error {
 }
 
 func (s *Sqled) execute(task *model.Task) error {
-	if task.SQLType == model.SQL_TYPE_DML {
+	if task.SQLType == model.SQLTypeDML {
 		return s.executeDMLs(task)
 	}
 
-	if task.SQLType == model.SQL_TYPE_DDL {
+	if task.SQLType == model.SQLTypeDDL {
 		return s.executeDDLs(task)
 	}
 
@@ -343,11 +343,11 @@ func (s *Sqled) execute(task *model.Task) error {
 		return err
 	}
 	switch i.SqlType() {
-	case model.SQL_TYPE_DML:
+	case model.SQLTypeDML:
 		return s.executeDMLs(task)
-	case model.SQL_TYPE_DDL:
+	case model.SQLTypeDDL:
 		return s.executeDDLs(task)
-	case model.SQL_TYPE_MULTI:
+	case model.SQLTypeMulti:
 		return errors.ErrSQLTypeConflict
 	}
 	return nil
@@ -485,11 +485,11 @@ func (s *Sqled) rollback(task *model.Task) error {
 				return err
 			}
 			switch i.SqlType() {
-			case model.SQL_TYPE_DDL:
+			case model.SQLTypeDDL:
 				i.CommitDDL(&currentSql.BaseSQL)
-			case model.SQL_TYPE_DML:
+			case model.SQLTypeDML:
 				i.CommitDMLs([]*model.BaseSQL{&currentSql.BaseSQL})
-			case model.SQL_TYPE_MULTI:
+			case model.SQLTypeMulti:
 				i.Logger().Error(errors.ErrSQLTypeConflict)
 				return errors.ErrSQLTypeConflict
 			}

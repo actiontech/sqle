@@ -13,15 +13,15 @@ import (
 
 // task action
 const (
-	TASK_ACTION_AUDIT = iota + 1
-	TASK_ACTION_EXECUTE
-	TASK_ACTION_ROLLBACK
+	TaskActionAudit = iota + 1
+	TaskActionExecute
+	TaskActionRollback
 )
 
 const (
-	SQL_TYPE_DML   = "dml"
-	SQL_TYPE_DDL   = "ddl"
-	SQL_TYPE_MULTI = "dml&ddl"
+	SQLTypeDML   = "dml"
+	SQLTypeDDL   = "ddl"
+	SQLTypeMulti = "dml&ddl"
 )
 
 const (
@@ -191,14 +191,14 @@ func (t *Task) HasDoingRollback() bool {
 
 func (t *Task) ValidAction(typ int) error {
 	switch typ {
-	case TASK_ACTION_AUDIT:
+	case TaskActionAudit:
 		// audit sql allowed at all times
 		return nil
-	case TASK_ACTION_EXECUTE:
+	case TaskActionExecute:
 		if t.HasDoingExecute() {
 			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been executed"))
 		}
-	case TASK_ACTION_ROLLBACK:
+	case TaskActionRollback:
 		if t.HasDoingRollback() {
 			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been rolled back"))
 		}
@@ -337,7 +337,7 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 		InstanceId: task.InstanceId,
 		Schema:     task.Schema,
 		PassRate:   1,
-		SQLType:    SQL_TYPE_DDL,
+		SQLType:    SQLTypeDDL,
 		Status:     TaskStatusAudited,
 	}).Preload("Instance").Preload("ExecuteSQLs").Find(&tasks).Error
 	return tasks, errors.New(errors.ConnectStorageError, err)
