@@ -59,6 +59,17 @@ func AllRules() []*model.Rule {
 	return rules
 }
 
+func AllDrivers() []string {
+	rulesMu.RLock()
+	defer rulesMu.RUnlock()
+
+	driverNames := make([]string, 0, len(drivers))
+	for n := range drivers {
+		driverNames = append(driverNames, n)
+	}
+	return driverNames
+}
+
 type Driver interface {
 	Close()
 	Ping(ctx context.Context) error
