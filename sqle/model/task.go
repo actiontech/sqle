@@ -198,6 +198,9 @@ func (t *Task) ValidAction(typ int) error {
 		if t.HasDoingExecute() {
 			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been executed"))
 		}
+		if !t.HasDoingAudit() {
+			return errors.New(errors.TaskActionInvalid, fmt.Errorf("task has not been audit, not allow execute"))
+		}
 	case TaskActionRollback:
 		if t.HasDoingRollback() {
 			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been rolled back"))

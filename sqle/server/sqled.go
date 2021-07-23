@@ -8,7 +8,6 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/driver"
 	_ "actiontech.cloud/sqle/sqle/sqle/driver/mysql"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/inspector"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
@@ -327,24 +326,9 @@ func (s *Sqled) audit(task *model.Task) error {
 func (s *Sqled) execute(task *model.Task) error {
 	if task.SQLType == model.SQLTypeDML {
 		return s.executeDMLs(task)
-	}
-
-	if task.SQLType == model.SQLTypeDDL {
+	} else if task.SQLType == model.SQLTypeDDL {
 		return s.executeDDLs(task)
-	}
-
-	// if task is not inspected, parse task SQL type and execute it.
-	entry := log.NewEntry().WithField("task_id", task.ID)
-	i := inspector.NewInspector(entry, inspector.NewContext(nil), task, nil)
-	if err := i.ParseSqlType(); err != nil {
-		return err
-	}
-	switch i.SqlType() {
-	case model.SQLTypeDML:
-		return s.executeDMLs(task)
-	case model.SQLTypeDDL:
-		return s.executeDDLs(task)
-	case model.SQLTypeMulti:
+	} else if task.SQLType == model.SQLTypeMulti {
 		return errors.ErrSQLTypeConflict
 	}
 	return nil
@@ -445,6 +429,7 @@ func (s *Sqled) rollback(task *model.Task) error {
 	if err != nil {
 		return err
 	}
+	defer d.Close()
 
 	var execErr error
 	st := model.GetStorage()
