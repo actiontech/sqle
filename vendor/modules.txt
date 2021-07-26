@@ -93,12 +93,7 @@ github.com/go-sql-driver/mysql
 # github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe
 github.com/golang-sql/civil
 # github.com/golang/protobuf v1.3.5
-## explicit
 github.com/golang/protobuf/proto
-github.com/golang/protobuf/ptypes
-github.com/golang/protobuf/ptypes/any
-github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/ptypes/timestamp
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
 # github.com/jinzhu/gorm v1.9.15 => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
@@ -229,12 +224,7 @@ golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/md4
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
-## explicit
 golang.org/x/net/bpf
-golang.org/x/net/context
-golang.org/x/net/http/httpguts
-golang.org/x/net/http2
-golang.org/x/net/http2/hpack
 golang.org/x/net/icmp
 golang.org/x/net/idna
 golang.org/x/net/internal/iana
@@ -270,48 +260,6 @@ golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/buildutil
 golang.org/x/tools/go/internal/cgo
 golang.org/x/tools/go/loader
-# google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
-google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.28.0
-## explicit
-google.golang.org/grpc
-google.golang.org/grpc/attributes
-google.golang.org/grpc/backoff
-google.golang.org/grpc/balancer
-google.golang.org/grpc/balancer/base
-google.golang.org/grpc/balancer/roundrobin
-google.golang.org/grpc/binarylog/grpc_binarylog_v1
-google.golang.org/grpc/codes
-google.golang.org/grpc/connectivity
-google.golang.org/grpc/credentials
-google.golang.org/grpc/credentials/internal
-google.golang.org/grpc/encoding
-google.golang.org/grpc/encoding/proto
-google.golang.org/grpc/grpclog
-google.golang.org/grpc/internal
-google.golang.org/grpc/internal/backoff
-google.golang.org/grpc/internal/balancerload
-google.golang.org/grpc/internal/binarylog
-google.golang.org/grpc/internal/buffer
-google.golang.org/grpc/internal/channelz
-google.golang.org/grpc/internal/envconfig
-google.golang.org/grpc/internal/grpclog
-google.golang.org/grpc/internal/grpcrand
-google.golang.org/grpc/internal/grpcsync
-google.golang.org/grpc/internal/grpcutil
-google.golang.org/grpc/internal/resolver/dns
-google.golang.org/grpc/internal/resolver/passthrough
-google.golang.org/grpc/internal/syscall
-google.golang.org/grpc/internal/transport
-google.golang.org/grpc/keepalive
-google.golang.org/grpc/metadata
-google.golang.org/grpc/naming
-google.golang.org/grpc/peer
-google.golang.org/grpc/resolver
-google.golang.org/grpc/serviceconfig
-google.golang.org/grpc/stats
-google.golang.org/grpc/status
-google.golang.org/grpc/tap
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
 ## explicit
 gopkg.in/alexcesaro/quotedprintable.v3

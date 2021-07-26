@@ -22,11 +22,13 @@ var (
 	rulesMu sync.RWMutex
 )
 
+// handler is a template which Driver plugin should provide such function signature.
 type handler func(log *logrus.Entry, inst *model.Instance, schema string) Driver
 
 // Register like sql.Register.
 //
-//
+// Register makes a database driver available by the provided driver name.
+// Driver's initialize handler and audit rules register by Register.
 func Register(name string, h handler, rs []*model.Rule) {
 	_, exist := drivers[name]
 	if exist {
@@ -44,6 +46,7 @@ func Register(name string, h handler, rs []*model.Rule) {
 	rulesMu.Unlock()
 }
 
+// NewDriver return a new instantiated Driver.
 func NewDriver(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error) {
 	driversMu.RLock()
 	defer driversMu.RUnlock()
@@ -73,6 +76,11 @@ func AllDrivers() []string {
 	return driverNames
 }
 
+// Driver is a interface that must be implemented by a database.
+//
+// Driver is responsible for two primary things:
+// 1. privode handle to communicate with database
+// 2. audit SQL with rules
 type Driver interface {
 	Close()
 	Ping(ctx context.Context) error
@@ -82,12 +90,46 @@ type Driver interface {
 
 	// Schemas export all supported schemas.
 	//
-	// For example, performance_schema/performance_schema... in MySQL is not allowed for Auditing.
+	// For example, performance_schema/performance_schema... which in MySQL is not allowed for auditing.
 	Schemas(ctx context.Context) ([]string, error)
 
+	// Parse parse sqlText to Node array.
+	//
+	// sqlText may be single SQL or batch SQLs.
 	Parse(sqlText string) ([]Node, error)
+
+	// Audit sql with rules. sql is single SQL text.
+	//
+	// Multi Audit call may be in one context.
+	// For example:
+	//		driver, _ := NewDriver(..., ..., ...)
+	// 		driver.Audit(..., "CREATE TABLE t1(id int)")
+	// 		driver.Audit(..., "SELECT * FROM t1 WHERE id = 1")
+	//      ...
+	// driver should keep SQL context during it's lifecycle.
 	Audit(rules []*model.Rule, sql string) (*AuditResult, error)
+
+	// GenRollbackSQL generate sql's rollback SQL.
 	GenRollbackSQL(sql string) (string, string, error)
+}
+
+// Node is a interface which unify SQL ast tree. It produce by Driver.Parse.
+//
+//
+type Node interface {
+	// Text get the raw SQL text of Node.
+	Text() string
+
+	// Type return type of SQL, such as DML/DDL/DCL.
+	Type() string
+
+	// Fingerprint generate fingerprint of Node's raw SQL.
+	//
+	// For example:
+	// 		driver, _ := NewDriver(..., ..., ...)
+	// 		nodes, _ := driver.Parse("select * from t1 where id = 1")
+	//		f, _ := nodes[0].Fingerprint() // f == SELECT * FROM `t1` WHERE id = ?
+	Fingerprint() (string, error)
 }
 
 func Tx(d Driver, baseSQLs []*model.BaseSQL) error {
@@ -133,12 +175,6 @@ func Exec(d Driver, baseSQL *model.BaseSQL) error {
 		baseSQL.ExecResult = "ok"
 	}
 	return err
-}
-
-type Node interface {
-	Text() string
-	Type() string
-	Fingerprint() (string, error)
 }
 
 type AuditResult struct {
