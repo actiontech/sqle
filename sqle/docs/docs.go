@@ -2659,6 +2659,9 @@ var doc = `{
         "v1.CreateRuleTemplateReqV1": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string"
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -3499,6 +3502,9 @@ var doc = `{
         "v1.RuleTemplateResV1": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string"
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -3516,6 +3522,9 @@ var doc = `{
         "v1.RuleTemplateTipResV1": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string"
+                },
                 "rule_template_name": {
                     "type": "string"
                 }
