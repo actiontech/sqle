@@ -40,9 +40,7 @@ func Register(name string, h handler, rs []*model.Rule) {
 	driversMu.Unlock()
 
 	rulesMu.Lock()
-	for _, r := range rs {
-		rules = append(rules, r)
-	}
+	rules = append(rules, rs...)
 	rulesMu.Unlock()
 }
 
@@ -114,8 +112,6 @@ type Driver interface {
 }
 
 // Node is a interface which unify SQL ast tree. It produce by Driver.Parse.
-//
-//
 type Node interface {
 	// Text get the raw SQL text of Node.
 	Text() string
