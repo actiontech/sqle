@@ -132,25 +132,25 @@ func DefaultMysqlInspect() *Inspect {
 				"lower_case_table_names": "0",
 			},
 			schemas: map[string]*SchemaInfo{
-				"exist_db": &SchemaInfo{
+				"exist_db": {
 					DefaultEngine:    "InnoDB",
 					engineLoad:       true,
 					DefaultCharacter: "utf8mb4",
 					characterLoad:    true,
 					Tables: map[string]*TableInfo{
-						"exist_tb_1": &TableInfo{
+						"exist_tb_1": {
 							sizeLoad:      true,
 							isLoad:        true,
 							Size:          1,
 							OriginalTable: getTestCreateTableStmt1(),
 						},
-						"exist_tb_2": &TableInfo{
+						"exist_tb_2": {
 							sizeLoad:      true,
 							isLoad:        true,
 							Size:          1,
 							OriginalTable: getTestCreateTableStmt2(),
 						},
-						"exist_tb_3": &TableInfo{
+						"exist_tb_3": {
 							sizeLoad:      true,
 							isLoad:        true,
 							Size:          1,

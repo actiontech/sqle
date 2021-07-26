@@ -1,9 +1,9 @@
 package mysql
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"testing"
 
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/pingcap/parser"
@@ -19,13 +19,13 @@ func TestRemoveArrayRepeat(t *testing.T) {
 }
 
 var columnOptionsForTest = []*ast.ColumnOption{
-	&ast.ColumnOption{
+	{
 		Tp: ast.ColumnOptionAutoIncrement,
 	},
-	&ast.ColumnOption{
+	{
 		Tp: ast.ColumnOptionPrimaryKey,
 	},
-	&ast.ColumnOption{
+	{
 		Tp: ast.ColumnOptionNotNull,
 	},
 }
