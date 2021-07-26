@@ -2559,7 +2559,7 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "rule_template_name": {
+                "new_rule_template_name": {
                     "type": "string"
                 }
             }

@@ -429,7 +429,7 @@ func GetRuleTemplateTips(c echo.Context) error {
 }
 
 type CloneRuleTemplateReqV1 struct {
-	Name      string   `json:"rule_template_name" valid:"required,name"`
+	Name      string   `json:"new_rule_template_name" valid:"required"`
 	Desc      string   `json:"desc"`
 	Instances []string `json:"instance_name_list"`
 }
