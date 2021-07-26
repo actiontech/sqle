@@ -95,7 +95,7 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 	case ast.AlterTableDropIndex:
 		return fmt.Sprintf("DROP INDEX `%s`", stmt.Name)
 	case ast.AlterTableDropPrimaryKey:
-		return fmt.Sprintf("DROP PRIMARY KEY")
+		return "DROP PRIMARY KEY"
 	case ast.AlterTableDropForeignKey:
 		return fmt.Sprintf("DROP FOREIGN KEY `%s`", stmt.Name)
 	case ast.AlterTableRenameIndex:

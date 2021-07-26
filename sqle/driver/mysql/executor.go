@@ -344,7 +344,7 @@ func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
 }
 
 func (c *Executor) ShowMasterStatus() ([]map[string]sql.NullString, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show master status"))
+	result, err := c.Db.Query("show master status")
 	if err != nil {
 		return nil, err
 	}
