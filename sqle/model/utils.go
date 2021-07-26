@@ -137,34 +137,40 @@ func (s *Storage) CreateRulesIfNotExist(rules []*Rule) error {
 	return nil
 }
 
-var DefaultRuleTemplate = "default"
-
 func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
-	_, exist, err := s.GetRuleTemplateByName(DefaultRuleTemplate)
-	if err != nil {
-		return err
+	defaultTemplates := make(map[string][]*Rule)
+	for _, rule := range rules {
+		defaultTemplates[rule.DBType] = append(defaultTemplates[rule.DBType], rule)
 	}
-	if !exist {
-		t := &RuleTemplate{
-			Name: DefaultRuleTemplate,
-			Desc: "默认规则模板",
-		}
-		if err := s.Save(t); err != nil {
+
+	for dbType, rs := range defaultTemplates {
+		_, exist, err := s.GetRuleTemplateByName(dbType)
+		if err != nil {
 			return err
 		}
-
-		ruleList := make([]RuleTemplateRule, 0, len(rules))
-		for _, rule := range rules {
-			if rule.IsDefault && rule.DBType == DBTypeMySQL {
-				ruleList = append(ruleList, RuleTemplateRule{
-					RuleTemplateId: t.ID,
-					RuleName:       rule.Name,
-					RuleLevel:      rule.Level,
-					RuleValue:      rule.Value,
-				})
+		if !exist {
+			t := &RuleTemplate{
+				Name:   fmt.Sprintf("default_%v", dbType),
+				Desc:   "默认规则模板",
+				DBType: dbType,
 			}
+			if err := s.Save(t); err != nil {
+				return err
+			}
+
+			ruleList := make([]RuleTemplateRule, 0, len(rs))
+			for _, rule := range rs {
+				if rule.IsDefault {
+					ruleList = append(ruleList, RuleTemplateRule{
+						RuleTemplateId: t.ID,
+						RuleName:       rule.Name,
+						RuleLevel:      rule.Level,
+						RuleValue:      rule.Value,
+					})
+				}
+			}
+			return s.UpdateRuleTemplateRules(t, ruleList...)
 		}
-		return s.UpdateRuleTemplateRules(t, ruleList...)
 	}
 	return nil
 }
