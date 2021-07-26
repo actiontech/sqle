@@ -1,11 +1,12 @@
 package mysql
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"actiontech.cloud/sqle/sqle/sqle/driver"
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
@@ -219,7 +220,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		newSpec := &ast.AlterTableSpec{
 			Tp: ast.AlterTableAlterColumn,
 			NewColumns: []*ast.ColumnDef{
-				&ast.ColumnDef{
+				{
 					Name: newColumn.Name,
 				},
 			},
@@ -230,7 +231,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 					for _, op := range col.Options {
 						if op.Tp == ast.ColumnOptionDefaultValue {
 							newSpec.NewColumns[0].Options = []*ast.ColumnOption{
-								&ast.ColumnOption{
+								{
 									Expr: op.Expr,
 								},
 							}

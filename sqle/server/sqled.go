@@ -148,7 +148,7 @@ func (s *Sqled) do(action *Action) error {
 		action.Error = err
 	}
 	s.Lock()
-	taskId := fmt.Sprintf(fmt.Sprintf("%d", action.Task.ID))
+	taskId := fmt.Sprintf("%d", action.Task.ID)
 	delete(s.currentTask, taskId)
 	s.Unlock()
 
