@@ -2436,6 +2436,9 @@ func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
+var createTriggerReg1 = regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+before|after`)
+var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`)
+
 // CREATE
 //    [DEFINER = user]
 //    TRIGGER trigger_name
@@ -2451,13 +2454,16 @@ func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
 func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
-		if regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) ||
-			regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) {
+		if createTriggerReg1.MatchString(node.Text()) ||
+			createTriggerReg2.MatchString(node.Text()) {
 			i.addResult(rule.Name)
 		}
 	}
 	return nil
 }
+
+var createFunctionReg1 = regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+returns`)
+var createFunctionReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`)
 
 // CREATE
 //    [DEFINER = user]
@@ -2471,13 +2477,16 @@ func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
-		if regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) ||
-			regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) {
+		if createFunctionReg1.MatchString(node.Text()) ||
+			createFunctionReg2.MatchString(node.Text()) {
 			i.addResult(rule.Name)
 		}
 	}
 	return nil
 }
+
+var createProcedureReg1 = regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s]+`)
+var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`)
 
 // CREATE
 //    [DEFINER = user]
@@ -2490,8 +2499,8 @@ func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
 func checkCreateProcedure(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
-		if regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) ||
-			regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) {
+		if createProcedureReg1.MatchString(node.Text()) ||
+			createProcedureReg2.MatchString(node.Text()) {
 			i.addResult(rule.Name)
 		}
 	}
