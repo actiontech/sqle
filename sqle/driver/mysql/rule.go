@@ -2449,9 +2449,12 @@ func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
 // For now, we do character matching for CREATE TRIGGER Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
 func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
-	if regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) ||
-		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) {
-		i.addResult(rule.Name)
+	switch node.(type) {
+	case *ast.UnparsedStmt:
+		if regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) ||
+			regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`).MatchString(node.Text()) {
+			i.addResult(rule.Name)
+		}
 	}
 	return nil
 }
@@ -2466,9 +2469,12 @@ func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
 func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
-	if regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) ||
-		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) {
-		i.addResult(rule.Name)
+	switch node.(type) {
+	case *ast.UnparsedStmt:
+		if regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) ||
+			regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`).MatchString(node.Text()) {
+			i.addResult(rule.Name)
+		}
 	}
 	return nil
 }
@@ -2482,9 +2488,12 @@ func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
 // For now, we do character matching for CREATE PROCEDURE Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
 func checkCreateProcedure(rule model.Rule, i *Inspect, node ast.Node) error {
-	if regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) ||
-		regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) {
-		i.addResult(rule.Name)
+	switch node.(type) {
+	case *ast.UnparsedStmt:
+		if regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) ||
+			regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`).MatchString(node.Text()) {
+			i.addResult(rule.Name)
+		}
 	}
 	return nil
 }
