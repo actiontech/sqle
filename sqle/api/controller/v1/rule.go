@@ -1,17 +1,20 @@
 package v1
 
 import (
+	"fmt"
+	"net/http"
+
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"fmt"
+
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 type CreateRuleTemplateReqV1 struct {
 	Name      string      `json:"rule_template_name" valid:"required,name"`
 	Desc      string      `json:"desc"`
+	DBType    string      `json:"db_type"`
 	Instances []string    `json:"instance_name_list"`
 	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
 }
@@ -68,9 +71,13 @@ func CreateRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	if req.DBType == "" {
+		req.DBType = model.DBTypeMySQL
+	}
 	ruleTemplate := &model.RuleTemplate{
-		Name: req.Name,
-		Desc: req.Desc,
+		Name:   req.Name,
+		Desc:   req.Desc,
+		DBType: req.DBType,
 	}
 	err = s.Save(ruleTemplate)
 	if err != nil {
@@ -187,12 +194,6 @@ type GetRuleTemplateResV1 struct {
 	Data *RuleTemplateDetailResV1 `json:"data"`
 }
 
-type RuleTemplateResV1 struct {
-	Name      string   `json:"rule_template_name"`
-	Desc      string   `json:"desc"`
-	Instances []string `json:"instance_name_list,omitempty"`
-}
-
 type RuleTemplateDetailResV1 struct {
 	Name      string      `json:"rule_template_name"`
 	Desc      string      `json:"desc"`
@@ -286,6 +287,13 @@ type GetRuleTemplatesResV1 struct {
 	TotalNums uint64              `json:"total_nums"`
 }
 
+type RuleTemplateResV1 struct {
+	Name      string   `json:"rule_template_name"`
+	Desc      string   `json:"desc"`
+	DBType    string   `json:"db_type"`
+	Instances []string `json:"instance_name_list,omitempty"`
+}
+
 // @Summary 规则模板列表
 // @Description get all rule template
 // @Id getRuleTemplateListV1
@@ -322,6 +330,7 @@ func GetRuleTemplates(c echo.Context) error {
 		ruleTemplateReq := RuleTemplateResV1{
 			Name:      ruleTemplate.Name,
 			Desc:      ruleTemplate.Desc,
+			DBType:    ruleTemplate.DBType,
 			Instances: ruleTemplate.InstanceNames,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
@@ -382,7 +391,8 @@ func GetRules(c echo.Context) error {
 }
 
 type RuleTemplateTipResV1 struct {
-	Name string `json:"rule_template_name"`
+	Name   string `json:"rule_template_name"`
+	DBType string `json:"db_type"`
 }
 
 type GetRuleTemplateTipsResV1 struct {
@@ -403,11 +413,12 @@ func GetRuleTemplateTips(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	ruleTemplateTipsRes := make([]RuleTemplateTipResV1, 0, len(ruleTemplates))
 
+	ruleTemplateTipsRes := make([]RuleTemplateTipResV1, 0, len(ruleTemplates))
 	for _, roleTemplate := range ruleTemplates {
 		ruleTemplateTipRes := RuleTemplateTipResV1{
-			Name: roleTemplate.Name,
+			Name:   roleTemplate.Name,
+			DBType: roleTemplate.DBType,
 		}
 		ruleTemplateTipsRes = append(ruleTemplateTipsRes, ruleTemplateTipRes)
 	}
@@ -469,8 +480,9 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	ruleTemplate := &model.RuleTemplate{
-		Name: req.Name,
-		Desc: req.Desc,
+		Name:   req.Name,
+		Desc:   req.Desc,
+		DBType: sourceTpl.DBType,
 	}
 	err = s.Save(ruleTemplate)
 	if err != nil {

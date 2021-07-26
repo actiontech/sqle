@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -27,6 +28,7 @@ type RuleTemplate struct {
 	Model
 	Name      string             `json:"name"`
 	Desc      string             `json:"desc"`
+	DBType    string             `json:"db_type"`
 	Instances []Instance         `json:"instance_list" gorm:"many2many:instance_rule_template"`
 	RuleList  []RuleTemplateRule `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
@@ -116,7 +118,7 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 
 func (s *Storage) GetRuleTemplateTips() ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
-	err := s.db.Select("name").Find(&ruleTemplates).Error
+	err := s.db.Select("name, db_type").Find(&ruleTemplates).Error
 	return ruleTemplates, errors.New(errors.ConnectStorageError, err)
 }
 

@@ -3,11 +3,12 @@ package model
 type RuleTemplateDetail struct {
 	Name          string  `json:"name"`
 	Desc          string  `json:"desc"`
+	DBType        string  `json:"db_type"`
 	RuleNames     RowList `json:"rule_names"`
 	InstanceNames RowList `json:"instance_names"`
 }
 
-var ruleTemplatesQueryTpl = `SELECT rule_templates.name, rule_templates.desc,
+var ruleTemplatesQueryTpl = `SELECT rule_templates.name, rule_templates.desc, rule_templates.db_type,
 GROUP_CONCAT(DISTINCT COALESCE(rules.name,'')) AS rule_names,
 GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names
 FROM rule_templates
