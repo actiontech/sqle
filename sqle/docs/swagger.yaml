@@ -86,7 +86,7 @@ definitions:
         items:
           type: string
         type: array
-      rule_template_name:
+      new_rule_template_name:
         type: string
     type: object
   v1.CreateAuditWhitelistReqV1:
