@@ -1849,6 +1849,11 @@ paths:
       description: clone a rule template
       operationId: CloneRuleTemplateV1
       parameters:
+      - description: rule template name
+        in: path
+        name: rule_template_name
+        required: true
+        type: string
       - description: clone rule template request
         in: body
         name: instance

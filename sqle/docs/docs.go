@@ -1167,6 +1167,13 @@ var doc = `{
                 "operationId": "CloneRuleTemplateV1",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "clone rule template request",
                         "name": "instance",
                         "in": "body",
