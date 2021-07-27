@@ -188,7 +188,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		}
 
 		if len(nodes) != 1 {
-			return fmt.Errorf("want get single node, but got %v", len(nodes))
+			return driver.ErrNodesCountExceedOne
 		}
 
 		sourceFP, err := nodes[0].Fingerprint()
@@ -204,7 +204,7 @@ func (s *Sqled) audit(task *model.Task) error {
 					return err
 				}
 				if len(wlNodes) != 1 {
-					return fmt.Errorf("want get single node, but got %v", len(nodes))
+					return driver.ErrNodesCountExceedOne
 				}
 
 				wlFP, err := wlNodes[0].Fingerprint()
@@ -290,7 +290,7 @@ func (s *Sqled) audit(task *model.Task) error {
 			continue
 		}
 		if len(nodes) != 1 {
-			entry.Errorf("expected single SQL, but got %v", len(nodes))
+			entry.Errorf(driver.ErrNodesCountExceedOne.Error())
 			continue
 		}
 
