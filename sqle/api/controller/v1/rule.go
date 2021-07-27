@@ -440,6 +440,7 @@ type CloneRuleTemplateReqV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Accept json
+// @Param rule_template_name path string true "rule template name"
 // @Param instance body v1.CloneRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates/{rule_template_name}/clone [post]
