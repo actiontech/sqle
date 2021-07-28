@@ -595,6 +595,7 @@ func GetInstanceSchemas(c echo.Context) error {
 
 type InstanceTipResV1 struct {
 	Name string `json:"instance_name"`
+	Type string `json:"instance_type"`
 }
 
 type GetInstanceTipsResV1 struct {
@@ -625,6 +626,7 @@ func GetInstanceTips(c echo.Context) error {
 	for _, role := range roles {
 		instanceTipRes := InstanceTipResV1{
 			Name: role.Name,
+			Type: role.DbType,
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}
