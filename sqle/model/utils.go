@@ -208,7 +208,7 @@ func (s *Storage) CreateDefaultWorkflowTemplate() error {
 			Name: DefaultWorkflowTemplate,
 			Desc: "默认模板",
 			Steps: []*WorkflowStepTemplate{
-				&WorkflowStepTemplate{
+				{
 					Number: 1,
 					Typ:    WorkflowStepTypeSQLExecute,
 					Users:  []*User{user},
