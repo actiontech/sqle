@@ -1,20 +1,20 @@
 package api
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/api/controller"
-	"actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
-	"actiontech.cloud/sqle/sqle/sqle/config"
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/model"
 	"crypto/tls"
-	"github.com/facebookgo/grace/gracenet"
+	"fmt"
 	"net/http"
 	"strings"
 
-	"fmt"
-
+	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	v1 "actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
+	"actiontech.cloud/sqle/sqle/sqle/config"
 	_ "actiontech.cloud/sqle/sqle/sqle/docs"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/model"
+
+	"github.com/facebookgo/grace/gracenet"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"

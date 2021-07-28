@@ -3392,6 +3392,9 @@ var doc = `{
             "properties": {
                 "instance_name": {
                     "type": "string"
+                },
+                "instance_type": {
+                    "type": "string"
                 }
             }
         },
@@ -3486,6 +3489,9 @@ var doc = `{
         "v1.RuleTemplateDetailResV1": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string"
+                },
                 "desc": {
                     "type": "string"
                 },
