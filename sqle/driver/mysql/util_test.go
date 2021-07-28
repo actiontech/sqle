@@ -56,7 +56,7 @@ func TestReplaceSchemaName(t *testing.T) {
 
 func TestInspectResults(t *testing.T) {
 	results := driver.NewInspectResults()
-	handler := RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST]
+	handler := RuleHandlerMap[DDLCheckPKWithoutIfNotExists]
 	results.Add(handler.Rule.Level, handler.Message)
 	assert.Equal(t, "error", results.Level())
 	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.Message())

@@ -115,13 +115,13 @@ func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql, unable
 }
 
 const (
-	NOT_SUPPORT_STATEMENT_ROLLBACK             = "暂不支持回滚该类型的语句"
-	NOT_SUPPORT_MULTI_TABLE_STATEMENT_ROLLBACK = "暂不支持回滚多表的 DML 语句"
-	NOT_SUPPORT_ON_DUPLICAT_STATEMENT_ROLLBACK = "暂不支持回滚 ON DUPLICATE 语句"
-	NOT_SUPPORT_SUB_QUERY_STATEMENT_ROLLBACK   = "暂不支持回滚带子查询的语句"
-	NOT_SUPPORT_NO_PK_TABLE_ROLLBACK           = "不支持回滚没有主键的表的DML语句"
-	NOT_SUPPORT_INSERT_NO_PK_PRIVIDED_ROLLBACK = "不支持回滚 INSERT 没有指定主键的语句"
-	EXCEED_MAX_ROWS_NOT_ROLLBACK               = "预计影响行数超过配置的最大值，不生成回滚语句"
+	NotSupportStatementRollback               = "暂不支持回滚该类型的语句"
+	NotSupportMultiTableStatementRollback     = "暂不支持回滚多表的 DML 语句"
+	NotSupportOnDuplicatStatementRollback     = "暂不支持回滚 ON DUPLICATE 语句"
+	NotSupportSubQueryStatementRollback       = "暂不支持回滚带子查询的语句"
+	NotSupportNoPrimaryKeyTableRollback       = "不支持回滚没有主键的表的DML语句"
+	NotSupportInsertWithoutPrimaryKeyRollback = "不支持回滚 INSERT 没有指定主键的语句"
+	NotSupportExceedMaxRowsRollback           = "预计影响行数超过配置的最大值，不生成回滚语句"
 )
 
 // generateAlterTableRollbackSql generate alter table SQL for alter table.
@@ -401,7 +401,7 @@ func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string,
 				sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON %s",
 					indexName, i.getTableNameWithQuote(stmt.Table))
 			default:
-				return "", NOT_SUPPORT_STATEMENT_ROLLBACK, nil
+				return "", NotSupportStatementRollback, nil
 			}
 			if constraint.Option != nil {
 				sql = fmt.Sprintf("%s %s", sql, indexOptionFormat(constraint.Option))
@@ -417,10 +417,10 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 	tables := getTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(tables) != 1 {
-		return "", NOT_SUPPORT_MULTI_TABLE_STATEMENT_ROLLBACK, nil
+		return "", NotSupportMultiTableStatementRollback, nil
 	}
 	if stmt.OnDuplicate != nil {
-		return "", NOT_SUPPORT_ON_DUPLICAT_STATEMENT_ROLLBACK, nil
+		return "", NotSupportOnDuplicatStatementRollback, nil
 	}
 	table := tables[0]
 	createTableStmt, exist, err := i.getCreateTableStmt(table)
@@ -436,7 +436,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 		return "", "", err
 	}
 	if !hasPk {
-		return "", NOT_SUPPORT_NO_PK_TABLE_ROLLBACK, nil
+		return "", NotSupportNoPrimaryKeyTableRollback, nil
 	}
 
 	rollbackSql := ""
@@ -445,7 +445,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 	// match "insert into table_name value (v1,...)"
 	if stmt.Lists != nil {
 		if int64(len(stmt.Lists)) > i.config.DMLRollbackMaxRows {
-			return "", EXCEED_MAX_ROWS_NOT_ROLLBACK, nil
+			return "", NotSupportExceedMaxRowsRollback, nil
 		}
 		columnsName := []string{}
 		if stmt.Columns != nil {
@@ -470,7 +470,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 				}
 			}
 			if len(where) != len(pkColumnsName) {
-				return "", NOT_SUPPORT_INSERT_NO_PK_PRIVIDED_ROLLBACK, nil
+				return "", NotSupportInsertWithoutPrimaryKeyRollback, nil
 			}
 			rollbackSql += fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
 				i.getTableNameWithQuote(table), strings.Join(where, " AND "))
@@ -481,7 +481,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 	// match "insert into table_name set col_name = value1, ..."
 	if stmt.Setlist != nil {
 		if 1 > i.config.DMLRollbackMaxRows {
-			return "", EXCEED_MAX_ROWS_NOT_ROLLBACK, nil
+			return "", NotSupportExceedMaxRowsRollback, nil
 		}
 		where := []string{}
 		for _, setExpr := range stmt.Setlist {
@@ -505,12 +505,12 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
 		i.Logger().Infof("not support generate rollback sql with multi-delete statement")
-		return "", NOT_SUPPORT_MULTI_TABLE_STATEMENT_ROLLBACK, nil
+		return "", NotSupportMultiTableStatementRollback, nil
 	}
 	// sub query statement
 	if whereStmtHasSubQuery(stmt.Where) {
 		i.Logger().Infof("not support generate rollback sql with sub query")
-		return "", NOT_SUPPORT_SUB_QUERY_STATEMENT_ROLLBACK, nil
+		return "", NotSupportSubQueryStatementRollback, nil
 	}
 	var err error
 	tables := getTables(stmt.TableRefs.TableRefs)
@@ -524,7 +524,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 		return "", "", err
 	}
 	if !hasPk {
-		return "", NOT_SUPPORT_NO_PK_TABLE_ROLLBACK, nil
+		return "", NotSupportNoPrimaryKeyTableRollback, nil
 	}
 
 	var max = i.config.DMLRollbackMaxRows
@@ -538,7 +538,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 			return "", "", err
 		}
 		if count > max {
-			return "", EXCEED_MAX_ROWS_NOT_ROLLBACK, nil
+			return "", NotSupportExceedMaxRowsRollback, nil
 		}
 	}
 	records, err := i.getRecords(table, "", stmt.Where, stmt.Order, limit)
@@ -578,12 +578,12 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 	// multi table syntax
 	if len(tableSources) != 1 {
 		i.Logger().Infof("not support generate rollback sql with multi-update statement")
-		return "", NOT_SUPPORT_MULTI_TABLE_STATEMENT_ROLLBACK, nil
+		return "", NotSupportMultiTableStatementRollback, nil
 	}
 	// sub query statement
 	if whereStmtHasSubQuery(stmt.Where) {
 		i.Logger().Infof("not support generate rollback sql with sub query")
-		return "", NOT_SUPPORT_SUB_QUERY_STATEMENT_ROLLBACK, nil
+		return "", NotSupportSubQueryStatementRollback, nil
 	}
 	var (
 		table      *ast.TableName
@@ -596,9 +596,9 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 		tableAlias = tableSource.AsName.String()
 	case *ast.SelectStmt, *ast.UnionStmt:
 		i.Logger().Infof("not support generate rollback sql with update-select statement")
-		return "", NOT_SUPPORT_SUB_QUERY_STATEMENT_ROLLBACK, nil
+		return "", NotSupportSubQueryStatementRollback, nil
 	default:
-		return "", NOT_SUPPORT_STATEMENT_ROLLBACK, nil
+		return "", NotSupportStatementRollback, nil
 	}
 	createTableStmt, exist, err := i.getCreateTableStmt(table)
 	if err != nil || !exist {
@@ -609,7 +609,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 		return "", "", err
 	}
 	if !hasPk {
-		return "", NOT_SUPPORT_NO_PK_TABLE_ROLLBACK, nil
+		return "", NotSupportNoPrimaryKeyTableRollback, nil
 	}
 
 	var max = i.config.DMLRollbackMaxRows
@@ -623,7 +623,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 			return "", "", err
 		}
 		if count > max {
-			return "", EXCEED_MAX_ROWS_NOT_ROLLBACK, nil
+			return "", NotSupportExceedMaxRowsRollback, nil
 		}
 	}
 	records, err := i.getRecords(table, tableAlias, stmt.Where, stmt.Order, limit)

@@ -29,78 +29,78 @@ const (
 
 // inspector DDL rules
 const (
-	DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST             = "ddl_check_table_without_if_not_exists"
-	DDL_CHECK_OBJECT_NAME_LENGTH                     = "ddl_check_object_name_length"
-	DDL_CHECK_OBJECT_NAME_USING_KEYWORD              = "ddl_check_object_name_using_keyword"
-	DDL_CHECK_PK_NOT_EXIST                           = "ddl_check_pk_not_exist"
-	DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED             = "ddl_check_pk_without_bigint_unsigned"
-	DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT              = "ddl_check_pk_without_auto_increment"
-	DDL_CHECK_COLUMN_VARCHAR_MAX                     = "ddl_check_column_varchar_max"
-	DDL_CHECK_COLUMN_CHAR_LENGTH                     = "ddl_check_column_char_length"
-	DDL_DISABLE_FK                                   = "ddl_disable_fk"
-	DDL_CHECK_INDEX_COUNT                            = "ddl_check_index_count"
-	DDL_CHECK_COMPOSITE_INDEX_MAX                    = "ddl_check_composite_index_max"
-	DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4           = "ddl_check_table_without_innodb_utf8mb4"
-	DDL_CHECK_INDEX_COLUMN_WITH_BLOB                 = "ddl_check_index_column_with_blob"
-	DDL_CHECK_ALTER_TABLE_NEED_MERGE                 = "ddl_check_alter_table_need_merge"
-	DDL_DISABLE_DROP_STATEMENT                       = "ddl_disable_drop_statement"
-	DDL_CHECK_TABLE_WITHOUT_COMMENT                  = "ddl_check_table_without_comment"
-	DDL_CHECK_COLUMN_WITHOUT_COMMENT                 = "ddl_check_column_without_comment"
-	DDL_CHECK_INDEX_PREFIX                           = "ddl_check_index_prefix"
-	DDL_CHECK_UNIQUE_INDEX_PRIFIX                    = "ddl_check_unique_index_prefix"
-	DDL_CHECK_UNIQUE_INDEX                           = "ddl_check_unique_index"
-	DDL_CHECK_COLUMN_WITHOUT_DEFAULT                 = "ddl_check_column_without_default"
-	DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT       = "ddl_check_column_timestamp_without_default"
-	DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL              = "ddl_check_column_blob_with_not_null"
-	DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL        = "ddl_check_column_blob_default_is_not_null"
-	DDL_CHECK_COLUMN_ENUM_NOTICE                     = "ddl_check_column_enum_notice"
-	DDL_CHECK_COLUMN_SET_NOTICE                      = "ddl_check_column_set_notice"
-	DDL_CHECK_COLUMN_BLOB_NOTICE                     = "ddl_check_column_blob_notice"
-	DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT             = "ddl_check_pk_prohibit_auto_increment"
-	DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS = "ddl_check_indexes_exist_before_creat_constraints"
-	DDL_CHECK_COLLATION_DATABASE                     = "ddl_check_collation_database"
-	DDL_CHECK_DECIMAL_TYPE_COLUMN                    = "ddl_check_decimal_type_column"
-	DDL_CHECK_DATABASE_SUFFIX                        = "ddl_check_database_suffix"
-	DDL_CHECK_PK_NAME                                = "ddl_check_pk_name"
-	DDL_CHECK_TRANSACTION_ISOLATION_LEVEL            = "ddl_check_transaction_isolation_level"
-	DDL_CHECK_TABLE_PARTITION                        = "ddl_check_table_partition"
-	DDL_CHECK_IS_EXIST_LIMIT_OFFSET                  = "ddl_check_is_exist_limit_offset"
-	DDL_CHECK_INDEX_OPTION                           = "ddl_check_index_option"
-	DDL_CHECK_OBJECT_NAME_USING_CN                   = "ddl_check_object_name_using_cn"
-	DDLCheckCreateView                               = "ddl_check_create_view"
-	DDLCheckCreateTrigger                            = "ddl_check_create_trigger"
-	DDLCheckCreateFunction                           = "ddl_check_create_function"
-	DDLCheckCreateProcedure                          = "ddl_check_create_procedure"
+	DDLCheckPKWithoutIfNotExists                = "ddl_check_table_without_if_not_exists"
+	DDLCheckObjectNameLength                    = "ddl_check_object_name_length"
+	DDLCheckObjectNameUsingKeyword              = "ddl_check_object_name_using_keyword"
+	DDLCheckPKNotExist                          = "ddl_check_pk_not_exist"
+	DDLCheckPKWithoutBigintUnsigned             = "ddl_check_pk_without_bigint_unsigned"
+	DDLCheckPKWithoutAutoIncrement              = "ddl_check_pk_without_auto_increment"
+	DDLCheckPKProhibitAutoIncrement             = "ddl_check_pk_prohibit_auto_increment"
+	DDLCheckColumnVarcharMax                    = "ddl_check_column_varchar_max"
+	DDLCheckColumnCharLength                    = "ddl_check_column_char_length"
+	DDLDisableFK                                = "ddl_disable_fk"
+	DDLCheckIndexCount                          = "ddl_check_index_count"
+	DDLCheckCompositeIndexMax                   = "ddl_check_composite_index_max"
+	DDLCheckTableWithoutInnoDBUTF8MB4           = "ddl_check_table_without_innodb_utf8mb4"
+	DDLCheckIndexedColumnWithBolb               = "ddl_check_index_column_with_blob"
+	DDLCheckAlterTableNeedMerge                 = "ddl_check_alter_table_need_merge"
+	DDLDisableDropStatement                     = "ddl_disable_drop_statement"
+	DDLCheckTableWithoutComment                 = "ddl_check_table_without_comment"
+	DDLCheckColumnWithoutComment                = "ddl_check_column_without_comment"
+	DDLCheckIndexPrefix                         = "ddl_check_index_prefix"
+	DDLCheckUniqueIndexPrefix                   = "ddl_check_unique_index_prefix"
+	DDLCheckUniqueIndex                         = "ddl_check_unique_index"
+	DDLCheckColumnWithoutDefault                = "ddl_check_column_without_default"
+	DDLCheckColumnTimestampWitoutDefault        = "ddl_check_column_timestamp_without_default"
+	DDLCheckColumnBlobWithNotNull               = "ddl_check_column_blob_with_not_null"
+	DDLCheckColumnBlobDefaultIsNotNull          = "ddl_check_column_blob_default_is_not_null"
+	DDLCheckColumnEnumNotice                    = "ddl_check_column_enum_notice"
+	DDLCheckColumnSetNitice                     = "ddl_check_column_set_notice"
+	DDLCheckColumnBlobNotice                    = "ddl_check_column_blob_notice"
+	DDLCheckIndexesExistBeforeCreateConstraints = "ddl_check_indexes_exist_before_creat_constraints"
+	DDLCheckDatabaseCollation                   = "ddl_check_collation_database"
+	DDLCheckDecimalTypeColumn                   = "ddl_check_decimal_type_column"
+	DDLCheckDatabaseSuffix                      = "ddl_check_database_suffix"
+	DDLCheckPKName                              = "ddl_check_pk_name"
+	DDLCheckTransactionIsolationLevel           = "ddl_check_transaction_isolation_level"
+	DDLCheckTablePartition                      = "ddl_check_table_partition"
+	DDLCheckIsExistLimitOffset                  = "ddl_check_is_exist_limit_offset"
+	DDLCheckIndexOption                         = "ddl_check_index_option"
+	DDLCheckOBjectNameUseCN                     = "ddl_check_object_name_using_cn"
+	DDLCheckCreateView                          = "ddl_check_create_view"
+	DDLCheckCreateTrigger                       = "ddl_check_create_trigger"
+	DDLCheckCreateFunction                      = "ddl_check_create_function"
+	DDLCheckCreateProcedure                     = "ddl_check_create_procedure"
 )
 
 // inspector DML rules
 const (
-	DML_CHECK_WITH_LIMIT                      = "dml_check_with_limit"
-	DML_CHECK_WITH_ORDER_BY                   = "dml_check_with_order_by"
-	DML_CHECK_WHERE_IS_INVALID                = "all_check_where_is_invalid"
-	DML_DISABE_SELECT_ALL_COLUMN              = "dml_disable_select_all_column"
-	DML_CHECK_INSERT_COLUMNS_EXIST            = "dml_check_insert_columns_exist"
-	DML_CHECK_BATCH_INSERT_LISTS_MAX          = "dml_check_batch_insert_lists_max"
-	DML_CHECK_WHERE_EXIST_FUNC                = "dml_check_where_exist_func"
-	DML_CHECK_WHERE_EXIST_NOT                 = "dml_check_where_exist_not"
-	DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION = "dml_check_where_exist_implicit_conversion"
-	DML_CHECK_LIMIT_MUST_EXIST                = "dml_check_limit_must_exist"
-	DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES  = "dml_check_where_exist_scalar_sub_queries"
-	DML_CHECK_WHERE_EXIST_NULL                = "dml_check_where_exist_null"
-	DML_CHECK_SELECT_FOR_UPDATE               = "dml_check_select_for_update"
-	DML_CHECK_NEEDLESS_FUNC                   = "dml_check_needless_func"
-	DML_CHECK_FUZZY_SEARCH                    = "dml_check_fuzzy_search"
-	DML_CHECK_NUMBER_OF_JOIN_TABLES           = "dml_check_number_of_join_tables"
-	DML_CHECK_IS_AFTER_UNION_DISTINCT         = "dml_check_is_after_union_distinct"
-	DMLCheckExplainAccessTypeAll              = "dml_check_explain_access_type_all"
-	DMLCheckExplainExtraUsingFilesort         = "dml_check_explain_extra_using_filesort"
-	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
+	DMLCheckWithLimit                    = "dml_check_with_limit"
+	DMLCheckWithOrderBy                  = "dml_check_with_order_by"
+	DMLCheckWhereIsInvalid               = "all_check_where_is_invalid"
+	DMLDisableSelectAllColumn            = "dml_disable_select_all_column"
+	DMLCheckInsertColumnsExist           = "dml_check_insert_columns_exist"
+	DMLCheckBatchInsertListsMax          = "dml_check_batch_insert_lists_max"
+	DMLCheckWhereExistFunc               = "dml_check_where_exist_func"
+	DMLCheckWhereExistNot                = "dml_check_where_exist_not"
+	DMLCheckWhereExistImplicitConversion = "dml_check_where_exist_implicit_conversion"
+	DMLCheckLimitMustExist               = "dml_check_limit_must_exist"
+	DMLCheckWhereExistScalarSubquery     = "dml_check_where_exist_scalar_sub_queries"
+	DMLWhereExistNull                    = "dml_check_where_exist_null"
+	DMLCheckSelectForUpdate              = "dml_check_select_for_update"
+	DMLCheckNeedlessFunc                 = "dml_check_needless_func"
+	DMLCheckFuzzySearch                  = "dml_check_fuzzy_search"
+	DMLCheckNumberOfJoinTables           = "dml_check_number_of_join_tables"
+	DMLCheckIfAfterUnionDistinct         = "dml_check_is_after_union_distinct"
+	DMLCheckExplainAccessTypeAll         = "dml_check_explain_access_type_all"
+	DMLCheckExplainExtraUsingFilesort    = "dml_check_explain_extra_using_filesort"
+	DMLCheckExplainExtraUsingTemporary   = "dml_check_explain_extra_using_temporary"
 )
 
 // inspector config code
 const (
-	CONFIG_DML_ROLLBACK_MAX_ROWS = "dml_rollback_max_rows"
-	CONFIG_DDL_OSC_MIN_SIZE      = "ddl_osc_min_size"
+	ConfigDMLRollbackMaxRows = "dml_rollback_max_rows"
+	ConfigDDLOSCMinSize      = "ddl_osc_min_size"
 )
 
 type RuleHandler struct {
@@ -122,7 +122,7 @@ var RuleHandlers = []RuleHandler{
 	// config
 	{
 		Rule: model.Rule{
-			Name:      CONFIG_DML_ROLLBACK_MAX_ROWS,
+			Name:      ConfigDMLRollbackMaxRows,
 			Desc:      "在 DML 语句中预计影响行数超过指定值则不回滚",
 			Value:     "1000",
 			Level:     model.RuleLevelNotice,
@@ -133,7 +133,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      CONFIG_DDL_OSC_MIN_SIZE,
+			Name:      ConfigDDLOSCMinSize,
 			Desc:      "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
 			Value:     "16",
 			Level:     model.RuleLevelNormal,
@@ -146,7 +146,7 @@ var RuleHandlers = []RuleHandler{
 	// rule
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST,
+			Name:      DDLCheckPKWithoutIfNotExists,
 			Desc:      "新建表必须加入if not exists create，保证重复执行不报错",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeUsageSuggestion,
@@ -157,7 +157,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_OBJECT_NAME_LENGTH,
+			Name:      DDLCheckObjectNameLength,
 			Desc:      "表名、列名、索引名的长度不能大于64字节",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeNamingConvention,
@@ -168,7 +168,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_PK_NOT_EXIST,
+			Name:      DDLCheckPKNotExist,
 			Desc:      "表必须有主键",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeIndexingConvention,
@@ -179,7 +179,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT,
+			Name:      DDLCheckPKWithoutAutoIncrement,
 			Desc:      "主键建议使用自增",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeIndexingConvention,
@@ -190,7 +190,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED,
+			Name:      DDLCheckPKWithoutBigintUnsigned,
 			Desc:      "主键建议使用 bigint 无符号类型，即 bigint unsigned",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeIndexingConvention,
@@ -201,7 +201,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COLUMN_VARCHAR_MAX,
+			Name:      DDLCheckColumnVarcharMax,
 			Desc:      "禁止使用 varchar(max)",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDDLConvention,
@@ -212,7 +212,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COLUMN_CHAR_LENGTH,
+			Name:      DDLCheckColumnCharLength,
 			Desc:      "char长度大于20时，必须使用varchar类型",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDDLConvention,
@@ -223,7 +223,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_DISABLE_FK,
+			Name:      DDLDisableFK,
 			Desc:      "禁止使用外键",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeIndexingConvention,
@@ -234,7 +234,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_INDEX_COUNT,
+			Name:      DDLCheckIndexCount,
 			Desc:      "索引个数建议不超过阈值",
 			Level:     model.RuleLevelNotice,
 			Value:     "5",
@@ -246,7 +246,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COMPOSITE_INDEX_MAX,
+			Name:      DDLCheckCompositeIndexMax,
 			Desc:      "复合索引的列数量不建议超过阈值",
 			Level:     model.RuleLevelNotice,
 			Value:     "3",
@@ -258,7 +258,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
+			Name:      DDLCheckObjectNameUsingKeyword,
 			Desc:      "数据库对象命名禁止使用关键字",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeNamingConvention,
@@ -269,8 +269,8 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_OBJECT_NAME_USING_CN,
-			Desc:      "数据库对象命名不能使用英文、下划线、数字之外的字符",
+			Name:      DDLCheckOBjectNameUseCN,
+			Desc:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
@@ -280,7 +280,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4,
+			Name:      DDLCheckTableWithoutInnoDBUTF8MB4,
 			Desc:      "建议使用Innodb引擎,utf8mb4字符集",
 			Level:     model.RuleLevelNotice,
 			Typ:       RuleTypeDDLConvention,
@@ -291,7 +291,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_INDEX_COLUMN_WITH_BLOB,
+			Name:      DDLCheckIndexedColumnWithBolb,
 			Desc:      "禁止将blob类型的列加入索引",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeIndexingConvention,
@@ -302,7 +302,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DML_CHECK_WHERE_IS_INVALID,
+			Name:      DMLCheckWhereIsInvalid,
 			Desc:      "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDMLConvention,
@@ -313,7 +313,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_ALTER_TABLE_NEED_MERGE,
+			Name:      DDLCheckAlterTableNeedMerge,
 			Desc:      "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
 			Level:     model.RuleLevelNotice,
 			Typ:       RuleTypeUsageSuggestion,
@@ -324,7 +324,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DML_DISABE_SELECT_ALL_COLUMN,
+			Name:      DMLDisableSelectAllColumn,
 			Desc:      "不建议使用select *",
 			Level:     model.RuleLevelNotice,
 			Typ:       RuleTypeDMLConvention,
@@ -335,7 +335,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_DISABLE_DROP_STATEMENT,
+			Name:      DDLDisableDropStatement,
 			Desc:      "禁止除索引外的drop操作",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeUsageSuggestion,
@@ -346,7 +346,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_TABLE_WITHOUT_COMMENT,
+			Name:      DDLCheckTableWithoutComment,
 			Desc:      "表建议添加注释",
 			Level:     model.RuleLevelNotice,
 			Typ:       RuleTypeDDLConvention,
@@ -357,7 +357,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COLUMN_WITHOUT_COMMENT,
+			Name:      DDLCheckColumnWithoutComment,
 			Desc:      "列建议添加注释",
 			Level:     model.RuleLevelNotice,
 			Typ:       RuleTypeDDLConvention,
@@ -368,7 +368,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_INDEX_PREFIX,
+			Name:      DDLCheckIndexPrefix,
 			Desc:      "普通索引必须要以\"idx_\"为前缀",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeNamingConvention,
@@ -379,7 +379,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_UNIQUE_INDEX_PRIFIX,
+			Name:      DDLCheckUniqueIndexPrefix,
 			Desc:      "unique索引必须要以\"uniq_\"为前缀",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeNamingConvention,
@@ -390,7 +390,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_UNIQUE_INDEX,
+			Name:  DDLCheckUniqueIndex,
 			Desc:  "unique索引名必须使用 IDX_UK_表名_字段名",
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
@@ -400,7 +400,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COLUMN_WITHOUT_DEFAULT,
+			Name:      DDLCheckColumnWithoutDefault,
 			Desc:      "除了自增列及大字段列之外，每个列都必须添加默认值",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDDLConvention,
@@ -411,7 +411,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT,
+			Name:      DDLCheckColumnTimestampWitoutDefault,
 			Desc:      "timestamp 类型的列必须添加默认值",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDDLConvention,
@@ -422,7 +422,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL,
+			Name:      DDLCheckColumnBlobWithNotNull,
 			Desc:      "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDDLConvention,
@@ -433,7 +433,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL,
+			Name:      DDLCheckColumnBlobDefaultIsNotNull,
 			Desc:      "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDDLConvention,
@@ -444,7 +444,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DML_CHECK_WITH_LIMIT,
+			Name:      DMLCheckWithLimit,
 			Desc:      "delete/update 语句不能有limit条件",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDMLConvention,
@@ -455,7 +455,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:      DML_CHECK_WITH_ORDER_BY,
+			Name:      DMLCheckWithOrderBy,
 			Desc:      "delete/update 语句不能有order by",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeDMLConvention,
@@ -466,7 +466,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_INSERT_COLUMNS_EXIST,
+			Name:  DMLCheckInsertColumnsExist,
 			Desc:  "insert 语句必须指定column",
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
@@ -476,7 +476,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_BATCH_INSERT_LISTS_MAX,
+			Name:  DMLCheckBatchInsertListsMax,
 			Desc:  "单条insert语句，建议批量插入不超过阈值",
 			Level: model.RuleLevelNotice,
 			Value: "5000",
@@ -487,7 +487,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT,
+			Name:  DDLCheckPKProhibitAutoIncrement,
 			Desc:  "主键禁止使用自增",
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
@@ -497,7 +497,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_WHERE_EXIST_FUNC,
+			Name:  DMLCheckWhereExistFunc,
 			Desc:  "避免对条件字段使用函数操作",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -507,7 +507,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_WHERE_EXIST_NOT,
+			Name:  DMLCheckWhereExistNot,
 			Desc:  "不建议对条件字段使用负向查询",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -517,7 +517,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_WHERE_EXIST_NULL,
+			Name:  DMLWhereExistNull,
 			Desc:  "不建议对条件字段使用 NULL 值判断",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -527,7 +527,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION,
+			Name:  DMLCheckWhereExistImplicitConversion,
 			Desc:  "条件字段存在数值和字符的隐式转换",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -537,7 +537,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_LIMIT_MUST_EXIST,
+			Name:  DMLCheckLimitMustExist,
 			Desc:  "delete/update 语句必须有limit条件",
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
@@ -547,7 +547,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES,
+			Name:  DMLCheckWhereExistScalarSubquery,
 			Desc:  "避免使用标量子查询",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -557,7 +557,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS,
+			Name:  DDLCheckIndexesExistBeforeCreateConstraints,
 			Desc:  "建议创建约束前,先行创建索引",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeIndexingConvention,
@@ -567,7 +567,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_SELECT_FOR_UPDATE,
+			Name:  DMLCheckSelectForUpdate,
 			Desc:  "建议避免使用select for update",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -577,7 +577,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_COLLATION_DATABASE,
+			Name:  DDLCheckDatabaseCollation,
 			Desc:  "建议使用规定的数据库排序规则",
 			Level: model.RuleLevelNotice,
 			Value: "utf8mb4_0900_ai_ci",
@@ -588,7 +588,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_DECIMAL_TYPE_COLUMN,
+			Name:  DDLCheckDecimalTypeColumn,
 			Desc:  "精确浮点数建议使用DECIMAL",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
@@ -598,7 +598,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_NEEDLESS_FUNC,
+			Name:  DMLCheckNeedlessFunc,
 			Desc:  "避免使用不必要的内置函数",
 			Level: model.RuleLevelNotice,
 			Value: "sha(),sqrt(),md5()",
@@ -609,7 +609,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_DATABASE_SUFFIX,
+			Name:  DDLCheckDatabaseSuffix,
 			Desc:  "数据库名称建议以\"_DB\"结尾",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeNamingConvention,
@@ -619,7 +619,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_PK_NAME,
+			Name:  DDLCheckPKName,
 			Desc:  "建议主键命名为\"PK_表名\"",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeNamingConvention,
@@ -629,7 +629,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_TRANSACTION_ISOLATION_LEVEL,
+			Name:  DDLCheckTransactionIsolationLevel,
 			Desc:  "事物隔离级别建议设置成RC",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeUsageSuggestion,
@@ -639,7 +639,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_FUZZY_SEARCH,
+			Name:  DMLCheckFuzzySearch,
 			Desc:  "禁止使用全模糊搜索或左模糊搜索",
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
@@ -649,7 +649,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_TABLE_PARTITION,
+			Name:  DDLCheckTablePartition,
 			Desc:  "不建议使用分区表相关功能",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeUsageSuggestion,
@@ -659,7 +659,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_NUMBER_OF_JOIN_TABLES,
+			Name:  DMLCheckNumberOfJoinTables,
 			Desc:  "使用JOIN连接表查询建议不超过阈值",
 			Level: model.RuleLevelNotice,
 			Value: "3",
@@ -670,7 +670,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DML_CHECK_IS_AFTER_UNION_DISTINCT,
+			Name:  DMLCheckIfAfterUnionDistinct,
 			Desc:  "建议使用UNION ALL,替代UNION",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -680,7 +680,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_IS_EXIST_LIMIT_OFFSET,
+			Name:  DDLCheckIsExistLimitOffset,
 			Desc:  "使用LIMIT分页时,避免使用LIMIT M,N",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
@@ -690,7 +690,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_INDEX_OPTION,
+			Name:  DDLCheckIndexOption,
 			Desc:  "建议选择可选性超过阈值字段作为索引",
 			Level: model.RuleLevelNotice,
 			Value: "0.7",
@@ -701,7 +701,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_COLUMN_ENUM_NOTICE,
+			Name:  DDLCheckColumnEnumNotice,
 			Desc:  "不建议使用 ENUM 类型",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
@@ -711,7 +711,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_COLUMN_SET_NOTICE,
+			Name:  DDLCheckColumnSetNitice,
 			Desc:  "不建议使用 SET 类型",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
@@ -721,7 +721,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: model.Rule{
-			Name:  DDL_CHECK_COLUMN_BLOB_NOTICE,
+			Name:  DDLCheckColumnBlobNotice,
 			Desc:  "不建议使用 BLOB 或 TEXT 类型",
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
@@ -819,7 +819,7 @@ func checkSelectAll(rule model.Rule, i *Inspect, node ast.Node) error {
 		if stmt.Fields != nil && stmt.Fields.Fields != nil {
 			for _, field := range stmt.Fields.Fields {
 				if field.WildCard != nil {
-					i.addResult(DML_DISABE_SELECT_ALL_COLUMN)
+					i.addResult(DMLDisableSelectAllColumn)
 				}
 			}
 		}
@@ -857,19 +857,19 @@ func checkWhere(i *Inspect, where ast.ExprNode) bool {
 	isAddResult := false
 
 	if where == nil || !whereStmtHasOneColumn(where) {
-		i.addResult(DML_CHECK_WHERE_IS_INVALID)
+		i.addResult(DMLCheckWhereIsInvalid)
 		isAddResult = true
 	}
 	if where != nil && whereStmtExistNot(where) {
-		i.addResult(DML_CHECK_WHERE_EXIST_NOT)
+		i.addResult(DMLCheckWhereExistNot)
 		isAddResult = true
 	}
 	if where != nil && whereStmtExistScalarSubQueries(where) {
-		i.addResult(DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES)
+		i.addResult(DMLCheckWhereExistScalarSubquery)
 		isAddResult = true
 	}
 	if where != nil && checkWhereFuzzySearch(where) {
-		i.addResult(DML_CHECK_FUZZY_SEARCH)
+		i.addResult(DMLCheckFuzzySearch)
 		isAddResult = true
 	}
 	return isAddResult
@@ -934,7 +934,7 @@ func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node a
 		}
 		for _, col := range cols {
 			if _, ok := constraintMap[col]; !ok {
-				i.addResult(DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS)
+				i.addResult(DDLCheckIndexesExistBeforeCreateConstraints)
 				return nil
 			}
 		}
@@ -999,16 +999,16 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 		if !hasPk {
-			i.addResult(DDL_CHECK_PK_NOT_EXIST)
+			i.addResult(DDLCheckPKNotExist)
 		}
 		if hasPk && pkColumnExist && !pkIsAutoIncrement {
-			i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
+			i.addResult(DDLCheckPKWithoutAutoIncrement)
 		}
 		if hasPk && pkColumnExist && pkIsAutoIncrement {
-			i.addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT)
+			i.addResult(DDLCheckPKProhibitAutoIncrement)
 		}
 		if hasPk && pkColumnExist && !pkIsBigIntUnsigned {
-			i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
+			i.addResult(DDLCheckPKWithoutBigintUnsigned)
 		}
 	case *ast.AlterTableStmt:
 		var alterPK bool
@@ -1058,13 +1058,13 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 		if alterPK && !pkIsAutoIncrement {
-			i.addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT)
+			i.addResult(DDLCheckPKWithoutAutoIncrement)
 		}
 		if alterPK && pkIsAutoIncrement {
-			i.addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT)
+			i.addResult(DDLCheckPKProhibitAutoIncrement)
 		}
 		if alterPK && !pkIsBigIntUnsigned {
-			i.addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED)
+			i.addResult(DDLCheckPKWithoutBigintUnsigned)
 		}
 	default:
 		return nil
@@ -1079,7 +1079,7 @@ func checkMergeAlterTable(rule model.Rule, i *Inspect, node ast.Node) error {
 		info, exist := i.getTableInfo(stmt.Table)
 		if exist {
 			if info.AlterTables != nil && len(info.AlterTables) > 0 {
-				i.addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+				i.addResult(DDLCheckAlterTableNeedMerge)
 			}
 		}
 	}
@@ -1152,7 +1152,7 @@ func checkEngineAndCharacterSet(rule model.Rule, i *Inspect, node ast.Node) erro
 	if strings.ToLower(engine) == "innodb" && strings.ToLower(characterSet) == "utf8mb4" {
 		return nil
 	}
-	i.addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
+	i.addResult(DDLCheckTableWithoutInnoDBUTF8MB4)
 	return nil
 }
 
@@ -1249,7 +1249,7 @@ func disableAddIndexForColumnsTypeBlob(rule model.Rule, i *Inspect, node ast.Nod
 		return nil
 	}
 	if indexDataTypeIsBlob {
-		i.addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB)
+		i.addResult(DDLCheckIndexedColumnWithBolb)
 	}
 	return nil
 }
@@ -1308,24 +1308,24 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 	// check length
 	for _, name := range names {
 		if len(name) > 64 {
-			i.addResult(DDL_CHECK_OBJECT_NAME_LENGTH)
+			i.addResult(DDLCheckObjectNameLength)
 			break
 		}
 	}
 
 	// check exist non-latin and underscore
 	for _, name := range names {
-		if bytes.IndexFunc([]byte(name), func(r rune) bool {
-			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
-		}) != -1 {
-			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
-			break
+		// CASE:
+		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
+		if name == "" {
+			continue
 		}
+		if !unicode.Is(unicode.Latin, rune(name[0])) ||
+			bytes.IndexFunc([]byte(name), func(r rune) bool {
+				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+			}) != -1 {
 
-		if idx := bytes.IndexFunc([]byte(name), func(r rune) bool {
-			return string(r) == "_"
-		}); idx == -1 || idx == 0 || idx == len(name)-1 {
-			i.addResult(DDL_CHECK_OBJECT_NAME_USING_CN)
+			i.addResult(DDLCheckOBjectNameUseCN)
 			break
 		}
 	}
@@ -1338,7 +1338,7 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 		}
 	}
 	if len(invalidNames) > 0 {
-		i.addResult(DDL_CHECK_OBJECT_NAME_USING_KEYWORD,
+		i.addResult(DDLCheckObjectNameUsingKeyword,
 			strings.Join(RemoveArrayRepeat(invalidNames), ", "))
 	}
 	return nil
@@ -1366,7 +1366,7 @@ func checkForeignKey(rule model.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if hasFk {
-		i.addResult(DDL_DISABLE_FK)
+		i.addResult(DDLDisableFK)
 	}
 	return nil
 }
@@ -1437,10 +1437,10 @@ func checkIndex(rule model.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if indexCounter > value {
-		i.addResult(DDL_CHECK_INDEX_COUNT, value)
+		i.addResult(DDLCheckIndexCount, value)
 	}
 	if compositeIndexMax > value {
-		i.addResult(DDL_CHECK_COMPOSITE_INDEX_MAX, value)
+		i.addResult(DDLCheckCompositeIndexMax, value)
 	}
 	return nil
 }
@@ -1451,14 +1451,14 @@ func checkStringType(rule model.Rule, i *Inspect, node ast.Node) error {
 		// if char length >20 using varchar.
 		for _, col := range stmt.Cols {
 			if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-				i.addResult(DDL_CHECK_COLUMN_CHAR_LENGTH)
+				i.addResult(DDLCheckColumnCharLength)
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, col := range spec.NewColumns {
 				if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-					i.addResult(DDL_CHECK_COLUMN_CHAR_LENGTH)
+					i.addResult(DDLCheckColumnCharLength)
 				}
 			}
 		}
@@ -1473,7 +1473,7 @@ func checkIfNotExist(rule model.Rule, i *Inspect, node ast.Node) error {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
 		if !stmt.IfNotExists {
-			i.addResult(DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST)
+			i.addResult(DDLCheckPKWithoutIfNotExists)
 		}
 	}
 	return nil
@@ -1483,9 +1483,9 @@ func disableDropStmt(rule model.Rule, i *Inspect, node ast.Node) error {
 	// specific check
 	switch node.(type) {
 	case *ast.DropDatabaseStmt:
-		i.addResult(DDL_DISABLE_DROP_STATEMENT)
+		i.addResult(DDLDisableDropStatement)
 	case *ast.DropTableStmt:
-		i.addResult(DDL_DISABLE_DROP_STATEMENT)
+		i.addResult(DDLDisableDropStatement)
 	}
 	return nil
 }
@@ -1507,7 +1507,7 @@ func checkTableWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error 
 			}
 		}
 		if !tableHasComment {
-			i.addResult(DDL_CHECK_TABLE_WITHOUT_COMMENT)
+			i.addResult(DDLCheckTableWithoutComment)
 		}
 	}
 	return nil
@@ -1527,7 +1527,7 @@ func checkColumnWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error
 				}
 			}
 			if !columnHasComment {
-				i.addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT)
+				i.addResult(DDLCheckColumnWithoutComment)
 				return nil
 			}
 		}
@@ -1544,7 +1544,7 @@ func checkColumnWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error
 					}
 				}
 				if !columnHasComment {
-					i.addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT)
+					i.addResult(DDLCheckColumnWithoutComment)
 					return nil
 				}
 			}
@@ -1579,7 +1579,7 @@ func checkIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	for _, name := range indexesName {
 		if !utils.HasPrefix(name, "idx_", false) {
-			i.addResult(DDL_CHECK_INDEX_PREFIX)
+			i.addResult(DDLCheckIndexPrefix)
 			return nil
 		}
 	}
@@ -1674,7 +1674,7 @@ func checkColumnWithoutDefault(rule model.Rule, i *Inspect, node ast.Node) error
 				continue
 			}
 			if !columnHasDefault {
-				i.addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
+				i.addResult(DDLCheckColumnWithoutDefault)
 				return nil
 			}
 		}
@@ -1703,7 +1703,7 @@ func checkColumnWithoutDefault(rule model.Rule, i *Inspect, node ast.Node) error
 					continue
 				}
 				if !columnHasDefault {
-					i.addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
+					i.addResult(DDLCheckColumnWithoutDefault)
 					return nil
 				}
 			}
@@ -1726,7 +1726,7 @@ func checkColumnTimestampWithoutDefault(rule model.Rule, i *Inspect, node ast.No
 				}
 			}
 			if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
-				i.addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT)
+				i.addResult(DDLCheckColumnTimestampWitoutDefault)
 				return nil
 			}
 		}
@@ -1743,7 +1743,7 @@ func checkColumnTimestampWithoutDefault(rule model.Rule, i *Inspect, node ast.No
 					}
 				}
 				if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
-					i.addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT)
+					i.addResult(DDLCheckColumnTimestampWitoutDefault)
 					return nil
 				}
 			}
@@ -1766,7 +1766,7 @@ func checkColumnBlobNotNull(rule model.Rule, i *Inspect, node ast.Node) error {
 			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 				for _, opt := range col.Options {
 					if opt.Tp == ast.ColumnOptionNotNull {
-						i.addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL)
+						i.addResult(DDLCheckColumnBlobWithNotNull)
 						return nil
 					}
 				}
@@ -1786,7 +1786,7 @@ func checkColumnBlobNotNull(rule model.Rule, i *Inspect, node ast.Node) error {
 				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 					for _, opt := range col.Options {
 						if opt.Tp == ast.ColumnOptionNotNull {
-							i.addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL)
+							i.addResult(DDLCheckColumnBlobWithNotNull)
 							return nil
 						}
 					}
@@ -1861,7 +1861,7 @@ func checkColumnBlobDefaultNull(rule model.Rule, i *Inspect, node ast.Node) erro
 			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 				for _, opt := range col.Options {
 					if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
-						i.addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL)
+						i.addResult(DDLCheckColumnBlobDefaultIsNotNull)
 						return nil
 					}
 				}
@@ -1881,7 +1881,7 @@ func checkColumnBlobDefaultNull(rule model.Rule, i *Inspect, node ast.Node) erro
 				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 					for _, opt := range col.Options {
 						if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
-							i.addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL)
+							i.addResult(DDLCheckColumnBlobDefaultIsNotNull)
 							return nil
 						}
 					}
@@ -1896,11 +1896,11 @@ func checkDMLWithLimit(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit != nil {
-			i.addResult(DML_CHECK_WITH_LIMIT)
+			i.addResult(DMLCheckWithLimit)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Limit != nil {
-			i.addResult(DML_CHECK_WITH_LIMIT)
+			i.addResult(DMLCheckWithLimit)
 		}
 	}
 	return nil
@@ -1909,11 +1909,11 @@ func checkDMLLimitExist(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit == nil {
-			i.addResult(DML_CHECK_LIMIT_MUST_EXIST)
+			i.addResult(DMLCheckLimitMustExist)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Limit == nil {
-			i.addResult(DML_CHECK_LIMIT_MUST_EXIST)
+			i.addResult(DMLCheckLimitMustExist)
 		}
 	}
 	return nil
@@ -1923,11 +1923,11 @@ func checkDMLWithOrderBy(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Order != nil {
-			i.addResult(DML_CHECK_WITH_ORDER_BY)
+			i.addResult(DMLCheckWithOrderBy)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Order != nil {
-			i.addResult(DML_CHECK_WITH_ORDER_BY)
+			i.addResult(DMLCheckWithOrderBy)
 		}
 	}
 	return nil
@@ -1937,7 +1937,7 @@ func checkDMLWithInsertColumnExist(rule model.Rule, i *Inspect, node ast.Node) e
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		if len(stmt.Columns) == 0 {
-			i.addResult(DML_CHECK_INSERT_COLUMNS_EXIST)
+			i.addResult(DMLCheckInsertColumnsExist)
 		}
 	}
 	return nil
@@ -1951,7 +1951,7 @@ func checkDMLWithBatchInsertMaxLimits(rule model.Rule, i *Inspect, node ast.Node
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		if len(stmt.Lists) > value {
-			i.addResult(DML_CHECK_BATCH_INSERT_LISTS_MAX, value)
+			i.addResult(DMLCheckBatchInsertListsMax, value)
 		}
 	}
 	return nil
@@ -2027,7 +2027,7 @@ func checkExistFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) boo
 		colMap[col.Name.String()] = struct{}{}
 	}
 	if isFuncUsedOnColumnInWhereStmt(colMap, where) {
-		i.addResult(DML_CHECK_WHERE_EXIST_FUNC)
+		i.addResult(DMLCheckWhereExistFunc)
 		return true
 	}
 	return false
@@ -2116,7 +2116,7 @@ func checkWhereColumnImplicitConversionFunc(i *Inspect, tables []*ast.TableName,
 
 	}
 	if isColumnImplicitConversionInWhereStmt(colMap, where) {
-		i.addResult(DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION)
+		i.addResult(DMLCheckWhereExistImplicitConversion)
 		return true
 	}
 	return false
@@ -2126,7 +2126,7 @@ func checkDMLSelectForUpdate(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.LockTp == ast.SelectLockForUpdate {
-			i.addResult(DML_CHECK_SELECT_FOR_UPDATE)
+			i.addResult(DMLCheckSelectForUpdate)
 		}
 	}
 	return nil
@@ -2185,7 +2185,7 @@ func checkCollationDatabase(rule model.Rule, i *Inspect, node ast.Node) error {
 		}
 	}
 	if !strings.EqualFold(collationDatabase, rule.Value) {
-		i.addResult(DDL_CHECK_COLLATION_DATABASE, rule.Value)
+		i.addResult(DDLCheckDatabaseCollation, rule.Value)
 	}
 	return nil
 }
@@ -2194,14 +2194,14 @@ func checkDecimalTypeColumn(rule model.Rule, i *Inspect, node ast.Node) error {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
 			if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
-				i.addResult(DDL_CHECK_DECIMAL_TYPE_COLUMN)
+				i.addResult(DDLCheckDecimalTypeColumn)
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, col := range spec.NewColumns {
 				if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
-					i.addResult(DDL_CHECK_DECIMAL_TYPE_COLUMN)
+					i.addResult(DDLCheckDecimalTypeColumn)
 				}
 			}
 		}
@@ -2217,7 +2217,7 @@ func checkNeedlessFunc(rule model.Rule, i *Inspect, node ast.Node) error {
 	for _, needlessFunc := range needlessFuncArr {
 		needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, ")"))
 		if strings.Contains(sql, needlessFunc) {
-			i.addResult(DML_CHECK_NEEDLESS_FUNC, rule.Value)
+			i.addResult(DMLCheckNeedlessFunc, rule.Value)
 			return nil
 		}
 	}
@@ -2235,7 +2235,7 @@ func checkDatabaseSuffix(rule model.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if databaseName != "" && !utils.HasSuffix(databaseName, "_DB", false) {
-		i.addResult(DDL_CHECK_DATABASE_SUFFIX)
+		i.addResult(DDLCheckDatabaseSuffix)
 		return nil
 	}
 	return nil
@@ -2266,7 +2266,7 @@ func checkPKIndexName(rule model.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if indexesName != "" && !strings.EqualFold(indexesName, "PK_"+tableName) {
-		i.addResult(DDL_CHECK_PK_NAME)
+		i.addResult(DDLCheckPKName)
 		return nil
 	}
 	return nil
@@ -2280,7 +2280,7 @@ func checkTransactionIsolationLevel(rule model.Rule, i *Inspect, node ast.Node) 
 				switch node := variable.Value.(type) {
 				case *driver.ValueExpr:
 					if node.Datum.GetString() != ast.ReadCommitted {
-						i.addResult(DDL_CHECK_TRANSACTION_ISOLATION_LEVEL)
+						i.addResult(DDLCheckTransactionIsolationLevel)
 						return nil
 					}
 				}
@@ -2297,13 +2297,13 @@ func checkTablePartition(rule model.Rule, i *Inspect, node ast.Node) error {
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			if spec.PartitionNames != nil || spec.PartDefinitions != nil || spec.Partition != nil {
-				i.addResult(DDL_CHECK_TABLE_PARTITION)
+				i.addResult(DDLCheckTablePartition)
 				return nil
 			}
 		}
 	case *ast.CreateTableStmt:
 		if stmt.Partition != nil {
-			i.addResult(DDL_CHECK_TABLE_PARTITION)
+			i.addResult(DDLCheckTablePartition)
 			return nil
 		}
 	default:
@@ -2322,7 +2322,7 @@ func checkNumberOfJoinTables(rule model.Rule, i *Inspect, node ast.Node) error {
 			return nil
 		}
 		if nums < getNumberOfJoinTables(stmt.From.TableRefs) {
-			i.addResult(DML_CHECK_NUMBER_OF_JOIN_TABLES, rule.Value)
+			i.addResult(DMLCheckNumberOfJoinTables, rule.Value)
 		}
 	default:
 		return nil
@@ -2335,7 +2335,7 @@ func checkIsAfterUnionDistinct(rule model.Rule, i *Inspect, node ast.Node) error
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
 			if ss.IsAfterUnionDistinct {
-				i.addResult(DML_CHECK_IS_AFTER_UNION_DISTINCT)
+				i.addResult(DMLCheckIfAfterUnionDistinct)
 				return nil
 			}
 		}
@@ -2350,7 +2350,7 @@ func checkIsExistLimitOffset(rule model.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.Limit.Offset != nil {
-			i.addResult(DDL_CHECK_IS_EXIST_LIMIT_OFFSET)
+			i.addResult(DDLCheckIsExistLimitOffset)
 		}
 	default:
 		return nil

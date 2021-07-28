@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -73,6 +74,8 @@ func AllDrivers() []string {
 	}
 	return driverNames
 }
+
+var ErrNodesCountExceedOne = errors.New("after parse, nodes count exceed one")
 
 // Driver is a interface that must be implemented by a database.
 //
