@@ -197,6 +197,7 @@ type GetRuleTemplateResV1 struct {
 type RuleTemplateDetailResV1 struct {
 	Name      string      `json:"rule_template_name"`
 	Desc      string      `json:"desc"`
+	DBType    string      `json:"db_type"`
 	Instances []string    `json:"instance_name_list,omitempty"`
 	RuleList  []RuleResV1 `json:"rule_list,omitempty"`
 }
@@ -209,16 +210,18 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 	ruleList := make([]RuleResV1, 0, len(template.RuleList))
 	for _, r := range template.RuleList {
 		ruleList = append(ruleList, RuleResV1{
-			Name:  r.RuleName,
-			Value: r.RuleValue,
-			Level: r.RuleLevel,
-			Typ:   r.Rule.Typ,
-			Desc:  r.Rule.Desc,
+			Name:   r.RuleName,
+			Value:  r.RuleValue,
+			Level:  r.RuleLevel,
+			Typ:    r.Rule.Typ,
+			Desc:   r.Rule.Desc,
+			DBType: r.Rule.DBType,
 		})
 	}
 	return &RuleTemplateDetailResV1{
 		Name:      template.Name,
 		Desc:      template.Desc,
+		DBType:    template.DBType,
 		Instances: instanceNames,
 		RuleList:  ruleList,
 	}

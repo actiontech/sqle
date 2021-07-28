@@ -148,7 +148,7 @@ func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 
 func (s *Storage) GetUserInstanceTip(user *User) ([]*Instance, error) {
 	instances := []*Instance{}
-	db := s.db.Model(&Instance{}).Select("instances.name")
+	db := s.db.Model(&Instance{}).Select("instances.name, instances.db_type")
 	if user.Name != DefaultAdminUser {
 		db = db.Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
 			Joins("JOIN user_role AS ur ON ir.role_id = ur.role_id").
