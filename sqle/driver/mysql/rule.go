@@ -270,7 +270,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: model.Rule{
 			Name:      DDLCheckOBjectNameUseCN,
-			Desc:      "数据库对象命名不能使用英文、下划线、数字之外的字符",
+			Desc:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
@@ -1315,16 +1315,16 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 
 	// check exist non-latin and underscore
 	for _, name := range names {
-		if bytes.IndexFunc([]byte(name), func(r rune) bool {
-			return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
-		}) != -1 {
-			i.addResult(DDLCheckOBjectNameUseCN)
-			break
+		// CASE:
+		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
+		if name == "" {
+			continue
 		}
+		if !unicode.Is(unicode.Latin, rune(name[0])) ||
+			bytes.IndexFunc([]byte(name), func(r rune) bool {
+				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+			}) != -1 {
 
-		if idx := bytes.IndexFunc([]byte(name), func(r rune) bool {
-			return string(r) == "_"
-		}); idx == -1 || idx == 0 || idx == len(name)-1 {
 			i.addResult(DDLCheckOBjectNameUseCN)
 			break
 		}
