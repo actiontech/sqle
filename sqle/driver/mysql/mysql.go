@@ -117,15 +117,15 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
 	if !i.configInit {
 		for _, rule := range rules {
-			if rule.Name == CONFIG_DML_ROLLBACK_MAX_ROWS {
-				defaultRule := RuleHandlerMap[CONFIG_DML_ROLLBACK_MAX_ROWS].Rule
+			if rule.Name == ConfigDMLRollbackMaxRows {
+				defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
 				i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
 			} else {
 				i.config.DMLRollbackMaxRows = -1
 			}
 
-			if rule.Name == CONFIG_DDL_OSC_MIN_SIZE {
-				defaultRule := RuleHandlerMap[CONFIG_DDL_OSC_MIN_SIZE].Rule
+			if rule.Name == ConfigDDLOSCMinSize {
+				defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
 				i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
 			} else {
 				i.config.DDLOSCMinSize = -1

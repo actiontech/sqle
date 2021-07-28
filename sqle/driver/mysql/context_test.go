@@ -7,10 +7,10 @@ import (
 )
 
 func TestContext(t *testing.T) {
-	handler := RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE]
-	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	handler := RuleHandlerMap[DDLCheckAlterTableNeedMerge]
+	delete(RuleHandlerMap, DDLCheckAlterTableNeedMerge)
 	defer func() {
-		RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE] = handler
+		RuleHandlerMap[DDLCheckAlterTableNeedMerge] = handler
 	}()
 
 	runDefaultRulesInspectCase(t, "rename table and drop column: table not exists", DefaultMysqlInspect(),
@@ -106,13 +106,13 @@ alter table exist_tb_1 drop index idx_1;
 }
 
 func TestParentContext(t *testing.T) {
-	handler := RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE]
-	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	handler := RuleHandlerMap[DDLCheckAlterTableNeedMerge]
+	delete(RuleHandlerMap, DDLCheckAlterTableNeedMerge)
 	// It's trick :),
 	// elegant method: unit test support MySQL.
-	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
+	delete(RuleHandlerMap, DDLCheckTableWithoutInnoDBUTF8MB4)
 	defer func() {
-		RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE] = handler
+		RuleHandlerMap[DDLCheckAlterTableNeedMerge] = handler
 	}()
 
 	inspect1 := DefaultMysqlInspect()

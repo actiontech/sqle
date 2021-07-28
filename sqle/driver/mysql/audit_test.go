@@ -174,7 +174,7 @@ func runSingleRuleInspectCase(rule model.Rule, t *testing.T, desc string, i *Ins
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
 	// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
 	for idx, dr := range DefaultTemplateRules {
-		if dr.Name == DDL_CHECK_OBJECT_NAME_USING_CN {
+		if dr.Name == DDLCheckOBjectNameUseCN {
 			DefaultTemplateRules = append(DefaultTemplateRules[:idx], DefaultTemplateRules[idx+1:]...)
 			break
 		}
@@ -277,10 +277,10 @@ PRIMARY KEY (id)
 `,
 		newTestResult(),
 	)
-	handler := RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST]
-	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST)
+	handler := RuleHandlerMap[DDLCheckPKWithoutIfNotExists]
+	delete(RuleHandlerMap, DDLCheckPKWithoutIfNotExists)
 	defer func() {
-		RuleHandlerMap[DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST] = handler
+		RuleHandlerMap[DDLCheckPKWithoutIfNotExists] = handler
 	}()
 	runDefaultRulesInspectCase(t, "create_table: table is exist(2)", DefaultMysqlInspect(),
 		`
@@ -414,7 +414,7 @@ INDEX (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(model.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
-			"v1").addResult(DDL_CHECK_INDEX_PREFIX))
+			"v1").addResult(DDLCheckIndexPrefix))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
 		`
@@ -434,7 +434,7 @@ INDEX idx_2 (v1,v2,v2)
 func TestCheckInvalidAlterTable(t *testing.T) {
 	// It's trick :),
 	// elegant method: unit test support MySQL.
-	delete(RuleHandlerMap, DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4)
+	delete(RuleHandlerMap, DDLCheckTableWithoutInnoDBUTF8MB4)
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
@@ -508,7 +508,7 @@ ALTER TABLE exist_db.exist_tb_2 Add primary key(id);
 		`
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 `,
-		newTestResult().add(model.RuleLevelError, PrimaryKeyExistMessage).addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT).addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
+		newTestResult().add(model.RuleLevelError, PrimaryKeyExistMessage).addResult(DDLCheckPKWithoutAutoIncrement).addResult(DDLCheckPKWithoutBigintUnsigned),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add pk but key column not exist", DefaultMysqlInspect(),
@@ -564,7 +564,7 @@ ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (id,id);
 ALTER TABLE exist_db.exist_tb_1 Add index (id,id);
 `,
 		newTestResult().add(model.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
-			"id").addResult(DDL_CHECK_INDEX_PREFIX),
+			"id").addResult(DDLCheckIndexPrefix),
 	)
 }
 
@@ -629,10 +629,10 @@ CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id,v1);
 }
 
 func TestCheckInvalidDrop(t *testing.T) {
-	handler := RuleHandlerMap[DDL_DISABLE_DROP_STATEMENT]
-	delete(RuleHandlerMap, DDL_DISABLE_DROP_STATEMENT)
+	handler := RuleHandlerMap[DDLDisableDropStatement]
+	delete(RuleHandlerMap, DDLDisableDropStatement)
 	defer func() {
-		RuleHandlerMap[DDL_DISABLE_DROP_STATEMENT] = handler
+		RuleHandlerMap[DDLDisableDropStatement] = handler
 	}()
 	runDefaultRulesInspectCase(t, "drop_database: ok", DefaultMysqlInspect(),
 		`
@@ -984,7 +984,7 @@ select id from exist_db.not_exist_tb where id=1;
 func TestCheckSelectAll(t *testing.T) {
 	runDefaultRulesInspectCase(t, "select_from: all columns", DefaultMysqlInspect(),
 		"select * from exist_db.exist_tb_1 where id =1;",
-		newTestResult().addResult(DML_DISABE_SELECT_ALL_COLUMN),
+		newTestResult().addResult(DMLDisableSelectAllColumn),
 	)
 }
 
@@ -996,22 +996,22 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(2)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(3)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where id=id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(4)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
 	runDefaultRulesInspectCase(t, "update: has where condition", DefaultMysqlInspect(),
@@ -1020,19 +1020,19 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "update: no where condition(1)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1';",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "update: no where condition(2)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where 1=1 and 2=2;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "update: no where condition(3)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where id=id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "update: no where condition(4)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where exist_tb_1.id=exist_tb_1.id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "delete: has where condition", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where id = 1;",
@@ -1040,19 +1040,19 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(1)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(2)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=1 and 2=2;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(3)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=1 and id=id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(4)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=1 and exist_tb_1.id=exist_tb_1.id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 }
 
 func TestCheckWhereInvalid_FP(t *testing.T) {
@@ -1066,11 +1066,11 @@ func TestCheckWhereInvalid_FP(t *testing.T) {
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where 1=? and 2=2;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(2)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where ?=?;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
 	runDefaultRulesInspectCase(t, "[pf]update: has where condition", DefaultMysqlInspect(),
@@ -1079,27 +1079,27 @@ func TestCheckWhereInvalid_FP(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "[pf]update: no where condition(1)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1=?;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "[pf]update: no where condition(2)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1=? where 1=1 and 2=2;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "[pf]update: no where condition(3)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1=? where id=id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "[pf]update: no where condition(4)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1=? where exist_tb_1.id=exist_tb_1.id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "[pf]delete: no where condition(1)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=? and ?=?;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "[pf]delete: no where condition(2)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=? and id=id;",
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 }
 
 func TestCheckCreateTableWithoutIfNotExists(t *testing.T) {
@@ -1112,7 +1112,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_IF_NOT_EXIST),
+		newTestResult().addResult(DDLCheckPKWithoutIfNotExists),
 	)
 }
 
@@ -1125,8 +1125,8 @@ func TestCheckObjectNameUsingKeyword(t *testing.T) {
 			"PRIMARY KEY (id),"+
 			"INDEX `show` (v1)"+
 			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT=\"unit test\";",
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_USING_KEYWORD, "select, create, show").
-			addResult(DDL_CHECK_INDEX_PREFIX),
+		newTestResult().addResult(DDLCheckObjectNameUsingKeyword, "select, create, show").
+			addResult(DDLCheckIndexPrefix),
 	)
 
 }
@@ -1138,7 +1138,7 @@ ALTER TABLE exist_db.exist_tb_1 Add column v5 varchar(255) NOT NULL DEFAULT "uni
 ALTER TABLE exist_db.exist_tb_1 Add column v6 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
 		newTestResult(),
-		newTestResult().addResult(DDL_CHECK_ALTER_TABLE_NEED_MERGE),
+		newTestResult().addResult(DDLCheckAlterTableNeedMerge),
 	)
 }
 
@@ -1165,7 +1165,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: columns length > 64", DefaultMysqlInspect(),
@@ -1176,7 +1176,7 @@ id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: index length > 64", DefaultMysqlInspect(),
@@ -1188,37 +1188,37 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_%s (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: table length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 RENAME %s;`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:Add column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:change column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 ADD index idx_%s (v1);`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:rename index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 RENAME index idx_1 TO idx_%s;`, length65),
-		newTestResult().addResult(DDL_CHECK_OBJECT_NAME_LENGTH),
+		newTestResult().addResult(DDLCheckObjectNameLength),
 	)
 }
 
@@ -1242,7 +1242,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PK_NOT_EXIST),
+		newTestResult().addResult(DDLCheckPKNotExist),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: primary key not auto increment(1)", DefaultMysqlInspect(),
@@ -1253,7 +1253,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT),
+		newTestResult().addResult(DDLCheckPKWithoutAutoIncrement),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: primary key not auto increment(2)", DefaultMysqlInspect(),
@@ -1265,7 +1265,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_AUTO_INCREMENT),
+		newTestResult().addResult(DDLCheckPKWithoutAutoIncrement),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: primary key not bigint unsigned(1)", DefaultMysqlInspect(),
@@ -1276,7 +1276,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
+		newTestResult().addResult(DDLCheckPKWithoutBigintUnsigned),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: primary key not bigint unsigned(2)", DefaultMysqlInspect(),
@@ -1288,7 +1288,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_PK_WITHOUT_BIGINT_UNSIGNED),
+		newTestResult().addResult(DDLCheckPKWithoutBigintUnsigned),
 	)
 }
 
@@ -1314,7 +1314,7 @@ func TestCheckColumnCharLength(t *testing.T) {
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
-		newTestResult().addResult(DDL_CHECK_COLUMN_CHAR_LENGTH),
+		newTestResult().addResult(DDLCheckColumnCharLength),
 	)
 }
 
@@ -1351,7 +1351,7 @@ INDEX idx_5 (id),
 INDEX idx_6 (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_INDEX_COUNT),
+		newTestResult().addResult(DDLCheckIndexCount),
 	)
 }
 
@@ -1384,7 +1384,7 @@ PRIMARY KEY (id),
 INDEX idx_1 (id,v1,v2,v3,v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COMPOSITE_INDEX_MAX),
+		newTestResult().addResult(DDLCheckCompositeIndexMax),
 	)
 }
 
@@ -1408,7 +1408,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4),
+		newTestResult().addResult(DDLCheckTableWithoutInnoDBUTF8MB4),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table charset not utf8mb4", DefaultMysqlInspect(),
@@ -1419,7 +1419,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1  COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_INNODB_UTF8MB4),
+		newTestResult().addResult(DDLCheckTableWithoutInnoDBUTF8MB4),
 	)
 }
 
@@ -1435,7 +1435,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
+		newTestResult().addResult(DDLCheckIndexedColumnWithBolb),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspect(),
@@ -1448,13 +1448,13 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
+		newTestResult().addResult(DDLCheckIndexedColumnWithBolb),
 	)
 
-	handler := RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE]
-	delete(RuleHandlerMap, DDL_CHECK_ALTER_TABLE_NEED_MERGE)
+	handler := RuleHandlerMap[DDLCheckAlterTableNeedMerge]
+	delete(RuleHandlerMap, DDLCheckAlterTableNeedMerge)
 	defer func() {
-		RuleHandlerMap[DDL_CHECK_ALTER_TABLE_NEED_MERGE] = handler
+		RuleHandlerMap[DDLCheckAlterTableNeedMerge] = handler
 	}()
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (3)", DefaultMysqlInspect(),
@@ -1472,10 +1472,10 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit 
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
 		newTestResult(),
-		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
-		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
-		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
-		newTestResult().addResult(DDL_CHECK_INDEX_COLUMN_WITH_BLOB),
+		newTestResult().addResult(DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(DDLCheckIndexedColumnWithBolb),
 	)
 }
 
@@ -1490,7 +1490,7 @@ PRIMARY KEY (id),
 FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_DISABLE_FK),
+		newTestResult().addResult(DDLDisableFK),
 	)
 }
 
@@ -1504,7 +1504,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 `,
-		newTestResult().addResult(DDL_CHECK_TABLE_WITHOUT_COMMENT),
+		newTestResult().addResult(DDLCheckTableWithoutComment),
 	)
 }
 
@@ -1518,21 +1518,21 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
+		newTestResult().addResult(DDLCheckColumnWithoutComment),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column without comment(1)", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL DEFAULT "unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
+		newTestResult().addResult(DDLCheckColumnWithoutComment),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column without comment(2)", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL DEFAULT "unit test" ;
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_COMMENT),
+		newTestResult().addResult(DDLCheckColumnWithoutComment),
 	)
 }
 
@@ -1547,21 +1547,21 @@ PRIMARY KEY (id),
 INDEX index_1 (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
+		newTestResult().addResult(DDLCheckIndexPrefix),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: index prefix not idx_", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD INDEX index_1(v1);
 `,
-		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
+		newTestResult().addResult(DDLCheckIndexPrefix),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: index prefix not idx_", DefaultMysqlInspect(),
 		`
 CREATE INDEX index_1 ON exist_db.exist_tb_1(v1);
 `,
-		newTestResult().addResult(DDL_CHECK_INDEX_PREFIX),
+		newTestResult().addResult(DDLCheckIndexPrefix),
 	)
 
 	for _, sql := range []string{
@@ -1572,7 +1572,7 @@ CREATE INDEX index_1 ON exist_db.exist_tb_1(v1);
 		`alter table exist_db.exist_tb_1 Add index idx_v1(v1);`,
 		`alter table exist_db.exist_tb_1 Add index IDX_V1(v1);`,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_INDEX_PREFIX].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckIndexPrefix].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
 }
 
@@ -1587,21 +1587,21 @@ PRIMARY KEY (id),
 UNIQUE INDEX index_1 (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
+		newTestResult().addResult(DDLCheckUniqueIndexPrefix),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: unique index prefix not uniq_", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD UNIQUE INDEX index_1(v1);
 `,
-		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
+		newTestResult().addResult(DDLCheckUniqueIndexPrefix),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: unique index prefix not uniq_", DefaultMysqlInspect(),
 		`
 CREATE UNIQUE INDEX index_1 ON exist_db.exist_tb_1(v1);
 `,
-		newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX_PRIFIX),
+		newTestResult().addResult(DDLCheckUniqueIndexPrefix),
 	)
 
 	for _, sql := range []string{
@@ -1612,7 +1612,7 @@ CREATE UNIQUE INDEX index_1 ON exist_db.exist_tb_1(v1);
 		`alter table exist_db.exist_tb_1 Add unique index uniq_v1(v1);`,
 		`alter table exist_db.exist_tb_1 Add unique index UNIQ_V1(v1);`,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_UNIQUE_INDEX_PRIFIX].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckUniqueIndexPrefix].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
 }
 
@@ -1625,14 +1625,14 @@ v1 varchar(255) COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
+		newTestResult().addResult(DDLCheckColumnWithoutDefault),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_WITHOUT_DEFAULT),
+		newTestResult().addResult(DDLCheckColumnWithoutDefault),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: auto increment column without default", DefaultMysqlInspect(),
@@ -1651,10 +1651,10 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob COMMENT "unit test";
 }
 
 func TestCheckColumnTimestampDefault(t *testing.T) {
-	handler := RuleHandlerMap[DDL_CHECK_COLUMN_WITHOUT_DEFAULT]
-	delete(RuleHandlerMap, DDL_CHECK_COLUMN_WITHOUT_DEFAULT)
+	handler := RuleHandlerMap[DDLCheckColumnWithoutDefault]
+	delete(RuleHandlerMap, DDLCheckColumnWithoutDefault)
 	defer func() {
-		RuleHandlerMap[DDL_CHECK_COLUMN_WITHOUT_DEFAULT] = handler
+		RuleHandlerMap[DDLCheckColumnWithoutDefault] = handler
 	}()
 
 	runDefaultRulesInspectCase(t, "create_table: column timestamp without default", DefaultMysqlInspect(),
@@ -1665,14 +1665,14 @@ v1 timestamp COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT),
+		newTestResult().addResult(DDLCheckColumnTimestampWitoutDefault),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_TIMESTAMP_WITHOUT_DEFAULT),
+		newTestResult().addResult(DDLCheckColumnTimestampWitoutDefault),
 	)
 }
 
@@ -1685,14 +1685,14 @@ v1 blob NOT NULL COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL),
+		newTestResult().addResult(DDLCheckColumnBlobWithNotNull),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_WITH_NOT_NULL),
+		newTestResult().addResult(DDLCheckColumnBlobWithNotNull),
 	)
 }
 
@@ -1705,14 +1705,14 @@ v1 blob DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL),
+		newTestResult().addResult(DDLCheckColumnBlobDefaultIsNotNull),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_DEFAULT_IS_NOT_NULL),
+		newTestResult().addResult(DDLCheckColumnBlobDefaultIsNotNull),
 	)
 }
 
@@ -1721,14 +1721,14 @@ func TestCheckDMLWithLimit(t *testing.T) {
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 limit 1;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_LIMIT),
+		newTestResult().addResult(DMLCheckWithLimit),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: with limit", DefaultMysqlInspect(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 limit 1;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_LIMIT),
+		newTestResult().addResult(DMLCheckWithLimit),
 	)
 }
 
@@ -1737,14 +1737,14 @@ func TestCheckDMLWithLimit_FP(t *testing.T) {
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=? limit ?;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_LIMIT),
+		newTestResult().addResult(DMLCheckWithLimit),
 	)
 
 	runDefaultRulesInspectCase(t, "[fp]delete: with limit", DefaultMysqlInspect(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=? limit ?;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_LIMIT),
+		newTestResult().addResult(DMLCheckWithLimit),
 	)
 }
 
@@ -1753,14 +1753,14 @@ func TestCheckDMLWithOrderBy(t *testing.T) {
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by v1;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_ORDER_BY),
+		newTestResult().addResult(DMLCheckWithOrderBy),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: with limit", DefaultMysqlInspect(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by v1;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_ORDER_BY),
+		newTestResult().addResult(DMLCheckWithOrderBy),
 	)
 }
 
@@ -1769,24 +1769,24 @@ func TestCheckDMLWithOrderBy_FP(t *testing.T) {
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by ?;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_ORDER_BY),
+		newTestResult().addResult(DMLCheckWithOrderBy),
 	)
 
 	runDefaultRulesInspectCase(t, "[fp]delete: with limit", DefaultMysqlInspect(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1=? where id=? order by ?;
 `,
-		newTestResult().addResult(DML_CHECK_WITH_ORDER_BY),
+		newTestResult().addResult(DMLCheckWithOrderBy),
 	)
 }
 
 func TestCheckInsertColumnsExist(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_INSERT_COLUMNS_EXIST].Rule
+	rule := RuleHandlerMap[DMLCheckInsertColumnsExist].Rule
 	runSingleRuleInspectCase(rule, t, "insert: check columns exist", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 values (1,"1","1"),(2,"2","2");
 `,
-		newTestResult().addResult(DML_CHECK_INSERT_COLUMNS_EXIST),
+		newTestResult().addResult(DMLCheckInsertColumnsExist),
 	)
 
 	runSingleRuleInspectCase(rule, t, "insert: passing the check columns exist", DefaultMysqlInspect(),
@@ -1798,12 +1798,12 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2");
 }
 
 func TestCheckInsertColumnsExist_FP(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_INSERT_COLUMNS_EXIST].Rule
+	rule := RuleHandlerMap[DMLCheckInsertColumnsExist].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]insert: check columns exist", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 values (?,?,?),(?,?,?);
 `,
-		newTestResult().addResult(DML_CHECK_INSERT_COLUMNS_EXIST),
+		newTestResult().addResult(DMLCheckInsertColumnsExist),
 	)
 
 	runSingleRuleInspectCase(rule, t, "[fp]insert: passing the check columns exist", DefaultMysqlInspect(),
@@ -1815,14 +1815,14 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?);
 }
 
 func TestCheckBatchInsertListsMax(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_BATCH_INSERT_LISTS_MAX].Rule
+	rule := RuleHandlerMap[DMLCheckBatchInsertListsMax].Rule
 	// defult 5000,  unit testing :4
 	rule.Value = "4"
 	runSingleRuleInspectCase(rule, t, "insert:check batch insert lists max", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2"),(3,"3","3"),(4,"4","4"),(5,"5","5");
 `,
-		newTestResult().addResult(DML_CHECK_BATCH_INSERT_LISTS_MAX, rule.Value),
+		newTestResult().addResult(DMLCheckBatchInsertListsMax, rule.Value),
 	)
 
 	runSingleRuleInspectCase(rule, t, "insert: passing the check batch insert lists max", DefaultMysqlInspect(),
@@ -1834,14 +1834,14 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2"),(3,"3"
 }
 
 func TestCheckBatchInsertListsMax_FP(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_BATCH_INSERT_LISTS_MAX].Rule
+	rule := RuleHandlerMap[DMLCheckBatchInsertListsMax].Rule
 	// defult 5000, unit testing :4
 	rule.Value = "4"
 	runSingleRuleInspectCase(rule, t, "[fp]insert:check batch insert lists max", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?),(?,?,?),(?,?,?),(?,?,?);
 `,
-		newTestResult().addResult(DML_CHECK_BATCH_INSERT_LISTS_MAX, rule.Value),
+		newTestResult().addResult(DMLCheckBatchInsertListsMax, rule.Value),
 	)
 
 	runSingleRuleInspectCase(rule, t, "[fp]insert: passing the check batch insert lists max", DefaultMysqlInspect(),
@@ -1853,7 +1853,7 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?),(?,?,?),(?,?,?
 }
 
 func TestCheckPkProhibitAutoIncrement(t *testing.T) {
-	rule := RuleHandlerMap[DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT].Rule
+	rule := RuleHandlerMap[DDLCheckPKProhibitAutoIncrement].Rule
 	runSingleRuleInspectCase(rule, t, "create_table: primary key not auto increment", DefaultMysqlInspect(),
 		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
@@ -1863,7 +1863,7 @@ func TestCheckPkProhibitAutoIncrement(t *testing.T) {
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
-		newTestResult().addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT),
+		newTestResult().addResult(DDLCheckPKProhibitAutoIncrement),
 	)
 
 	{
@@ -1887,8 +1887,8 @@ PRIMARY KEY (id)
 ALTER TABLE exist_db.not_exist_tb_1 modify COLUMN id BIGINT auto_increment;
 ALTER TABLE exist_db.not_exist_tb_1 change COLUMN id new_id bigint unsigned NOT NULL auto_increment;
 `,
-			newTestResult().addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT),
-			newTestResult().addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT))
+			newTestResult().addResult(DDLCheckPKProhibitAutoIncrement),
+			newTestResult().addResult(DDLCheckPKProhibitAutoIncrement))
 	}
 
 	{
@@ -1950,17 +1950,17 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 			`
 ALTER TABLE exist_db.not_exist_tb_1 Add COLUMN id bigint unsigned PRIMARY KEY NOT NULL AUTO_INCREMENT;
 `,
-			newTestResult().addResult(DDL_CHECK_PK_PROHIBIT_AUTO_INCREMENT))
+			newTestResult().addResult(DDLCheckPKProhibitAutoIncrement))
 	}
 }
 
 func TestCheckWhereExistFunc(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_WHERE_EXIST_FUNC].Rule
+	rule := RuleHandlerMap[DMLCheckWhereExistFunc].Rule
 	runSingleRuleInspectCase(rule, t, "select: check where exist func", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where nvl(v2,"0") = "3";
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_FUNC),
+		newTestResult().addResult(DMLCheckWhereExistFunc),
 	)
 
 	runSingleRuleInspectCase(rule, t, "select: passing the check where exist func", DefaultMysqlInspect(),
@@ -1972,12 +1972,12 @@ select v1 from exist_db.exist_tb_1 where v2 = "3"
 }
 
 func TestCheckWhereExistFunc_FP(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_WHERE_EXIST_FUNC].Rule
+	rule := RuleHandlerMap[DMLCheckWhereExistFunc].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist func", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where nvl(v2,?) = ?;
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_FUNC),
+		newTestResult().addResult(DMLCheckWhereExistFunc),
 	)
 
 	runSingleRuleInspectCase(rule, t, "[fp]select: passing the check where exist func", DefaultMysqlInspect(),
@@ -1989,40 +1989,40 @@ select v1 from exist_db.exist_tb_1 where v2 = ?
 }
 
 func TestCheckWhereExistNot(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_WHERE_EXIST_NOT].Rule
+	rule := RuleHandlerMap[DMLCheckWhereExistNot].Rule
 	runSingleRuleInspectCase(rule, t, "select: check where exist <> ", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v2 <> "3";
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_NOT),
+		newTestResult().addResult(DMLCheckWhereExistNot),
 	)
 	runSingleRuleInspectCase(rule, t, "select: check where exist not like ", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v2 not like "%3%";
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_NOT),
+		newTestResult().addResult(DMLCheckWhereExistNot),
 	)
 	runSingleRuleInspectCase(rule, t, "select: check where exist != ", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v2 != "3";
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_NOT),
+		newTestResult().addResult(DMLCheckWhereExistNot),
 	)
 	runSingleRuleInspectCase(rule, t, "select: check where exist not null ", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v2 is not null;
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_NOT),
+		newTestResult().addResult(DMLCheckWhereExistNot),
 	)
 }
 
 func TestCheckWhereExistImplicitConversion(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION].Rule
+	rule := RuleHandlerMap[DMLCheckWhereExistImplicitConversion].Rule
 	runSingleRuleInspectCase(rule, t, "select: check where exist implicit conversion", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v1 = 3;
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION),
+		newTestResult().addResult(DMLCheckWhereExistImplicitConversion),
 	)
 	runSingleRuleInspectCase(rule, t, "select: passing the check where exist implicit conversion", DefaultMysqlInspect(),
 		`
@@ -2035,7 +2035,7 @@ select v1 from exist_db.exist_tb_1 where v1 = "3";
 		`
 select v1 from exist_db.exist_tb_1 where id = "3";
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION),
+		newTestResult().addResult(DMLCheckWhereExistImplicitConversion),
 	)
 	runSingleRuleInspectCase(rule, t, "select: passing the check where exist implicit conversion", DefaultMysqlInspect(),
 		`
@@ -2046,7 +2046,7 @@ select v1 from exist_db.exist_tb_1 where id = 3;
 }
 
 func TestCheckWhereExistImplicitConversion_FP(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_WHERE_EXIST_IMPLICIT_CONVERSION].Rule
+	rule := RuleHandlerMap[DMLCheckWhereExistImplicitConversion].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]select: unable to check implicit conversion", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v1 = ?;
@@ -2062,12 +2062,12 @@ select v1 from exist_db.exist_tb_1 where id = ?;
 }
 
 func TestCheckLimitMustExist(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_LIMIT_MUST_EXIST].Rule
+	rule := RuleHandlerMap[DMLCheckLimitMustExist].Rule
 	runSingleRuleInspectCase(rule, t, "delete: check limit must exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1;
 `,
-		newTestResult().addResult(DML_CHECK_LIMIT_MUST_EXIST),
+		newTestResult().addResult(DMLCheckLimitMustExist),
 	)
 	runSingleRuleInspectCase(rule, t, "delete: passing the check limit must exist", DefaultMysqlInspect(),
 		`
@@ -2079,7 +2079,7 @@ delete from exist_db.exist_tb_1 limit 10 ;
 		`
 update exist_db.exist_tb_1 set v1 ="1";
 `,
-		newTestResult().addResult(DML_CHECK_LIMIT_MUST_EXIST),
+		newTestResult().addResult(DMLCheckLimitMustExist),
 	)
 	runSingleRuleInspectCase(rule, t, "update: passing the check limit must exist", DefaultMysqlInspect(),
 		`
@@ -2090,12 +2090,12 @@ update exist_db.exist_tb_1 set v1 ="1" limit 10 ;
 }
 
 func TestCheckLimitMustExist_FP(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_LIMIT_MUST_EXIST].Rule
+	rule := RuleHandlerMap[DMLCheckLimitMustExist].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]delete: check limit must exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1;
 `,
-		newTestResult().addResult(DML_CHECK_LIMIT_MUST_EXIST),
+		newTestResult().addResult(DMLCheckLimitMustExist),
 	)
 	runSingleRuleInspectCase(rule, t, "[fp]delete: passing the check limit must exist", DefaultMysqlInspect(),
 		`
@@ -2107,7 +2107,7 @@ delete from exist_db.exist_tb_1 limit ? ;
 		`
 update exist_db.exist_tb_1 set v1 =?;
 `,
-		newTestResult().addResult(DML_CHECK_LIMIT_MUST_EXIST),
+		newTestResult().addResult(DMLCheckLimitMustExist),
 	)
 	runSingleRuleInspectCase(rule, t, "[fp]update: passing the check limit must exist", DefaultMysqlInspect(),
 		`
@@ -2118,12 +2118,12 @@ update exist_db.exist_tb_1 set v1 =? limit ? ;
 }
 
 func TestCheckWhereExistScalarSubQueries(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES].Rule
+	rule := RuleHandlerMap[DMLCheckWhereExistScalarSubquery].Rule
 	runSingleRuleInspectCase(rule, t, "select: check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v1 in (select v1 from  exist_db.exist_tb_2);
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES),
+		newTestResult().addResult(DMLCheckWhereExistScalarSubquery),
 	)
 	runSingleRuleInspectCase(rule, t, "select: passing the check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
@@ -2134,12 +2134,12 @@ select a.v1 from exist_db.exist_tb_1 a, exist_db.exist_tb_2 b  where a.v1 = b.v1
 }
 
 func TestCheckWhereExistScalarSubQueries_FP(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES].Rule
+	rule := RuleHandlerMap[DMLCheckWhereExistScalarSubquery].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v1 in (select v1 from exist_db.exist_tb_2 where v1 = ?);
 `,
-		newTestResult().addResult(DML_CHECK_WHERE_EXIST_SCALAR_SUB_QUERIES),
+		newTestResult().addResult(DMLCheckWhereExistScalarSubquery),
 	)
 	runSingleRuleInspectCase(rule, t, "[fp]select: passing the check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
@@ -2150,12 +2150,12 @@ select v1 from exist_db.exist_tb_1 where v1 in (?);
 }
 
 func TestCheckIndexesExistBeforeCreatConstraints(t *testing.T) {
-	rule := RuleHandlerMap[DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS].Rule
+	rule := RuleHandlerMap[DDLCheckIndexesExistBeforeCreateConstraints].Rule
 	runSingleRuleInspectCase(rule, t, "Add unique: check indexes exist before creat constraints", DefaultMysqlInspect(),
 		`
 alter table exist_db.exist_tb_3 Add unique uniq_test(v2);
 `, /*not exist index*/
-		newTestResult().addResult(DDL_CHECK_INDEXES_EXIST_BEFORE_CREAT_CONSTRAINTS),
+		newTestResult().addResult(DDLCheckIndexesExistBeforeCreateConstraints),
 	)
 	runSingleRuleInspectCase(rule, t, "Add unique: passing the check indexes exist before creat constraints", DefaultMysqlInspect(),
 		`
@@ -2166,12 +2166,12 @@ alter table exist_db.exist_tb_1 Add unique uniq_test(v1);
 }
 
 func TestCheckSelectForUpdate(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_SELECT_FOR_UPDATE].Rule
+	rule := RuleHandlerMap[DMLCheckSelectForUpdate].Rule
 	runSingleRuleInspectCase(rule, t, "select : check exist select_for_update", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 for update;
 `,
-		newTestResult().addResult(DML_CHECK_SELECT_FOR_UPDATE),
+		newTestResult().addResult(DMLCheckSelectForUpdate),
 	)
 	runSingleRuleInspectCase(rule, t, "select: passing the check exist select_for_update", DefaultMysqlInspect(),
 		`
@@ -2182,12 +2182,12 @@ select v1 from exist_db.exist_tb_1;
 }
 
 func TestCheckSelectForUpdate_FP(t *testing.T) {
-	rule := RuleHandlerMap[DML_CHECK_SELECT_FOR_UPDATE].Rule
+	rule := RuleHandlerMap[DMLCheckSelectForUpdate].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]select : check exist select_for_update", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v1 = ? for update;
 `,
-		newTestResult().addResult(DML_CHECK_SELECT_FOR_UPDATE),
+		newTestResult().addResult(DMLCheckSelectForUpdate),
 	)
 	runSingleRuleInspectCase(rule, t, "[fp]select: passing the check exist select_for_update", DefaultMysqlInspect(),
 		`
@@ -2204,12 +2204,12 @@ func TestCheckCollationDatabase(t *testing.T) {
 		`create database`: `CREATE DATABASE db COLLATE utf8_general_ci;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLLATION_DATABASE].Rule,
+			RuleHandlerMap[DDLCheckDatabaseCollation].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_COLLATION_DATABASE))
+			newTestResult().addResult(DDLCheckDatabaseCollation))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2218,7 +2218,7 @@ func TestCheckCollationDatabase(t *testing.T) {
 		`create database`: `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLLATION_DATABASE].Rule,
+			RuleHandlerMap[DDLCheckDatabaseCollation].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2228,18 +2228,18 @@ func TestCheckCollationDatabase(t *testing.T) {
 }
 
 func TestCheckDecimalTypeColumn(t *testing.T) {
-	rule := RuleHandlerMap[DDL_CHECK_DECIMAL_TYPE_COLUMN].Rule
+	rule := RuleHandlerMap[DDLCheckDecimalTypeColumn].Rule
 	runSingleRuleInspectCase(rule, t, "create table: check decimal type column", DefaultMysqlInspect(),
 		`
 CREATE TABLE exist_db.not_exist_tb_4 (v1 float(10));
 `,
-		newTestResult().addResult(DDL_CHECK_DECIMAL_TYPE_COLUMN),
+		newTestResult().addResult(DDLCheckDecimalTypeColumn),
 	)
 	runSingleRuleInspectCase(rule, t, "alter table: check decimal type column", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 FLOAT ( 10, 0 );
 `,
-		newTestResult().addResult(DDL_CHECK_DECIMAL_TYPE_COLUMN),
+		newTestResult().addResult(DDLCheckDecimalTypeColumn),
 	)
 	runSingleRuleInspectCase(rule, t, "create table: passing the check decimal type column", DefaultMysqlInspect(),
 		`
@@ -2270,12 +2270,12 @@ func TestCheckColumnTypeBlobText(t *testing.T) {
 		`(2)alter table`:  `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 BLOB;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLUMN_BLOB_NOTICE].Rule,
+			RuleHandlerMap[DDLCheckColumnBlobNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_COLUMN_BLOB_NOTICE))
+			newTestResult().addResult(DDLCheckColumnBlobNotice))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2284,7 +2284,7 @@ func TestCheckColumnTypeBlobText(t *testing.T) {
 		`(2)alter table`:  `ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 SET('male', 'female');`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLUMN_BLOB_NOTICE].Rule,
+			RuleHandlerMap[DDLCheckColumnBlobNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2301,12 +2301,12 @@ func TestCheckColumnTypeSet(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 SET("male", "female");`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLUMN_SET_NOTICE].Rule,
+			RuleHandlerMap[DDLCheckColumnSetNitice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_COLUMN_SET_NOTICE))
+			newTestResult().addResult(DDLCheckColumnSetNitice))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2316,7 +2316,7 @@ func TestCheckColumnTypeSet(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 BLOB;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLUMN_SET_NOTICE].Rule,
+			RuleHandlerMap[DDLCheckColumnSetNitice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2333,12 +2333,12 @@ func TestCheckColumnTypeEnum(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 ENUM("male", "female");`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLUMN_ENUM_NOTICE].Rule,
+			RuleHandlerMap[DDLCheckColumnEnumNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_COLUMN_ENUM_NOTICE))
+			newTestResult().addResult(DDLCheckColumnEnumNotice))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2348,7 +2348,7 @@ func TestCheckColumnTypeEnum(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 BLOB;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_COLUMN_ENUM_NOTICE].Rule,
+			RuleHandlerMap[DDLCheckColumnEnumNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2364,12 +2364,12 @@ func TestCheckUniqueIndex(t *testing.T) {
 		`create index`: `CREATE UNIQUE INDEX i_u_id ON exist_db.exist_tb_1(id);`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_UNIQUE_INDEX].Rule,
+			RuleHandlerMap[DDLCheckUniqueIndex].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_UNIQUE_INDEX))
+			newTestResult().addResult(DDLCheckUniqueIndex))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2394,7 +2394,7 @@ ADD INDEX idx_v2(v2);
 		`(3)create index`: `CREATE INDEX idx_id ON exist_db.exist_tb_1(id);`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_UNIQUE_INDEX].Rule,
+			RuleHandlerMap[DDLCheckUniqueIndex].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2413,12 +2413,12 @@ func TestCheckWhereExistNull(t *testing.T) {
 		`(2)delete table`: `DELETE FROM exist_db.exist_tb_1 WHERE id IS NOT NULL;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_WHERE_EXIST_NULL].Rule,
+			RuleHandlerMap[DMLWhereExistNull].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DML_CHECK_WHERE_EXIST_NULL))
+			newTestResult().addResult(DMLWhereExistNull))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2427,7 +2427,7 @@ func TestCheckWhereExistNull(t *testing.T) {
 		`delete table`: `DELETE FROM exist_db.exist_tb_1 WHERE id = 1;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_WHERE_EXIST_NULL].Rule,
+			RuleHandlerMap[DMLWhereExistNull].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2443,7 +2443,7 @@ func TestCheckWhereExistNull_FP(t *testing.T) {
 		`[fp]delete table`: `DELETE FROM exist_db.exist_tb_1 WHERE id = ?;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_WHERE_EXIST_NULL].Rule,
+			RuleHandlerMap[DMLWhereExistNull].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2457,19 +2457,19 @@ func TestCheckNeedlessFunc(t *testing.T) {
 		`(1)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, MD5('aaa'), MD5('bbb'));`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NEEDLESS_FUNC].Rule,
+			RuleHandlerMap[DMLCheckNeedlessFunc].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DML_CHECK_NEEDLESS_FUNC))
+			newTestResult().addResult(DMLCheckNeedlessFunc))
 	}
 
 	for desc, sql := range map[string]string{
 		`(1)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, sha1('aaa'), sha1('bbb'));`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NEEDLESS_FUNC].Rule,
+			RuleHandlerMap[DMLCheckNeedlessFunc].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2483,19 +2483,19 @@ func TestCheckNeedlessFunc_FP(t *testing.T) {
 		`[fp]INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(?, MD5(?), MD5(?));`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NEEDLESS_FUNC].Rule,
+			RuleHandlerMap[DMLCheckNeedlessFunc].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DML_CHECK_NEEDLESS_FUNC))
+			newTestResult().addResult(DMLCheckNeedlessFunc))
 	}
 
 	for desc, sql := range map[string]string{
 		`[fp]INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(?, sha1(?), sha1(?));`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NEEDLESS_FUNC].Rule,
+			RuleHandlerMap[DMLCheckNeedlessFunc].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2509,12 +2509,12 @@ func TestCheckDatabaseSuffix(t *testing.T) {
 		`create database`: `CREATE DATABASE app_service;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_DATABASE_SUFFIX].Rule,
+			RuleHandlerMap[DDLCheckDatabaseSuffix].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_DATABASE_SUFFIX))
+			newTestResult().addResult(DDLCheckDatabaseSuffix))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2522,7 +2522,7 @@ func TestCheckDatabaseSuffix(t *testing.T) {
 		`(1)create database`: `CREATE DATABASE APP_SERVICE_DB;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_DATABASE_SUFFIX].Rule,
+			RuleHandlerMap[DDLCheckDatabaseSuffix].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2539,12 +2539,12 @@ func TestCheckTransactionIsolationLevel(t *testing.T) {
 		`(4)transaction isolation should notice`: `SET GLOBAL TRANSACTION READ ONLY, ISOLATION LEVEL SERIALIZABLE;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_TRANSACTION_ISOLATION_LEVEL].Rule,
+			RuleHandlerMap[DDLCheckTransactionIsolationLevel].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_TRANSACTION_ISOLATION_LEVEL))
+			newTestResult().addResult(DDLCheckTransactionIsolationLevel))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2554,7 +2554,7 @@ func TestCheckTransactionIsolationLevel(t *testing.T) {
 		`(4)transaction isolation should not notice`: `SET GLOBAL TRANSACTION READ ONLY;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_TRANSACTION_ISOLATION_LEVEL].Rule,
+			RuleHandlerMap[DDLCheckTransactionIsolationLevel].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2586,7 +2586,7 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a';`,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DML_CHECK_FUZZY_SEARCH))
+		runSingleRuleInspectCase(RuleHandlerMap[DMLCheckFuzzySearch].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DMLCheckFuzzySearch))
 	}
 
 	for _, sql := range []string{
@@ -2599,7 +2599,7 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a____';`,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+		runSingleRuleInspectCase(RuleHandlerMap[DMLCheckFuzzySearch].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
 }
 
@@ -2610,7 +2610,7 @@ func TestCheckFuzzySearch_FP(t *testing.T) {
 		`[fp] "delete" unable to check fuzzy search`: `DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE ?;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_FUZZY_SEARCH].Rule,
+			RuleHandlerMap[DMLCheckFuzzySearch].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2643,12 +2643,12 @@ PARTITION p3 VALUES IN(7, 8, 9)
 `,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_TABLE_PARTITION].Rule,
+			RuleHandlerMap[DDLCheckTablePartition].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_TABLE_PARTITION))
+			newTestResult().addResult(DDLCheckTablePartition))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2662,7 +2662,7 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 INT;
 `,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_TABLE_PARTITION].Rule,
+			RuleHandlerMap[DDLCheckTablePartition].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2698,12 +2698,12 @@ JOIN exist_db.exist_tb_4 ON exist_db.exist_tb_3.id = exist_db.exist_tb_4.id
 `,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NUMBER_OF_JOIN_TABLES].Rule,
+			RuleHandlerMap[DMLCheckNumberOfJoinTables].Rule,
 			t,
 			desc,
 			inspector,
 			sql,
-			newTestResult().addResult(DML_CHECK_NUMBER_OF_JOIN_TABLES))
+			newTestResult().addResult(DMLCheckNumberOfJoinTables))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2716,7 +2716,7 @@ JOIN exist_db.exist_tb_3 ON exist_db.exist_tb_2.id = exist_db.exist_tb_3.id
 		`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NUMBER_OF_JOIN_TABLES].Rule,
+			RuleHandlerMap[DMLCheckNumberOfJoinTables].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2753,12 +2753,12 @@ WHERE exist_db.exist_tb_1.v1 = ? AND exist_db.exist_tb_1.v2 = ?
 `,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NUMBER_OF_JOIN_TABLES].Rule,
+			RuleHandlerMap[DMLCheckNumberOfJoinTables].Rule,
 			t,
 			desc,
 			inspector,
 			sql,
-			newTestResult().addResult(DML_CHECK_NUMBER_OF_JOIN_TABLES))
+			newTestResult().addResult(DMLCheckNumberOfJoinTables))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2772,7 +2772,7 @@ WHERE exist_db.exist_tb_1.v1 = ? AND exist_db.exist_tb_1.v2 = ?
 		`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_NUMBER_OF_JOIN_TABLES].Rule,
+			RuleHandlerMap[DMLCheckNumberOfJoinTables].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2787,12 +2787,12 @@ func TestCheckIsAfterUnionDistinct(t *testing.T) {
 SELECT 1, 2 UNION SELECT 'a', 'b';`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			RuleHandlerMap[DMLCheckIfAfterUnionDistinct].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DML_CHECK_IS_AFTER_UNION_DISTINCT))
+			newTestResult().addResult(DMLCheckIfAfterUnionDistinct))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2800,7 +2800,7 @@ SELECT 1, 2 UNION SELECT 'a', 'b';`,
 SELECT 1, 2 UNION ALL SELECT 'a', 'b';`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			RuleHandlerMap[DMLCheckIfAfterUnionDistinct].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2815,12 +2815,12 @@ func TestCheckIsAfterUnionDistinct_FP(t *testing.T) {
 SELECT ?, ? UNION SELECT ?, ?;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			RuleHandlerMap[DMLCheckIfAfterUnionDistinct].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DML_CHECK_IS_AFTER_UNION_DISTINCT))
+			newTestResult().addResult(DMLCheckIfAfterUnionDistinct))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2828,7 +2828,7 @@ SELECT ?, ? UNION SELECT ?, ?;`,
 SELECT ?, ? UNION ALL SELECT ?, ?;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DML_CHECK_IS_AFTER_UNION_DISTINCT].Rule,
+			RuleHandlerMap[DMLCheckIfAfterUnionDistinct].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2845,12 +2845,12 @@ SELECT * FROM exist_db.exist_tb_1 LIMIT 5,6;`,
 SELECT * FROM exist_db.exist_tb_1 LIMIT 6 OFFSET 5;`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_IS_EXIST_LIMIT_OFFSET].Rule,
+			RuleHandlerMap[DDLCheckIsExistLimitOffset].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_IS_EXIST_LIMIT_OFFSET))
+			newTestResult().addResult(DDLCheckIsExistLimitOffset))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2858,7 +2858,7 @@ SELECT * FROM exist_db.exist_tb_1 LIMIT 6 OFFSET 5;`,
 SELECT * FROM exist_db.exist_tb_1 LIMIT 5`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_IS_EXIST_LIMIT_OFFSET].Rule,
+			RuleHandlerMap[DDLCheckIsExistLimitOffset].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2887,12 +2887,12 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldError(t *testing.T) {
 		`(3)create index`:    `CREATE INDEX ®® ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
+			RuleHandlerMap[DDLCheckOBjectNameUseCN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(DDL_CHECK_OBJECT_NAME_USING_CN))
+			newTestResult().addResult(DDLCheckOBjectNameUseCN))
 	}
 }
 
@@ -2904,7 +2904,7 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldNotError(t *testing.T) {
 		`(0)create index`:    `CREATE INDEX idx_v1 ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			RuleHandlerMap[DDL_CHECK_OBJECT_NAME_USING_CN].Rule,
+			RuleHandlerMap[DDLCheckOBjectNameUseCN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2915,7 +2915,7 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldNotError(t *testing.T) {
 
 func TestCheckIndexOption_ShouldNot_QueryDB(t *testing.T) {
 	runSingleRuleInspectCase(
-		RuleHandlerMap[DDL_CHECK_INDEX_OPTION].Rule,
+		RuleHandlerMap[DDLCheckIndexOption].Rule,
 		t,
 		`(1)index on new db new column`,
 		DefaultMysqlInspect(),
@@ -2923,7 +2923,7 @@ func TestCheckIndexOption_ShouldNot_QueryDB(t *testing.T) {
 		newTestResult())
 
 	runSingleRuleInspectCase(
-		RuleHandlerMap[DDL_CHECK_INDEX_OPTION].Rule,
+		RuleHandlerMap[DDLCheckIndexOption].Rule,
 		t,
 		`(2)index on new db new column`,
 		DefaultMysqlInspect(),
@@ -2933,7 +2933,7 @@ ALTER TABLE t1 ADD INDEX idx_name(name);
 		newTestResult(), newTestResult())
 
 	runSingleRuleInspectCase(
-		RuleHandlerMap[DDL_CHECK_INDEX_OPTION].Rule,
+		RuleHandlerMap[DDLCheckIndexOption].Rule,
 		t,
 		`(3)index on old db new column`,
 		DefaultMysqlInspect(),
@@ -3024,24 +3024,24 @@ func Test_DDL_CHECK_PK_NAME(t *testing.T) {
 		`create table t1(id int, primary key(id))`,
 		`alter table exist_db.exist_tb_2 Add primary key(id)`,
 		`alter table exist_db.exist_tb_2 Add primary key PK_EXIST_TB_2(id)`} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_PK_NAME].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckPKName].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
 
 	for _, sql := range []string{
 		`create table t1(id int, primary key wrongPK(id))`,
 		`alter table exist_db.exist_tb_2 Add primary key wrongPK(id)`} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDL_CHECK_PK_NAME].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDL_CHECK_PK_NAME))
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckPKName].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(DDLCheckPKName))
 	}
 }
 
 func Test_PerfectParse(t *testing.T) {
-	runSingleRuleInspectCase(RuleHandlerMap[DML_CHECK_WHERE_IS_INVALID].Rule, t, "", DefaultMysqlInspect(), `
+	runSingleRuleInspectCase(RuleHandlerMap[DMLCheckWhereIsInvalid].Rule, t, "", DefaultMysqlInspect(), `
 SELECT * FROM exist_db.exist_tb_1;
 OPTIMIZE TABLE exist_db.exist_tb_1;
 SELECT * FROM exist_db.exist_tb_2;
-`, newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID),
+`, newTestResult().addResult(DMLCheckWhereIsInvalid),
 		newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持"),
-		newTestResult().addResult(DML_CHECK_WHERE_IS_INVALID))
+		newTestResult().addResult(DMLCheckWhereIsInvalid))
 }
 
 func Test_DDLCheckCreateView(t *testing.T) {
@@ -3286,7 +3286,7 @@ func runDefaultRulesInspectCaseWithWL(t *testing.T, desc string, i *Inspect,
 	wl []model.SqlWhitelist, sql string, results ...*testResult) {
 	// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
 	for idx, dr := range DefaultTemplateRules {
-		if dr.Name == DDL_CHECK_OBJECT_NAME_USING_CN {
+		if dr.Name == DDLCheckOBjectNameUseCN {
 			DefaultTemplateRules = append(DefaultTemplateRules[:idx], DefaultTemplateRules[idx+1:]...)
 			break
 		}
