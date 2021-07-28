@@ -11,6 +11,8 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
+
+	"github.com/sirupsen/logrus"
 )
 
 var sqled *Sqled
@@ -236,7 +238,11 @@ func (s *Sqled) audit(task *model.Task) error {
 		executeSQL.AuditLevel = result.Level()
 		executeSQL.AuditResult = result.Message()
 		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(sourceFP)...)))
-		entry.Infof("SQL=%s, level=%s, result=%s", executeSQL.Content, executeSQL.AuditLevel, executeSQL.AuditResult)
+
+		entry.WithFields(logrus.Fields{
+			"SQL":    executeSQL.Content,
+			"level":  executeSQL.AuditLevel,
+			"result": executeSQL.AuditResult}).Info("audit finished")
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
