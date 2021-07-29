@@ -625,10 +625,14 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 	} else {
 		stepType = model.WorkflowStepTypeUpdateWorkflow
 	}
+	var createUserName string
+	if workflow.CreateUser != nil {
+		createUserName = workflow.CreateUser.Name
+	}
 	firstVirtualStep := &WorkflowStepResV1{
 		Type:          stepType,
 		OperationTime: &record.CreatedAt,
-		OperationUser: workflow.CreateUser.Name,
+		OperationUser: createUserName,
 	}
 	steps = append(steps, firstVirtualStep)
 
