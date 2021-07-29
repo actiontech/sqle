@@ -44,9 +44,13 @@ type AuditTaskResV1 struct {
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
+	var instanceName string
+	if task.Instance != nil {
+		instanceName = task.Instance.Name
+	}
 	return &AuditTaskResV1{
 		Id:             task.ID,
-		InstanceName:   task.Instance.Name,
+		InstanceName:   instanceName,
 		InstanceSchema: task.Schema,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
