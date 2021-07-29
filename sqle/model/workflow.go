@@ -223,6 +223,13 @@ func (w *Workflow) cloneWorkflowStep() []*WorkflowStep {
 	return steps
 }
 
+func (w *Workflow) CreateUserName() string {
+	if w.CreateUser != nil {
+		return w.CreateUser.Name
+	}
+	return ""
+}
+
 func (w *Workflow) CurrentStep() *WorkflowStep {
 	return w.Record.CurrentStep
 }
