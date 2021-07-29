@@ -18,9 +18,9 @@ GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
 GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names
 FROM roles
 LEFT JOIN user_role ON roles.id = user_role.role_id
-LEFT JOIN users ON user_role.user_id = users.id
+LEFT JOIN users ON user_role.user_id = users.id AND users.deleted_at IS NULL
 LEFT JOIN instance_role ON roles.id = instance_role.role_id
-LEFT JOIN instances ON instance_role.instance_id = instances.id
+LEFT JOIN instances ON instance_role.instance_id = instances.id AND instances.deleted_at IS NULL
 WHERE
 roles.id in (SELECT DISTINCT(roles.id)
 
@@ -41,9 +41,9 @@ var rolesQueryBodyTpl = `
 {{ define "body" }}
 FROM roles 
 LEFT JOIN user_role ON roles.id = user_role.role_id
-LEFT JOIN users ON user_role.user_id = users.id
+LEFT JOIN users ON user_role.user_id = users.id AND users.deleted_at IS NULL
 LEFT JOIN instance_role ON roles.id = instance_role.role_id
-LEFT JOIN instances ON instance_role.instance_id = instances.id
+LEFT JOIN instances ON instance_role.instance_id = instances.id AND instances.deleted_at IS NULL
 WHERE
 roles.deleted_at IS NULL
 
