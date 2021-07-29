@@ -53,7 +53,8 @@ func SendEmailIfConfigureSMTP(workflowId string) error {
 - 工单主题: %v
 - 工单描述: %v
 - 申请人: %v
-`, model.GetWorkflowStepTypeDesc(workflow.CurrentStep().Template.Typ), workflow.Subject, workflow.Desc, workflow.CreateUser.Name)
+`, model.GetWorkflowStepTypeDesc(workflow.CurrentStep().Template.Typ),
+		workflow.Subject, workflow.Desc, workflow.CreateUserName())
 	message.SetBody("text/html",
 		strings.Replace(body, "\n", "<br/>\n", -1))
 
