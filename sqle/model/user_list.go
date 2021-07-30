@@ -10,7 +10,7 @@ type UserDetail struct {
 var usersQueryTpl = `SELECT users.id, users.login_name, users.email, GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
 FROM users 
 LEFT JOIN user_role ON users.id = user_role.user_id
-LEFT JOIN roles ON user_role.role_id = roles.id
+LEFT JOIN roles ON user_role.role_id = roles.id AND roles.deleted_at IS NULL
 WHERE
 users.id in (SELECT DISTINCT(users.id)
 
@@ -31,7 +31,7 @@ var usersQueryBodyTpl = `
 {{ define "body" }}
 FROM users 
 LEFT JOIN user_role ON users.id = user_role.user_id
-LEFT JOIN roles ON user_role.role_id = roles.id
+LEFT JOIN roles ON user_role.role_id = roles.id AND roles.deleted_at IS NULL
 WHERE
 users.deleted_at IS NULL
 
