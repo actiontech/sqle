@@ -1,12 +1,13 @@
 package model
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"bytes"
 	"database/sql"
 	"fmt"
 	"strings"
 	"time"
+
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 
 	"github.com/jinzhu/gorm"
 )

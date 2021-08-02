@@ -329,20 +329,8 @@ func (s *Sqled) audit(task *model.Task) error {
 	return nil
 }
 
-func (s *Sqled) execute(task *model.Task) error {
-	if task.SQLType == model.SQLTypeDML {
-		return s.executeDMLs(task)
-	} else if task.SQLType == model.SQLTypeDDL {
-		return s.executeDDLs(task)
-	} else if task.SQLType == model.SQLTypeMulti {
-		return errors.ErrSQLTypeConflict
-	}
-	return nil
-}
-
-func (s *Sqled) executeDDLs(task *model.Task) error {
-	st := model.GetStorage()
-
+// execute execute task's ExecuteSQLs and update task's exected status to storage.
+func (s *Sqled) execute(task *model.Task) (err error) {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
 	if err != nil {
@@ -350,81 +338,74 @@ func (s *Sqled) executeDDLs(task *model.Task) error {
 	}
 	defer d.Close()
 
-	entry.Info("start execute")
+	entry.Info("start execution...")
 
-	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
-		return err
+	if err = model.GetStorage().UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
+		return
 	}
 
-	for _, executeSQL := range task.ExecuteSQLs {
-		if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
-			return err
-		}
-
-		err := driver.Exec(d, &executeSQL.BaseSQL)
-		err = st.Save(executeSQL)
-		if err != nil {
-			entry.Errorf("save SQL to storage error:%v", err)
-			break
-		}
+	if task.SQLType == model.SQLTypeDML {
+		err = s.executeDMLs(d, task.ExecuteSQLs)
+	} else if task.SQLType == model.SQLTypeDDL {
+		err = s.executeDDLs(d, task.ExecuteSQLs)
+	} else if task.SQLType == model.SQLTypeMulti {
+		return errors.ErrSQLTypeConflict
 	}
 
 	taskStatus := model.TaskStatusExecuteSucceeded
+	if err != nil {
+		taskStatus = model.TaskStatusExecuteFailed
+	}
 	for _, sql := range task.ExecuteSQLs {
 		if sql.ExecStatus == model.SQLExecuteStatusFailed {
 			taskStatus = model.TaskStatusExecuteFailed
 			break
 		}
 	}
-	return st.UpdateTaskStatusById(task.ID, taskStatus)
+
+	entry.WithField("TaskStatus", taskStatus).Info("execution is complated")
+	return model.GetStorage().UpdateTaskStatusById(task.ID, taskStatus)
 }
 
-func (s *Sqled) executeDMLs(task *model.Task) error {
-	entry := log.NewEntry().WithField("task_id", task.ID)
+// executeDMLs execute SQLs and update SQLs' executed status to storage.
+func (s *Sqled) executeDDLs(d driver.Driver, executeSQLs []*model.ExecuteSQL) error {
+	st := model.GetStorage()
+	for _, executeSQL := range executeSQLs {
+		if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
+			return err
+		}
 
+		driver.Exec(d, &executeSQL.BaseSQL)
+		if err := st.Save(executeSQL); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// executeDMLs execute SQLs and update SQLs' executed status to storage.
+func (s *Sqled) executeDMLs(d driver.Driver, executeSQLs []*model.ExecuteSQL) error {
 	st := model.GetStorage()
 
-	entry.Info("start execute")
-
-	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
-	if err != nil {
-		entry.Errorf("update execute SQL status to storage failed, error: %v", err)
+	for _, executeSQL := range executeSQLs {
+		executeSQL.ExecStatus = model.SQLExecuteStatusDoing
+	}
+	if err := st.UpdateExecuteSQLs(executeSQLs); err != nil {
 		return err
 	}
-
-	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
-		return err
-	}
-
-	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
 
 	var baseSQLs []*model.BaseSQL
-	for _, executeSQL := range task.ExecuteSQLs {
+	for _, executeSQL := range executeSQLs {
 		baseSQLs = append(baseSQLs, &executeSQL.BaseSQL)
 	}
 
 	driver.Tx(d, baseSQLs)
 
-	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
-		entry.Errorf("save execute sql to storage failed, error: %v", err)
-		if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuteFailed); nil != err {
-			log.Logger().Errorf("update task exec_status failed: %v", err)
-		}
+	if err := st.UpdateExecuteSQLs(executeSQLs); err != nil {
 		return err
 	}
-
-	taskStatus := model.TaskStatusExecuteSucceeded
-	for _, commitSql := range task.ExecuteSQLs {
-		if commitSql.ExecStatus == model.SQLExecuteStatusFailed {
-			taskStatus = model.TaskStatusExecuteFailed
-			break
-		}
-	}
-	return st.UpdateTaskStatusById(task.ID, taskStatus)
+	return nil
 }
 
 func (s *Sqled) rollback(task *model.Task) error {
