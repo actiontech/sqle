@@ -29,13 +29,12 @@ func init() {
 	}
 }
 
-// Inspect implements Inspector interface for MySQL.
+// Inspect implements driver.Driver interface
 type Inspect struct {
 	// Ctx is SQL context.
 	Ctx *Context
 	// config is task config, config variables record in rules.
-	configInit bool
-	config     *Config
+	config *Config
 	// Results is inspect result for commit sql.
 	Results *driver.AuditResult
 	// HasInvalidSql represent one of the commit sql base-validation failed.
@@ -67,7 +66,6 @@ func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.D
 		Ctx:     ctx,
 		inst:    inst,
 		log:     log,
-		config:  &Config{},
 		Results: driver.NewInspectResults(),
 	}
 }
@@ -115,23 +113,22 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 }
 
 func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
-	if !i.configInit {
+	if i.config == nil {
+		i.config = &Config{
+			DMLRollbackMaxRows: -1,
+			DDLOSCMinSize:      -1,
+		}
+
 		for _, rule := range rules {
 			if rule.Name == ConfigDMLRollbackMaxRows {
 				defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
 				i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
-			} else {
-				i.config.DMLRollbackMaxRows = -1
 			}
-
 			if rule.Name == ConfigDDLOSCMinSize {
 				defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
 				i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
-			} else {
-				i.config.DDLOSCMinSize = -1
 			}
 		}
-		i.configInit = true
 	}
 
 	result := driver.NewInspectResults()
