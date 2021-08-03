@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -344,14 +345,35 @@ func (s *Sqled) execute(task *model.Task) (err error) {
 		return
 	}
 
-	if task.SQLType == model.SQLTypeDML {
-		err = s.executeDMLs(d, task.ExecuteSQLs)
-	} else if task.SQLType == model.SQLTypeDDL {
-		err = s.executeDDLs(d, task.ExecuteSQLs)
-	} else if task.SQLType == model.SQLTypeMulti {
-		return errors.ErrSQLTypeConflict
+	var txSQLs []*model.ExecuteSQL
+	for _, executeSQL := range task.ExecuteSQLs {
+		var nodes []driver.Node
+		if nodes, err = d.Parse(executeSQL.Content); err != nil {
+			goto UpdateTask
+		}
+
+		switch nodes[0].Type() {
+		case model.SQLTypeDML:
+			txSQLs = append(txSQLs, executeSQL)
+
+		case model.SQLTypeDDL:
+			if len(txSQLs) > 0 {
+				if err = s.executeDMLs(d, txSQLs); err != nil {
+					goto UpdateTask
+				}
+				txSQLs = nil
+			}
+			if err = s.executeDDL(d, executeSQL); err != nil {
+				goto UpdateTask
+			}
+
+		default:
+			err = fmt.Errorf("unknown SQL type %v", nodes[0].Type())
+			goto UpdateTask
+		}
 	}
 
+UpdateTask:
 	taskStatus := model.TaskStatusExecuteSucceeded
 	if err != nil {
 		taskStatus = model.TaskStatusExecuteFailed
@@ -363,24 +385,29 @@ func (s *Sqled) execute(task *model.Task) (err error) {
 		}
 	}
 
-	entry.WithField("TaskStatus", taskStatus).Info("execution is complated")
+	entry.WithField("task_status", taskStatus).Infof("execution is complated, err:%v", err)
 	return model.GetStorage().UpdateTaskStatusById(task.ID, taskStatus)
 }
 
-// executeDMLs execute SQLs and update SQLs' executed status to storage.
-func (s *Sqled) executeDDLs(d driver.Driver, executeSQLs []*model.ExecuteSQL) error {
+// executeDDL execute SQLs and update SQLs' executed status to storage.
+func (s *Sqled) executeDDL(d driver.Driver, executeSQL *model.ExecuteSQL) error {
 	st := model.GetStorage()
-	for _, executeSQL := range executeSQLs {
-		if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
-			return err
-		}
 
-		driver.Exec(d, &executeSQL.BaseSQL)
-		if err := st.Save(executeSQL); err != nil {
-			return err
-		}
+	if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
+		return err
 	}
 
+	_, err := d.Exec(context.TODO(), executeSQL.Content)
+	if err != nil {
+		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+		executeSQL.ExecResult = err.Error()
+	} else {
+		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+		executeSQL.ExecResult = "ok"
+	}
+	if err := st.Save(executeSQL); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -164,18 +164,6 @@ func Tx(d Driver, baseSQLs []*model.BaseSQL) error {
 	return retErr
 }
 
-func Exec(d Driver, baseSQL *model.BaseSQL) error {
-	_, err := d.Exec(context.TODO(), baseSQL.Content)
-	if err != nil {
-		baseSQL.ExecStatus = model.SQLExecuteStatusFailed
-		baseSQL.ExecResult = err.Error()
-	} else {
-		baseSQL.ExecStatus = model.SQLExecuteStatusSucceeded
-		baseSQL.ExecResult = "ok"
-	}
-	return err
-}
-
 type AuditResult struct {
 	results []*auditResult
 }
