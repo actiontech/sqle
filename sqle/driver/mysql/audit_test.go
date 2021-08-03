@@ -115,8 +115,7 @@ func (t *testResult) message() string {
 func DefaultMysqlInspect() *Inspect {
 	log.Logger().SetLevel(logrus.ErrorLevel)
 	return &Inspect{
-		log:     log.NewEntry(),
-		Results: driver.NewInspectResults(),
+		log: log.NewEntry(),
 		inst: &model.Instance{
 			Host:     "127.0.0.1",
 			Port:     "3306",

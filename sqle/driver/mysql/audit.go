@@ -3,7 +3,6 @@ package mysql
 import (
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
 
@@ -31,38 +30,37 @@ const (
 	DuplicateIndexedColumnMessage      = "索引 %s 字段 %s重复"
 )
 
-func (i *Inspect) CheckInvalid(node ast.Node) (*driver.AuditResult, error) {
-	results := driver.NewInspectResults()
+func (i *Inspect) CheckInvalid(node ast.Node) error {
 	var err error
 	switch stmt := node.(type) {
 	case *ast.UseStmt:
-		err = i.checkInvalidUse(stmt, results)
+		err = i.checkInvalidUse(stmt)
 	case *ast.CreateTableStmt:
-		err = i.checkInvalidCreateTable(stmt, results)
+		err = i.checkInvalidCreateTable(stmt)
 	case *ast.AlterTableStmt:
-		err = i.checkInvalidAlterTable(stmt, results)
+		err = i.checkInvalidAlterTable(stmt)
 	case *ast.DropTableStmt:
-		err = i.checkInvalidDropTable(stmt, results)
+		err = i.checkInvalidDropTable(stmt)
 	case *ast.CreateDatabaseStmt:
-		err = i.checkInvalidCreateDatabase(stmt, results)
+		err = i.checkInvalidCreateDatabase(stmt)
 	case *ast.DropDatabaseStmt:
-		err = i.checkInvalidDropDatabase(stmt, results)
+		err = i.checkInvalidDropDatabase(stmt)
 	case *ast.CreateIndexStmt:
-		err = i.checkInvalidCreateIndex(stmt, results)
+		err = i.checkInvalidCreateIndex(stmt)
 	case *ast.DropIndexStmt:
-		err = i.checkInvalidDropIndex(stmt, results)
+		err = i.checkInvalidDropIndex(stmt)
 	case *ast.InsertStmt:
-		err = i.checkInvalidInsert(stmt, results)
+		err = i.checkInvalidInsert(stmt)
 	case *ast.UpdateStmt:
-		err = i.checkInvalidUpdate(stmt, results)
+		err = i.checkInvalidUpdate(stmt)
 	case *ast.DeleteStmt:
-		err = i.checkInvalidDelete(stmt, results)
+		err = i.checkInvalidDelete(stmt)
 	case *ast.SelectStmt:
-		err = i.checkInvalidSelect(stmt, results)
+		err = i.checkInvalidSelect(stmt)
 	case *ast.UnparsedStmt:
-		err = i.checkUnparsedStmt(stmt, results)
+		err = i.checkUnparsedStmt(stmt)
 	}
-	return results, err
+	return err
 }
 
 /*
@@ -78,21 +76,21 @@ create table ...
 7. index column can't duplicated, "index idx_1(id,id)" is invalid
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
 	if !schemaExist {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
 	} else {
 		tableExist, err := i.isTableExist(stmt.Table)
 		if err != nil {
 			return err
 		}
 		if tableExist && !stmt.IfNotExists {
-			results.Add(model.RuleLevelError, TableExistMessage,
+			i.result.Add(model.RuleLevelError, TableExistMessage,
 				i.getTableName(stmt.Table))
 		}
 		if stmt.ReferTable != nil {
@@ -101,7 +99,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *dr
 				return err
 			}
 			if !referTableExist {
-				results.Add(model.RuleLevelError, TableNotExistMessage,
+				i.result.Add(model.RuleLevelError, TableNotExistMessage,
 					i.getTableName(stmt.ReferTable))
 			}
 		}
@@ -131,7 +129,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *dr
 			}
 			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
-				results.Add(model.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+				i.result.Add(model.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 					strings.Join(duplicateName, ","))
 			}
 		case ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintFulltext:
@@ -149,23 +147,23 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *dr
 			}
 			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
-				results.Add(model.RuleLevelError, DuplicateIndexedColumnMessage, constraintName,
+				i.result.Add(model.RuleLevelError, DuplicateIndexedColumnMessage, constraintName,
 					strings.Join(duplicateName, ","))
 			}
 		}
 	}
 	if d := utils.GetDuplicate(colsName); len(d) > 0 {
-		results.Add(model.RuleLevelError, DuplicateColumnsMessage,
+		i.result.Add(model.RuleLevelError, DuplicateColumnsMessage,
 			strings.Join(d, ","))
 	}
 
 	if d := utils.GetDuplicate(indexesName); len(d) > 0 {
-		results.Add(model.RuleLevelError, DuplicateIndexesMessage,
+		i.result.Add(model.RuleLevelError, DuplicateIndexesMessage,
 			strings.Join(d, ","))
 	}
 
 	if pkCounter > 1 {
-		results.Add(model.RuleLevelError, MultiPrimaryKeyMessage)
+		i.result.Add(model.RuleLevelError, MultiPrimaryKeyMessage)
 	}
 	notExistKeyColsName := []string{}
 	for _, colName := range keyColsName {
@@ -174,7 +172,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt, results *dr
 		}
 	}
 	if len(notExistKeyColsName) > 0 {
-		results.Add(model.RuleLevelError, KeyedColumnNotExistMessage,
+		i.result.Add(model.RuleLevelError, KeyedColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(notExistKeyColsName), ","))
 	}
 	return nil
@@ -196,14 +194,14 @@ alter table ...
 10. index column can't duplicated.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
 	if !schemaExist {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
@@ -211,7 +209,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 		return err
 	}
 	if !tableExist {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -280,7 +278,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 			} else {
 				colNameMap[colName] = struct{}{}
 				if hasPk && HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-					results.Add(model.RuleLevelError, PrimaryKeyExistMessage)
+					i.result.Add(model.RuleLevelError, PrimaryKeyExistMessage)
 				} else {
 					hasPk = true
 				}
@@ -304,7 +302,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 
 	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
 		// primary key not exist, can not drop primary key
-		results.Add(model.RuleLevelError, PrimaryKeyNotExistMessage)
+		i.result.Add(model.RuleLevelError, PrimaryKeyNotExistMessage)
 	}
 
 	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
@@ -336,7 +334,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
 				// primary key has exist, can not add primary key
-				results.Add(model.RuleLevelError, PrimaryKeyExistMessage)
+				i.result.Add(model.RuleLevelError, PrimaryKeyExistMessage)
 			} else {
 				hasPk = true
 			}
@@ -350,7 +348,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				results.Add(model.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+				i.result.Add(model.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
@@ -374,30 +372,30 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt, results *driv
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				results.Add(model.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
+				i.result.Add(model.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
 					strings.Join(duplicateColumn, ","))
 			}
 		}
 	}
 
 	if len(needExistsColsName) > 0 {
-		results.Add(model.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(model.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsColsName), ","))
 	}
 	if len(needNotExistsColsName) > 0 {
-		results.Add(model.RuleLevelError, ColumnExistMessage,
+		i.result.Add(model.RuleLevelError, ColumnExistMessage,
 			strings.Join(utils.RemoveDuplicate(needNotExistsColsName), ","))
 	}
 	if len(needExistsIndexesName) > 0 {
-		results.Add(model.RuleLevelError, IndexNotExistMessage,
+		i.result.Add(model.RuleLevelError, IndexNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsIndexesName), ","))
 	}
 	if len(needNotExistsIndexesName) > 0 {
-		results.Add(model.RuleLevelError, IndexExistMessage,
+		i.result.Add(model.RuleLevelError, IndexExistMessage,
 			strings.Join(utils.RemoveDuplicate(needNotExistsIndexesName), ","))
 	}
 	if len(needExistsKeyColsName) > 0 {
-		results.Add(model.RuleLevelError, KeyedColumnNotExistMessage,
+		i.result.Add(model.RuleLevelError, KeyedColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsKeyColsName), ","))
 	}
 	return nil
@@ -411,7 +409,7 @@ drop table ...
 2. table must exist if SQL has not "IF EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
 	if stmt.IfExists {
 		return nil
 	}
@@ -436,11 +434,11 @@ func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt, results *driver
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
@@ -453,13 +451,13 @@ use database ...
 1. schema must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt) error {
 	schemaExist, err := i.isSchemaExist(stmt.DBName)
 	if err != nil {
 		return err
 	}
 	if !schemaExist {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage, stmt.DBName)
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage, stmt.DBName)
 	}
 	return nil
 }
@@ -471,8 +469,7 @@ create database ...
 1. schema can't exist if SQL has not "IF NOT EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt,
-	results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt) error {
 	if stmt.IfNotExists {
 		return nil
 	}
@@ -482,7 +479,7 @@ func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt,
 		return err
 	}
 	if schemaExist {
-		results.Add(model.RuleLevelError, SchemaExistMessage, schemaName)
+		i.result.Add(model.RuleLevelError, SchemaExistMessage, schemaName)
 	}
 	return nil
 }
@@ -494,8 +491,7 @@ drop database ...
 1. schema must exist if SQL has not "IF EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt,
-	results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt) error {
 	if stmt.IfExists {
 		return nil
 	}
@@ -505,7 +501,7 @@ func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt,
 		return err
 	}
 	if !schemaExist {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
 	}
 	return nil
 }
@@ -520,15 +516,14 @@ create index ...
 4. index column name can't be duplicated.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
-	results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) error {
 	schemaName := i.getSchemaName(stmt.Table)
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
 	if !schemaExist {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
@@ -536,7 +531,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 		return err
 	}
 	if !tableExist {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -551,7 +546,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; ok {
-		results.Add(model.RuleLevelError, IndexExistMessage, stmt.IndexName)
+		i.result.Add(model.RuleLevelError, IndexExistMessage, stmt.IndexName)
 	}
 	keyColsName := []string{}
 	keyColNeedExist := []string{}
@@ -564,12 +559,12 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt,
 	}
 	duplicateName := utils.GetDuplicate(keyColsName)
 	if len(duplicateName) > 0 {
-		results.Add(model.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
+		i.result.Add(model.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
 			strings.Join(duplicateName, ","))
 	}
 
 	if len(keyColNeedExist) > 0 {
-		results.Add(model.RuleLevelError, KeyedColumnNotExistMessage,
+		i.result.Add(model.RuleLevelError, KeyedColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(keyColNeedExist), ","))
 	}
 	return nil
@@ -584,8 +579,7 @@ drop index ...
 3. index name must exist if SQL has not "IF EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
-	results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 	if stmt.IfExists {
 		return nil
 	}
@@ -595,7 +589,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 		return err
 	}
 	if !schemaExist {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
@@ -603,7 +597,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 		return err
 	}
 	if !tableExist {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -614,7 +608,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt,
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; !ok {
-		results.Add(model.RuleLevelError, IndexNotExistMessage, stmt.IndexName)
+		i.result.Add(model.RuleLevelError, IndexNotExistMessage, stmt.IndexName)
 	}
 	return nil
 }
@@ -629,7 +623,7 @@ insert into ... values ...
 4. value length must match column length.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt) error {
 	tables := getTables(stmt.Table.TableRefs)
 	table := tables[0]
 	schemaName := i.getSchemaName(table)
@@ -638,7 +632,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *driver.Audit
 		return err
 	}
 	if !schemaExist {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.getCreateTableStmt(table)
@@ -646,7 +640,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *driver.Audit
 		return err
 	}
 	if !tableExist {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			i.getTableName(table))
 		return nil
 	}
@@ -672,7 +666,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *driver.Audit
 		}
 	}
 	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
-		results.Add(model.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
+		i.result.Add(model.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
 	}
 
 	needExistColsName := []string{}
@@ -682,14 +676,14 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt, results *driver.Audit
 		}
 	}
 	if len(needExistColsName) > 0 {
-		results.Add(model.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(model.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if stmt.Lists != nil {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
-				results.Add(model.RuleLevelError, ColumnsValuesNotMatchMessage)
+				i.result.Add(model.RuleLevelError, ColumnsValuesNotMatchMessage)
 				break
 			}
 		}
@@ -707,7 +701,7 @@ update ... set  ... where ...
 4. where column ("where column = ...") must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	tables := []*ast.TableName{}
 	tableAlias := map[*ast.TableName]string{}
 	tableSources := getTableSources(stmt.TableRefs.TableRefs)
@@ -745,11 +739,11 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *driver.Audit
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 
@@ -804,12 +798,12 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt, results *driver.Audit
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		results.Add(model.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(model.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		results.Add(model.RuleLevelError, ColumnIsAmbiguousMessage,
+		i.result.Add(model.RuleLevelError, ColumnIsAmbiguousMessage,
 			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -824,7 +818,7 @@ delete from ... where ...
 3. where column ("where column = ...") must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 	tables := getTables(stmt.TableRefs.TableRefs)
 	needExistsSchemasName := []string{}
 	needExistsTablesName := []string{}
@@ -847,11 +841,11 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *driver.Audit
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
@@ -890,12 +884,12 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt, results *driver.Audit
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		results.Add(model.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(model.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		results.Add(model.RuleLevelError, ColumnIsAmbiguousMessage,
+		i.result.Add(model.RuleLevelError, ColumnIsAmbiguousMessage,
 			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -909,7 +903,7 @@ select ... from ...
 2. table must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *driver.AuditResult) error {
+func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 	if stmt.From == nil {
 		return nil
 	}
@@ -949,18 +943,18 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt, results *driver.Audit
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		results.Add(model.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(model.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		results.Add(model.RuleLevelError, TableNotExistMessage,
+		i.result.Add(model.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
 }
 
 // checkUnparsedStmt might add more check in future.
-func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt, results *driver.AuditResult) error {
-	results.Add(model.RuleLevelError, "语法错误或者解析器不支持")
+func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
+	i.result.Add(model.RuleLevelError, "语法错误或者解析器不支持")
 	return nil
 }
