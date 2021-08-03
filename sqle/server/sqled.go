@@ -403,7 +403,7 @@ func (s *Sqled) executeDDL(d driver.Driver, executeSQL *model.ExecuteSQL) error 
 		executeSQL.ExecResult = err.Error()
 	} else {
 		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
-		executeSQL.ExecResult = "ok"
+		executeSQL.ExecResult = model.TaskExecResultOK
 	}
 	if err := st.Save(executeSQL); err != nil {
 		return err

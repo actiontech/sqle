@@ -151,7 +151,7 @@ func Tx(d Driver, baseSQLs []*model.BaseSQL) error {
 			rowAffects, _ := results[idx].RowsAffected()
 			baseSQL.RowAffects = rowAffects
 			baseSQL.ExecStatus = model.SQLExecuteStatusSucceeded
-			baseSQL.ExecResult = "ok"
+			baseSQL.ExecResult = model.TaskExecResultOK
 		}
 	}()
 

@@ -39,6 +39,8 @@ const (
 	TaskSQLSourceFromMyBatisXMLFile = "mybatis_xml_file"
 )
 
+const TaskExecResultOK = "OK"
+
 type Task struct {
 	Model
 	InstanceId   uint    `json:"instance_id"`
