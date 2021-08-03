@@ -159,7 +159,7 @@ func DefaultMysqlInspect() *Inspect {
 				},
 			},
 		},
-		config: &Config{
+		cnf: &Config{
 			DDLOSCMinSize:      16,
 			DMLRollbackMaxRows: 1000,
 		},

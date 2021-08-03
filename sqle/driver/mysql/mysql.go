@@ -33,8 +33,9 @@ func init() {
 type Inspect struct {
 	// Ctx is SQL context.
 	Ctx *Context
-	// config is task config, config variables record in rules.
-	config *Config
+	// cnf is task cnf, cnf variables record in rules.
+	cnf *Config
+
 	// result keep inspect result for single audited SQL.
 	// It refresh on every Audit.
 	result *driver.AuditResult
@@ -114,23 +115,7 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 }
 
 func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
-	if i.config == nil {
-		i.config = &Config{
-			DMLRollbackMaxRows: -1,
-			DDLOSCMinSize:      -1,
-		}
-
-		for _, rule := range rules {
-			if rule.Name == ConfigDMLRollbackMaxRows {
-				defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
-				i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
-			}
-			if rule.Name == ConfigDDLOSCMinSize {
-				defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
-				i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
-			}
-		}
-	}
+	i.initCnf(rules)
 
 	i.result = driver.NewInspectResults()
 
@@ -230,6 +215,27 @@ func (n *node) Fingerprint() (string, error) {
 type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
+}
+
+func (i *Inspect) initCnf(rules []*model.Rule) {
+	if i.cnf != nil {
+		return
+	}
+
+	i.cnf = &Config{
+		DMLRollbackMaxRows: -1,
+		DDLOSCMinSize:      -1,
+	}
+	for _, rule := range rules {
+		if rule.Name == ConfigDMLRollbackMaxRows {
+			defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
+			i.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+		}
+		if rule.Name == ConfigDDLOSCMinSize {
+			defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
+			i.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+		}
+	}
 }
 
 func (i *Inspect) Context() *Context {
