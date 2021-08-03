@@ -46,7 +46,7 @@ type AuditTaskResV1 struct {
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 	return &AuditTaskResV1{
 		Id:             task.ID,
-		InstanceName:   task.Instance.Name,
+		InstanceName:   task.InstanceName(),
 		InstanceSchema: task.Schema,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
@@ -402,7 +402,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		})
 	}
 	cw.Flush()
-	fileName := fmt.Sprintf("SQL审核报告_%v_%v.csv", task.Instance.Name, taskId)
+	fileName := fmt.Sprintf("SQL审核报告_%v_%v.csv", task.InstanceName(), taskId)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
 	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
@@ -435,7 +435,7 @@ func DownloadTaskSQLFile(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	fileName := fmt.Sprintf("exec_sql_%s_%s.sql", task.Instance.Name, taskId)
+	fileName := fmt.Sprintf("exec_sql_%s_%s.sql", task.InstanceName(), taskId)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
 

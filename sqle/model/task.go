@@ -55,6 +55,13 @@ type Task struct {
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
 }
 
+func (t *Task) InstanceName() string {
+	if t.Instance != nil {
+		return t.Instance.Name
+	}
+	return ""
+}
+
 const (
 	SQLAuditStatusInitialized = "initialized"
 	SQLAuditStatusDoing       = "doing"

@@ -476,6 +476,10 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	if task.Instance == nil {
+		return controller.JSONBaseErrorReq(c, instanceNotExistError)
+	}
+
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -589,9 +593,8 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV1 {
 		Desc:       workflow.Desc,
 		CreateTime: &workflow.CreatedAt,
 	}
-	if workflow.CreateUser != nil {
-		workflowRes.CreateUser = workflow.CreateUser.Name
-	}
+
+	workflowRes.CreateUser = workflow.CreateUserName()
 
 	// convert workflow record
 	recordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
@@ -625,10 +628,11 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 	} else {
 		stepType = model.WorkflowStepTypeUpdateWorkflow
 	}
+
 	firstVirtualStep := &WorkflowStepResV1{
 		Type:          stepType,
 		OperationTime: &record.CreatedAt,
-		OperationUser: workflow.CreateUser.Name,
+		OperationUser: workflow.CreateUserName(),
 	}
 	steps = append(steps, firstVirtualStep)
 
@@ -807,9 +811,9 @@ func GetWorkflows(c echo.Context) error {
 			Desc:                    workflow.Desc,
 			TaskStatus:              workflow.TaskStatus,
 			TaskPassRate:            workflow.TaskPassRate,
-			TaskInstance:            workflow.TaskInstance,
+			TaskInstance:            workflow.TaskInstance.String,
 			TaskInstanceSchema:      workflow.TaskInstanceSchema,
-			CreateUser:              workflow.CreateUser,
+			CreateUser:              workflow.CreateUser.String,
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
@@ -921,8 +925,7 @@ func ApproveWorkflow(c echo.Context) error {
 				errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
 		}
 		if task.Instance == nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(
-				errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))))
+			return controller.JSONBaseErrorReq(c, instanceNotExistError)
 		}
 
 		// if instance is not connectable, exec sql must be failed;
@@ -1176,6 +1179,10 @@ func UpdateWorkflow(c echo.Context) error {
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if task.Instance == nil {
+		return controller.JSONBaseErrorReq(c, instanceNotExistError)
 	}
 
 	user, err := controller.GetCurrentUser(c)
