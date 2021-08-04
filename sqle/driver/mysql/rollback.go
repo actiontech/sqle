@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/driver"
-
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
@@ -100,7 +99,8 @@ func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql, unable
 }
 
 func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
-	if i.config.DMLRollbackMaxRows < 0 {
+	// Inspect may skip initialized cnf when Audited SQLs in whitelist.
+	if i.cnf == nil || i.cnf.DMLRollbackMaxRows < 0 {
 		return "", "", nil
 	}
 	switch stmt := node.(type) {
@@ -444,7 +444,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 	// match "insert into table_name (column_name,...) value (v1,...)"
 	// match "insert into table_name value (v1,...)"
 	if stmt.Lists != nil {
-		if int64(len(stmt.Lists)) > i.config.DMLRollbackMaxRows {
+		if int64(len(stmt.Lists)) > i.cnf.DMLRollbackMaxRows {
 			return "", NotSupportExceedMaxRowsRollback, nil
 		}
 		columnsName := []string{}
@@ -480,7 +480,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 
 	// match "insert into table_name set col_name = value1, ..."
 	if stmt.Setlist != nil {
-		if 1 > i.config.DMLRollbackMaxRows {
+		if 1 > i.cnf.DMLRollbackMaxRows {
 			return "", NotSupportExceedMaxRowsRollback, nil
 		}
 		where := []string{}
@@ -527,7 +527,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 		return "", NotSupportNoPrimaryKeyTableRollback, nil
 	}
 
-	var max = i.config.DMLRollbackMaxRows
+	var max = i.cnf.DMLRollbackMaxRows
 	limit, err := getLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return "", "", err
@@ -612,7 +612,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 		return "", NotSupportNoPrimaryKeyTableRollback, nil
 	}
 
-	var max = i.config.DMLRollbackMaxRows
+	var max = i.cnf.DMLRollbackMaxRows
 	limit, err := getLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return "", "", err

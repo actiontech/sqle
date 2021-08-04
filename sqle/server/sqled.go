@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	_errors "errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -11,6 +13,8 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
+
+	"github.com/sirupsen/logrus"
 )
 
 var sqled *Sqled
@@ -33,17 +37,6 @@ type Sqled struct {
 	queue chan *Action
 }
 
-// Action is an action for the task;
-// when you want to execute a task, you can define an action whose type is rollback.
-type Action struct {
-	sync.Mutex
-	Task *model.Task
-	// Typ is task type, include inspect, execute, rollback.
-	Typ   int
-	Error error
-	Done  chan struct{}
-}
-
 func InitSqled(exit chan struct{}) {
 	sqled = &Sqled{
 		exit:        exit,
@@ -64,10 +57,14 @@ func (s *Sqled) HasTask(taskId string) bool {
 // action will be validated, and sent to Sqled.queue.
 func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 	var err error
+	var d driver.Driver
+	entry := log.NewEntry().WithField("task_id", taskId)
 	action := &Action{
-		Typ:  typ,
-		Done: make(chan struct{}),
+		typ:   typ,
+		entry: entry,
+		Done:  make(chan struct{}),
 	}
+
 	s.Lock()
 	_, taskRunning := s.currentTask[taskId]
 	if !taskRunning {
@@ -87,12 +84,17 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 		goto Error
 	}
 
-	err = task.ValidAction(typ)
-	if err != nil {
+	if err = action.validation(task); err != nil {
 		goto Error
 	}
+	action.task = task
 
-	action.Task = task
+	// d will be closed in Sqled.do().
+	if d, err = driver.NewDriver(entry, task.Instance, task.Schema); err != nil {
+		goto Error
+	}
+	action.driver = d
+
 	s.queue <- action
 	return action, nil
 
@@ -114,7 +116,7 @@ func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
 		return nil, err
 	}
 	<-action.Done
-	return action.Task, action.Error
+	return action.task, action.Error
 }
 
 func (s *Sqled) Start() {
@@ -136,19 +138,22 @@ func (s *Sqled) taskLoop() {
 
 func (s *Sqled) do(action *Action) error {
 	var err error
-	switch action.Typ {
-	case model.TaskActionAudit:
-		err = s.audit(action.Task)
-	case model.TaskActionExecute:
-		err = s.execute(action.Task)
-	case model.TaskActionRollback:
-		err = s.rollback(action.Task)
+	switch action.typ {
+	case ActionTypeAudit:
+		err = action.audit()
+	case ActionTypeExecute:
+		err = action.execute()
+	case ActionTypeRollback:
+		err = action.rollback()
 	}
 	if err != nil {
 		action.Error = err
 	}
+
+	action.driver.Close()
+
 	s.Lock()
-	taskId := fmt.Sprintf("%d", action.Task.ID)
+	taskId := fmt.Sprintf("%d", action.task.ID)
 	delete(s.currentTask, taskId)
 	s.Unlock()
 
@@ -159,8 +164,68 @@ func (s *Sqled) do(action *Action) error {
 	return err
 }
 
-func (s *Sqled) audit(task *model.Task) error {
+const (
+	ActionTypeAudit = iota + 1
+	ActionTypeExecute
+	ActionTypeRollback
+)
+
+// Action is an action for the task;
+// when you want to execute a task, you can define an action whose type is rollback.
+type Action struct {
+	sync.Mutex
+
+	// driver is interface which communicate with specify instance.
+	driver driver.Driver
+
+	task  *model.Task
+	entry *logrus.Entry
+
+	// typ is action type.
+	typ   int
+	Error error
+	Done  chan struct{}
+}
+
+var (
+	ErrActionExecuteOnExecutedTask       = _errors.New("task has been executed, can not do execute on it")
+	ErrActionExecuteOnNonAuditedTask     = _errors.New("task has not been audited, can not do execute on it")
+	ErrActionRollbackOnRollbackedTask    = _errors.New("task has been rollbacked, can not do rollback on it")
+	ErrActionRollbackOnExecuteFailedTask = _errors.New("task has been executed failed, can not do rollback on it")
+	ErrActionRollbackOnNonExecutedTask   = _errors.New("task has not been executed, can not do rollback on it")
+)
+
+// validation validate whether task can do action type(a.typ) or not.
+func (a *Action) validation(task *model.Task) error {
+	switch a.typ {
+	case ActionTypeAudit:
+		// audit sql allowed at all times
+		return nil
+	case ActionTypeExecute:
+		if task.HasDoingExecute() {
+			return errors.New(errors.TaskActionDone, ErrActionExecuteOnExecutedTask)
+		}
+		if !task.HasDoingAudit() {
+			return errors.New(errors.TaskActionInvalid, ErrActionExecuteOnNonAuditedTask)
+		}
+	case ActionTypeRollback:
+		if task.HasDoingRollback() {
+			return errors.New(errors.TaskActionDone, ErrActionRollbackOnRollbackedTask)
+		}
+		if task.IsExecuteFailed() {
+			return errors.New(errors.TaskActionInvalid, ErrActionRollbackOnExecuteFailedTask)
+		}
+		if !task.HasDoingExecute() {
+			return errors.New(errors.TaskActionInvalid, ErrActionRollbackOnNonExecutedTask)
+		}
+	}
+	return nil
+}
+
+func (a *Action) audit() error {
 	st := model.GetStorage()
+
+	task := a.task
 
 	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
 	if err != nil {
@@ -170,19 +235,13 @@ func (s *Sqled) audit(task *model.Task) error {
 	for i := range rules {
 		ptrRules = append(ptrRules, &rules[i])
 	}
-	entry := log.NewEntry().WithField("task_id", task.ID)
-	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
 
 	whitelist, _, err := st.GetSqlWhitelist(0, 0)
 	if err != nil {
 		return err
 	}
 	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := d.Parse(executeSQL.Content)
+		nodes, err := a.driver.Parse(executeSQL.Content)
 		if err != nil {
 			return err
 		}
@@ -199,7 +258,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		var whitelistMatch bool
 		for _, wl := range whitelist {
 			if wl.MatchType == model.SQLWhitelistFPMatch {
-				wlNodes, err := d.Parse(wl.Value)
+				wlNodes, err := a.driver.Parse(wl.Value)
 				if err != nil {
 					return err
 				}
@@ -216,7 +275,8 @@ func (s *Sqled) audit(task *model.Task) error {
 					whitelistMatch = true
 				}
 			} else {
-				if wl.CapitalizedValue == strings.ToUpper(nodes[0].Text()) {
+				rawSQL := nodes[0].Text()
+				if wl.CapitalizedValue == strings.ToUpper(rawSQL) {
 					whitelistMatch = true
 				}
 			}
@@ -226,7 +286,7 @@ func (s *Sqled) audit(task *model.Task) error {
 		if whitelistMatch {
 			result.Add(model.RuleLevelNormal, "白名单")
 		} else {
-			result, err = d.Audit(ptrRules, executeSQL.Content)
+			result, err = a.driver.Audit(ptrRules, executeSQL.Content)
 			if err != nil {
 				return err
 			}
@@ -236,15 +296,19 @@ func (s *Sqled) audit(task *model.Task) error {
 		executeSQL.AuditLevel = result.Level()
 		executeSQL.AuditResult = result.Message()
 		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(sourceFP)...)))
-		entry.Infof("SQL=%s, level=%s, result=%s", executeSQL.Content, executeSQL.AuditLevel, executeSQL.AuditResult)
+
+		a.entry.WithFields(logrus.Fields{
+			"SQL":    executeSQL.Content,
+			"level":  executeSQL.AuditLevel,
+			"result": executeSQL.AuditResult}).Info("audit finished")
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		entry.Warn("skip generate rollback SQLs")
+		a.entry.Warn("skip generate rollback SQLs")
 	} else {
 		var rollbackSQLs []*model.RollbackSQL
 		for _, executeSQL := range task.ExecuteSQLs {
-			rollbackSQL, reason, err := d.GenRollbackSQL(executeSQL.Content)
+			rollbackSQL, reason, err := a.driver.GenRollbackSQL(executeSQL.Content)
 			if err != nil {
 				return err
 			}
@@ -264,13 +328,13 @@ func (s *Sqled) audit(task *model.Task) error {
 		}
 
 		if err = st.UpdateRollbackSQLs(rollbackSQLs); err != nil {
-			entry.Errorf("save rollback SQLs error:%v", err)
+			a.entry.Errorf("save rollback SQLs error:%v", err)
 			return err
 		}
 	}
 
 	if err = st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
-		entry.Errorf("save SQLs error:%v", err)
+		a.entry.Errorf("save SQLs error:%v", err)
 		return err
 	}
 
@@ -284,13 +348,13 @@ func (s *Sqled) audit(task *model.Task) error {
 	var hasDDL bool
 	var hasDML bool
 	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := d.Parse(executeSQL.Content)
+		nodes, err := a.driver.Parse(executeSQL.Content)
 		if err != nil {
-			entry.Error(err.Error())
+			a.entry.Error(err.Error())
 			continue
 		}
 		if len(nodes) != 1 {
-			entry.Errorf(driver.ErrNodesCountExceedOne.Error())
+			a.entry.Errorf(driver.ErrNodesCountExceedOne.Error())
 			continue
 		}
 
@@ -317,119 +381,124 @@ func (s *Sqled) audit(task *model.Task) error {
 		"pass_rate": utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4),
 		"status":    model.TaskStatusAudited,
 	}); err != nil {
-		entry.Errorf("update task error:%v", err)
+		a.entry.Errorf("update task error:%v", err)
 		return err
 	}
 	return nil
 }
 
-func (s *Sqled) execute(task *model.Task) error {
-	if task.SQLType == model.SQLTypeDML {
-		return s.executeDMLs(task)
-	} else if task.SQLType == model.SQLTypeDDL {
-		return s.executeDDLs(task)
-	} else if task.SQLType == model.SQLTypeMulti {
-		return errors.ErrSQLTypeConflict
-	}
-	return nil
-}
+func (a *Action) execute() (err error) {
+	task := a.task
 
-func (s *Sqled) executeDDLs(task *model.Task) error {
-	st := model.GetStorage()
+	a.entry.Info("start execution...")
 
-	entry := log.NewEntry().WithField("task_id", task.ID)
-	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-
-	entry.Info("start execute")
-
-	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
-		return err
+	if err = model.GetStorage().UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
+		return
 	}
 
-	for _, executeSQL := range task.ExecuteSQLs {
-		if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
-			return err
+	var txSQLs []*model.ExecuteSQL
+	for i, executeSQL := range task.ExecuteSQLs {
+		var nodes []driver.Node
+		if nodes, err = a.driver.Parse(executeSQL.Content); err != nil {
+			goto UpdateTask
 		}
 
-		err := driver.Exec(d, &executeSQL.BaseSQL)
-		err = st.Save(executeSQL)
-		if err != nil {
-			entry.Errorf("save SQL to storage error:%v", err)
-			break
+		switch nodes[0].Type() {
+		case model.SQLTypeDML:
+			txSQLs = append(txSQLs, executeSQL)
+
+			if i == len(task.ExecuteSQLs)-1 {
+				if err = a.execSQLs(txSQLs); err != nil {
+					goto UpdateTask
+				}
+			}
+		case model.SQLTypeDDL:
+			if len(txSQLs) > 0 {
+				if err = a.execSQLs(txSQLs); err != nil {
+					goto UpdateTask
+				}
+				txSQLs = nil
+			}
+			if err = a.execSQL(executeSQL); err != nil {
+				goto UpdateTask
+			}
+
+		default:
+			err = fmt.Errorf("unknown SQL type %v", nodes[0].Type())
+			goto UpdateTask
 		}
 	}
 
+UpdateTask:
 	taskStatus := model.TaskStatusExecuteSucceeded
+	if err != nil {
+		taskStatus = model.TaskStatusExecuteFailed
+	}
 	for _, sql := range task.ExecuteSQLs {
 		if sql.ExecStatus == model.SQLExecuteStatusFailed {
 			taskStatus = model.TaskStatusExecuteFailed
 			break
 		}
 	}
-	return st.UpdateTaskStatusById(task.ID, taskStatus)
+
+	a.entry.WithField("task_status", taskStatus).Infof("execution is complated, err:%v", err)
+	return model.GetStorage().UpdateTaskStatusById(task.ID, taskStatus)
 }
 
-func (s *Sqled) executeDMLs(task *model.Task) error {
-	entry := log.NewEntry().WithField("task_id", task.ID)
-
+// execSQL execute SQL and update SQL's executed status to storage.
+func (a *Action) execSQL(executeSQL *model.ExecuteSQL) error {
 	st := model.GetStorage()
 
-	entry.Info("start execute")
+	if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
+		return err
+	}
 
-	err := st.UpdateExecuteSQLStatusByTaskId(task, model.SQLExecuteStatusDoing)
+	_, err := a.driver.Exec(context.TODO(), executeSQL.Content)
 	if err != nil {
-		entry.Errorf("update execute SQL status to storage failed, error: %v", err)
+		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+		executeSQL.ExecResult = err.Error()
+	} else {
+		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+		executeSQL.ExecResult = model.TaskExecResultOK
+	}
+	if err := st.Save(executeSQL); err != nil {
 		return err
 	}
-
-	if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
-		return err
-	}
-
-	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-
-	var baseSQLs []*model.BaseSQL
-	for _, executeSQL := range task.ExecuteSQLs {
-		baseSQLs = append(baseSQLs, &executeSQL.BaseSQL)
-	}
-
-	driver.Tx(d, baseSQLs)
-
-	if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
-		entry.Errorf("save execute sql to storage failed, error: %v", err)
-		if err := st.UpdateTaskStatusById(task.ID, model.TaskStatusExecuteFailed); nil != err {
-			log.Logger().Errorf("update task exec_status failed: %v", err)
-		}
-		return err
-	}
-
-	taskStatus := model.TaskStatusExecuteSucceeded
-	for _, commitSql := range task.ExecuteSQLs {
-		if commitSql.ExecStatus == model.SQLExecuteStatusFailed {
-			taskStatus = model.TaskStatusExecuteFailed
-			break
-		}
-	}
-	return st.UpdateTaskStatusById(task.ID, taskStatus)
+	return nil
 }
 
-func (s *Sqled) rollback(task *model.Task) error {
-	entry := log.NewEntry().WithField("task_id", task.ID)
-	entry.Info("start rollback SQL")
+// execSQLs execute SQLs and update SQLs' executed status to storage.
+func (a *Action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
+	st := model.GetStorage()
 
-	d, err := driver.NewDriver(entry, task.Instance, task.Schema)
-	if err != nil {
+	if err := st.UpdateExecuteSQLStatusByTaskId(a.task, model.SQLExecuteStatusDoing); err != nil {
 		return err
 	}
-	defer d.Close()
+
+	qs := make([]string, 0, len(executeSQLs))
+	for _, executeSQL := range executeSQLs {
+		qs = append(qs, executeSQL.Content)
+	}
+
+	results, txErr := a.driver.Tx(context.TODO(), qs...)
+	for idx, executeSQL := range executeSQLs {
+		if txErr != nil {
+			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+			executeSQL.ExecResult = txErr.Error()
+			continue
+		}
+		rowAffects, _ := results[idx].RowsAffected()
+		executeSQL.RowAffects = rowAffects
+		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+		executeSQL.ExecResult = model.TaskExecResultOK
+	}
+
+	return st.UpdateExecuteSQLs(executeSQLs)
+}
+
+func (a *Action) rollback() (err error) {
+	task := a.task
+	a.entry.Info("start rollback SQL")
 
 	var execErr error
 	st := model.GetStorage()
@@ -442,7 +511,7 @@ ExecSQLs:
 			return err
 		}
 
-		nodes, err := d.Parse(rollbackSQL.Content)
+		nodes, err := a.driver.Parse(rollbackSQL.Content)
 		if err != nil {
 			return err
 		}
@@ -452,19 +521,24 @@ ExecSQLs:
 				TaskId:  rollbackSQL.TaskId,
 				Content: node.Text(),
 			}, ExecuteSQLId: rollbackSQL.ExecuteSQLId}
-
-			execErr = driver.Exec(d, &currentSQL.BaseSQL)
-			execErr = st.Save(currentSQL)
+			_, execErr := a.driver.Exec(context.TODO(), node.Text())
 			if execErr != nil {
+				currentSQL.ExecStatus = model.SQLExecuteStatusFailed
+				currentSQL.ExecResult = execErr.Error()
+			} else {
+				currentSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+				currentSQL.ExecResult = model.TaskExecResultOK
+			}
+			if execErr := st.Save(currentSQL); execErr != nil {
 				break ExecSQLs
 			}
 		}
 	}
 
 	if execErr != nil {
-		entry.Errorf("rollback SQL error:%v", execErr)
+		a.entry.Errorf("rollback SQL error:%v", execErr)
 	} else {
-		entry.Error("rollback SQL finished")
+		a.entry.Error("rollback SQL finished")
 	}
 	return execErr
 }

@@ -1,21 +1,15 @@
 package model
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"bytes"
 	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
-)
+	"actiontech.cloud/sqle/sqle/sqle/errors"
 
-// task action
-const (
-	TaskActionAudit = iota + 1
-	TaskActionExecute
-	TaskActionRollback
+	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -37,6 +31,8 @@ const (
 	TaskSQLSourceFromSQLFile        = "sql_file"
 	TaskSQLSourceFromMyBatisXMLFile = "mybatis_xml_file"
 )
+
+const TaskExecResultOK = "OK"
 
 type Task struct {
 	Model
@@ -194,32 +190,6 @@ func (t *Task) HasDoingRollback() bool {
 		}
 	}
 	return false
-}
-
-func (t *Task) ValidAction(typ int) error {
-	switch typ {
-	case TaskActionAudit:
-		// audit sql allowed at all times
-		return nil
-	case TaskActionExecute:
-		if t.HasDoingExecute() {
-			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been executed"))
-		}
-		if !t.HasDoingAudit() {
-			return errors.New(errors.TaskActionInvalid, fmt.Errorf("task has not been audit, not allow execute"))
-		}
-	case TaskActionRollback:
-		if t.HasDoingRollback() {
-			return errors.New(errors.TaskActionDone, fmt.Errorf("task has been rolled back"))
-		}
-		if t.IsExecuteFailed() {
-			return errors.New(errors.TaskActionInvalid, fmt.Errorf("task is commit failed, not allow rollback"))
-		}
-		if !t.HasDoingExecute() {
-			return errors.New(errors.TaskActionInvalid, fmt.Errorf("task need commit first"))
-		}
-	}
-	return nil
 }
 
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {

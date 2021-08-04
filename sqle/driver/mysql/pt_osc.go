@@ -39,7 +39,7 @@ const (
 // generateOSCCommandLine generate pt-online-schema-change command-line statement;
 // see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
 func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
-	if i.config.DDLOSCMinSize < 0 {
+	if i.cnf.DDLOSCMinSize < 0 {
 		return "", nil
 	}
 
@@ -52,7 +52,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		return "", err
 	}
 
-	if int64(tableSize) < i.config.DDLOSCMinSize {
+	if int64(tableSize) < i.cnf.DDLOSCMinSize {
 		return "", err
 	}
 

@@ -144,13 +144,14 @@ func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
 	}
 
 	for dbType, rs := range defaultTemplates {
-		_, exist, err := s.GetRuleTemplateByName(dbType)
+		templateName := fmt.Sprintf("default_%v", dbType)
+		_, exist, err := s.GetRuleTemplateByName(templateName)
 		if err != nil {
 			return err
 		}
 		if !exist {
 			t := &RuleTemplate{
-				Name:   fmt.Sprintf("default_%v", dbType),
+				Name:   templateName,
 				Desc:   "默认规则模板",
 				DBType: dbType,
 			}

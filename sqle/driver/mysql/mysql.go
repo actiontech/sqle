@@ -29,15 +29,16 @@ func init() {
 	}
 }
 
-// Inspect implements Inspector interface for MySQL.
+// Inspect implements driver.Driver interface
 type Inspect struct {
 	// Ctx is SQL context.
 	Ctx *Context
-	// config is task config, config variables record in rules.
-	configInit bool
-	config     *Config
-	// Results is inspect result for commit sql.
-	Results *driver.AuditResult
+	// cnf is task cnf, cnf variables record in rules.
+	cnf *Config
+
+	// result keep inspect result for single audited SQL.
+	// It refresh on every Audit.
+	result *driver.AuditResult
 	// HasInvalidSql represent one of the commit sql base-validation failed.
 	HasInvalidSql bool
 	// currentRule is instance's rules.
@@ -64,11 +65,10 @@ func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.D
 	ctx := NewContext(nil)
 	ctx.UseSchema(schema)
 	return &Inspect{
-		Ctx:     ctx,
-		inst:    inst,
-		log:     log,
-		config:  &Config{},
-		Results: driver.NewInspectResults(),
+		Ctx:    ctx,
+		inst:   inst,
+		log:    log,
+		result: driver.NewInspectResults(),
 	}
 }
 
@@ -115,40 +115,23 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 }
 
 func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
-	if !i.configInit {
-		for _, rule := range rules {
-			if rule.Name == ConfigDMLRollbackMaxRows {
-				defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
-				i.config.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
-			} else {
-				i.config.DMLRollbackMaxRows = -1
-			}
+	i.initCnf(rules)
 
-			if rule.Name == ConfigDDLOSCMinSize {
-				defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
-				i.config.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
-			} else {
-				i.config.DDLOSCMinSize = -1
-			}
-		}
-		i.configInit = true
-	}
+	i.result = driver.NewInspectResults()
 
-	result := driver.NewInspectResults()
 	nodes, err := i.ParseSql(sql)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
-	result, err = i.CheckInvalid(nodes[0])
-	if err != nil {
-		return result, err
-	}
-	if result.Level() == model.RuleLevelError {
-		i.HasInvalidSql = true
-		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), result.Message())
+	if err = i.CheckInvalid(nodes[0]); err != nil {
+		return nil, err
 	}
 
-	i.Results = result
+	if i.result.Level() == model.RuleLevelError {
+		i.HasInvalidSql = true
+		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), i.result.Message())
+	}
+
 	for _, rule := range rules {
 		i.currentRule = *rule
 		handler, ok := RuleHandlerMap[rule.Name]
@@ -156,20 +139,20 @@ func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, e
 			continue
 		}
 		if err := handler.Func(*rule, i, nodes[0]); err != nil {
-			return result, err
+			return nil, err
 		}
 	}
 
 	// print osc
 	oscCommandLine, err := i.generateOSCCommandLine(nodes[0])
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	if oscCommandLine != "" {
-		result.Add(model.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
+		i.result.Add(model.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
 	i.updateContext(nodes[0])
-	return result, nil
+	return i.result, nil
 }
 
 func (i *Inspect) GenRollbackSQL(sql string) (string, string, error) {
@@ -232,6 +215,27 @@ func (n *node) Fingerprint() (string, error) {
 type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
+}
+
+func (i *Inspect) initCnf(rules []*model.Rule) {
+	if i.cnf != nil {
+		return
+	}
+
+	i.cnf = &Config{
+		DMLRollbackMaxRows: -1,
+		DDLOSCMinSize:      -1,
+	}
+	for _, rule := range rules {
+		if rule.Name == ConfigDMLRollbackMaxRows {
+			defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
+			i.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+		}
+		if rule.Name == ConfigDDLOSCMinSize {
+			defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
+			i.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+		}
+	}
 }
 
 func (i *Inspect) Context() *Context {
@@ -320,7 +324,7 @@ func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 	}
 	level := i.currentRule.Level
 	message := RuleHandlerMap[ruleName].Message
-	i.Results.Add(level, message, args...)
+	i.result.Add(level, message, args...)
 }
 
 // getDbConn get db conn and just connect once.
