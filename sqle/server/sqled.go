@@ -397,7 +397,7 @@ func (a *Action) execute() (err error) {
 	}
 
 	var txSQLs []*model.ExecuteSQL
-	for _, executeSQL := range task.ExecuteSQLs {
+	for i, executeSQL := range task.ExecuteSQLs {
 		var nodes []driver.Node
 		if nodes, err = a.driver.Parse(executeSQL.Content); err != nil {
 			goto UpdateTask
@@ -407,6 +407,11 @@ func (a *Action) execute() (err error) {
 		case model.SQLTypeDML:
 			txSQLs = append(txSQLs, executeSQL)
 
+			if i == len(task.ExecuteSQLs)-1 {
+				if err = a.execSQLs(txSQLs); err != nil {
+					goto UpdateTask
+				}
+			}
 		case model.SQLTypeDDL:
 			if len(txSQLs) > 0 {
 				if err = a.execSQLs(txSQLs); err != nil {
