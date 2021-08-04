@@ -99,7 +99,8 @@ func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql, unable
 }
 
 func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
-	if i.cnf.DMLRollbackMaxRows < 0 {
+	// Inspect may skip initialized cnf when Audited SQLs in whitelist.
+	if i.cnf == nil || i.cnf.DMLRollbackMaxRows < 0 {
 		return "", "", nil
 	}
 	switch stmt := node.(type) {

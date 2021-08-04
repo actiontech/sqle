@@ -176,7 +176,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	task.Instance = instance
-	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), model.TaskActionAudit)
+	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
