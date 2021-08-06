@@ -36,7 +36,6 @@ const (
 	DDLCheckPKWithoutBigintUnsigned             = "ddl_check_pk_without_bigint_unsigned"
 	DDLCheckPKWithoutAutoIncrement              = "ddl_check_pk_without_auto_increment"
 	DDLCheckPKProhibitAutoIncrement             = "ddl_check_pk_prohibit_auto_increment"
-	DDLCheckColumnVarcharMax                    = "ddl_check_column_varchar_max"
 	DDLCheckColumnCharLength                    = "ddl_check_column_char_length"
 	DDLDisableFK                                = "ddl_disable_fk"
 	DDLCheckIndexCount                          = "ddl_check_index_count"
@@ -198,17 +197,6 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "主键建议使用 bigint 无符号类型，即 bigint unsigned",
 		Func:    checkPrimaryKey,
-	},
-	{
-		Rule: model.Rule{
-			Name:      DDLCheckColumnVarcharMax,
-			Desc:      "禁止使用 varchar(max)",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
-		},
-		Message: "禁止使用 varchar(max)",
-		Func:    nil,
 	},
 	{
 		Rule: model.Rule{
