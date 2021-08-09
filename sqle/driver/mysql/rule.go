@@ -247,12 +247,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: model.Rule{
 			Name:      DDLCheckObjectNameUsingKeyword,
-			Desc:      "数据库对象命名禁止使用关键字",
+			Desc:      "数据库对象命名禁止使用保留字",
 			Level:     model.RuleLevelError,
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
 		},
-		Message: "数据库对象命名禁止使用关键字 %s",
+		Message: "数据库对象命名禁止使用保留字 %s",
 		Func:    checkNewObjectName,
 	},
 	{
