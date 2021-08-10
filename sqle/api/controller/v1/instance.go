@@ -233,6 +233,20 @@ func DeleteInstance(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, instanceNotExistError)
 	}
+
+	tasks, err := s.GetTaskByInstanceId(instance.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	createUserIds := make([]uint, 0, len(tasks))
+	for _, task := range tasks {
+		createUserIds = append(createUserIds, task.CreateUserId)
+	}
+	err = s.CheckWorkflowStateByUserIds(createUserIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	err = s.Delete(instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
