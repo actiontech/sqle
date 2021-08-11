@@ -429,7 +429,8 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Preload("CreateUser").Preload("Record").
+	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
+		Preload("Record").
 		Where("id = ?", id).First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil

@@ -14,6 +14,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/misc"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/server"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -594,7 +595,7 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV1 {
 		CreateTime: &workflow.CreatedAt,
 	}
 
-	workflowRes.CreateUser = workflow.CreateUserName()
+	workflowRes.CreateUser = utils.AddDelTag(workflow.CreateUser.DeletedAt, workflow.CreateUserName())
 
 	// convert workflow record
 	recordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
@@ -805,21 +806,15 @@ func GetWorkflows(c echo.Context) error {
 
 	workflowsReq := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
-		addDelTag := func(delTime *time.Time, target string) string {
-			if delTime != nil {
-				return target + "[x]"
-			}
-			return target
-		}
 		workflowReq := &WorkflowDetailResV1{
 			Id:                      workflow.Id,
 			Subject:                 workflow.Subject,
 			Desc:                    workflow.Desc,
 			TaskStatus:              workflow.TaskStatus,
 			TaskPassRate:            workflow.TaskPassRate,
-			TaskInstance:            addDelTag(workflow.TaskInstanceDeletedAt, workflow.TaskInstance.String),
+			TaskInstance:            utils.AddDelTag(workflow.TaskInstanceDeletedAt, workflow.TaskInstance.String),
 			TaskInstanceSchema:      workflow.TaskInstanceSchema,
-			CreateUser:              addDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
+			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
