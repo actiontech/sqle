@@ -805,15 +805,21 @@ func GetWorkflows(c echo.Context) error {
 
 	workflowsReq := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
+		addDelTag := func(delTime *time.Time, target string) string {
+			if delTime != nil {
+				return target + "[x]"
+			}
+			return target
+		}
 		workflowReq := &WorkflowDetailResV1{
 			Id:                      workflow.Id,
 			Subject:                 workflow.Subject,
 			Desc:                    workflow.Desc,
 			TaskStatus:              workflow.TaskStatus,
 			TaskPassRate:            workflow.TaskPassRate,
-			TaskInstance:            workflow.TaskInstance.String,
+			TaskInstance:            addDelTag(workflow.TaskInstanceDeletedAt, workflow.TaskInstance.String),
 			TaskInstanceSchema:      workflow.TaskInstanceSchema,
-			CreateUser:              workflow.CreateUser.String,
+			CreateUser:              addDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
