@@ -241,7 +241,7 @@ func (a *Action) audit() error {
 		return err
 	}
 	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := a.driver.Parse(executeSQL.Content)
+		nodes, err := a.driver.Parse(context.TODO(), executeSQL.Content)
 		if err != nil {
 			return err
 		}
@@ -275,7 +275,7 @@ func (a *Action) audit() error {
 		if whitelistMatch {
 			result.Add(model.RuleLevelNormal, "白名单")
 		} else {
-			result, err = a.driver.Audit(ptrRules, executeSQL.Content)
+			result, err = a.driver.Audit(context.TODO(), ptrRules, executeSQL.Content)
 			if err != nil {
 				return err
 			}
@@ -297,7 +297,7 @@ func (a *Action) audit() error {
 	} else {
 		var rollbackSQLs []*model.RollbackSQL
 		for _, executeSQL := range task.ExecuteSQLs {
-			rollbackSQL, reason, err := a.driver.GenRollbackSQL(executeSQL.Content)
+			rollbackSQL, reason, err := a.driver.GenRollbackSQL(context.TODO(), executeSQL.Content)
 			if err != nil {
 				return err
 			}
@@ -337,7 +337,7 @@ func (a *Action) audit() error {
 	var hasDDL bool
 	var hasDML bool
 	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := a.driver.Parse(executeSQL.Content)
+		nodes, err := a.driver.Parse(context.TODO(), executeSQL.Content)
 		if err != nil {
 			a.entry.Error(err.Error())
 			continue
@@ -388,7 +388,7 @@ func (a *Action) execute() (err error) {
 	var txSQLs []*model.ExecuteSQL
 	for i, executeSQL := range task.ExecuteSQLs {
 		var nodes []driver.Node
-		if nodes, err = a.driver.Parse(executeSQL.Content); err != nil {
+		if nodes, err = a.driver.Parse(context.TODO(), executeSQL.Content); err != nil {
 			goto UpdateTask
 		}
 
@@ -500,7 +500,7 @@ ExecSQLs:
 			return err
 		}
 
-		nodes, err := a.driver.Parse(rollbackSQL.Content)
+		nodes, err := a.driver.Parse(context.TODO(), rollbackSQL.Content)
 		if err != nil {
 			return err
 		}

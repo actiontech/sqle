@@ -97,7 +97,7 @@ type Driver interface {
 	// Parse parse sqlText to Node array.
 	//
 	// sqlText may be single SQL or batch SQLs.
-	Parse(sqlText string) ([]Node, error)
+	Parse(ctx context.Context, sqlText string) ([]Node, error)
 
 	// Audit sql with rules. sql is single SQL text.
 	//
@@ -108,10 +108,10 @@ type Driver interface {
 	// 		driver.Audit(..., "SELECT * FROM t1 WHERE id = 1")
 	//      ...
 	// driver should keep SQL context during it's lifecycle.
-	Audit(rules []*model.Rule, sql string) (*AuditResult, error)
+	Audit(ctx context.Context, rules []*model.Rule, sql string) (*AuditResult, error)
 
 	// GenRollbackSQL generate sql's rollback SQL.
-	GenRollbackSQL(sql string) (string, string, error)
+	GenRollbackSQL(ctx context.Context, sql string) (string, string, error)
 }
 
 // Node is a interface which unify SQL ast tree. It produce by Driver.Parse.

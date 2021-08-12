@@ -96,7 +96,7 @@ func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) 
 	return conn.Db.Query(query, args...)
 }
 
-func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
+func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, error) {
 	nodes, err := i.ParseSql(sqlText)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 	return ns, nil
 }
 
-func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
+func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*driver.AuditResult, error) {
 	i.initCnf(rules)
 
 	i.result = driver.NewInspectResults()
@@ -169,7 +169,7 @@ func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, e
 	return i.result, nil
 }
 
-func (i *Inspect) GenRollbackSQL(sql string) (string, string, error) {
+func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
 	if i.HasInvalidSql {
 		return "", "", nil
 	}

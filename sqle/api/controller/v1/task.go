@@ -157,7 +157,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	nodes, err := d.Parse(sql)
+	nodes, err := d.Parse(context.TODO(), sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
