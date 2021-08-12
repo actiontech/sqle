@@ -165,7 +165,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(n + 1),
-				Content: node.Text(),
+				Content: node.Text,
 			},
 		})
 	}

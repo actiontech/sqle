@@ -115,20 +115,15 @@ type Driver interface {
 }
 
 // Node is a interface which unify SQL ast tree. It produce by Driver.Parse.
-type Node interface {
-	// Text get the raw SQL text of Node.
-	Text() string
+type Node struct {
+	// Text is the raw SQL text of Node.
+	Text string
 
-	// Type return type of SQL, such as DML/DDL/DCL.
-	Type() string
+	// Type is type of SQL, such as DML/DDL/DCL.
+	Type string
 
-	// Fingerprint generate fingerprint of Node's raw SQL.
-	//
-	// For example:
-	// 		driver, _ := NewDriver(..., ..., ...)
-	// 		nodes, _ := driver.Parse("select * from t1 where id = 1")
-	//		f, _ := nodes[0].Fingerprint() // f == SELECT * FROM `t1` WHERE id = ?
-	Fingerprint() (string, error)
+	// Fingerprint is fingerprint of Node's raw SQL.
+	Fingerprint string
 }
 
 type AuditResult struct {

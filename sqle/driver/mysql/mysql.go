@@ -109,7 +109,21 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 
 	var ns []driver.Node
 	for i := range nodes {
-		ns = append(ns, &node{innerNode: nodes[i], isCaseSensitive: lowerCaseTableNames == "0"})
+		n := driver.Node{}
+		fingerprint, err := Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
+		if err != nil {
+			return nil, err
+		}
+		n.Fingerprint = fingerprint
+		n.Text = nodes[i].Text()
+		switch nodes[i].(type) {
+		case ast.DDLNode:
+			n.Type = model.SQLTypeDDL
+		case ast.DMLNode:
+			n.Type = model.SQLTypeDML
+		}
+
+		ns = append(ns, n)
 	}
 	return ns, nil
 }
@@ -186,30 +200,6 @@ func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	return conn.ShowDatabases(true)
-}
-
-type node struct {
-	innerNode       ast.Node
-	isCaseSensitive bool
-}
-
-func (n *node) Text() string {
-	return n.innerNode.Text()
-}
-
-func (n *node) Type() string {
-	switch n.innerNode.(type) {
-	case ast.DDLNode:
-		return model.SQLTypeDDL
-	case ast.DMLNode:
-		return model.SQLTypeDML
-	}
-
-	return ""
-}
-
-func (n *node) Fingerprint() (string, error) {
-	return Fingerprint(n.innerNode.Text(), n.isCaseSensitive)
 }
 
 type Config struct {

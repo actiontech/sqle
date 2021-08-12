@@ -250,15 +250,10 @@ func (a *Action) audit() error {
 			return driver.ErrNodesCountExceedOne
 		}
 
-		sourceFP, err := nodes[0].Fingerprint()
-		if err != nil {
-			return err
-		}
-
 		var whitelistMatch bool
 		for _, wl := range whitelist {
 			if wl.MatchType == model.SQLWhitelistFPMatch {
-				wlNodes, err := a.driver.Parse(wl.Value)
+				wlNodes, err := a.driver.Parse(context.TODO(), wl.Value)
 				if err != nil {
 					return err
 				}
@@ -266,17 +261,11 @@ func (a *Action) audit() error {
 					return driver.ErrNodesCountExceedOne
 				}
 
-				wlFP, err := wlNodes[0].Fingerprint()
-				if err != nil {
-					return err
-				}
-
-				if sourceFP == wlFP {
+				if nodes[0].Fingerprint == wlNodes[0].Fingerprint {
 					whitelistMatch = true
 				}
 			} else {
-				rawSQL := nodes[0].Text()
-				if wl.CapitalizedValue == strings.ToUpper(rawSQL) {
+				if wl.CapitalizedValue == strings.ToUpper(nodes[0].Text) {
 					whitelistMatch = true
 				}
 			}
@@ -295,7 +284,7 @@ func (a *Action) audit() error {
 		executeSQL.AuditStatus = model.SQLAuditStatusFinished
 		executeSQL.AuditLevel = result.Level()
 		executeSQL.AuditResult = result.Message()
-		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(sourceFP)...)))
+		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(nodes[0].Fingerprint)...)))
 
 		a.entry.WithFields(logrus.Fields{
 			"SQL":    executeSQL.Content,
@@ -358,7 +347,7 @@ func (a *Action) audit() error {
 			continue
 		}
 
-		switch nodes[0].Type() {
+		switch nodes[0].Type {
 		case model.SQLTypeDDL:
 			hasDDL = true
 		case model.SQLTypeDML:
@@ -403,7 +392,7 @@ func (a *Action) execute() (err error) {
 			goto UpdateTask
 		}
 
-		switch nodes[0].Type() {
+		switch nodes[0].Type {
 		case model.SQLTypeDML:
 			txSQLs = append(txSQLs, executeSQL)
 
@@ -424,7 +413,7 @@ func (a *Action) execute() (err error) {
 			}
 
 		default:
-			err = fmt.Errorf("unknown SQL type %v", nodes[0].Type())
+			err = fmt.Errorf("unknown SQL type %v", nodes[0].Type)
 			goto UpdateTask
 		}
 	}
@@ -519,9 +508,9 @@ ExecSQLs:
 		for _, node := range nodes {
 			currentSQL := model.RollbackSQL{BaseSQL: model.BaseSQL{
 				TaskId:  rollbackSQL.TaskId,
-				Content: node.Text(),
+				Content: node.Text,
 			}, ExecuteSQLId: rollbackSQL.ExecuteSQLId}
-			_, execErr := a.driver.Exec(context.TODO(), node.Text())
+			_, execErr := a.driver.Exec(context.TODO(), node.Text)
 			if execErr != nil {
 				currentSQL.ExecStatus = model.SQLExecuteStatusFailed
 				currentSQL.ExecResult = execErr.Error()
