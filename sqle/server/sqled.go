@@ -150,7 +150,7 @@ func (s *Sqled) do(action *Action) error {
 		action.Error = err
 	}
 
-	action.driver.Close()
+	action.driver.Close(context.TODO())
 
 	s.Lock()
 	taskId := fmt.Sprintf("%d", action.task.ID)

@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 )
 
 var (
+	// drivers store instantiate handlers for MySQL or gRPC plugin.
 	drivers   = make(map[string]handler)
 	driversMu sync.RWMutex
 
@@ -24,7 +24,7 @@ var (
 )
 
 // handler is a template which Driver plugin should provide such function signature.
-type handler func(log *logrus.Entry, inst *model.Instance, schema string) Driver
+type handler func(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error)
 
 // Register like sql.Register.
 //
@@ -45,6 +45,14 @@ func Register(name string, h handler, rs []*model.Rule) {
 	rulesMu.Unlock()
 }
 
+type ErrDriverNotSupported struct {
+	driverTyp string
+}
+
+func (e *ErrDriverNotSupported) Error() string {
+	return fmt.Sprintf("driver type %v is not supported", e.driverTyp)
+}
+
 // NewDriver return a new instantiated Driver.
 func NewDriver(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error) {
 	driversMu.RLock()
@@ -55,7 +63,7 @@ func NewDriver(log *logrus.Entry, inst *model.Instance, schema string) (Driver, 
 		return nil, fmt.Errorf("driver type %v is not supported", inst.DbType)
 	}
 
-	return d(log, inst, schema), nil
+	return d(log, inst, schema)
 }
 
 func AllRules() []*model.Rule {
@@ -79,15 +87,16 @@ var ErrNodesCountExceedOne = errors.New("after parse, nodes count exceed one")
 
 // Driver is a interface that must be implemented by a database.
 //
+// It's implementation maybe on the same process or over gRPC(by go-plugin).
+//
 // Driver is responsible for two primary things:
 // 1. privode handle to communicate with database
 // 2. audit SQL with rules
 type Driver interface {
-	Close()
+	Close(ctx context.Context)
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, query string) (driver.Result, error)
 	Tx(ctx context.Context, queries ...string) ([]driver.Result, error)
-	Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error)
 
 	// Schemas export all supported schemas.
 	//
@@ -114,6 +123,15 @@ type Driver interface {
 	GenRollbackSQL(ctx context.Context, sql string) (string, string, error)
 }
 
+// BaseDriver is the interface that all SQLe plugins must support.
+type BaseDriver interface {
+	// Name returns plugin name.
+	Name() string
+
+	// Rules returns all rules that plugin supported.
+	Rules() []*model.Rule
+}
+
 // Node is a interface which unify SQL ast tree. It produce by Driver.Parse.
 type Node struct {
 	// Text is the raw SQL text of Node.
@@ -125,6 +143,17 @@ type Node struct {
 	// Fingerprint is fingerprint of Node's raw SQL.
 	Fingerprint string
 }
+
+// // DSN like https://github.com/go-sql-driver/mysql/blob/master/dsn.go. type Config struct
+// type DSN struct {
+// 	Type string
+
+// 	Host   string
+// 	Port   string
+// 	User   string
+// 	Pass   string
+// 	DBName string
+// }
 
 type AuditResult struct {
 	results []*auditResult
