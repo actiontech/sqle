@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"testing"
 
 	"actiontech.cloud/sqle/sqle/sqle/model"
@@ -16,7 +17,7 @@ func runRollbackCase(t *testing.T, desc string, i *Inspect, sql string, results 
 	}
 
 	for _, stmt := range stmts {
-		sql, _, err := i.GenRollbackSQL(stmt.Text())
+		sql, _, err := i.GenRollbackSQL(context.TODO(), stmt.Text())
 		_, err = parseSql(model.DBTypeMySQL, sql)
 		assert.NoError(t, err)
 		assert.Equal(t, results, sql, desc)

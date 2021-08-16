@@ -20,6 +20,8 @@ require (
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/golang/protobuf v1.5.0
+	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jinzhu/gorm v1.9.15
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.1 // indirect
@@ -37,6 +39,9 @@ require (
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7
 	github.com/urfave/cli/v2 v2.1.1
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	google.golang.org/grpc v1.28.0
+	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0

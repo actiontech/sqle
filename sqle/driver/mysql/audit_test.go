@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -200,7 +201,7 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect,
 	}
 
 	for idx, stmt := range stmts {
-		result, err := i.Audit(ptrRules, stmt.Text())
+		result, err := i.Audit(context.TODO(), ptrRules, stmt.Text())
 		if err != nil {
 			t.Error(err)
 			return

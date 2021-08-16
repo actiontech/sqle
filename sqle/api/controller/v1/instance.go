@@ -462,7 +462,7 @@ func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error 
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer d.Close(context.TODO())
 	if err := d.Ping(context.TODO()); err != nil {
 		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -580,7 +580,7 @@ func GetInstanceSchemas(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer d.Close()
+	defer d.Close(context.TODO())
 	schemas, err := d.Schemas(context.TODO())
 	if err != nil {
 		return err

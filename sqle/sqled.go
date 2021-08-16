@@ -22,6 +22,10 @@ func Run(config *config.Config) error {
 
 	log.Logger().Infoln("starting sqled server")
 
+	if err := driver.InitPlugins(config.Server.SqleCnf.PluginPath); err != nil {
+		return fmt.Errorf("init plugins error: %v", err)
+	}
+
 	dbConfig := config.Server.DBCnf.MysqlCnf
 	s, err := model.NewStorage(dbConfig.User, dbConfig.Password,
 		dbConfig.Host, dbConfig.Port, dbConfig.Schema, config.Server.SqleCnf.DebugLog)

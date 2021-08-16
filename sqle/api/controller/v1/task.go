@@ -136,7 +136,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer d.Close(context.TODO())
 	if err := d.Ping(context.TODO()); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -157,7 +157,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	nodes, err := d.Parse(sql)
+	nodes, err := d.Parse(context.TODO(), sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -165,7 +165,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(n + 1),
-				Content: node.Text(),
+				Content: node.Text,
 			},
 		})
 	}

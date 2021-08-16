@@ -934,7 +934,7 @@ func ApproveWorkflow(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-		defer d.Close()
+		defer d.Close(context.TODO())
 		if err := d.Ping(context.TODO()); err != nil {
 			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 		}

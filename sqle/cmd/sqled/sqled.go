@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"actiontech.cloud/sqle/sqle/sqle"
+	sqled "actiontech.cloud/sqle/sqle/sqle"
 	"actiontech.cloud/sqle/sqle/sqle/config"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"actiontech.cloud/universe/ucommon/v4/util"
@@ -30,6 +30,7 @@ var logPath = "./logs"
 var httpsEnable bool
 var certFilePath string
 var keyFilePath string
+var pluginPath string
 
 func main() {
 	var rootCmd = &cobra.Command{
@@ -56,6 +57,7 @@ func main() {
 	rootCmd.Flags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
 	rootCmd.Flags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
 	rootCmd.Flags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
+	rootCmd.Flags().StringVarP(&pluginPath, "plugin-path", "", "./plugins", "plugin path")
 
 	rootCmd.AddCommand(genSecretPasswordCmd())
 	rootCmd.Execute()
@@ -101,6 +103,7 @@ func run(cmd *cobra.Command, _ []string) error {
 					EnableHttps:      httpsEnable,
 					CertFilePath:     certFilePath,
 					KeyFilePath:      keyFilePath,
+					PluginPath:       pluginPath,
 				},
 				DBCnf: config.DatabaseConfig{
 					MysqlCnf: config.MysqlConfig{

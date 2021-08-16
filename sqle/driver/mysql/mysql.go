@@ -61,7 +61,7 @@ type Inspect struct {
 	SqlAction []func(node ast.Node) error
 }
 
-func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.Driver {
+func newInspect(log *logrus.Entry, inst *model.Instance, schema string) (driver.Driver, error) {
 	ctx := NewContext(nil)
 	ctx.UseSchema(schema)
 	return &Inspect{
@@ -69,7 +69,7 @@ func newInspect(log *logrus.Entry, inst *model.Instance, schema string) driver.D
 		inst:   inst,
 		log:    log,
 		result: driver.NewInspectResults(),
-	}
+	}, nil
 }
 
 func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
@@ -96,7 +96,7 @@ func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) 
 	return conn.Db.Query(query, args...)
 }
 
-func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
+func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, error) {
 	nodes, err := i.ParseSql(sqlText)
 	if err != nil {
 		return nil, err
@@ -109,12 +109,26 @@ func (i *Inspect) Parse(sqlText string) ([]driver.Node, error) {
 
 	var ns []driver.Node
 	for i := range nodes {
-		ns = append(ns, &node{innerNode: nodes[i], isCaseSensitive: lowerCaseTableNames == "0"})
+		n := driver.Node{}
+		fingerprint, err := Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
+		if err != nil {
+			return nil, err
+		}
+		n.Fingerprint = fingerprint
+		n.Text = nodes[i].Text()
+		switch nodes[i].(type) {
+		case ast.DDLNode:
+			n.Type = model.SQLTypeDDL
+		case ast.DMLNode:
+			n.Type = model.SQLTypeDML
+		}
+
+		ns = append(ns, n)
 	}
 	return ns, nil
 }
 
-func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, error) {
+func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*driver.AuditResult, error) {
 	i.initCnf(rules)
 
 	i.result = driver.NewInspectResults()
@@ -155,7 +169,7 @@ func (i *Inspect) Audit(rules []*model.Rule, sql string) (*driver.AuditResult, e
 	return i.result, nil
 }
 
-func (i *Inspect) GenRollbackSQL(sql string) (string, string, error) {
+func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
 	if i.HasInvalidSql {
 		return "", "", nil
 	}
@@ -168,7 +182,7 @@ func (i *Inspect) GenRollbackSQL(sql string) (string, string, error) {
 	return i.GenerateRollbackSql(nodes[0])
 }
 
-func (i *Inspect) Close() {
+func (i *Inspect) Close(ctx context.Context) {
 	i.closeDbConn()
 }
 
@@ -186,30 +200,6 @@ func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	return conn.ShowDatabases(true)
-}
-
-type node struct {
-	innerNode       ast.Node
-	isCaseSensitive bool
-}
-
-func (n *node) Text() string {
-	return n.innerNode.Text()
-}
-
-func (n *node) Type() string {
-	switch n.innerNode.(type) {
-	case ast.DDLNode:
-		return model.SQLTypeDDL
-	case ast.DMLNode:
-		return model.SQLTypeDML
-	}
-
-	return ""
-}
-
-func (n *node) Fingerprint() (string, error) {
-	return Fingerprint(n.innerNode.Text(), n.isCaseSensitive)
 }
 
 type Config struct {
