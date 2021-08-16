@@ -17,10 +17,11 @@ type SqleConfig struct {
 	AutoMigrateTable bool   `yaml:"auto_migrate_table"`
 	DebugLog         bool   `yaml:"debug_log"`
 	LogPath          string `yaml:"log_path"`
+	PluginPath       string `yaml:"plugin_path"`
 }
 
 type DatabaseConfig struct {
-	MysqlCnf     MysqlConfig     `yaml:"mysql_cnf"`
+	MysqlCnf MysqlConfig `yaml:"mysql_cnf"`
 }
 
 type MysqlConfig struct {

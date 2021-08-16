@@ -22,7 +22,7 @@ func Run(config *config.Config) error {
 
 	log.Logger().Infoln("starting sqled server")
 
-	if err := driver.InitPlugins(); err != nil {
+	if err := driver.InitPlugins(config.Server.SqleCnf.PluginPath); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
 

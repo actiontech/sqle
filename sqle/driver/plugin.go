@@ -16,15 +16,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-const PluginDir = "./plugins"
-
 // InitPlugins init plugins at plugins directory. It should be called on host process.
-func InitPlugins() error {
+func InitPlugins(pluginDir string) error {
 	getServerHandle := func(path string, closeCh <-chan struct{}) (proto.DriverClient, error) {
 		client := goPlugin.NewClient(&goPlugin.ClientConfig{
 			HandshakeConfig: handshakeConfig,
 			Plugins: goPlugin.PluginSet{
-				filepath.Base(path): driverPlugin{},
+				filepath.Base(path): &driverPlugin{},
 			},
 			Cmd:              exec.Command(path),
 			AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
@@ -49,18 +47,18 @@ func InitPlugins() error {
 	}
 
 	var plugins []fs.FileInfo
-	filepath.Walk(PluginDir, func(path string, info fs.FileInfo, err error) error {
-		if info.IsDir() {
+	filepath.Walk(pluginDir, func(path string, info fs.FileInfo, err error) error {
+		if info.IsDir() || info.Mode()&0111 == 0 {
 			return nil
 		}
 		plugins = append(plugins, info)
 		return nil
 	})
 	for _, p := range plugins {
-		plugin := p
+		binaryPath := filepath.Join(pluginDir, p.Name())
 
 		closeCh := make(chan struct{})
-		srv, err := getServerHandle(filepath.Join(PluginDir, plugin.Name()), closeCh)
+		srv, err := getServerHandle(binaryPath, closeCh)
 		if err != nil {
 			return err
 		}
@@ -79,13 +77,13 @@ func InitPlugins() error {
 				Value: rule.Value,
 				Level: rule.Level,
 
-				DBType: plugin.Name(),
+				DBType: pluginMeta.Name,
 			})
 		}
 
 		Register(pluginMeta.Name, func(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error) {
 			pluginCloseCh := make(chan struct{})
-			srv, err := getServerHandle(filepath.Join(PluginDir, plugin.Name()), pluginCloseCh)
+			srv, err := getServerHandle(binaryPath, pluginCloseCh)
 			if err != nil {
 				return nil, err
 			}
@@ -103,7 +101,7 @@ func InitPlugins() error {
 		}, modelRules)
 
 		log.Logger().WithFields(logrus.Fields{
-			"plugin_name": plugin.Name(),
+			"plugin_name": pluginMeta.Name,
 		}).Infoln("plugin inited")
 	}
 
