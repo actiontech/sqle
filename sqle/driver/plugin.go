@@ -71,11 +71,12 @@ func InitPlugins(pluginDir string) error {
 		var modelRules []*model.Rule
 		for _, rule := range pluginMeta.Rules {
 			modelRules = append(modelRules, &model.Rule{
-				Typ:   rule.Typ,
-				Name:  rule.Name,
-				Desc:  rule.Desc,
-				Value: rule.Value,
-				Level: rule.Level,
+				Typ:       rule.Typ,
+				Name:      rule.Name,
+				Desc:      rule.Desc,
+				Value:     rule.Value,
+				Level:     rule.Level,
+				IsDefault: rule.IsDefault,
 
 				DBType: pluginMeta.Name,
 			})
@@ -376,11 +377,12 @@ func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.
 
 	for _, r := range d.Base.Rules() {
 		protoRules = append(protoRules, &proto.Rule{
-			Name:  r.Name,
-			Desc:  r.Desc,
-			Level: r.Level,
-			Value: r.Value,
-			Typ:   r.Typ,
+			Name:      r.Name,
+			Desc:      r.Desc,
+			Level:     r.Level,
+			Value:     r.Value,
+			Typ:       r.Typ,
+			IsDefault: r.IsDefault,
 		})
 	}
 
