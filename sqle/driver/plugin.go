@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
-	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -47,8 +47,8 @@ func InitPlugins(pluginDir string) error {
 		return srv, nil
 	}
 
-	var plugins []fs.FileInfo
-	filepath.Walk(pluginDir, func(path string, info fs.FileInfo, err error) error {
+	var plugins []os.FileInfo
+	filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() || info.Mode()&0111 == 0 {
 			return nil
 		}
