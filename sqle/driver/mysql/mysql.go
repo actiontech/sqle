@@ -117,10 +117,10 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 		n.Fingerprint = fingerprint
 		n.Text = nodes[i].Text()
 		switch nodes[i].(type) {
-		case ast.DDLNode:
-			n.Type = model.SQLTypeDDL
 		case ast.DMLNode:
 			n.Type = model.SQLTypeDML
+		default:
+			n.Type = model.SQLTypeDDL
 		}
 
 		ns = append(ns, n)
