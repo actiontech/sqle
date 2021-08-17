@@ -19,6 +19,10 @@ import (
 
 // InitPlugins init plugins at plugins directory. It should be called on host process.
 func InitPlugins(pluginDir string) error {
+	if pluginDir == "" {
+		return nil
+	}
+
 	getServerHandle := func(path string, closeCh <-chan struct{}) (proto.DriverClient, error) {
 		client := goPlugin.NewClient(&goPlugin.ClientConfig{
 			HandshakeConfig: handshakeConfig,
