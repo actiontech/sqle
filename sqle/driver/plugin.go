@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"database/sql/driver"
+	"fmt"
 	"io/fs"
 	"os/exec"
 	"path/filepath"
@@ -150,15 +151,23 @@ func (s *driverPluginClient) Ping(ctx context.Context) error {
 }
 
 type dbDriverResult struct {
-	lastInsertId int64
-	rowsAffected int64
+	lastInsertId    int64
+	lastInsertIdErr string
+	rowsAffected    int64
+	rowsAffectedErr string
 }
 
 func (s *dbDriverResult) LastInsertId() (int64, error) {
+	if s.lastInsertIdErr != "" {
+		return s.lastInsertId, fmt.Errorf(s.lastInsertIdErr)
+	}
 	return s.lastInsertId, nil
 }
 
 func (s *dbDriverResult) RowsAffected() (int64, error) {
+	if s.rowsAffectedErr != "" {
+		return s.rowsAffected, fmt.Errorf(s.rowsAffectedErr)
+	}
 	return s.rowsAffected, nil
 }
 
@@ -167,7 +176,12 @@ func (s *driverPluginClient) Exec(ctx context.Context, query string) (driver.Res
 	if err != nil {
 		return nil, err
 	}
-	return &dbDriverResult{lastInsertId: resp.LastInsertId, rowsAffected: resp.RowsAffected}, nil
+	return &dbDriverResult{
+		lastInsertId:    resp.LastInsertId,
+		lastInsertIdErr: resp.LastInsertIdError,
+		rowsAffected:    resp.RowsAffected,
+		rowsAffectedErr: resp.RowsAffectedError,
+	}, nil
 }
 
 func (s *driverPluginClient) Tx(ctx context.Context, queries ...string) ([]driver.Result, error) {
@@ -179,8 +193,10 @@ func (s *driverPluginClient) Tx(ctx context.Context, queries ...string) ([]drive
 	var ret []driver.Result
 	for _, result := range resp.Resluts {
 		ret = append(ret, &dbDriverResult{
-			lastInsertId: result.LastInsertId,
-			rowsAffected: result.RowsAffected,
+			lastInsertId:    result.LastInsertId,
+			lastInsertIdErr: result.LastInsertIdError,
+			rowsAffected:    result.RowsAffected,
+			rowsAffectedErr: result.RowsAffectedError,
 		})
 	}
 	return ret, nil
@@ -277,18 +293,14 @@ func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*p
 	if err != nil {
 		return &proto.ExecResponse{}, nil
 	}
-	lastInsertId, err := result.LastInsertId()
-	if err != nil {
-		return &proto.ExecResponse{}, nil
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return &proto.ExecResponse{}, nil
-	}
-
+	lastInsertId, lastInsertIdErr := result.LastInsertId()
+	rowsAffected, rowsAffectedErr := result.RowsAffected()
 	return &proto.ExecResponse{
-		LastInsertId: lastInsertId,
-		RowsAffected: rowsAffected}, err
+		LastInsertId:      lastInsertId,
+		LastInsertIdError: lastInsertIdErr.Error(),
+		RowsAffected:      rowsAffected,
+		RowsAffectedError: rowsAffectedErr.Error(),
+	}, err
 }
 
 func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto.TxResponse, error) {
@@ -299,18 +311,13 @@ func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto
 
 	resp := &proto.TxResponse{}
 	for _, result := range resluts {
-		lastInsertId, err := result.LastInsertId()
-		if err != nil {
-			return &proto.TxResponse{}, nil
-		}
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			return &proto.TxResponse{}, nil
-		}
-
+		lastInsertId, lastInsertIdErr := result.LastInsertId()
+		rowsAffected, rowsAffectedErr := result.RowsAffected()
 		resp.Resluts = append(resp.Resluts, &proto.ExecResponse{
-			LastInsertId: lastInsertId,
-			RowsAffected: rowsAffected,
+			LastInsertId:      lastInsertId,
+			LastInsertIdError: lastInsertIdErr.Error(),
+			RowsAffected:      rowsAffected,
+			RowsAffectedError: rowsAffectedErr.Error(),
 		})
 	}
 	return resp, nil

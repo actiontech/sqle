@@ -37,7 +37,9 @@ message ExecRequest {
 
 message ExecResponse {
     int64 lastInsertId = 1;
-    int64 rowsAffected = 2;
+    string lastInsertIdError = 2;
+    int64 rowsAffected = 3;
+    string rowsAffectedError = 4;
 }
 
 message TxRequest {
