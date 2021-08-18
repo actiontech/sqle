@@ -34,12 +34,12 @@ type RuleTemplate struct {
 }
 
 type Rule struct {
-	Name      string `json:"name" gorm:"primary_key"`
+	Name      string `json:"name" gorm:"primary_key; not null"`
+	DBType    string `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
 	Desc      string `json:"desc"`
 	Value     string `json:"value"`
 	Level     string `json:"level" example:"error"` // notice, warn, error
 	Typ       string `json:"type" gorm:"column:type; not null"`
-	DBType    string `json:"db_type" gorm:"default:\"mysql\"; not null"`
 	IsDefault bool   `json:"is_default" gorm:"default:false; not null"`
 }
 
@@ -120,6 +120,15 @@ func (s *Storage) GetRuleTemplateTips() ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 	err := s.db.Select("name, db_type").Find(&ruleTemplates).Error
 	return ruleTemplates, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetRule(name, dbType string) (*Rule, bool, error) {
+	rule := Rule{Name: name, DBType: dbType}
+	err := s.db.Find(&rule).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	return &rule, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAllRule() ([]Rule, error) {
