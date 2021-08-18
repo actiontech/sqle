@@ -137,6 +137,12 @@ func (s *Storage) GetAllRule() ([]Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetAllRuleByDBType(dbType string) ([]Rule, error) {
+	rules := []Rule{}
+	err := s.db.Where(&Rule{DBType: dbType}).Find(&rules).Error
+	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
 	rules := []Rule{}
 	instance, _, err := s.GetInstanceById(instanceId)
