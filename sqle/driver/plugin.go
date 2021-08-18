@@ -297,14 +297,19 @@ func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*p
 	if err != nil {
 		return &proto.ExecResponse{}, nil
 	}
+
+	resp := &proto.ExecResponse{}
 	lastInsertId, lastInsertIdErr := result.LastInsertId()
+	resp.LastInsertId = lastInsertId
+	if lastInsertIdErr != nil {
+		resp.LastInsertIdError = lastInsertIdErr.Error()
+	}
 	rowsAffected, rowsAffectedErr := result.RowsAffected()
-	return &proto.ExecResponse{
-		LastInsertId:      lastInsertId,
-		LastInsertIdError: lastInsertIdErr.Error(),
-		RowsAffected:      rowsAffected,
-		RowsAffectedError: rowsAffectedErr.Error(),
-	}, err
+	resp.RowsAffected = rowsAffected
+	if rowsAffectedErr != nil {
+		resp.RowsAffectedError = rowsAffectedErr.Error()
+	}
+	return resp, nil
 }
 
 func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto.TxResponse, error) {
@@ -313,18 +318,24 @@ func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto
 		return &proto.TxResponse{}, nil
 	}
 
-	resp := &proto.TxResponse{}
+	txResp := &proto.TxResponse{}
 	for _, result := range resluts {
+		resp := &proto.ExecResponse{}
+
 		lastInsertId, lastInsertIdErr := result.LastInsertId()
+		resp.LastInsertId = lastInsertId
+		if lastInsertIdErr != nil {
+			resp.LastInsertIdError = lastInsertIdErr.Error()
+		}
 		rowsAffected, rowsAffectedErr := result.RowsAffected()
-		resp.Resluts = append(resp.Resluts, &proto.ExecResponse{
-			LastInsertId:      lastInsertId,
-			LastInsertIdError: lastInsertIdErr.Error(),
-			RowsAffected:      rowsAffected,
-			RowsAffectedError: rowsAffectedErr.Error(),
-		})
+		resp.RowsAffected = rowsAffected
+		if rowsAffectedErr != nil {
+			resp.RowsAffectedError = rowsAffectedErr.Error()
+		}
+
+		txResp.Resluts = append(txResp.Resluts, resp)
 	}
-	return resp, nil
+	return txResp, nil
 }
 
 func (d *driverGRPCServer) Databases(ctx context.Context, req *proto.Empty) (*proto.DatabasesResponse, error) {
