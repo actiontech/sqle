@@ -345,6 +345,10 @@ func GetRuleTemplates(c echo.Context) error {
 	})
 }
 
+type GetRulesReqV1 struct {
+	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
+}
+
 type GetRulesResV1 struct {
 	controller.BaseRes
 	Data []RuleResV1 `json:"data"`
@@ -379,11 +383,22 @@ func convertRulesToRes(rules []model.Rule) []RuleResV1 {
 // @Id getRuleListV1
 // @Tags rule_template
 // @Security ApiKeyAuth
+// @Param filter_db_type query string false "filter db type"
 // @Success 200 {object} v1.GetRulesResV1
 // @router /v1/rules [get]
 func GetRules(c echo.Context) error {
+	req := new(GetRulesReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
 	s := model.GetStorage()
-	rules, err := s.GetAllRule()
+	var rules []model.Rule
+	var err error
+	if req.FilterDBType != "" {
+		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
+	} else {
+		rules, err = s.GetAllRule()
+	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
