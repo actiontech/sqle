@@ -1206,6 +1206,14 @@ var doc = `{
                 ],
                 "summary": "规则列表",
                 "operationId": "getRuleListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

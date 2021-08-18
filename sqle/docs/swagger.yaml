@@ -1878,6 +1878,11 @@ paths:
     get:
       description: get all rule template
       operationId: getRuleListV1
+      parameters:
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
       responses:
         "200":
           description: OK
