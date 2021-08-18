@@ -113,25 +113,16 @@ func (s *Storage) AutoMigrate() error {
 }
 
 func (s *Storage) CreateRulesIfNotExist(rules []*Rule) error {
-	allRules, err := s.GetAllRule()
-	if err != nil {
-		return err
-	}
-	allRulesMap := make(map[string]string)
-	for _, rule := range allRules {
-		allRulesMap[rule.Name] = rule.Value
-	}
 	for _, rule := range rules {
-		/*If rule exist
-		1.value is used, skip init
-		2.new value is empty,skip init (otherwise it will cause a panic)
-		*/
-		if existRuleValue, ok := allRulesMap[rule.Name]; ok && (existRuleValue != "" || rule.Value == "") {
-			continue
-		}
-		err = s.Save(rule)
+		existedRule, exist, err := s.GetRule(rule.Name, rule.DBType)
 		if err != nil {
 			return err
+		}
+		if !exist || (existedRule.Value == "" && rule.Value != "") {
+			err = s.Save(rule)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -170,7 +161,9 @@ func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
 					})
 				}
 			}
-			return s.UpdateRuleTemplateRules(t, ruleList...)
+			if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
