@@ -9,6 +9,395 @@
     },
     "basePath": "/",
     "paths": {
+        "/v1/audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan info list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取审核计划信息列表",
+                "operationId": "getAuditPlansV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlansResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create audit plan",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "添加审核计划",
+                "operationId": "createAuditPlanV1",
+                "parameters": [
+                    {
+                        "description": "create audit plan",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditPlanReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "删除审核计划",
+                "operationId": "deleteAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "更新审核计划",
+                "operationId": "updateAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update audit plan",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditPlanReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report detail",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定审核计划的报告详情",
+                "operationId": "getAuditPlanReportDetailV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/reports": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定审核计划的报告列表",
+                "operationId": "getAuditPlanReportsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定审核计划的SQLs信息",
+                "operationId": "getAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/sqls/full": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "full sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "全量同步SQL到审核计划",
+                "operationId": "fullSyncAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "full sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.FullSyncAuditPlanSQLsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/sqls/partial": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "partial sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "增量同步SQL到审核计划",
+                "operationId": "partialSyncAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "partial sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.PartialSyncAuditPlanSQLsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "trigger audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "触发审核计划",
+                "operationId": "triggerAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_whitelist": {
             "get": {
                 "security": [
@@ -2444,6 +2833,90 @@
                 }
             }
         },
+        "v1.AuditPlanReportResV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_report_id": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "audit_plan_report_timestamp": {
+                    "type": "string",
+                    "example": "RFC3339"
+                }
+            }
+        },
+        "v1.AuditPlanResV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_cron": {
+                    "type": "string",
+                    "example": "0 */2 * * *"
+                },
+                "audit_plan_db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "audit_plan_instance_database": {
+                    "type": "string",
+                    "example": "app1"
+                },
+                "audit_plan_instance_name": {
+                    "type": "string",
+                    "example": "test_mysql"
+                },
+                "audit_plan_name": {
+                    "type": "string",
+                    "example": "audit_for_java_app1"
+                },
+                "audit_plan_token": {
+                    "type": "string",
+                    "example": "it's a JWT Token for scanner"
+                }
+            }
+        },
+        "v1.AuditPlanSQLReqV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_counter": {
+                    "type": "string",
+                    "example": "6"
+                },
+                "audit_plan_sql_fingerprint": {
+                    "type": "string",
+                    "example": "select * from t1 where id = ?"
+                },
+                "audit_plan_sql_last_receive_text": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_sql_last_receive_timestamp": {
+                    "type": "string",
+                    "example": "RFC3339"
+                }
+            }
+        },
+        "v1.AuditPlanSQLResV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_counter": {
+                    "type": "string",
+                    "example": "6"
+                },
+                "audit_plan_sql_fingerprint": {
+                    "type": "string",
+                    "example": "select * from t1 where id = ?"
+                },
+                "audit_plan_sql_last_receive_text": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_sql_last_receive_timestamp": {
+                    "type": "string",
+                    "example": "RFC3339"
+                }
+            }
+        },
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
@@ -2462,7 +2935,8 @@
                     "enum": [
                         "form_data",
                         "sql_file",
-                        "mybatis_xml_file"
+                        "mybatis_xml_file",
+                        "audit_plan"
                     ]
                 },
                 "status": {
@@ -2560,6 +3034,31 @@
                 },
                 "new_rule_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.CreateAuditPlanReqV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_cron": {
+                    "type": "string",
+                    "example": "0 */2 * * *"
+                },
+                "audit_plan_instance_database": {
+                    "type": "string",
+                    "example": "app1"
+                },
+                "audit_plan_instance_name": {
+                    "type": "string",
+                    "example": "test_mysql"
+                },
+                "audit_plan_instance_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "audit_plan_name": {
+                    "type": "string",
+                    "example": "audit_plan_for_java_repo_1"
                 }
             }
         },
@@ -2758,6 +3257,83 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.FullSyncAuditPlanSQLsReqV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanSQLReqV1"
+                    }
+                }
+            }
+        },
+        "v1.GetAuditPlanReportsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanReportResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetAuditPlanSQLsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanSQLResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetAuditPlansResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -3390,6 +3966,17 @@
                 }
             }
         },
+        "v1.PartialSyncAuditPlanSQLsReqV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanSQLReqV1"
+                    }
+                }
+            }
+        },
         "v1.RejectWorkflowReqV1": {
             "type": "object",
             "properties": {
@@ -3554,6 +4141,23 @@
             "properties": {
                 "workflow_expired_hours": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.UpdateAuditPlanReqV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_cron": {
+                    "type": "string",
+                    "example": "0 */2 * * *"
+                },
+                "audit_plan_instance_database": {
+                    "type": "string",
+                    "example": "app1"
+                },
+                "audit_plan_instance_name": {
+                    "type": "string",
+                    "example": "test_mysql"
                 }
             }
         },

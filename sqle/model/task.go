@@ -30,6 +30,7 @@ const (
 	TaskSQLSourceFromFormData       = "form_data"
 	TaskSQLSourceFromSQLFile        = "sql_file"
 	TaskSQLSourceFromMyBatisXMLFile = "mybatis_xml_file"
+	TaskSQLSourceFromAuditPlan      = "audit_plan"
 )
 
 const TaskExecResultOK = "OK"

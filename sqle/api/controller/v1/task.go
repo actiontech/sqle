@@ -40,7 +40,7 @@ type AuditTaskResV1 struct {
 	InstanceSchema string  `json:"instance_schema" example:"db1"`
 	PassRate       float64 `json:"pass_rate"`
 	Status         string  `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
-	SQLSource      string  `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file"`
+	SQLSource      string  `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {

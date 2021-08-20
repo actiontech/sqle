@@ -9,6 +9,66 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AuditPlanReportResV1:
+    properties:
+      audit_plan_report_id:
+        example: "1"
+        type: string
+      audit_plan_report_timestamp:
+        example: RFC3339
+        type: string
+    type: object
+  v1.AuditPlanResV1:
+    properties:
+      audit_plan_cron:
+        example: 0 */2 * * *
+        type: string
+      audit_plan_db_type:
+        example: mysql
+        type: string
+      audit_plan_instance_database:
+        example: app1
+        type: string
+      audit_plan_instance_name:
+        example: test_mysql
+        type: string
+      audit_plan_name:
+        example: audit_for_java_app1
+        type: string
+      audit_plan_token:
+        example: it's a JWT Token for scanner
+        type: string
+    type: object
+  v1.AuditPlanSQLReqV1:
+    properties:
+      audit_plan_sql_counter:
+        example: "6"
+        type: string
+      audit_plan_sql_fingerprint:
+        example: select * from t1 where id = ?
+        type: string
+      audit_plan_sql_last_receive_text:
+        example: select * from t1 where id = 1
+        type: string
+      audit_plan_sql_last_receive_timestamp:
+        example: RFC3339
+        type: string
+    type: object
+  v1.AuditPlanSQLResV1:
+    properties:
+      audit_plan_sql_counter:
+        example: "6"
+        type: string
+      audit_plan_sql_fingerprint:
+        example: select * from t1 where id = ?
+        type: string
+      audit_plan_sql_last_receive_text:
+        example: select * from t1 where id = 1
+        type: string
+      audit_plan_sql_last_receive_timestamp:
+        example: RFC3339
+        type: string
+    type: object
   v1.AuditTaskResV1:
     properties:
       instance_name:
@@ -23,6 +83,7 @@ definitions:
         - form_data
         - sql_file
         - mybatis_xml_file
+        - audit_plan
         type: string
       status:
         enum:
@@ -87,6 +148,24 @@ definitions:
           type: string
         type: array
       new_rule_template_name:
+        type: string
+    type: object
+  v1.CreateAuditPlanReqV1:
+    properties:
+      audit_plan_cron:
+        example: 0 */2 * * *
+        type: string
+      audit_plan_instance_database:
+        example: app1
+        type: string
+      audit_plan_instance_name:
+        example: test_mysql
+        type: string
+      audit_plan_instance_type:
+        example: mysql
+        type: string
+      audit_plan_name:
+        example: audit_plan_for_java_repo_1
         type: string
     type: object
   v1.CreateAuditWhitelistReqV1:
@@ -222,6 +301,58 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.FullSyncAuditPlanSQLsReqV1:
+    properties:
+      audit_plan_sql_list:
+        items:
+          $ref: '#/definitions/v1.AuditPlanSQLReqV1'
+        type: array
+    type: object
+  v1.GetAuditPlanReportsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanReportResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetAuditPlanSQLsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanSQLResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetAuditPlansResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetAuditTaskResV1:
     properties:
@@ -658,6 +789,13 @@ definitions:
       instance_type:
         type: string
     type: object
+  v1.PartialSyncAuditPlanSQLsReqV1:
+    properties:
+      audit_plan_sql_list:
+        items:
+          $ref: '#/definitions/v1.AuditPlanSQLReqV1'
+        type: array
+    type: object
   v1.RejectWorkflowReqV1:
     properties:
       reason:
@@ -768,6 +906,18 @@ definitions:
     properties:
       workflow_expired_hours:
         type: integer
+    type: object
+  v1.UpdateAuditPlanReqV1:
+    properties:
+      audit_plan_cron:
+        example: 0 */2 * * *
+        type: string
+      audit_plan_instance_database:
+        example: app1
+        type: string
+      audit_plan_instance_name:
+        example: test_mysql
+        type: string
     type: object
   v1.UpdateAuditWhitelistReqV1:
     properties:
@@ -1137,6 +1287,252 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /v1/audit_plans:
+    get:
+      description: get audit plan info list
+      operationId: getAuditPlansV1
+      parameters:
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlansResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核计划信息列表
+      tags:
+      - audit_plan
+    post:
+      consumes:
+      - application/json
+      description: create audit plan
+      operationId: createAuditPlanV1
+      parameters:
+      - description: create audit plan
+        in: body
+        name: audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateAuditPlanReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加审核计划
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/:
+    delete:
+      description: delete audit plan
+      operationId: deleteAuditPlanV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除审核计划
+      tags:
+      - audit_plan
+    patch:
+      description: update audit plan
+      operationId: updateAuditPlanV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: update audit plan
+        in: body
+        name: audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateAuditPlanReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新审核计划
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/:
+    get:
+      description: get audit plan report detail
+      operationId: getAuditPlanReportDetailV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanReportsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核计划的报告详情
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/reports:
+    get:
+      description: get audit plan report list
+      operationId: getAuditPlanReportsV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanReportsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核计划的报告列表
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/sqls:
+    get:
+      description: get audit plan SQLs
+      operationId: getAuditPlanSQLsV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanSQLsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核计划的SQLs信息
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/sqls/full:
+    post:
+      description: full sync audit plan SQLs
+      operationId: fullSyncAuditPlanSQLsV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: full sync audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v1.FullSyncAuditPlanSQLsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 全量同步SQL到审核计划
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/sqls/partial:
+    post:
+      description: partial sync audit plan SQLs
+      operationId: partialSyncAuditPlanSQLsV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: partial sync audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v1.PartialSyncAuditPlanSQLsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 增量同步SQL到审核计划
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/trigger:
+    post:
+      description: trigger audit plan
+      operationId: triggerAuditPlanV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 触发审核计划
+      tags:
+      - audit_plan
   /v1/audit_whitelist:
     get:
       description: get all whitelist
