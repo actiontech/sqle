@@ -1755,6 +1755,11 @@ paths:
     get:
       description: get instance tip list
       operationId: getInstanceTipListV1
+      parameters:
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
       responses:
         "200":
           description: OK
@@ -2119,6 +2124,11 @@ paths:
     get:
       description: get rule template tips
       operationId: getRuleTemplateTipsV1
+      parameters:
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
       responses:
         "200":
           description: OK

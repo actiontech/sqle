@@ -775,6 +775,14 @@ var doc = `{
                 ],
                 "summary": "获取实例提示列表",
                 "operationId": "getInstanceTipListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1349,6 +1357,14 @@ var doc = `{
                 ],
                 "summary": "获取规则模板提示",
                 "operationId": "getRuleTemplateTipsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

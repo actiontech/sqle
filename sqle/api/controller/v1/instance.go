@@ -100,6 +100,10 @@ func CreateInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	err = s.CheckInstanceAndRuleTemplateDbType(templates, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	err = s.Save(instance)
 	if err != nil {
@@ -282,9 +286,16 @@ func UpdateInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	ruleTemplates, err := s.GetRuleTemplatesByNames(req.RuleTemplates)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.CheckInstanceAndRuleTemplateDbType(ruleTemplates, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	updateMap := map[string]interface{}{}
-
 	if req.Desc != nil {
 		updateMap["desc"] = *req.Desc
 	}
@@ -303,9 +314,6 @@ func UpdateInstance(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		updateMap["db_password"] = password
-	}
-	if req.DBType != nil {
-		updateMap["db_type"] = *req.DBType
 	}
 
 	if req.WorkflowTemplateName != nil {
@@ -593,6 +601,10 @@ func GetInstanceSchemas(c echo.Context) error {
 	})
 }
 
+type InstanceTipReqV1 struct {
+	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
+}
+
 type InstanceTipResV1 struct {
 	Name string `json:"instance_name"`
 	Type string `json:"instance_type"`
@@ -609,24 +621,30 @@ type GetInstanceTipsResV1 struct {
 // @Tags instance
 // @Id getInstanceTipListV1
 // @Security ApiKeyAuth
+// @Param filter_db_type query string false "filter db type"
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
+	req := new(InstanceTipReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
 	s := model.GetStorage()
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	roles, err := s.GetUserInstanceTip(user)
+	instances, err := s.GetUserInstanceTip(user, req.FilterDBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(roles))
+	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
 
-	for _, role := range roles {
+	for _, inst := range instances {
 		instanceTipRes := InstanceTipResV1{
-			Name: role.Name,
-			Type: role.DbType,
+			Name: inst.Name,
+			Type: inst.DbType,
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}

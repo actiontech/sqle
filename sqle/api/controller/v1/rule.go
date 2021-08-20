@@ -14,7 +14,7 @@ import (
 type CreateRuleTemplateReqV1 struct {
 	Name      string      `json:"rule_template_name" valid:"required,name"`
 	Desc      string      `json:"desc"`
-	DBType    string      `json:"db_type"`
+	DBType    string      `json:"db_type" valid:"required"`
 	Instances []string    `json:"instance_name_list"`
 	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
 }
@@ -48,12 +48,18 @@ func CreateRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
 	}
 
+	ruleTemplate := &model.RuleTemplate{
+		Name:   req.Name,
+		Desc:   req.Desc,
+		DBType: req.DBType,
+	}
+
 	ruleNames := make([]string, 0, len(req.RuleList))
 	for _, r := range req.RuleList {
 		ruleNames = append(ruleNames, r.Name)
 	}
 	if req.RuleList != nil || len(req.RuleList) > 0 {
-		_, err = s.GetAndCheckRuleExist(ruleNames)
+		_, err := s.GetAndCheckRuleExist(ruleNames, req.DBType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -70,28 +76,24 @@ func CreateRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	err = s.CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
-	if req.DBType == "" {
-		req.DBType = model.DBTypeMySQL
-	}
-	ruleTemplate := &model.RuleTemplate{
-		Name:   req.Name,
-		Desc:   req.Desc,
-		DBType: req.DBType,
-	}
 	err = s.Save(ruleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	ruleList := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	for _, r := range req.RuleList {
-		ruleList = append(ruleList, model.RuleTemplateRule{
-			RuleTemplateId: ruleTemplate.ID,
-			RuleName:       r.Name,
-			RuleValue:      r.Value,
-			RuleLevel:      r.Level,
-		})
+	for _, rule := range req.RuleList {
+		ruleList = append(ruleList, model.NewRuleTemplateRule(ruleTemplate, &model.Rule{
+			Name:   rule.Name,
+			Value:  rule.Value,
+			Level:  rule.Level,
+			DBType: req.DBType,
+		}))
 	}
 	err = s.UpdateRuleTemplateRules(ruleTemplate, ruleList...)
 	if err != nil {
@@ -139,18 +141,20 @@ func UpdateRuleTemplate(c echo.Context) error {
 	var ruleNames = make([]string, 0, len(req.RuleList))
 	for _, r := range req.RuleList {
 		ruleNames = append(ruleNames, r.Name)
-		ruleList = append(ruleList, model.RuleTemplateRule{
-			RuleTemplateId: template.ID,
-			RuleName:       r.Name,
-			RuleValue:      r.Value,
-			RuleLevel:      r.Level,
-		})
 	}
 
 	if len(req.RuleList) > 0 {
-		_, err = s.GetAndCheckRuleExist(ruleNames)
+		_, err := s.GetAndCheckRuleExist(ruleNames, template.DBType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
+		}
+		for _, rule := range req.RuleList {
+			ruleList = append(ruleList, model.NewRuleTemplateRule(template, &model.Rule{
+				Name:   rule.Name,
+				Value:  rule.Value,
+				Level:  rule.Level,
+				DBType: template.DBType,
+			}))
 		}
 	}
 
@@ -162,6 +166,10 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 	err = s.CheckInstanceBindCount([]string{templateName}, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -408,6 +416,10 @@ func GetRules(c echo.Context) error {
 	})
 }
 
+type RuleTemplateTipReqV1 struct {
+	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
+}
+
 type RuleTemplateTipResV1 struct {
 	Name   string `json:"rule_template_name"`
 	DBType string `json:"db_type"`
@@ -423,11 +435,17 @@ type GetRuleTemplateTipsResV1 struct {
 // @Id getRuleTemplateTipsV1
 // @Tags rule_template
 // @Security ApiKeyAuth
+// @Param filter_db_type query string false "filter db type"
 // @Success 200 {object} v1.GetRuleTemplateTipsResV1
 // @router /v1/rule_template_tips [get]
 func GetRuleTemplateTips(c echo.Context) error {
+	req := new(RuleTemplateTipReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
 	s := model.GetStorage()
-	ruleTemplates, err := s.GetRuleTemplateTips()
+	ruleTemplates, err := s.GetRuleTemplateTips(req.FilterDBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -494,6 +512,10 @@ func CloneRuleTemplate(c echo.Context) error {
 		}
 	}
 	err = s.CheckInstanceBindCount([]string{req.Name}, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

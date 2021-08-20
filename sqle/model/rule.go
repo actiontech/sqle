@@ -116,9 +116,14 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 	return ruleMap
 }
 
-func (s *Storage) GetRuleTemplateTips() ([]*RuleTemplate, error) {
+func (s *Storage) GetRuleTemplateTips(dbType string) ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
-	err := s.db.Select("name, db_type").Find(&ruleTemplates).Error
+
+	db := s.db.Select("name, db_type")
+	if dbType != "" {
+		db = db.Where("db_type = ?", dbType)
+	}
+	err := db.Find(&ruleTemplates).Error
 	return ruleTemplates, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -203,14 +208,14 @@ func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemp
 	return ruleTemplates, nil
 }
 
-func (s *Storage) GetRulesByNames(names []string) ([]Rule, error) {
+func (s *Storage) GetRulesByNames(names []string, dbType string) ([]Rule, error) {
 	rules := []Rule{}
-	err := s.db.Where("name in (?)", names).Find(&rules).Error
+	err := s.db.Where("db_type = ?", dbType).Where("name in (?)", names).Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAndCheckRuleExist(ruleNames []string) (rules []Rule, err error) {
-	rules, err = s.GetRulesByNames(ruleNames)
+func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (rules []Rule, err error) {
+	rules, err = s.GetRulesByNames(ruleNames, dbType)
 	if err != nil {
 		return rules, err
 	}

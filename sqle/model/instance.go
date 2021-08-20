@@ -119,6 +119,9 @@ func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) erro
 }
 
 func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*Instance) error {
+	if len(ruleTemplates) == 0 || len(instances) == 0 {
+		return nil
+	}
 	if len(ruleTemplates) > 1 {
 		return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 	}
@@ -136,6 +139,25 @@ func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*I
 	return nil
 }
 
+func (s *Storage) CheckInstanceAndRuleTemplateDbType(ruleTemplates []*RuleTemplate, instances ...*Instance) error {
+	if len(ruleTemplates) == 0 || len(instances) == 0 {
+		return nil
+	}
+
+	dbType := ruleTemplates[0].DBType
+	for _, rt := range ruleTemplates {
+		if rt.DBType != dbType {
+			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
+		}
+	}
+	for _, inst := range instances {
+		if inst.DbType != dbType {
+			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
+		}
+	}
+	return nil
+}
+
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
 	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.ConnectStorageError, err)
@@ -146,13 +168,16 @@ func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetUserInstanceTip(user *User) ([]*Instance, error) {
+func (s *Storage) GetUserInstanceTip(user *User, dbType string) ([]*Instance, error) {
 	instances := []*Instance{}
 	db := s.db.Model(&Instance{}).Select("instances.name, instances.db_type")
 	if user.Name != DefaultAdminUser {
 		db = db.Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
 			Joins("JOIN user_role AS ur ON ir.role_id = ur.role_id").
 			Joins("JOIN users ON ur.user_id = users.id AND users.id = ?", user.ID)
+	}
+	if dbType != "" {
+		db = db.Where("instances.db_type = ?", dbType)
 	}
 	err := db.Scan(&instances).Error
 	return instances, errors.New(errors.ConnectStorageError, err)

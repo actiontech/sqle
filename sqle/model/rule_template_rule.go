@@ -5,10 +5,21 @@ type RuleTemplateRule struct {
 	RuleName       string `json:"name" gorm:"primary_key;"`
 	RuleLevel      string `json:"level" gorm:"column:level;"`
 	RuleValue      string `json:"value" gorm:"column:value;" `
+	RuleDBType     string `json:"rule_db_type" gorm:"column:db_type; not null; default:'mysql'"`
 
-	Rule Rule `json:"-" gorm:"foreignkey:Name;association_foreignkey:RuleName"`
+	Rule Rule `json:"-" gorm:"foreignkey:Name,DBType;association_foreignkey:RuleName,RuleDBType"`
 }
 
 func (rtr *RuleTemplateRule) TableName() string {
 	return "rule_template_rule"
+}
+
+func NewRuleTemplateRule(t *RuleTemplate, r *Rule) RuleTemplateRule {
+	return RuleTemplateRule{
+		RuleTemplateId: t.ID,
+		RuleName:       r.Name,
+		RuleLevel:      r.Level,
+		RuleValue:      r.Value,
+		RuleDBType:     r.DBType,
+	}
 }
