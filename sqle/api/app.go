@@ -154,18 +154,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// configurations
 	v1Router.GET("/configurations/drivers", v1.GetDrivers)
 
-	// audit plan
-	v1Router.POST("/audit_plans", v1.CreateAuditPlan)
-	v1Router.DELETE("/audit_plans/:audit_plan_name/", v1.DeleteAuditPlan)
-	v1Router.PATCH("/audit_plans/:audit_plan_name/", v1.UpdateAuditPlan)
-	v1Router.GET("/audit_plans", v1.GetAuditPlans)
-	v1Router.GET("/audit_plans/:audit_plan_name/reports", v1.GetAuditPlanReports)
-	v1Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", v1.GetAuditPlanReportDetail)
-	v1Router.GET("/audit_plans/:audit_plan_name/sqls", v1.GetAuditPlanSQLs)
-	v1Router.POST("/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs)
-	v1Router.POST("/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs)
-	v1Router.POST("/audit_plans/:audit_plan_name/trigger", v1.TriggerAuditPlan)
-
 	// UI
 	e.File("/", "ui/index.html")
 	e.Static("/static", "ui/static")
