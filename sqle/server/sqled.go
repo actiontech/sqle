@@ -460,7 +460,10 @@ func (a *Action) execSQL(executeSQL *model.ExecuteSQL) error {
 func (a *Action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 	st := model.GetStorage()
 
-	if err := st.UpdateExecuteSQLStatusByTaskId(a.task, model.SQLExecuteStatusDoing); err != nil {
+	for _, executeSQL := range executeSQLs {
+		executeSQL.ExecStatus = model.SQLExecuteStatusDoing
+	}
+	if err := st.UpdateExecuteSQLs(executeSQLs); err != nil {
 		return err
 	}
 
