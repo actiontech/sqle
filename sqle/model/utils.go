@@ -158,6 +158,7 @@ func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
 						RuleName:       rule.Name,
 						RuleLevel:      rule.Level,
 						RuleValue:      rule.Value,
+						RuleDBType:     rule.DBType,
 					})
 				}
 			}
