@@ -118,46 +118,6 @@ func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) erro
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) CheckInstanceBindCount(ruleTemplates []string, instances ...*Instance) error {
-	if len(ruleTemplates) == 0 || len(instances) == 0 {
-		return nil
-	}
-	if len(ruleTemplates) > 1 {
-		return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
-	}
-
-	for _, inst := range instances {
-		var associationRT []RuleTemplate
-		count := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT).Count()
-		if count > 1 {
-			return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
-		}
-		if count == 1 && associationRT[0].Name != ruleTemplates[0] {
-			return errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
-		}
-	}
-	return nil
-}
-
-func (s *Storage) CheckInstanceAndRuleTemplateDbType(ruleTemplates []*RuleTemplate, instances ...*Instance) error {
-	if len(ruleTemplates) == 0 || len(instances) == 0 {
-		return nil
-	}
-
-	dbType := ruleTemplates[0].DBType
-	for _, rt := range ruleTemplates {
-		if rt.DBType != dbType {
-			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
-		}
-	}
-	for _, inst := range instances {
-		if inst.DbType != dbType {
-			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
-		}
-	}
-	return nil
-}
-
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
 	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.ConnectStorageError, err)

@@ -17,6 +17,7 @@ import (
 
 var instanceNotExistError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 var instanceNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
+var instanceBindError = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 
 type CreateInstanceReqV1 struct {
 	Name                 string   `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
@@ -96,11 +97,16 @@ func CreateInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.CheckInstanceBindCount(req.RuleTemplates)
+
+	ok, err := CheckInstanceCanBindOneRuleTemplate(s, req.RuleTemplates, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.CheckInstanceAndRuleTemplateDbType(templates, instance)
+	if !ok {
+		return controller.JSONBaseErrorReq(c, instanceBindError)
+	}
+
+	err = CheckInstanceAndRuleTemplateDbType(templates, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -300,15 +306,19 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, instanceNotExistError)
 	}
 
-	err = s.CheckInstanceBindCount(req.RuleTemplates)
+	ok, err := CheckInstanceCanBindOneRuleTemplate(s, req.RuleTemplates, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	if !ok {
+		return controller.JSONBaseErrorReq(c, instanceBindError)
+	}
+
 	ruleTemplates, err := s.GetRuleTemplatesByNames(req.RuleTemplates)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.CheckInstanceAndRuleTemplateDbType(ruleTemplates, instance)
+	err = CheckInstanceAndRuleTemplateDbType(ruleTemplates, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -699,4 +709,60 @@ func GetInstanceRules(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertRulesToRes(rules),
 	})
+}
+
+func CheckInstancesCanBindOneRuleTemplate(s *model.Storage, ruleTemplates []string, instances []*model.Instance) (bool, error) {
+	for _, inst := range instances {
+		ok, err := CheckInstanceCanBindOneRuleTemplate(s, ruleTemplates, inst)
+		if err != nil {
+			return false, instanceBindError
+		}
+		if !ok {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func CheckInstanceCanBindOneRuleTemplate(s *model.Storage, ruleTemplates []string, inst *model.Instance) (bool, error) {
+	if len(ruleTemplates) == 0 {
+		return true, nil
+	}
+	if len(ruleTemplates) > 1 {
+		return false, nil
+	}
+	if inst == nil {
+		return true, nil
+	}
+
+	associationRT, err := s.GetRuleTemplatesByInstance(inst)
+	if err != nil {
+		return false, err
+	}
+	if len(associationRT) > 1 {
+		return false, nil
+	}
+	if len(associationRT) == 1 && associationRT[0].Name != ruleTemplates[0] {
+		return false, nil
+	}
+	return true, nil
+}
+
+func CheckInstanceAndRuleTemplateDbType(ruleTemplates []*model.RuleTemplate, instances ...*model.Instance) error {
+	if len(ruleTemplates) == 0 || len(instances) == 0 {
+		return nil
+	}
+
+	dbType := ruleTemplates[0].DBType
+	for _, rt := range ruleTemplates {
+		if rt.DBType != dbType {
+			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
+		}
+	}
+	for _, inst := range instances {
+		if inst.DbType != dbType {
+			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
+		}
+	}
+	return nil
 }
