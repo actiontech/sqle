@@ -139,9 +139,13 @@ func DeleteUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
-	err = s.CheckWorkflowStateByUserIds([]uint{user.ID})
+	exist, err = s.CheckWorkflowStateByUserIds([]uint{user.ID})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
+			fmt.Errorf("%s can't be deleted,cause on_process workflow exist", userName)))
 	}
 	err = s.Delete(user)
 	if err != nil {

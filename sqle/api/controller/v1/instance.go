@@ -238,13 +238,17 @@ func DeleteInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	createUserIds := make([]uint, 0, len(tasks))
+	taskIds := make([]uint, 0, len(tasks))
 	for _, task := range tasks {
-		createUserIds = append(createUserIds, task.CreateUserId)
+		taskIds = append(taskIds, task.ID)
 	}
-	err = s.CheckWorkflowStateByUserIds(createUserIds)
+	exist, err = s.CheckWorkflowStateByTaskIds(taskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
+			fmt.Errorf("%s can't be deleted,cause on_process workflow exist", instanceName)))
 	}
 
 	err = s.Delete(instance)
