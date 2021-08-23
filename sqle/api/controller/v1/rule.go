@@ -72,11 +72,16 @@ func CreateRuleTemplate(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	err = s.CheckInstanceBindCount([]string{req.Name}, instances...)
+
+	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{req.Name}, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
+	if !ok {
+		return controller.JSONBaseErrorReq(c, instanceBindError)
+	}
+
+	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -165,11 +170,15 @@ func UpdateRuleTemplate(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	err = s.CheckInstanceBindCount([]string{templateName}, instances...)
+
+	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{templateName}, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
+	if !ok {
+		return controller.JSONBaseErrorReq(c, instanceBindError)
+	}
+	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -511,11 +520,15 @@ func CloneRuleTemplate(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	err = s.CheckInstanceBindCount([]string{req.Name}, instances...)
+
+	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{req.Name}, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
+	if !ok {
+		return controller.JSONBaseErrorReq(c, instanceBindError)
+	}
+	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

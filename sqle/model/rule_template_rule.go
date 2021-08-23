@@ -1,5 +1,7 @@
 package model
 
+import "actiontech.cloud/sqle/sqle/sqle/errors"
+
 type RuleTemplateRule struct {
 	RuleTemplateId uint   `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
 	RuleName       string `json:"name" gorm:"primary_key;"`
@@ -22,4 +24,10 @@ func NewRuleTemplateRule(t *RuleTemplate, r *Rule) RuleTemplateRule {
 		RuleValue:      r.Value,
 		RuleDBType:     r.DBType,
 	}
+}
+
+func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, error) {
+	var associationRT []RuleTemplate
+	err := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT).Error
+	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
