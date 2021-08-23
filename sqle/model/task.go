@@ -324,6 +324,12 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	return tasks, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetTaskByInstanceId(instanceId uint) ([]Task, error) {
+	tasks := []Task{}
+	err := s.db.Where(&Task{InstanceId: instanceId}).Find(&tasks).Error
+	return tasks, errors.New(errors.ConnectStorageError, err)
+}
+
 type TaskSQLDetail struct {
 	Number      uint           `json:"number"`
 	ExecSQL     string         `json:"exec_sql"`

@@ -568,3 +568,24 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	}
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) CheckWorkflowStateByUserIds(userIds []uint) (bool, error) {
+	workflows := []*Workflow{}
+	err := s.db.Model(workflows).
+		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
+		Where("workflow_records.status = ? AND create_user_id IN (?)", WorkflowStatusRunning, userIds).
+		Scan(&workflows).Error
+	if len(workflows) > 0 {
+		return true, errors.New(errors.ConnectStorageError, err)
+	}
+	return false, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) CheckWorkflowStateByTaskIds(taskIds []uint) (bool, error) {
+	workflowRecords := []*WorkflowRecord{}
+	err := s.db.Where("status = ? AND task_id IN (?)", WorkflowStatusRunning, taskIds).Find(&workflowRecords).Error
+	if len(workflowRecords) > 0 {
+		return true, errors.New(errors.ConnectStorageError, err)
+	}
+	return false, errors.New(errors.ConnectStorageError, err)
+}
