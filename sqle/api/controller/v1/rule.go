@@ -181,7 +181,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	if len(req.RuleList) > 0 {
+	if req.RuleList != nil {
 		err = s.UpdateRuleTemplateRules(template, ruleList...)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
