@@ -9,6 +9,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AuditPlanReportDetailResV1:
+    properties:
+      audit_plan_report_audit_result:
+        example: same format as task audit result
+        type: string
+      audit_plan_report_sql_fingerprint:
+        example: select * from t1 where id = ?
+        type: string
+      audit_plan_report_sql_last_receive_text:
+        example: select * from t1 where id = 1
+        type: string
+      audit_plan_report_timestamp:
+        example: RFC3339
+        type: string
+    type: object
   v1.AuditPlanReportResV1:
     properties:
       audit_plan_report_id:
@@ -308,6 +323,21 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
+    type: object
+  v1.GetAuditPlanReportResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanReportDetailResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetAuditPlanReportsResV1:
     properties:
@@ -1399,7 +1429,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetAuditPlanReportsResV1'
+            $ref: '#/definitions/v1.GetAuditPlanReportResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取指定审核计划的报告详情

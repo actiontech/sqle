@@ -126,7 +126,7 @@ type AuditPlanReportDetailResV1 struct {
 // @Param audit_plan_name path string true "audit plan name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
-// @Success 200 {object} v1.GetAuditPlanReportsResV1
+// @Success 200 {object} v1.GetAuditPlanReportResV1
 // @router /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/ [get]
 func GetAuditPlanReportDetail(c echo.Context) error { return nil }
 
