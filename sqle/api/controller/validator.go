@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"github.com/go-playground/validator"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -11,6 +10,8 @@ import (
 	"github.com/go-playground/locales/en"
 	"github.com/go-playground/locales/zh"
 	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator"
+	cron "github.com/robfig/cron/v3"
 )
 
 func Validate(i interface{}) error {
@@ -38,6 +39,7 @@ var defaultCustomValidator *CustomValidator
 var (
 	ValidNameTag = "name"
 	ValidPortTag = "port"
+	ValidCronTag = "cron"
 )
 
 func init() {
@@ -56,6 +58,7 @@ func init() {
 	// register custom validator
 	cv.validate.RegisterValidation(ValidNameTag, ValidateName)
 	cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
+	cv.validate.RegisterValidation(ValidCronTag, ValidateCron)
 
 	type registerTranslationArgs struct {
 		tag    string
@@ -89,6 +92,11 @@ func init() {
 			tag:    ValidPortTag,
 			enText: "{0} is invalid port",
 			zhText: "{0}是无效的端口",
+		},
+		{
+			tag:    ValidCronTag,
+			enText: "{0} is invalid cron",
+			zhText: "{0}是无效的Cron表达式",
 		},
 	}
 	// register custom validator error message
@@ -176,4 +184,10 @@ func validatePort(port string) bool {
 		return false
 	}
 	return true
+}
+
+// ValidateCron implements validator.Func
+func ValidateCron(fl validator.FieldLevel) bool {
+	_, err := cron.ParseStandard(fl.Field().String())
+	return err == nil
 }

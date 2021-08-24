@@ -11,13 +11,12 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
-	cron "github.com/robfig/cron/v3"
 	"github.com/ungerik/go-dry"
 )
 
 type CreateAuditPlanReqV1 struct {
 	Name             string `json:"audit_plan_name" form:"audit_plan_name" example:"audit_plan_for_java_repo_1" valid:"required,name"`
-	Cron             string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"required"`
+	Cron             string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"required,cron"`
 	InstanceType     string `json:"audit_plan_instance_type" form:"audit_plan_instance_type" example:"mysql" valid:"required"`
 	InstanceName     string `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
 	InstanceDatabase string `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
@@ -46,11 +45,6 @@ func CreateAuditPlan(c echo.Context) error {
 
 	if req.InstanceDatabase != "" && req.InstanceName == "" {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("instance_name can not be empty while instance_database is not empty")))
-	}
-
-	_, err := cron.ParseStandard(req.Cron)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("cron is not standard specification")))
 	}
 
 	_, exist, err := s.GetAuditPlanByName(req.Name)
