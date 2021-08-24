@@ -14,6 +14,10 @@ import (
 	"github.com/ungerik/go-dry"
 )
 
+var (
+	errAuditPlanNotExist = errors.New(errors.DataNotExist, fmt.Errorf("audit plan is not exist"))
+)
+
 type CreateAuditPlanReqV1 struct {
 	Name             string `json:"audit_plan_name" form:"audit_plan_name" example:"audit_plan_for_java_repo_1" valid:"required,name"`
 	Cron             string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"required,cron"`
@@ -52,7 +56,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("audit plan %v is exist", req.Name)))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, errAuditPlanNotExist))
 	}
 
 	if req.InstanceName != "" {
@@ -61,7 +65,7 @@ func CreateAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if !exist {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance %v is not exist", req.InstanceName)))
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, instanceNotExistError))
 		}
 
 		if req.InstanceDatabase != "" {
@@ -74,7 +78,7 @@ func CreateAuditPlan(c echo.Context) error {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 			if !dry.StringInSlice(req.InstanceDatabase, schemas) {
-				return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist", req.InstanceDatabase)))
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist in instance", req.InstanceDatabase)))
 			}
 			d.Close(context.TODO())
 		}
@@ -98,7 +102,19 @@ func CreateAuditPlan(c echo.Context) error {
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/ [delete]
-func DeleteAuditPlan(c echo.Context) error { return nil }
+func DeleteAuditPlan(c echo.Context) error {
+	s := model.GetStorage()
+
+	auditPlan, exist, err := s.GetAuditPlanByName(c.Param("audit_plan_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
+	return controller.JSONBaseErrorReq(c, s.Delete(auditPlan))
+}
 
 type UpdateAuditPlanReqV1 struct {
 	Cron             *string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *"`
