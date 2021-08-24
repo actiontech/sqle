@@ -1,9 +1,18 @@
 package v1
 
 import (
+	"context"
+	"fmt"
+
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
+	"actiontech.cloud/sqle/sqle/sqle/driver"
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"actiontech.cloud/sqle/sqle/sqle/log"
+	"actiontech.cloud/sqle/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
+	cron "github.com/robfig/cron/v3"
+	"github.com/ungerik/go-dry"
 )
 
 type CreateAuditPlanReqV1 struct {
@@ -23,7 +32,69 @@ type CreateAuditPlanReqV1 struct {
 // @Param audit_plan body v1.CreateAuditPlanReqV1 true "create audit plan"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans [post]
-func CreateAuditPlan(c echo.Context) error { return nil }
+func CreateAuditPlan(c echo.Context) error {
+	s := model.GetStorage()
+
+	req := new(CreateAuditPlanReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if !dry.StringInSlice(req.InstanceType, driver.AllDrivers()) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driver.ErrDriverNotSupported{DriverTyp: req.InstanceType}))
+	}
+
+	if req.InstanceDatabase != "" && req.InstanceName == "" {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("instance_name can not be empty while instance_database is not empty")))
+	}
+
+	_, err := cron.ParseStandard(req.Cron)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("cron is not standard specification")))
+	}
+
+	_, exist, err := s.GetAuditPlanByName(req.Name)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("audit plan %v is exist", req.Name)))
+	}
+
+	if req.InstanceName != "" {
+		instance, exist, err := s.GetInstanceByName(req.InstanceName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance %v is not exist", req.InstanceName)))
+		}
+
+		if req.InstanceDatabase != "" {
+			d, err := driver.NewDriver(log.NewEntry(), instance, "")
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			schemas, err := d.Schemas(context.TODO())
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			if !dry.StringInSlice(req.InstanceDatabase, schemas) {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist", req.InstanceDatabase)))
+			}
+			d.Close(context.TODO())
+		}
+	}
+
+	return controller.JSONBaseErrorReq(c,
+		s.Save(&model.AuditPlan{
+			Name:             req.Name,
+			Cron:             req.Cron,
+			DBType:           req.InstanceType,
+			InstanceName:     req.InstanceName,
+			InstanceDatabase: req.InstanceDatabase,
+		}))
+}
 
 // @Summary 删除审核计划
 // @Description delete audit plan
