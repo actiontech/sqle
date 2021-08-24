@@ -190,7 +190,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportsResV1"
+                            "$ref": "#/definitions/v1.GetAuditPlanReportResV1"
                         }
                     }
                 }
@@ -2849,6 +2849,27 @@
                 }
             }
         },
+        "v1.AuditPlanReportDetailResV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_report_audit_result": {
+                    "type": "string",
+                    "example": "same format as task audit result"
+                },
+                "audit_plan_report_sql_fingerprint": {
+                    "type": "string",
+                    "example": "select * from t1 where id = ?"
+                },
+                "audit_plan_report_sql_last_receive_text": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_report_timestamp": {
+                    "type": "string",
+                    "example": "RFC3339"
+                }
+            }
+        },
         "v1.AuditPlanReportResV1": {
             "type": "object",
             "properties": {
@@ -3284,6 +3305,28 @@
                     "items": {
                         "$ref": "#/definitions/v1.AuditPlanSQLReqV1"
                     }
+                }
+            }
+        },
+        "v1.GetAuditPlanReportResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanReportDetailResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },

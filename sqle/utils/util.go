@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"math"
 	"strings"
+	"time"
 	"unsafe"
 )
 
@@ -82,4 +83,11 @@ func Round(f float64, dec int) float64 {
 		return 0
 	}
 	return result
+}
+
+func AddDelTag(delTime *time.Time, target string) string {
+	if delTime != nil {
+		return target + "[x]"
+	}
+	return target
 }
