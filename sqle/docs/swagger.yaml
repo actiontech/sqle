@@ -1322,6 +1322,10 @@ paths:
       description: get audit plan info list
       operationId: getAuditPlansV1
       parameters:
+      - description: filter audit plan db type
+        in: query
+        name: filter_audit_plan_db_type
+        type: string
       - description: page index
         in: query
         name: page_index
