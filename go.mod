@@ -38,6 +38,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7
+	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 	github.com/urfave/cli/v2 v2.1.1
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	google.golang.org/grpc v1.28.0
