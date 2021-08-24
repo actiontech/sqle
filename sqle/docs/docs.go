@@ -40,6 +40,12 @@ var doc = `{
                 "operationId": "getAuditPlansV1",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "filter audit plan db type",
+                        "name": "filter_audit_plan_db_type",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
