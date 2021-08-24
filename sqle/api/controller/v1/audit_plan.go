@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	errAuditPlanNotExist = errors.New(errors.DataNotExist, fmt.Errorf("audit plan is not exist"))
+	errAuditPlanNotExist         = errors.New(errors.DataNotExist, fmt.Errorf("audit plan is not exist"))
+	errAuditPlanInstanceConflict = errors.New(errors.DataConflict, fmt.Errorf("instance_name can not be empty while instance_database is not empty"))
 )
 
 type CreateAuditPlanReqV1 struct {
@@ -48,7 +49,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	if req.InstanceDatabase != "" && req.InstanceName == "" {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("instance_name can not be empty while instance_database is not empty")))
+		return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
 	}
 
 	_, exist, err := s.GetAuditPlanByName(req.Name)
@@ -56,7 +57,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, errAuditPlanNotExist))
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	if req.InstanceName != "" {
@@ -83,6 +84,8 @@ func CreateAuditPlan(c echo.Context) error {
 			d.Close(context.TODO())
 		}
 	}
+
+	// todo trigger memory create
 
 	return controller.JSONBaseErrorReq(c,
 		s.Save(&model.AuditPlan{
@@ -113,11 +116,13 @@ func DeleteAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
+	// todo trigger memory delete
+
 	return controller.JSONBaseErrorReq(c, s.Delete(auditPlan))
 }
 
 type UpdateAuditPlanReqV1 struct {
-	Cron             *string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *"`
+	Cron             *string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"omitempty,cron"`
 	InstanceName     *string `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
 	InstanceDatabase *string `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
 }
@@ -131,7 +136,42 @@ type UpdateAuditPlanReqV1 struct {
 // @param audit_plan body v1.UpdateAuditPlanReqV1 true "update audit plan"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/ [patch]
-func UpdateAuditPlan(c echo.Context) error { return nil }
+func UpdateAuditPlan(c echo.Context) error {
+	s := model.GetStorage()
+
+	req := new(UpdateAuditPlanReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	auditPlan, exist, err := s.GetAuditPlanByName(c.Param("audit_plan_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
+	if req.Cron != nil {
+		auditPlan.Cron = *req.Cron
+	}
+	if req.InstanceName != nil {
+		if auditPlan.InstanceDatabase != "" && *req.InstanceName == "" {
+			return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
+		}
+		auditPlan.InstanceName = *req.InstanceName
+	}
+	if req.InstanceDatabase != nil {
+		if auditPlan.InstanceName == "" && *req.InstanceDatabase != "" {
+			return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
+		}
+		auditPlan.InstanceDatabase = *req.InstanceDatabase
+	}
+
+	// todo trigger memory update
+
+	return controller.JSONBaseErrorReq(c, s.Save(auditPlan))
+}
 
 type GetAuditPlansReqV1 struct {
 	FilterAuditPlanDBType string `json:"filter_audit_plan_db_type"`
