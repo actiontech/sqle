@@ -181,24 +181,24 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get audit plan report detail",
+                "description": "get audit plan report SQLs",
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的报告详情",
-                "operationId": "getAuditPlanReportDetailV1",
+                "summary": "获取指定审核计划的SQL审核详情",
+                "operationId": "getAuditPlanReportSQLsV1",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
                         "in": "path",
                         "required": true
                     },
@@ -219,7 +219,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportResV1"
+                            "$ref": "#/definitions/v1.GetAuditPlanReportSQLsResV1"
                         }
                     }
                 }
@@ -280,7 +280,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的SQLs信息",
+                "summary": "获取指定审核计划的SQLs信息(不包括审核结果)",
                 "operationId": "getAuditPlanSQLsV1",
                 "parameters": [
                     {
@@ -2878,10 +2878,23 @@ var doc = `{
                 }
             }
         },
-        "v1.AuditPlanReportDetailResV1": {
+        "v1.AuditPlanReportResV1": {
             "type": "object",
             "properties": {
-                "audit_plan_report_audit_result": {
+                "audit_plan_report_id": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "audit_plan_report_timestamp": {
+                    "type": "string",
+                    "example": "RFC3339"
+                }
+            }
+        },
+        "v1.AuditPlanReportSQLResV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_report_sql_audit_result": {
                     "type": "string",
                     "example": "same format as task audit result"
                 },
@@ -2893,20 +2906,7 @@ var doc = `{
                     "type": "string",
                     "example": "select * from t1 where id = 1"
                 },
-                "audit_plan_report_timestamp": {
-                    "type": "string",
-                    "example": "RFC3339"
-                }
-            }
-        },
-        "v1.AuditPlanReportResV1": {
-            "type": "object",
-            "properties": {
-                "audit_plan_report_id": {
-                    "type": "string",
-                    "example": "1"
-                },
-                "audit_plan_report_timestamp": {
+                "audit_plan_report_sql_last_receive_timestamp": {
                     "type": "string",
                     "example": "RFC3339"
                 }
@@ -3337,7 +3337,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetAuditPlanReportResV1": {
+        "v1.GetAuditPlanReportSQLsResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -3347,7 +3347,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.AuditPlanReportDetailResV1"
+                        "$ref": "#/definitions/v1.AuditPlanReportSQLResV1"
                     }
                 },
                 "message": {
