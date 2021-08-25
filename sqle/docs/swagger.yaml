@@ -9,9 +9,18 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.AuditPlanReportDetailResV1:
+  v1.AuditPlanReportResV1:
     properties:
-      audit_plan_report_audit_result:
+      audit_plan_report_id:
+        example: "1"
+        type: string
+      audit_plan_report_timestamp:
+        example: RFC3339
+        type: string
+    type: object
+  v1.AuditPlanReportSQLResV1:
+    properties:
+      audit_plan_report_sql_audit_result:
         example: same format as task audit result
         type: string
       audit_plan_report_sql_fingerprint:
@@ -20,16 +29,7 @@ definitions:
       audit_plan_report_sql_last_receive_text:
         example: select * from t1 where id = 1
         type: string
-      audit_plan_report_timestamp:
-        example: RFC3339
-        type: string
-    type: object
-  v1.AuditPlanReportResV1:
-    properties:
-      audit_plan_report_id:
-        example: "1"
-        type: string
-      audit_plan_report_timestamp:
+      audit_plan_report_sql_last_receive_timestamp:
         example: RFC3339
         type: string
     type: object
@@ -324,14 +324,14 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
     type: object
-  v1.GetAuditPlanReportResV1:
+  v1.GetAuditPlanReportSQLsResV1:
     properties:
       code:
         example: 0
         type: integer
       data:
         items:
-          $ref: '#/definitions/v1.AuditPlanReportDetailResV1'
+          $ref: '#/definitions/v1.AuditPlanReportSQLResV1'
         type: array
       message:
         example: ok
@@ -1413,17 +1413,17 @@ paths:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/:
     get:
-      description: get audit plan report detail
-      operationId: getAuditPlanReportDetailV1
+      description: get audit plan report SQLs
+      operationId: getAuditPlanReportSQLsV1
       parameters:
-      - description: audit plan report id
-        in: path
-        name: audit_plan_report_id
-        required: true
-        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
+        required: true
+        type: string
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
         required: true
         type: string
       - description: page index
@@ -1438,10 +1438,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetAuditPlanReportResV1'
+            $ref: '#/definitions/v1.GetAuditPlanReportSQLsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的报告详情
+      summary: 获取指定审核计划的SQL审核详情
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/reports:
@@ -1497,7 +1497,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanSQLsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQLs信息
+      summary: 获取指定审核计划的SQLs信息(不包括审核结果)
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls/full:
