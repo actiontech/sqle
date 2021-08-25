@@ -190,6 +190,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "audit plan name",
                         "name": "audit_plan_name",
                         "in": "path",

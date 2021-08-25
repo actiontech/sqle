@@ -336,6 +336,7 @@ type AuditPlanReportDetailResV1 struct {
 // @Id getAuditPlanReportDetailV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
+// @Param audit_plan_report_id path string true "audit plan report id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
