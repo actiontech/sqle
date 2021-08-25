@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/driver"
@@ -86,6 +87,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	// todo trigger memory create
+	// todo generate token before save audit plan
 
 	return controller.JSONBaseErrorReq(c,
 		s.Save(&model.AuditPlan{
@@ -204,7 +206,48 @@ type AuditPlanResV1 struct {
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetAuditPlansResV1
 // @router /v1/audit_plans [get]
-func GetAuditPlans(c echo.Context) error { return nil }
+func GetAuditPlans(c echo.Context) error {
+	s := model.GetStorage()
+
+	req := new(GetAuditPlansReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	// todo refactor to api common utils
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+
+	data := map[string]interface{}{
+		"filter_audit_plan_db_type": req.FilterAuditPlanDBType,
+		"limit":                     req.PageSize,
+		"offset":                    offset,
+	}
+	auditPlans, count, err := s.GetAuditPlansByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var auditPlansResV1 []AuditPlanResV1
+	for _, auditPlan := range auditPlans {
+		auditPlansResV1 = append(auditPlansResV1, AuditPlanResV1{
+			Name:             auditPlan.Name,
+			Cron:             auditPlan.Cron,
+			DBType:           auditPlan.DBType,
+			InstanceName:     auditPlan.InstanceName.String,
+			InstanceDatabase: auditPlan.InstanceDatabase.String,
+
+			Token: auditPlan.Token,
+		})
+	}
+	return c.JSON(http.StatusOK, &GetAuditPlansResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      auditPlansResV1,
+		TotalNums: count,
+	})
+}
 
 type GetAuditPlanReportsReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
