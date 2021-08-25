@@ -1416,6 +1416,11 @@ paths:
       description: get audit plan report detail
       operationId: getAuditPlanReportDetailV1
       parameters:
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
