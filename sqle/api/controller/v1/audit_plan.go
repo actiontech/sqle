@@ -113,46 +113,46 @@ type AuditPlanReportResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/reports [get]
 func GetAuditPlanReports(c echo.Context) error { return nil }
 
-type GetAuditPlanReportReqV1 struct {
+type GetAuditPlanReportSQLsReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type GetAuditPlanReportResV1 struct {
+type GetAuditPlanReportSQLsResV1 struct {
 	controller.BaseRes
-	Data      []AuditPlanReportDetailResV1 `json:"data"`
-	TotalNums uint64                       `json:"total_nums"`
+	Data      []AuditPlanReportSQLResV1 `json:"data"`
+	TotalNums uint64                    `json:"total_nums"`
 }
 
-type AuditPlanReportDetailResV1 struct {
-	SQLFingerprint     string `json:"audit_plan_report_sql_fingerprint" example:"select * from t1 where id = ?"`
-	SQLLastReceiveText string `json:"audit_plan_report_sql_last_receive_text" example:"select * from t1 where id = 1"`
-	AuditResult        string `json:"audit_plan_report_audit_result" example:"same format as task audit result"`
-	Timestamp          string `json:"audit_plan_report_timestamp" example:"RFC3339"`
+type AuditPlanReportSQLResV1 struct {
+	Fingerprint          string `json:"audit_plan_report_sql_fingerprint" example:"select * from t1 where id = ?"`
+	LastReceiveText      string `json:"audit_plan_report_sql_last_receive_text" example:"select * from t1 where id = 1"`
+	LastReceiveTimestamp string `json:"audit_plan_report_sql_last_receive_timestamp" example:"RFC3339"`
+	AuditResult          string `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
 }
 
-// @Summary 获取指定审核计划的报告详情
-// @Description get audit plan report detail
-// @Id getAuditPlanReportDetailV1
+// @Summary 获取指定审核计划的SQL审核详情
+// @Description get audit plan report SQLs
+// @Id getAuditPlanReportSQLsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param audit_plan_report_id path string true "audit plan report id"
 // @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
-// @Success 200 {object} v1.GetAuditPlanReportResV1
+// @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
 // @router /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/ [get]
-func GetAuditPlanReportDetail(c echo.Context) error { return nil }
+func GetAuditPlanReportSQLs(c echo.Context) error { return nil }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
 	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list"`
 }
 
 type AuditPlanSQLReqV1 struct {
-	SQLFingerprint          string `json:"audit_plan_sql_fingerprint" form:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?" valid:"required"`
-	SQLCounter              string `json:"audit_plan_sql_counter" form:"audit_plan_sql_counter" example:"6" valid:"required"`
-	SQLLastReceiveText      string `json:"audit_plan_sql_last_receive_text" form:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
-	SQLLastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" form:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
+	Fingerprint          string `json:"audit_plan_sql_fingerprint" form:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?" valid:"required"`
+	Counter              string `json:"audit_plan_sql_counter" form:"audit_plan_sql_counter" example:"6" valid:"required"`
+	LastReceiveText      string `json:"audit_plan_sql_last_receive_text" form:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
+	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" form:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
 }
 
 // @Summary 全量同步SQL到审核计划
@@ -193,13 +193,13 @@ type GetAuditPlanSQLsResV1 struct {
 }
 
 type AuditPlanSQLResV1 struct {
-	SQLFingerprint          string `json:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
-	SQLCounter              string `json:"audit_plan_sql_counter" example:"6"`
-	SQLLastReceiveText      string `json:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
-	SQLLastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
+	Fingerprint          string `json:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
+	Counter              string `json:"audit_plan_sql_counter" example:"6"`
+	LastReceiveText      string `json:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
+	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
 }
 
-// @Summary 获取指定审核计划的SQLs信息
+// @Summary 获取指定审核计划的SQLs信息(不包括审核结果)
 // @Description get audit plan SQLs
 // @Id getAuditPlanSQLsV1
 // @Tags audit_plan
