@@ -342,7 +342,46 @@ type AuditPlanReportSQLResV1 struct {
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
 // @router /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/ [get]
-func GetAuditPlanReportSQLs(c echo.Context) error { return nil }
+func GetAuditPlanReportSQLs(c echo.Context) error {
+	s := model.GetStorage()
+
+	req := new(GetAuditPlanReportSQLsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	// todo refactor to api common utils
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+
+	data := map[string]interface{}{
+		"audit_plan_name":      c.Param("audit_plan_name"),
+		"audit_plan_report_id": c.Param("audit_plan_report_id"),
+		"limit":                req.PageSize,
+		"offset":               offset,
+	}
+	auditPlanReportSQLs, count, err := s.GetAuditPlanReportSQLsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var auditPlanReportSQLsResV1 []AuditPlanReportSQLResV1
+	for _, auditPlanReportSQL := range auditPlanReportSQLs {
+		auditPlanReportSQLsResV1 = append(auditPlanReportSQLsResV1, AuditPlanReportSQLResV1{
+			Fingerprint:          auditPlanReportSQL.Fingerprint,
+			LastReceiveText:      auditPlanReportSQL.LastReceiveText,
+			LastReceiveTimestamp: auditPlanReportSQL.LastReceiveTimestamp,
+			AuditResult:          auditPlanReportSQL.AuditResult,
+		})
+	}
+	return c.JSON(http.StatusOK, &GetAuditPlanReportSQLsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      auditPlanReportSQLsResV1,
+		TotalNums: count,
+	})
+}
 
 type FullSyncAuditPlanSQLsReqV1 struct {
 	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list"`
