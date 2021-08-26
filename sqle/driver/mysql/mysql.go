@@ -67,14 +67,13 @@ func newInspect(log *logrus.Entry, inst *model.Instance, schema string) (driver.
 	ctx := NewContext(nil)
 	ctx.UseSchema(schema)
 
-	inspect := &Inspect{
+	return &Inspect{
 		Ctx:      ctx,
 		inst:     inst,
 		log:      log,
 		result:   driver.NewInspectResults(),
 		isStatic: inst == nil,
-	}
-	return inspect, nil
+	}, nil
 }
 
 func (i *Inspect) IsStaticAudit() bool {
