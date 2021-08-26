@@ -90,7 +90,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 	action.task = task
 
 	// d will be closed in Sqled.do().
-	if d, err = driver.NewDriver(entry, task.Instance, task.Schema); err != nil {
+	if d, err = driver.NewDriver(entry, task.Instance, task.DBType, task.Schema); err != nil {
 		goto Error
 	}
 	action.driver = d
@@ -227,10 +227,18 @@ func (a *Action) audit() error {
 
 	task := a.task
 
-	rules, err := st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
+	var rules []model.Rule
+	var err error
+	if task.InstanceId == 0 {
+		// get all rules if audit is static
+		rules, err = st.GetAllRuleByDBType(task.DBType)
+	} else {
+		rules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
+	}
 	if err != nil {
 		return err
 	}
+
 	var ptrRules []*model.Rule
 	for i := range rules {
 		ptrRules = append(ptrRules, &rules[i])
@@ -292,7 +300,8 @@ func (a *Action) audit() error {
 			"result": executeSQL.AuditResult}).Info("audit finished")
 	}
 
-	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+	// skip generate if audit is static
+	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else {
 		var rollbackSQLs []*model.RollbackSQL

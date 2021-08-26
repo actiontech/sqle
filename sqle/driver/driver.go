@@ -54,11 +54,11 @@ func (e *ErrDriverNotSupported) Error() string {
 }
 
 // NewDriver return a new instantiated Driver.
-func NewDriver(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error) {
+func NewDriver(log *logrus.Entry, inst *model.Instance, dbType, schema string) (Driver, error) {
 	driversMu.RLock()
 	defer driversMu.RUnlock()
 
-	d, exist := drivers[inst.DbType]
+	d, exist := drivers[dbType]
 	if !exist {
 		return nil, fmt.Errorf("driver type %v is not supported", inst.DbType)
 	}

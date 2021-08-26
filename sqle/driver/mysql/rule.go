@@ -2494,3 +2494,59 @@ func checkCreateProcedure(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	return nil
 }
+
+func RuleCanAuditWithoutInstance(rule model.Rule, node ast.Node) bool {
+	switch node.(type) {
+	case *ast.CreateTableStmt, *ast.CreateViewStmt, *ast.CreateUserStmt:
+	case *ast.DropDatabaseStmt, *ast.DropTableStmt:
+	default:
+		return false
+	}
+
+	switch rule.Name {
+	case DDLCheckPKWithoutIfNotExists:
+	case DDLCheckObjectNameLength:
+	case DDLCheckObjectNameUsingKeyword:
+	case DDLCheckPKNotExist:
+	case DDLCheckPKWithoutBigintUnsigned:
+	case DDLCheckPKWithoutAutoIncrement:
+	case DDLCheckPKProhibitAutoIncrement:
+	case DDLCheckColumnCharLength:
+	case DDLDisableFK:
+	case DDLCheckIndexCount:
+	case DDLCheckCompositeIndexMax:
+	//case DDLCheckTableWithoutInnoDBUTF8MB4:
+	case DDLCheckIndexedColumnWithBolb:
+	case DDLCheckAlterTableNeedMerge:
+	case DDLDisableDropStatement:
+	case DDLCheckTableWithoutComment:
+	case DDLCheckColumnWithoutComment:
+	case DDLCheckIndexPrefix:
+	case DDLCheckUniqueIndexPrefix:
+	case DDLCheckUniqueIndex:
+	case DDLCheckColumnWithoutDefault:
+	case DDLCheckColumnTimestampWitoutDefault:
+	case DDLCheckColumnBlobWithNotNull:
+	case DDLCheckColumnBlobDefaultIsNotNull:
+	case DDLCheckColumnEnumNotice:
+	case DDLCheckColumnSetNitice:
+	case DDLCheckColumnBlobNotice:
+	//case DDLCheckIndexesExistBeforeCreateConstraints:
+	//case DDLCheckDatabaseCollation:
+	case DDLCheckDecimalTypeColumn:
+	case DDLCheckDatabaseSuffix:
+	case DDLCheckPKName:
+	case DDLCheckTransactionIsolationLevel:
+	case DDLCheckTablePartition:
+	case DDLCheckIsExistLimitOffset:
+	//case DDLCheckIndexOption:
+	case DDLCheckOBjectNameUseCN:
+	case DDLCheckCreateView:
+	case DDLCheckCreateTrigger:
+	case DDLCheckCreateFunction:
+	case DDLCheckCreateProcedure:
+	default:
+		return false
+	}
+	return true
+}

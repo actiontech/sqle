@@ -51,6 +51,8 @@ type Inspect struct {
 	dbConn *Executor
 	// isConnected represent dbConn has Connected.
 	isConnected bool
+	// isStatic represent Audit without instance.
+	isStatic bool
 	// counterDDL is a counter for all ddl sql.
 	counterDDL uint
 	// counterDML is a counter for all dml sql.
@@ -64,15 +66,26 @@ type Inspect struct {
 func newInspect(log *logrus.Entry, inst *model.Instance, schema string) (driver.Driver, error) {
 	ctx := NewContext(nil)
 	ctx.UseSchema(schema)
-	return &Inspect{
-		Ctx:    ctx,
-		inst:   inst,
-		log:    log,
-		result: driver.NewInspectResults(),
-	}, nil
+
+	inspect := &Inspect{
+		Ctx:      ctx,
+		inst:     inst,
+		log:      log,
+		result:   driver.NewInspectResults(),
+		isStatic: inst == nil,
+	}
+	return inspect, nil
+}
+
+func (i *Inspect) IsStaticAudit() bool {
+	return i.isStatic
 }
 
 func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
+	if i.IsStaticAudit() {
+		return nil, nil
+	}
+
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
@@ -81,6 +94,9 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 }
 
 func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+	if i.IsStaticAudit() {
+		return nil, nil
+	}
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
@@ -152,6 +168,9 @@ func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*
 		if !ok || handler.Func == nil {
 			continue
 		}
+		if i.IsStaticAudit() && !RuleCanAuditWithoutInstance(handler.Rule, nodes[0]) {
+			continue
+		}
 		if err := handler.Func(*rule, i, nodes[0]); err != nil {
 			return nil, err
 		}
@@ -170,6 +189,9 @@ func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*
 }
 
 func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+	if i.IsStaticAudit() {
+		return "", "", nil
+	}
 	if i.HasInvalidSql {
 		return "", "", nil
 	}
@@ -187,6 +209,10 @@ func (i *Inspect) Close(ctx context.Context) {
 }
 
 func (i *Inspect) Ping(ctx context.Context) error {
+	if i.IsStaticAudit() {
+		return nil
+	}
+
 	conn, err := i.getDbConn()
 	if err != nil {
 		return err
@@ -195,6 +221,9 @@ func (i *Inspect) Ping(ctx context.Context) error {
 }
 
 func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
+	if i.IsStaticAudit() {
+		return nil, nil
+	}
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
@@ -662,6 +691,9 @@ func (i *Inspect) getSystemVariable(name string) (string, error) {
 	v, exist := i.Ctx.GetSysVar(name)
 	if exist {
 		return v, nil
+	}
+	if i.IsStaticAudit() {
+		return "", nil
 	}
 
 	conn, err := i.getDbConn()
