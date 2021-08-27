@@ -131,14 +131,14 @@ func CreateAndAuditTask(c echo.Context) error {
 		if !exist {
 			return controller.JSONBaseErrorReq(c, instanceNoAccessError)
 		}
+
+		err = checkCurrentUserCanAccessInstance(c, instance)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
-	err = checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	d, err := driver.NewDriver(log.NewEntry(), instance, req.DBType, "")
+	d, err := driver.NewDriver(log.NewEntry(), instance, instance == nil, req.DBType, "")
 	if err != nil {
 		return err
 	}

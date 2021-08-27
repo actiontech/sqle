@@ -51,8 +51,8 @@ type Inspect struct {
 	dbConn *Executor
 	// isConnected represent dbConn has Connected.
 	isConnected bool
-	// isStatic represent Audit without instance.
-	isStatic bool
+	// isOfflineAudit represent Audit without instance.
+	isOfflineAudit bool
 	// counterDDL is a counter for all ddl sql.
 	counterDDL uint
 	// counterDML is a counter for all dml sql.
@@ -63,25 +63,25 @@ type Inspect struct {
 	SqlAction []func(node ast.Node) error
 }
 
-func newInspect(log *logrus.Entry, inst *model.Instance, schema string) (driver.Driver, error) {
+func newInspect(cfg *driver.Config) (driver.Driver, error) {
 	ctx := NewContext(nil)
-	ctx.UseSchema(schema)
+	ctx.UseSchema(cfg.Schema)
 
 	return &Inspect{
-		Ctx:      ctx,
-		inst:     inst,
-		log:      log,
-		result:   driver.NewInspectResults(),
-		isStatic: inst == nil,
+		Ctx:            ctx,
+		inst:           cfg.Inst,
+		log:            cfg.Log,
+		result:         driver.NewInspectResults(),
+		isOfflineAudit: cfg.IsOffline,
 	}, nil
 }
 
-func (i *Inspect) IsStaticAudit() bool {
-	return i.isStatic
+func (i *Inspect) IsOfflineAudit() bool {
+	return i.isOfflineAudit
 }
 
 func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
-	if i.IsStaticAudit() {
+	if i.IsOfflineAudit() {
 		return nil, nil
 	}
 
@@ -93,7 +93,7 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 }
 
 func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
-	if i.IsStaticAudit() {
+	if i.IsOfflineAudit() {
 		return nil, nil
 	}
 	conn, err := i.getDbConn()
@@ -167,7 +167,7 @@ func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*
 		if !ok || handler.Func == nil {
 			continue
 		}
-		if i.IsStaticAudit() && !RuleCanAuditWithoutInstance(handler.Rule, nodes[0]) {
+		if i.IsOfflineAudit() && !handler.IsAllowOfflineRule(nodes[0]) {
 			continue
 		}
 		if err := handler.Func(*rule, i, nodes[0]); err != nil {
@@ -188,7 +188,7 @@ func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*
 }
 
 func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
-	if i.IsStaticAudit() {
+	if i.IsOfflineAudit() {
 		return "", "", nil
 	}
 	if i.HasInvalidSql {
@@ -208,7 +208,7 @@ func (i *Inspect) Close(ctx context.Context) {
 }
 
 func (i *Inspect) Ping(ctx context.Context) error {
-	if i.IsStaticAudit() {
+	if i.IsOfflineAudit() {
 		return nil
 	}
 
@@ -220,7 +220,7 @@ func (i *Inspect) Ping(ctx context.Context) error {
 }
 
 func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
-	if i.IsStaticAudit() {
+	if i.IsOfflineAudit() {
 		return nil, nil
 	}
 	conn, err := i.getDbConn()
@@ -691,7 +691,7 @@ func (i *Inspect) getSystemVariable(name string) (string, error) {
 	if exist {
 		return v, nil
 	}
-	if i.IsStaticAudit() {
+	if i.IsOfflineAudit() {
 		return "", nil
 	}
 

@@ -87,18 +87,18 @@ func InitPlugins(pluginDir string) error {
 			})
 		}
 
-		Register(pluginMeta.Name, func(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error) {
+		Register(pluginMeta.Name, func(config *Config) (Driver, error) {
 			pluginCloseCh := make(chan struct{})
 			srv, err := getServerHandle(binaryPath, pluginCloseCh)
 			if err != nil {
 				return nil, err
 			}
 			_, err = srv.Init(context.TODO(), &proto.InitRequest{
-				InstanceHost: inst.Host,
-				InstancePort: inst.Port,
-				InstanceUser: inst.User,
-				InstancePass: inst.Password,
-				DatabaseOpen: schema,
+				InstanceHost: config.Inst.Host,
+				InstancePort: config.Inst.Port,
+				InstanceUser: config.Inst.User,
+				InstancePass: config.Inst.Password,
+				DatabaseOpen: config.Schema,
 			})
 			if err != nil {
 				return nil, err

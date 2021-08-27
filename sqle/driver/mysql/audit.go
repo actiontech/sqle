@@ -31,7 +31,7 @@ const (
 )
 
 func (i *Inspect) CheckInvalid(node ast.Node) error {
-	if i.IsStaticAudit() {
+	if i.IsOfflineAudit() {
 		return nil
 	}
 

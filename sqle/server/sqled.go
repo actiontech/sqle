@@ -90,7 +90,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
 	action.task = task
 
 	// d will be closed in Sqled.do().
-	if d, err = driver.NewDriver(entry, task.Instance, task.DBType, task.Schema); err != nil {
+	if d, err = driver.NewDriver(entry, task.Instance, task.Instance == nil, task.DBType, task.Schema); err != nil {
 		goto Error
 	}
 	action.driver = d

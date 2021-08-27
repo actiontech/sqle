@@ -23,8 +23,24 @@ var (
 	rulesMu sync.RWMutex
 )
 
+type Config struct {
+	IsOffline bool
+	Schema    string
+	Log       *logrus.Entry
+	Inst      *model.Instance
+}
+
+func NewConfig(log *logrus.Entry, inst *model.Instance, schema string, isOffline bool) *Config {
+	return &Config{
+		Log:       log,
+		Inst:      inst,
+		Schema:    schema,
+		IsOffline: isOffline,
+	}
+}
+
 // handler is a template which Driver plugin should provide such function signature.
-type handler func(log *logrus.Entry, inst *model.Instance, schema string) (Driver, error)
+type handler func(config *Config) (Driver, error)
 
 // Register like sql.Register.
 //
@@ -54,7 +70,7 @@ func (e *ErrDriverNotSupported) Error() string {
 }
 
 // NewDriver return a new instantiated Driver.
-func NewDriver(log *logrus.Entry, inst *model.Instance, dbType, schema string) (Driver, error) {
+func NewDriver(log *logrus.Entry, inst *model.Instance, isOfflineAudit bool, dbType, schema string) (Driver, error) {
 	driversMu.RLock()
 	defer driversMu.RUnlock()
 
@@ -62,8 +78,7 @@ func NewDriver(log *logrus.Entry, inst *model.Instance, dbType, schema string) (
 	if !exist {
 		return nil, fmt.Errorf("driver type %v is not supported", inst.DbType)
 	}
-
-	return d(log, inst, schema)
+	return d(NewConfig(log, inst, schema, isOfflineAudit))
 }
 
 func AllRules() []*model.Rule {
