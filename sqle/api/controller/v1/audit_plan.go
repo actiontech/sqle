@@ -448,7 +448,45 @@ type AuditPlanSQLResV1 struct {
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetAuditPlanSQLsResV1
 // @router /v1/audit_plans/{audit_plan_name}/sqls [get]
-func GetAuditPlanSQLs(c echo.Context) error { return nil }
+func GetAuditPlanSQLs(c echo.Context) error {
+	s := model.GetStorage()
+
+	req := new(GetAuditPlanSQLsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	// todo refactor to api common utils
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+
+	data := map[string]interface{}{
+		"audit_plan_name": c.Param("audit_plan_name"),
+		"limit":           req.PageSize,
+		"offset":          offset,
+	}
+	auditPlanSQLs, count, err := s.GetAuditPlanSQLsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var auditPlanSQLsResV1 []AuditPlanSQLResV1
+	for _, auditPlanSQL := range auditPlanSQLs {
+		auditPlanSQLsResV1 = append(auditPlanSQLsResV1, AuditPlanSQLResV1{
+			Fingerprint:          auditPlanSQL.Fingerprint,
+			LastReceiveText:      auditPlanSQL.LastReceiveText,
+			LastReceiveTimestamp: auditPlanSQL.LastReceiveTimestamp,
+			Counter:              auditPlanSQL.Counter,
+		})
+	}
+	return c.JSON(http.StatusOK, &GetAuditPlanSQLsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      auditPlanSQLsResV1,
+		TotalNums: count,
+	})
+}
 
 // @Summary 触发审核计划
 // @Description trigger audit plan
