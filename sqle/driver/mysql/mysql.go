@@ -72,7 +72,7 @@ func newInspect(cfg *driver.Config) (driver.Driver, error) {
 		inst:           cfg.Inst,
 		log:            cfg.Log,
 		result:         driver.NewInspectResults(),
-		isOfflineAudit: cfg.IsOffline,
+		isOfflineAudit: cfg.IsOfflineAudit,
 	}, nil
 }
 

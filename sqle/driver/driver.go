@@ -24,18 +24,18 @@ var (
 )
 
 type Config struct {
-	IsOffline bool
-	Schema    string
-	Log       *logrus.Entry
-	Inst      *model.Instance
+	IsOfflineAudit bool
+	Schema         string
+	Log            *logrus.Entry
+	Inst           *model.Instance
 }
 
-func NewConfig(log *logrus.Entry, inst *model.Instance, schema string, isOffline bool) *Config {
+func NewConfig(log *logrus.Entry, inst *model.Instance, schema string, isOfflineAudit bool) *Config {
 	return &Config{
-		Log:       log,
-		Inst:      inst,
-		Schema:    schema,
-		IsOffline: isOffline,
+		Log:            log,
+		Inst:           inst,
+		Schema:         schema,
+		IsOfflineAudit: isOfflineAudit,
 	}
 }
 
