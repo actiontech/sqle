@@ -73,7 +73,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{req.Name}, instances)
+	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -171,7 +171,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{templateName}, instances)
+	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -521,7 +521,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{req.Name}, instances)
+	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -552,4 +552,20 @@ func CloneRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, instances []*model.Instance) (bool, error) {
+	for _, inst := range instances {
+		currentBindTemplates, err := s.GetRuleTemplatesByInstance(inst)
+		if err != nil {
+			return false, err
+		}
+		if len(currentBindTemplates) > 1 {
+			return false, instanceBindError
+		}
+		if len(currentBindTemplates) == 1 && currentBindTemplates[0].Name != tplName {
+			return false, instanceBindError
+		}
+	}
+	return true, nil
 }
