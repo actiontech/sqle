@@ -98,11 +98,7 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	ok, err := CheckInstanceCanBindOneRuleTemplate(s, req.RuleTemplates, nil)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !ok {
+	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
 		return controller.JSONBaseErrorReq(c, instanceBindError)
 	}
 
@@ -306,11 +302,7 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, instanceNotExistError)
 	}
 
-	ok, err := CheckInstanceCanBindOneRuleTemplate(s, req.RuleTemplates, nil)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !ok {
+	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
 		return controller.JSONBaseErrorReq(c, instanceBindError)
 	}
 
@@ -711,39 +703,25 @@ func GetInstanceRules(c echo.Context) error {
 	})
 }
 
-func CheckInstancesCanBindOneRuleTemplate(s *model.Storage, ruleTemplates []string, instances []*model.Instance) (bool, error) {
-	for _, inst := range instances {
-		ok, err := CheckInstanceCanBindOneRuleTemplate(s, ruleTemplates, inst)
-		if err != nil {
-			return false, instanceBindError
-		}
-		if !ok {
-			return false, nil
-		}
+func CheckInstanceCanBindOneRuleTemplate(ruleTemplates []string) bool {
+	if len(ruleTemplates) == 1 {
+		return true
 	}
-	return true, nil
+	return false
 }
 
-func CheckInstanceCanBindOneRuleTemplate(s *model.Storage, ruleTemplates []string, inst *model.Instance) (bool, error) {
-	if len(ruleTemplates) == 0 {
-		return true, nil
-	}
-	if len(ruleTemplates) > 1 {
-		return false, nil
-	}
-	if inst == nil {
-		return true, nil
-	}
-
-	associationRT, err := s.GetRuleTemplatesByInstance(inst)
-	if err != nil {
-		return false, err
-	}
-	if len(associationRT) > 1 {
-		return false, nil
-	}
-	if len(associationRT) == 1 && associationRT[0].Name != ruleTemplates[0] {
-		return false, nil
+func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, instances []*model.Instance) (bool, error) {
+	for _, inst := range instances {
+		currentBindTemplates, err := s.GetRuleTemplatesByInstance(inst)
+		if err != nil {
+			return false, err
+		}
+		if len(currentBindTemplates) > 1 {
+			return false, instanceBindError
+		}
+		if len(currentBindTemplates) == 1 && currentBindTemplates[0].Name != tplName {
+			return false, instanceBindError
+		}
 	}
 	return true, nil
 }

@@ -73,7 +73,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{req.Name}, instances)
+	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -171,7 +171,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{templateName}, instances)
+	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -521,7 +521,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckInstancesCanBindOneRuleTemplate(s, []string{req.Name}, instances)
+	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
