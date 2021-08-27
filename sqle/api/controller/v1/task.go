@@ -152,6 +152,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	task := &model.Task{
+		Schema:       req.InstanceSchema,
 		Instance:     instance,
 		CreateUserId: user.ID,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
