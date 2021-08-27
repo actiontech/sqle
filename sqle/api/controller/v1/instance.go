@@ -704,26 +704,10 @@ func GetInstanceRules(c echo.Context) error {
 }
 
 func CheckInstanceCanBindOneRuleTemplate(ruleTemplates []string) bool {
-	if len(ruleTemplates) == 1 {
+	if len(ruleTemplates) <= 1 {
 		return true
 	}
 	return false
-}
-
-func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, instances []*model.Instance) (bool, error) {
-	for _, inst := range instances {
-		currentBindTemplates, err := s.GetRuleTemplatesByInstance(inst)
-		if err != nil {
-			return false, err
-		}
-		if len(currentBindTemplates) > 1 {
-			return false, instanceBindError
-		}
-		if len(currentBindTemplates) == 1 && currentBindTemplates[0].Name != tplName {
-			return false, instanceBindError
-		}
-	}
-	return true, nil
 }
 
 func CheckInstanceAndRuleTemplateDbType(ruleTemplates []*model.RuleTemplate, instances ...*model.Instance) error {

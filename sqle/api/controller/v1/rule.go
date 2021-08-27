@@ -553,3 +553,19 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
+
+func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, instances []*model.Instance) (bool, error) {
+	for _, inst := range instances {
+		currentBindTemplates, err := s.GetRuleTemplatesByInstance(inst)
+		if err != nil {
+			return false, err
+		}
+		if len(currentBindTemplates) > 1 {
+			return false, instanceBindError
+		}
+		if len(currentBindTemplates) == 1 && currentBindTemplates[0].Name != tplName {
+			return false, instanceBindError
+		}
+	}
+	return true, nil
+}
