@@ -92,7 +92,7 @@ func CreateAuditPlan(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c,
 		s.Save(&model.AuditPlan{
 			Name:             req.Name,
-			Cron:             req.Cron,
+			CronExpression:   req.Cron,
 			DBType:           req.InstanceType,
 			InstanceName:     req.InstanceName,
 			InstanceDatabase: req.InstanceDatabase,
@@ -155,7 +155,7 @@ func UpdateAuditPlan(c echo.Context) error {
 	}
 
 	if req.Cron != nil {
-		auditPlan.Cron = *req.Cron
+		auditPlan.CronExpression = *req.Cron
 	}
 	if req.InstanceName != nil {
 		if auditPlan.InstanceDatabase != "" && *req.InstanceName == "" {
@@ -496,4 +496,6 @@ func GetAuditPlanSQLs(c echo.Context) error {
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/trigger [post]
-func TriggerAuditPlan(c echo.Context) error { return nil }
+func TriggerAuditPlan(c echo.Context) error {
+	return nil
+}
