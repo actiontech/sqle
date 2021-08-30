@@ -3,106 +3,111 @@ package proto;
 option go_package = "./;proto";
 
 service Driver {
-    // Metas returns some base info from plugin server.
-    rpc Metas(Empty) returns (MetasResponse);
+  // Metas returns some base info from plugin server.
+  rpc Metas(Empty) returns (MetasResponse);
 
-    // Init will should be called at first before calling following methods.
-    // It will pass some necessary info to plugin server. In the begginning,
-    // we consider that put this info to the executable binary environment.
-    // We put all communication on gRPC for unification in the end.
-    rpc Init(InitRequest) returns (Empty);
-    rpc Close(Empty) returns (Empty);
-    rpc Ping(Empty) returns (Empty);
-    rpc Exec(ExecRequest) returns (ExecResponse);
-    rpc Tx(TxRequest) returns (TxResponse);
-    rpc Databases(Empty) returns (DatabasesResponse);
-    rpc Parse(ParseRequest) returns (ParseResponse);
-    rpc Audit(AuditRequest) returns (AuditResponse);
-    rpc GenRollbackSQL(GenRollbackSQLRequest) returns (GenRollbackSQLResponse);
+  // Init will should be called at first before calling following methods.
+  // It will pass some necessary info to plugin server. In the begginning,
+  // we consider that put this info to the executable binary environment.
+  // We put all communication on gRPC for unification in the end.
+  rpc Init(InitRequest) returns (Empty);
+  rpc Close(Empty) returns (Empty);
+  rpc Ping(Empty) returns (Empty);
+  rpc Exec(ExecRequest) returns (ExecResponse);
+  rpc Tx(TxRequest) returns (TxResponse);
+  rpc Databases(Empty) returns (DatabasesResponse);
+  rpc Parse(ParseRequest) returns (ParseResponse);
+  rpc Audit(AuditRequest) returns (AuditResponse);
+  rpc GenRollbackSQL(GenRollbackSQLRequest) returns (GenRollbackSQLResponse);
 }
 
+message InstanceMeta {
+  string instanceHost = 1;
+  string instancePort = 2;
+  string instanceUser = 3;
+  string instancePass = 4;
+  string databaseOpen = 5;
+}
 message InitRequest {
-    string instanceHost = 1;
-    string instancePort = 2;
-    string instanceUser = 3;
-    string instancePass = 4;
-    string databaseOpen = 5;
+  InstanceMeta instanceMeta = 1;
+  bool   isOffline = 2;
 }
+
 
 message Empty {}
 
 message ExecRequest {
-    string query = 1;
+  string query = 1;
 }
 
 message ExecResponse {
-    int64 lastInsertId = 1;
-    string lastInsertIdError = 2;
-    int64 rowsAffected = 3;
-    string rowsAffectedError = 4;
+  int64 lastInsertId = 1;
+  string lastInsertIdError = 2;
+  int64 rowsAffected = 3;
+  string rowsAffectedError = 4;
 }
 
 message TxRequest {
-    repeated string queries = 1;
+  repeated string queries = 1;
 }
 
 message TxResponse {
-    repeated ExecResponse resluts = 1;
+  repeated ExecResponse resluts = 1;
 }
 
 message DatabasesResponse {
-    repeated string databases = 1;
+  repeated string databases = 1;
 }
 
 message ParseRequest {
-    string sqlText = 1;
+  string sqlText = 1;
 }
 
 message Node {
-    string text = 1;
-    string type = 2;
-    string fingerprint = 3;
+  string text = 1;
+  string type = 2;
+  string fingerprint = 3;
 }
 
 message ParseResponse {
-    repeated Node nodes = 1;
+  repeated Node nodes = 1;
 }
 
 message Rule {
-    string name = 1;
-    string desc = 2;
-    string value = 3;
-    string level = 4;
-    string typ = 5;
-    bool isDefault = 6;
+  string name = 1;
+  string desc = 2;
+  string value = 3;
+  string level = 4;
+  string typ = 5;
+  bool isDefault = 6;
 }
 
 message AuditRequest {
-    repeated Rule rules = 1;
-    string sql = 2;
+  repeated Rule rules = 1;
+  string sql = 2;
 }
 
 message AuditResult {
-    string message = 1;
-    string level = 2;
+  string message = 1;
+  string level = 2;
 }
 
 message AuditResponse {
-    repeated AuditResult results = 1;
+  repeated AuditResult results = 1;
 }
 
 message GenRollbackSQLRequest {
-    string sql = 1;
+  string sql = 1;
 }
 
 message GenRollbackSQLResponse {
-    string sql = 1;
-    string reason = 2;
+  string sql = 1;
+  string reason = 2;
 }
 
 message MetasResponse {
-    string name = 1;
-    repeated Rule rules = 2;
+  string name = 1;
+  repeated Rule rules = 2;
 }
 
 

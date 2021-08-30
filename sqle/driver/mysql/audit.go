@@ -31,6 +31,10 @@ const (
 )
 
 func (i *Inspect) CheckInvalid(node ast.Node) error {
+	if i.IsOfflineAudit() {
+		return nil
+	}
+
 	var err error
 	switch stmt := node.(type) {
 	case *ast.UseStmt:
