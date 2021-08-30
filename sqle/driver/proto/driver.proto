@@ -21,14 +21,18 @@ service Driver {
   rpc GenRollbackSQL(GenRollbackSQLRequest) returns (GenRollbackSQLResponse);
 }
 
-message InitRequest {
+message InstanceMeta {
   string instanceHost = 1;
   string instancePort = 2;
   string instanceUser = 3;
   string instancePass = 4;
   string databaseOpen = 5;
-  bool   isOffline = 6;
 }
+message InitRequest {
+  InstanceMeta instanceMeta = 1;
+  bool   isOffline = 2;
+}
+
 
 message Empty {}
 

@@ -20,12 +20,14 @@ import (
 func NewInitRequest(cfg *Config) *proto.InitRequest {
 	if cfg.Inst != nil {
 		return &proto.InitRequest{
-			InstanceHost: cfg.Inst.Host,
-			InstancePort: cfg.Inst.Port,
-			InstanceUser: cfg.Inst.User,
-			InstancePass: cfg.Inst.Password,
-			DatabaseOpen: cfg.Schema,
-			IsOffline:    cfg.IsOfflineAudit,
+			InstanceMeta: &proto.InstanceMeta{
+				InstanceHost: cfg.Inst.Host,
+				InstancePort: cfg.Inst.Port,
+				InstanceUser: cfg.Inst.User,
+				InstancePass: cfg.Inst.Password,
+				DatabaseOpen: cfg.Schema,
+			},
+			IsOffline: cfg.IsOfflineAudit,
 		}
 	}
 	return &proto.InitRequest{IsOffline: cfg.IsOfflineAudit}
@@ -291,9 +293,13 @@ type driverGRPCServer struct {
 func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
 	d.init(&Config{
 		IsOfflineAudit: req.GetIsOffline(),
-		Schema:         req.GetDatabaseOpen(),
-		Inst:           &model.Instance{Host: req.InstanceHost, Port: req.InstancePort, User: req.InstanceUser, Password: req.InstancePass},
-	})
+		Schema:         req.GetInstanceMeta().GetDatabaseOpen(),
+		Inst: &model.Instance{
+			Host:     req.GetInstanceMeta().GetInstanceHost(),
+			Port:     req.GetInstanceMeta().GetInstancePort(),
+			User:     req.GetInstanceMeta().GetInstanceUser(),
+			Password: req.GetInstanceMeta().GetInstancePass(),
+		}})
 	return &proto.Empty{}, nil
 }
 
