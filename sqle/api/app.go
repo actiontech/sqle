@@ -158,6 +158,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/audit_plans", v1.CreateAuditPlan)
 	v1Router.DELETE("/audit_plans/:audit_plan_name/", v1.DeleteAuditPlan)
 	v1Router.PATCH("/audit_plans/:audit_plan_name/", v1.UpdateAuditPlan)
+	v1Router.GET("/audit_plans/:audit_plan_name/", v1.GetAuditPlan)
 	v1Router.GET("/audit_plans", v1.GetAuditPlans)
 	v1Router.GET("/audit_plans/:audit_plan_name/reports", v1.GetAuditPlanReports)
 	v1Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", v1.GetAuditPlanReportSQLs)
