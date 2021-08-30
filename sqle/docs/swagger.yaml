@@ -354,6 +354,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetAuditPlanResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditPlanResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetAuditPlanSQLsResV1:
     properties:
       code:
@@ -1384,6 +1396,25 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 删除审核计划
+      tags:
+      - audit_plan
+    get:
+      description: get audit plan
+      operationId: getAuditPlanV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核计划
       tags:
       - audit_plan
     patch:

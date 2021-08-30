@@ -249,6 +249,21 @@ func GetAuditPlans(c echo.Context) error {
 	})
 }
 
+type GetAuditPlanResV1 struct {
+	controller.BaseRes
+	Data AuditPlanResV1 `json:"data"`
+}
+
+// @Summary 获取指定审核计划
+// @Description get audit plan
+// @Id getAuditPlanV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Success 200 {object} v1.GetAuditPlanResV1
+// @router /v1/audit_plans/{audit_plan_name}/ [get]
+func GetAuditPlan(c echo.Context) error { return nil }
+
 type GetAuditPlanReportsReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
