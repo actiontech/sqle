@@ -63,14 +63,13 @@ type Inspect struct {
 	SqlAction []func(node ast.Node) error
 }
 
-func newInspect(cfg *driver.Config) (driver.Driver, error) {
+func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	ctx := NewContext(nil)
 	ctx.UseSchema(cfg.Schema)
-
 	return &Inspect{
+		log:            log,
 		Ctx:            ctx,
 		inst:           cfg.Inst,
-		log:            cfg.Log,
 		result:         driver.NewInspectResults(),
 		isOfflineAudit: cfg.IsOfflineAudit,
 	}, nil

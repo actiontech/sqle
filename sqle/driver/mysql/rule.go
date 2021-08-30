@@ -104,23 +104,23 @@ const (
 )
 
 type RuleHandler struct {
-	Rule              model.Rule
-	Message           string
-	Func              func(model.Rule, *Inspect, ast.Node) error
-	AllowOffline      bool
-	AllowOfflineStmts []ast.Node
+	Rule                 model.Rule
+	Message              string
+	Func                 func(model.Rule, *Inspect, ast.Node) error
+	AllowOffline         bool
+	NotAllowOfflineStmts []ast.Node
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
 	if !rh.AllowOffline {
 		return false
 	}
-	for _, stmt := range rh.AllowOfflineStmts {
+	for _, stmt := range rh.NotAllowOfflineStmts {
 		if reflect.TypeOf(stmt).Kind() == reflect.TypeOf(node).Kind() {
-			return true
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 var (
@@ -166,10 +166,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeUsageSuggestion,
 			IsDefault: true,
 		},
-		Message:           "新建表必须加入if not exists create，保证重复执行不报错",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkIfNotExist,
+		Message:      "新建表必须加入if not exists create，保证重复执行不报错",
+		AllowOffline: true,
+		Func:         checkIfNotExist,
 	},
 	{
 		Rule: model.Rule{
@@ -179,10 +178,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
 		},
-		Message:           "表名、列名、索引名的长度不能大于64字节",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateDatabaseStmt{}, &ast.CreateTableStmt{}, &ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:              checkNewObjectName,
+		Message:      "表名、列名、索引名的长度不能大于64字节",
+		AllowOffline: true,
+		Func:         checkNewObjectName,
 	},
 	{
 		Rule: model.Rule{
@@ -192,10 +190,10 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeIndexingConvention,
 			IsDefault: true,
 		},
-		Message:           "表必须有主键",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkPrimaryKey,
+		Message:              "表必须有主键",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                 checkPrimaryKey,
 	},
 	{
 		Rule: model.Rule{
@@ -205,10 +203,10 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeIndexingConvention,
 			IsDefault: true,
 		},
-		Message:           "主键建议使用自增",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkPrimaryKey,
+		Message:              "主键建议使用自增",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                 checkPrimaryKey,
 	},
 	{
 		Rule: model.Rule{
@@ -218,10 +216,10 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeIndexingConvention,
 			IsDefault: true,
 		},
-		Message:           "主键建议使用 bigint 无符号类型，即 bigint unsigned",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkPrimaryKey,
+		Message:              "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                 checkPrimaryKey,
 	},
 	{
 		Rule: model.Rule{
@@ -231,10 +229,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDDLConvention,
 			IsDefault: true,
 		},
-		Message:           "char长度大于20时，必须使用varchar类型",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkStringType,
+		Message:      "char长度大于20时，必须使用varchar类型",
+		AllowOffline: true,
+		Func:         checkStringType,
 	},
 	{
 		Rule: model.Rule{
@@ -244,10 +241,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeIndexingConvention,
 			IsDefault: true,
 		},
-		Message:           "禁止使用外键",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkForeignKey,
+		Message:      "禁止使用外键",
+		AllowOffline: true,
+		Func:         checkForeignKey,
 	},
 	{
 		Rule: model.Rule{
@@ -258,10 +254,10 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeIndexingConvention,
 			IsDefault: true,
 		},
-		Message:           "索引个数建议不超过%v个",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkIndex,
+		Message:              "索引个数建议不超过%v个",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                 checkIndex,
 	},
 	{
 		Rule: model.Rule{
@@ -272,10 +268,10 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeIndexingConvention,
 			IsDefault: true,
 		},
-		Message:           "复合索引的列数量不建议超过%v个",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkIndex,
+		Message:              "复合索引的列数量不建议超过%v个",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                 checkIndex,
 	},
 	{
 		Rule: model.Rule{
@@ -285,10 +281,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
 		},
-		Message:           "数据库对象命名禁止使用保留字 %s",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateDatabaseStmt{}, &ast.CreateTableStmt{}, &ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:              checkNewObjectName,
+		Message:      "数据库对象命名禁止使用保留字 %s",
+		AllowOffline: true,
+		Func:         checkNewObjectName,
 	},
 	{
 		Rule: model.Rule{
@@ -298,10 +293,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
 		},
-		Message:           "数据库对象命名不能使用英文、下划线、数字之外的字符",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateDatabaseStmt{}, &ast.CreateTableStmt{}, &ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:              checkNewObjectName,
+		Message:      "数据库对象命名不能使用英文、下划线、数字之外的字符",
+		AllowOffline: true,
+		Func:         checkNewObjectName,
 	},
 	{
 		Rule: model.Rule{
@@ -323,10 +317,10 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeIndexingConvention,
 			IsDefault: true,
 		},
-		Message:           "禁止将blob类型的列加入索引",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              disableAddIndexForColumnsTypeBlob,
+		Message:              "禁止将blob类型的列加入索引",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                 disableAddIndexForColumnsTypeBlob,
 	},
 	{
 		Rule: model.Rule{
@@ -336,10 +330,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDMLConvention,
 			IsDefault: true,
 		},
-		Message:           "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.SelectStmt{}, &ast.UpdateStmt{}, &ast.DeleteStmt{}, &ast.UnionStmt{}},
-		Func:              checkSelectWhere,
+		Message:      "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
+		AllowOffline: true,
+		Func:         checkSelectWhere,
 	},
 	{
 		Rule: model.Rule{
@@ -361,10 +354,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDMLConvention,
 			IsDefault: true,
 		},
-		Message:           "不建议使用select *",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.SelectStmt{}},
-		Func:              checkSelectAll,
+		Message:      "不建议使用select *",
+		AllowOffline: true,
+		Func:         checkSelectAll,
 	},
 	{
 		Rule: model.Rule{
@@ -374,10 +366,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeUsageSuggestion,
 			IsDefault: true,
 		},
-		Message:           "禁止除索引外的drop操作",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.DropTableStmt{}, &ast.DropDatabaseStmt{}},
-		Func:              disableDropStmt,
+		Message:      "禁止除索引外的drop操作",
+		AllowOffline: true,
+		Func:         disableDropStmt,
 	},
 	{
 		Rule: model.Rule{
@@ -387,10 +378,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDDLConvention,
 			IsDefault: true,
 		},
-		Message:           "表建议添加注释",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkTableWithoutComment,
+		Message:      "表建议添加注释",
+		AllowOffline: true,
+		Func:         checkTableWithoutComment,
 	},
 	{
 		Rule: model.Rule{
@@ -400,10 +390,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDDLConvention,
 			IsDefault: true,
 		},
-		Message:           "列建议添加注释",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnWithoutComment,
+		Message:      "列建议添加注释",
+		AllowOffline: true,
+		Func:         checkColumnWithoutComment,
 	},
 	{
 		Rule: model.Rule{
@@ -413,10 +402,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
 		},
-		Message:           "普通索引必须要以\"idx_\"为前缀",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:              checkIndexPrefix,
+		Message:      "普通索引必须要以\"idx_\"为前缀",
+		AllowOffline: true,
+		Func:         checkIndexPrefix,
 	},
 	{
 		Rule: model.Rule{
@@ -426,10 +414,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
 		},
-		Message:           "unique索引必须要以\"uniq_\"为前缀",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:              checkUniqIndexPrefix,
+		Message:      "unique索引必须要以\"uniq_\"为前缀",
+		AllowOffline: true,
+		Func:         checkUniqIndexPrefix,
 	},
 	{
 		Rule: model.Rule{
@@ -438,10 +425,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeNamingConvention,
 		},
-		Message:           "unique索引名必须使用 IDX_UK_表名_字段名",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:              checkUniqIndex,
+		Message:      "unique索引名必须使用 IDX_UK_表名_字段名",
+		AllowOffline: true,
+		Func:         checkUniqIndex,
 	},
 	{
 		Rule: model.Rule{
@@ -451,10 +437,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDDLConvention,
 			IsDefault: true,
 		},
-		Message:           "除了自增列及大字段列之外，每个列都必须添加默认值",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnWithoutDefault,
+		Message:      "除了自增列及大字段列之外，每个列都必须添加默认值",
+		AllowOffline: true,
+		Func:         checkColumnWithoutDefault,
 	},
 	{
 		Rule: model.Rule{
@@ -464,10 +449,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDDLConvention,
 			IsDefault: true,
 		},
-		Message:           "timestamp 类型的列必须添加默认值",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnTimestampWithoutDefault,
+		Message:      "timestamp 类型的列必须添加默认值",
+		AllowOffline: true,
+		Func:         checkColumnTimestampWithoutDefault,
 	},
 	{
 		Rule: model.Rule{
@@ -477,10 +461,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDDLConvention,
 			IsDefault: true,
 		},
-		Message:           "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnBlobNotNull,
+		Message:      "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+		AllowOffline: true,
+		Func:         checkColumnBlobNotNull,
 	},
 	{
 		Rule: model.Rule{
@@ -490,10 +473,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDDLConvention,
 			IsDefault: true,
 		},
-		Message:           "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnBlobDefaultNull,
+		Message:      "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+		AllowOffline: true,
+		Func:         checkColumnBlobDefaultNull,
 	},
 	{
 		Rule: model.Rule{
@@ -503,10 +485,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDMLConvention,
 			IsDefault: true,
 		},
-		Message:           "delete/update 语句不能有limit条件",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.UpdateStmt{}, &ast.DeleteStmt{}},
-		Func:              checkDMLWithLimit,
+		Message:      "delete/update 语句不能有limit条件",
+		AllowOffline: true,
+		Func:         checkDMLWithLimit,
 	},
 	{
 		Rule: model.Rule{
@@ -516,10 +497,9 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeDMLConvention,
 			IsDefault: true,
 		},
-		Message:           "delete/update 语句不能有order by",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.UpdateStmt{}, &ast.DeleteStmt{}},
-		Func:              checkDMLWithOrderBy,
+		Message:      "delete/update 语句不能有order by",
+		AllowOffline: true,
+		Func:         checkDMLWithOrderBy,
 	},
 	{
 		Rule: model.Rule{
@@ -528,10 +508,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "insert 语句必须指定column",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.InsertStmt{}},
-		Func:              checkDMLWithInsertColumnExist,
+		Message:      "insert 语句必须指定column",
+		AllowOffline: true,
+		Func:         checkDMLWithInsertColumnExist,
 	},
 	{
 		Rule: model.Rule{
@@ -541,10 +520,9 @@ var RuleHandlers = []RuleHandler{
 			Value: "5000",
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "单条insert语句，建议批量插入不超过%v条",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.InsertStmt{}},
-		Func:              checkDMLWithBatchInsertMaxLimits,
+		Message:      "单条insert语句，建议批量插入不超过%v条",
+		AllowOffline: true,
+		Func:         checkDMLWithBatchInsertMaxLimits,
 	},
 	{
 		Rule: model.Rule{
@@ -553,10 +531,10 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeIndexingConvention,
 		},
-		Message:           "主键禁止使用自增",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}},
-		Func:              checkPrimaryKey,
+		Message:              "主键禁止使用自增",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                 checkPrimaryKey,
 	},
 	{
 		Rule: model.Rule{
@@ -576,10 +554,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "不建议对条件字段使用负向查询",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.SelectStmt{}, &ast.UpdateStmt{}, &ast.DeleteStmt{}, &ast.UnionStmt{}},
-		Func:              checkSelectWhere,
+		Message:      "不建议对条件字段使用负向查询",
+		AllowOffline: true,
+		Func:         checkSelectWhere,
 	},
 	{
 		Rule: model.Rule{
@@ -618,10 +595,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "避免使用标量子查询",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.SelectStmt{}, &ast.UpdateStmt{}, &ast.DeleteStmt{}, &ast.UnionStmt{}},
-		Func:              checkSelectWhere,
+		Message:      "避免使用标量子查询",
+		AllowOffline: true,
+		Func:         checkSelectWhere,
 	},
 	{
 		Rule: model.Rule{
@@ -712,10 +688,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "禁止使用全模糊搜索或左模糊搜索",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.SelectStmt{}, &ast.UpdateStmt{}, &ast.DeleteStmt{}, &ast.UnionStmt{}},
-		Func:              checkSelectWhere,
+		Message:      "禁止使用全模糊搜索或左模糊搜索",
+		AllowOffline: true,
+		Func:         checkSelectWhere,
 	},
 	{
 		Rule: model.Rule{
@@ -724,10 +699,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeUsageSuggestion,
 		},
-		Message:           "不建议使用分区表相关功能",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkTablePartition,
+		Message:      "不建议使用分区表相关功能",
+		AllowOffline: true,
+		Func:         checkTablePartition,
 	},
 	{
 		Rule: model.Rule{
@@ -737,10 +711,9 @@ var RuleHandlers = []RuleHandler{
 			Value: "3",
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "使用JOIN连接表查询建议不超过%v张",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.SelectStmt{}},
-		Func:              checkNumberOfJoinTables,
+		Message:      "使用JOIN连接表查询建议不超过%v张",
+		AllowOffline: true,
+		Func:         checkNumberOfJoinTables,
 	},
 	{
 		Rule: model.Rule{
@@ -749,10 +722,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "建议使用UNION ALL,替代UNION",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.UnionStmt{}},
-		Func:              checkIsAfterUnionDistinct,
+		Message:      "建议使用UNION ALL,替代UNION",
+		AllowOffline: true,
+		Func:         checkIsAfterUnionDistinct,
 	},
 	{
 		Rule: model.Rule{
@@ -761,10 +733,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message:           "使用LIMIT分页时,避免使用LIMIT M,N",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.SelectStmt{}},
-		Func:              checkIsExistLimitOffset,
+		Message:      "使用LIMIT分页时,避免使用LIMIT M,N",
+		AllowOffline: true,
+		Func:         checkIsExistLimitOffset,
 	},
 	{
 		Rule: model.Rule{
@@ -785,10 +756,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
-		Message:           "不建议使用 ENUM 类型",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnEnumNotice,
+		Message:      "不建议使用 ENUM 类型",
+		AllowOffline: true,
+		Func:         checkColumnEnumNotice,
 	},
 	{
 		Rule: model.Rule{
@@ -797,10 +767,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
-		Message:           "不建议使用 SET 类型",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnSetNotice,
+		Message:      "不建议使用 SET 类型",
+		AllowOffline: true,
+		Func:         checkColumnSetNotice,
 	},
 	{
 		Rule: model.Rule{
@@ -809,10 +778,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
-		Message:           "不建议使用 BLOB 或 TEXT 类型",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateTableStmt{}, &ast.AlterTableStmt{}},
-		Func:              checkColumnBlobNotice,
+		Message:      "不建议使用 BLOB 或 TEXT 类型",
+		AllowOffline: true,
+		Func:         checkColumnBlobNotice,
 	},
 	{
 		Rule: model.Rule{
@@ -855,10 +823,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
-		Message:           "禁止使用视图",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.CreateViewStmt{}},
-		Func:              checkCreateView,
+		Message:      "禁止使用视图",
+		AllowOffline: true,
+		Func:         checkCreateView,
 	},
 	{
 		Rule: model.Rule{
@@ -867,10 +834,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
-		Message:           "禁止使用触发器",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.UnparsedStmt{}},
-		Func:              checkCreateTrigger,
+		Message:      "禁止使用触发器",
+		AllowOffline: true,
+		Func:         checkCreateTrigger,
 	},
 	{
 		Rule: model.Rule{
@@ -879,10 +845,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
-		Message:           "禁止使用自定义函数",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.UnparsedStmt{}},
-		Func:              checkCreateFunction,
+		Message:      "禁止使用自定义函数",
+		AllowOffline: true,
+		Func:         checkCreateFunction,
 	},
 	{
 		Rule: model.Rule{
@@ -891,10 +856,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeUsageSuggestion,
 		},
-		Message:           "禁止使用存储过程",
-		AllowOffline:      true,
-		AllowOfflineStmts: []ast.Node{&ast.UnparsedStmt{}},
-		Func:              checkCreateProcedure,
+		Message:      "禁止使用存储过程",
+		AllowOffline: true,
+		Func:         checkCreateProcedure,
 	},
 }
 

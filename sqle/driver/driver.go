@@ -30,9 +30,8 @@ type Config struct {
 	Inst           *model.Instance
 }
 
-func NewConfig(log *logrus.Entry, inst *model.Instance, schema string, isOfflineAudit bool) *Config {
+func NewConfig(inst *model.Instance, schema string, isOfflineAudit bool) *Config {
 	return &Config{
-		Log:            log,
 		Inst:           inst,
 		Schema:         schema,
 		IsOfflineAudit: isOfflineAudit,
@@ -40,7 +39,7 @@ func NewConfig(log *logrus.Entry, inst *model.Instance, schema string, isOffline
 }
 
 // handler is a template which Driver plugin should provide such function signature.
-type handler func(config *Config) (Driver, error)
+type handler func(log *logrus.Entry, config *Config) (Driver, error)
 
 // Register like sql.Register.
 //
@@ -78,7 +77,7 @@ func NewDriver(log *logrus.Entry, inst *model.Instance, isOfflineAudit bool, dbT
 	if !exist {
 		return nil, fmt.Errorf("driver type %v is not supported", inst.DbType)
 	}
-	return d(NewConfig(log, inst, schema, isOfflineAudit))
+	return d(log, NewConfig(inst, schema, isOfflineAudit))
 }
 
 func AllRules() []*model.Rule {

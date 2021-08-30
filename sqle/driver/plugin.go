@@ -17,6 +17,19 @@ import (
 	"google.golang.org/grpc"
 )
 
+func NewInitRequest(cfg *Config) *proto.InitRequest {
+	if cfg.Inst != nil {
+		return &proto.InitRequest{
+			InstanceHost: cfg.Inst.Host,
+			InstancePort: cfg.Inst.Port,
+			InstanceUser: cfg.Inst.User,
+			InstancePass: cfg.Inst.Password,
+			DatabaseOpen: cfg.Schema,
+		}
+	}
+	return &proto.InitRequest{}
+}
+
 // InitPlugins init plugins at plugins directory. It should be called on host process.
 func InitPlugins(pluginDir string) error {
 	if pluginDir == "" {
@@ -87,19 +100,13 @@ func InitPlugins(pluginDir string) error {
 			})
 		}
 
-		Register(pluginMeta.Name, func(config *Config) (Driver, error) {
+		Register(pluginMeta.Name, func(log *logrus.Entry, config *Config) (Driver, error) {
 			pluginCloseCh := make(chan struct{})
 			srv, err := getServerHandle(binaryPath, pluginCloseCh)
 			if err != nil {
 				return nil, err
 			}
-			_, err = srv.Init(context.TODO(), &proto.InitRequest{
-				InstanceHost: config.Inst.Host,
-				InstancePort: config.Inst.Port,
-				InstanceUser: config.Inst.User,
-				InstancePass: config.Inst.Password,
-				DatabaseOpen: config.Schema,
-			})
+			_, err = srv.Init(context.TODO(), NewInitRequest(config))
 			if err != nil {
 				return nil, err
 			}
