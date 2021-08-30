@@ -31,3 +31,26 @@ func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, er
 	err := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT).Error
 	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]Rule, error) {
+	tpl, exist, err := s.GetRuleTemplateDetailByName(name)
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, err)
+	}
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	rules := make([]Rule, 0, len(tpl.RuleList))
+	for _, r := range tpl.RuleList {
+		if r.RuleLevel != "" {
+			r.Rule.Level = r.RuleLevel
+		}
+		if r.RuleValue != "" {
+			r.Rule.Value = r.RuleValue
+		}
+		rules = append(rules, r.Rule)
+	}
+
+	return rules, errors.New(errors.ConnectStorageError, err)
+}

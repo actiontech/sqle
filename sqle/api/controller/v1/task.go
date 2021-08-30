@@ -24,7 +24,8 @@ import (
 var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
 
 type CreateAuditTaskReqV1 struct {
-	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
+	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1"`
+	DBType         string `json:"db_type" form:"db_type" example:"mysql" valid:"required"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
 	Sql            string `json:"sql" example:"alter table tb1 drop columns c1"`
 }
@@ -94,7 +95,8 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 // @Tags task
 // @Id createAndAuditTaskV1
 // @Security ApiKeyAuth
-// @Param instance_name formData string true "instance name"
+// @Param instance_name formData string false "instance name"
+// @Param db_type formData string true "database type"
 // @Param instance_schema formData string false "schema of instance"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
@@ -119,20 +121,24 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 	}
 	s := model.GetStorage()
-	instance, exist, err := s.GetInstanceByName(req.InstanceName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+	var instance *model.Instance
+	var exist bool
+	if req.InstanceName != "" {
+		instance, exist, err = s.GetInstanceByName(req.InstanceName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+		}
+
+		err = checkCurrentUserCanAccessInstance(c, instance)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
-	err = checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	d, err := driver.NewDriver(log.NewEntry(), instance, "")
+	d, err := driver.NewDriver(log.NewEntry(), instance, instance == nil, req.DBType, "")
 	if err != nil {
 		return err
 	}
@@ -147,13 +153,15 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	task := &model.Task{
 		Schema:       req.InstanceSchema,
-		InstanceId:   instance.ID,
 		Instance:     instance,
 		CreateUserId: user.ID,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
 		SQLSource:    source,
+		DBType:       req.DBType,
 	}
-
+	if instance != nil {
+		task.InstanceId = instance.ID
+	}
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
