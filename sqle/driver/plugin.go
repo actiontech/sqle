@@ -25,9 +25,10 @@ func NewInitRequest(cfg *Config) *proto.InitRequest {
 			InstanceUser: cfg.Inst.User,
 			InstancePass: cfg.Inst.Password,
 			DatabaseOpen: cfg.Schema,
+			IsOffline:    cfg.IsOfflineAudit,
 		}
 	}
-	return &proto.InitRequest{}
+	return &proto.InitRequest{IsOffline: cfg.IsOfflineAudit}
 }
 
 // InitPlugins init plugins at plugins directory. It should be called on host process.
@@ -100,18 +101,20 @@ func InitPlugins(pluginDir string) error {
 			})
 		}
 
-		Register(pluginMeta.Name, func(log *logrus.Entry, config *Config) (Driver, error) {
-			pluginCloseCh := make(chan struct{})
-			srv, err := getServerHandle(binaryPath, pluginCloseCh)
-			if err != nil {
-				return nil, err
-			}
-			_, err = srv.Init(context.TODO(), NewInitRequest(config))
-			if err != nil {
-				return nil, err
-			}
-			return &driverPluginClient{srv, pluginCloseCh}, nil
-		}, modelRules)
+		Register(pluginMeta.Name,
+			func(log *logrus.Entry, config *Config) (Driver, error) {
+				pluginCloseCh := make(chan struct{})
+				srv, err := getServerHandle(binaryPath, pluginCloseCh)
+				if err != nil {
+					return nil, err
+				}
+				_, err = srv.Init(context.TODO(), NewInitRequest(config))
+				if err != nil {
+					return nil, err
+				}
+				return &driverPluginClient{srv, pluginCloseCh}, nil
+			},
+			modelRules)
 
 		log.Logger().WithFields(logrus.Fields{
 			"plugin_name": pluginMeta.Name,
@@ -123,7 +126,7 @@ func InitPlugins(pluginDir string) error {
 
 // ServePlugin start plugin process service. It should be called on plugin process.
 // initDriver is a closure which should hold the pointer to driver.
-func ServePlugin(driver Driver, base BaseDriver, initDriver func(inst *model.Instance, schema string)) {
+func ServePlugin(driver Driver, base BaseDriver, initDriver func(cfg *Config)) {
 	name := base.Name()
 	goPlugin.Serve(&goPlugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,
@@ -276,7 +279,7 @@ func (s *driverPluginClient) GenRollbackSQL(ctx context.Context, sql string) (st
 // driverPlugin use for hide gRPC detail.
 type driverGRPCServer struct {
 	// todo: func params whould be replcate with DNS.
-	init func(inst *model.Instance, schema string)
+	init func(cfg *Config)
 
 	// Impl is plugin's Driver implementation by plugin.
 	Impl Driver
@@ -286,7 +289,11 @@ type driverGRPCServer struct {
 }
 
 func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
-	d.init(&model.Instance{Host: req.InstanceHost, Port: req.InstancePort, User: req.InstanceUser, Password: req.InstancePass}, req.DatabaseOpen)
+	d.init(&Config{
+		IsOfflineAudit: req.GetIsOffline(),
+		Schema:         req.GetDatabaseOpen(),
+		Inst:           &model.Instance{Host: req.InstanceHost, Port: req.InstancePort, User: req.InstanceUser, Password: req.InstancePass},
+	})
 	return &proto.Empty{}, nil
 }
 

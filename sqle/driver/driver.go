@@ -26,7 +26,6 @@ var (
 type Config struct {
 	IsOfflineAudit bool
 	Schema         string
-	Log            *logrus.Entry
 	Inst           *model.Instance
 }
 
