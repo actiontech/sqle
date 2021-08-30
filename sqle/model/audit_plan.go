@@ -2,12 +2,8 @@ package model
 
 type AuditPlan struct {
 	Model
-	Name           string `json:"name" gorm:"not null"`
-	CronExpression string `json:"cron_expression" gorm:"not null"`
-
-	// CronEntryID is generate from cron scheduler. It may changes after each server restarts.
-	// see: https://pkg.go.dev/github.com/robfig/cron/v3#Cron.AddFunc
-	CronEntryID      string `json:"cron_entry_id" gorm:"not null"`
+	Name             string `json:"name" gorm:"not null"`
+	CronExpression   string `json:"cron_expression" gorm:"not null"`
 	DBType           string `json:"db_type" gorm:"not null"`
 	Token            string `json:"token" gorm:"not null"`
 	InstanceName     string `json:"instance_name"`
