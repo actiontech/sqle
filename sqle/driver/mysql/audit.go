@@ -31,6 +31,9 @@ const (
 )
 
 func (i *Inspect) CheckInvalid(node ast.Node) error {
+	if stmt, ok := node.(*ast.UnparsedStmt); ok {
+		return i.checkUnparsedStmt(stmt)
+	}
 	if i.IsOfflineAudit() {
 		return nil
 	}
