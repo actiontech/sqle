@@ -190,6 +190,9 @@ github.com/pingcap/tipb/sharedbytes
 github.com/pmezard/go-difflib/difflib
 # github.com/remyoudompheng/bigfft v0.0.0-20190512091148-babf20351dd7
 github.com/remyoudompheng/bigfft
+# github.com/robfig/cron/v3 v3.0.1
+## explicit
+github.com/robfig/cron/v3
 # github.com/russross/blackfriday/v2 v2.0.1
 github.com/russross/blackfriday/v2
 # github.com/shirou/gopsutil v2.18.10+incompatible
