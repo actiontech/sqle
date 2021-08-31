@@ -494,7 +494,7 @@ type InstanceConnectableResV1 struct {
 }
 
 func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
-	d, err := driver.NewDriver(log.NewEntry(), instance, false, instance.DbType, "")
+	d, err := driver.NewDriver(log.NewEntry(), instance, instance == nil, instance.DbType, "")
 	if err != nil {
 		return err
 	}
@@ -612,7 +612,7 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	d, err := driver.NewDriver(log.NewEntry(), instance, false, instance.DbType, "")
+	d, err := driver.NewDriver(log.NewEntry(), instance, instance == nil, instance.DbType, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

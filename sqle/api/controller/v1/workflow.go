@@ -931,7 +931,7 @@ func ApproveWorkflow(c echo.Context) error {
 
 		// if instance is not connectable, exec sql must be failed;
 		// commit action unable to retry, so don't to exec it.
-		d, err := driver.NewDriver(log.NewEntry(), task.Instance, false, task.Instance.DbType, "")
+		d, err := driver.NewDriver(log.NewEntry(), task.Instance, task.Instance == nil, task.Instance.DbType, "")
 		if err != nil {
 			return err
 		}
