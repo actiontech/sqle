@@ -236,8 +236,8 @@ func GetAuditPlans(c echo.Context) error {
 			Name:             auditPlan.Name,
 			Cron:             auditPlan.Cron,
 			DBType:           auditPlan.DBType,
-			InstanceName:     auditPlan.InstanceName.String,
-			InstanceDatabase: auditPlan.InstanceDatabase.String,
+			InstanceName:     auditPlan.InstanceName,
+			InstanceDatabase: auditPlan.InstanceDatabase,
 
 			Token: auditPlan.Token,
 		})
