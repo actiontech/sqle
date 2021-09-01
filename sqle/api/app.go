@@ -13,6 +13,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
 	"github.com/labstack/echo/v4"
@@ -54,7 +55,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	e.POST("/v1/login", v1.Login)
 
 	v1Router := e.Group("/v1")
-	v1Router.Use(JWTTokenAdapter(), middleware.JWT([]byte(v1.JWTSecret)))
+	v1Router.Use(JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
 
 	// v1 admin api, just admin user can access.
 	{

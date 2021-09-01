@@ -1,18 +1,17 @@
 package v1
 
 import (
+	"fmt"
+	"net/http"
+	"time"
+
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
-	"net/http"
-	"time"
-)
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
-// TODO: Using configuration to set jwt secret
-const JWTSecret = "secret"
+	"github.com/labstack/echo/v4"
+)
 
 type UserLoginReqV1 struct {
 	UserName string `json:"username" form:"username" example:"test" valid:"required"`
@@ -50,13 +49,9 @@ func Login(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail,
 			fmt.Errorf("password is wrong or user does not exist")))
 	}
-	// Create token
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["name"] = req.UserName
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 
-	t, err := token.SignedString([]byte(JWTSecret))
+	j := utils.NewJWT([]byte(utils.JWTSecret))
+	t, err := j.CreateToken(req.UserName, time.Now().Add(time.Hour*24).Unix())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
