@@ -10,6 +10,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
+	"actiontech.cloud/sqle/sqle/sqle/server/auditplan"
 
 	"github.com/labstack/echo/v4"
 	"github.com/ungerik/go-dry"
@@ -84,19 +85,20 @@ func CreateAuditPlan(c echo.Context) error {
 			}
 			d.Close(context.TODO())
 		}
+		return controller.JSONBaseErrorReq(c,
+			auditplan.GetManager().AddDynamicAuditPlan(
+				req.Name,
+				req.Cron,
+				req.InstanceName,
+				req.InstanceDatabase,
+				controller.GetUserName(c)))
 	}
-
-	// todo trigger memory create
-	// todo generate token before save audit plan
-
 	return controller.JSONBaseErrorReq(c,
-		s.Save(&model.AuditPlan{
-			Name:             req.Name,
-			CronExpression:   req.Cron,
-			DBType:           req.InstanceType,
-			InstanceName:     req.InstanceName,
-			InstanceDatabase: req.InstanceDatabase,
-		}))
+		auditplan.GetManager().AddStaticAuditPlan(
+			req.Name,
+			req.Cron,
+			req.InstanceType,
+			controller.GetUserName(c)))
 }
 
 // @Summary 删除审核计划
@@ -108,19 +110,8 @@ func CreateAuditPlan(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
-	s := model.GetStorage()
-
-	auditPlan, exist, err := s.GetAuditPlanByName(c.Param("audit_plan_name"))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
-	}
-
-	// todo trigger memory delete
-
-	return controller.JSONBaseErrorReq(c, s.Delete(auditPlan))
+	return controller.JSONBaseErrorReq(c,
+		auditplan.GetManager().DeleteAuditPlan(c.Param("audit_plan_name")))
 }
 
 type UpdateAuditPlanReqV1 struct {
@@ -139,40 +130,23 @@ type UpdateAuditPlanReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/ [patch]
 func UpdateAuditPlan(c echo.Context) error {
-	s := model.GetStorage()
-
 	req := new(UpdateAuditPlanReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 
-	auditPlan, exist, err := s.GetAuditPlanByName(c.Param("audit_plan_name"))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
-	}
-
+	updateAttr := make(map[string]interface{})
 	if req.Cron != nil {
-		auditPlan.CronExpression = *req.Cron
+		updateAttr["cron_expression"] = *req.Cron
 	}
 	if req.InstanceName != nil {
-		if auditPlan.InstanceDatabase != "" && *req.InstanceName == "" {
-			return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
-		}
-		auditPlan.InstanceName = *req.InstanceName
+		updateAttr["instance_name"] = *req.InstanceName
 	}
 	if req.InstanceDatabase != nil {
-		if auditPlan.InstanceName == "" && *req.InstanceDatabase != "" {
-			return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
-		}
-		auditPlan.InstanceDatabase = *req.InstanceDatabase
+		updateAttr["instance_database"] = *req.InstanceDatabase
 	}
-
-	// todo trigger memory update
-
-	return controller.JSONBaseErrorReq(c, s.Save(auditPlan))
+	return controller.JSONBaseErrorReq(c,
+		auditplan.GetManager().UpdateAuditPlan(c.Param("audit_plan_name"), updateAttr))
 }
 
 type GetAuditPlansReqV1 struct {
@@ -512,5 +486,6 @@ func GetAuditPlanSQLs(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
-	return nil
+	return controller.JSONBaseErrorReq(c,
+		auditplan.GetManager().TriggerAuditPlan(c.Param("audit_plan_name")))
 }
