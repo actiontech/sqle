@@ -11,8 +11,10 @@ import (
 func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	// 1. test for common user
 	tableAndRowOfSQL := `
-	FROM audit_plans JOIN users ON audit_plans.create_user_id = users.id
-	WHERE audit_plans.deleted_at IS NULL AND users.id = ? AND audit_plans.db_type = ?
+	FROM audit_plans
+	WHERE audit_plans.deleted_at IS NULL 
+	AND audit_plans.create_user_id = ? 
+	AND audit_plans.db_type = ?
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)

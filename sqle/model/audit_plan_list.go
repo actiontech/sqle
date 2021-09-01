@@ -29,13 +29,11 @@ SELECT COUNT(*)
 var auditPlanBodyTpl = `
 {{ define "body" }}
 FROM audit_plans
-{{- if not .current_user_is_admin }}
-JOIN users ON audit_plans.create_user_id = users.id
-{{- end }}
+
 WHERE audit_plans.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
-AND users.id = :current_user_id
+AND audit_plans.create_user_id = :current_user_id
 {{- end }}
 
 {{- if .filter_audit_plan_db_type }}
