@@ -131,7 +131,7 @@ var auditPlanReportBodyTpl = `
 {{ define "body" }}
 
 FROM audit_plan_reports
-JOIN audit_plans ON audit_plans.audit_plan_id = audit_plan_reports.id
+JOIN audit_plans ON audit_plans.id = audit_plan_reports.id
 
 WHERE audit_plan_reports.deleted_at IS NULL
 AND audit_plans.name = :audit_plan_name
