@@ -135,6 +135,13 @@ func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) er
 		ap.DBType = instance.DbType
 	}
 
+	// todo: remove mock sqls
+	ap.AuditPlanSQLs = append(ap.AuditPlanSQLs,
+		&model.AuditPlanSQL{
+			Fingerprint:          "select * from tasks where id = ?",
+			LastSQL:              "select * from tasks where id = 1",
+			Counter:              "100",
+			LastReceiveTimestamp: time.Now().String()})
 	err = mgr.persist.Save(ap)
 	if err != nil {
 		return err
@@ -263,9 +270,12 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) {
 
 func (mgr *Manager) addAuditPlansToScheduler(aps []*model.AuditPlan) error {
 	for _, ap := range aps {
-		mgr.scheduler.addJob(ap, func() {
+		err := mgr.scheduler.addJob(ap, func() {
 			mgr.runJob(ap)
 		})
+		if err != nil {
+			return err
+		}
 		mgr.logger.WithFields(logrus.Fields{
 			"name":            ap.Name,
 			"cron_expression": ap.CronExpression}).Infoln("audit plan added")
@@ -295,7 +305,7 @@ func (s *scheduler) removeJob(auditPlanName string) error {
 
 func (s *scheduler) addJob(ap *model.AuditPlan, do func()) error {
 	_, ok := s.entryIDs[ap.Name]
-	if !ok {
+	if ok {
 		return ErrAuditPlanExisted
 	}
 
