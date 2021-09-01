@@ -7,7 +7,7 @@ import (
 
 type AuditPlan struct {
 	Model
-	Name             string `json:"name" gorm:"not null"`
+	Name             string `json:"name" gorm:"not null;uniqueIndex"`
 	CronExpression   string `json:"cron_expression" gorm:"not null"`
 	DBType           string `json:"db_type" gorm:"not null"`
 	Token            string `json:"token" gorm:"not null"`
