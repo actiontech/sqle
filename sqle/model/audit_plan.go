@@ -1,5 +1,10 @@
 package model
 
+import (
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"github.com/jinzhu/gorm"
+)
+
 type AuditPlan struct {
 	Model
 	Name             string `json:"name" gorm:"not null"`
@@ -43,4 +48,38 @@ type AuditPlanReportSQL struct {
 
 	AuditPlanSQL    *AuditPlanSQL    `gorm:"foreignkey:AuditPlanSQLID"`
 	AuditPlanReport *AuditPlanReport `gorm:"foreignkey:AuditPlanReportID"`
+}
+
+func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
+	var aps []*AuditPlan
+	err := s.db.Model(AuditPlan{}).Find(&aps).Error
+	return aps, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
+	ap := &AuditPlan{}
+	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
+	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQL, error) {
+	ap, exist, err := s.GetAuditPlanByName(name)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	var sqls []*AuditPlanSQL
+	err = s.db.Model(AuditPlanSQL{}).Where("audit_plan_id = ?", ap.ID).Find(&sqls).Error
+	return sqls, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{}) error {
+	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Update(attrs).Error
+	return errors.New(errors.ConnectStorageError, err)
 }
