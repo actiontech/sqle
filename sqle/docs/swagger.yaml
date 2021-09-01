@@ -2383,10 +2383,6 @@ paths:
       - description: instance name
         in: formData
         name: instance_name
-        type: string
-      - description: database type
-        in: formData
-        name: db_type
         required: true
         type: string
       - description: schema of instance
