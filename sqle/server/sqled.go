@@ -230,7 +230,7 @@ func (a *Action) audit() error {
 	var rules []model.Rule
 	var err error
 	if task.InstanceId == 0 {
-		// use default_{db_type}'s rules if audit is static
+		// use default_{db_type}'s rules if audit is offline
 		// refer: model.utils.CreateDefaultTemplate
 		templateName := fmt.Sprintf("default_%v", task.DBType)
 		rules, err = st.GetRulesFromRuleTemplateByName(templateName)

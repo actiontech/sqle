@@ -31,10 +31,6 @@ const (
 )
 
 func (i *Inspect) CheckInvalid(node ast.Node) error {
-	if i.IsOfflineAudit() {
-		return nil
-	}
-
 	var err error
 	switch stmt := node.(type) {
 	case *ast.UseStmt:
@@ -65,6 +61,14 @@ func (i *Inspect) CheckInvalid(node ast.Node) error {
 		err = i.checkUnparsedStmt(stmt)
 	}
 	return err
+}
+
+func (i *Inspect) CheckInvalidOffline(node ast.Node) error {
+	stmt, ok := node.(*ast.UnparsedStmt)
+	if ok {
+		return i.checkUnparsedStmt(stmt)
+	}
+	return nil
 }
 
 /*
