@@ -10,6 +10,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/server"
+	"actiontech.cloud/sqle/sqle/sqle/server/auditplan"
 	"actiontech.cloud/universe/ucommon/v4/ubootstrap"
 
 	"github.com/facebookgo/grace/gracenet"
@@ -54,6 +55,7 @@ func Run(config *config.Config) error {
 
 	exitChan := make(chan struct{}, 0)
 	server.InitSqled(exitChan)
+	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, config.Server.SqleCnf)
@@ -61,6 +63,7 @@ func Run(config *config.Config) error {
 	killChan := ubootstrap.ListenKillSignal()
 	select {
 	case <-exitChan:
+		auditPlanMgrQuitCh <- struct{}{}
 		log.Logger().Infoln("sqled server will exit")
 	case sig := <-killChan:
 		switch sig {
