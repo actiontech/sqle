@@ -116,7 +116,7 @@ func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
 		return false
 	}
 	for _, stmt := range rh.NotAllowOfflineStmts {
-		if reflect.TypeOf(stmt).Kind() == reflect.TypeOf(node).Kind() {
+		if reflect.TypeOf(stmt) == reflect.TypeOf(node) {
 			return false
 		}
 	}
@@ -565,8 +565,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message: "不建议对条件字段使用 NULL 值判断",
-		Func:    checkWhereExistNull,
+		Message:      "不建议对条件字段使用 NULL 值判断",
+		Func:         checkWhereExistNull,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
@@ -585,8 +586,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelError,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message: "delete/update 语句必须有limit条件",
-		Func:    checkDMLLimitExist,
+		Message:      "delete/update 语句必须有limit条件",
+		Func:         checkDMLLimitExist,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
@@ -616,8 +618,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message: "建议避免使用select for update",
-		Func:    checkDMLSelectForUpdate,
+		Message:      "建议避免使用select for update",
+		Func:         checkDMLSelectForUpdate,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
@@ -637,8 +640,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeDDLConvention,
 		},
-		Message: "精确浮点数建议使用DECIMAL",
-		Func:    checkDecimalTypeColumn,
+		Message:      "精确浮点数建议使用DECIMAL",
+		Func:         checkDecimalTypeColumn,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
@@ -648,8 +652,9 @@ var RuleHandlers = []RuleHandler{
 			Value: "sha(),sqrt(),md5()",
 			Typ:   RuleTypeDMLConvention,
 		},
-		Message: "避免使用不必要的内置函数[%v]",
-		Func:    checkNeedlessFunc,
+		Message:      "避免使用不必要的内置函数[%v]",
+		Func:         checkNeedlessFunc,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
@@ -658,8 +663,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeNamingConvention,
 		},
-		Message: "数据库名称建议以\"_DB\"结尾",
-		Func:    checkDatabaseSuffix,
+		Message:      "数据库名称建议以\"_DB\"结尾",
+		Func:         checkDatabaseSuffix,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
@@ -668,8 +674,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeNamingConvention,
 		},
-		Message: "建议主键命名为\"PK_表名\"",
-		Func:    checkPKIndexName,
+		Message:      "建议主键命名为\"PK_表名\"",
+		Func:         checkPKIndexName,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
@@ -678,8 +685,9 @@ var RuleHandlers = []RuleHandler{
 			Level: model.RuleLevelNotice,
 			Typ:   RuleTypeUsageSuggestion,
 		},
-		Message: "事物隔离级别建议设置成RC",
-		Func:    checkTransactionIsolationLevel,
+		Message:      "事物隔离级别建议设置成RC",
+		Func:         checkTransactionIsolationLevel,
+		AllowOffline: true,
 	},
 	{
 		Rule: model.Rule{
