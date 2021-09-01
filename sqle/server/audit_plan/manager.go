@@ -12,6 +12,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/server"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
 
+	"github.com/jinzhu/gorm"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
@@ -19,30 +20,16 @@ import (
 var ErrAuditPlanNotExist = errors.New("audit plan not exist")
 var ErrAuditPlanExisted = errors.New("audit plan existed")
 
-// todo: remove after implementing related model method.
-type Persist interface {
-	Save(model interface{}) error
-	Delete(model interface{}) error
-	GetAuditPlans() ([]*model.AuditPlan, error)
-	GetAuditPlanByName(name string) (*model.AuditPlan, error)
-	GetUserByName(name string) (*model.User, error)
-	GetAuditPlanSQLs(name string) ([]*model.AuditPlanSQL, error)
-	GetInstanceByName(name string) (*model.Instance, error)
-	UpdateCronEntryID([]*model.AuditPlan) error
-	UpdateAuditPlanByName(name string, attrs map[string]interface{}) error
-	GetTaskSQLsByReq(data map[string]interface{}) (result []*model.TaskSQLDetail, count uint64, err error)
-}
-
 var manager *Manager
 
-func InitManager(p Persist) chan struct{} {
+func InitManager(s *model.Storage) chan struct{} {
 	if manager == nil {
 		manager = &Manager{
 			scheduler: &scheduler{
 				cron:     cron.New(),
 				entryIDs: make(map[string]cron.EntryID),
 			},
-			persist: p,
+			persist: s,
 			logger:  log.NewEntry(),
 		}
 		manager.start()
@@ -72,8 +59,7 @@ type Manager struct {
 	scheduler *scheduler
 
 	// persist is a database handle which store AuditPlan.
-	// todo: replace with Storage after implementing related model method
-	persist Persist
+	persist *model.Storage
 
 	logger *logrus.Entry
 }
@@ -122,7 +108,10 @@ func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDat
 }
 
 func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) error {
-	user, err := mgr.persist.GetUserByName(currentUserName)
+	user, exist, err := mgr.persist.GetUserByName(currentUserName)
+	if !exist {
+		return gorm.ErrRecordNotFound
+	}
 	if err != nil {
 		return err
 	}
@@ -136,7 +125,10 @@ func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) er
 	ap.Token = t
 
 	if ap.InstanceName != "" {
-		instance, err := mgr.persist.GetInstanceByName(ap.InstanceName)
+		instance, exist, err := mgr.persist.GetInstanceByName(ap.InstanceName)
+		if !exist {
+			return gorm.ErrRecordNotFound
+		}
 		if err != nil {
 			return err
 		}
@@ -166,7 +158,7 @@ func (mgr *Manager) UpdateAuditPlan(name string, attrs map[string]interface{}) e
 	if err != nil {
 		return err
 	}
-	ap, err := mgr.persist.GetAuditPlanByName(name)
+	ap, _, err := mgr.persist.GetAuditPlanByName(name)
 	if err != nil {
 		return err
 	}
@@ -183,7 +175,7 @@ func (mgr *Manager) DeleteAuditPlan(name string) error {
 		return ErrAuditPlanNotExist
 	}
 
-	ap, err := mgr.persist.GetAuditPlanByName(name)
+	ap, _, err := mgr.persist.GetAuditPlanByName(name)
 	if err != nil {
 		return err
 	}
@@ -198,7 +190,7 @@ func (mgr *Manager) TriggerAuditPlan(name string) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	ap, err := mgr.persist.GetAuditPlanByName(name)
+	ap, _, err := mgr.persist.GetAuditPlanByName(name)
 	if err != nil {
 		return err
 	}
@@ -211,16 +203,11 @@ func (mgr *Manager) loadAuditPlans() error {
 	if err != nil {
 		return err
 	}
-
-	err = mgr.addAuditPlansToScheduler(aps)
-	if err != nil {
-		return err
-	}
-	return mgr.persist.UpdateCronEntryID(aps)
+	return mgr.addAuditPlansToScheduler(aps)
 }
 
 func (mgr *Manager) runJob(ap *model.AuditPlan) {
-	instance, err := mgr.persist.GetInstanceByName(ap.InstanceName)
+	instance, _, err := mgr.persist.GetInstanceByName(ap.InstanceName)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("get instance error:%v\n", err)
 		return
