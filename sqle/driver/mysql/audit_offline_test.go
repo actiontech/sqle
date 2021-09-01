@@ -13,11 +13,7 @@ func DefaultMysqlInspectOffline() *Inspect {
 	return &Inspect{
 		log:  log.NewEntry(),
 		inst: nil,
-		Ctx: &Context{
-			sysVars: map[string]string{
-				"lower_case_table_names": "0",
-			},
-		},
+		Ctx:  &Context{},
 		cnf: &Config{
 			DDLOSCMinSize:      -1,
 			DMLRollbackMaxRows: -1,
