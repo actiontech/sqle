@@ -230,7 +230,7 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) {
 			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 				BaseSQL: model.BaseSQL{
 					Number:  uint(i),
-					Content: sql.LastSQLText,
+					Content: sql.LastSQL,
 				},
 			})
 		}

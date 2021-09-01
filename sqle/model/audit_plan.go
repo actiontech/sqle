@@ -27,7 +27,7 @@ type AuditPlanSQL struct {
 
 	Fingerprint          string `json:"fingerprint" gorm:"not null"`
 	Counter              string `json:"counter" gorm:"not null"`
-	LastSQLText          string `json:"last_sql" gorm:"not null"`
+	LastSQL              string `json:"last_sql" gorm:"not null"`
 	LastReceiveTimestamp string `json:"last_receive_timestamp" gorm:"not null"`
 }
 
