@@ -27,6 +27,16 @@ func InitStorage(s *Storage) {
 	storage = s
 }
 
+func initMockStorage(db *sql.DB) {
+	storageMutex.Lock()
+	defer storageMutex.Unlock()
+	gormDB, err := gorm.Open("mysql", db)
+	if err != nil {
+		panic(err)
+	}
+	storage = &Storage{db: gormDB}
+}
+
 func GetStorage() *Storage {
 	storageMutex.Lock()
 	defer storageMutex.Unlock()
