@@ -188,14 +188,16 @@ func GetAuditPlans(c echo.Context) error {
 		return err
 	}
 
-	// todo refactor to api common utils
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 
+	currentUserName := controller.GetUserName(c)
 	data := map[string]interface{}{
 		"filter_audit_plan_db_type": req.FilterAuditPlanDBType,
+		"current_user_id":           currentUserName,
+		"current_user_is_admin":     model.DefaultAdminUser == currentUserName,
 		"limit":                     req.PageSize,
 		"offset":                    offset,
 	}
@@ -272,7 +274,6 @@ func GetAuditPlanReports(c echo.Context) error {
 		return err
 	}
 
-	// todo refactor to api common utils
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
@@ -339,7 +340,6 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		return err
 	}
 
-	// todo refactor to api common utils
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
@@ -445,7 +445,6 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		return err
 	}
 
-	// todo refactor to api common utils
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
