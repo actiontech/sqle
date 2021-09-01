@@ -94,8 +94,7 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 // @Tags task
 // @Id createAndAuditTaskV1
 // @Security ApiKeyAuth
-// @Param instance_name formData string false "instance name"
-// @Param db_type formData string true "database type"
+// @Param instance_name formData string true "instance name"
 // @Param instance_schema formData string false "schema of instance"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"

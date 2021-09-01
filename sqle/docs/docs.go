@@ -1653,12 +1653,6 @@ var doc = `{
                         "type": "string",
                         "description": "instance name",
                         "name": "instance_name",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "database type",
-                        "name": "db_type",
                         "in": "formData",
                         "required": true
                     },
