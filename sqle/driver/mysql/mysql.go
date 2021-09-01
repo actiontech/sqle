@@ -151,7 +151,12 @@ func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*
 	if err != nil {
 		return nil, err
 	}
-	if err = i.CheckInvalid(nodes[0]); err != nil {
+	if i.IsOfflineAudit() {
+		err = i.CheckInvalidOffline(nodes[0])
+	} else {
+		err = i.CheckInvalid(nodes[0])
+	}
+	if err != nil {
 		return nil, err
 	}
 

@@ -42,7 +42,7 @@ type Task struct {
 	PassRate     float64 `json:"pass_rate"`
 	SQLType      string  `json:"sql_type" gorm:"column:sql_type"`
 	SQLSource    string  `json:"sql_source" gorm:"column:sql_source"`
-	DBType       string  `json:"db_type" gorm:"column:db_type" example:"mysql"`
+	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
 	CreateUserId uint
 
