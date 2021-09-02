@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/driver"
@@ -531,13 +532,18 @@ func GetAuditPlanSQLs(c echo.Context) error {
 	})
 }
 
+type TriggerAuditPlanResV1 struct {
+	controller.BaseRes
+	Data AuditPlanReportResV1 `json:"data"`
+}
+
 // @Summary 触发审核计划
 // @Description trigger audit plan
 // @Id triggerAuditPlanV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Param audit_plan_name path string true "audit plan name"
-// @Success 200 {object} controller.BaseRes
+// @Success 200 {object} v1.TriggerAuditPlanResV1
 // @router /v1/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
@@ -547,7 +553,18 @@ func TriggerAuditPlan(c echo.Context) error {
 	}
 
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.TriggerAuditPlan(apName))
+	report, err := manager.TriggerAuditPlan(apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &TriggerAuditPlanResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: AuditPlanReportResV1{
+			Id:        fmt.Sprintf("%v", report.ID),
+			Timestamp: report.CreatedAt.Format(time.RFC3339),
+		},
+	})
 }
 
 func checkCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {

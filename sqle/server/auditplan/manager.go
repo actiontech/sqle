@@ -193,16 +193,15 @@ func (mgr *Manager) DeleteAuditPlan(name string) error {
 	return mgr.scheduler.removeJob(name)
 }
 
-func (mgr *Manager) TriggerAuditPlan(name string) error {
+func (mgr *Manager) TriggerAuditPlan(name string) (*model.AuditPlanReport, error) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
 	ap, _, err := mgr.persist.GetAuditPlanByName(name)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	mgr.runJob(ap)
-	return nil
+	return mgr.runJob(ap), nil
 }
 
 func (mgr *Manager) loadAuditPlans() error {
@@ -213,11 +212,11 @@ func (mgr *Manager) loadAuditPlans() error {
 	return mgr.addAuditPlansToScheduler(aps)
 }
 
-func (mgr *Manager) runJob(ap *model.AuditPlan) {
+func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 	instance, _, err := mgr.persist.GetInstanceByName(ap.InstanceName)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("get instance error:%v\n", err)
-		return
+		return nil
 	}
 
 	task := &model.Task{
@@ -232,7 +231,7 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) {
 	auditPlanSQLs, err := mgr.persist.GetAuditPlanSQLs(ap.Name)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("get audit plan SQLs error:%v\n", err)
-		return
+		return nil
 	}
 	for i, sql := range auditPlanSQLs {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
@@ -245,13 +244,13 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) {
 	err = mgr.persist.Save(task)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("save audit plan task error:%v\n", err)
-		return
+		return nil
 	}
 
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%v", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("audit task error:%v\n", err)
-		return
+		return nil
 	}
 
 	auditPlanReport := &model.AuditPlanReport{AuditPlanID: ap.ID}
@@ -265,8 +264,9 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) {
 	err = mgr.persist.Save(auditPlanReport)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("save audit plan report error:%v\n", err)
-		return
+		return nil
 	}
+	return auditPlanReport
 }
 
 func (mgr *Manager) addAuditPlansToScheduler(aps []*model.AuditPlan) error {
