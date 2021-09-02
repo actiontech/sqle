@@ -40,6 +40,7 @@ type CreateAuditPlanReqV1 struct {
 // @router /v1/audit_plans [post]
 func CreateAuditPlan(c echo.Context) error {
 	s := model.GetStorage()
+	manager := auditplan.GetManager()
 
 	req := new(CreateAuditPlanReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -62,43 +63,37 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	if req.InstanceName != "" {
-		instance, exist, err := s.GetInstanceByName(req.InstanceName)
+	currentUserName := controller.GetUserName(c)
+
+	if req.InstanceName == "" {
+		err := manager.AddStaticAuditPlan(req.Name, req.Cron, req.InstanceType, currentUserName)
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByName(req.InstanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, instanceNotExistError))
+	}
+
+	if req.InstanceDatabase != "" {
+		d, err := driver.NewDriver(log.NewEntry(), instance, false, instance.DbType, "")
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		if !exist {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, instanceNotExistError))
+		schemas, err := d.Schemas(context.TODO())
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
 		}
-
-		if req.InstanceDatabase != "" {
-			d, err := driver.NewDriver(log.NewEntry(), instance, false, instance.DbType, "")
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-			schemas, err := d.Schemas(context.TODO())
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-			if !dry.StringInSlice(req.InstanceDatabase, schemas) {
-				return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist in instance", req.InstanceDatabase)))
-			}
-			d.Close(context.TODO())
+		if !dry.StringInSlice(req.InstanceDatabase, schemas) {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist in instance", req.InstanceDatabase)))
 		}
-		return controller.JSONBaseErrorReq(c,
-			auditplan.GetManager().AddDynamicAuditPlan(
-				req.Name,
-				req.Cron,
-				req.InstanceName,
-				req.InstanceDatabase,
-				controller.GetUserName(c)))
+		d.Close(context.TODO())
 	}
-	return controller.JSONBaseErrorReq(c,
-		auditplan.GetManager().AddStaticAuditPlan(
-			req.Name,
-			req.Cron,
-			req.InstanceType,
-			controller.GetUserName(c)))
+	err = manager.AddDynamicAuditPlan(req.Name, req.Cron, req.InstanceName, req.InstanceDatabase, currentUserName)
+	return controller.JSONBaseErrorReq(c, err)
 }
 
 // @Summary 删除审核计划
