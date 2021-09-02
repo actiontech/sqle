@@ -254,7 +254,7 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) {
 		}
 	}
 
-	auditPlanReport := &model.AuditPlanReport{AuditPlanID: fmt.Sprintf("%v", ap.ID)}
+	auditPlanReport := &model.AuditPlanReport{AuditPlanID: ap.ID}
 	for _, executeSQL := range task.ExecuteSQLs {
 		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQL{
 			AuditResult: executeSQL.AuditResult,
