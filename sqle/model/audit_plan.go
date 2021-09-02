@@ -23,17 +23,17 @@ type AuditPlan struct {
 
 type AuditPlanSQL struct {
 	Model
-	AuditPlanID string `json:"audit_plan_id" gorm:"index"`
+	AuditPlanID uint `json:"audit_plan_id" gorm:"index"`
 
 	Fingerprint          string `json:"fingerprint" gorm:"not null"`
 	Counter              string `json:"counter" gorm:"not null"`
-	LastSQLText          string `json:"last_sql" gorm:"not null"`
+	LastSQL              string `json:"last_sql" gorm:"not null"`
 	LastReceiveTimestamp string `json:"last_receive_timestamp" gorm:"not null"`
 }
 
 type AuditPlanReport struct {
 	Model
-	AuditPlanID string `json:"audit_plan_id" gorm:"index"`
+	AuditPlanID uint `json:"audit_plan_id" gorm:"index"`
 
 	AuditPlan           *AuditPlan            `gorm:"foreignkey:AuditPlanID"`
 	AuditPlanReportSQLs []*AuditPlanReportSQL `gorm:"foreignkey:AuditPlanReportID"`
@@ -43,8 +43,8 @@ type AuditPlanReportSQL struct {
 	Model
 	AuditResult string `json:"audit_result" gorm:"type:text"`
 
-	AuditPlanSQLID    string `json:"audit_plan_sql_id" gorm:"index"`
-	AuditPlanReportID string `json:"audit_plan_report_id" gorm:"index"`
+	AuditPlanSQLID    uint `json:"audit_plan_sql_id" gorm:"index"`
+	AuditPlanReportID uint `json:"audit_plan_report_id" gorm:"index"`
 
 	AuditPlanSQL    *AuditPlanSQL    `gorm:"foreignkey:AuditPlanSQLID"`
 	AuditPlanReport *AuditPlanReport `gorm:"foreignkey:AuditPlanReportID"`

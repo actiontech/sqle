@@ -225,7 +225,8 @@ github.com/swaggo/swag
 github.com/swaggo/swag/gen
 # github.com/tatsushid/go-fastping v0.0.0-20160109021039-d7bb493dee3e
 github.com/tatsushid/go-fastping
-# github.com/ungerik/go-dry v0.0.0-20180411133923-654ae31114c8
+# github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
+## explicit
 github.com/ungerik/go-dry
 # github.com/urfave/cli/v2 v2.1.1
 ## explicit

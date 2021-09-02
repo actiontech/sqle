@@ -1,15 +1,15 @@
 package dry
 
 import (
-	cryptoRand "crypto/rand"
+	cryptorand "crypto/rand"
 	"fmt"
-	mathRand "math/rand"
+	mathrand "math/rand"
 	"time"
 )
 
 // RandSeedWithTime calls rand.Seed() with the current time.
 func RandSeedWithTime() {
-	mathRand.Seed(time.Now().UTC().UnixNano())
+	mathrand.Seed(time.Now().UTC().UnixNano())
 }
 
 func getRandomHexString(length int, formatStr string) string {
@@ -19,7 +19,7 @@ func getRandomHexString(length int, formatStr string) string {
 	} else {
 		buffer = make([]byte, (length+1)/2)
 	}
-	_, err := cryptoRand.Read(buffer)
+	_, err := cryptorand.Read(buffer)
 	if err != nil {
 		return ""
 	}

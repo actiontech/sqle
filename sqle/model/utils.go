@@ -107,6 +107,10 @@ func (s *Storage) AutoMigrate() error {
 		&WorkflowStep{},
 		&SMTPConfiguration{},
 		&SystemVariable{},
+		&AuditPlan{},
+		&AuditPlanReport{},
+		&AuditPlanSQL{},
+		&AuditPlanReportSQL{},
 	).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)

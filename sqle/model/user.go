@@ -1,12 +1,13 @@
 package model
 
 import (
+	"fmt"
+	"strings"
+
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/universe/ucommon/v4/util"
-	"fmt"
 	"github.com/jinzhu/gorm"
-	"strings"
 )
 
 const DefaultAdminUser = "admin"

@@ -451,7 +451,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.TriggerAuditPlanResV1"
                         }
                     }
                 }
@@ -4276,6 +4276,23 @@ var doc = `{
             "properties": {
                 "workflow_expired_hours": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.TriggerAuditPlanResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanReportResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

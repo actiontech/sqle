@@ -60,11 +60,11 @@ func Register(name string, h handler, rs []*model.Rule) {
 }
 
 type ErrDriverNotSupported struct {
-	driverTyp string
+	DriverTyp string
 }
 
 func (e *ErrDriverNotSupported) Error() string {
-	return fmt.Sprintf("driver type %v is not supported", e.driverTyp)
+	return fmt.Sprintf("driver type %v is not supported", e.DriverTyp)
 }
 
 // NewDriver return a new instantiated Driver.
