@@ -247,7 +247,35 @@ type GetAuditPlanResV1 struct {
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} v1.GetAuditPlanResV1
 // @router /v1/audit_plans/{audit_plan_name}/ [get]
-func GetAuditPlan(c echo.Context) error { return nil }
+func GetAuditPlan(c echo.Context) error {
+	apName := c.Param("audit_plan_name")
+	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	storage := model.GetStorage()
+
+	ap, exist, err := storage.GetAuditPlanByName(apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditPlanResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: AuditPlanResV1{
+			Name:             ap.Name,
+			Cron:             ap.CronExpression,
+			DBType:           ap.DBType,
+			InstanceName:     ap.InstanceName,
+			InstanceDatabase: ap.InstanceDatabase,
+			Token:            ap.Token,
+		},
+	})
+}
 
 type GetAuditPlanReportsReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
