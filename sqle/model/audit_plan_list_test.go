@@ -132,6 +132,7 @@ func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 	FROM audit_plan_report_sqls
 	JOIN audit_plan_reports ON audit_plan_report_sqls.audit_plan_report_id = audit_plan_reports.id
 	JOIN audit_plans ON audit_plan_reports.audit_plan_id = audit_plans.id
+	JOIN audit_plan_sqls ON audit_plan_sqls.id = audit_plan_report_sqls.audit_plan_sql_id
 	WHERE audit_plan_report_sqls.deleted_at IS NULL
 	AND audit_plans.name = ?
 	AND audit_plan_reports.id = ?
