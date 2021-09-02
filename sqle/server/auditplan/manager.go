@@ -227,37 +227,38 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) {
 		SQLSource:    model.TaskSQLSourceFromAuditPlan,
 		DBType:       ap.DBType,
 	}
-	{ // todo: extract common logic in CreateAndAuditTask
-		sqls, err := mgr.persist.GetAuditPlanSQLs(ap.Name)
-		if err != nil {
-			mgr.logger.WithField("name", ap.Name).Errorf("get audit plan SQLs error:%v\n", err)
-			return
-		}
-		for i, sql := range sqls {
-			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-				BaseSQL: model.BaseSQL{
-					Number:  uint(i),
-					Content: sql.LastSQL,
-				},
-			})
-		}
-		err = mgr.persist.Save(task)
-		if err != nil {
-			mgr.logger.WithField("name", ap.Name).Errorf("save audit plan task error:%v\n", err)
-			return
-		}
 
-		task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%v", task.ID), server.ActionTypeAudit)
-		if err != nil {
-			mgr.logger.WithField("name", ap.Name).Errorf("audit task error:%v\n", err)
-			return
-		}
+	// todo: extract common logic in CreateAndAuditTask
+	auditPlanSQLs, err := mgr.persist.GetAuditPlanSQLs(ap.Name)
+	if err != nil {
+		mgr.logger.WithField("name", ap.Name).Errorf("get audit plan SQLs error:%v\n", err)
+		return
+	}
+	for i, sql := range auditPlanSQLs {
+		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(i),
+				Content: sql.LastSQL,
+			},
+		})
+	}
+	err = mgr.persist.Save(task)
+	if err != nil {
+		mgr.logger.WithField("name", ap.Name).Errorf("save audit plan task error:%v\n", err)
+		return
+	}
+
+	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%v", task.ID), server.ActionTypeAudit)
+	if err != nil {
+		mgr.logger.WithField("name", ap.Name).Errorf("audit task error:%v\n", err)
+		return
 	}
 
 	auditPlanReport := &model.AuditPlanReport{AuditPlanID: ap.ID}
-	for _, executeSQL := range task.ExecuteSQLs {
+	for i, executeSQL := range task.ExecuteSQLs {
 		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQL{
-			AuditResult: executeSQL.AuditResult,
+			AuditPlanSQLID: auditPlanSQLs[i].ID,
+			AuditResult:    executeSQL.AuditResult,
 		})
 	}
 
