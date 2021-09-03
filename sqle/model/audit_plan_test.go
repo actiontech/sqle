@@ -11,7 +11,7 @@ import (
 func TestStorage_GetAuditPlans(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL").
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("audit_plan_1"))
@@ -28,7 +28,7 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 	// 1. test record exist
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("audit_plan_1"))
@@ -44,7 +44,7 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 	// 2. test record not exist
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}))
@@ -60,7 +60,7 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 
 	mockAuditPlanRow := AuditPlan{Model: Model{ID: 1}, Name: "audit_plan_for_java_repo1"}
 
@@ -81,7 +81,7 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	// 2. test update audit plan not exist
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}))
