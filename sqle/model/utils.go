@@ -27,6 +27,8 @@ func InitStorage(s *Storage) {
 	storage = s
 }
 
+var MockTime, _ = time.Parse("0000-00-00 00:00:00.0000000", "0000-00-00 00:00:00.0000000")
+
 func InitMockStorage(db *sql.DB) {
 	storageMutex.Lock()
 	defer storageMutex.Unlock()
@@ -35,6 +37,14 @@ func InitMockStorage(db *sql.DB) {
 		panic(err)
 	}
 	storage = &Storage{db: gormDB}
+
+	// Custom NowFunc solve this problem:
+	// 	When mock SQL which will update CreateAt/UpdateAt fields,
+	// 	GORM will auto-update this field by NowFunc(when is is empty),
+	// 	then it will never equal to expection(always later than expection).
+	gorm.NowFunc = func() time.Time {
+		return MockTime
+	}
 }
 
 func GetStorage() *Storage {
