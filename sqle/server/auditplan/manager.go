@@ -132,13 +132,6 @@ func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) er
 		ap.DBType = instance.DbType
 	}
 
-	// todo: remove mock sqls
-	ap.AuditPlanSQLs = append(ap.AuditPlanSQLs,
-		&model.AuditPlanSQL{
-			Fingerprint:          "select * from tasks where id = ?",
-			LastSQL:              "select * from tasks where id = 1",
-			Counter:              "100",
-			LastReceiveTimestamp: time.Now().String()})
 	err = mgr.persist.Save(ap)
 	if err != nil {
 		return err
