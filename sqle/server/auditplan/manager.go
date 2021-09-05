@@ -31,7 +31,10 @@ func InitManager(s *model.Storage) chan struct{} {
 		persist: s,
 		logger:  log.NewEntry(),
 	}
-	manager.start()
+	err := manager.start()
+	if err != nil {
+		panic(err)
+	}
 	exitCh := make(chan struct{})
 	go func() {
 		select {
