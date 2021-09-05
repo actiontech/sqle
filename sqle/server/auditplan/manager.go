@@ -23,26 +23,23 @@ var ErrAuditPlanExisted = errors.New("audit plan existed")
 var manager *Manager
 
 func InitManager(s *model.Storage) chan struct{} {
-	if manager == nil {
-		manager = &Manager{
-			scheduler: &scheduler{
-				cron:     cron.New(),
-				entryIDs: make(map[string]cron.EntryID),
-			},
-			persist: s,
-			logger:  log.NewEntry(),
-		}
-		manager.start()
-		exitCh := make(chan struct{})
-		go func() {
-			select {
-			case <-exitCh:
-				manager.stop()
-			}
-		}()
-		return exitCh
+	manager = &Manager{
+		scheduler: &scheduler{
+			cron:     cron.New(),
+			entryIDs: make(map[string]cron.EntryID),
+		},
+		persist: s,
+		logger:  log.NewEntry(),
 	}
-	return nil
+	manager.start()
+	exitCh := make(chan struct{})
+	go func() {
+		select {
+		case <-exitCh:
+			manager.stop()
+		}
+	}()
+	return exitCh
 }
 
 func GetManager() *Manager {
