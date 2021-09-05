@@ -105,6 +105,10 @@ func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDat
 }
 
 func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) error {
+	if mgr.scheduler.hasJob(ap.Name) {
+		return ErrAuditPlanExisted
+	}
+
 	user, exist, err := mgr.persist.GetUserByName(currentUserName)
 	if !exist {
 		return gorm.ErrRecordNotFound
