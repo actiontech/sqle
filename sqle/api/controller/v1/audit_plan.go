@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
@@ -442,7 +443,22 @@ type AuditPlanSQLReqV1 struct {
 // @Param sqls body v1.FullSyncAuditPlanSQLsReqV1 true "full sync audit plan SQLs request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/sqls/full [post]
-func FullSyncAuditPlanSQLs(c echo.Context) error { return nil }
+func FullSyncAuditPlanSQLs(c echo.Context) error {
+	req := new(FullSyncAuditPlanSQLsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	apName := c.Param("audit_plan_name")
+	sqls, err := checkAndConvertToModelAuditPlanSQL(c, apName, req.SQLs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	err = s.SaveAuditPlanSQLs(apName, sqls)
+	return controller.JSONBaseErrorReq(c, err)
+}
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
 	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list"`
@@ -457,7 +473,54 @@ type PartialSyncAuditPlanSQLsReqV1 struct {
 // @Param sqls body v1.PartialSyncAuditPlanSQLsReqV1 true "partial sync audit plan SQLs request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/sqls/partial [post]
-func PartialSyncAuditPlanSQLs(c echo.Context) error { return nil }
+func PartialSyncAuditPlanSQLs(c echo.Context) error {
+	req := new(PartialSyncAuditPlanSQLsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	apName := c.Param("audit_plan_name")
+	sqls, err := checkAndConvertToModelAuditPlanSQL(c, apName, req.SQLs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	err = s.UpdateAuditPlanSQLs(apName, sqls)
+	return controller.JSONBaseErrorReq(c, err)
+}
+
+func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*model.AuditPlanSQL, error) {
+	s := model.GetStorage()
+
+	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	if err != nil {
+		return nil, err
+	}
+
+	_, exist, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errAuditPlanNotExist
+	}
+
+	var sqls []*model.AuditPlanSQL
+	for _, reqSQL := range reqSQLs {
+		counter, err := strconv.ParseInt(reqSQL.Counter, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		sqls = append(sqls, &model.AuditPlanSQL{
+			Fingerprint:          reqSQL.Fingerprint,
+			Counter:              int(counter),
+			LastSQL:              reqSQL.LastReceiveText,
+			LastReceiveTimestamp: reqSQL.LastReceiveTimestamp,
+		})
+	}
+	return sqls, nil
+}
 
 type GetAuditPlanSQLsReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`

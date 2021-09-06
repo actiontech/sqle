@@ -18,7 +18,7 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token, audit_plans.instance_name, audit_plans.instance_database %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs(1, "mysql", 100, 10).WillReturnRows(sqlmock.NewRows([]string{"name", "cron_expression", "db_type", "token", "instance_name", "instance_database"}).AddRow("audit_plan_1", "* */2 * * *", "mysql", "fake token", "inst_1", "db_1"))
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
@@ -45,7 +45,7 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	`
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`
 	SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token, audit_plans.instance_name, audit_plans.instance_database
 	%v
@@ -79,7 +79,7 @@ func TestStorage_GetAuditPlanSQLsByReq(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer mockDB.Close()
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plan_sqls.fingerprint, audit_plan_sqls.counter, audit_plan_sqls.last_sql, audit_plan_sqls.last_receive_timestamp %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs("audit_plan_for_jave_repo", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"fingerprint", "counter", "last_sql", "last_receive_timestamp",
@@ -108,7 +108,7 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer mockDB.Close()
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plan_reports.id, audit_plan_reports.created_at %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs("audit_plan_for_jave_repo", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"id", "created_at"}).AddRow("1", "2021-09-01T13:46:13+08:00"))
@@ -141,7 +141,7 @@ func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer mockDB.Close()
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plan_report_sqls.audit_result, audit_plan_sqls.fingerprint, audit_plan_sqls.last_sql, audit_plan_sqls.last_receive_timestamp %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs("audit_plan_for_jave_repo", 1, 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"audit_result", "fingerprint", "last_sql", "last_receive_timestamp",

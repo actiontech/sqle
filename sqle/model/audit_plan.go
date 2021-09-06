@@ -1,7 +1,10 @@
 package model
 
 import (
+	"fmt"
+
 	"actiontech.cloud/sqle/sqle/sqle/errors"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -25,8 +28,8 @@ type AuditPlanSQL struct {
 	Model
 	AuditPlanID uint `json:"audit_plan_id" gorm:"index"`
 
-	Fingerprint          string `json:"fingerprint" gorm:"not null"`
-	Counter              string `json:"counter" gorm:"not null"`
+	Fingerprint          string `json:"fingerprint" gorm:"unique_index;not null"`
+	Counter              int    `json:"counter" gorm:"not null"`
 	LastSQL              string `json:"last_sql" gorm:"not null"`
 	LastReceiveTimestamp string `json:"last_receive_timestamp" gorm:"not null"`
 }
@@ -77,6 +80,43 @@ func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQL, error) {
 	var sqls []*AuditPlanSQL
 	err = s.db.Model(AuditPlanSQL{}).Where("audit_plan_id = ?", ap.ID).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) SaveAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error {
+	ap, _, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return err
+	}
+
+	raw := getBatchInsertRawSQL(ap, sqls)
+	raw += " ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);"
+	return errors.New(errors.ConnectStorageError, s.db.Exec(raw).Error)
+}
+
+func (s *Storage) UpdateAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error {
+	ap, _, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return err
+	}
+
+	raw := getBatchInsertRawSQL(ap, sqls)
+	// counter column is a accumulate value when update.
+	raw += " ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`) + `counter`, `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);"
+	return errors.New(errors.ConnectStorageError, s.db.Exec(raw).Error)
+}
+
+func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQL) string {
+	raw := "INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES "
+	for i, sql := range sqls {
+		if i == len(sqls)-1 {
+			raw += fmt.Sprintf("('%v','%v','%v','%v','%v') ",
+				ap.ID, sql.Fingerprint, sql.Counter, sql.LastSQL, sql.LastReceiveTimestamp)
+		} else {
+			raw += fmt.Sprintf("('%v','%v','%v','%v','%v'),",
+				ap.ID, sql.Fingerprint, sql.Counter, sql.LastSQL, sql.LastReceiveTimestamp)
+		}
+	}
+	return raw
 }
 
 func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{}) error {

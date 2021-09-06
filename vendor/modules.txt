@@ -25,6 +25,9 @@ github.com/StackExchange/wmi
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast
 github.com/actiontech/mybatis-mapper-2-sql/sqlfmt
+# github.com/agiledragon/gomonkey v2.0.2+incompatible
+## explicit
+github.com/agiledragon/gomonkey
 # github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 ## explicit
 github.com/alecthomas/template

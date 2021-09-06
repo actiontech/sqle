@@ -23,26 +23,26 @@ var ErrAuditPlanExisted = errors.New("audit plan existed")
 var manager *Manager
 
 func InitManager(s *model.Storage) chan struct{} {
-	if manager == nil {
-		manager = &Manager{
-			scheduler: &scheduler{
-				cron:     cron.New(),
-				entryIDs: make(map[string]cron.EntryID),
-			},
-			persist: s,
-			logger:  log.NewEntry(),
-		}
-		manager.start()
-		exitCh := make(chan struct{})
-		go func() {
-			select {
-			case <-exitCh:
-				manager.stop()
-			}
-		}()
-		return exitCh
+	manager = &Manager{
+		scheduler: &scheduler{
+			cron:     cron.New(),
+			entryIDs: make(map[string]cron.EntryID),
+		},
+		persist: s,
+		logger:  log.NewEntry(),
 	}
-	return nil
+	err := manager.start()
+	if err != nil {
+		panic(err)
+	}
+	exitCh := make(chan struct{})
+	go func() {
+		select {
+		case <-exitCh:
+			manager.stop()
+		}
+	}()
+	return exitCh
 }
 
 func GetManager() *Manager {
@@ -108,6 +108,10 @@ func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDat
 }
 
 func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) error {
+	if mgr.scheduler.hasJob(ap.Name) {
+		return ErrAuditPlanExisted
+	}
+
 	user, exist, err := mgr.persist.GetUserByName(currentUserName)
 	if !exist {
 		return gorm.ErrRecordNotFound
@@ -135,13 +139,6 @@ func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) er
 		ap.DBType = instance.DbType
 	}
 
-	// todo: remove mock sqls
-	ap.AuditPlanSQLs = append(ap.AuditPlanSQLs,
-		&model.AuditPlanSQL{
-			Fingerprint:          "select * from tasks where id = ?",
-			LastSQL:              "select * from tasks where id = 1",
-			Counter:              "100",
-			LastReceiveTimestamp: time.Now().String()})
 	err = mgr.persist.Save(ap)
 	if err != nil {
 		return err

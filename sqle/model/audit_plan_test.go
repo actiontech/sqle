@@ -11,7 +11,7 @@ import (
 func TestStorage_GetAuditPlans(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL").
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("audit_plan_1"))
@@ -28,7 +28,7 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 	// 1. test record exist
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("audit_plan_1"))
@@ -44,7 +44,7 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 	// 2. test record not exist
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}))
@@ -60,7 +60,7 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 
 	mockAuditPlanRow := AuditPlan{Model: Model{ID: 1}, Name: "audit_plan_for_java_repo1"}
 
@@ -81,7 +81,7 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	// 2. test update audit plan not exist
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
-	initMockStorage(mockDB)
+	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}))
@@ -120,3 +120,32 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 // 	err = mock.ExpectationsWereMet()
 // 	assert.NoError(t, err)
 // }
+
+func TestStorage_SaveAuditPlanSQLs(t *testing.T) {
+	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.NoError(t, err)
+	InitMockStorage(mockDB)
+
+	ap := &AuditPlan{
+		Model: Model{
+			ID: 1,
+		},
+		Name: "test_ap_name",
+	}
+
+	mockTime := "mock time"
+	sqls := []*AuditPlanSQL{
+		{Fingerprint: "select * from t1 where id = ?", LastSQL: "select * from t1 where id = 1", Counter: 1, LastReceiveTimestamp: mockTime},
+		{Fingerprint: "select * from t1 where name = ?", LastSQL: "select * from t1 where name = 1", Counter: 1, LastReceiveTimestamp: mockTime},
+	}
+	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
+		WithArgs(ap.Name).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(ap.ID, ap.Name))
+	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES ('1','select * from t1 where id = ?','1','select * from t1 where id = 1','mock time'),('1','select * from t1 where name = ?','1','select * from t1 where name = 1','mock time') ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);").
+		WithArgs().
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	err = GetStorage().SaveAuditPlanSQLs(ap.Name, sqls)
+	assert.NoError(t, err)
+	err = mock.ExpectationsWereMet()
+	assert.NoError(t, err)
+}
