@@ -33,9 +33,6 @@ const (
 
 type (
 	BaseRes                     = controller.BaseRes
-	UserLoginReq                = v1.UserLoginReqV1
-	GetUserLoginRes             = v1.GetUserLoginResV1
-	UserLoginRes                = v1.UserLoginResV1
 	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1
 	AuditPlanSQLReq             = v1.AuditPlanSQLReqV1
 	FullSyncAuditPlanSQLsReq    = v1.FullSyncAuditPlanSQLsReqV1
@@ -67,34 +64,7 @@ func (sc *Client) WithToken(token string) *Client {
 	sc2 := *sc
 	return &sc2
 }
-func (sc *Client) Login(user, password string) (string, error) {
-	url := sc.baseURL + LoginUri
 
-	reqBody := &UserLoginReq{
-		UserName: user,
-		Password: password,
-	}
-	body, err := utils.JSONMarshal(reqBody)
-	if err != nil {
-		return "", err
-	}
-
-	resBody, err := sc.httpClient.SendRequest(context.TODO(), url, http.MethodPost, "", bytes.NewBuffer(body))
-	if err != nil {
-		return "", err
-	}
-
-	loginRes := new(GetUserLoginRes)
-	err = json.Unmarshal(resBody, loginRes)
-	if err != nil {
-		return "", err
-	}
-	if loginRes.Code != 0 {
-		return "", fmt.Errorf("failed to request %s", url)
-	}
-	return loginRes.Data.Token, nil
-
-}
 func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPlanSQLReq) error {
 	url := sc.baseURL + fmt.Sprintf(uri, auditPlanName)
 

@@ -19,8 +19,7 @@ var (
 	dir           string
 	typ           string
 	auditPlanName string
-	user          string
-	password      string
+	token         string
 )
 
 func init() {
@@ -38,13 +37,12 @@ func init() {
 }
 
 func Execute() {
-	rootCmd.Flags().StringVarP(&host, "host", "H", "http://127.0.0.1", "sqle host")
+	rootCmd.Flags().StringVarP(&host, "host", "H", "127.0.0.1", "sqle host")
 	rootCmd.Flags().StringVarP(&port, "port", "P", "10000", "sqle port")
 	rootCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
 	rootCmd.Flags().StringVarP(&auditPlanName, "name", "N", "", "audit plan name")
 	rootCmd.Flags().StringVarP(&typ, "typ", "T", "", "scanner type")
-	rootCmd.Flags().StringVarP(&user, "user", "U", "", "sqle user")
-	rootCmd.Flags().StringVarP(&password, "password", "p", "", "sqle password")
+	rootCmd.Flags().StringVarP(&token, "token", "A", "", "sqle token")
 
 	code := 0
 
@@ -67,8 +65,7 @@ func run(_ *cobra.Command, _ []string) error {
 		Dir:           dir,
 		Typ:           typ,
 		AuditPlanName: auditPlanName,
-		User:          user,
-		Password:      password,
+		Token:         token,
 	}
 	return scanner.Run(cfg)
 }

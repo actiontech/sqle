@@ -23,13 +23,8 @@ func MybatisScanner(cfg *config.Config) error {
 		return err
 	}
 
-	token, err := sqle.NewSQLEClient(time.Second, cfg).Login(cfg.User, cfg.Password)
-	if err != nil {
-		return err
-	}
-	client := sqle.NewSQLEClient(time.Second, cfg).WithToken(token)
+	client := sqle.NewSQLEClient(time.Second, cfg).WithToken(cfg.Token)
 	err = client.UploadReq(sqle.FullUpload, cfg.AuditPlanName, sqlList)
-	//err = sqle.NewSQLEClient(time.Second, cfg).WithToken(token).UploadReq(sqle.FullUpload, cfg.AuditPlanName, sqlList)
 	if err != nil {
 		return err
 	}

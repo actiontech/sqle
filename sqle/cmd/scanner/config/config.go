@@ -6,6 +6,5 @@ type Config struct {
 	Dir           string
 	AuditPlanName string
 	Typ           string
-	User          string
-	Password      string
+	Token         string
 }
