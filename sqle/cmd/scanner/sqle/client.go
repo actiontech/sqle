@@ -143,7 +143,7 @@ func (sc *Client) TriggerAuditReq(auditPlanName string) (string, error) {
 
 func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error {
 	var pageIndex, pageSize, cursor uint64
-	pageIndex, pageSize = 1, 1
+	pageIndex, pageSize = 1, 10
 	cursor = pageIndex * pageSize
 
 	for {
@@ -162,8 +162,10 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 			return fmt.Errorf("failed to request %s", url)
 		}
 		for _, res := range auditRes.Data {
+			fmt.Println(res.LastReceiveText)
+			fmt.Println(res.AuditResult)
 			if strings.Contains(res.AuditResult, "[error]") {
-				return fmt.Errorf("audit error, stopped")
+				return fmt.Errorf("audit result error, stopped")
 			}
 		}
 
