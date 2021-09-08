@@ -1,11 +1,12 @@
 package model
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"database/sql"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"time"
+
+	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"github.com/jinzhu/gorm"
 )
 
 type WorkflowTemplate struct {
@@ -570,20 +571,23 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) CheckWorkflowStateByUserIds(userIds []uint) (bool, error) {
-	workflows := []*Workflow{}
-	err := s.db.Model(workflows).
-		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
-		Where("workflow_records.status = ? AND create_user_id IN (?)", WorkflowStatusRunning, userIds).
-		Scan(&workflows).Error
-	if len(workflows) > 0 {
-		return true, errors.New(errors.ConnectStorageError, err)
+func (s *Storage) IsRunningWorkflowExistByUserId(userId uint) (bool, error) {
+	query := `SELECT COUNT(user_id) FROM users
+LEFT JOIN workflow_step_template_user wstu ON users.id = wstu.user_id
+LEFT JOIN workflow_steps ws ON wstu.workflow_step_template_id = ws.workflow_step_template_id
+LEFT JOIN workflow_records wr ON ws.workflow_record_id = wr.id
+WHERE users.id = ? AND wr.status = ? AND ws.state = ?;`
+
+	var count uint
+	err := s.db.Raw(query, userId, WorkflowStatusRunning, WorkflowStepStateInit).Count(&count).Error
+	if err != nil {
+		return false, errors.New(errors.ConnectStorageError, err)
 	}
-	return false, errors.New(errors.ConnectStorageError, err)
+	return count > 0, nil
 }
 
-func (s *Storage) CheckWorkflowStateByTaskIds(taskIds []uint) (bool, error) {
-	workflowRecords := []*WorkflowRecord{}
+func (s *Storage) IsRunningWorkflowExistByTaskIds(taskIds []uint) (bool, error) {
+	var workflowRecords []*WorkflowRecord
 	err := s.db.Where("status = ? AND task_id IN (?)", WorkflowStatusRunning, taskIds).Find(&workflowRecords).Error
 	if len(workflowRecords) > 0 {
 		return true, errors.New(errors.ConnectStorageError, err)
