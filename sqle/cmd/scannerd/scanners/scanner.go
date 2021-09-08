@@ -13,5 +13,5 @@ type Scanner interface {
 	Run(ctx context.Context) error
 
 	// SQLs returns channel that should be read until it is closed.
-	SQLs() (chan *model.AuditPlanSQL, error)
+	SQLs() <-chan model.AuditPlanSQL
 }
