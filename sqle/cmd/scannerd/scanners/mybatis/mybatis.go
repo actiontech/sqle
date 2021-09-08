@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/sqle"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/utils/parser"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/sqle"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils/parser"
 	"actiontech.cloud/sqle/sqle/sqle/driver"
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
 )

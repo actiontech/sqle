@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/scanners/mybatis"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners/mybatis"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
