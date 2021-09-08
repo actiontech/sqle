@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/sqle"
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils/parser"
 	"actiontech.cloud/sqle/sqle/sqle/driver"
+	"actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
 )
 
@@ -23,8 +23,8 @@ func MybatisScanner(cfg *config.Config) error {
 		return err
 	}
 
-	client := sqle.NewSQLEClient(time.Second, cfg).WithToken(cfg.Token)
-	err = client.UploadReq(sqle.FullUpload, cfg.AuditPlanName, sqlList)
+	client := scanner.NewSQLEClient(time.Second, cfg).WithToken(cfg.Token)
+	err = client.UploadReq(scanner.FullUpload, cfg.AuditPlanName, sqlList)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func MybatisScanner(cfg *config.Config) error {
 	return nil
 }
 
-func PrepareSQL(cfg *config.Config) ([]sqle.AuditPlanSQLReq, error) {
+func PrepareSQL(cfg *config.Config) ([]scanner.AuditPlanSQLReq, error) {
 	allSQL, err := GetSQLFromPath(cfg.Dir)
 	if err != nil {
 		return nil, err
@@ -58,9 +58,9 @@ func PrepareSQL(cfg *config.Config) ([]sqle.AuditPlanSQLReq, error) {
 		}
 	}
 
-	reqBody := make([]sqle.AuditPlanSQLReq, 0, len(nodeList))
+	reqBody := make([]scanner.AuditPlanSQLReq, 0, len(nodeList))
 	for _, sql := range nodeList {
-		reqBody = append(reqBody, sqle.AuditPlanSQLReq{
+		reqBody = append(reqBody, scanner.AuditPlanSQLReq{
 			Fingerprint:          sql.Fingerprint,
 			Counter:              fmt.Sprintf("%v", counterMap[sql.Fingerprint]),
 			LastReceiveText:      sql.Text,
