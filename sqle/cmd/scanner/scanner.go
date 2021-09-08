@@ -1,11 +1,12 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"os"
 
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/scanner"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/scanners/mybatis"
+
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,7 @@ var (
 	token         string
 )
 
-func init() {
+func main() {
 	rootCmd = &cobra.Command{
 		Use:   "SQLE Scanner",
 		Short: "SQLE Scanner",
@@ -34,9 +35,7 @@ func init() {
 			}
 		},
 	}
-}
 
-func Execute() {
 	rootCmd.Flags().StringVarP(&host, "host", "H", "127.0.0.1", "sqle host")
 	rootCmd.Flags().StringVarP(&port, "port", "P", "10000", "sqle port")
 	rootCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
@@ -67,5 +66,10 @@ func run(_ *cobra.Command, _ []string) error {
 		AuditPlanName: auditPlanName,
 		Token:         token,
 	}
-	return scanner.Run(cfg)
+	switch cfg.Typ {
+	case "mybatis":
+		return mybatis.MybatisScanner(cfg)
+	default:
+		return nil
+	}
 }
