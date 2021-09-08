@@ -73,12 +73,9 @@ func CreateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
+	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !ok {
-		return controller.JSONBaseErrorReq(c, instanceBindError)
 	}
 
 	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
@@ -171,13 +168,11 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
+	err = CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !ok {
-		return controller.JSONBaseErrorReq(c, instanceBindError)
-	}
+
 	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -521,13 +516,11 @@ func CloneRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	ok, err := CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
+	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !ok {
-		return controller.JSONBaseErrorReq(c, instanceBindError)
-	}
+
 	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -554,18 +547,18 @@ func CloneRuleTemplate(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, instances []*model.Instance) (bool, error) {
+func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, instances []*model.Instance) error {
 	for _, inst := range instances {
 		currentBindTemplates, err := s.GetRuleTemplatesByInstance(inst)
 		if err != nil {
-			return false, err
+			return err
 		}
 		if len(currentBindTemplates) > 1 {
-			return false, instanceBindError
+			return instanceBindError
 		}
 		if len(currentBindTemplates) == 1 && currentBindTemplates[0].Name != tplName {
-			return false, instanceBindError
+			return instanceBindError
 		}
 	}
-	return true, nil
+	return nil
 }

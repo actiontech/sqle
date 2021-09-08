@@ -248,7 +248,7 @@ func DeleteInstance(c echo.Context) error {
 	for _, task := range tasks {
 		taskIds = append(taskIds, task.ID)
 	}
-	exist, err = s.CheckWorkflowStateByTaskIds(taskIds)
+	exist, err = s.IsRunningWorkflowExistByTaskIds(taskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
