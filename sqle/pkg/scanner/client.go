@@ -16,7 +16,6 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils/httpc"
 
 	v1 "actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
 )
@@ -46,7 +45,7 @@ type (
 
 type Client struct {
 	baseURL    string
-	httpClient *httpc.Client
+	httpClient *client
 	token      string
 }
 
@@ -58,7 +57,7 @@ func NewSQLEClient(timeout time.Duration, cfg *config.Config) *Client {
 
 	client := &Client{
 		baseURL:    baseURL,
-		httpClient: httpc.NewHTTPClient(timeout, nil),
+		httpClient: newClient(timeout, nil),
 	}
 
 	return client
@@ -80,7 +79,7 @@ func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPla
 		return err
 	}
 
-	resBody, err := sc.httpClient.SendRequest(context.TODO(), url, http.MethodPost, sc.token, bytes.NewBuffer(body))
+	resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodPost, sc.token, bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}
@@ -99,7 +98,7 @@ func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPla
 func (sc *Client) TriggerAuditReq(auditPlanName string) (string, error) {
 	url := sc.baseURL + fmt.Sprintf(TriggerAudit, auditPlanName)
 
-	resBody, err := sc.httpClient.SendRequest(context.TODO(), url, http.MethodPost, sc.token, nil)
+	resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodPost, sc.token, nil)
 	if err != nil {
 		return "", err
 	}
@@ -122,7 +121,7 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 
 	for {
 		url := sc.baseURL + fmt.Sprintf(GetAuditReport, auditPlanName, reportID, pageIndex, pageSize)
-		resBody, err := sc.httpClient.SendRequest(context.TODO(), url, http.MethodGet, sc.token, nil)
+		resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodGet, sc.token, nil)
 		if err != nil {
 			return err
 		}
@@ -154,19 +153,17 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 	return nil
 }
 
-// =====================================
-
 const (
 	defaultTimeout = time.Second * 10
 )
 
-// HTTPClient is a wrap of http.Client
-type Client struct {
+// client is a wrap of http.Client
+type client struct {
 	*http.Client
 }
 
-// NewHTTPClient returns a new HTTP client with timeout and HTTPS support
-func NewHTTPClient(timeout time.Duration, tlsCfg *tls.Config) *Client {
+// newClient returns a new HTTP client with timeout and HTTPS support
+func newClient(timeout time.Duration, tlsCfg *tls.Config) *client {
 	if timeout < time.Second {
 		timeout = defaultTimeout
 	}
@@ -174,26 +171,26 @@ func NewHTTPClient(timeout time.Duration, tlsCfg *tls.Config) *Client {
 		TLSClientConfig: tlsCfg,
 		Dial:            (&net.Dialer{Timeout: 3 * time.Second}).Dial,
 	}
-	return &Client{&http.Client{
+	return &client{&http.Client{
 		Timeout:   timeout,
 		Transport: tp,
 	}}
 }
 
-func (c *Client) SendRequest(ctx context.Context, url, method, token string, body io.Reader) ([]byte, error) {
+func (c *client) sendRequest(ctx context.Context, url, method, token string, body io.Reader) ([]byte, error) {
 	defer c.CloseIdleConnections()
 	switch method {
 	case http.MethodGet:
-		return c.Get(ctx, url, token)
+		return c.get(ctx, url, token)
 	case http.MethodPost:
-		return c.Post(ctx, url, token, body)
+		return c.post(ctx, url, token, body)
 	default:
 		return nil, fmt.Errorf("invalid request method")
 	}
 }
 
-// Get fetch a URL with GET method and returns the response
-func (c *Client) Get(ctx context.Context, url, token string) ([]byte, error) {
+// get fetch a URL with GET method and returns the response
+func (c *client) get(ctx context.Context, url, token string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -213,8 +210,8 @@ func (c *Client) Get(ctx context.Context, url, token string) ([]byte, error) {
 	return checkHTTPResponse(res)
 }
 
-// Post send a POST request to the url and returns the response
-func (c *Client) Post(ctx context.Context, url, token string, body io.Reader) ([]byte, error) {
+// post send a POST request to the url and returns the response
+func (c *client) post(ctx context.Context, url, token string, body io.Reader) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
