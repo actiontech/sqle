@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/utils"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scanner/utils/httpc"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils/httpc"
 
 	v1 "actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
 )
