@@ -11,8 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rootCmd *cobra.Command
-
 // arguments
 var (
 	host          string
@@ -24,7 +22,7 @@ var (
 )
 
 func main() {
-	rootCmd = &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:   "SQLE Scanner",
 		Short: "SQLE Scanner",
 		Long:  "SQLE Scanner\nVersion:\n  " + "version",
