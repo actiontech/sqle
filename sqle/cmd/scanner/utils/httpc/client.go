@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -90,7 +91,7 @@ func (c *Client) Post(ctx context.Context, url, token string, body io.Reader) ([
 
 // checkHTTPResponse checks if an HTTP response is with normal status codes
 func checkHTTPResponse(res *http.Response) ([]byte, error) {
-	body, err := io.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
