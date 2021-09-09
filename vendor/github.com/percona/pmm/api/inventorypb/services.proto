@@ -1,0 +1,501 @@
+syntax = "proto3";
+
+package inventory;
+
+option go_package = "api/inventorypb;inventorypb";
+
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+
+// ServiceType describes supported Service types.
+enum ServiceType {
+  SERVICE_TYPE_INVALID = 0;
+  MYSQL_SERVICE = 1;
+  MONGODB_SERVICE = 2;
+  POSTGRESQL_SERVICE = 3;
+  PROXYSQL_SERVICE = 4;
+  HAPROXY_SERVICE = 6;
+  EXTERNAL_SERVICE = 5;
+}
+
+// MySQLService represents a generic MySQL instance.
+message MySQLService {
+  // Unique randomly generated instance identifier.
+  string service_id = 1;
+  // Unique across all Services user-defined name.
+  string service_name = 2;
+  // Node identifier where this instance runs.
+  string node_id = 3;
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 4;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 5;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 10;
+  // Environment name.
+  string environment = 6;
+  // Cluster name.
+  string cluster = 7;
+  // Replication set name.
+  string replication_set = 8;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 9;
+}
+
+// MongoDBService represents a generic MongoDB instance.
+message MongoDBService {
+  // Unique randomly generated instance identifier.
+  string service_id = 1;
+  // Unique across all Services user-defined name.
+  string service_name = 2;
+  // Node identifier where this instance runs.
+  string node_id = 3;
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 4;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 5;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 10;
+  // Environment name.
+  string environment = 6;
+  // Cluster name.
+  string cluster = 7;
+  // Replication set name.
+  string replication_set = 8;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 9;
+}
+
+// PostgreSQLService represents a generic PostgreSQL instance.
+message PostgreSQLService {
+  // Unique randomly generated instance identifier.
+  string service_id = 1;
+  // Unique across all Services user-defined name.
+  string service_name = 2;
+  // Node identifier where this instance runs.
+  string node_id = 3;
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 4;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 5;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 10;
+  // Environment name.
+  string environment = 6;
+  // Cluster name.
+  string cluster = 7;
+  // Replication set name.
+  string replication_set = 8;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 9;
+}
+
+// ProxySQLService represents a generic ProxySQL instance.
+message ProxySQLService {
+  // Unique randomly generated instance identifier.
+  string service_id = 1;
+  // Unique across all Services user-defined name.
+  string service_name = 2;
+  // Node identifier where this instance runs.
+  string node_id = 3;
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 4;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 5;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 10;
+  // Environment name.
+  string environment = 6;
+  // Cluster name.
+  string cluster = 7;
+  // Replication set name.
+  string replication_set = 8;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 9;
+}
+
+// HAProxyService represents a generic HAProxy service instance.
+message HAProxyService {
+  // Unique randomly generated instance identifier.
+  string service_id = 1;
+  // Unique across all Services user-defined name.
+  string service_name = 2;
+  // Node identifier where this service instance runs.
+  string node_id = 3;
+  // Environment name.
+  string environment = 4;
+  // Cluster name.
+  string cluster = 5;
+  // Replication set name.
+  string replication_set = 6;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 7;
+}
+
+// ExternalService represents a generic External service instance.
+message ExternalService {
+  // Unique randomly generated instance identifier.
+  string service_id = 1;
+  // Unique across all Services user-defined name.
+  string service_name = 2;
+  // Node identifier where this service instance runs.
+  string node_id = 3;
+  // Environment name.
+  string environment = 4;
+  // Cluster name.
+  string cluster = 5;
+  // Replication set name.
+  string replication_set = 6;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 7;
+  // Group name of external service.
+  string group = 8;
+}
+
+// List
+
+message ListServicesRequest {
+  // Return only Services running on that Node.
+  string node_id = 1;
+  // Return only services filtered by service type.
+  ServiceType service_type = 2;
+  // Return only services in this external group.
+  string external_group = 3;
+}
+
+message ListServicesResponse {
+  repeated MySQLService mysql = 1;
+  repeated MongoDBService mongodb = 3;
+  repeated PostgreSQLService postgresql = 4;
+  repeated ProxySQLService proxysql = 5;
+  repeated HAProxyService haproxy = 7;
+  repeated ExternalService external = 6;
+}
+
+// Get
+
+message GetServiceRequest {
+  // Unique randomly generated instance identifier.
+  string service_id = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+}
+
+message GetServiceResponse {
+  oneof service {
+    MySQLService mysql = 1;
+    MongoDBService mongodb = 2;
+    PostgreSQLService postgresql = 3;
+    ProxySQLService proxysql = 4;
+    HAProxyService haproxy = 6;
+    ExternalService external = 5;
+  }
+}
+
+// Add MySQL
+
+message AddMySQLServiceRequest {
+  // Unique across all Services user-defined name. Required.
+  string service_name = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Node identifier where this instance runs. Required.
+  string node_id = 2 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 3;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 4;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 9;
+  // Environment name.
+  string environment = 5;
+  // Cluster name.
+  string cluster = 6;
+  // Replication set name.
+  string replication_set = 7;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 8;
+}
+
+message AddMySQLServiceResponse {
+  MySQLService mysql = 1;
+}
+
+// Add MongoDB
+
+message AddMongoDBServiceRequest {
+  // Unique across all Services user-defined name. Required.
+  string service_name = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Node identifier where this instance runs. Required.
+  string node_id = 2 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 3;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 4;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 9;
+  // Environment name.
+  string environment = 5;
+  // Cluster name.
+  string cluster = 6;
+  // Replication set name.
+  string replication_set = 7;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 8;
+}
+
+message AddMongoDBServiceResponse {
+  MongoDBService mongodb = 1;
+}
+
+// Add PostgreSQL
+
+message AddPostgreSQLServiceRequest {
+  // Unique across all Services user-defined name. Required.
+  string service_name = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Node identifier where this instance runs. Required.
+  string node_id = 2 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 3;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 4;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 9;
+  // Environment name.
+  string environment = 5;
+  // Cluster name.
+  string cluster = 6;
+  // Replication set name.
+  string replication_set = 7;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 8;
+}
+
+message AddPostgreSQLServiceResponse {
+  PostgreSQLService postgresql = 1;
+}
+
+// Add ProxySQL
+
+message AddProxySQLServiceRequest {
+  // Unique across all Services user-defined name. Required.
+  string service_name = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Node identifier where this instance runs. Required.
+  string node_id = 2 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Access address (DNS name or IP).
+  // Address (and port) or socket is required.
+  string address = 3;
+  // Access port.
+  // Port is required when the address present.
+  uint32 port = 4;
+  // Access unix socket.
+  // Address (and port) or socket is required.
+  string socket = 9;
+  // Environment name.
+  string environment = 5;
+  // Cluster name.
+  string cluster = 6;
+  // Replication set name.
+  string replication_set = 7;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 8;
+}
+
+message AddProxySQLServiceResponse {
+  ProxySQLService proxysql = 1;
+}
+
+// Add HAProxy Service
+
+message AddHAProxyServiceRequest {
+  // Unique across all Services user-defined name. Required.
+  string service_name = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Node identifier where this instance runs. Required.
+  string node_id = 2 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Environment name.
+  string environment = 3;
+  // Cluster name.
+  string cluster = 4;
+  // Replication set name.
+  string replication_set = 5;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 6;
+}
+
+message AddHAProxyServiceResponse {
+  HAProxyService haproxy = 1;
+}
+
+// Add External Service
+
+message AddExternalServiceRequest {
+  // Unique across all Services user-defined name. Required.
+  string service_name = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Node identifier where this instance runs. Required.
+  string node_id = 2 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Environment name.
+  string environment = 3;
+  // Cluster name.
+  string cluster = 4;
+  // Replication set name.
+  string replication_set = 5;
+  // Custom user-assigned labels.
+  map<string, string> custom_labels = 6;
+  // Group name of external service.
+  string group = 7;
+}
+
+message AddExternalServiceResponse {
+  ExternalService external = 1;
+}
+
+// Remove
+
+message RemoveServiceRequest {
+  // Unique randomly generated instance identifier. Required.
+  string service_id = 1 [
+    (validator.field) = {
+      string_not_empty: true
+    }
+  ];
+  // Remove service with all dependencies.
+  bool force = 2;
+}
+
+message RemoveServiceResponse {}
+
+// Services service provides public methods for managing Services.
+service Services {
+  // ListServices returns a list of all Services.
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/List"
+      body: "*"
+    };
+  }
+  // GetService returns a single Service by ID.
+  rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/Get"
+      body: "*"
+    };
+  }
+  // AddMySQLService adds MySQL Service.
+  rpc AddMySQLService(AddMySQLServiceRequest) returns (AddMySQLServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/AddMySQL"
+      body: "*"
+    };
+  }
+  // AddMongoDBService adds MongoDB Service.
+  rpc AddMongoDBService(AddMongoDBServiceRequest) returns (AddMongoDBServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/AddMongoDB"
+      body: "*"
+    };
+  }
+  // AddPostgreSQLService adds PostgreSQL Service.
+  rpc AddPostgreSQLService(AddPostgreSQLServiceRequest) returns (AddPostgreSQLServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/AddPostgreSQL"
+      body: "*"
+    };
+  }
+  // AddProxySQLService adds ProxySQL Service.
+  rpc AddProxySQLService(AddProxySQLServiceRequest) returns (AddProxySQLServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/AddProxySQL"
+      body: "*"
+    };
+  }
+  // AddHAProxyService adds HAProxy Service.
+  rpc AddHAProxyService(AddHAProxyServiceRequest) returns (AddHAProxyServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/AddHAProxyService"
+      body: "*"
+    };
+  }
+  // AddExternalService adds External Service.
+  rpc AddExternalService(AddExternalServiceRequest) returns (AddExternalServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/AddExternalService"
+      body: "*"
+    };
+  }
+  // RemoveService removes Service.
+  rpc RemoveService(RemoveServiceRequest) returns (RemoveServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/inventory/Services/Remove"
+      body: "*"
+    };
+  }
+}

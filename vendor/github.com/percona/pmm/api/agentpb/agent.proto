@@ -1,0 +1,638 @@
+syntax = "proto3";
+
+package agent;
+
+option go_package = "api/agentpb;agentpb";
+
+import "agentpb/collector.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
+import "inventorypb/agent_status.proto";
+import "inventorypb/agents.proto";
+import "inventorypb/services.proto";
+
+// TextFiles contains files which can be used to connect to DB (certificates, keys and etc).
+message TextFiles {
+  // files contains files which can be used to connect to DB (certificates, keys and etc).
+  map<string, string> files = 1;
+  // template_left_delim is used to replace placeholders in templates (DSN and etc.) with paths to files.
+  string template_left_delim = 2;
+  // template_right_delim is used to replace placeholders in templates (DSN and etc.) with paths to files.
+  string template_right_delim = 3;
+}
+
+// Ping is a AgentMessage/ServerMessage for checking connectivity, latency and clock drift.
+message Ping {}
+
+// Pong is an AgentMessage/ServerMessage with current time for measuring clock drift.
+message Pong {
+  google.protobuf.Timestamp current_time = 1;
+}
+
+// QANCollectRequest is an AgentMessage for sending QAN data for qan-api.
+message QANCollectRequest {
+  repeated MetricsBucket metrics_bucket = 1;
+}
+
+// QANCollectResponse is a ServerMessage for QAN data acceptance.
+message QANCollectResponse {}
+
+// StateChangedRequest is an AgentMessage describing actual agent status.
+message StateChangedRequest {
+  string agent_id = 1;
+  inventory.AgentStatus status = 2;
+  uint32 listen_port = 3;
+}
+
+// StateChangedResponse is a ServerMessage for StateChangedRequest acceptance.
+message StateChangedResponse {}
+
+// SetStateRequest is a ServerMessage asking pmm-agent to run agents according to desired state.
+message SetStateRequest {
+  // AgentProcess describes desired configuration of a single agent process started by pmm-agent.
+  message AgentProcess {
+    inventory.AgentType type = 1;
+    string template_left_delim = 2;
+    string template_right_delim = 3;
+    repeated string args = 4;
+    repeated string env = 5;
+    map<string, string> text_files = 6;
+    repeated string redact_words = 7;
+  }
+  map<string, AgentProcess> agent_processes = 1;
+  // BuiltinAgent describes desired configuration of a single built-in agent for pmm-agent.
+  message BuiltinAgent {
+    inventory.AgentType type = 1;
+    string dsn = 2;
+    // Disables query examples for QAN Agents if true.
+    bool disable_query_examples = 3;
+    // Instructs QAN Agents to rotate query log file or table at this size if > 0.
+    int64 max_query_log_size = 4;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles text_files = 5;
+    // TLS in enabled if true.
+    bool tls = 6;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 7;
+  }
+  map<string, BuiltinAgent> builtin_agents = 2;
+}
+
+// SetStateResponse is an AgentMessage for SetStateRequest acceptance.
+message SetStateResponse {
+  // TODO https://jira.percona.com/browse/PMM-4691
+
+}
+
+// MysqlExplainOutputFormat output formats supported by MySQL Explain action.
+enum MysqlExplainOutputFormat {
+  MYSQL_EXPLAIN_OUTPUT_FORMAT_INVALID = 0;
+  // EXPLAIN FORMAT=TRADITIONAL, returns result as text
+  MYSQL_EXPLAIN_OUTPUT_FORMAT_DEFAULT = 1;
+  // EXPLAIN FORMAT=JSON
+  MYSQL_EXPLAIN_OUTPUT_FORMAT_JSON = 2;
+  // EXPLAIN FORMAT=TRADITIONAL, returns result as JSON
+  MYSQL_EXPLAIN_OUTPUT_FORMAT_TRADITIONAL_JSON = 3;
+}
+
+// QueryActionValue represents a single value used in query Actions.
+message QueryActionValue {
+  oneof kind {
+    bool nil = 1;
+    bool bool = 2;
+    int64 int64 = 3;
+    uint64 uint64 = 4;
+    double double = 5;
+    bytes bytes = 6;
+    //
+    // 7 is reserved for string if/when we need it.
+    // See https://jira.percona.com/browse/SAAS-107.
+    //
+
+    google.protobuf.Timestamp timestamp = 8;
+    QueryActionSlice slice = 10;
+    QueryActionMap map = 11;
+  }
+}
+
+// QueryActionSlice represents a slice of values used in query Actions.
+message QueryActionSlice {
+  repeated QueryActionValue slice = 1;
+}
+
+// QueryActionMap represents a map of values used in query Actions.
+message QueryActionMap {
+  map<string, QueryActionValue> map = 1;
+}
+
+// QueryActionResult represents query Action result.
+message QueryActionResult {
+  // SQL result column names.
+  repeated string columns = 1;
+  // SQL result data rows.
+  repeated QueryActionSlice rows = 2;
+  // MongoDB documents.
+  repeated QueryActionMap docs = 3;
+}
+
+// StartActionRequest is a ServerMessage asking pmm-agent to start action.
+message StartActionRequest {
+  // MySQLExplainParams describes MySQL EXPLAIN action parameters.
+  message MySQLExplainParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    string query = 2;
+    MysqlExplainOutputFormat output_format = 3;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 4;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 5;
+  }
+  // MySQLShowCreateTableParams describes MySQL SHOW CREATE TABLE action parameters.
+  message MySQLShowCreateTableParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    string table = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // MySQLShowTableStatusParams describes MySQL SHOW TABLE STATUS action parameters.
+  message MySQLShowTableStatusParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    string table = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // MySQLShowIndexParams describes MySQL SHOW INDEX action parameters.
+  message MySQLShowIndexParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    string table = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // PostgreSQLShowCreateTableParams describes PostgreSQL SHOW CREATE TABLE action parameters.
+  message PostgreSQLShowCreateTableParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    string table = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // PostgreSQLShowIndexParams describes PostgreSQL SHOW INDEX action parameters.
+  message PostgreSQLShowIndexParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    string table = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // MongoDBExplainParams describes MongoDB EXPLAIN action parameters.
+  message MongoDBExplainParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    // May contain placeholders for file paths in DSN.
+    string dsn = 1;
+    string query = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles text_files = 3;
+  }
+  // PTSummaryParams describes parameters for PT summary.
+  message PTSummaryParams {}
+
+  // PTPgSummaryParams describes parameters for PT PG summary.
+  message PTPgSummaryParams {
+    string host = 1;
+    uint32 port = 2;
+    string username = 3;
+    string password = 4;
+  }
+  // PTMongoDBSummaryParams describes parameters for PT MongoDB summary.
+  message PTMongoDBSummaryParams {
+    string host = 1;
+    uint32 port = 2;
+    string username = 3;
+    string password = 4;
+  }
+  // PTMySQLSummaryParams describes parameters for PT MySQL summary.
+  message PTMySQLSummaryParams {
+    string host = 1;
+    uint32 port = 2;
+    string socket = 3;
+    string username = 4;
+    string password = 5;
+  }
+  // MySQLQueryShowParams describes MySQL SHOW query action parameters.
+  message MySQLQueryShowParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    // Query suffix (without leading SHOW).
+    string query = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // MySQLQuerySelectParams describes MySQL SELECT query action parameters.
+  message MySQLQuerySelectParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    // Query suffix (without leading SELECT).
+    string query = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // PostgreSQLQueryShowParams describes PostgreSQL SHOW query action parameters.
+  message PostgreSQLQueryShowParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 2;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 3;
+  }
+  // PostgreSQLQuerySelectParams describes PostgreSQL SELECT query action parameters.
+  message PostgreSQLQuerySelectParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    string dsn = 1;
+    // Query suffix (without leading SELECT).
+    string query = 2;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles tls_files = 3;
+    // TLS certificate wont be verified.
+    bool tls_skip_verify = 4;
+  }
+  // MongoDBQueryGetParameterParams describes MongoDB getParameter query action parameters.
+  message MongoDBQueryGetParameterParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    // May contain placeholders for file paths in DSN.
+    string dsn = 1;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles text_files = 2;
+  }
+  // MongoDBQueryBuildInfoParams describes MongoDB buildInfo query action parameters.
+  message MongoDBQueryBuildInfoParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    // May contain placeholders for file paths in DSN.
+    string dsn = 1;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles text_files = 2;
+  }
+  // MongoDBQueryGetCmdLineOptsParams describes MongoDB getCmdLineOpts query action parameters.
+  message MongoDBQueryGetCmdLineOptsParams {
+    // DSN for the service. May contain connection (dial) timeout.
+    // May contain placeholders for file paths in DSN.
+    string dsn = 1;
+    // Contains files and their contents which can be used in DSN.
+    TextFiles text_files = 2;
+  }
+  string action_id = 1;
+  oneof params {
+    MySQLExplainParams mysql_explain_params = 2;
+    MySQLShowCreateTableParams mysql_show_create_table_params = 3;
+    MySQLShowTableStatusParams mysql_show_table_status_params = 4;
+    MySQLShowIndexParams mysql_show_index_params = 5;
+    PostgreSQLShowCreateTableParams postgresql_show_create_table_params = 6;
+    PostgreSQLShowIndexParams postgresql_show_index_params = 7;
+    MongoDBExplainParams mongodb_explain_params = 8;
+    PTSummaryParams pt_summary_params = 10;
+    PTPgSummaryParams pt_pg_summary_params = 12;
+    PTMongoDBSummaryParams pt_mongodb_summary_params = 13;
+    PTMySQLSummaryParams pt_mysql_summary_params = 11;
+    MySQLQueryShowParams mysql_query_show_params = 50;
+    MySQLQuerySelectParams mysql_query_select_params = 51;
+    PostgreSQLQueryShowParams postgresql_query_show_params = 52;
+    PostgreSQLQuerySelectParams postgresql_query_select_params = 53;
+    MongoDBQueryGetParameterParams mongodb_query_getparameter_params = 54;
+    MongoDBQueryBuildInfoParams mongodb_query_buildinfo_params = 55;
+    MongoDBQueryGetCmdLineOptsParams mongodb_query_getcmdlineopts_params = 56;
+  }
+  // Timeout for the whole action. If zero or absent, pmm-agent will pick one itself.
+  google.protobuf.Duration timeout = 9;
+}
+
+// StartActionResponse is an AgentMessage for StartActionRequest acceptance.
+message StartActionResponse {}
+
+// StopActionRequest is a ServerMessage asking pmm-agent to stop action.
+message StopActionRequest {
+  string action_id = 1;
+}
+
+// StopActionResponse is an AgentMessage for StopActionRequest acceptance.
+message StopActionResponse {}
+
+// ActionResultRequest is an AgentMessage containing action run status and new chunk of output.
+message ActionResultRequest {
+  // Unique action ID.
+  string action_id = 1;
+  // New chunk of action output.
+  bytes output = 3;
+  // True if action is finished.
+  bool done = 4;
+  // Error message if action failed.
+  string error = 5;
+}
+
+// ActionResultResponse is an ServerMessage for ActionResultRequest acceptance.
+message ActionResultResponse {}
+
+// CheckConnectionRequest is a ServerMessage asking pmm-agent to check connection with Service.
+message CheckConnectionRequest {
+  // Service type.
+  inventory.ServiceType type = 1;
+  // DSN for the service. May contain connection (dial) timeout.
+  string dsn = 2;
+  // Timeout for the whole request.
+  google.protobuf.Duration timeout = 3;
+  // Contains files and their contents which can be used in DSN.
+  TextFiles text_files = 4;
+  // TLS certificate wont be verified.
+  bool tls_skip_verify = 5;
+}
+
+// CheckConnectionResponse is an AgentMessage containing a result of connection check.
+message CheckConnectionResponse {
+  // Stats contains various Service statistics.
+  message Stats {
+    // A number of tables, 0 if unknown.
+    int32 table_count = 1;
+  }
+  // Error message if connection check failed.
+  string error = 1;
+  Stats stats = 2;
+}
+
+// JobStatusRequest is a ServerMessage asking pmm-agent for job status.
+message JobStatusRequest {
+  string job_id = 1;
+}
+
+// JobStatusResponse is an AgentMessage containing job status.
+message JobStatusResponse {
+  bool alive = 1;
+}
+
+// S3LocationConfig represents S3 bucket configuration.
+message S3LocationConfig {
+  string endpoint = 1;
+  string access_key = 2;
+  string secret_key = 3;
+  string bucket_name = 4;
+  string bucket_region = 5;
+}
+
+// StartJobRequest is a ServerMessage asking pmm-agent to start job.
+message StartJobRequest {
+  // MySQLBackup is job for backup MySQL service.
+  message MySQLBackup {
+    // Database user;
+    string user = 1;
+    // Database password.
+    string password = 2;
+    // Database address. Can't be specified with socket.
+    string address = 3;
+    // Database port. Can't be specified with socket.
+    int32 port = 4;
+    // Database unix socket. Can't be specified with address/port.
+    string socket = 5;
+    // Backup name.
+    string name = 6;
+    // Backup target location.
+    oneof location_config {
+      S3LocationConfig s3_config = 10;
+    }
+  }
+  // MySQLRestoreBackup is job for MySQL restore backup service.
+  message MySQLRestoreBackup {
+    // Service identifier where the backup should be restored.
+    string service_id = 1;
+    // Backup name.
+    string name = 2;
+    // Where backup is stored.
+    oneof location_config {
+      S3LocationConfig s3_config = 10;
+    }
+  }
+  // MongoDBBackup is job for backup MongoDB service.
+  message MongoDBBackup {
+    // Database user;
+    string user = 1;
+    // Database password.
+    string password = 2;
+    // Database address. Can't be specified with socket.
+    string address = 3;
+    // Database port. Can't be specified with socket.
+    int32 port = 4;
+    // Database unix socket. Can't be specified with address/port.
+    string socket = 5;
+    // Backup name.
+    string name = 6;
+    // Backup target location.
+    oneof location_config {
+      S3LocationConfig s3_config = 10;
+    }
+  }
+  // MongoDBRestoreBackup is job for MongoDB restore backup service.
+  message MongoDBRestoreBackup {
+    // Database user;
+    string user = 1;
+    // Database password.
+    string password = 2;
+    // Database address. Can't be specified with socket.
+    string address = 3;
+    // Database port. Can't be specified with socket.
+    int32 port = 4;
+    // Database unix socket. Can't be specified with address/port.
+    string socket = 5;
+    // Backup name.
+    string name = 6;
+    // Where backup is stored.
+    oneof location_config {
+      S3LocationConfig s3_config = 10;
+    }
+  }
+  string job_id = 1;
+  // Timeout for the job.
+  google.protobuf.Duration timeout = 2;
+  oneof job {
+    MySQLBackup mysql_backup = 11;
+    MySQLRestoreBackup mysql_restore_backup = 12;
+    MongoDBBackup mongodb_backup = 13;
+    MongoDBRestoreBackup mongodb_restore_backup = 14;
+  }
+}
+
+// StartJobResponse is an AgentMessage for StartJobRequest acceptance.
+message StartJobResponse {
+  string error = 1;
+}
+
+// StopJobRequest is a ServerMessage asking pmm-agent to stop job.
+message StopJobRequest {
+  string job_id = 1;
+}
+
+// StopJobResponse is an AgentMessage for StopJobRequest acceptance.
+message StopJobResponse {}
+
+// JobResult represents job result.
+message JobResult {
+  // Error contains job error message.
+  message Error {
+    string message = 1;
+  }
+  // MongoDBBackup contains result for MongoDB backup job.
+  message MongoDBBackup {}
+
+  // MySQLBackup contains result for MySQL backup job.
+  message MySQLBackup {}
+
+  // MySQLRestoreBackup contains result for MySQL restore backup job.
+  message MySQLRestoreBackup {}
+
+  // MongoDBRestoreBackup contains result for MongoDB restore backup job.
+  message MongoDBRestoreBackup {}
+
+  string job_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  oneof result {
+    Error error = 10;
+    MySQLBackup mysql_backup = 12;
+    MySQLRestoreBackup mysql_restore_backup = 13;
+    MongoDBBackup mongodb_backup = 14;
+    MongoDBRestoreBackup mongodb_restore_backup = 15;
+  }
+}
+
+// JobProgress represents job progress messages like percentage of completion, status updates, etc.
+message JobProgress {
+  // MySQLBackup contains backup job status update.
+  message MySQLBackup {}
+
+  // MySQLRestoreBackup contains restore backup job status update.
+  message MySQLRestoreBackup {}
+
+  string job_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  oneof result {
+    MySQLBackup mysql_backup = 11;
+    MySQLRestoreBackup mysql_restore_backup = 12;
+  }
+}
+
+// GetVersionsRequest represents a request for version retrieving of different software.
+message GetVersionsRequest {
+  // MySQLd is used for mysqld binary version retrieving using `mysqld --version`.
+  message MySQLd {}
+
+  // Xtrabackup is used for xtrabackup binary version retrieving.
+  message Xtrabackup {}
+
+  // Xbcloud is used for xbcloud binary version retrieving.
+  message Xbcloud {}
+
+  // Qpress is used for qpress binary version retrieving.
+  message Qpress {}
+
+  // Software is used to select software for which retrieve version.
+  message Software {
+    oneof software {
+      MySQLd mysqld = 1;
+      Xtrabackup xtrabackup = 2;
+      Xbcloud xbcloud = 3;
+      Qpress qpress = 4;
+    }
+  }
+  repeated Software softwares = 1;
+}
+
+// GetVersionsResponse represents a response containing versions of software in the same order as in the request.
+message GetVersionsResponse {
+  // Version contains the version field of the requested software and
+  // the error field which is set in case of version retrieving error.
+  message Version {
+    string version = 1;
+    string error = 2;
+  }
+  repeated Version versions = 1;
+}
+
+message AgentMessage {
+  // TODO https://jira.percona.com/browse/PMM-3449
+
+  uint32 id = 1;
+  // The responder sets the status field in two situations:
+  // 1. When it received a request with the payload field not set.
+  //    That means that responded is older than the requester, and doesn't know about newer payload types.
+  //    Status code UNIMPLEMENTED (12) is reserved for that case.
+  // 2. When the payload is set, but the request can't be performed due to some error.
+  google.rpc.Status status = 2047;
+  oneof payload {
+    // requests from agent
+    Ping ping = 2;
+    StateChangedRequest state_changed = 3;
+    QANCollectRequest qan_collect = 4;
+    ActionResultRequest action_result = 5;
+    // responses from agent
+    Pong pong = 8;
+    SetStateResponse set_state = 9;
+    StartActionResponse start_action = 10;
+    StopActionResponse stop_action = 11;
+    CheckConnectionResponse check_connection = 12;
+    StartJobResponse start_job = 13;
+    StopJobResponse stop_job = 14;
+    JobStatusResponse job_status = 15;
+    JobResult job_result = 16;
+    JobProgress job_progress = 17;
+    GetVersionsResponse get_versions = 18;
+  }
+}
+
+message ServerMessage {
+  // TODO https://jira.percona.com/browse/PMM-3449
+
+  uint32 id = 1;
+  // The responder sets the status field in two situations:
+  // 1. When it received a request with the payload field not set.
+  //    That means that responded is older than the requester, and doesn't know about newer payload types.
+  //    Status code UNIMPLEMENTED (12) is reserved for that case.
+  // 2. When the payload is set, but the request can't be performed due to some error.
+  google.rpc.Status status = 2047;
+  oneof payload {
+    // responses from server
+    Pong pong = 2;
+    StateChangedResponse state_changed = 3;
+    QANCollectResponse qan_collect = 4;
+    ActionResultResponse action_result = 5;
+    // requests from server
+    Ping ping = 8;
+    SetStateRequest set_state = 9;
+    StartActionRequest start_action = 10;
+    StopActionRequest stop_action = 11;
+    CheckConnectionRequest check_connection = 12;
+    StartJobRequest start_job = 13;
+    StopJobRequest stop_job = 14;
+    JobStatusRequest job_status = 15;
+    GetVersionsRequest get_versions = 16;
+  }
+}
+
+// Agent service provides private methods for pmm-agent <-> pmm-managed interactions.
+service Agent {
+  // Connect establishes two-way communication channel between pmm-agent and pmm-managed.
+  rpc Connect(stream AgentMessage) returns (stream ServerMessage);
+}

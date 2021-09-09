@@ -1,0 +1,66 @@
+---
+version: '{build}'
+
+clone_folder: c:\gopath\src\gopkg.in\reform.v1
+
+environment:
+  # no `-mod=readonly` to test PRs made by @dependabot;
+  # `make ci-check-changes` step below still checks what we need
+  GOPATH: c:\gopath
+  GO111MODULE: "on"
+  GOPROXY: https://proxy.golang.org
+  GORACE: halt_on_error=1
+
+  matrix:
+    - REFORM_MAKE_TARGET: sqlite3
+
+    - REFORM_SQL_INSTANCE: SQL2008R2SP2
+      REFORM_MAKE_TARGET: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2008R2SP2
+      REFORM_MAKE_TARGET: win-sqlserver
+
+    - REFORM_SQL_INSTANCE: SQL2012SP1
+      REFORM_MAKE_TARGET: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2012SP1
+      REFORM_MAKE_TARGET: win-sqlserver
+
+    - REFORM_SQL_INSTANCE: SQL2014
+      REFORM_MAKE_TARGET: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2014
+      REFORM_MAKE_TARGET: win-sqlserver
+
+    - REFORM_SQL_INSTANCE: SQL2016
+      REFORM_MAKE_TARGET: win-mssql
+    - REFORM_SQL_INSTANCE: SQL2016
+      REFORM_MAKE_TARGET: win-sqlserver
+
+install:
+  - if defined REFORM_SQL_INSTANCE powershell -file .github\appveyor-prepare-mssql.ps1
+  - set PATH=C:\msys64\usr\bin;C:\msys64\mingw64\bin;%GOPATH%\bin;%PATH%
+  - pacman -Rsc --noconfirm gcc
+
+  - go env
+  - go version
+
+build_script:
+  - go mod download
+
+  # check that it is still possible to install reform without modules
+  - env GO111MODULE=off go get -v ./...
+  - reform -version
+  - reform-db -version
+
+  - make init
+
+test_script:
+  - make test-unit
+  - make %REFORM_MAKE_TARGET%
+  - make merge-cover
+
+  # TODO test again with updated deps
+
+  - make ci-check-changes
+
+on_success:
+  - curl -s -o codecov https://codecov.io/bash
+  - bash codecov -f coverage.txt -X fix -e REFORM_MAKE_TARGET,REFORM_SQL_INSTANCE

@@ -9,6 +9,8 @@ actiontech.cloud/universe/ucommon/v4/user
 actiontech.cloud/universe/ucommon/v4/util
 actiontech.cloud/universe/ucommon/v4/wrapper
 actiontech.cloud/universe/ucommon/v4/wrapper/syscall
+# github.com/AlekSi/pointer v1.1.0
+github.com/AlekSi/pointer
 # github.com/DATA-DOG/go-sqlmock v1.5.0
 ## explicit
 github.com/DATA-DOG/go-sqlmock
@@ -32,6 +34,10 @@ github.com/agiledragon/gomonkey
 ## explicit
 github.com/alecthomas/template
 github.com/alecthomas/template/parse
+# github.com/beorn7/perks v1.0.1
+github.com/beorn7/perks/quantile
+# github.com/cespare/xxhash/v2 v2.1.1
+github.com/cespare/xxhash/v2
 # github.com/cpuguy83/go-md2man/v2 v2.0.0
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/cznic/golex v0.0.0-20181122101858-9c343928389c
@@ -54,7 +60,7 @@ github.com/cznic/strutil
 github.com/cznic/y
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/denisenkom/go-mssqldb v0.0.0-20200620013148-b91950f658ec
+# github.com/denisenkom/go-mssqldb v0.9.0
 ## explicit
 github.com/denisenkom/go-mssqldb
 github.com/denisenkom/go-mssqldb/internal/cp
@@ -78,11 +84,11 @@ github.com/go-ole/go-ole
 github.com/go-ole/go-ole/oleutil
 # github.com/go-openapi/jsonpointer v0.19.3
 github.com/go-openapi/jsonpointer
-# github.com/go-openapi/jsonreference v0.19.3
+# github.com/go-openapi/jsonreference v0.19.4
 github.com/go-openapi/jsonreference
-# github.com/go-openapi/spec v0.19.4
+# github.com/go-openapi/spec v0.19.8
 github.com/go-openapi/spec
-# github.com/go-openapi/swag v0.19.5
+# github.com/go-openapi/swag v0.19.9
 github.com/go-openapi/swag
 # github.com/go-playground/locales v0.13.0
 ## explicit
@@ -99,10 +105,15 @@ github.com/go-playground/validator
 # github.com/go-sql-driver/mysql v1.5.0
 ## explicit
 github.com/go-sql-driver/mysql
+# github.com/gogo/protobuf v1.3.1
+github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe
 github.com/golang-sql/civil
 # github.com/golang/protobuf v1.5.0
 ## explicit
+github.com/golang/protobuf/descriptor
+github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/protoc-gen-go/descriptor
 github.com/golang/protobuf/ptypes
@@ -110,6 +121,11 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/timestamp
+github.com/golang/protobuf/ptypes/wrappers
+# github.com/grpc-ecosystem/grpc-gateway v1.15.1
+github.com/grpc-ecosystem/grpc-gateway/internal
+github.com/grpc-ecosystem/grpc-gateway/runtime
+github.com/grpc-ecosystem/grpc-gateway/utilities
 # github.com/hashicorp/go-hclog v0.14.1
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-plugin v1.4.2
@@ -132,7 +148,7 @@ github.com/jinzhu/inflection
 ## explicit
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
-# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+# github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/labstack/echo/v4 v4.0.0
 ## explicit
@@ -147,9 +163,7 @@ github.com/labstack/gommon/random
 # github.com/leodido/go-urn v1.2.1
 ## explicit
 github.com/leodido/go-urn
-# github.com/lib/pq v1.3.0
-## explicit
-# github.com/mailru/easyjson v0.7.0
+# github.com/mailru/easyjson v0.7.1
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
@@ -159,10 +173,25 @@ github.com/mattn/go-colorable
 github.com/mattn/go-isatty
 # github.com/mattn/go-sqlite3 v2.0.3+incompatible
 ## explicit
+# github.com/matttproud/golang_protobuf_extensions v1.0.1
+github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77
 github.com/mitchellh/go-testing-interface
+# github.com/mwitkow/go-proto-validators v0.3.2
+github.com/mwitkow/go-proto-validators
 # github.com/oklog/run v1.0.0
 github.com/oklog/run
+# github.com/percona/pmm v0.0.0-20210902153818-0f316cc1adf9
+github.com/percona/pmm/api/agentpb
+github.com/percona/pmm/api/inventorypb
+github.com/percona/pmm/utils/sqlmetrics
+# github.com/percona/pmm-agent v0.0.0-20210908073243-9723053cd5eb
+## explicit
+github.com/percona/pmm-agent/agents
+github.com/percona/pmm-agent/agents/mysql/perfschema
+github.com/percona/pmm-agent/tlshelpers
+github.com/percona/pmm-agent/utils/truncate
+github.com/percona/pmm-agent/utils/version
 # github.com/pingcap/errors v0.11.4
 github.com/pingcap/errors
 # github.com/pingcap/log v0.0.0-20190715063458-479153f07ebd
@@ -193,8 +222,23 @@ github.com/pingcap/tidb/util/memory
 # github.com/pingcap/tipb v0.0.0-20191120045257-1b9900292ab6
 github.com/pingcap/tipb/go-tipb
 github.com/pingcap/tipb/sharedbytes
+# github.com/pkg/errors v0.9.1
+github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
+# github.com/prometheus/client_golang v1.5.1
+github.com/prometheus/client_golang/prometheus
+github.com/prometheus/client_golang/prometheus/internal
+# github.com/prometheus/client_model v0.2.0
+github.com/prometheus/client_model/go
+# github.com/prometheus/common v0.10.0
+github.com/prometheus/common/expfmt
+github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
+github.com/prometheus/common/model
+# github.com/prometheus/procfs v0.5.0
+github.com/prometheus/procfs
+github.com/prometheus/procfs/internal/fs
+github.com/prometheus/procfs/internal/util
 # github.com/remyoudompheng/bigfft v0.0.0-20190512091148-babf20351dd7
 github.com/remyoudompheng/bigfft
 # github.com/robfig/cron/v3 v3.0.1
@@ -207,7 +251,7 @@ github.com/shirou/gopsutil/internal/common
 github.com/shirou/gopsutil/mem
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
-# github.com/sirupsen/logrus v1.2.0
+# github.com/sirupsen/logrus v1.4.2
 ## explicit
 github.com/sirupsen/logrus
 # github.com/spf13/cobra v0.0.7
@@ -239,6 +283,8 @@ github.com/urfave/cli/v2
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasttemplate v0.0.0-20170224212429-dcecefd839c4
 github.com/valyala/fasttemplate
+# go.mongodb.org/mongo-driver v1.7.1
+go.mongodb.org/mongo-driver/bson/primitive
 # go.uber.org/atomic v1.4.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.1.0
@@ -250,12 +296,11 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
+# golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/md4
-golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+# golang.org/x/net v0.0.0-20200707034311-ab3426394381
 ## explicit
 golang.org/x/net/bpf
 golang.org/x/net/context
@@ -272,10 +317,11 @@ golang.org/x/net/ipv6
 golang.org/x/net/trace
 golang.org/x/net/webdav
 golang.org/x/net/webdav/internal/xml
-# golang.org/x/sys v0.0.0-20200327173247-9dae0f8f5775
+# golang.org/x/sys v0.0.0-20200722175500-76b94024e4b6
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/text v0.3.5
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/internal
@@ -297,9 +343,12 @@ golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/buildutil
 golang.org/x/tools/go/internal/cgo
 golang.org/x/tools/go/loader
-# google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
+# google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+google.golang.org/genproto/googleapis/api/annotations
+google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.28.0
+google.golang.org/genproto/protobuf/field_mask
+# google.golang.org/grpc v1.36.0 => google.golang.org/grpc v1.29.0
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -330,6 +379,7 @@ google.golang.org/grpc/internal/grpcsync
 google.golang.org/grpc/internal/grpcutil
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
+google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
 google.golang.org/grpc/keepalive
@@ -345,12 +395,14 @@ google.golang.org/grpc/status
 google.golang.org/grpc/tap
 # google.golang.org/protobuf v1.27.1
 ## explicit
+google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
 google.golang.org/protobuf/internal/descopts
 google.golang.org/protobuf/internal/detrand
 google.golang.org/protobuf/internal/encoding/defval
+google.golang.org/protobuf/internal/encoding/json
 google.golang.org/protobuf/internal/encoding/messageset
 google.golang.org/protobuf/internal/encoding/tag
 google.golang.org/protobuf/internal/encoding/text
@@ -375,7 +427,9 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/emptypb
+google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/timestamppb
+google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
 ## explicit
 gopkg.in/alexcesaro/quotedprintable.v3
@@ -385,10 +439,15 @@ gopkg.in/gomail.v2
 # gopkg.in/natefinch/lumberjack.v2 v2.0.0
 ## explicit
 gopkg.in/natefinch/lumberjack.v2
-# gopkg.in/yaml.v2 v2.2.8
+# gopkg.in/reform.v1 v1.5.0
+gopkg.in/reform.v1
+gopkg.in/reform.v1/dialects/mysql
+gopkg.in/reform.v1/parse
+# gopkg.in/yaml.v2 v2.3.0
 ## explicit
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
 # github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
 # github.com/pingcap/parser => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
+# google.golang.org/grpc => google.golang.org/grpc v1.29.0

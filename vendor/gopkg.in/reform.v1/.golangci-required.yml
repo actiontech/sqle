@@ -1,0 +1,48 @@
+---
+# The most valuable linters; they are required to pass for PR to be merged.
+
+run:
+  skip-dirs:
+    - bogus
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  goimports:
+    local-prefixes: gopkg.in/reform.v1
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - depguard
+    - goimports
+    - golint
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nolintlint
+    - staticcheck
+    - unused
+
+issues:
+  exclude-use-default: false
+  exclude:
+    # gosec - we are making an ORM after all
+    - "G201: SQL string formatting"
+    - "G202: SQL string concatenation"
+
+    # golint - matches database/sql.Result.LastInsertId()
+    # > method LastInsertIdMethod should be LastInsertIDMethod
+    # > type `LastInsertIdMethod` should be `LastInsertIDMethod`
+    # > var `lastInsertIdMethod` should be `lastInsertIDMethod`
+    - "`?LastInsertIdMethod`? should be `?LastInsertIDMethod`?"
+
+  exclude-rules:
+    - path: internal/test/models/
+      linters:
+        - golint
+    - path: _test\.go
+      linters:
+        - unused       # very annoying false positive: https://github.com/golangci/golangci-lint/issues/791

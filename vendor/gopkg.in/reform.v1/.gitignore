@@ -1,0 +1,10 @@
+/.vscode/
+/.idea/
+
+/bin/
+
+*.tmp.sql
+*.sqlite3
+
+*.cover
+coverage.txt

@@ -1,0 +1,46 @@
+---
+version: '3.7'
+
+services:
+  postgres:
+    image: ${REFORM_POSTGRES_IMAGE:-postgres:12}
+    container_name: reform_postgres
+    environment:
+      - TZ=Europe/Moscow
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - 127.0.0.1:5432:5432
+    healthcheck:
+      test: psql -U postgres --command='SELECT 1'
+      interval: 1s
+      timeout: 1s
+      retries: 1
+
+  mysql:
+    image: ${REFORM_MYSQL_IMAGE:-mysql:5.7}
+    container_name: reform_mysql
+    environment:
+      - TZ=Europe/Moscow
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+      - MYSQL_ROOT_HOST=%
+    ports:
+      - 127.0.0.1:3306:3306
+    healthcheck:
+      test: echo 'SELECT 1' | mysql
+      interval: 1s
+      timeout: 1s
+      retries: 1
+
+  mssql:
+    image: ${REFORM_MSSQL_IMAGE:-mcr.microsoft.com/mssql/server:2017-latest}
+    container_name: reform_mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=reform-password123
+    ports:
+      - 127.0.0.1:1433:1433
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$SA_PASSWORD" -Q "SELECT 1" || exit 1
+      interval: 1s
+      timeout: 1s
+      retries: 1

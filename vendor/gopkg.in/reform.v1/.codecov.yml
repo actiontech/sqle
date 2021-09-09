@@ -1,0 +1,6 @@
+---
+codecov:
+  branch: "main"
+
+coverage:
+  range: "50...80"

@@ -1,0 +1,348 @@
+syntax = "proto3";
+
+package agent;
+
+option go_package = "api/agentpb;agentpb";
+
+import "inventorypb/agents.proto";
+
+// ExampleFormat is format of query example: real or query without values.
+//
+// Deprecated: is not used, should not be used, should be removed.
+enum ExampleFormat {
+  EXAMPLE_FORMAT_INVALID = 0 [deprecated = true];
+  EXAMPLE = 1 [deprecated = true];
+  FINGERPRINT = 2 [deprecated = true];
+}
+
+// ExampleType is a type of query example selected for this query class in given period of time.
+enum ExampleType {
+  EXAMPLE_TYPE_INVALID = 0;
+  RANDOM = 1;
+  SLOWEST = 2;
+  FASTEST = 3;
+  WITH_ERROR = 4;
+}
+
+// MetricsBucket is aggregated message created by pmm-agent.
+// Contains information about one query selected in defined way from query class in specific period of time.
+message MetricsBucket {
+  // Common contains common fields for all DBs.
+  message Common {
+    // md5 of digest_text/fingerprint.
+    string queryid = 1;
+    // digest_text - query signature. Query without values.
+    string fingerprint = 2;
+    //
+    // Dimension Group.
+    //
+    // MongoDB or PostgreSQL database.
+    // Several databases can't be combined in a single declarative query.
+    string database = 3;
+    // MySQL database or PostgreSQL schema.
+    // Several schemas can be combined in a single declarative query.
+    string schema = 4;
+    // Tables or Collections list.
+    repeated string tables = 5;
+    // client user name.
+    string username = 6;
+    // client IP or hostname.
+    string client_host = 7;
+    // Identifier of agent that collect and send metrics.
+    string agent_id = 8;
+    // Metrics source.
+    inventory.AgentType agent_type = 9;
+    //
+    // Period and Query Example Group.
+    //
+
+    // Time when collection of bucket started.
+    uint32 period_start_unix_secs = 10;
+    // Duration of bucket.
+    uint32 period_length_secs = 11;
+    // One of query example from set found in bucket.
+    string example = 12;
+    // Deprecated: should not be used, should be removed.
+    ExampleFormat example_format = 13 [deprecated = true];
+    ExampleType example_type = 14;
+    // Indicates if the query example is truncated.
+    bool is_truncated = 24;
+    //
+    // Metrics.
+    //
+
+    // How many queries was with warnings in bucket.
+    float num_queries_with_warnings = 15;
+    // How many queries was with error in bucket.
+    float num_queries_with_errors = 16;
+    // List of errors: {code: count}.
+    map<uint64, uint64> errors = 17;
+    // Amount queries in this bucket.
+    float num_queries = 18;
+    // How many times query_time was found.
+    float m_query_time_cnt = 19;
+    // The statement execution time in seconds.
+    float m_query_time_sum = 20;
+    // Smallest value of query_time in bucket.
+    float m_query_time_min = 21;
+    // Biggest value of query_time in bucket.
+    float m_query_time_max = 22;
+    // 99 percentile of value of query_time in bucket.
+    float m_query_time_p99 = 23;
+  }
+  // MySQL contains metrics for MySQL.
+  message MySQL {
+    float m_lock_time_cnt = 1;
+    // The time to acquire locks in seconds.
+    float m_lock_time_sum = 2;
+    float m_lock_time_min = 3;
+    float m_lock_time_max = 4;
+    float m_lock_time_p99 = 5;
+    float m_rows_sent_cnt = 6;
+    // The number of rows sent to the client.
+    float m_rows_sent_sum = 7;
+    float m_rows_sent_min = 8;
+    float m_rows_sent_max = 9;
+    float m_rows_sent_p99 = 10;
+    float m_rows_examined_cnt = 11;
+    // Number of rows scanned - SELECT.
+    float m_rows_examined_sum = 12;
+    float m_rows_examined_min = 13;
+    float m_rows_examined_max = 14;
+    float m_rows_examined_p99 = 15;
+    float m_rows_affected_cnt = 16;
+    // Number of rows changed - UPDATE, DELETE, INSERT.
+    float m_rows_affected_sum = 17;
+    float m_rows_affected_min = 18;
+    float m_rows_affected_max = 19;
+    float m_rows_affected_p99 = 20;
+    float m_rows_read_cnt = 21;
+    // The number of rows read from tables.
+    float m_rows_read_sum = 22;
+    float m_rows_read_min = 23;
+    float m_rows_read_max = 24;
+    float m_rows_read_p99 = 25;
+    float m_merge_passes_cnt = 26;
+    // The number of merge passes that the sort algorithm has had to do.
+    float m_merge_passes_sum = 27;
+    float m_merge_passes_min = 28;
+    float m_merge_passes_max = 29;
+    float m_merge_passes_p99 = 30;
+    float m_innodb_io_r_ops_cnt = 31;
+    // Counts the number of page read operations scheduled.
+    float m_innodb_io_r_ops_sum = 32;
+    float m_innodb_io_r_ops_min = 33;
+    float m_innodb_io_r_ops_max = 34;
+    float m_innodb_io_r_ops_p99 = 35;
+    float m_innodb_io_r_bytes_cnt = 36;
+    // Similar to innodb_IO_r_ops, but the unit is bytes.
+    float m_innodb_io_r_bytes_sum = 37;
+    float m_innodb_io_r_bytes_min = 38;
+    float m_innodb_io_r_bytes_max = 39;
+    float m_innodb_io_r_bytes_p99 = 40;
+    float m_innodb_io_r_wait_cnt = 41;
+    // Shows how long (in seconds) it took InnoDB to actually read the data from storage.
+    float m_innodb_io_r_wait_sum = 42;
+    float m_innodb_io_r_wait_min = 43;
+    float m_innodb_io_r_wait_max = 44;
+    float m_innodb_io_r_wait_p99 = 45;
+    float m_innodb_rec_lock_wait_cnt = 46;
+    // Shows how long (in seconds) the query waited for row locks.
+    float m_innodb_rec_lock_wait_sum = 47;
+    float m_innodb_rec_lock_wait_min = 48;
+    float m_innodb_rec_lock_wait_max = 49;
+    float m_innodb_rec_lock_wait_p99 = 50;
+    float m_innodb_queue_wait_cnt = 51;
+    // Shows how long (in seconds) the query spent either waiting to enter the InnoDB queue or inside that queue waiting for execution.
+    float m_innodb_queue_wait_sum = 52;
+    float m_innodb_queue_wait_min = 53;
+    float m_innodb_queue_wait_max = 54;
+    float m_innodb_queue_wait_p99 = 55;
+    float m_innodb_pages_distinct_cnt = 56;
+    // Counts approximately the number of unique pages the query accessed.
+    float m_innodb_pages_distinct_sum = 57;
+    float m_innodb_pages_distinct_min = 58;
+    float m_innodb_pages_distinct_max = 59;
+    float m_innodb_pages_distinct_p99 = 60;
+    float m_query_length_cnt = 61;
+    // Shows how long the query is.
+    float m_query_length_sum = 62;
+    float m_query_length_min = 63;
+    float m_query_length_max = 64;
+    float m_query_length_p99 = 65;
+    float m_bytes_sent_cnt = 66;
+    // The number of bytes sent to all clients.
+    float m_bytes_sent_sum = 67;
+    float m_bytes_sent_min = 68;
+    float m_bytes_sent_max = 69;
+    float m_bytes_sent_p99 = 70;
+    float m_tmp_tables_cnt = 71;
+    // Number of temporary tables created on memory for the query.
+    float m_tmp_tables_sum = 72;
+    float m_tmp_tables_min = 73;
+    float m_tmp_tables_max = 74;
+    float m_tmp_tables_p99 = 75;
+    float m_tmp_disk_tables_cnt = 76;
+    // Number of temporary tables created on disk for the query.
+    float m_tmp_disk_tables_sum = 77;
+    float m_tmp_disk_tables_min = 78;
+    float m_tmp_disk_tables_max = 79;
+    float m_tmp_disk_tables_p99 = 80;
+    float m_tmp_table_sizes_cnt = 81;
+    // Total Size in bytes for all temporary tables used in the query.
+    float m_tmp_table_sizes_sum = 82;
+    float m_tmp_table_sizes_min = 83;
+    float m_tmp_table_sizes_max = 84;
+    float m_tmp_table_sizes_p99 = 85;
+    //
+    // Boolean metrics:
+    // - *_cnt - how many times this metric was met.
+    // - *_sum - how many times this metric was true.
+    //
+    float m_qc_hit_cnt = 86;
+    // Query Cache hits.
+    float m_qc_hit_sum = 87;
+    float m_full_scan_cnt = 88;
+    // The query performed a full table scan.
+    float m_full_scan_sum = 89;
+    float m_full_join_cnt = 90;
+    // The query performed a full join (a join without indexes).
+    float m_full_join_sum = 91;
+    float m_tmp_table_cnt = 92;
+    // The query created an implicit internal temporary table.
+    float m_tmp_table_sum = 93;
+    float m_tmp_table_on_disk_cnt = 94;
+    // The querys temporary table was stored on disk.
+    float m_tmp_table_on_disk_sum = 95;
+    float m_filesort_cnt = 96;
+    // The query used a filesort.
+    float m_filesort_sum = 97;
+    float m_filesort_on_disk_cnt = 98;
+    // The filesort was performed on disk.
+    float m_filesort_on_disk_sum = 99;
+    float m_select_full_range_join_cnt = 100;
+    // The number of joins that used a range search on a reference table.
+    float m_select_full_range_join_sum = 101;
+    float m_select_range_cnt = 102;
+    // The number of joins that used ranges on the first table.
+    float m_select_range_sum = 103;
+    float m_select_range_check_cnt = 104;
+    // The number of joins without keys that check for key usage after each row.
+    float m_select_range_check_sum = 105;
+    float m_sort_range_cnt = 106;
+    // The number of sorts that were done using ranges.
+    float m_sort_range_sum = 107;
+    float m_sort_rows_cnt = 108;
+    // The number of sorted rows.
+    float m_sort_rows_sum = 109;
+    float m_sort_scan_cnt = 110;
+    // The number of sorts that were done by scanning the table.
+    float m_sort_scan_sum = 111;
+    float m_no_index_used_cnt = 112;
+    // The number of queries without index.
+    float m_no_index_used_sum = 113;
+    float m_no_good_index_used_cnt = 114;
+    // The number of queries without good index.
+    float m_no_good_index_used_sum = 115;
+  }
+  // MongoDB contains metrics for Mongo DB.
+  message MongoDB {
+    float m_docs_returned_cnt = 1;
+    // The number of returned documents.
+    float m_docs_returned_sum = 2;
+    float m_docs_returned_min = 3;
+    float m_docs_returned_max = 4;
+    float m_docs_returned_p99 = 5;
+    float m_response_length_cnt = 6;
+    // The response length of the query result in bytes.
+    float m_response_length_sum = 7;
+    float m_response_length_min = 8;
+    float m_response_length_max = 9;
+    float m_response_length_p99 = 10;
+    float m_docs_scanned_cnt = 11;
+    // The number of scanned documents.
+    float m_docs_scanned_sum = 12;
+    float m_docs_scanned_min = 13;
+    float m_docs_scanned_max = 14;
+    float m_docs_scanned_p99 = 15;
+  }
+  // PostgreSQL contains metrics for PostgreSQL.
+  message PostgreSQL {
+    float m_rows_cnt = 1;
+    // The number of rows sent to the client.
+    float m_rows_sum = 2;
+    float m_shared_blks_hit_cnt = 3;
+    // Total number of shared block cache hits by the statement.
+    float m_shared_blks_hit_sum = 4;
+    float m_shared_blks_read_cnt = 5;
+    // Total number of shared blocks read by the statement.
+    float m_shared_blks_read_sum = 6;
+    float m_shared_blks_dirtied_cnt = 7;
+    // Total number of shared blocks dirtied by the statement.
+    float m_shared_blks_dirtied_sum = 8;
+    float m_shared_blks_written_cnt = 9;
+    // Total number of shared blocks written by the statement.
+    float m_shared_blks_written_sum = 10;
+    float m_local_blks_hit_cnt = 11;
+    // Total number of local block cache hits by the statement.
+    float m_local_blks_hit_sum = 12;
+    float m_local_blks_read_cnt = 13;
+    // Total number of local blocks read by the statement.
+    float m_local_blks_read_sum = 14;
+    float m_local_blks_dirtied_cnt = 15;
+    // Total number of local blocks dirtied by the statement.
+    float m_local_blks_dirtied_sum = 16;
+    float m_local_blks_written_cnt = 17;
+    // Total number of local blocks written by the statement.
+    float m_local_blks_written_sum = 18;
+    float m_temp_blks_read_cnt = 19;
+    // Total number of temp blocks read by the statement.
+    float m_temp_blks_read_sum = 20;
+    float m_temp_blks_written_cnt = 21;
+    // Total number of temp blocks written by the statement.
+    float m_temp_blks_written_sum = 22;
+    float m_blk_read_time_cnt = 23;
+    // Total time the statement spent reading blocks, in milliseconds (if track_io_timing is enabled, otherwise zero).
+    float m_blk_read_time_sum = 24;
+    float m_blk_write_time_cnt = 25;
+    // Total time the statement spent writing blocks, in milliseconds (if track_io_timing is enabled, otherwise zero).
+    float m_blk_write_time_sum = 26;
+    float m_cpu_user_time_cnt = 27;
+    // Total time user spent in query.
+    float m_cpu_user_time_sum = 28;
+    float m_cpu_sys_time_cnt = 29;
+    // Total time system spent in query.
+    float m_cpu_sys_time_sum = 30;
+    //
+    // pg_stat_monitor 0.9 metrics
+    //
+    // Total number of planned calls.
+    float m_plans_calls_sum = 31;
+    float m_plans_calls_cnt = 32;
+    // Total number of WAL (Write-ahead logging) records.
+    float m_wal_records_sum = 33;
+    float m_wal_records_cnt = 34;
+    // Total number of FPI (full page images) in WAL (Write-ahead logging) records.
+    float m_wal_fpi_sum = 35;
+    float m_wal_fpi_cnt = 36;
+    // Total bytes of WAL (Write-ahead logging) records.
+    float m_wal_bytes_sum = 37;
+    float m_wal_bytes_cnt = 38;
+    // Sum, count, min, max of plan time.
+    float m_plan_time_sum = 39;
+    float m_plan_time_cnt = 40;
+    float m_plan_time_min = 41;
+    float m_plan_time_max = 42;
+    // Metrics skipped due to different bucket_time in pg_stat_monitor (1min in PMM, 5min in pg_stat_monitor):
+    // min_time, max_time, mean_time
+    // plan_mean_time
+    // stddev_time
+    // Other metrics skipped (empty values, codes):
+    // application_name, cmd_type, cmd_type_text, elevel, sqlcode, message, state_code, state
+
+  }
+  Common common = 1;
+  MySQL mysql = 2;
+  MongoDB mongodb = 3;
+  PostgreSQL postgresql = 4;
+}
