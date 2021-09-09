@@ -1,12 +1,13 @@
 package v1
 
 import (
+	"fmt"
+	"net/http"
+
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"fmt"
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 type CreateUserReqV1 struct {
@@ -139,7 +140,7 @@ func DeleteUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
-	exist, err = s.CheckWorkflowStateByUserIds([]uint{user.ID})
+	exist, err = s.UserHasRunningWorkflow(user.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -147,6 +148,15 @@ func DeleteUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
 			fmt.Errorf("%s can't be deleted,cause on_process workflow exist", userName)))
 	}
+	hasBind, err := s.UserHasBindWorkflowTemplate(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if hasBind {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
+			fmt.Errorf("%s can't be deleted,cause the user binds the workflow template", userName)))
+	}
+
 	err = s.Delete(user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
