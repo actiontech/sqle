@@ -571,26 +571,8 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsRunningWorkflowExistByUserId(userId uint) (bool, error) {
-	query := `SELECT COUNT(user_id) FROM users
-LEFT JOIN workflow_step_template_user wstu ON users.id = wstu.user_id
-LEFT JOIN workflow_steps ws ON wstu.workflow_step_template_id = ws.workflow_step_template_id
-LEFT JOIN workflow_records wr ON ws.workflow_record_id = wr.id
-WHERE users.id = ? AND wr.status = ? AND ws.state = ?;`
-
-	var count uint
-	err := s.db.Raw(query, userId, WorkflowStatusRunning, WorkflowStepStateInit).Count(&count).Error
-	if err != nil {
-		return false, errors.New(errors.ConnectStorageError, err)
-	}
-	return count > 0, nil
-}
-
-func (s *Storage) IsRunningWorkflowExistByTaskIds(taskIds []uint) (bool, error) {
+func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 	var workflowRecords []*WorkflowRecord
 	err := s.db.Where("status = ? AND task_id IN (?)", WorkflowStatusRunning, taskIds).Find(&workflowRecords).Error
-	if len(workflowRecords) > 0 {
-		return true, errors.New(errors.ConnectStorageError, err)
-	}
-	return false, errors.New(errors.ConnectStorageError, err)
+	return len(workflowRecords) > 0, errors.New(errors.ConnectStorageError, err)
 }

@@ -20,6 +20,8 @@ type User struct {
 	Password       string  `json:"-" gorm:"-"`
 	SecretPassword string  `json:"secret_password" gorm:"not null;column:password"`
 	Roles          []*Role `gorm:"many2many:user_role;"`
+
+	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
 }
 
 type Role struct {
@@ -227,4 +229,37 @@ func (s *Storage) UpdatePassword(user *User, newPassword string) error {
 	// User{}.encryptPassword(): SecretPassword为空时才会对密码进行加密操作
 	user.SecretPassword = ""
 	return s.Save(user)
+}
+
+func (s *Storage) UserHasRunningWorkflow(userId uint) (bool, error) {
+	// count how many running workflows have been assigned to this user
+	query := `SELECT COUNT(user_id) FROM users
+LEFT JOIN workflow_step_template_user wstu ON users.id = wstu.user_id
+LEFT JOIN workflow_steps ws ON wstu.workflow_step_template_id = ws.workflow_step_template_id
+LEFT JOIN workflow_records wr ON ws.workflow_record_id = wr.id
+WHERE users.id = ? AND wr.status = ? AND ws.state = ?;`
+	var count uint
+	err := s.db.Raw(query, userId, WorkflowStatusRunning, WorkflowStepStateInit).Count(&count).Error
+	if err != nil {
+		return false, errors.New(errors.ConnectStorageError, err)
+	}
+	if count > 0 {
+		return true, nil
+	}
+
+	// count how many running workflows have been created by this user
+	var workflows []*Workflow
+	err = s.db.Model(workflows).
+		Preload("Record", "status = ?", WorkflowStatusRunning).
+		Where("create_user_id = ?", userId).
+		Find(&workflows).Error
+	return len(workflows) > 0 && workflows[0].Record != nil, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
+	copyUser := *user
+	// 1 WorkflowTemplate to many WorkflowStepTemplates (delete: set NULL=set WorkflowStepTemplate.WorkflowTemplateId = NULL)
+	// Many Users to many WorkflowStepTemplates
+	err := s.db.Model(&copyUser).Preload("WorkflowStepTemplates", "workflow_template_id IS NOT NULL").Find(&copyUser).Error
+	return len(copyUser.WorkflowStepTemplates) > 0, errors.New(errors.ConnectStorageError, err)
 }
