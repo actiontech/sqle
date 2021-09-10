@@ -19,7 +19,8 @@ type SlowQuery struct {
 	c  *pkg.Client
 	ps *perfschema.PerfSchema
 
-	apName string
+	apName          string
+	slowQuerySecond int
 }
 
 type Params struct {
@@ -28,7 +29,8 @@ type Params struct {
 	DBUser string
 	DBPass string
 
-	APName string
+	APName          string
+	SlowQuerySecond int
 
 	// todo: support PG
 	// DBType string
@@ -49,10 +51,11 @@ func New(params *Params, l *logrus.Entry, c *pkg.Client) (*SlowQuery, error) {
 	}
 
 	return &SlowQuery{
-		l:      l,
-		c:      c,
-		ps:     ps,
-		apName: params.APName}, nil
+		l:               l,
+		c:               c,
+		ps:              ps,
+		apName:          params.APName,
+		slowQuerySecond: params.SlowQuerySecond}, nil
 }
 
 func (sq *SlowQuery) Run(ctx context.Context) error {
@@ -66,6 +69,10 @@ func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
 		for change := range sq.ps.Changes() {
 			sq.l.Infoln("change status", change.Status)
 			for _, mb := range change.MetricsBucket {
+				if int(mb.Common.MQueryTimeSum) < sq.slowQuerySecond {
+					continue
+				}
+				sq.l.Infoln("%+v", mb)
 				sql := scanners.SQL{
 					Counter:     int(mb.Common.MQueryTimeCnt),
 					Fingerprint: mb.Common.Fingerprint,
