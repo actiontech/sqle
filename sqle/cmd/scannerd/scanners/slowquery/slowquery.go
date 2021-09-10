@@ -35,12 +35,11 @@ type Params struct {
 }
 
 func New(params *Params, l *logrus.Entry, c *pkg.Client) (*SlowQuery, error) {
-	dsn := mysql.Config{
-		Addr:   fmt.Sprintf("%v:%v", params.DBHost, params.DBPort),
-		User:   params.DBUser,
-		Passwd: params.DBPass,
-		Net:    "tcp"}
-
+	dsn := mysql.NewConfig()
+	dsn.Addr = fmt.Sprintf("%v:%v", params.DBHost, params.DBPort)
+	dsn.Net = "tcp"
+	dsn.User = params.DBUser
+	dsn.Passwd = params.DBPass
 	pp := &perfschema.Params{
 		DSN: dsn.FormatDSN(),
 	}
