@@ -50,6 +50,7 @@ func New(params *Params, l *logrus.Entry, c *pkg.Client) (*SlowQuery, error) {
 
 	return &SlowQuery{
 		l:      l,
+		c:      c,
 		ps:     ps,
 		apName: params.APName}, nil
 }
