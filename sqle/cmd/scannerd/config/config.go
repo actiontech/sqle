@@ -27,4 +27,8 @@ type Config struct {
 	AuditPlanName string
 	Token         string
 	Typ           ScannerType
+	ScannerDBHost string
+	ScannerDBPort string
+	ScannerDBUser string
+	ScannerDBPass string
 }
