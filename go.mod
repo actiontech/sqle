@@ -36,6 +36,7 @@ require (
 	github.com/percona/pmm-agent v0.0.0-20210908073243-9723053cd5eb
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340 // v3.0.12
+	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.7
