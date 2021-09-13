@@ -33,6 +33,8 @@ require (
 	github.com/labstack/gommon v0.2.8
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
+	github.com/nxadm/tail v1.4.8
+	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 	github.com/percona/pmm-agent v0.0.0-20210908073243-9723053cd5eb
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340 // v3.0.12
