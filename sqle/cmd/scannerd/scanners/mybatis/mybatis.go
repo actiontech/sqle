@@ -11,11 +11,105 @@ import (
 	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
+	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners"
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils/parser"
 	"actiontech.cloud/sqle/sqle/sqle/driver"
 	"actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
+	"github.com/sirupsen/logrus"
 )
+
+type MyBatis struct {
+	l *logrus.Entry
+	c *scanner.Client
+
+	needTrigger bool
+	sqls        []scanners.SQL
+
+	apName string
+	xmlDir string
+}
+
+type Params struct {
+	XMLDir string
+	APName string
+}
+
+func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
+	return &MyBatis{
+		xmlDir: params.XMLDir,
+		apName: params.APName,
+		l:      l,
+	}, nil
+}
+
+func (mb *MyBatis) Run(ctx context.Context) error {
+	return nil
+}
+
+func (mb *MyBatis) SQLs() <-chan scanners.SQL {
+	// todo: channel size configurable
+	sqlCh := make(chan scanners.SQL, 10240)
+
+	sqls, err := GetSQLFromPath(mb.xmlDir)
+	if err != nil {
+		mb.l.Errorf("parse sql error:%v", err)
+		close(sqlCh)
+		return sqlCh
+	}
+
+	go func() {
+		for _, sql := range sqls {
+			sqlCh <- scanners.SQL{
+				Fingerprint: sql.Fingerprint,
+				RawText:     sql.Text,
+			}
+		}
+		mb.needTrigger = true
+	}()
+	return sqlCh
+}
+
+func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
+	mb.sqls = append(mb.sqls, sqls...)
+
+	if !mb.needTrigger {
+		return nil
+	}
+
+	// key=fingerPrint val=count
+	counterMap := make(map[string]uint, len(mb.sqls))
+
+	nodeList := make([]scanners.SQL, 0, len(mb.sqls))
+	for _, node := range mb.sqls {
+		counterMap[node.Fingerprint]++
+		if counterMap[node.Fingerprint] <= 1 {
+			nodeList = append(nodeList, node)
+		}
+	}
+
+	reqBody := make([]scanner.AuditPlanSQLReq, 0, len(nodeList))
+	now := time.Now().Format(time.RFC3339)
+	for _, sql := range nodeList {
+		reqBody = append(reqBody, scanner.AuditPlanSQLReq{
+			Fingerprint:          sql.Fingerprint,
+			Counter:              fmt.Sprintf("%v", counterMap[sql.Fingerprint]),
+			LastReceiveText:      sql.RawText,
+			LastReceiveTimestamp: now,
+		})
+	}
+
+	err := mb.c.UploadReq(scanner.FullUpload, mb.apName, reqBody)
+	if err != nil {
+		return err
+	}
+
+	reportID, err := mb.c.TriggerAuditReq(mb.apName)
+	if err != nil {
+		return err
+	}
+	return mb.c.GetAuditReportReq(mb.apName, reportID)
+}
 
 func MybatisScanner(cfg *config.Config) error {
 	sqlList, err := PrepareSQL(cfg)
