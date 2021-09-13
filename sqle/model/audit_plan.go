@@ -1,8 +1,6 @@
 package model
 
 import (
-	"fmt"
-
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 
 	"github.com/jinzhu/gorm"
@@ -88,9 +86,9 @@ func (s *Storage) SaveAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error {
 		return err
 	}
 
-	raw := getBatchInsertRawSQL(ap, sqls)
+	raw, args := getBatchInsertRawSQL(ap, sqls)
 	raw += " ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);"
-	return errors.New(errors.ConnectStorageError, s.db.Exec(raw).Error)
+	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
 func (s *Storage) UpdateAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error {
@@ -99,24 +97,23 @@ func (s *Storage) UpdateAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error
 		return err
 	}
 
-	raw := getBatchInsertRawSQL(ap, sqls)
+	raw, args := getBatchInsertRawSQL(ap, sqls)
 	// counter column is a accumulate value when update.
 	raw += " ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`) + `counter`, `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);"
-	return errors.New(errors.ConnectStorageError, s.db.Exec(raw).Error)
+	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
-func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQL) string {
-	raw := "INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES "
+func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQL) (raw string, args []interface{}) {
+	raw = "INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES "
 	for i, sql := range sqls {
 		if i == len(sqls)-1 {
-			raw += fmt.Sprintf("('%v','%v','%v','%v','%v') ",
-				ap.ID, sql.Fingerprint, sql.Counter, sql.LastSQL, sql.LastReceiveTimestamp)
+			raw += "(?, ?, ?, ?, ?) "
 		} else {
-			raw += fmt.Sprintf("('%v','%v','%v','%v','%v'),",
-				ap.ID, sql.Fingerprint, sql.Counter, sql.LastSQL, sql.LastReceiveTimestamp)
+			raw += "(?, ?, ?, ?, ?), "
 		}
+		args = append(args, ap.ID, sql.Fingerprint, sql.Counter, sql.LastSQL, sql.LastReceiveTimestamp)
 	}
-	return raw
+	return
 }
 
 func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{}) error {

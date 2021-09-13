@@ -2,9 +2,13 @@ package scanners
 
 import (
 	"context"
-
-	"actiontech.cloud/sqle/sqle/sqle/model"
 )
+
+type SQL struct {
+	Fingerprint string
+	RawText     string
+	Counter     int
+}
 
 // Scanner is a interface for all Scanners.
 type Scanner interface {
@@ -13,5 +17,8 @@ type Scanner interface {
 	Run(ctx context.Context) error
 
 	// SQLs returns channel that should be read until it is closed.
-	SQLs() <-chan model.AuditPlanSQL
+	SQLs() <-chan SQL
+
+	// Upload upload sqls to underlying client.
+	Upload(ctx context.Context, sqls []SQL) error
 }

@@ -141,7 +141,7 @@ func TestStorage_SaveAuditPlanSQLs(t *testing.T) {
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs(ap.Name).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(ap.ID, ap.Name))
-	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES ('1','select * from t1 where id = ?','1','select * from t1 where id = 1','mock time'),('1','select * from t1 where name = ?','1','select * from t1 where name = 1','mock time') ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);").
+	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);").
 		WithArgs().
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	err = GetStorage().SaveAuditPlanSQLs(ap.Name, sqls)
