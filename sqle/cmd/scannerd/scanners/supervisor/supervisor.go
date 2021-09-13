@@ -31,12 +31,8 @@ func Start(cfg *config.Config) error {
 
 	case config.ScannerTypeSlowQuery:
 		p := &slowquery.Params{
-			DBHost:          cfg.ScannerDBHost,
-			DBPort:          cfg.ScannerDBPort,
-			DBUser:          cfg.ScannerDBUser,
-			DBPass:          cfg.ScannerDBPass,
-			APName:          cfg.AuditPlanName,
-			SlowQuerySecond: cfg.SlowQuerySecond,
+			APName:      cfg.AuditPlanName,
+			LogFilePath: cfg.LogFilePath,
 		}
 		scanner, err = slowquery.New(p, l, client)
 

@@ -21,15 +21,11 @@ func (t ScannerType) String() string {
 }
 
 type Config struct {
-	Host            string
-	Port            string
-	Dir             string
-	AuditPlanName   string
-	Token           string
-	Typ             ScannerType
-	ScannerDBHost   string
-	ScannerDBPort   string
-	ScannerDBUser   string
-	ScannerDBPass   string
-	SlowQuerySecond int
+	Host          string
+	Port          string
+	Dir           string
+	AuditPlanName string
+	Token         string
+	Typ           ScannerType
+	LogFilePath   string
 }
