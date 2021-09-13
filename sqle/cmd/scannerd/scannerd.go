@@ -20,11 +20,7 @@ var (
 	auditPlanName string
 	token         string
 
-	databaseHost    string
-	databasePort    string
-	databaseUser    string
-	databasePass    string
-	slowQuerySecond int
+	logFilePath string
 )
 
 func main() {
@@ -44,7 +40,7 @@ func main() {
 
 	mybatisCmd := &cobra.Command{
 		Use:   "mybatis",
-		Short: "Parse MyBatis xml file",
+		Short: "Parse MyBatis XML file",
 		Long:  "",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := run(cmd, args, config.ScannerTypeSlowQuery)
@@ -68,17 +64,8 @@ func main() {
 			}
 		},
 	}
-	slowlogCmd.Flags().StringVarP(&databaseHost, "dbHost", "", "127.0.0.1", "database host")
-	slowlogCmd.Flags().StringVarP(&databasePort, "dbPort", "", "3306", "database port")
-	slowlogCmd.Flags().StringVarP(&databaseUser, "dbUser", "", "", "database user")
-	// todo: need prompt, try https://github.com/manifoldco/promptui
-	slowlogCmd.Flags().StringVarP(&databasePass, "dbPass", "", "", "database password")
-	// default value keep consistent with MySQL long-query-time
-	slowlogCmd.Flags().IntVarP(&slowQuerySecond, "slow-query-second", "", 10, "slow query second")
-	slowlogCmd.MarkFlagRequired("dbHost")
-	slowlogCmd.MarkFlagRequired("dbPort")
-	slowlogCmd.MarkFlagRequired("dbUser")
-	slowlogCmd.MarkFlagRequired("dbPass")
+	slowlogCmd.Flags().StringVarP(&logFilePath, "log-file", "", "", "log file absolute path")
+	slowlogCmd.MarkFlagRequired("log-file")
 	rootCmd.AddCommand(slowlogCmd)
 
 	code := 0
@@ -97,17 +84,13 @@ func main() {
 
 func run(_ *cobra.Command, _ []string, typ config.ScannerType) error {
 	cfg := &config.Config{
-		Host:            host,
-		Port:            port,
-		Dir:             dir,
-		Typ:             typ,
-		AuditPlanName:   auditPlanName,
-		Token:           token,
-		ScannerDBHost:   databaseHost,
-		ScannerDBPort:   databasePort,
-		ScannerDBUser:   databaseUser,
-		ScannerDBPass:   databasePass,
-		SlowQuerySecond: slowQuerySecond,
+		Host:          host,
+		Port:          port,
+		Dir:           dir,
+		Typ:           typ,
+		AuditPlanName: auditPlanName,
+		Token:         token,
+		LogFilePath:   logFilePath,
 	}
 	return supervisor.Start(cfg)
 }
