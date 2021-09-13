@@ -2,88 +2,96 @@ package slowquery
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"time"
 
 	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners"
 	"actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
 	pkg "actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
 
-	"github.com/go-sql-driver/mysql"
-	"github.com/percona/pmm-agent/agents/mysql/perfschema"
+	"github.com/percona/go-mysql/log"
+	"github.com/percona/go-mysql/query"
+	"github.com/percona/pmm-agent/agents/mysql/slowlog/parser"
 	"github.com/sirupsen/logrus"
 )
 
 type SlowQuery struct {
-	l  *logrus.Entry
-	c  *pkg.Client
-	ps *perfschema.PerfSchema
+	l *logrus.Entry
+	c *pkg.Client
 
-	apName          string
-	slowQuerySecond int
+	logFilePath string
+
+	sqlCh chan scanners.SQL
+
+	apName string
 }
 
 type Params struct {
-	DBHost string
-	DBPort string
-	DBUser string
-	DBPass string
+	LogFilePath string
 
-	APName          string
-	SlowQuerySecond int
+	APName string
 
 	// todo: support PG
 	// DBType string
 }
 
 func New(params *Params, l *logrus.Entry, c *pkg.Client) (*SlowQuery, error) {
-	dsn := mysql.NewConfig()
-	dsn.Addr = fmt.Sprintf("%v:%v", params.DBHost, params.DBPort)
-	dsn.Net = "tcp"
-	dsn.User = params.DBUser
-	dsn.Passwd = params.DBPass
-	pp := &perfschema.Params{
-		DSN: dsn.FormatDSN(),
-	}
-	ps, err := perfschema.New(pp, l)
-	if err != nil {
-		return nil, err
-	}
-
 	return &SlowQuery{
-		l:               l,
-		c:               c,
-		ps:              ps,
-		apName:          params.APName,
-		slowQuerySecond: params.SlowQuerySecond}, nil
+		l:           l,
+		c:           c,
+		logFilePath: params.LogFilePath,
+		apName:      params.APName,
+		sqlCh:       make(chan scanners.SQL, 10)}, nil
 }
 
-func (sq *SlowQuery) Run(ctx context.Context) error {
-	sq.ps.Run(ctx)
-	return nil
+func (s *SlowQuery) Run(ctx context.Context) error {
+	reader, err := NewContinuousFileReader(s.logFilePath, logrus.WithField("filename", s.logFilePath))
+	if err != nil {
+		return err
+	}
+
+	p := parser.NewSlowLogParser(reader, log.Options{})
+	go p.Run()
+
+	events := make(chan *log.Event, 1000)
+	go func() {
+		for {
+			event := p.Parse()
+			if event != nil {
+				events <- event
+				continue
+			}
+
+			if err := p.Err(); err != io.EOF {
+				s.l.Warnf("Parser error: %v.", err)
+			}
+			close(events)
+			return
+		}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			err = reader.Close()
+			s.l.Infof("context done: %s. reader closed: %v.", ctx.Err(), err)
+
+		case e, ok := <-events:
+			if !ok {
+				return nil
+			}
+			s.l.Debugf("parsed slowlog event: %+v.", e)
+			s.sqlCh <- scanners.SQL{
+				Fingerprint: query.Fingerprint(e.Query),
+				RawText:     e.Query,
+				Counter:     1}
+
+		}
+	}
 }
 
 func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
-	sqlCh := make(chan scanners.SQL, 10)
-	go func() {
-		for change := range sq.ps.Changes() {
-			sq.l.Infoln("change status", change.Status)
-			for _, mb := range change.MetricsBucket {
-				if int(mb.Common.MQueryTimeSum) < sq.slowQuerySecond {
-					continue
-				}
-				sq.l.Infoln("%+v", mb)
-				sql := scanners.SQL{
-					Counter:     int(mb.Common.MQueryTimeCnt),
-					Fingerprint: mb.Common.Fingerprint,
-					RawText:     mb.Common.Example,
-				}
-				sqlCh <- sql
-			}
-		}
-		close(sqlCh)
-	}()
-	return sqlCh
+	return sq.sqlCh
 }
 
 func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
