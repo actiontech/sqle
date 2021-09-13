@@ -4,10 +4,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"actiontech.cloud/sqle/sqle/sqle/api/controller"
 	v1 "actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
+	sqleMiddleware "actiontech.cloud/sqle/sqle/sqle/api/middleware"
 	"actiontech.cloud/sqle/sqle/sqle/config"
 	_ "actiontech.cloud/sqle/sqle/sqle/docs"
 	"actiontech.cloud/sqle/sqle/sqle/errors"
@@ -55,7 +55,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	e.POST("/v1/login", v1.Login)
 
 	v1Router := e.Group("/v1")
-	v1Router.Use(JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
+	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
 
 	// v1 admin api, just admin user can access.
 	{
@@ -204,21 +204,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		log.Logger().Fatal(e.Start(""))
 	}
 	return
-}
-
-// JWTTokenAdapter is a `echo` middleware,　by rewriting the header, the jwt token support header
-// "Authorization: {token}" and "Authorization: Bearer {token}".
-func JWTTokenAdapter() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			auth := c.Request().Header.Get(echo.HeaderAuthorization)
-			if auth != "" && !strings.HasPrefix(auth, middleware.DefaultJWTConfig.AuthScheme) {
-				c.Request().Header.Set(echo.HeaderAuthorization,
-					fmt.Sprintf("%s %s", middleware.DefaultJWTConfig.AuthScheme, auth))
-			}
-			return next(c)
-		}
-	}
 }
 
 // AdminUserAllowed is a `echo` middleware, only allow admin user to access next.
