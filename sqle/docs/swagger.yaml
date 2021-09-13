@@ -1813,8 +1813,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的
-        json 的子集
+      description: test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集
       operationId: checkInstanceIsConnectableV1
       parameters:
       - description: instance info
@@ -2487,8 +2486,7 @@ paths:
       - task
   /v1/tasks/audits/{task_id}/sql_report:
     get:
-      description: download report file of all SQLs information belong to the specified
-        audit task
+      description: download report file of all SQLs information belong to the specified audit task
       operationId: downloadAuditTaskSQLReportV1
       parameters:
       - description: task id
