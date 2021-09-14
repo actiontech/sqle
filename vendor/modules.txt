@@ -52,8 +52,6 @@ github.com/denisenkom/go-mssqldb/internal/querytext
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 ## explicit
 github.com/dgrijalva/jwt-go
-# github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5
-## explicit
 # github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c
 ## explicit
 # github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9
@@ -119,11 +117,10 @@ github.com/hashicorp/go-plugin/internal/plugin
 github.com/hashicorp/yamux
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/jinzhu/gorm v1.9.15 => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
+# github.com/jinzhu/gorm v1.9.15
 ## explicit
 github.com/jinzhu/gorm
 # github.com/jinzhu/inflection v1.0.0
-## explicit
 github.com/jinzhu/inflection
 # github.com/jinzhu/now v1.1.1
 ## explicit
@@ -404,6 +401,5 @@ gopkg.in/tomb.v1
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
-# github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
 # github.com/pingcap/parser => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
 # google.golang.org/grpc => google.golang.org/grpc v1.29.0

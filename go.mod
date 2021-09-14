@@ -15,7 +15,6 @@ require (
 	github.com/cznic/y v0.0.0-20181122101901-b05e8c2e8d7b
 	github.com/denisenkom/go-mssqldb v0.9.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
 	github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
@@ -29,7 +28,6 @@ require (
 	github.com/golang/protobuf v1.5.0
 	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jinzhu/gorm v1.9.15
-	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.1
 	github.com/labstack/echo/v4 v4.0.0
@@ -63,7 +61,6 @@ require (
 )
 
 replace (
-	github.com/jinzhu/gorm => actiontech.cloud/universe/gorm v0.0.0-20190520085104-6d6ea8fa4ec5
 	github.com/pingcap/parser => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
