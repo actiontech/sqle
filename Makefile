@@ -19,7 +19,6 @@ TEST_DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1
 
 ## Static Parameter, should not be overwrite
 PROJECT_NAME = sqle
-SUB_PROJECT_NAME = sqle_sqlserver
 override VERSION = 1.3.0
 GOBIN = ${shell pwd}/bin
 default: install
@@ -68,9 +67,6 @@ docker_install:
 install: swagger parser
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
 
-build_sqlserver:
-	cd ./sqle/sqlserver/SqlserverProtoServer && dotnet publish -c Release -r ${DOTNET_TARGET}
-
 swagger:
 	GOARCH=amd64 go build -o ${shell pwd}/bin/swag ${shell pwd}/build/swag/main.go
 	rm -rf ${shell pwd}/sqle/docs
@@ -102,7 +98,7 @@ clean:
 pull_image:
 	$(DOCKER) pull $(DOCKER_IMAGE)
 
-docker_rpm: docker_rpm/sqle docker_rpm/sqle_sqlserver
+docker_rpm: docker_rpm/sqle
 
 docker_rpm/sqle: pull_image docker_install
 	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
@@ -112,23 +108,11 @@ docker_rpm/sqle: pull_image docker_install
 	--target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && \
 	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
 
-docker_rpm/sqle_sqlserver: pull_image docker_install
-	$(DOCKER) run -v $(shell pwd):/universe/sqle --rm $(DOTNET_DOCKER_IMAGE) -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
-	(tar zcf ${SUB_PROJECT_NAME}.tar.gz /universe --transform 's/universe/${SUB_PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)/' >/tmp/build.log 2>&1) && \
-	(rpmbuild --define '_dotnet_target ${DOTNET_TARGET}' --define '_git_version ${GIT_VERSION}' --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' \
-	--define 'commit $(GIT_COMMIT)' --define 'os_version $(OS_VERSION)' \
-	--target $(RPMBUILD_TARGET) -bb --with qa /universe/sqle/build/sqled_sqlserver.spec >>/tmp/build.log 2>&1) && \
-	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${SUB_PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > ${SUB_PROJECT_NAME}.$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
-
-upload:upload/sqle upload/sqle_sqlserver
+upload:upload/sqle
 
 upload/sqle:
 	curl -T $(shell pwd)/$(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm \
 	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm --ftp-create-dirs
-
-upload/sqle_sqlserver:
-	curl -T $(shell pwd)/$(SUB_PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm \
-	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(SUB_PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm  --ftp-create-dirs
 
 ###################################### 5.docker start #####################################################
 docker_start: fill_ui_dir docker_rpm/sqle
