@@ -11,11 +11,11 @@ import (
 
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
-	"actiontech.cloud/universe/ucommon/v4/util"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	driver "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/ungerik/go-dry"
 )
 
 // rule type
@@ -2344,7 +2344,7 @@ func checkTransactionIsolationLevel(rule model.Rule, i *Inspect, node ast.Node) 
 	switch stmt := node.(type) {
 	case *ast.SetStmt:
 		for _, variable := range stmt.Variables {
-			if util.Contains([]string{"tx_isolation", "tx_isolation_one_shot"}, variable.Name) {
+			if dry.StringListContains([]string{"tx_isolation", "tx_isolation_one_shot"}, variable.Name) {
 				switch node := variable.Value.(type) {
 				case *driver.ValueExpr:
 					if node.Datum.GetString() != ast.ReadCommitted {
