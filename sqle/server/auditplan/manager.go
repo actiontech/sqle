@@ -122,7 +122,8 @@ func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) er
 	ap.CreateUserID = user.ID
 
 	j := utils.NewJWT([]byte(utils.JWTSecret))
-	t, err := j.CreateToken(currentUserName, time.Now().Add(time.Hour*24*365).Unix())
+	t, err := j.CreateToken(currentUserName, time.Now().Add(time.Hour*24*365).Unix(),
+		utils.WithAuditPlanName(ap.Name))
 	if err != nil {
 		return err
 	}
