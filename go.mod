@@ -3,7 +3,6 @@ module actiontech.cloud/sqle/sqle
 go 1.14
 
 require (
-	actiontech.cloud/universe/ucommon/v4 v4.2101.1-0.20210204023918-a44296eb4ef0
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/actiontech/mybatis-mapper-2-sql v0.1.3-0.20210426090447-30154a3f590e
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -17,7 +16,11 @@ require (
 	github.com/denisenkom/go-mssqldb v0.9.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
+	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
+	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
 	github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
+	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
+	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/fatih/color v1.7.0
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
@@ -34,6 +37,8 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/nxadm/tail v1.4.8
+	github.com/onsi/ginkgo v1.10.1 // indirect
+	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 	github.com/percona/pmm-agent v0.0.0-20210908073243-9723053cd5eb
 	github.com/pingcap/parser v3.0.12+incompatible
@@ -42,6 +47,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.7
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7

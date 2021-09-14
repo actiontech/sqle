@@ -6,7 +6,7 @@ import (
 
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/universe/ucommon/v4/util"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"github.com/jinzhu/gorm"
 )
 
@@ -51,7 +51,7 @@ func (i *User) decryptPassword() error {
 		return nil
 	}
 	if i.Password == "" {
-		data, err := util.AesDecrypt(i.SecretPassword)
+		data, err := utils.AesDecrypt(i.SecretPassword)
 		if err != nil {
 			return err
 		} else {
@@ -66,7 +66,7 @@ func (i *User) encryptPassword() error {
 		return nil
 	}
 	if i.SecretPassword == "" {
-		data, err := util.AesEncrypt(i.Password)
+		data, err := utils.AesEncrypt(i.Password)
 		if err != nil {
 			return err
 		}
