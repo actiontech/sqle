@@ -8,13 +8,5 @@
 /sqled
 /sqled.yml*
 /swag
-sqlserver/.vs/
-sqlserver/SqlserverProtoServer/obj/
-sqlserver/SqlserverProtoServer/bin/
-sqlserver/SqlserverProto/obj/
-sqlserver/SqlserverProto/bin/
-sqlserver/SqlserverProtoServerTest/obj/
-sqlserver/SqlserverProtoServerTest/bin/
-
 bin/
 ui/

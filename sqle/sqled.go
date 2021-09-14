@@ -2,6 +2,8 @@ package sqled
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"syscall"
 
 	"actiontech.cloud/sqle/sqle/sqle/api"
@@ -11,7 +13,6 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/model"
 	"actiontech.cloud/sqle/sqle/sqle/server"
 	"actiontech.cloud/sqle/sqle/sqle/server/auditplan"
-	"actiontech.cloud/universe/ucommon/v4/ubootstrap"
 
 	"github.com/facebookgo/grace/gracenet"
 )
@@ -60,7 +61,8 @@ func Run(config *config.Config) error {
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, config.Server.SqleCnf)
 
-	killChan := ubootstrap.ListenKillSignal()
+	killChan := make(chan os.Signal, 1)
+	signal.Notify(killChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGUSR2 /*graceful-shutdown*/)
 	select {
 	case <-exitChan:
 		auditPlanMgrQuitCh <- struct{}{}

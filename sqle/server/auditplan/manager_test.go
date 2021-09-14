@@ -63,9 +63,11 @@ func TestManager_AddStaticAuditPlan(t *testing.T) {
 	mockHandle.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").
 		WithArgs(adminUser.Name).
 		WillReturnRows(mockHandle.NewRows([]string{"id", "login_name"}).AddRow(adminUser.ID, adminUser.Name))
+	mockHandle.ExpectBegin()
 	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
 		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "").
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mockHandle.ExpectCommit()
 	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name)
 	assert.NoError(t, err)
 	assert.Len(t, manager.scheduler.cron.Entries(), 1)
@@ -105,9 +107,11 @@ func TestManager_AddDynamicAuditPlan(t *testing.T) {
 	mockHandle.ExpectQuery("SELECT * FROM `instances`  WHERE `instances`.`deleted_at` IS NULL AND ((name = ?)) ORDER BY `instances`.`id` ASC LIMIT 1").
 		WithArgs(inst.Name).
 		WillReturnRows(sqlmock.NewRows([]string{"db_type"}).AddRow(inst.DbType))
+	mockHandle.ExpectBegin()
 	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
 		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, inst.DbType, token, inst.Name, ap.CreateUserID, database).
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mockHandle.ExpectCommit()
 	err = manager.AddDynamicAuditPlan(ap.Name, ap.CronExpression, inst.Name, database, adminUser.Name)
 	assert.NoError(t, err)
 	assertManager(t, manager, 1)
@@ -136,9 +140,11 @@ func TestManager_UpdateAuditPlan(t *testing.T) {
 	mockHandle.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").
 		WithArgs(adminUser.Name).
 		WillReturnRows(mockHandle.NewRows([]string{"id", "login_name"}).AddRow(adminUser.ID, adminUser.Name))
+	mockHandle.ExpectBegin()
 	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
 		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "").
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mockHandle.ExpectCommit()
 	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name)
 	assert.NoError(t, err)
 	assertManager(t, manager, 1)
@@ -152,8 +158,10 @@ func TestManager_UpdateAuditPlan(t *testing.T) {
 		"instance_database": "test_db",
 	}
 
+	mockHandle.ExpectBegin()
 	mockHandle.ExpectExec("UPDATE `audit_plans` SET `cron_expression` = ?, `instance_database` = ?, `instance_name` = ?, `updated_at` = ? WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs(updateAttr["cron_expression"], updateAttr["instance_database"], updateAttr["instance_name"], model.MockTime, ap.Name).WillReturnResult(sqlmock.NewResult(1, 1))
+	mockHandle.ExpectCommit()
 	mockHandle.ExpectQuery("SELECT * FROM `audit_plans`  WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs(ap.Name).WillReturnRows(sqlmock.NewRows([]string{"name", "cron_expression"}).AddRow(ap.Name, updateAttr["cron_expression"]))
 	err = manager.UpdateAuditPlan(ap.Name, updateAttr)
@@ -187,17 +195,21 @@ func TestManager_DeleteAuditPlan(t *testing.T) {
 	mockHandle.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").
 		WithArgs(adminUser.Name).
 		WillReturnRows(mockHandle.NewRows([]string{"id", "login_name"}).AddRow(adminUser.ID, adminUser.Name))
+	mockHandle.ExpectBegin()
 	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
 		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "").
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mockHandle.ExpectCommit()
 	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name)
 	assert.NoError(t, err)
 	assertManager(t, manager, 1)
 
 	mockHandle.ExpectQuery("SELECT * FROM `audit_plans`  WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs(ap.Name).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(ap.Name))
+	mockHandle.ExpectBegin()
 	mockHandle.ExpectExec("UPDATE `audit_plans` SET `deleted_at`=? WHERE `audit_plans`.`deleted_at` IS NULL").
 		WithArgs(model.MockTime).WillReturnResult(sqlmock.NewResult(1, 1))
+	mockHandle.ExpectCommit()
 	err = manager.DeleteAuditPlan(ap.Name)
 	assert.NoError(t, err)
 	assertManager(t, manager, 0)

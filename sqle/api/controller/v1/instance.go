@@ -10,7 +10,7 @@ import (
 	"actiontech.cloud/sqle/sqle/sqle/errors"
 	"actiontech.cloud/sqle/sqle/sqle/log"
 	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/universe/ucommon/v4/util"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -329,7 +329,7 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["db_user"] = *req.User
 	}
 	if req.Password != nil {
-		password, err := util.AesEncrypt(*req.Password)
+		password, err := utils.AesEncrypt(*req.Password)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

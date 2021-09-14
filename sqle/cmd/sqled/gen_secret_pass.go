@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"actiontech.cloud/sqle/sqle/sqle/config"
-	"actiontech.cloud/universe/ucommon/v4/util"
+	"actiontech.cloud/sqle/sqle/sqle/utils"
 
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
@@ -28,7 +28,7 @@ func genSecretPasswordCmd() *cobra.Command {
 			if password == "" {
 				return fmt.Errorf("mysql_password is empty")
 			}
-			secretPassword, err := util.AesEncrypt(password)
+			secretPassword, err := utils.AesEncrypt(password)
 			if err != nil {
 				return fmt.Errorf("gen secret password error, %d", err)
 			}
