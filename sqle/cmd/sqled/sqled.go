@@ -8,7 +8,6 @@ import (
 	sqled "actiontech.cloud/sqle/sqle/sqle"
 	"actiontech.cloud/sqle/sqle/sqle/config"
 	"actiontech.cloud/sqle/sqle/sqle/utils"
-	"actiontech.cloud/universe/ucommon/v4/util"
 
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
@@ -81,7 +80,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		// but you can still use mysql_password to be compatible with older versions.
 		secretPassword := cfg.Server.DBCnf.MysqlCnf.SecretPassword
 		if secretPassword != "" {
-			password, err := util.AesDecrypt(secretPassword)
+			password, err := utils.AesDecrypt(secretPassword)
 			if err != nil {
 				return fmt.Errorf("read db info from config file error, %d", err)
 			}
