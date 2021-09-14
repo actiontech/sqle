@@ -35,7 +35,7 @@ func getGivenBeforeAddAP() (*model.AuditPlan, *model.User, *model.Instance, stri
 	}
 
 	token := "mock token"
-	gomonkey.ApplyMethod(reflect.TypeOf(&utils.JWT{}), "CreateToken", func(_ *utils.JWT, _ string, _ int64) (string, error) {
+	gomonkey.ApplyMethod(reflect.TypeOf(&utils.JWT{}), "CreateToken", func(_ *utils.JWT, _ string, _ int64, _ ...utils.CustomClaimOption) (string, error) {
 		return token, nil
 	})
 	return ap, adminUser, inst, token
