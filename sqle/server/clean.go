@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/sirupsen/logrus"
 )

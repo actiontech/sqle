@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"actiontech.cloud/sqle/sqle/sqle/api/controller"
-	"actiontech.cloud/sqle/sqle/sqle/driver"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )

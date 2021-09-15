@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"

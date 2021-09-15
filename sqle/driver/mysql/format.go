@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/pingcap/parser/ast"
 )

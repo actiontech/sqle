@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"actiontech.cloud/sqle/sqle/sqle/config"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/config"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"

@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners/mybatis"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners/slowquery"
-	pkg "actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/config"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/mybatis"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/slowquery"
+	pkg "github.com/actiontech/sqle/sqle/pkg/scanner"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
