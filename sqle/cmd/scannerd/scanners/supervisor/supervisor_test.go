@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )

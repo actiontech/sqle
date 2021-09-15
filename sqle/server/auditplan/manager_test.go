@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/agiledragon/gomonkey"
 	"github.com/stretchr/testify/assert"
 )

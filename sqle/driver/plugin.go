@@ -8,9 +8,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"actiontech.cloud/sqle/sqle/sqle/driver/proto"
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/driver/proto"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"

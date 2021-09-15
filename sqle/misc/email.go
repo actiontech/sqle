@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"gopkg.in/gomail.v2"
 )

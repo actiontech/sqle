@@ -1,11 +1,12 @@
 package mysql
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"testing"
+
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/sirupsen/logrus"
 )
 
 func DefaultMysqlInspectOffline() *Inspect {

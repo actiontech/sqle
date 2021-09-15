@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"

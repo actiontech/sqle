@@ -3,8 +3,8 @@ package mysql
 import (
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 )

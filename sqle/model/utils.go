@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"

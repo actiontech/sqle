@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/model"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"

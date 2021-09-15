@@ -7,12 +7,12 @@ import (
 	"strings"
 	"sync"
 
-	"actiontech.cloud/sqle/sqle/sqle/driver"
-	_ "actiontech.cloud/sqle/sqle/sqle/driver/mysql"
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/driver"
+	_ "github.com/actiontech/sqle/sqle/driver/mysql"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/sirupsen/logrus"
 )

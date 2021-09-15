@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )

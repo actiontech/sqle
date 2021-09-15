@@ -1,4 +1,4 @@
-module actiontech.cloud/sqle/sqle
+module github.com/actiontech/sqle
 
 go 1.14
 

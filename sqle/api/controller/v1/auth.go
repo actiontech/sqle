@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/api/controller"
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
