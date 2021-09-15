@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/sirupsen/logrus"
 )

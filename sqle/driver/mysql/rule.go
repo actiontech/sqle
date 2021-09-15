@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode"
 
-	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/driver"
-	"actiontech.cloud/sqle/sqle/sqle/errors"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"

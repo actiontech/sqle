@@ -3,8 +3,8 @@ package mysql
 import (
 	"testing"
 
-	"actiontech.cloud/sqle/sqle/sqle/driver"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"

@@ -3,7 +3,7 @@ package mysql
 import (
 	"testing"
 
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/model"
 )
 
 func TestContext(t *testing.T) {

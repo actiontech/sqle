@@ -3,8 +3,8 @@ package server
 import (
 	"testing"
 
-	_ "actiontech.cloud/sqle/sqle/sqle/driver/mysql"
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	_ "github.com/actiontech/sqle/sqle/driver/mysql"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/stretchr/testify/assert"
 )
 

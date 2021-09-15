@@ -5,9 +5,9 @@ import (
 	"io"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners"
-	"actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
-	pkg "actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/pkg/scanner"
+	pkg "github.com/actiontech/sqle/sqle/pkg/scanner"
 
 	"github.com/percona/go-mysql/log"
 	"github.com/percona/go-mysql/query"

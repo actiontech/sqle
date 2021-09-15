@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners/supervisor"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/config"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

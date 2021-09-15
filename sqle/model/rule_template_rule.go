@@ -1,6 +1,6 @@
 package model
 
-import "actiontech.cloud/sqle/sqle/sqle/errors"
+import "github.com/actiontech/sqle/sqle/errors"
 
 type RuleTemplateRule struct {
 	RuleTemplateId uint   `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`

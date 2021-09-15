@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"actiontech.cloud/sqle/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/stretchr/testify/assert"
 )

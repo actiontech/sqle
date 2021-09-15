@@ -1,7 +1,7 @@
 package model
 
 import (
-	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/jinzhu/gorm"
 )

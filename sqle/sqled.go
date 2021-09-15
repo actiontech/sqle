@@ -6,13 +6,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"actiontech.cloud/sqle/sqle/sqle/api"
-	"actiontech.cloud/sqle/sqle/sqle/config"
-	"actiontech.cloud/sqle/sqle/sqle/driver"
-	"actiontech.cloud/sqle/sqle/sqle/log"
-	"actiontech.cloud/sqle/sqle/sqle/model"
-	"actiontech.cloud/sqle/sqle/sqle/server"
-	"actiontech.cloud/sqle/sqle/sqle/server/auditplan"
+	"github.com/actiontech/sqle/sqle/api"
+	"github.com/actiontech/sqle/sqle/config"
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/server/auditplan"
 
 	"github.com/facebookgo/grace/gracenet"
 )

@@ -3,7 +3,7 @@ package model
 import (
 	"strings"
 
-	"actiontech.cloud/sqle/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/jinzhu/gorm"
 )

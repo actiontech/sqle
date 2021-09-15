@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/api/controller"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils"
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/config"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/utils"
 
-	v1 "actiontech.cloud/sqle/sqle/sqle/api/controller/v1"
+	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 )
 
 // %s = audit plan name

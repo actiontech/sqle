@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/config"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/scanners"
-	"actiontech.cloud/sqle/sqle/sqle/cmd/scannerd/utils/parser"
-	"actiontech.cloud/sqle/sqle/sqle/driver"
-	"actiontech.cloud/sqle/sqle/sqle/pkg/scanner"
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/config"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/utils/parser"
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/pkg/scanner"
 	"github.com/sirupsen/logrus"
 )
 
