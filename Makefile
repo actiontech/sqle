@@ -4,7 +4,6 @@ override GIT_COMMIT     		= $(shell git rev-parse HEAD)
 override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
 override RPM_BUILD_BIN  		= $(shell type -p rpmbuild 2>/dev/null)
 override DOCKER         		= $(shell which docker)
-override GONOSUMDB      		= actiontech.cloud
 override GOOS           		= linux
 override OS_VERSION 			= el7
 override GOARCH         		= amd64
@@ -38,7 +37,6 @@ default: install
 ## Static Code Analysis
 vet: swagger
 	GOOS=$(GOOS) GOARCH=amd64 go vet $$(GOOS=${GOOS} GOARCH=${GOARCH} go list ./...)
-	GOOS=$(GOOS) GOARCH=amd64 go vet ./vendor/actiontech.cloud/...
 
 ## Unit Test
 test: swagger parser
