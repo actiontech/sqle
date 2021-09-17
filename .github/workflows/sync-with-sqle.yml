@@ -1,0 +1,41 @@
+on:
+  workflow_dispatch:  # click the button on Github repo!
+
+jobs:
+  sync_latest_from_sqle:
+    runs-on: ubuntu-latest
+    name: Sync latest commits from sqle
+
+    steps:
+    # Step 1: run a standard checkout action, provided by GitHub
+    - name: Checkout target repo
+      uses: actions/checkout@v2
+      with:
+        ref:  main
+        persist-credentials: false
+
+    # Step 2: run the sync action
+    - name: Sync sqle changes
+      id: sync
+      uses: aormsby/Fork-Sync-With-Upstream-action@v3.0
+      with:
+        target_sync_branch: main
+        target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+        upstream_sync_branch: main
+        upstream_sync_repo: actiontech/sqle
+        upstream_repo_access_token: ${{ secrets.UPSTREAM_REPO_SECRET }}
+        # add --allow-unrelated-histories, otherwise got ERROR message "fatal: refusing to merge unrelated histories"
+        # add -Xtheirs, other ERROR message "Automatic merge failed; fix conflicts and then commit the result."
+        upstream_pull_args: '--no-edit --allow-unrelated-histories -Xtheirs'
+      
+    # Step 3: Display a sample message based on the sync output var 'has_new_commits'
+    - name: New commits found
+      if: steps.sync.outputs.has_new_commits == 'true'
+      run: echo "New commits were found to sync."
+    
+    - name: No new commits
+      if: steps.sync.outputs.has_new_commits == 'false'
+      run: echo "There were no new commits."
+      
+    - name: Show value of 'has_new_commits'
+      run: echo ${{ steps.sync.outputs.has_new_commits }}
