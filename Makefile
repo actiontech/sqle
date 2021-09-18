@@ -9,10 +9,15 @@ override OS_VERSION 			= el7
 override GOARCH         		= amd64
 override RPMBUILD_TARGET		= x86_64
 override RELEASE 				= qa
-override CUSTOMER 				= standard
 override GO_BUILD_FLAGS 		= -mod=vendor
 override RPM_USER_GROUP_NAME 	= actiontech
 override RPM_USER_NAME 			= actiontech-universe
+
+EDITION ?= ce
+GO_BUILD_TAGS = dummyhead
+ifeq ($(EDITION),ee)
+    GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise
+endif
 
 ## The docker registry to pull complier image, can be overwrite by: `make DOCKER_REGISTRY=10.0.0.1`
 DOCKER_REGISTRY ?= 10.186.18.20
@@ -56,7 +61,8 @@ docker_install:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(DOCKER_IMAGE) -c "cd /universe && make install $(MAKEFLAGS)"
 
 install: swagger parser
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/scannerd ./$(PROJECT_NAME)/cmd/scannerd
 
 swagger:
 	GOARCH=amd64 go build -o ${shell pwd}/bin/swag ${shell pwd}/build/swag/main.go
@@ -96,7 +102,7 @@ docker_rpm/sqle: pull_image docker_install
 	(rpmbuild --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' \
 	--define 'commit $(GIT_COMMIT)' --define 'os_version $(OS_VERSION)' \
 	--target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && \
-	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
+	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(EDITION).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
 
 upload: upload/sqle
 

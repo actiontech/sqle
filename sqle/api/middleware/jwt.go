@@ -28,19 +28,27 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 
 var errAuditPlanMisMatch = errors.New("audit plan name don't match the token")
 
-// AuditPlanVerifyAdapter is a `echo` middleware. Every audit plan should be
+// ScannerVerifier is a `echo` middleware. Every audit plan should be
 // scanner-scoped which means that scanner-A should not push SQL to scanner-B.
-func AuditPlanVerifyAdapter() echo.MiddlewareFunc {
+func ScannerVerifier() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			token := c.Request().Header.Get(echo.HeaderAuthorization)
+			// JWT parser expect no 'Bearer' ahead of token, so
+			// we cut the leading auth schema.
+			auth := c.Request().Header.Get(echo.HeaderAuthorization)
+			parts := strings.Split(auth, " ")
+			token := parts[0]
+			if len(parts) == 2 {
+				token = parts[1]
+			}
+
 			apnInToken, err := utils.ParseAuditPlanName(token)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 
-			apInPath := c.Param("audit_plan_name")
-			if apnInToken != apInPath {
+			apnInParam := c.Param("audit_plan_name")
+			if apnInToken != apnInParam {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 			return next(c)
