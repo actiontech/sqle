@@ -14,8 +14,6 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/cmd/scannerd/config"
-	"github.com/actiontech/sqle/sqle/cmd/scannerd/utils"
 
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 )
@@ -49,8 +47,8 @@ type Client struct {
 	token      string
 }
 
-func NewSQLEClient(timeout time.Duration, cfg *config.Config) *Client {
-	baseURL := fmt.Sprintf("%s:%v", cfg.Host, cfg.Port)
+func NewSQLEClient(timeout time.Duration, host, port string) *Client {
+	baseURL := fmt.Sprintf("%s:%v", host, port)
 	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
 		baseURL = "http://" + baseURL
 	}
@@ -62,6 +60,7 @@ func NewSQLEClient(timeout time.Duration, cfg *config.Config) *Client {
 
 	return client
 }
+
 func (sc *Client) WithToken(token string) *Client {
 	sc.token = token
 	sc2 := *sc
@@ -69,17 +68,18 @@ func (sc *Client) WithToken(token string) *Client {
 }
 
 func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPlanSQLReq) error {
-	url := sc.baseURL + fmt.Sprintf(uri, auditPlanName)
-
-	reqBody := &FullSyncAuditPlanSQLsReq{
+	bodyBuf := &bytes.Buffer{}
+	encoder := json.NewEncoder(bodyBuf)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(&FullSyncAuditPlanSQLsReq{
 		SQLs: sqlList,
-	}
-	body, err := utils.JSONMarshal(reqBody)
+	})
 	if err != nil {
 		return err
 	}
 
-	resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodPost, sc.token, bytes.NewBuffer(body))
+	url := sc.baseURL + fmt.Sprintf(uri, auditPlanName)
+	resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodPost, sc.token, bytes.NewBuffer(bodyBuf.Bytes()))
 	if err != nil {
 		return err
 	}
