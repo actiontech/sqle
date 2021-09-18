@@ -59,7 +59,7 @@ func Test_start(t *testing.T) {
 
 	mc := getMockScanner()
 	go func() {
-		errCh <- start(context.TODO(), mc, leastPushSecond, pushBufferSize)
+		errCh <- Start(context.TODO(), mc, leastPushSecond, pushBufferSize)
 	}()
 	mc.generateSQL(pushBufferSize / 2)
 	time.Sleep(time.Duration(leastPushSecond*2) * time.Second)
@@ -70,7 +70,7 @@ func Test_start(t *testing.T) {
 
 	mc = getMockScanner()
 	go func() {
-		errCh <- start(context.TODO(), mc, leastPushSecond, pushBufferSize)
+		errCh <- Start(context.TODO(), mc, leastPushSecond, pushBufferSize)
 	}()
 	mc.generateSQL(pushBufferSize * 2)
 	time.Sleep(time.Duration(leastPushSecond*2) * time.Second)
@@ -82,7 +82,7 @@ func Test_start(t *testing.T) {
 	mc = getMockScanner()
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		errCh <- start(ctx, mc, leastPushSecond, pushBufferSize)
+		errCh <- Start(ctx, mc, leastPushSecond, pushBufferSize)
 	}()
 	cancel()
 	assert.NoError(t, <-errCh)

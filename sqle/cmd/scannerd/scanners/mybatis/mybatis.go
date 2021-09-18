@@ -117,7 +117,7 @@ func MybatisScanner(cfg *config.Config) error {
 		return err
 	}
 
-	client := scanner.NewSQLEClient(time.Second, cfg).WithToken(cfg.Token)
+	client := scanner.NewSQLEClient(time.Second, "", "").WithToken(cfg.Token)
 	err = client.UploadReq(scanner.FullUpload, cfg.AuditPlanName, sqlList)
 	if err != nil {
 		return err
