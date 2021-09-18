@@ -24,6 +24,8 @@ const (
 	DataInvalid   ErrorCode = 4013
 
 	DriverNotExist ErrorCode = 5001
+
+	FeatureNotImplemented ErrorCode = 7001
 )
 
 var (
@@ -57,4 +59,8 @@ func New(code ErrorCode, err error) error {
 		code: code,
 		err:  err,
 	}
+}
+
+func NewNotImplemented(feature string) *CodeError {
+	return &CodeError{code: FeatureNotImplemented, err: fmt.Errorf("Not avaliable feature: %v, it is only supported for enterprise edition", feature)}
 }
