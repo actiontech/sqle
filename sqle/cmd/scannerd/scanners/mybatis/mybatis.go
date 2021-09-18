@@ -11,9 +11,7 @@ import (
 	"time"
 
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
-	"github.com/actiontech/sqle/sqle/cmd/scannerd/config"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
-	"github.com/actiontech/sqle/sqle/cmd/scannerd/utils/parser"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 	"github.com/sirupsen/logrus"
@@ -111,60 +109,6 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	return mb.c.GetAuditReportReq(mb.apName, reportID)
 }
 
-func MybatisScanner(cfg *config.Config) error {
-	sqlList, err := PrepareSQL(cfg)
-	if err != nil {
-		return err
-	}
-
-	client := scanner.NewSQLEClient(time.Second, "", "").WithToken(cfg.Token)
-	err = client.UploadReq(scanner.FullUpload, cfg.AuditPlanName, sqlList)
-	if err != nil {
-		return err
-	}
-
-	reportID, err := client.TriggerAuditReq(cfg.AuditPlanName)
-	if err != nil {
-		return err
-	}
-
-	err = client.GetAuditReportReq(cfg.AuditPlanName, reportID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func PrepareSQL(cfg *config.Config) ([]scanner.AuditPlanSQLReq, error) {
-	allSQL, err := GetSQLFromPath(cfg.Dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// key=fingerPrint val=count
-	counterMap := make(map[string]uint, len(allSQL))
-
-	nodeList := make([]driver.Node, 0, len(allSQL))
-	for _, node := range allSQL {
-		counterMap[node.Fingerprint]++
-		if counterMap[node.Fingerprint] <= 1 {
-			nodeList = append(nodeList, node)
-		}
-	}
-
-	reqBody := make([]scanner.AuditPlanSQLReq, 0, len(nodeList))
-	for _, sql := range nodeList {
-		reqBody = append(reqBody, scanner.AuditPlanSQLReq{
-			Fingerprint:          sql.Fingerprint,
-			Counter:              fmt.Sprintf("%v", counterMap[sql.Fingerprint]),
-			LastReceiveText:      sql.Text,
-			LastReceiveTimestamp: time.Now().Format(time.RFC3339),
-		})
-	}
-
-	return reqBody, nil
-}
-
 func GetSQLFromPath(pathName string) (allSQL []driver.Node, err error) {
 	if !path.IsAbs(pathName) {
 		pwd, err := os.Getwd()
@@ -203,7 +147,7 @@ func GetSQLFromFile(file string) (r []driver.Node, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return parser.Parse(context.TODO(), sql)
+	return Parse(context.TODO(), sql)
 }
 
 func ReadFileContent(file string) (content string, err error) {
