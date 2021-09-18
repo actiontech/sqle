@@ -38,6 +38,7 @@ Acitontech Sqle
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
 cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
+cp %{_builddir}/%{buildsubdir}/sqle/bin/scannerd $RPM_BUILD_ROOT/usr/local/sqle/bin/scannerd
 cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
 cp -R %{_builddir}/%{buildsubdir}/sqle/ui $RPM_BUILD_ROOT/usr/local/sqle/ui
 
@@ -187,6 +188,7 @@ fi
 %files
 %defattr(-,root,root)
 /usr/local/sqle/bin/sqled
+/usr/local/sqle/bin/scannerd
 /usr/local/sqle/scripts/sqled.systemd
 /usr/local/sqle/scripts/sqled.initd
 /usr/local/sqle/scripts/pt-online-schema-change.template
