@@ -91,6 +91,8 @@ clean:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
 
 ###################################### RPM Build #####################################################
+override RPM_NAME = $(PROJECT_NAME)-$(EDITION)-$(VERSION).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
+
 pull_image:
 	$(DOCKER) pull $(DOCKER_IMAGE)
 
@@ -102,13 +104,12 @@ docker_rpm/sqle: pull_image docker_install
 	(rpmbuild --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' \
 	--define 'commit $(GIT_COMMIT)' --define 'os_version $(OS_VERSION)' \
 	--target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && \
-	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(PROJECT_NAME).$(EDITION).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
+	(cat /root/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-${VERSION}_$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(RPM_NAME)
 
 upload: upload/sqle
 
 upload/sqle:
-	curl -T $(shell pwd)/$(PROJECT_NAME).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm \
-	ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/qa/$(VERSION)/$(PROJECT_NAME)-$(VERSION).$(CUSTOMER).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm --ftp-create-dirs
+	curl --ftp-create-dirs -T $(shell pwd)/$(RPM_NAME) ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/$(EDITION)/qa/$(VERSION)/$(RPM_NAME)
 
 ###################################### docker start #####################################################
 docker_start: fill_ui_dir docker_rpm/sqle
