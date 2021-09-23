@@ -33,7 +33,7 @@ TEST_DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1
 
 ## Static Parameter, should not be overwrite
 PROJECT_NAME = sqle
-VERSION = 1.3.0
+VERSION = 9.9.9.9
 GOBIN = ${shell pwd}/bin
 PARSER_PATH   = ${shell pwd}/vendor/github.com/pingcap/parser
 
