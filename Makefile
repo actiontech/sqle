@@ -22,9 +22,6 @@ endif
 ## The docker registry to pull complier image, can be overwrite by: `make DOCKER_REGISTRY=10.0.0.1`
 DOCKER_REGISTRY ?= 10.186.18.20
 
-## The ftp host and user/pass used to upload rpm package, can be overwrite by: `make RELEASE_FTPD_HOST=ftp:ftp@10.186.18.21`
-RELEASE_FTPD_HOST ?= admin:ftpadmin@10.186.18.20
-
 ## Dynamic Parameter
 # The ftp host and user/pass used to upload rpm package, can be overwrite by: `make DOCKER_IMAGE=image:tag`
 DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-centos6
