@@ -376,10 +376,11 @@ func (a *Action) audit() error {
 	}
 
 	task.Status = model.TaskStatusAudited
+	task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 	if err = st.UpdateTask(task, map[string]interface{}{
 		"sql_type":  sqlType,
-		"pass_rate": utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4),
-		"status":    model.TaskStatusAudited,
+		"pass_rate": task.PassRate,
+		"status":    task.Status,
 	}); err != nil {
 		a.entry.Errorf("update task error:%v", err)
 		return err
