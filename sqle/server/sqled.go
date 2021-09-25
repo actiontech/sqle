@@ -344,41 +344,10 @@ func (a *action) audit() error {
 			normalCount += 1
 		}
 	}
-
-	var hasDDL bool
-	var hasDML bool
-	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := a.driver.Parse(context.TODO(), executeSQL.Content)
-		if err != nil {
-			a.entry.Error(err.Error())
-			continue
-		}
-		if len(nodes) != 1 {
-			a.entry.Errorf(driver.ErrNodesCountExceedOne.Error())
-			continue
-		}
-
-		switch nodes[0].Type {
-		case model.SQLTypeDDL:
-			hasDDL = true
-		case model.SQLTypeDML:
-			hasDML = true
-		}
-	}
-
-	var sqlType string
-	if hasDML && hasDDL {
-		sqlType = model.SQLTypeMulti
-	} else if hasDDL {
-		sqlType = model.SQLTypeDDL
-	} else if hasDML {
-		sqlType = model.SQLTypeDML
-	}
+	task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 
 	task.Status = model.TaskStatusAudited
-	task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 	if err = st.UpdateTask(task, map[string]interface{}{
-		"sql_type":  sqlType,
 		"pass_rate": task.PassRate,
 		"status":    task.Status,
 	}); err != nil {
