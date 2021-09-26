@@ -1,0 +1,53 @@
+name: CI (no build)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - main-ee
+      - release*
+      
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up repository
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          # Should be consistent with go.mod
+          go-version: '1.14'
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: v1.29
+
+          # If set to true then the action will use pre-installed Go
+          skip-go-installation: true
+
+          # Optional: golangci-lint command line arguments. 
+          # The config file has lower priority than command-line options.
+          args: --config=.golangci.yml
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up repository
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          # Should be consistent with go.mod
+          go-version: '1.14'
+      - name: Unit test
+        run: make test
