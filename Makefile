@@ -2,7 +2,7 @@
 override GIT_VERSION    		= $(shell git rev-parse --abbrev-ref HEAD)${CUSTOM} $(shell git rev-parse HEAD)
 override GIT_COMMIT     		= $(shell git rev-parse HEAD)
 override PROJECT_NAME 			= sqle
-override PROJECT_VERSION 		= $(shell git rev-parse --abbrev-ref HEAD | tr "/" "\n" | tail -1)
+override PROJECT_VERSION 		= $(shell git rev-parse --abbrev-ref HEAD | tr "/" "\n" | tail -1| tr "\-ee" "\n"|head -1)
 override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
 override RPM_BUILD_BIN  		= $(shell type -p rpmbuild 2>/dev/null)
 override DOCKER         		= $(shell which docker)
