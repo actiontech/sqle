@@ -62,5 +62,5 @@ func New(code ErrorCode, err error) error {
 }
 
 func NewNotImplemented(feature string) *CodeError {
-	return &CodeError{code: FeatureNotImplemented, err: fmt.Errorf("Not avaliable feature: %v, it is only supported for enterprise edition", feature)}
+	return &CodeError{code: FeatureNotImplemented, err: fmt.Errorf("Not available feature: %v, it is only supported for enterprise edition", feature)}
 }

@@ -41,7 +41,7 @@ func InitMockStorage(db *sql.DB) {
 	// Custom NowFunc solve this problem:
 	// 	When mock SQL which will update CreateAt/UpdateAt fields,
 	// 	GORM will auto-update this field by NowFunc(when is is empty),
-	// 	then it will never equal to expection(always later than expection).
+	// 	then it will never equal to our expectation(always later than our expectation).
 	gorm.NowFunc = func() time.Time {
 		return MockTime
 	}
