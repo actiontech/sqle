@@ -38,6 +38,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 		xmlDir: params.XMLDir,
 		apName: params.APName,
 		l:      l,
+		c:      c,
 	}, nil
 }
 
