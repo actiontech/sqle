@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
@@ -264,13 +263,14 @@ func (i *Inspect) Context() *Context {
 	return i.Ctx
 }
 
+// todo: remove
 func (i *Inspect) SqlType() string {
 	hasDML := i.counterDML > 0
 	hasDDL := i.counterDDL > 0
 
-	if hasDML && hasDDL {
-		return model.SQLTypeMulti
-	}
+	// if hasDML && hasDDL {
+	// 	return model.SQLTypeMulti
+	// }
 
 	if hasDML {
 		return model.SQLTypeDML
@@ -303,13 +303,14 @@ func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) erro
 	return nil
 }
 
+// todo: remove
 func (i *Inspect) Do() error {
 	defer i.closeDbConn()
 
-	if i.SqlType() == model.SQLTypeMulti {
-		i.Logger().Error(errors.ErrSQLTypeConflict)
-		return errors.ErrSQLTypeConflict
-	}
+	// if i.SqlType() == model.SQLTypeMulti {
+	// 	i.Logger().Error(errors.ErrSQLTypeConflict)
+	// 	return errors.ErrSQLTypeConflict
+	// }
 	for idx, node := range i.SqlArray {
 		err := i.SqlAction[idx](node)
 		if err != nil {

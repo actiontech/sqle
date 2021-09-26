@@ -13,9 +13,8 @@ import (
 )
 
 const (
-	SQLTypeDML   = "dml"
-	SQLTypeDDL   = "ddl"
-	SQLTypeMulti = "dml&ddl"
+	SQLTypeDML = "dml"
+	SQLTypeDDL = "ddl"
 )
 
 const (
@@ -40,7 +39,6 @@ type Task struct {
 	InstanceId   uint    `json:"instance_id"`
 	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
 	PassRate     float64 `json:"pass_rate"`
-	SQLType      string  `json:"sql_type" gorm:"column:sql_type"`
 	SQLSource    string  `json:"sql_source" gorm:"column:sql_source"`
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
@@ -319,7 +317,6 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 		InstanceId: task.InstanceId,
 		Schema:     task.Schema,
 		PassRate:   1,
-		SQLType:    SQLTypeDDL,
 		Status:     TaskStatusAudited,
 	}).Preload("Instance").Preload("ExecuteSQLs").Find(&tasks).Error
 	return tasks, errors.New(errors.ConnectStorageError, err)
