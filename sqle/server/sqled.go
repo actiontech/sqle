@@ -34,14 +34,14 @@ type Sqled struct {
 	// and delete it after execution.
 	currentTask map[string]struct{}
 	// queue is a chan used to receive tasks.
-	queue chan *Action
+	queue chan *action
 }
 
 func InitSqled(exit chan struct{}) {
 	sqled = &Sqled{
 		exit:        exit,
 		currentTask: map[string]struct{}{},
-		queue:       make(chan *Action, 1024),
+		queue:       make(chan *action, 1024),
 	}
 	sqled.Start()
 }
@@ -55,14 +55,14 @@ func (s *Sqled) HasTask(taskId string) bool {
 
 // addTask receive taskId and action type, using taskId and typ to create an action;
 // action will be validated, and sent to Sqled.queue.
-func (s *Sqled) addTask(taskId string, typ int) (*Action, error) {
+func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	var err error
 	var d driver.Driver
 	entry := log.NewEntry().WithField("task_id", taskId)
-	action := &Action{
+	action := &action{
 		typ:   typ,
 		entry: entry,
-		Done:  make(chan struct{}),
+		done:  make(chan struct{}),
 	}
 
 	s.Lock()
@@ -115,8 +115,8 @@ func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	<-action.Done
-	return action.task, action.Error
+	<-action.done
+	return action.task, action.err
 }
 
 func (s *Sqled) Start() {
@@ -136,7 +136,7 @@ func (s *Sqled) taskLoop() {
 	}
 }
 
-func (s *Sqled) do(action *Action) error {
+func (s *Sqled) do(action *action) error {
 	var err error
 	switch action.typ {
 	case ActionTypeAudit:
@@ -147,7 +147,7 @@ func (s *Sqled) do(action *Action) error {
 		err = action.rollback()
 	}
 	if err != nil {
-		action.Error = err
+		action.err = err
 	}
 
 	action.driver.Close(context.TODO())
@@ -158,7 +158,7 @@ func (s *Sqled) do(action *Action) error {
 	s.Unlock()
 
 	select {
-	case action.Done <- struct{}{}:
+	case action.done <- struct{}{}:
 	default:
 	}
 	return err
@@ -172,7 +172,7 @@ const (
 
 // Action is an action for the task;
 // when you want to execute a task, you can define an action whose type is rollback.
-type Action struct {
+type action struct {
 	sync.Mutex
 
 	// driver is interface which communicate with specify instance.
@@ -182,9 +182,9 @@ type Action struct {
 	entry *logrus.Entry
 
 	// typ is action type.
-	typ   int
-	Error error
-	Done  chan struct{}
+	typ  int
+	err  error
+	done chan struct{}
 }
 
 var (
@@ -196,7 +196,7 @@ var (
 )
 
 // validation validate whether task can do action type(a.typ) or not.
-func (a *Action) validation(task *model.Task) error {
+func (a *action) validation(task *model.Task) error {
 	switch a.typ {
 	case ActionTypeAudit:
 		// audit sql allowed at all times
@@ -222,7 +222,7 @@ func (a *Action) validation(task *model.Task) error {
 	return nil
 }
 
-func (a *Action) audit() error {
+func (a *action) audit() error {
 	st := model.GetStorage()
 
 	task := a.task
@@ -344,42 +344,12 @@ func (a *Action) audit() error {
 			normalCount += 1
 		}
 	}
-
-	var hasDDL bool
-	var hasDML bool
-	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := a.driver.Parse(context.TODO(), executeSQL.Content)
-		if err != nil {
-			a.entry.Error(err.Error())
-			continue
-		}
-		if len(nodes) != 1 {
-			a.entry.Errorf(driver.ErrNodesCountExceedOne.Error())
-			continue
-		}
-
-		switch nodes[0].Type {
-		case model.SQLTypeDDL:
-			hasDDL = true
-		case model.SQLTypeDML:
-			hasDML = true
-		}
-	}
-
-	var sqlType string
-	if hasDML && hasDDL {
-		sqlType = model.SQLTypeMulti
-	} else if hasDDL {
-		sqlType = model.SQLTypeDDL
-	} else if hasDML {
-		sqlType = model.SQLTypeDML
-	}
+	task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
 
 	task.Status = model.TaskStatusAudited
 	if err = st.UpdateTask(task, map[string]interface{}{
-		"sql_type":  sqlType,
-		"pass_rate": utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4),
-		"status":    model.TaskStatusAudited,
+		"pass_rate": task.PassRate,
+		"status":    task.Status,
 	}); err != nil {
 		a.entry.Errorf("update task error:%v", err)
 		return err
@@ -387,7 +357,7 @@ func (a *Action) audit() error {
 	return nil
 }
 
-func (a *Action) execute() (err error) {
+func (a *action) execute() (err error) {
 	task := a.task
 
 	a.entry.Info("start execution...")
@@ -446,7 +416,7 @@ UpdateTask:
 }
 
 // execSQL execute SQL and update SQL's executed status to storage.
-func (a *Action) execSQL(executeSQL *model.ExecuteSQL) error {
+func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 	st := model.GetStorage()
 
 	if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
@@ -468,7 +438,7 @@ func (a *Action) execSQL(executeSQL *model.ExecuteSQL) error {
 }
 
 // execSQLs execute SQLs and update SQLs' executed status to storage.
-func (a *Action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
+func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 	st := model.GetStorage()
 
 	for _, executeSQL := range executeSQLs {
@@ -499,7 +469,7 @@ func (a *Action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 	return st.UpdateExecuteSQLs(executeSQLs)
 }
 
-func (a *Action) rollback() (err error) {
+func (a *action) rollback() (err error) {
 	task := a.task
 	a.entry.Info("start rollback SQL")
 
