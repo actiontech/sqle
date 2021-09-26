@@ -20,7 +20,7 @@ jobs:
       uses: aormsby/Fork-Sync-With-Upstream-action@v3.0
       with:
         target_sync_branch: main
-        target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+        target_repo_token: ${{ secrets.UPSTREAM_REPO_SECRET }}
         upstream_sync_branch: main
         upstream_sync_repo: actiontech/sqle
         upstream_repo_access_token: ${{ secrets.UPSTREAM_REPO_SECRET }}
