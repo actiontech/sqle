@@ -24,6 +24,9 @@ type MyBatis struct {
 	needTrigger bool
 	sqls        []scanners.SQL
 
+	allSQL []driver.Node
+	getAll chan struct{}
+
 	apName string
 	xmlDir string
 }
@@ -39,10 +42,18 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 		apName: params.APName,
 		l:      l,
 		c:      c,
+		getAll: make(chan struct{}),
 	}, nil
 }
 
 func (mb *MyBatis) Run(ctx context.Context) error {
+	sqls, err := GetSQLFromPath(mb.xmlDir)
+	if err != nil {
+		return err
+	}
+
+	mb.allSQL = sqls
+	close(mb.getAll)
 	return nil
 }
 
@@ -50,21 +61,16 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 	// todo: channel size configurable
 	sqlCh := make(chan scanners.SQL, 10240)
 
-	sqls, err := GetSQLFromPath(mb.xmlDir)
-	if err != nil {
-		mb.l.Errorf("parse sql error:%v", err)
-		close(sqlCh)
-		return sqlCh
-	}
-
 	go func() {
-		for _, sql := range sqls {
+		<-mb.getAll
+		for _, sql := range mb.allSQL {
 			sqlCh <- scanners.SQL{
 				Fingerprint: sql.Fingerprint,
 				RawText:     sql.Text,
 			}
 		}
 		mb.needTrigger = true
+		close(sqlCh)
 	}()
 	return sqlCh
 }
