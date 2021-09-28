@@ -1,0 +1,51 @@
+version: '3.1'
+
+services:
+  sqle-server:
+    image: ${SQLE_IMAGE:-actiontech/sqle-ce:latest}
+    container_name: sqle-server
+    hostname: sqle-server
+    privileged: true
+    stdin_open: true
+    tty: true
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - sqle_net
+    ports:
+      - 10000:10000
+    environment:
+      - MYSQL_HOST=20.20.20.2
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=mysqlpass
+      - MYSQL_SCHEMA=sqle
+    depends_on:
+      - mysql-for-sqle
+    command: bash -c "sleep 10 && /opt/start.sh"
+
+  mysql-for-sqle:
+    image: mysql:5.7
+    container_name: mysql-for-sqle
+    hostname: mysql-for-sqle
+    privileged: true
+    stdin_open: true
+    tty: true
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      sqle_net:
+        ipv4_address: 20.20.20.2
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysqlpass
+      - MYSQL_DATABASE=sqle
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+
+networks:
+  sqle_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 20.20.20.0/24

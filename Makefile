@@ -108,13 +108,18 @@ upload: upload/sqle
 upload/sqle:
 	curl --ftp-create-dirs -T $(shell pwd)/$(RPM_NAME) ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/$(EDITION)/qa/$(PROJECT_VERSION)/$(RPM_NAME)
 
-###################################### docker start #####################################################
-docker_start: fill_ui_dir docker_rpm/sqle
-	cd ./docker-compose && docker-compose up -d
-	./docker-compose/install.sh
+###################################### docker #####################################################
+override SQLE_DOCKER_IMAGE ?= actiontech/$(PROJECT_NAME)-$(EDITION):$(PROJECT_VERSION)
+
+docker_image: fill_ui_dir docker_rpm/sqle
+	cp $(shell pwd)/$(RPM_NAME) $(shell pwd)/sqle.rpm
+	$(DOCKER) build -t $(SQLE_DOCKER_IMAGE) -f ./docker-images/sqle/Dockerfile .
+
+docker_start:
+	cd ./docker-images/sqle && SQLE_IMAGE=$(SQLE_DOCKER_IMAGE) docker-compose up -d
 
 docker_stop:
-	cd ./docker-compose && docker-compose down
+	cd ./docker-images/sqle && docker-compose down
 
 ###################################### ui #####################################################
 fill_ui_dir:
