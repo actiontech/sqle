@@ -29,6 +29,7 @@ DOCKER_REGISTRY ?= 10.186.18.20
 DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-centos6
 DOTNET_DOCKER_IMAGE ?= docker-registry:5000/actiontech/universe-compiler-dotnetcore2.1
 TEST_DOCKER_IMAGE  ?= docker-registry:5000/actiontech/universe-compiler-go1.14.1-ubuntu-with-docker
+SQLE_DOCKER_IMAGE ?= actiontech/sqle
 
 ## Static Parameter, should not be overwrite
 GOBIN = ${shell pwd}/bin
@@ -115,6 +116,11 @@ docker_start: fill_ui_dir docker_rpm/sqle
 
 docker_stop:
 	cd ./docker-compose && docker-compose down
+
+###################################### docker image #####################################################
+docker_image:
+	cp $(shell pwd)/$(RPM_NAME) $(shell pwd)/sqle.rpm
+	$(DOCKER) build -t $(SQLE_DOCKER_IMAGE):$(PROJECT_VERSION) -f ./docker-images/sqle/Dockerfile .
 
 ###################################### ui #####################################################
 fill_ui_dir:
