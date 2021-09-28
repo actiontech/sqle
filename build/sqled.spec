@@ -106,6 +106,9 @@ server:
   auto_migrate_table: true
   debug_log: false
   log_path: './logs'
+  enable_https: false
+  cert_file_path: './etc/cert.pem'
+  key_file_path: './etc/key.pem'
  db_config:
   mysql_cnf:
    mysql_host: '127.0.0.1'
