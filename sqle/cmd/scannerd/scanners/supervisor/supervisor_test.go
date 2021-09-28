@@ -15,7 +15,10 @@ type mockScanner struct {
 	isRunning bool
 	testSQLCh chan scanners.SQL
 
-	uploadSQLCnt int
+	uploadSQLCnt   int
+	generateSQLCnt int
+
+	runFailed bool
 }
 
 func getMockScanner() *mockScanner {
@@ -24,15 +27,26 @@ func getMockScanner() *mockScanner {
 	}
 }
 
-func (mc *mockScanner) generateSQL(cnt int) {
-	for i := 0; i < cnt; i++ {
+func (mc *mockScanner) Run(ctx context.Context) error {
+	if mc.runFailed {
+		return fmt.Errorf("mock scanner run failed")
+	}
+
+	mc.isRunning = true
+
+	for i := 0; i < mc.generateSQLCnt; i++ {
 		mc.testSQLCh <- scanners.SQL{RawText: fmt.Sprintf("select * from t1 where id = %v", i)}
 	}
-}
 
-func (mc *mockScanner) Run(ctx context.Context) error {
-	mc.isRunning = true
-	return nil
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
 
 func (mc *mockScanner) SQLs() <-chan scanners.SQL {
@@ -58,10 +72,10 @@ func Test_start(t *testing.T) {
 	pushBufferSize := 1024
 
 	mc := getMockScanner()
+	mc.generateSQLCnt = pushBufferSize / 2
 	go func() {
 		errCh <- Start(context.TODO(), mc, leastPushSecond, pushBufferSize)
 	}()
-	mc.generateSQL(pushBufferSize / 2)
 	time.Sleep(time.Duration(leastPushSecond*2) * time.Second)
 	assert.True(t, mc.isRunning)
 	close(mc.testSQLCh)
@@ -69,10 +83,10 @@ func Test_start(t *testing.T) {
 	assert.Equal(t, pushBufferSize/2, mc.uploadSQLCnt)
 
 	mc = getMockScanner()
+	mc.generateSQLCnt = pushBufferSize * 2
 	go func() {
 		errCh <- Start(context.TODO(), mc, leastPushSecond, pushBufferSize)
 	}()
-	mc.generateSQL(pushBufferSize * 2)
 	time.Sleep(time.Duration(leastPushSecond*2) * time.Second)
 	assert.True(t, mc.isRunning)
 	close(mc.testSQLCh)
@@ -86,4 +100,9 @@ func Test_start(t *testing.T) {
 	}()
 	cancel()
 	assert.NoError(t, <-errCh)
+
+	mc = getMockScanner()
+	mc.runFailed = true
+	err := Start(context.TODO(), mc, leastPushSecond, pushBufferSize)
+	assert.Error(t, err)
 }
