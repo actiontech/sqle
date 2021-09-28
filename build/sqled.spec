@@ -103,7 +103,7 @@ cat > $RPM_INSTALL_PREFIX/etc/sqled.yml.template<<EOF
 server:
  sqle_config:
   server_port: 10000
-  auto_migrate_table: false
+  auto_migrate_table: true
   debug_log: false
   log_path: './logs'
  db_config:
