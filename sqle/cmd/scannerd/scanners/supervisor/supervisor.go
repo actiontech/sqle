@@ -12,8 +12,10 @@ import (
 
 func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushBufferSize int) error {
 	runErrCh := make(chan error)
+	runCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	go func() {
-		err := scanner.Run(ctx)
+		err := scanner.Run(runCtx)
 		runErrCh <- err
 	}()
 
