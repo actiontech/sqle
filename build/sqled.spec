@@ -116,9 +116,6 @@ server:
    mysql_user: 'root'
    mysql_password: 'pass'
    mysql_schema: 'sqle'
-  sql_server_cnf:
-   sql_server_host: '127.0.0.1'
-   sql_server_port: '10001'
 EOF
 
 #chown
