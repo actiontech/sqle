@@ -54,6 +54,8 @@ func (mb *MyBatis) Run(ctx context.Context) error {
 
 	mb.allSQL = sqls
 	close(mb.getAll)
+
+	<-ctx.Done()
 	return nil
 }
 
