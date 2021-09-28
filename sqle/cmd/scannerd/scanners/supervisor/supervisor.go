@@ -11,7 +11,12 @@ import (
 )
 
 func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushBufferSize int) error {
-	go scanner.Run(ctx)
+	runErrCh := make(chan error)
+	go func() {
+		err := scanner.Run(ctx)
+		runErrCh <- err
+	}()
+
 	logrus.StandardLogger().Infoln("scanner started...")
 
 	t := time.NewTicker(time.Second * time.Duration(leastPushSecond))
@@ -21,6 +26,9 @@ func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushB
 	batch := make([]scanners.SQL, 0, pushBufferSize)
 	for {
 		select {
+		case err := <-runErrCh:
+			return err
+
 		case <-ctx.Done():
 			logrus.StandardLogger().Infoln("context done, exited")
 			return nil
