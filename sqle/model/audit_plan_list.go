@@ -87,6 +87,7 @@ FROM audit_plan_sqls
 JOIN audit_plans ON audit_plans.id = audit_plan_sqls.audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
+AND audit_plans.deleted_at IS NULL
 AND audit_plans.name = :audit_plan_name
 
 {{ end }}
@@ -134,6 +135,7 @@ FROM audit_plan_reports
 JOIN audit_plans ON audit_plans.id = audit_plan_reports.audit_plan_id
 
 WHERE audit_plan_reports.deleted_at IS NULL
+AND audit_plans.deleted_at IS NULL
 AND audit_plans.name = :audit_plan_name
 
 {{ end }}
