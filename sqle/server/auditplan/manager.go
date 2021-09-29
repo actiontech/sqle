@@ -31,17 +31,21 @@ func InitManager(s *model.Storage) chan struct{} {
 		persist: s,
 		logger:  log.NewEntry(),
 	}
+
 	err := manager.start()
 	if err != nil {
 		panic(err)
 	}
+
 	exitCh := make(chan struct{})
+
 	go func() {
 		select {
 		case <-exitCh:
 			manager.stop()
 		}
 	}()
+
 	return exitCh
 }
 
@@ -70,6 +74,7 @@ func (mgr *Manager) start() error {
 
 	mgr.scheduler.start()
 	mgr.logger.Infoln("audit plan manager started")
+
 	return mgr.loadAuditPlans()
 }
 
@@ -91,6 +96,7 @@ func (mgr *Manager) AddStaticAuditPlan(name, cronExp, dbType, currentUserName st
 		CronExpression: cronExp,
 		DBType:         dbType,
 	}
+
 	return mgr.addAuditPlan(ap, currentUserName)
 }
 
@@ -104,6 +110,7 @@ func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDat
 		InstanceName:     instanceName,
 		InstanceDatabase: instanceDatabase,
 	}
+
 	return mgr.addAuditPlan(ap, currentUserName)
 }
 
@@ -115,35 +122,37 @@ func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) er
 	user, exist, err := mgr.persist.GetUserByName(currentUserName)
 	if !exist {
 		return gorm.ErrRecordNotFound
-	}
-	if err != nil {
+	} else if err != nil {
 		return err
 	}
-	ap.CreateUserID = user.ID
 
 	j := utils.NewJWT([]byte(utils.JWTSecret))
+
 	t, err := j.CreateToken(currentUserName, time.Now().Add(time.Hour*24*365).Unix(),
 		utils.WithAuditPlanName(ap.Name))
 	if err != nil {
 		return err
 	}
-	ap.Token = t
 
 	if ap.InstanceName != "" {
 		instance, exist, err := mgr.persist.GetInstanceByName(ap.InstanceName)
 		if !exist {
 			return gorm.ErrRecordNotFound
-		}
-		if err != nil {
+		} else if err != nil {
 			return err
 		}
+
 		ap.DBType = instance.DbType
 	}
+
+	ap.Token = t
+	ap.CreateUserID = user.ID
 
 	err = mgr.persist.Save(ap)
 	if err != nil {
 		return err
 	}
+
 	return mgr.addAuditPlansToScheduler([]*model.AuditPlan{ap})
 }
 
@@ -159,14 +168,17 @@ func (mgr *Manager) UpdateAuditPlan(name string, attrs map[string]interface{}) e
 	if err != nil {
 		return err
 	}
+
 	err = mgr.scheduler.removeJob(name)
 	if err != nil {
 		return err
 	}
+
 	ap, _, err := mgr.persist.GetAuditPlanByName(name)
 	if err != nil {
 		return err
 	}
+
 	return mgr.scheduler.addJob(ap, func() {
 		mgr.runJob(ap)
 	})
@@ -184,10 +196,12 @@ func (mgr *Manager) DeleteAuditPlan(name string) error {
 	if err != nil {
 		return err
 	}
+
 	err = mgr.persist.Delete(ap)
 	if err != nil {
 		return err
 	}
+
 	return mgr.scheduler.removeJob(name)
 }
 
@@ -199,6 +213,7 @@ func (mgr *Manager) TriggerAuditPlan(name string) (*model.AuditPlanReport, error
 	if err != nil {
 		return nil, err
 	}
+
 	return mgr.runJob(ap), nil
 }
 
@@ -207,6 +222,7 @@ func (mgr *Manager) loadAuditPlans() error {
 	if err != nil {
 		return err
 	}
+
 	return mgr.addAuditPlansToScheduler(aps)
 }
 
@@ -231,6 +247,7 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 		mgr.logger.WithField("name", ap.Name).Errorf("get audit plan SQLs error:%v\n", err)
 		return nil
 	}
+
 	for i, sql := range auditPlanSQLs {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
@@ -239,6 +256,7 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 			},
 		})
 	}
+
 	err = mgr.persist.Save(task)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("save audit plan task error:%v\n", err)
@@ -264,12 +282,14 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 		mgr.logger.WithField("name", ap.Name).Errorf("save audit plan report error:%v\n", err)
 		return nil
 	}
+
 	return auditPlanReport
 }
 
 func (mgr *Manager) addAuditPlansToScheduler(aps []*model.AuditPlan) error {
 	for _, v := range aps {
 		ap := v
+
 		err := mgr.scheduler.addJob(ap, func() {
 			mgr.runJob(ap)
 		})
@@ -282,6 +302,7 @@ func (mgr *Manager) addAuditPlansToScheduler(aps []*model.AuditPlan) error {
 			"cron_expression": ap.CronExpression,
 		}).Infoln("audit plan added")
 	}
+
 	return nil
 }
 
@@ -302,6 +323,7 @@ func (s *scheduler) removeJob(auditPlanName string) error {
 
 	s.cron.Remove(entryID)
 	delete(s.entryIDs, auditPlanName)
+
 	return nil
 }
 
@@ -315,7 +337,9 @@ func (s *scheduler) addJob(ap *model.AuditPlan, do func()) error {
 	if err != nil {
 		return err
 	}
+
 	s.entryIDs[ap.Name] = entryID
+
 	return nil
 }
 
