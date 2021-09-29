@@ -86,6 +86,14 @@ func (s *Storage) SaveAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error {
 		return err
 	}
 
+	err = s.db.Unscoped().
+		Model(AuditPlanSQL{}).
+		Where("audit_plan_id = ?", ap.ID).
+		Delete(&AuditPlanSQL{}).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+
 	raw, args := getBatchInsertRawSQL(ap, sqls)
 	raw += " ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);"
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)

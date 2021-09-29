@@ -136,16 +136,26 @@ func TestStorage_SaveAuditPlanSQLs(t *testing.T) {
 	mockTime := "mock time"
 	sqls := []*AuditPlanSQL{
 		{Fingerprint: "select * from t1 where id = ?", LastSQL: "select * from t1 where id = 1", Counter: 1, LastReceiveTimestamp: mockTime},
-		{Fingerprint: "select * from t1 where name = ?", LastSQL: "select * from t1 where name = 1", Counter: 1, LastReceiveTimestamp: mockTime},
 	}
+
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs(ap.Name).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(ap.ID, ap.Name))
-	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);").
-		WithArgs().
+
+	mock.ExpectBegin()
+	// expect hard delete
+	mock.ExpectExec("DELETE FROM `audit_plan_sqls` WHERE (audit_plan_id = ?)").
+		WithArgs(ap.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);").
+		WithArgs(ap.ID, sqls[0].Fingerprint, sqls[0].Counter, sqls[0].LastSQL, sqls[0].LastReceiveTimestamp).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
 	err = GetStorage().SaveAuditPlanSQLs(ap.Name, sqls)
 	assert.NoError(t, err)
+
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
 }
