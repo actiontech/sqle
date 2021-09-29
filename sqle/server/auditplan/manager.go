@@ -207,6 +207,8 @@ func (mgr *Manager) DeleteAuditPlan(name string) error {
 	return mgr.scheduler.removeJob(name)
 }
 
+var errNoSQLInAuditPlan = errors.New("there is no SQLs in audit plan")
+
 func (mgr *Manager) TriggerAuditPlan(name string) (*model.AuditPlanReport, error) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
@@ -216,7 +218,12 @@ func (mgr *Manager) TriggerAuditPlan(name string) (*model.AuditPlanReport, error
 		return nil, err
 	}
 
-	return mgr.runJob(ap), nil
+	report := mgr.runJob(ap)
+	if report == nil {
+		return nil, errNoSQLInAuditPlan
+	}
+
+	return report, nil
 }
 
 func (mgr *Manager) loadAuditPlans() error {
@@ -228,16 +235,10 @@ func (mgr *Manager) loadAuditPlans() error {
 	return mgr.addAuditPlansToScheduler(aps)
 }
 
+// TODO: runJob is a async task, it's report should send by channel.
 func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
-	instance, _, err := mgr.persist.GetInstanceByName(ap.InstanceName)
-	if err != nil {
-		mgr.logger.WithField("name", ap.Name).Errorf("get instance error:%v\n", err)
-		return nil
-	}
-
 	task := &model.Task{
 		Schema:       ap.InstanceDatabase,
-		InstanceId:   instance.ID,
 		CreateUserId: ap.CreateUserID,
 		SQLSource:    model.TaskSQLSourceFromAuditPlan,
 		DBType:       ap.DBType,
@@ -250,6 +251,11 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 		return nil
 	}
 
+	if len(auditPlanSQLs) == 0 {
+		mgr.logger.WithField("name", ap.Name).Warnf("skip audit, %v", errNoSQLInAuditPlan)
+		return nil
+	}
+
 	for i, sql := range auditPlanSQLs {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
@@ -258,6 +264,14 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 			},
 		})
 	}
+
+	instance, _, err := mgr.persist.GetInstanceByName(ap.InstanceName)
+	if err != nil {
+		mgr.logger.WithField("name", ap.Name).Errorf("get instance error:%v\n", err)
+		return nil
+	}
+
+	task.InstanceId = instance.ID
 
 	err = mgr.persist.Save(task)
 	if err != nil {
