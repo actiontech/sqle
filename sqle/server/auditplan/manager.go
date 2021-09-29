@@ -16,6 +16,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var tokenExpire = 365 * 24 * time.Hour
+
 var ErrAuditPlanNotExist = errors.New("audit plan not exist")
 
 var ErrAuditPlanExisted = errors.New("audit plan existed")
@@ -128,7 +130,7 @@ func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) er
 
 	j := utils.NewJWT([]byte(utils.JWTSecret))
 
-	t, err := j.CreateToken(currentUserName, time.Now().Add(time.Hour*24*365).Unix(),
+	t, err := j.CreateToken(currentUserName, time.Now().Add(tokenExpire).Unix(),
 		utils.WithAuditPlanName(ap.Name))
 	if err != nil {
 		return err
