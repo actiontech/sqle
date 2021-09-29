@@ -11,13 +11,13 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/jinzhu/gorm"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
 var ErrAuditPlanNotExist = errors.New("audit plan not exist")
+
 var ErrAuditPlanExisted = errors.New("audit plan existed")
 
 var manager *Manager
@@ -268,16 +268,19 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 }
 
 func (mgr *Manager) addAuditPlansToScheduler(aps []*model.AuditPlan) error {
-	for _, ap := range aps {
+	for _, v := range aps {
+		ap := v
 		err := mgr.scheduler.addJob(ap, func() {
 			mgr.runJob(ap)
 		})
 		if err != nil {
 			return err
 		}
+
 		mgr.logger.WithFields(logrus.Fields{
 			"name":            ap.Name,
-			"cron_expression": ap.CronExpression}).Infoln("audit plan added")
+			"cron_expression": ap.CronExpression,
+		}).Infoln("audit plan added")
 	}
 	return nil
 }
