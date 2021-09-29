@@ -2,6 +2,7 @@ package auditplan
 
 import (
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -24,6 +25,7 @@ func getGivenBeforeAddAP() (*model.AuditPlan, *model.User, *model.Instance, stri
 		Name: model.DefaultAdminUser,
 	}
 	ap := &model.AuditPlan{
+		Model:          model.Model{ID: 1},
 		Name:           "test_audit_plan",
 		CronExpression: "*/1 * * * *",
 		DBType:         model.DBTypeMySQL,
@@ -237,4 +239,36 @@ func TestInitManager(t *testing.T) {
 	InitManager(storage)
 	manager = GetManager()
 	assertManager(t, manager, 1)
+}
+
+func TestManager_runJob(t *testing.T) {
+	mockDB, mockHandle, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
+	model.InitMockStorage(mockDB)
+
+	storage := model.GetStorage()
+
+	mockHandle.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `audit_plans`")).
+		WillReturnRows(sqlmock.NewRows([]string{"name", "cron_expression"}))
+	exitCh := InitManager(storage)
+	err = mockHandle.ExpectationsWereMet()
+	assert.NoError(t, err)
+	defer func() {
+		exitCh <- struct{}{}
+	}()
+
+	// no SQL in audit plan, runJob should skip audit.
+	m := GetManager()
+	ap, _, _, _ := getGivenBeforeAddAP()
+	mockHandle.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `audit_plans`")).
+		WithArgs(ap.Name).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(ap.ID))
+	mockHandle.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `audit_plan_sqls`")).
+		WithArgs(ap.ID).
+		WillReturnRows(sqlmock.NewRows([]string{}))
+	report := m.runJob(ap)
+	err = mockHandle.ExpectationsWereMet()
+	assert.NoError(t, err)
+	assert.Nil(t, report)
 }
