@@ -74,6 +74,7 @@ func TestStorage_GetAuditPlanSQLsByReq(t *testing.T) {
 	FROM audit_plan_sqls
 	JOIN audit_plans ON audit_plans.id = audit_plan_sqls.audit_plan_id
 	WHERE audit_plan_sqls.deleted_at IS NULL
+	AND  audit_plans.deleted_at IS NULL
 	AND audit_plans.name = ?
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -103,6 +104,7 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 	FROM audit_plan_reports
 	JOIN audit_plans ON audit_plans.id = audit_plan_reports.audit_plan_id
 	WHERE audit_plan_reports.deleted_at IS NULL
+	AND  audit_plans.deleted_at IS NULL
 	AND audit_plans.name = ?
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
