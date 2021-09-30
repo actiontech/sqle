@@ -14,7 +14,7 @@ SQLE is an SQL audit platform. SQLE 是一个支持多场景，原生支持 MySQ
 * QQ group: 637150065
 * Subscribe "Actiontech Open Source Community" on WeChat to get further information on *SQLE*:
 
-  ![QR code.png](./misc/action-opensource-community.png)
+  ![QR code.png](./QR_code.png)
 
 ## Contact us
 *SQLE* has enterprise support plan, you may contact our sales team:
