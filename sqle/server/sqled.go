@@ -404,13 +404,15 @@ outerLoop:
 	}
 
 	taskStatus := model.TaskStatusExecuteSucceeded
+
 	if err != nil {
 		taskStatus = model.TaskStatusExecuteFailed
-	}
-	for _, sql := range task.ExecuteSQLs {
-		if sql.ExecStatus == model.SQLExecuteStatusFailed {
-			taskStatus = model.TaskStatusExecuteFailed
-			break
+	} else {
+		for _, sql := range task.ExecuteSQLs {
+			if sql.ExecStatus == model.SQLExecuteStatusFailed {
+				taskStatus = model.TaskStatusExecuteFailed
+				break
+			}
 		}
 	}
 
