@@ -93,35 +93,7 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// func TestStorage_UpdateAuditPlanByName(t *testing.T) {
-// 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-// 	assert.NoError(t, err)
-// 	initMockStorage(mockDB)
-// 	mockAuditPlanRow := AuditPlan{
-// 		Model:            Model{ID: 1},
-// 		Name:             "audit_plan_for_java_repo1",
-// 		CronExpression:   "* * * * *",
-// 		InstanceName:     "inst1",
-// 		InstanceDatabase: "db_1"}
-
-// 	updateTime := time.Now()
-// 	mock.ExpectExec("UPDATE `audit_plans` SET `cron_expression` = ?, `instance_database` = ?, `instance_name` = ?, `updated_at` = ? WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
-// 		WithArgs("* */2 * * *", "db_2", "inst2", updateTime, "audit_plan_for_java_repo1").
-// 		WillReturnResult(sqlmock.NewResult(1, 1))
-// 	mock.ExpectClose()
-// 	updateAttrs := map[string]interface{}{
-// 		"cron_expression":   "* */2 * * *",
-// 		"updated_at":        updateTime,
-// 		"instance_name":     "inst2",
-// 		"instance_database": "db_2"}
-// 	err = GetStorage().UpdateAuditPlanByName(mockAuditPlanRow.Name, updateAttrs)
-// 	assert.NoError(t, err)
-// 	mockDB.Close()
-// 	err = mock.ExpectationsWereMet()
-// 	assert.NoError(t, err)
-// }
-
-func TestStorage_SaveAuditPlanSQLs(t *testing.T) {
+func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
@@ -149,11 +121,11 @@ func TestStorage_SaveAuditPlanSQLs(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`), `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);").
+	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES (?, ?, ?, ?, ?) ;").
 		WithArgs(ap.ID, sqls[0].Fingerprint, sqls[0].Counter, sqls[0].LastSQL, sqls[0].LastReceiveTimestamp).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err = GetStorage().SaveAuditPlanSQLs(ap.Name, sqls)
+	err = GetStorage().OverrideAuditPlanSQLs(ap.Name, sqls)
 	assert.NoError(t, err)
 
 	err = mock.ExpectationsWereMet()
