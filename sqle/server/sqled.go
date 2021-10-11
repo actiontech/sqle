@@ -366,11 +366,14 @@ func (a *action) execute() (err error) {
 		return
 	}
 
+	// txSQLs keep adjacent DMLs, execute in one transaction.
 	var txSQLs []*model.ExecuteSQL
+
+outerLoop:
 	for i, executeSQL := range task.ExecuteSQLs {
 		var nodes []driver.Node
 		if nodes, err = a.driver.Parse(context.TODO(), executeSQL.Content); err != nil {
-			goto UpdateTask
+			break outerLoop
 		}
 
 		switch nodes[0].Type {
@@ -379,35 +382,37 @@ func (a *action) execute() (err error) {
 
 			if i == len(task.ExecuteSQLs)-1 {
 				if err = a.execSQLs(txSQLs); err != nil {
-					goto UpdateTask
+					break outerLoop
 				}
 			}
+
 		case model.SQLTypeDDL:
 			if len(txSQLs) > 0 {
 				if err = a.execSQLs(txSQLs); err != nil {
-					goto UpdateTask
+					break outerLoop
 				}
 				txSQLs = nil
 			}
 			if err = a.execSQL(executeSQL); err != nil {
-				goto UpdateTask
+				break outerLoop
 			}
 
 		default:
 			err = fmt.Errorf("unknown SQL type %v", nodes[0].Type)
-			goto UpdateTask
+			break outerLoop
 		}
 	}
 
-UpdateTask:
 	taskStatus := model.TaskStatusExecuteSucceeded
+
 	if err != nil {
 		taskStatus = model.TaskStatusExecuteFailed
-	}
-	for _, sql := range task.ExecuteSQLs {
-		if sql.ExecStatus == model.SQLExecuteStatusFailed {
-			taskStatus = model.TaskStatusExecuteFailed
-			break
+	} else {
+		for _, sql := range task.ExecuteSQLs {
+			if sql.ExecStatus == model.SQLExecuteStatusFailed {
+				taskStatus = model.TaskStatusExecuteFailed
+				break
+			}
 		}
 	}
 
