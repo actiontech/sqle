@@ -457,7 +457,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	err = s.SaveAuditPlanSQLs(apName, sqls)
+	err = s.OverrideAuditPlanSQLs(apName, sqls)
 	return controller.JSONBaseErrorReq(c, err)
 }
 
