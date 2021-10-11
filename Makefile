@@ -13,9 +13,14 @@ override RELEASE 				= qa
 override GO_BUILD_FLAGS 		= -mod=vendor
 override RPM_USER_GROUP_NAME 	= actiontech
 override RPM_USER_NAME 			= actiontech-universe
+override GO_BUILD_TAGS 			= dummyhead
 
 EDITION ?= ce
-GO_BUILD_TAGS = dummyhead
+
+ifeq ($(shell basename $(shell pwd)), sqle-ee)
+    EDITION = ee
+endif
+
 ifeq ($(EDITION),ee)
     GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise
 endif
