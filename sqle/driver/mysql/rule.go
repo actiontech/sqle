@@ -293,7 +293,7 @@ var RuleHandlers = []RuleHandler{
 			Typ:       RuleTypeNamingConvention,
 			IsDefault: true,
 		},
-		Message:      "数据库对象命名不能使用英文、下划线、数字之外的字符",
+		Message:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
