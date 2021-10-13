@@ -1,41 +1,67 @@
+# this workflow will be triggerd by 
+# 1. maually on GitHub UI
+# 2. API request from actiontech/sqle 
+
 on:
   workflow_dispatch:  # click the button on Github repo!
 
 jobs:
   sync_latest_from_sqle:
     runs-on: ubuntu-latest
-    name: Sync latest commits from sqle
+    name: Sync latest commits from actiontech/sqle
 
     steps:
     # Step 1: run a standard checkout action, provided by GitHub
     - name: Checkout target repo
       uses: actions/checkout@v2
       with:
-        ref:  main
+        ref: ${{ github.head_ref }}
         persist-credentials: false
 
-    # Step 2: run the sync action
+    # Step 2: get ${branch_name} from refs/heads/${branch_name}
+    # Becouse refs/heads/${branch_name} format is not recognized by aormsby/Fork-Sync-With-Upstream-action@v3.0
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v3.x
+
+    # Step 3: run the sync action
     - name: Sync sqle changes
       id: sync
       uses: aormsby/Fork-Sync-With-Upstream-action@v3.0
       with:
-        target_sync_branch: main
+        target_sync_branch: ${{ env.GITHUB_REF_NAME }}
         target_repo_token: ${{ secrets.UPSTREAM_REPO_SECRET }}
-        upstream_sync_branch: main
+        upstream_sync_branch: ${{ env.GITHUB_REF_NAME }}
         upstream_sync_repo: actiontech/sqle
         upstream_repo_access_token: ${{ secrets.UPSTREAM_REPO_SECRET }}
         # add --allow-unrelated-histories, otherwise got ERROR message "fatal: refusing to merge unrelated histories"
         # add -Xtheirs, other ERROR message "Automatic merge failed; fix conflicts and then commit the result."
         upstream_pull_args: '--no-edit --allow-unrelated-histories -Xtheirs'
-      
-    # Step 3: Display a sample message based on the sync output var 'has_new_commits'
-    - name: New commits found
-      if: steps.sync.outputs.has_new_commits == 'true'
-      run: echo "New commits were found to sync."
-    
-    - name: No new commits
-      if: steps.sync.outputs.has_new_commits == 'false'
-      run: echo "There were no new commits."
-      
-    - name: Show value of 'has_new_commits'
-      run: echo ${{ steps.sync.outputs.has_new_commits }}
+  
+    - name: create pull request sync branch to ee branch
+      id: create_pull_request
+      run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            EE_REF="refs/heads/main-ee"
+          else
+            EE_REF="${GITHUB_REF}-ee"
+          fi
+          R=$(curl --silent --show-error \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.UPSTREAM_REPO_SECRET }}" \
+            -X POST \
+            -d "{\"title\": \"Sync sync-branch to ee branch\", \"head\": \"$GITHUB_REF\", \"base\":\"$EE_REF\"}" \
+            https://api.github.com/repos/${{ github.repository }}/pulls)
+          echo $R | jq
+          echo "::set-output name=url::$(echo $R | jq '.url')"
+
+    - name: request reviewers for a pull request
+      if: steps.create_pull_request.outputs.url != 'null'
+      run: |
+          set -euo pipefail
+          curl --silent --show-error \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.UPSTREAM_REPO_SECRET }}" \
+          -X POST \
+          -d '{"reviewers":["drivebyer"]}' \
+          ${{ steps.create_pull_request.outputs.url }}/requested_reviewers
