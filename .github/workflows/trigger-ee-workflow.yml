@@ -1,0 +1,23 @@
+name: Trigger sqle-ee Workflow
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/*'
+
+jobs:
+  trigger-sync-workflow:
+    # this file will sync to sqle-ee, we only execute job on actiontech/sqle
+    if: github.repository == 'actiontech/sqle' 
+    name: Create workflow dispatch on sqle-ee
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create workflow dispatch on sqle-ee
+        run: |
+          curl \
+          -X POST \
+          -u "sjjian:${{ secrets.DOWNSTREAM_REPO_SECRET }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/actiontech/sqle-ee/actions/workflows/sync-with-sqle.yml/dispatches \
+          -d '{"ref": "${{ github.ref }}"}'
