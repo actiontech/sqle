@@ -38,6 +38,7 @@ jobs:
         upstream_pull_args: '--no-edit --allow-unrelated-histories -Xtheirs'
   
     - name: create pull request sync branch to ee branch
+      if: steps.sync.outputs.has_new_commits == 'true'
       id: create_pull_request
       run: |
           set -euo pipefail
