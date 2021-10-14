@@ -1,14 +1,10 @@
 name: CI (no build)
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
-      - main
-      - main-ee
-      - release*
+      - 'main*'
+      - 'release/*'
       
 jobs:
   lint:
