@@ -2,6 +2,8 @@
 # 1. maually on GitHub UI
 # 2. API request from actiontech/sqle 
 
+name: Sync with SQLE
+
 on:
   workflow_dispatch:  # click the button on Github repo!
 
