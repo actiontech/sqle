@@ -2,6 +2,8 @@
 # 1. maually on GitHub UI
 # 2. API request from actiontech/sqle 
 
+name: Sync with SQLE
+
 on:
   workflow_dispatch:  # click the button on Github repo!
 
@@ -36,32 +38,14 @@ jobs:
         # add --allow-unrelated-histories, otherwise got ERROR message "fatal: refusing to merge unrelated histories"
         # add -Xtheirs, other ERROR message "Automatic merge failed; fix conflicts and then commit the result."
         upstream_pull_args: '--no-edit --allow-unrelated-histories -Xtheirs'
-  
-    - name: create pull request sync branch to ee branch
-      id: create_pull_request
-      run: |
-          set -euo pipefail
-          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            EE_REF="refs/heads/main-ee"
-          else
-            EE_REF="${GITHUB_REF}-ee"
-          fi
-          R=$(curl --silent --show-error \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.UPSTREAM_REPO_SECRET }}" \
-            -X POST \
-            -d "{\"title\": \"Sync sync-branch to ee branch\", \"head\": \"$GITHUB_REF\", \"base\":\"$EE_REF\"}" \
-            https://api.github.com/repos/${{ github.repository }}/pulls)
-          echo $R | jq
-          echo "::set-output name=url::$(echo $R | jq '.url')"
 
-    - name: request reviewers for a pull request
-      if: steps.create_pull_request.outputs.url != 'null'
-      run: |
-          set -euo pipefail
-          curl --silent --show-error \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.UPSTREAM_REPO_SECRET }}" \
-          -X POST \
-          -d '{"reviewers":["drivebyer"]}' \
-          ${{ steps.create_pull_request.outputs.url }}/requested_reviewers
+    - name: Create Pull Request
+      if: steps.sync.outputs.has_new_commits == 'true'
+      uses: peter-evans/create-pull-request@v3
+      with:
+        branch: ${{ env.GITHUB_REF_NAME }}
+        base: '${{ env.GITHUB_REF_NAME }}-ee'
+        title: 'sync to ee branch'
+        reviewers: drivebyer
+        labels: sync-ce
+        body: 'This PR was automatically generated for sync ce to ee branch'
