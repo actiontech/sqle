@@ -9,30 +9,36 @@ on:
 
 jobs:
   sync_latest_from_sqle:
+    if: endsWith(github.ref, '-ee')
     runs-on: ubuntu-latest
     name: Sync latest commits from actiontech/sqle
-
     steps:
-    # Step 1: run a standard checkout action, provided by GitHub
-    - name: Checkout target repo
-      uses: actions/checkout@v2
-      with:
-        ref: ${{ github.head_ref }}
-        persist-credentials: false
-
-    # Step 2: get ${branch_name} from refs/heads/${branch_name}
+    # get ${branch_name} from refs/heads/${branch_name}
     # Becouse refs/heads/${branch_name} format is not recognized by aormsby/Fork-Sync-With-Upstream-action@v3.0
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v3.x
 
-    # Step 3: run the sync action
+    - name: Trim ee suffix
+      id: trim-ee-suffix
+      run: |
+        branch_name=${{ env.GITHUB_REF_NAME }}
+        suffix="-ee"
+        echo "::set-output name=substr-of-branch_name::${branch_name%$suffix}"
+
+    # run a standard checkout action, provided by GitHub
+    - name: Checkout target repo
+      uses: actions/checkout@v2
+      with:
+        ref: ${{steps.trim-ee-suffix.outputs.substr-of-branch_name}}
+        persist-credentials: false
+
     - name: Sync sqle changes
       id: sync
       uses: aormsby/Fork-Sync-With-Upstream-action@v3.0
       with:
-        target_sync_branch: ${{ env.GITHUB_REF_NAME }}
+        target_sync_branch: ${{steps.trim-ee-suffix.outputs.substr-of-branch_name}}
         target_repo_token: ${{ secrets.UPSTREAM_REPO_SECRET }}
-        upstream_sync_branch: ${{ env.GITHUB_REF_NAME }}
+        upstream_sync_branch: ${{steps.trim-ee-suffix.outputs.substr-of-branch_name}}
         upstream_sync_repo: actiontech/sqle
         upstream_repo_access_token: ${{ secrets.UPSTREAM_REPO_SECRET }}
         # add --allow-unrelated-histories, otherwise got ERROR message "fatal: refusing to merge unrelated histories"
@@ -40,11 +46,11 @@ jobs:
         upstream_pull_args: '--no-edit --allow-unrelated-histories -Xtheirs'
 
     - name: Create Pull Request
-      if: steps.sync.outputs.has_new_commits == 'true'
+      #if: steps.sync.outputs.has_new_commits == 'true'
       uses: peter-evans/create-pull-request@v3
       with:
-        branch: ${{ env.GITHUB_REF_NAME }}
-        base: '${{ env.GITHUB_REF_NAME }}-ee'
+        branch: ${{steps.trim-ee-suffix.outputs.substr-of-branch_name}}
+        base: ${{ env.GITHUB_REF_NAME }}
         title: 'sync to ee branch'
         reviewers: drivebyer
         labels: sync-ce
