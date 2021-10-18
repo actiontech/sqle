@@ -19,4 +19,4 @@ jobs:
           token: ${{ secrets.DOWNSTREAM_REPO_SECRET }}
           repo: actiontech/sqle-ee
           workflow: Sync with SQLE
-          ref: ${{ github.ref }}
+          ref: ${{ github.ref }}-ee
