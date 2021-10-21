@@ -227,7 +227,7 @@ func (a *action) audit() error {
 
 	task := a.task
 
-	var rules []model.Rule
+	var rules []*model.Rule
 	var err error
 	if task.InstanceId == 0 {
 		// use default_{db_type}'s rules if audit is offline
@@ -239,11 +239,6 @@ func (a *action) audit() error {
 	}
 	if err != nil {
 		return err
-	}
-
-	var ptrRules []*model.Rule
-	for i := range rules {
-		ptrRules = append(ptrRules, &rules[i])
 	}
 
 	whitelist, _, err := st.GetSqlWhitelist(0, 0)
@@ -285,7 +280,7 @@ func (a *action) audit() error {
 		if whitelistMatch {
 			result.Add(model.RuleLevelNormal, "白名单")
 		} else {
-			result, err = a.driver.Audit(context.TODO(), ptrRules, executeSQL.Content)
+			result, err = a.driver.Audit(context.TODO(), rules, executeSQL.Content)
 			if err != nil {
 				return err
 			}

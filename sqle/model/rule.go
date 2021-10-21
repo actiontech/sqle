@@ -74,7 +74,7 @@ type RuleTemplateRule struct {
 	RuleValue      string `json:"value" gorm:"column:value;" `
 	RuleDBType     string `json:"rule_db_type" gorm:"column:db_type; not null; default:'mysql'"`
 
-	Rule Rule `json:"-" gorm:"foreignkey:Name,DBType;association_foreignkey:RuleName,RuleDBType"`
+	Rule *Rule `json:"-" gorm:"foreignkey:Name,DBType;association_foreignkey:RuleName,RuleDBType"`
 }
 
 func (rtr *RuleTemplateRule) TableName() string {
@@ -97,7 +97,7 @@ func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, er
 	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]Rule, error) {
+func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]*Rule, error) {
 	tpl, exist, err := s.GetRuleTemplateDetailByName(name)
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, err)
@@ -106,7 +106,7 @@ func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]Rule, error) {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 
-	rules := make([]Rule, 0, len(tpl.RuleList))
+	rules := make([]*Rule, 0, len(tpl.RuleList))
 	for _, r := range tpl.RuleList {
 		if r.RuleLevel != "" {
 			r.Rule.Level = r.RuleLevel
@@ -189,38 +189,38 @@ func (s *Storage) GetRule(name, dbType string) (*Rule, bool, error) {
 	return &rule, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAllRule() ([]Rule, error) {
-	rules := []Rule{}
+func (s *Storage) GetAllRule() ([]*Rule, error) {
+	rules := []*Rule{}
 	err := s.db.Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAllRuleByDBType(dbType string) ([]Rule, error) {
-	rules := []Rule{}
+func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
+	rules := []*Rule{}
 	err := s.db.Where(&Rule{DBType: dbType}).Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesByInstanceId(instanceId string) ([]Rule, error) {
-	rules := []Rule{}
+func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
 	instance, _, err := s.GetInstanceById(instanceId)
 	if err != nil {
-		return rules, errors.New(errors.ConnectStorageError, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	templates := instance.RuleTemplates
 	if len(templates) <= 0 {
-		return rules, nil
+		return nil, nil
 	}
 
 	tplName := templates[0].Name
 	tpl, exist, err := s.GetRuleTemplateDetailByName(tplName)
 	if !exist {
-		return rules, errors.New(errors.DataNotExist, err)
+		return nil, errors.New(errors.DataNotExist, err)
 	}
 	if err != nil {
-		return rules, errors.New(errors.ConnectStorageError, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 
+	var rules []*Rule
 	for _, r := range tpl.RuleList {
 		if r.RuleLevel != "" {
 			r.Rule.Level = r.RuleLevel
