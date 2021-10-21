@@ -375,7 +375,7 @@ type RuleResV1 struct {
 	DBType string `json:"db_type" example:"mysql"`
 }
 
-func convertRulesToRes(rules []model.Rule) []RuleResV1 {
+func convertRulesToRes(rules []*model.Rule) []RuleResV1 {
 	rulesRes := make([]RuleResV1, 0, len(rules))
 	for _, rule := range rules {
 		rulesRes = append(rulesRes, RuleResV1{
@@ -404,7 +404,7 @@ func GetRules(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	var rules []model.Rule
+	var rules []*model.Rule
 	var err error
 	if req.FilterDBType != "" {
 		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
