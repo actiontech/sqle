@@ -74,6 +74,7 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 		cnf: &Config{
 			DMLRollbackMaxRows: -1,
 			DDLOSCMinSize:      -1,
+			DDLGhostMinSize:    -1,
 		},
 
 		inst:           cfg.Inst,
@@ -90,6 +91,10 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 		if rule.Name == ConfigDDLOSCMinSize {
 			defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
 			i.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+		}
+		if rule.Name == ConfigDDLGhostMinSize {
+			defaultRule := RuleHandlerMap[ConfigDDLGhostMinSize].Rule
+			i.cnf.DDLGhostMinSize = rule.GetValueInt(&defaultRule)
 		}
 	}
 
@@ -256,6 +261,7 @@ func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
 type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
+	DDLGhostMinSize    int64
 }
 
 func (i *Inspect) initCnf(rules []*model.Rule) {
