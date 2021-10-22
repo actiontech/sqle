@@ -54,14 +54,6 @@ type Inspect struct {
 	isConnected bool
 	// isOfflineAudit represent Audit without instance.
 	isOfflineAudit bool
-	// counterDDL is a counter for all ddl sql.
-	counterDDL uint
-	// counterDML is a counter for all dml sql.
-	counterDML uint
-
-	// SqlArray and SqlAction is two list for Add-Do design.
-	SqlArray  []ast.Node
-	SqlAction []func(node ast.Node) error
 }
 
 func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
@@ -264,71 +256,8 @@ type Config struct {
 	DDLGhostMinSize    int64
 }
 
-func (i *Inspect) initCnf(rules []*model.Rule) {
-
-}
-
 func (i *Inspect) Context() *Context {
 	return i.Ctx
-}
-
-// todo: remove
-func (i *Inspect) SqlType() string {
-	hasDML := i.counterDML > 0
-	hasDDL := i.counterDDL > 0
-
-	// if hasDML && hasDDL {
-	// 	return model.SQLTypeMulti
-	// }
-
-	if hasDML {
-		return model.SQLTypeDML
-	} else if hasDDL {
-		return model.SQLTypeDDL
-	} else {
-		return ""
-	}
-}
-
-func (i *Inspect) addNodeCounter(nodes []ast.Node) {
-	for _, node := range nodes {
-		switch node.(type) {
-		case ast.DDLNode:
-			i.counterDDL += 1
-		case ast.DMLNode:
-			i.counterDML += 1
-		}
-	}
-}
-
-func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) error {
-	nodes, err := i.ParseSql(sql.Content)
-	if err != nil {
-		return err
-	}
-	i.addNodeCounter(nodes)
-	i.SqlArray = append(i.SqlArray, nodes[0])
-	i.SqlAction = append(i.SqlAction, action)
-	return nil
-}
-
-// todo: remove
-func (i *Inspect) Do() error {
-	defer i.closeDbConn()
-
-	// if i.SqlType() == model.SQLTypeMulti {
-	// 	i.Logger().Error(errors.ErrSQLTypeConflict)
-	// 	return errors.ErrSQLTypeConflict
-	// }
-	for idx, node := range i.SqlArray {
-		err := i.SqlAction[idx](node)
-		if err != nil {
-			return err
-		}
-		// update schema info
-		i.updateContext(node)
-	}
-	return nil
 }
 
 func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
@@ -724,8 +653,4 @@ func (i *Inspect) getSystemVariable(name string) (string, error) {
 	value := results[0]["Value"]
 	i.Ctx.AddSysVar(name, value.String)
 	return value.String, nil
-}
-
-func (i *Inspect) GetProcedureFunctionBackupSql(sql string) ([]string, error) {
-	return nil, nil
 }
