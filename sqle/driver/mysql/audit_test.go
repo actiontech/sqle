@@ -168,22 +168,26 @@ func DefaultMysqlInspect() *Inspect {
 }
 
 func runSingleRuleInspectCase(rule model.Rule, t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
-	inspectCase([]model.Rule{rule}, t, desc, i, nil, sql, results...)
+	i.rules = []*model.Rule{&rule}
+	inspectCase(t, desc, i, nil, sql, results...)
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
-	// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
-	for idx, dr := range DefaultTemplateRules {
-		if dr.Name == DDLCheckOBjectNameUseCN {
-			DefaultTemplateRules = append(DefaultTemplateRules[:idx], DefaultTemplateRules[idx+1:]...)
-			break
+	var ptrRules []*model.Rule
+	for i := range DefaultTemplateRules {
+		// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
+		if DefaultTemplateRules[i].Name == DDLCheckOBjectNameUseCN {
+			continue
 		}
+
+		ptrRules = append(ptrRules, &DefaultTemplateRules[i])
 	}
-	inspectCase(DefaultTemplateRules, t, desc, i, nil, sql, results...)
+
+	i.rules = ptrRules
+	inspectCase(t, desc, i, nil, sql, results...)
 }
 
-func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect,
-	wls []model.SqlWhitelist, sql string, results ...*testResult) {
+func inspectCase(t *testing.T, desc string, i *Inspect, wls []model.SqlWhitelist, sql string, results ...*testResult) {
 	stmts, err := parseSql(model.DBTypeMySQL, sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
@@ -195,13 +199,8 @@ func inspectCase(rules []model.Rule, t *testing.T, desc string, i *Inspect,
 		return
 	}
 
-	var ptrRules []*model.Rule
-	for i := range rules {
-		ptrRules = append(ptrRules, &rules[i])
-	}
-
 	for idx, stmt := range stmts {
-		result, err := i.Audit(context.TODO(), ptrRules, stmt.Text())
+		result, err := i.Audit(context.TODO(), stmt.Text())
 		if err != nil {
 			t.Error(err)
 			return
@@ -3000,8 +2999,17 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		Rows:  100001,
 		Extra: strings.Join([]string{ExplainRecordExtraUsingFilesort, ExplainRecordExtraUsingTemporary}, ";"),
 	}})
-	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
-		t, "", inspect4, nil, "select * from exist_tb_1",
+
+	ruleDMLCheckExplainExtraUsingFilesort := RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule
+	ruleDMLCheckExplainExtraUsingTemporary := RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule
+	ruleDMLCheckExplainAccessTypeAll := RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule
+
+	inspect4.rules = []*model.Rule{
+		&ruleDMLCheckExplainExtraUsingFilesort,
+		&ruleDMLCheckExplainExtraUsingTemporary,
+		&ruleDMLCheckExplainAccessTypeAll}
+
+	inspectCase(t, "", inspect4, nil, "select * from exist_tb_1",
 		newTestResult().addResult(DMLCheckExplainExtraUsingFilesort).addResult(DMLCheckExplainExtraUsingTemporary).addResult(DMLCheckExplainAccessTypeAll, 100001))
 
 	inspect5 := DefaultMysqlInspect()
@@ -3015,8 +3023,13 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1 where id = 2;", []*ExplainRecord{{
 		Extra: ExplainRecordExtraUsingTemporary,
 	}})
-	inspectCase([]model.Rule{RuleHandlerMap[DMLCheckExplainExtraUsingFilesort].Rule, RuleHandlerMap[DMLCheckExplainExtraUsingTemporary].Rule, RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule},
-		t, "", inspect5, nil, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
+
+	inspect5.rules = []*model.Rule{
+		&ruleDMLCheckExplainExtraUsingFilesort,
+		&ruleDMLCheckExplainExtraUsingTemporary,
+		&ruleDMLCheckExplainAccessTypeAll}
+
+	inspectCase(t, "", inspect5, nil, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
 		newTestResult().addResult(DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(DMLCheckExplainExtraUsingTemporary))
 }
 
@@ -3287,12 +3300,16 @@ func TestWhitelist(t *testing.T) {
 
 func runDefaultRulesInspectCaseWithWL(t *testing.T, desc string, i *Inspect,
 	wl []model.SqlWhitelist, sql string, results ...*testResult) {
-	// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
-	for idx, dr := range DefaultTemplateRules {
-		if dr.Name == DDLCheckOBjectNameUseCN {
-			DefaultTemplateRules = append(DefaultTemplateRules[:idx], DefaultTemplateRules[idx+1:]...)
-			break
+	var ptrRules []*model.Rule
+	for i := range DefaultTemplateRules {
+		// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
+		if DefaultTemplateRules[i].Name == DDLCheckOBjectNameUseCN {
+			continue
 		}
+
+		ptrRules = append(ptrRules, &DefaultTemplateRules[i])
 	}
-	inspectCase(DefaultTemplateRules, t, desc, i, wl, sql, results...)
+
+	i.rules = ptrRules
+	inspectCase(t, desc, i, wl, sql, results...)
 }
