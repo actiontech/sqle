@@ -222,24 +222,9 @@ func (a *action) validation(task *model.Task) error {
 	return nil
 }
 
-func (a *action) audit() error {
+func (a *action) audit() (err error) {
 	st := model.GetStorage()
-
 	task := a.task
-
-	var rules []*model.Rule
-	var err error
-	if task.InstanceId == 0 {
-		// use default_{db_type}'s rules if audit is offline
-		// refer: model.utils.CreateDefaultTemplate
-		templateName := fmt.Sprintf("default_%v", task.DBType)
-		rules, err = st.GetRulesFromRuleTemplateByName(templateName)
-	} else {
-		rules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
-	}
-	if err != nil {
-		return err
-	}
 
 	whitelist, _, err := st.GetSqlWhitelist(0, 0)
 	if err != nil {
@@ -280,7 +265,7 @@ func (a *action) audit() error {
 		if whitelistMatch {
 			result.Add(model.RuleLevelNormal, "白名单")
 		} else {
-			result, err = a.driver.Audit(context.TODO(), rules, executeSQL.Content)
+			result, err = a.driver.Audit(context.TODO(), executeSQL.Content)
 			if err != nil {
 				return err
 			}

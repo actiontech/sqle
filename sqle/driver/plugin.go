@@ -17,22 +17,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewInitRequest(cfg *Config) *proto.InitRequest {
-	if cfg.Inst != nil {
-		return &proto.InitRequest{
-			InstanceMeta: &proto.InstanceMeta{
-				InstanceHost: cfg.Inst.Host,
-				InstancePort: cfg.Inst.Port,
-				InstanceUser: cfg.Inst.User,
-				InstancePass: cfg.Inst.Password,
-				DatabaseOpen: cfg.Schema,
-			},
-			IsOffline: cfg.IsOfflineAudit,
-		}
-	}
-	return &proto.InitRequest{IsOffline: cfg.IsOfflineAudit}
-}
-
 // InitPlugins init plugins at plugins directory. It should be called on host process.
 func InitPlugins(pluginDir string) error {
 	if pluginDir == "" {
@@ -89,6 +73,7 @@ func InitPlugins(pluginDir string) error {
 		}
 		close(closeCh)
 
+		// modelRules get from plugin when plugin initialize.
 		var modelRules []*model.Rule
 		for _, rule := range pluginMeta.Rules {
 			modelRules = append(modelRules, &model.Rule{
@@ -110,7 +95,35 @@ func InitPlugins(pluginDir string) error {
 				if err != nil {
 					return nil, err
 				}
-				_, err = srv.Init(context.TODO(), NewInitRequest(config))
+
+				// protoRules set to plugin for Audit.
+				var protoRules []*proto.Rule
+				for _, rule := range rules {
+					protoRules = append(protoRules, &proto.Rule{
+						Name:      rule.Name,
+						Desc:      rule.Desc,
+						Value:     rule.Value,
+						Level:     rule.Level,
+						Typ:       rule.Typ,
+						IsDefault: rule.IsDefault,
+					})
+				}
+
+				initRequest := &proto.InitRequest{
+					IsOffline: config.IsOfflineAudit,
+					Rules:     protoRules,
+				}
+				if config.Inst != nil {
+					initRequest.InstanceMeta = &proto.InstanceMeta{
+						InstanceHost: config.Inst.Host,
+						InstancePort: config.Inst.Port,
+						InstanceUser: config.Inst.User,
+						InstancePass: config.Inst.Password,
+						DatabaseOpen: config.Schema,
+					}
+				}
+
+				_, err = srv.Init(context.TODO(), initRequest)
 				if err != nil {
 					return nil, err
 				}
@@ -243,18 +256,8 @@ func (s *driverPluginClient) Parse(ctx context.Context, sqlText string) ([]Node,
 	return nodes, nil
 }
 
-func (s *driverPluginClient) Audit(ctx context.Context, rules []*model.Rule, sql string) (*AuditResult, error) {
-	var protoRules []*proto.Rule
-	for _, rule := range rules {
-		protoRules = append(protoRules, &proto.Rule{
-			Name:  rule.Name,
-			Desc:  rule.Desc,
-			Value: rule.Value,
-			Level: rule.Level,
-			Typ:   rule.Typ,
-		})
-	}
-	resp, err := s.plugin.Audit(ctx, &proto.AuditRequest{Rules: protoRules, Sql: sql})
+func (s *driverPluginClient) Audit(ctx context.Context, sql string) (*AuditResult, error) {
+	resp, err := s.plugin.Audit(ctx, &proto.AuditRequest{Sql: sql})
 	if err != nil {
 		return nil, err
 	}
@@ -381,17 +384,7 @@ func (d *driverGRPCServer) Parse(ctx context.Context, req *proto.ParseRequest) (
 }
 
 func (d *driverGRPCServer) Audit(ctx context.Context, req *proto.AuditRequest) (*proto.AuditResponse, error) {
-	var modelRules []*model.Rule
-	for _, r := range req.GetRules() {
-		modelRules = append(modelRules, &model.Rule{
-			Name:  r.Name,
-			Desc:  r.Desc,
-			Value: r.Value,
-			Level: r.Level,
-			Typ:   r.Typ,
-		})
-	}
-	auditResluts, err := d.Impl.Audit(ctx, modelRules, req.GetSql())
+	auditResluts, err := d.Impl.Audit(ctx, req.GetSql())
 	if err != nil {
 		return &proto.AuditResponse{}, nil
 	}

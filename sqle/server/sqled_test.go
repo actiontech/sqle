@@ -71,7 +71,7 @@ func (d *mockDriver) Parse(ctx context.Context, sqlText string) ([]driver.Node, 
 	return []driver.Node{{Text: sqlText}}, nil
 }
 
-func (d *mockDriver) Audit(ctx context.Context, rules []*model.Rule, sql string) (*driver.AuditResult, error) {
+func (d *mockDriver) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
 	return nil, nil
 }
 
@@ -142,8 +142,6 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 	}
 	act := getAction([]string{"select * from t1"}, ActionTypeAudit, &mockDriver{})
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `rule_templates`")).
-		WillReturnRows(sqlmock.NewRows([]string{}))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `sql_whitelist`")).
 		WillReturnRows(sqlmock.NewRows([]string{"value", "match_type"}).AddRow(whitelist.Value, whitelist.MatchType))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT count(*) FROM `sql_whitelist`")).
@@ -176,6 +174,10 @@ func Test_action_execute(t *testing.T) {
 
 			assert.Equal(t, model.TaskStatusExecuteFailed, status)
 			return nil
+		})
+
+		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "GetRulesFromRuleTemplateByName", func(_ *model.Storage, _ string) ([]*model.Rule, error) {
+			return nil, nil
 		})
 	}
 
