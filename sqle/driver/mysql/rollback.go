@@ -6,54 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"
 )
-
-func (i *Inspect) GenerateAllRollbackSql(executeSQLs []*model.ExecuteSQL) ([]*model.RollbackSQL, error) {
-	i.Logger().Info("start generate rollback sql")
-
-	rollbackSqls := []*model.RollbackSQL{}
-	for _, executeSQL := range executeSQLs {
-		currentSql := executeSQL
-		err := i.Add(&currentSql.BaseSQL, func(node ast.Node) error {
-			rollbackSql, reason, err := i.GenerateRollbackSql(node)
-			if rollbackSql != "" {
-				rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
-					BaseSQL: model.BaseSQL{
-						TaskId:  currentSql.TaskId,
-						Content: rollbackSql,
-					},
-					ExecuteSQLId: currentSql.ID,
-				})
-			}
-			if reason != "" {
-				result := driver.NewInspectResults()
-				if currentSql.AuditResult != "" {
-					result.Add(currentSql.AuditLevel, currentSql.AuditResult)
-				}
-				result.Add(model.RuleLevelNotice, reason)
-				currentSql.AuditLevel = result.Level()
-				currentSql.AuditResult = result.Message()
-			}
-			return err
-		})
-		if err != nil {
-			i.Logger().Error("add rollback sql failed")
-			return nil, err
-		}
-	}
-	if err := i.Do(); err != nil {
-		i.Logger().Errorf("generate rollback sql failed")
-		return nil, err
-	}
-	i.Logger().Info("generate rollback sql finish")
-	return i.GetAllRollbackSqlReversed(rollbackSqls), nil
-}
 
 func (i *Inspect) GetAllRollbackSqlReversed(sqls []*model.RollbackSQL) []*model.RollbackSQL {
 	rollbackSqls := []*model.RollbackSQL{}

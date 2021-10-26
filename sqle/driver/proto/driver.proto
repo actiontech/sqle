@@ -28,11 +28,21 @@ message InstanceMeta {
   string instancePass = 4;
   string databaseOpen = 5;
 }
+
+message Rule {
+  string name = 1;
+  string desc = 2;
+  string value = 3;
+  string level = 4;
+  string typ = 5;
+  bool isDefault = 6;
+}
+
 message InitRequest {
   InstanceMeta instanceMeta = 1;
   bool   isOffline = 2;
+  repeated Rule rules = 3;
 }
-
 
 message Empty {}
 
@@ -73,18 +83,8 @@ message ParseResponse {
   repeated Node nodes = 1;
 }
 
-message Rule {
-  string name = 1;
-  string desc = 2;
-  string value = 3;
-  string level = 4;
-  string typ = 5;
-  bool isDefault = 6;
-}
-
 message AuditRequest {
-  repeated Rule rules = 1;
-  string sql = 2;
+  string sql = 1;
 }
 
 message AuditResult {

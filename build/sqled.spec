@@ -118,6 +118,19 @@ server:
    mysql_schema: 'sqle'
 EOF
 
+cat > $RPM_INSTALL_PREFIX/etc/gh-ost.ini<<EOF
+max_load=Threads_running=80,Threads_connected=1000
+critical_load=Threads_running=160,Threads_connected=2000
+chunk_size=1000
+dml_batch_size=10
+default_retries=120
+exponential_backoff_max_interval=64
+throttle_additional_flag_file=/tmp/gh-ost.throttle
+cut_over_lock_timeout_seconds=3
+max_lag_millis=1500
+heartbeat_interval_millis=100
+EOF
+
 #chown
 chown -R %{user_name}: $RPM_INSTALL_PREFIX
 

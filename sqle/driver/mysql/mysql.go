@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/pkg/errors"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
@@ -35,6 +37,8 @@ type Inspect struct {
 	// cnf is task cnf, cnf variables record in rules.
 	cnf *Config
 
+	rules []*model.Rule
+
 	// result keep inspect result for single audited SQL.
 	// It refresh on every Audit.
 	result *driver.AuditResult
@@ -52,26 +56,43 @@ type Inspect struct {
 	isConnected bool
 	// isOfflineAudit represent Audit without instance.
 	isOfflineAudit bool
-	// counterDDL is a counter for all ddl sql.
-	counterDDL uint
-	// counterDML is a counter for all dml sql.
-	counterDML uint
-
-	// SqlArray and SqlAction is two list for Add-Do design.
-	SqlArray  []ast.Node
-	SqlAction []func(node ast.Node) error
 }
 
 func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	ctx := NewContext(nil)
 	ctx.UseSchema(cfg.Schema)
-	return &Inspect{
-		log:            log,
-		Ctx:            ctx,
+
+	i := &Inspect{
+		log: log,
+		Ctx: ctx,
+		cnf: &Config{
+			DMLRollbackMaxRows: -1,
+			DDLOSCMinSize:      -1,
+			DDLGhostMinSize:    -1,
+		},
+
 		inst:           cfg.Inst,
+		rules:          cfg.Rules,
 		result:         driver.NewInspectResults(),
 		isOfflineAudit: cfg.IsOfflineAudit,
-	}, nil
+	}
+
+	for _, rule := range cfg.Rules {
+		if rule.Name == ConfigDMLRollbackMaxRows {
+			defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
+			i.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+		}
+		if rule.Name == ConfigDDLOSCMinSize {
+			defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
+			i.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+		}
+		if rule.Name == ConfigDDLGhostMinSize {
+			defaultRule := RuleHandlerMap[ConfigDDLGhostMinSize].Rule
+			i.cnf.DDLGhostMinSize = rule.GetValueInt(&defaultRule)
+		}
+	}
+
+	return i, nil
 }
 
 func (i *Inspect) IsOfflineAudit() bool {
@@ -83,11 +104,77 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 		return nil, nil
 	}
 
+	useGhost, err := i.onlineddlWithGhost(query)
+	if err != nil {
+		return nil, errors.Wrap(err, "check whether use ghost or not")
+	}
+
+	if useGhost {
+		node, err := i.ParseSql(query)
+		if err != nil {
+			return nil, errors.Wrap(err, "parse SQL")
+		}
+		stmt := node[0].(*ast.AlterTableStmt)
+		schema := i.getSchemaName(stmt.Table)
+
+		run := func(dryRun bool) error {
+			executor, err := onlineddl.NewExecutor(i.log, i.inst, schema, query)
+			if err != nil {
+				return err
+			}
+
+			err = executor.Execute(ctx, dryRun)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		i.log.Infof("dry-run gh-ost")
+		if err := run(true); err != nil {
+			i.log.Errorf("dry-run gh-ost error:%v", err)
+			return nil, errors.Wrap(err, "dry-run gh-ost")
+		}
+		i.log.Infof("dry-run OK!")
+
+		i.log.Infof("run gh-ost")
+		if err := run(false); err != nil {
+			i.log.Errorf("run gh-ost error:%v", err)
+			return nil, errors.Wrap(err, "run gh-ost")
+		}
+		i.log.Infof("run OK!")
+
+		return _driver.ResultNoRows, nil
+	}
+
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
 	}
 	return conn.Db.Exec(query)
+}
+
+func (i *Inspect) onlineddlWithGhost(query string) (bool, error) {
+	if i.cnf.DDLGhostMinSize == -1 {
+		return false, nil
+	}
+
+	node, err := i.ParseSql(query)
+	if err != nil {
+		return false, errors.Wrap(err, "parse SQL")
+	}
+
+	stmt, ok := node[0].(*ast.AlterTableStmt)
+	if !ok {
+		return false, nil
+	}
+
+	tableSize, err := i.getTableSize(stmt.Table)
+	if err != nil {
+		return false, errors.Wrap(err, "get table size")
+	}
+
+	return int64(tableSize) > i.cnf.DDLGhostMinSize, nil
 }
 
 func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
@@ -141,9 +228,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 	return ns, nil
 }
 
-func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*driver.AuditResult, error) {
-	i.initCnf(rules)
-
+func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
 	i.result = driver.NewInspectResults()
 
 	nodes, err := i.ParseSql(sql)
@@ -164,7 +249,7 @@ func (i *Inspect) Audit(ctx context.Context, rules []*model.Rule, sql string) (*
 		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), i.result.Message())
 	}
 
-	for _, rule := range rules {
+	for _, rule := range i.rules {
 		i.currentRule = *rule
 		handler, ok := RuleHandlerMap[rule.Name]
 		if !ok || handler.Func == nil {
@@ -236,90 +321,11 @@ func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
 type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
-}
-
-func (i *Inspect) initCnf(rules []*model.Rule) {
-	if i.cnf != nil {
-		return
-	}
-
-	i.cnf = &Config{
-		DMLRollbackMaxRows: -1,
-		DDLOSCMinSize:      -1,
-	}
-	for _, rule := range rules {
-		if rule.Name == ConfigDMLRollbackMaxRows {
-			defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
-			i.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
-		}
-		if rule.Name == ConfigDDLOSCMinSize {
-			defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
-			i.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
-		}
-	}
+	DDLGhostMinSize    int64
 }
 
 func (i *Inspect) Context() *Context {
 	return i.Ctx
-}
-
-// todo: remove
-func (i *Inspect) SqlType() string {
-	hasDML := i.counterDML > 0
-	hasDDL := i.counterDDL > 0
-
-	// if hasDML && hasDDL {
-	// 	return model.SQLTypeMulti
-	// }
-
-	if hasDML {
-		return model.SQLTypeDML
-	} else if hasDDL {
-		return model.SQLTypeDDL
-	} else {
-		return ""
-	}
-}
-
-func (i *Inspect) addNodeCounter(nodes []ast.Node) {
-	for _, node := range nodes {
-		switch node.(type) {
-		case ast.DDLNode:
-			i.counterDDL += 1
-		case ast.DMLNode:
-			i.counterDML += 1
-		}
-	}
-}
-
-func (i *Inspect) Add(sql *model.BaseSQL, action func(node ast.Node) error) error {
-	nodes, err := i.ParseSql(sql.Content)
-	if err != nil {
-		return err
-	}
-	i.addNodeCounter(nodes)
-	i.SqlArray = append(i.SqlArray, nodes[0])
-	i.SqlAction = append(i.SqlAction, action)
-	return nil
-}
-
-// todo: remove
-func (i *Inspect) Do() error {
-	defer i.closeDbConn()
-
-	// if i.SqlType() == model.SQLTypeMulti {
-	// 	i.Logger().Error(errors.ErrSQLTypeConflict)
-	// 	return errors.ErrSQLTypeConflict
-	// }
-	for idx, node := range i.SqlArray {
-		err := i.SqlAction[idx](node)
-		if err != nil {
-			return err
-		}
-		// update schema info
-		i.updateContext(node)
-	}
-	return nil
 }
 
 func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
@@ -475,10 +481,15 @@ func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 
 // getTableSize get table size.
 func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
-	info, exist := i.getTableInfo(stmt)
+	exist, err := i.isTableExist(stmt)
+	if err != nil {
+		return 0, errors.Wrapf(err, "check table exist when get table size")
+	}
 	if !exist {
 		return 0, nil
 	}
+
+	info, _ := i.getTableInfo(stmt)
 	if !info.sizeLoad {
 		conn, err := i.getDbConn()
 		if err != nil {
@@ -715,8 +726,4 @@ func (i *Inspect) getSystemVariable(name string) (string, error) {
 	value := results[0]["Value"]
 	i.Ctx.AddSysVar(name, value.String)
 	return value.String, nil
-}
-
-func (i *Inspect) GetProcedureFunctionBackupSql(sql string) ([]string, error) {
-	return nil, nil
 }

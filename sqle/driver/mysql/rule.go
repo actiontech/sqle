@@ -101,6 +101,7 @@ const (
 const (
 	ConfigDMLRollbackMaxRows = "dml_rollback_max_rows"
 	ConfigDDLOSCMinSize      = "ddl_osc_min_size"
+	ConfigDDLGhostMinSize    = "ddl_ghost_min_size"
 )
 
 type RuleHandler struct {
@@ -149,6 +150,18 @@ var RuleHandlers = []RuleHandler{
 		Rule: model.Rule{
 			Name:      ConfigDDLOSCMinSize,
 			Desc:      "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
+			Value:     "16",
+			Level:     model.RuleLevelNormal,
+			Typ:       RuleTypeGlobalConfig,
+			IsDefault: true,
+		},
+		Func: nil,
+	},
+
+	{
+		Rule: model.Rule{
+			Name:      ConfigDDLGhostMinSize,
+			Desc:      "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
 			Value:     "16",
 			Level:     model.RuleLevelNormal,
 			Typ:       RuleTypeGlobalConfig,
