@@ -162,6 +162,7 @@ func DefaultMysqlInspect() *Inspect {
 		},
 		cnf: &Config{
 			DDLOSCMinSize:      16,
+			DDLGhostMinSize:    16,
 			DMLRollbackMaxRows: 1000,
 		},
 	}
