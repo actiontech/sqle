@@ -481,10 +481,15 @@ func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 
 // getTableSize get table size.
 func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
-	info, exist := i.getTableInfo(stmt)
+	exist, err := i.isTableExist(stmt)
+	if err != nil {
+		return 0, errors.Wrapf(err, "check table exist when get table size")
+	}
 	if !exist {
 		return 0, nil
 	}
+
+	info, _ := i.getTableInfo(stmt)
 	if !info.sizeLoad {
 		conn, err := i.getDbConn()
 		if err != nil {
