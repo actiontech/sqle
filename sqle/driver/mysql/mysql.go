@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/pkg/errors"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
@@ -102,11 +104,77 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 		return nil, nil
 	}
 
+	useGhost, err := i.onlineddlWithGhost(query)
+	if err != nil {
+		return nil, errors.Wrap(err, "check whether use ghost or not")
+	}
+
+	if useGhost {
+		node, err := i.ParseSql(query)
+		if err != nil {
+			return nil, errors.Wrap(err, "parse SQL")
+		}
+		stmt := node[0].(*ast.AlterTableStmt)
+		schema := i.getSchemaName(stmt.Table)
+
+		run := func(dryRun bool) error {
+			executor, err := onlineddl.NewExecutor(i.log, i.inst, schema, query)
+			if err != nil {
+				return err
+			}
+
+			err = executor.Execute(ctx, dryRun)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		i.log.Infof("dry-run gh-ost")
+		if err := run(true); err != nil {
+			i.log.Errorf("dry-run gh-ost error:%v", err)
+			return nil, errors.Wrap(err, "dry-run gh-ost")
+		}
+		i.log.Infof("dry-run OK!")
+
+		i.log.Infof("run gh-ost")
+		if err := run(false); err != nil {
+			i.log.Errorf("run gh-ost error:%v", err)
+			return nil, errors.Wrap(err, "run gh-ost")
+		}
+		i.log.Infof("run OK!")
+
+		return _driver.ResultNoRows, nil
+	}
+
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
 	}
 	return conn.Db.Exec(query)
+}
+
+func (i *Inspect) onlineddlWithGhost(query string) (bool, error) {
+	if i.cnf.DDLGhostMinSize == -1 {
+		return false, nil
+	}
+
+	node, err := i.ParseSql(query)
+	if err != nil {
+		return false, errors.Wrap(err, "parse SQL")
+	}
+
+	stmt, ok := node[0].(*ast.AlterTableStmt)
+	if !ok {
+		return false, nil
+	}
+
+	tableSize, err := i.getTableSize(stmt.Table)
+	if err != nil {
+		return false, errors.Wrap(err, "get table size")
+	}
+
+	return int64(tableSize) > i.cnf.DDLGhostMinSize, nil
 }
 
 func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
