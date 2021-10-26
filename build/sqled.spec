@@ -126,7 +126,6 @@ dml_batch_size=10
 default_retries=120
 exponential_backoff_max_interval=64
 throttle_additional_flag_file=/tmp/gh-ost.throttle
-replica_server_id=99999
 cut_over_lock_timeout_seconds=3
 max_lag_millis=1500
 heartbeat_interval_millis=100
