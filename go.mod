@@ -22,13 +22,15 @@ require (
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/github/gh-ost v1.1.3-0.20210727153850-e484824bbd68
+	github.com/go-ini/ini v1.63.2
 	github.com/go-openapi/jsonreference v0.19.4 // indirect
 	github.com/go-openapi/spec v0.19.8 // indirect
 	github.com/go-openapi/swag v0.19.9 // indirect
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator v9.31.0+incompatible
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.5.0
 	github.com/google/uuid v1.1.2 // indirect
@@ -36,7 +38,7 @@ require (
 	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jinzhu/gorm v1.9.15
 	github.com/jinzhu/now v1.1.1 // indirect
-	github.com/jmoiron/sqlx v1.3.1
+	github.com/jmoiron/sqlx v1.3.3
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo/v4 v4.0.0
@@ -45,11 +47,11 @@ require (
 	github.com/lib/pq v1.10.0 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
+	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/pingcap/parser v3.0.12+incompatible
-	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340 // v3.0.12
+	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1 // indirect
 	github.com/prometheus/common v0.10.0 // indirect
@@ -63,15 +65,11 @@ require (
 	github.com/swaggo/swag v1.6.7
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 	github.com/urfave/cli/v2 v2.1.1
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
-	golang.org/x/sys v0.0.0-20200722175500-76b94024e4b6 // indirect
-	golang.org/x/text v0.3.5 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.3.0
@@ -79,6 +77,7 @@ require (
 )
 
 replace (
+	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20190715063458-479153f07ebd
 	github.com/pingcap/parser => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
