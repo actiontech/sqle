@@ -45,13 +45,14 @@ jobs:
         # add -Xtheirs, other ERROR message "Automatic merge failed; fix conflicts and then commit the result."
         upstream_pull_args: '--no-edit --allow-unrelated-histories -Xtheirs'
 
-    - name: Create Pull Request
-      #if: steps.sync.outputs.has_new_commits == 'true'
-      uses: peter-evans/create-pull-request@v3
-      with:
-        branch: ${{steps.trim-ee-suffix.outputs.substr-of-branch_name}}
-        base: ${{ env.GITHUB_REF_NAME }}
-        title: 'sync to ee branch'
-        reviewers: drivebyer
-        labels: sync-ce
-        body: 'This PR was automatically generated for sync ce to ee branch'
+    # figure out:https://github.com/actiontech/sqle-ee/runs/4033635214?check_suite_focus=true
+    # - name: Create Pull Request
+    #   if: steps.sync.outputs.has_new_commits == 'true'
+    #   uses: peter-evans/create-pull-request@v3
+    #   with:
+    #     branch: ${{steps.trim-ee-suffix.outputs.substr-of-branch_name}}
+    #     base: ${{ env.GITHUB_REF_NAME }}
+    #     title: 'sync to ee branch'
+    #     reviewers: drivebyer
+    #     labels: sync-ce
+    #     body: 'This PR was automatically generated for sync ce to ee branch'
