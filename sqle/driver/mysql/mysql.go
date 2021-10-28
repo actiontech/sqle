@@ -288,7 +288,14 @@ func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, strin
 		return "", "", err
 	}
 
-	return i.GenerateRollbackSql(nodes[0])
+	rollback, reason, err := i.GenerateRollbackSql(nodes[0])
+	if err != nil {
+		return "", "", err
+	}
+
+	i.updateContext(nodes[0])
+
+	return rollback, reason, nil
 }
 
 func (i *Inspect) Close(ctx context.Context) {
