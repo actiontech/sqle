@@ -13,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
+	xerrors "github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
 )
@@ -286,9 +287,15 @@ func (a *action) audit() (err error) {
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else {
+		d, err := driver.NewDriver(a.entry, a.task.Instance, a.task.Instance == nil, a.task.DBType, a.task.Schema)
+		if err != nil {
+			return xerrors.Wrap(err, "new driver for generate rollback SQL")
+		}
+		defer d.Close(context.TODO())
+
 		var rollbackSQLs []*model.RollbackSQL
 		for _, executeSQL := range task.ExecuteSQLs {
-			rollbackSQL, reason, err := a.driver.GenRollbackSQL(context.TODO(), executeSQL.Content)
+			rollbackSQL, reason, err := d.GenRollbackSQL(context.TODO(), executeSQL.Content)
 			if err != nil {
 				return err
 			}
