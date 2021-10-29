@@ -81,6 +81,7 @@ parser:
 
 upload:
 	curl --ftp-create-dirs -T $(shell pwd)/$(RPM_NAME) ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/$(EDITION)/qa/$(PROJECT_VERSION)/$(RPM_NAME)
+	curl --ftp-create-dirs -T $(shell pwd)/$(RPM_NAME).md5 ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/$(EDITION)/qa/$(PROJECT_VERSION)/$(RPM_NAME).md5
 
 ###################################### docker #####################################################
 
@@ -101,7 +102,8 @@ docker_rpm: docker_install
 	(rpmbuild --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' \
 	--define 'commit $(GIT_COMMIT)' --define 'os_version $(OS_VERSION)' \
 	--target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled.spec >>/tmp/build.log 2>&1) && \
-	(cat ~/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(RPM_NAME)
+	(cat ~/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(RPM_NAME) && \
+	md5sum $(RPM_NAME) > $(RPM_NAME).md5
 
 override SQLE_DOCKER_IMAGE ?= actiontech/$(PROJECT_NAME)-$(EDITION):$(PROJECT_VERSION)
 
