@@ -3,7 +3,6 @@ package driver
 import (
 	"context"
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/model"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,11 +27,13 @@ type Config struct {
 	IsOfflineAudit bool
 	Schema         string
 	Inst           *model.Instance
+	Rules          []*model.Rule
 }
 
-func NewConfig(inst *model.Instance, schema string, isOfflineAudit bool) *Config {
+func NewConfig(inst *model.Instance, rules []*model.Rule, schema string, isOfflineAudit bool) *Config {
 	return &Config{
 		Inst:           inst,
+		Rules:          rules,
 		Schema:         schema,
 		IsOfflineAudit: isOfflineAudit,
 	}
@@ -76,7 +78,27 @@ func NewDriver(log *logrus.Entry, inst *model.Instance, isOfflineAudit bool, dbT
 	if !exist {
 		return nil, fmt.Errorf("driver type %v is not supported", inst.DbType)
 	}
-	return d(log, NewConfig(inst, schema, isOfflineAudit))
+
+	st := model.GetStorage()
+
+	var err error
+	var rules []*model.Rule
+
+	if isOfflineAudit {
+		// use default_{db_type}'s rules if audit is offline
+		// refer: model.utils.CreateDefaultTemplate
+		// TODO: add function to generate default rule template name
+		templateName := fmt.Sprintf("default_%v", dbType)
+		rules, err = st.GetRulesFromRuleTemplateByName(templateName)
+	} else {
+		rules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", inst.ID))
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "get rules for audit")
+	}
+
+	return d(log, NewConfig(inst, rules, schema, isOfflineAudit))
 }
 
 func AllRules() []*model.Rule {
@@ -130,7 +152,7 @@ type Driver interface {
 	// 		driver.Audit(..., "SELECT * FROM t1 WHERE id = 1")
 	//      ...
 	// driver should keep SQL context during it's lifecycle.
-	Audit(ctx context.Context, rules []*model.Rule, sql string) (*AuditResult, error)
+	Audit(ctx context.Context, sql string) (*AuditResult, error)
 
 	// GenRollbackSQL generate sql's rollback SQL.
 	GenRollbackSQL(ctx context.Context, sql string) (string, string, error)

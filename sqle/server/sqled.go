@@ -13,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
+	xerrors "github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
 )
@@ -222,29 +223,9 @@ func (a *action) validation(task *model.Task) error {
 	return nil
 }
 
-func (a *action) audit() error {
+func (a *action) audit() (err error) {
 	st := model.GetStorage()
-
 	task := a.task
-
-	var rules []model.Rule
-	var err error
-	if task.InstanceId == 0 {
-		// use default_{db_type}'s rules if audit is offline
-		// refer: model.utils.CreateDefaultTemplate
-		templateName := fmt.Sprintf("default_%v", task.DBType)
-		rules, err = st.GetRulesFromRuleTemplateByName(templateName)
-	} else {
-		rules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", task.InstanceId))
-	}
-	if err != nil {
-		return err
-	}
-
-	var ptrRules []*model.Rule
-	for i := range rules {
-		ptrRules = append(ptrRules, &rules[i])
-	}
 
 	whitelist, _, err := st.GetSqlWhitelist(0, 0)
 	if err != nil {
@@ -285,7 +266,7 @@ func (a *action) audit() error {
 		if whitelistMatch {
 			result.Add(model.RuleLevelNormal, "白名单")
 		} else {
-			result, err = a.driver.Audit(context.TODO(), ptrRules, executeSQL.Content)
+			result, err = a.driver.Audit(context.TODO(), executeSQL.Content)
 			if err != nil {
 				return err
 			}
@@ -306,9 +287,15 @@ func (a *action) audit() error {
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else {
+		d, err := driver.NewDriver(a.entry, a.task.Instance, a.task.Instance == nil, a.task.DBType, a.task.Schema)
+		if err != nil {
+			return xerrors.Wrap(err, "new driver for generate rollback SQL")
+		}
+		defer d.Close(context.TODO())
+
 		var rollbackSQLs []*model.RollbackSQL
 		for _, executeSQL := range task.ExecuteSQLs {
-			rollbackSQL, reason, err := a.driver.GenRollbackSQL(context.TODO(), executeSQL.Content)
+			rollbackSQL, reason, err := d.GenRollbackSQL(context.TODO(), executeSQL.Content)
 			if err != nil {
 				return err
 			}
