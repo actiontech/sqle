@@ -1,6 +1,6 @@
 Summary: Actiontech Sqle
 Name: sqle
-Version: %{project_version}_%{commit}
+Version: %{commit}
 %if %{?_with_qa:1}%{!?_with_qa:0}
 Release: qa.%{os_version}
 %else
