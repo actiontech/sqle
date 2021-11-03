@@ -98,7 +98,7 @@ func InitPlugins(pluginDir string) error {
 
 				// protoRules set to plugin for Audit.
 				var protoRules []*proto.Rule
-				for _, rule := range rules {
+				for _, rule := range config.Rules {
 					protoRules = append(protoRules, &proto.Rule{
 						Name:      rule.Name,
 						Desc:      rule.Desc,
@@ -294,7 +294,20 @@ type driverGRPCServer struct {
 }
 
 func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
+	var modelRules []*model.Rule
+	for _, rule := range req.GetRules() {
+		modelRules = append(modelRules, &model.Rule{
+			Name:      rule.Name,
+			Typ:       rule.Typ,
+			Desc:      rule.Desc,
+			Value:     rule.Value,
+			Level:     rule.Level,
+			IsDefault: rule.IsDefault,
+		})
+	}
+
 	d.init(&Config{
+		Rules:          modelRules,
 		IsOfflineAudit: req.GetIsOffline(),
 		Schema:         req.GetInstanceMeta().GetDatabaseOpen(),
 		Inst: &model.Instance{
