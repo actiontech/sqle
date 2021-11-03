@@ -11,6 +11,15 @@ import (
 )
 
 const (
+	RuleTypeGlobalConfig       = "全局配置"
+	RuleTypeNamingConvention   = "命名规范"
+	RuleTypeIndexingConvention = "索引规范"
+	RuleTypeDDLConvention      = "DDL规范"
+	RuleTypeDMLConvention      = "DML规范"
+	RuleTypeUsageSuggestion    = "使用建议"
+)
+
+const (
 	RuleLevelNormal = "normal"
 	RuleLevelNotice = "notice"
 	RuleLevelWarn   = "warn"
