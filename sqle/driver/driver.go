@@ -158,8 +158,8 @@ type Driver interface {
 	GenRollbackSQL(ctx context.Context, sql string) (string, string, error)
 }
 
-// BaseDriver is the interface that all SQLe plugins must support.
-type BaseDriver interface {
+// Registerer is the interface that all SQLe plugins must support.
+type Registerer interface {
 	// Name returns plugin name.
 	Name() string
 
