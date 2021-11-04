@@ -140,14 +140,13 @@ func InitPlugins(pluginDir string) error {
 }
 
 // ServePlugin start plugin process service. It should be called on plugin process.
-// initDriver is a closure which should hold the pointer to driver.
-func ServePlugin(driver Driver, base BaseDriver, initDriver func(cfg *Config)) {
-	name := base.Name()
+func ServePlugin(r Registerer, newDriver func(cfg *Config) Driver) {
+	name := r.Name()
 	goPlugin.Serve(&goPlugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,
 
 		Plugins: goPlugin.PluginSet{
-			name: &driverPlugin{Srv: &driverGRPCServer{Impl: driver, Base: base, init: initDriver}},
+			name: &driverPlugin{Srv: &driverGRPCServer{r: r, newDriver: newDriver}},
 		},
 
 		// A non-nil value here enables gRPC serving for this plugin...
@@ -283,14 +282,12 @@ func (s *driverPluginClient) GenRollbackSQL(ctx context.Context, sql string) (st
 
 // driverPlugin use for hide gRPC detail.
 type driverGRPCServer struct {
-	// todo: func params whould be replcate with DNS.
-	init func(cfg *Config)
+	newDriver func(cfg *Config) Driver
 
-	// Impl is plugin's Driver implementation by plugin.
-	Impl Driver
+	impl Driver
 
-	// Base provide some plugin info to host process.
-	Base BaseDriver
+	// Registerer provide some plugin info to host process.
+	r Registerer
 }
 
 func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
@@ -306,7 +303,7 @@ func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*p
 		})
 	}
 
-	d.init(&Config{
+	d.impl = d.newDriver(&Config{
 		Rules:          modelRules,
 		IsOfflineAudit: req.GetIsOffline(),
 		Schema:         req.GetInstanceMeta().GetDatabaseOpen(),
@@ -320,16 +317,16 @@ func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*p
 }
 
 func (d *driverGRPCServer) Close(ctx context.Context, req *proto.Empty) (*proto.Empty, error) {
-	d.Impl.Close(ctx)
+	d.impl.Close(ctx)
 	return &proto.Empty{}, nil
 }
 
 func (d *driverGRPCServer) Ping(ctx context.Context, req *proto.Empty) (*proto.Empty, error) {
-	return &proto.Empty{}, d.Impl.Ping(ctx)
+	return &proto.Empty{}, d.impl.Ping(ctx)
 }
 
 func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*proto.ExecResponse, error) {
-	result, err := d.Impl.Exec(ctx, req.GetQuery())
+	result, err := d.impl.Exec(ctx, req.GetQuery())
 	if err != nil {
 		return &proto.ExecResponse{}, nil
 	}
@@ -349,7 +346,7 @@ func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*p
 }
 
 func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto.TxResponse, error) {
-	resluts, err := d.Impl.Tx(ctx, req.GetQueries()...)
+	resluts, err := d.impl.Tx(ctx, req.GetQueries()...)
 	if err != nil {
 		return &proto.TxResponse{}, nil
 	}
@@ -375,12 +372,12 @@ func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto
 }
 
 func (d *driverGRPCServer) Databases(ctx context.Context, req *proto.Empty) (*proto.DatabasesResponse, error) {
-	databases, err := d.Impl.Schemas(ctx)
+	databases, err := d.impl.Schemas(ctx)
 	return &proto.DatabasesResponse{Databases: databases}, err
 }
 
 func (d *driverGRPCServer) Parse(ctx context.Context, req *proto.ParseRequest) (*proto.ParseResponse, error) {
-	nodes, err := d.Impl.Parse(ctx, req.GetSqlText())
+	nodes, err := d.impl.Parse(ctx, req.GetSqlText())
 	if err != nil {
 		return &proto.ParseResponse{}, err
 	}
@@ -397,7 +394,7 @@ func (d *driverGRPCServer) Parse(ctx context.Context, req *proto.ParseRequest) (
 }
 
 func (d *driverGRPCServer) Audit(ctx context.Context, req *proto.AuditRequest) (*proto.AuditResponse, error) {
-	auditResluts, err := d.Impl.Audit(ctx, req.GetSql())
+	auditResluts, err := d.impl.Audit(ctx, req.GetSql())
 	if err != nil {
 		return &proto.AuditResponse{}, nil
 	}
@@ -413,7 +410,7 @@ func (d *driverGRPCServer) Audit(ctx context.Context, req *proto.AuditRequest) (
 }
 
 func (d *driverGRPCServer) GenRollbackSQL(ctx context.Context, req *proto.GenRollbackSQLRequest) (*proto.GenRollbackSQLResponse, error) {
-	rollbackSQL, reason, err := d.Impl.GenRollbackSQL(ctx, req.GetSql())
+	rollbackSQL, reason, err := d.impl.GenRollbackSQL(ctx, req.GetSql())
 	return &proto.GenRollbackSQLResponse{
 		Sql:    rollbackSQL,
 		Reason: reason,
@@ -423,7 +420,7 @@ func (d *driverGRPCServer) GenRollbackSQL(ctx context.Context, req *proto.GenRol
 func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.MetasResponse, error) {
 	var protoRules []*proto.Rule
 
-	for _, r := range d.Base.Rules() {
+	for _, r := range d.r.Rules() {
 		protoRules = append(protoRules, &proto.Rule{
 			Name:      r.Name,
 			Desc:      r.Desc,
@@ -435,7 +432,7 @@ func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.
 	}
 
 	return &proto.MetasResponse{
-		Name:  d.Base.Name(),
+		Name:  d.r.Name(),
 		Rules: protoRules,
 	}, nil
 }
