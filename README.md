@@ -10,6 +10,9 @@ SQLE is an SQL audit platform. SQLE 是一个支持多场景，原生支持 MySQ
 * [源码安装](https://actiontech.github.io/sqle-docs-cn/2.deploy/2.1_source_deploy.html)
 * [RPM部署](https://actiontech.github.io/sqle-docs-cn/2.deploy/2.2_rpm_deploy.html)
 * [docker部署](https://actiontech.github.io/sqle-docs-cn/2.deploy/2.3_docker_deploy.html) (*推荐*)
+## SQL audit plugin
+You can use the [SQL audit plugin](https://actiontech.github.io/sqle-docs-cn/3.modules/3.7_auditplugin/overview.html) to support other databases.
+* [PostgreSQL](https://github.com/actiontech/sqle-pg-plugin)
 ## Community
 * QQ group: 637150065
 * Subscribe "Actiontech Open Source Community" on WeChat to get further information on *SQLE*:
