@@ -140,14 +140,13 @@ func InitPlugins(pluginDir string) error {
 }
 
 // ServePlugin start plugin process service. It should be called on plugin process.
-// initDriver is a closure which should hold the pointer to driver.
-func ServePlugin(driver Driver, base BaseDriver, initDriver func(cfg *Config)) {
-	name := base.Name()
+func ServePlugin(driver Driver, r Registerer, initDriver func(cfg *Config)) {
+	name := r.Name()
 	goPlugin.Serve(&goPlugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,
 
 		Plugins: goPlugin.PluginSet{
-			name: &driverPlugin{Srv: &driverGRPCServer{Impl: driver, Base: base, init: initDriver}},
+			name: &driverPlugin{Srv: &driverGRPCServer{Impl: driver, r: r, init: initDriver}},
 		},
 
 		// A non-nil value here enables gRPC serving for this plugin...
@@ -289,8 +288,8 @@ type driverGRPCServer struct {
 	// Impl is plugin's Driver implementation by plugin.
 	Impl Driver
 
-	// Base provide some plugin info to host process.
-	Base BaseDriver
+	// Registerer provide some plugin info to host process.
+	r Registerer
 }
 
 func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
@@ -423,7 +422,7 @@ func (d *driverGRPCServer) GenRollbackSQL(ctx context.Context, req *proto.GenRol
 func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.MetasResponse, error) {
 	var protoRules []*proto.Rule
 
-	for _, r := range d.Base.Rules() {
+	for _, r := range d.r.Rules() {
 		protoRules = append(protoRules, &proto.Rule{
 			Name:      r.Name,
 			Desc:      r.Desc,
@@ -435,7 +434,7 @@ func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.
 	}
 
 	return &proto.MetasResponse{
-		Name:  d.Base.Name(),
+		Name:  d.r.Name(),
 		Rules: protoRules,
 	}, nil
 }
