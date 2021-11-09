@@ -121,6 +121,7 @@ func (s *Storage) AutoMigrate() error {
 		&AuditPlanReport{},
 		&AuditPlanSQL{},
 		&AuditPlanReportSQL{},
+		&LDAPConfiguration{},
 	).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)

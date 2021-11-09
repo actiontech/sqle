@@ -103,6 +103,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.DELETE("/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById, AdminUserAllowed())
 
 		// configurations
+		v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
+		v1Router.PATCH("/configurations/ldap", v1.UpdateLDAPConfiguration, AdminUserAllowed())
 		v1Router.GET("/configurations/smtp", v1.GetSMTPConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/smtp", v1.UpdateSMTPConfiguration, AdminUserAllowed())
 		v1Router.GET("/configurations/system_variables", v1.GetSystemVariables, AdminUserAllowed())
