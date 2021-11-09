@@ -610,6 +610,64 @@
                 }
             }
         },
+        "/v1/configurations/ldap": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get LDAP configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 LDAP 配置",
+                "operationId": "getLDAPConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetLDAPConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update LDAP configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加 LDAP 配置",
+                "operationId": "updateLDAPConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update LDAP configuration req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.LDAPConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -3685,6 +3743,23 @@
                 }
             }
         },
+        "v1.GetLDAPConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.LDAPConfigurationResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRoleTipsResV1": {
             "type": "object",
             "properties": {
@@ -4081,6 +4156,61 @@
                     "type": "string"
                 },
                 "instance_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.LDAPConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "enable_ldap": {
+                    "type": "boolean"
+                },
+                "ldap_connect_dn": {
+                    "type": "string"
+                },
+                "ldap_connect_pwd": {
+                    "type": "string"
+                },
+                "ldap_search_base_dn": {
+                    "type": "string"
+                },
+                "ldap_server_host": {
+                    "type": "string"
+                },
+                "ldap_server_port": {
+                    "type": "string"
+                },
+                "ldap_user_email_rdn_key": {
+                    "type": "string"
+                },
+                "ldap_user_name_rdn_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.LDAPConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "enable_ldap": {
+                    "type": "boolean"
+                },
+                "ldap_connect_dn": {
+                    "type": "string"
+                },
+                "ldap_search_base_dn": {
+                    "type": "string"
+                },
+                "ldap_server_host": {
+                    "type": "string"
+                },
+                "ldap_server_port": {
+                    "type": "string"
+                },
+                "ldap_user_email_rdn_key": {
+                    "type": "string"
+                },
+                "ldap_user_name_rdn_key": {
                     "type": "string"
                 }
             }
