@@ -79,6 +79,85 @@ func (s *Storage) GetSMTPConfiguration() (*SMTPConfiguration, bool, error) {
 	return smtpC, true, errors.New(errors.ConnectStorageError, err)
 }
 
+// LDAPConfiguration store ldap server configuration.
+type LDAPConfiguration struct {
+	Model
+	// whether the ldap is enabled
+	Enable bool `json:"enable" gorm:"not null"`
+	// ldap server's ip
+	Host string `json:"host" gorm:"not null"`
+	// ldap server's port
+	Port string `json:"port" gorm:"not null"`
+	// the DN of the ldap administrative user for verification
+	ConnectDn string `json:"connect_dn" gorm:"not null"`
+	// the password of the ldap administrative user for verification
+	ConnectPassword string `json:"-" gorm:"-"`
+	// the secret password of the ldap administrative user for verification
+	ConnectSecretPassword string `json:"connect_secret_password" gorm:"not null"`
+	// base dn used for ldap verification
+	BaseDn string `json:"base_dn" gorm:"not null"`
+	// the key corresponding to the user name in ldap
+	UserNameRdnKey string `json:"ldap_user_name_rdn_key" gorm:"not null"`
+	// the key corresponding to the user email in ldap
+	UserEmailRdnKey string `json:"ldap_user_email_rdn_key" gorm:"not null"`
+}
+
+func (i *LDAPConfiguration) TableName() string {
+	return fmt.Sprintf("%v_ldap", globalConfigurationTablePrefix)
+}
+
+// BeforeSave is a hook implement gorm model before exec create
+func (i *LDAPConfiguration) BeforeSave() error {
+	return i.encryptPassword()
+}
+
+// AfterFind is a hook implement gorm model after query, ignore err if query from db
+func (i *LDAPConfiguration) AfterFind() error {
+	err := i.decryptPassword()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt password for ldap administrative user failed, error: %v", err)
+	}
+	return nil
+}
+
+func (i *LDAPConfiguration) decryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.ConnectPassword == "" {
+		data, err := utils.AesDecrypt(i.ConnectSecretPassword)
+		if err != nil {
+			return err
+		} else {
+			i.ConnectPassword = string(data)
+		}
+	}
+	return nil
+}
+
+func (i *LDAPConfiguration) encryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.ConnectSecretPassword == "" {
+		data, err := utils.AesEncrypt(i.ConnectPassword)
+		if err != nil {
+			return err
+		}
+		i.ConnectSecretPassword = string(data)
+	}
+	return nil
+}
+
+func (s *Storage) GetLDAPConfiguration() (*LDAPConfiguration, bool, error) {
+	ldapC := new(LDAPConfiguration)
+	err := s.db.Last(ldapC).Error
+	if err == gorm.ErrRecordNotFound {
+		return ldapC, false, nil
+	}
+	return ldapC, true, errors.New(errors.ConnectStorageError, err)
+}
+
 const (
 	SystemVariableWorkflowExpiredHours = "system_variable_workflow_expired_hours"
 )
