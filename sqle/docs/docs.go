@@ -670,7 +670,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdateLDAPConfigurationReqV1"
+                            "$ref": "#/definitions/v1.LDAPConfigurationReqV1"
                         }
                     }
                 ],
@@ -4176,31 +4176,57 @@ var doc = `{
                 }
             }
         },
+        "v1.LDAPConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "enable_ldap": {
+                    "type": "boolean"
+                },
+                "ldap_connect_dn": {
+                    "type": "string"
+                },
+                "ldap_connect_pwd": {
+                    "type": "string"
+                },
+                "ldap_search_base_dn": {
+                    "type": "string"
+                },
+                "ldap_server_host": {
+                    "type": "string"
+                },
+                "ldap_server_port": {
+                    "type": "string"
+                },
+                "ldap_user_email_rdn_key": {
+                    "type": "string"
+                },
+                "ldap_user_name_rdn_key": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.LDAPConfigurationResV1": {
             "type": "object",
             "properties": {
-                "enableLdap": {
+                "enable_ldap": {
                     "type": "boolean"
                 },
-                "ldapConnectDn": {
+                "ldap_connect_dn": {
                     "type": "string"
                 },
-                "ldapConnectPwd": {
+                "ldap_search_base_dn": {
                     "type": "string"
                 },
-                "ldapSearchBaseDn": {
+                "ldap_server_host": {
                     "type": "string"
                 },
-                "ldapServerHost": {
+                "ldap_server_port": {
                     "type": "string"
                 },
-                "ldapServerPort": {
+                "ldap_user_email_rdn_key": {
                     "type": "string"
                 },
-                "ldapUserEmailRdnKey": {
-                    "type": "string"
-                },
-                "ldapUserNameRdnKey": {
+                "ldap_user_name_rdn_key": {
                     "type": "string"
                 }
             }
@@ -4498,23 +4524,6 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.UpdateLDAPConfigurationReqV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.LDAPConfigurationResV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
