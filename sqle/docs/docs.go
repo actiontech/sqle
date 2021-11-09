@@ -626,6 +626,64 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/ldap": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get LDAP configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 LDAP 配置",
+                "operationId": "getLDAPConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetLDAPConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update LDAP configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加 LDAP 配置",
+                "operationId": "updateLDAPConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update LDAP configuration req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateLDAPConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -3701,6 +3759,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetLDAPConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.LDAPConfigurationResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRoleTipsResV1": {
             "type": "object",
             "properties": {
@@ -4101,6 +4176,35 @@ var doc = `{
                 }
             }
         },
+        "v1.LDAPConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "enableLdap": {
+                    "type": "boolean"
+                },
+                "ldapConnectDn": {
+                    "type": "string"
+                },
+                "ldapConnectPwd": {
+                    "type": "string"
+                },
+                "ldapSearchBaseDn": {
+                    "type": "string"
+                },
+                "ldapServerHost": {
+                    "type": "string"
+                },
+                "ldapServerPort": {
+                    "type": "string"
+                },
+                "ldapUserEmailRdnKey": {
+                    "type": "string"
+                },
+                "ldapUserNameRdnKey": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.PartialSyncAuditPlanSQLsReqV1": {
             "type": "object",
             "properties": {
@@ -4394,6 +4498,23 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.UpdateLDAPConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.LDAPConfigurationResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

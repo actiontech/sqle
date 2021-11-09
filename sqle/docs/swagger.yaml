@@ -95,18 +95,18 @@ definitions:
         type: number
       sql_source:
         enum:
-        - form_data
-        - sql_file
-        - mybatis_xml_file
-        - audit_plan
+          - form_data
+          - sql_file
+          - mybatis_xml_file
+          - audit_plan
         type: string
       status:
         enum:
-        - initialized
-        - audited
-        - executing
-        - exec_success
-        - exec_failed
+          - initialized
+          - audited
+          - executing
+          - exec_success
+          - exec_failed
         type: string
       task_id:
         type: integer
@@ -190,8 +190,8 @@ definitions:
         type: string
       match_type:
         enum:
-        - exact_match
-        - fp_match
+          - exact_match
+          - fp_match
         example: exact_match
         type: string
       value:
@@ -556,6 +556,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetLDAPConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.LDAPConfigurationResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRoleTipsResV1:
     properties:
       code:
@@ -831,6 +843,25 @@ definitions:
       instance_type:
         type: string
     type: object
+  v1.LDAPConfigurationResV1:
+    properties:
+      enableLdap:
+        type: boolean
+      ldapConnectDn:
+        type: string
+      ldapConnectPwd:
+        type: string
+      ldapSearchBaseDn:
+        type: string
+      ldapServerHost:
+        type: string
+      ldapServerPort:
+        type: string
+      ldapUserEmailRdnKey:
+        type: string
+      ldapUserNameRdnKey:
+        type: string
+    type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -884,10 +915,10 @@ definitions:
         type: string
       level:
         enum:
-        - normal
-        - notice
-        - warn
-        - error
+          - normal
+          - notice
+          - warn
+          - error
         example: error
         type: string
       rule_name:
@@ -980,8 +1011,8 @@ definitions:
         type: string
       match_type:
         enum:
-        - exact_match
-        - fp_match
+          - exact_match
+          - fp_match
         example: exact_match
         type: string
       value:
@@ -1031,6 +1062,18 @@ definitions:
       workflow_template_name:
         type: string
     type: object
+  v1.UpdateLDAPConfigurationReqV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.LDAPConfigurationResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.UpdateOtherUserPasswordReqV1:
     properties:
       password:
@@ -1055,7 +1098,7 @@ definitions:
         type: string
       instance_name_list:
         example:
-        - mysql-xxx
+          - mysql-xxx
         items:
           type: string
         type: array
@@ -1166,8 +1209,8 @@ definitions:
         type: string
       type:
         enum:
-        - sql_review
-        - sql_execute
+          - sql_review
+          - sql_execute
         type: string
     type: object
   v1.WorkFlowStepTemplateResV1:
@@ -1195,17 +1238,17 @@ definitions:
         type: array
       current_step_type:
         enum:
-        - sql_review
-        - sql_execute
+          - sql_review
+          - sql_execute
         type: string
       desc:
         type: string
       status:
         enum:
-        - on_process
-        - finished
-        - rejected
-        - canceled
+          - on_process
+          - finished
+          - rejected
+          - canceled
         type: string
       subject:
         type: string
@@ -1217,11 +1260,11 @@ definitions:
         type: number
       task_status:
         enum:
-        - initialized
-        - audited
-        - executing
-        - exec_succeeded
-        - exec_failed
+          - initialized
+          - audited
+          - executing
+          - exec_succeeded
+          - exec_failed
         type: string
       workflow_id:
         type: integer
@@ -1232,10 +1275,10 @@ definitions:
         type: integer
       status:
         enum:
-        - on_process
-        - finished
-        - rejected
-        - canceled
+          - on_process
+          - finished
+          - rejected
+          - canceled
         type: string
       task_id:
         type: integer
@@ -1293,16 +1336,16 @@ definitions:
         type: string
       state:
         enum:
-        - initialized
-        - approved
-        - rejected
+          - initialized
+          - approved
+          - rejected
         type: string
       type:
         enum:
-        - create_workflow
-        - update_workflow
-        - sql_review
-        - sql_execute
+          - create_workflow
+          - update_workflow
+          - sql_review
+          - sql_execute
         type: string
       workflow_step_id:
         type: integer
@@ -1346,367 +1389,367 @@ paths:
       description: get audit plan info list
       operationId: getAuditPlansV1
       parameters:
-      - description: filter audit plan db type
-        in: query
-        name: filter_audit_plan_db_type
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: filter audit plan db type
+          in: query
+          name: filter_audit_plan_db_type
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditPlansResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取审核计划信息列表
       tags:
-      - audit_plan
+        - audit_plan
     post:
       consumes:
-      - application/json
+        - application/json
       description: create audit plan
       operationId: createAuditPlanV1
       parameters:
-      - description: create audit plan
-        in: body
-        name: audit_plan
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateAuditPlanReqV1'
+        - description: create audit plan
+          in: body
+          name: audit_plan
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateAuditPlanReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 添加审核计划
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_plans/{audit_plan_name}/:
     delete:
       description: delete audit plan
       operationId: deleteAuditPlanV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 删除审核计划
       tags:
-      - audit_plan
+        - audit_plan
     get:
       description: get audit plan
       operationId: getAuditPlanV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditPlanResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取指定审核计划
       tags:
-      - audit_plan
+        - audit_plan
     patch:
       description: update audit plan
       operationId: updateAuditPlanV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
-      - description: update audit plan
-        in: body
-        name: audit_plan
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateAuditPlanReqV1'
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
+        - description: update audit plan
+          in: body
+          name: audit_plan
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateAuditPlanReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新审核计划
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/:
     get:
       description: get audit plan report SQLs
       operationId: getAuditPlanReportSQLsV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
-      - description: audit plan report id
-        in: path
-        name: audit_plan_report_id
-        required: true
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
+        - description: audit plan report id
+          in: path
+          name: audit_plan_report_id
+          required: true
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditPlanReportSQLsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取指定审核计划的SQL审核详情
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_plans/{audit_plan_name}/reports:
     get:
       description: get audit plan report list
       operationId: getAuditPlanReportsV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditPlanReportsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取指定审核计划的报告列表
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls:
     get:
       description: get audit plan SQLs
       operationId: getAuditPlanSQLsV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditPlanSQLsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取指定审核计划的SQLs信息(不包括审核结果)
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls/full:
     post:
       description: full sync audit plan SQLs
       operationId: fullSyncAuditPlanSQLsV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
-      - description: full sync audit plan SQLs request
-        in: body
-        name: sqls
-        required: true
-        schema:
-          $ref: '#/definitions/v1.FullSyncAuditPlanSQLsReqV1'
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
+        - description: full sync audit plan SQLs request
+          in: body
+          name: sqls
+          required: true
+          schema:
+            $ref: '#/definitions/v1.FullSyncAuditPlanSQLsReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 全量同步SQL到审核计划
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls/partial:
     post:
       description: partial sync audit plan SQLs
       operationId: partialSyncAuditPlanSQLsV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
-      - description: partial sync audit plan SQLs request
-        in: body
-        name: sqls
-        required: true
-        schema:
-          $ref: '#/definitions/v1.PartialSyncAuditPlanSQLsReqV1'
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
+        - description: partial sync audit plan SQLs request
+          in: body
+          name: sqls
+          required: true
+          schema:
+            $ref: '#/definitions/v1.PartialSyncAuditPlanSQLsReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 增量同步SQL到审核计划
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_plans/{audit_plan_name}/trigger:
     post:
       description: trigger audit plan
       operationId: triggerAuditPlanV1
       parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
+        - description: audit plan name
+          in: path
+          name: audit_plan_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.TriggerAuditPlanResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 触发审核计划
       tags:
-      - audit_plan
+        - audit_plan
   /v1/audit_whitelist:
     get:
       description: get all whitelist
       operationId: getAuditWhitelistV1
       parameters:
-      - description: page index
-        in: query
-        name: page_index
-        type: string
-      - description: page size
-        in: query
-        name: page_size
-        type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: string
+        - description: page size
+          in: query
+          name: page_size
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditWhitelistResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取Sql审核白名单
       tags:
-      - audit_whitelist
+        - audit_whitelist
     post:
       consumes:
-      - application/json
+        - application/json
       description: create a sql whitelist
       operationId: createAuditWhitelistV1
       parameters:
-      - description: add sql whitelist req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateAuditWhitelistReqV1'
+        - description: add sql whitelist req
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateAuditWhitelistReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 添加SQL白名单
       tags:
-      - audit_whitelist
+        - audit_whitelist
   /v1/audit_whitelist/{audit_whitelist_id}/:
     delete:
       description: remove sql white
       operationId: deleteAuditWhitelistByIdV1
       parameters:
-      - description: audit whitelist id
-        in: path
-        name: audit_whitelist_id
-        required: true
-        type: string
+        - description: audit whitelist id
+          in: path
+          name: audit_whitelist_id
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 删除SQL白名单信息
       tags:
-      - audit_whitelist
+        - audit_whitelist
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update sql whitelist by id
       operationId: UpdateAuditWhitelistByIdV1
       parameters:
-      - description: sql audit whitelist id
-        in: path
-        name: audit_whitelist_id
-        required: true
-        type: string
-      - description: update sql whitelist req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateAuditWhitelistReqV1'
+        - description: sql audit whitelist id
+          in: path
+          name: audit_whitelist_id
+          required: true
+          type: string
+        - description: update sql whitelist req
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateAuditWhitelistReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新SQL白名单
       tags:
-      - audit_whitelist
+        - audit_whitelist
   /v1/configurations/drivers:
     get:
       description: get drivers
@@ -1717,10 +1760,46 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetDriversResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取当前 server 支持的审核类型
       tags:
-      - configuration
+        - configuration
+  /v1/configurations/ldap:
+    get:
+      description: get LDAP configuration
+      operationId: getLDAPConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetLDAPConfigurationResV1'
+      security:
+        - ApiKeyAuth: []
+      summary: 获取 LDAP 配置
+      tags:
+        - configuration
+    patch:
+      consumes:
+        - application/json
+      description: update LDAP configuration
+      operationId: updateLDAPConfigurationV1
+      parameters:
+        - description: update LDAP configuration req
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateLDAPConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+        - ApiKeyAuth: []
+      summary: 添加 LDAP 配置
+      tags:
+        - configuration
   /v1/configurations/smtp:
     get:
       description: get SMTP configuration
@@ -1731,32 +1810,32 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetSMTPConfigurationResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取 SMTP 配置
       tags:
-      - configuration
+        - configuration
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update SMTP configuration
       operationId: updateSMTPConfigurationV1
       parameters:
-      - description: update SMTP configuration req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateSMTPConfigurationReqV1'
+        - description: update SMTP configuration req
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateSMTPConfigurationReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 添加 SMTP 配置
       tags:
-      - configuration
+        - configuration
   /v1/configurations/system_variables:
     get:
       description: get system variables
@@ -1767,302 +1846,302 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetSystemVariablesResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取系统变量
       tags:
-      - configuration
+        - configuration
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update system variables
       operationId: updateSystemVariablesV1
       parameters:
-      - description: update system variables request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateSystemVariablesReqV1'
+        - description: update system variables request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateSystemVariablesReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 修改系统变量
       tags:
-      - configuration
+        - configuration
   /v1/dashboard:
     get:
       description: get dashboard info
       operationId: getDashboardV1
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetDashboardResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取 dashboard 信息
       tags:
-      - dashboard
+        - dashboard
   /v1/instance_connection:
     post:
       consumes:
-      - application/json
+        - application/json
       description: test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集
       operationId: checkInstanceIsConnectableV1
       parameters:
-      - description: instance info
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.GetInstanceConnectableReqV1'
+        - description: instance info
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.GetInstanceConnectableReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetInstanceConnectableResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 实例连通性测试（实例提交前）
       tags:
-      - instance
+        - instance
   /v1/instance_tips:
     get:
       description: get instance tip list
       operationId: getInstanceTipListV1
       parameters:
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
+        - description: filter db type
+          in: query
+          name: filter_db_type
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetInstanceTipsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取实例提示列表
       tags:
-      - instance
+        - instance
   /v1/instances:
     get:
       description: get instance info list
       operationId: getInstanceListV1
       parameters:
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
-      - description: filter db host
-        in: query
-        name: filter_db_host
-        type: string
-      - description: filter db port
-        in: query
-        name: filter_db_port
-        type: string
-      - description: filter db user
-        in: query
-        name: filter_db_user
-        type: string
-      - description: filter workflow rule template name
-        in: query
-        name: filter_workflow_template_name
-        type: string
-      - description: filter rule template name
-        in: query
-        name: filter_rule_template_name
-        type: string
-      - description: filter role name
-        in: query
-        name: filter_role_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: filter instance name
+          in: query
+          name: filter_instance_name
+          type: string
+        - description: filter db type
+          in: query
+          name: filter_db_type
+          type: string
+        - description: filter db host
+          in: query
+          name: filter_db_host
+          type: string
+        - description: filter db port
+          in: query
+          name: filter_db_port
+          type: string
+        - description: filter db user
+          in: query
+          name: filter_db_user
+          type: string
+        - description: filter workflow rule template name
+          in: query
+          name: filter_workflow_template_name
+          type: string
+        - description: filter rule template name
+          in: query
+          name: filter_rule_template_name
+          type: string
+        - description: filter role name
+          in: query
+          name: filter_role_name
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetInstancesResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取实例信息列表
       tags:
-      - instance
+        - instance
     post:
       consumes:
-      - application/json
+        - application/json
       description: create a instance
       operationId: createInstanceV1
       parameters:
-      - description: add instance
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateInstanceReqV1'
+        - description: add instance
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateInstanceReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 添加实例
       tags:
-      - instance
+        - instance
   /v1/instances/{instance_name}/:
     delete:
       description: delete instance db
       operationId: deleteInstanceV1
       parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
+        - description: instance name
+          in: path
+          name: instance_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 删除实例
       tags:
-      - instance
+        - instance
     get:
       description: get instance db
       operationId: getInstanceV1
       parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
+        - description: instance name
+          in: path
+          name: instance_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetInstanceResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取实例信息
       tags:
-      - instance
+        - instance
     patch:
       description: update instance
       operationId: updateInstanceV1
       parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: update instance request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateInstanceReqV1'
+        - description: instance name
+          in: path
+          name: instance_name
+          required: true
+          type: string
+        - description: update instance request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateInstanceReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新实例
       tags:
-      - instance
+        - instance
   /v1/instances/{instance_name}/connection:
     get:
       description: test instance db connection
       operationId: checkInstanceIsConnectableByNameV1
       parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
+        - description: instance name
+          in: path
+          name: instance_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetInstanceConnectableResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 实例连通性测试（实例提交后）
       tags:
-      - instance
+        - instance
   /v1/instances/{instance_name}/rules:
     get:
       description: get instance all rule
       operationId: getInstanceRuleListV1
       parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
+        - description: instance name
+          in: path
+          name: instance_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetRulesResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取实例应用的规则列表
       tags:
-      - instance
+        - instance
   /v1/instances/{instance_name}/schemas:
     get:
       description: instance schema list
       operationId: getInstanceSchemasV1
       parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
+        - description: instance name
+          in: path
+          name: instance_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetInstanceSchemaResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 实例 Schema 列表
       tags:
-      - instance
+        - instance
   /v1/login:
     post:
       description: user login
       operationId: loginV1
       parameters:
-      - description: user login request
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UserLoginReqV1'
+        - description: user login request
+          in: body
+          name: user
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UserLoginReqV1'
       responses:
         "200":
           description: OK
@@ -2070,7 +2149,7 @@ paths:
             $ref: '#/definitions/v1.GetUserLoginResV1'
       summary: 用户登录
       tags:
-      - user
+        - user
   /v1/role_tips:
     get:
       description: get role tip list
@@ -2081,309 +2160,309 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetRoleTipsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取角色提示列表
       tags:
-      - role
+        - role
   /v1/roles:
     get:
       consumes:
-      - application/json
+        - application/json
       description: get role list
       operationId: getRoleListV1
       parameters:
-      - description: filter role name
-        in: query
-        name: filter_role_name
-        type: string
-      - description: filter user name
-        in: query
-        name: filter_user_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: filter role name
+          in: query
+          name: filter_role_name
+          type: string
+        - description: filter user name
+          in: query
+          name: filter_user_name
+          type: string
+        - description: filter instance name
+          in: query
+          name: filter_instance_name
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetRolesResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取角色列表
       tags:
-      - role
+        - role
     post:
       consumes:
-      - application/json
+        - application/json
       description: create role
       operationId: createRoleV1
       parameters:
-      - description: create role
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateRoleReqV1'
+        - description: create role
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateRoleReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 创建角色
       tags:
-      - role
+        - role
   /v1/roles/{role_name}/:
     delete:
       consumes:
-      - application/json
+        - application/json
       description: delete role
       operationId: deleteRoleV1
       parameters:
-      - description: role name
-        in: path
-        name: role_name
-        required: true
-        type: string
+        - description: role name
+          in: path
+          name: role_name
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 删除角色
       tags:
-      - role
+        - role
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update role
       operationId: updateRoleV1
       parameters:
-      - description: role name
-        in: path
-        name: role_name
-        required: true
-        type: string
-      - description: update role request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateRoleReqV1'
+        - description: role name
+          in: path
+          name: role_name
+          required: true
+          type: string
+        - description: update role request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateRoleReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新角色信息
       tags:
-      - role
+        - role
   /v1/rule_template_tips:
     get:
       description: get rule template tips
       operationId: getRuleTemplateTipsV1
       parameters:
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
+        - description: filter db type
+          in: query
+          name: filter_db_type
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetRuleTemplateTipsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取规则模板提示
       tags:
-      - rule_template
+        - rule_template
   /v1/rule_templates:
     get:
       description: get all rule template
       operationId: getRuleTemplateListV1
       parameters:
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: filter instance name
+          in: query
+          name: filter_instance_name
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetRuleTemplatesResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 规则模板列表
       tags:
-      - rule_template
+        - rule_template
     post:
       consumes:
-      - application/json
+        - application/json
       description: create a rule template
       operationId: createRuleTemplateV1
       parameters:
-      - description: add rule template request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateRuleTemplateReqV1'
+        - description: add rule template request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateRuleTemplateReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 添加规则模板
       tags:
-      - rule_template
+        - rule_template
   /v1/rule_templates/{rule_template_name}/:
     delete:
       description: delete rule template
       operationId: deleteRuleTemplateV1
       parameters:
-      - description: rule template name
-        in: path
-        name: rule_template_name
-        required: true
-        type: string
+        - description: rule template name
+          in: path
+          name: rule_template_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 删除规则模板
       tags:
-      - rule_template
+        - rule_template
     get:
       description: get rule template
       operationId: getRuleTemplateV1
       parameters:
-      - description: rule template name
-        in: path
-        name: rule_template_name
-        required: true
-        type: string
+        - description: rule template name
+          in: path
+          name: rule_template_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetRuleTemplateResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取规则模板信息
       tags:
-      - rule_template
+        - rule_template
     patch:
       description: update rule template
       operationId: updateRuleTemplateV1
       parameters:
-      - description: rule template name
-        in: path
-        name: rule_template_name
-        required: true
-        type: string
-      - description: update rule template request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateRuleTemplateReqV1'
+        - description: rule template name
+          in: path
+          name: rule_template_name
+          required: true
+          type: string
+        - description: update rule template request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateRuleTemplateReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新规则模板
       tags:
-      - rule_template
+        - rule_template
   /v1/rule_templates/{rule_template_name}/clone:
     post:
       consumes:
-      - application/json
+        - application/json
       description: clone a rule template
       operationId: CloneRuleTemplateV1
       parameters:
-      - description: rule template name
-        in: path
-        name: rule_template_name
-        required: true
-        type: string
-      - description: clone rule template request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CloneRuleTemplateReqV1'
+        - description: rule template name
+          in: path
+          name: rule_template_name
+          required: true
+          type: string
+        - description: clone rule template request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CloneRuleTemplateReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 克隆规则模板
       tags:
-      - rule_template
+        - rule_template
   /v1/rules:
     get:
       description: get all rule template
       operationId: getRuleListV1
       parameters:
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
+        - description: filter db type
+          in: query
+          name: filter_db_type
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetRulesResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 规则列表
       tags:
-      - rule_template
+        - rule_template
   /v1/tasks/audits:
     post:
       consumes:
-      - multipart/form-data
+        - multipart/form-data
       description: |-
         create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
         1. formData[sql]: sql content;
@@ -2391,172 +2470,172 @@ paths:
         3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
       operationId: createAndAuditTaskV1
       parameters:
-      - description: instance name
-        in: formData
-        name: instance_name
-        required: true
-        type: string
-      - description: schema of instance
-        in: formData
-        name: instance_schema
-        type: string
-      - description: sqls for audit
-        in: formData
-        name: sql
-        type: string
-      - description: input SQL file
-        in: formData
-        name: input_sql_file
-        type: file
-      - description: input mybatis XML file
-        in: formData
-        name: input_mybatis_xml_file
-        type: file
+        - description: instance name
+          in: formData
+          name: instance_name
+          required: true
+          type: string
+        - description: schema of instance
+          in: formData
+          name: instance_schema
+          type: string
+        - description: sqls for audit
+          in: formData
+          name: sql
+          type: string
+        - description: input SQL file
+          in: formData
+          name: input_sql_file
+          type: file
+        - description: input mybatis XML file
+          in: formData
+          name: input_mybatis_xml_file
+          type: file
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditTaskResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 创建Sql审核任务并提交审核
       tags:
-      - task
+        - task
   /v1/tasks/audits/{task_id}/:
     get:
       description: get task
       operationId: getAuditTaskV1
       parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
+        - description: task id
+          in: path
+          name: task_id
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditTaskResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取Sql审核任务信息
       tags:
-      - task
+        - task
   /v1/tasks/audits/{task_id}/sql_content:
     get:
       description: get SQL content for the audit task
       operationId: getAuditTaskSQLContentV1
       parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
+        - description: task id
+          in: path
+          name: task_id
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditTaskSQLContentResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取指定审核任务的SQL内容
       tags:
-      - task
+        - task
   /v1/tasks/audits/{task_id}/sql_file:
     get:
       description: download SQL file for the audit task
       operationId: downloadAuditTaskSQLFileV1
       parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
+        - description: task id
+          in: path
+          name: task_id
+          required: true
+          type: string
       responses:
         "200":
           description: sql file
           schema:
             type: file
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 下载指定审核任务的SQL文件
       tags:
-      - task
+        - task
   /v1/tasks/audits/{task_id}/sql_report:
     get:
       description: download report file of all SQLs information belong to the specified audit task
       operationId: downloadAuditTaskSQLReportV1
       parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      - description: select unique (fingerprint and audit result) for task sql
-        in: query
-        name: no_duplicate
-        type: boolean
+        - description: task id
+          in: path
+          name: task_id
+          required: true
+          type: string
+        - description: select unique (fingerprint and audit result) for task sql
+          in: query
+          name: no_duplicate
+          type: boolean
       responses:
         "200":
           description: sql report csv file
           schema:
             type: file
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 下载指定审核任务的SQLs信息报告
       tags:
-      - task
+        - task
   /v1/tasks/audits/{task_id}/sqls:
     get:
       description: get information of all SQLs belong to the specified audit task
       operationId: getAuditTaskSQLsV1
       parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      - description: 'filter: exec status of task sql'
-        enum:
-        - initialized
-        - doing
-        - succeeded
-        - failed
-        in: query
-        name: filter_exec_status
-        type: string
-      - description: 'filter: audit status of task sql'
-        enum:
-        - initialized
-        - doing
-        - finished
-        in: query
-        name: filter_audit_status
-        type: string
-      - description: select unique (fingerprint and audit result) for task sql
-        in: query
-        name: no_duplicate
-        type: boolean
-      - description: page index
-        in: query
-        name: page_index
-        type: string
-      - description: page size
-        in: query
-        name: page_size
-        type: string
+        - description: task id
+          in: path
+          name: task_id
+          required: true
+          type: string
+        - description: 'filter: exec status of task sql'
+          enum:
+            - initialized
+            - doing
+            - succeeded
+            - failed
+          in: query
+          name: filter_exec_status
+          type: string
+        - description: 'filter: audit status of task sql'
+          enum:
+            - initialized
+            - doing
+            - finished
+          in: query
+          name: filter_audit_status
+          type: string
+        - description: select unique (fingerprint and audit result) for task sql
+          in: query
+          name: no_duplicate
+          type: boolean
+        - description: page index
+          in: query
+          name: page_index
+          type: string
+        - description: page size
+          in: query
+          name: page_size
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetAuditTaskSQLsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取指定审核任务的SQLs信息
       tags:
-      - task
+        - task
   /v1/user:
     get:
       description: get current user info
@@ -2567,59 +2646,59 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetUserDetailResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取当前用户信息
       tags:
-      - user
+        - user
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update current user
       operationId: updateCurrentUserV1
       parameters:
-      - description: update user
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateCurrentUserReqV1'
+        - description: update user
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateCurrentUserReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新个人信息
       tags:
-      - user
+        - user
   /v1/user/password:
     put:
       consumes:
-      - application/json
+        - application/json
       description: update current user's password
       operationId: UpdateCurrentUserPasswordV1
       parameters:
-      - description: update user's password
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateCurrentUserPasswordReqV1'
+        - description: update user's password
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateCurrentUserPasswordReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 用户修改密码
       tags:
-      - user
+        - user
   /v1/user_tips:
     get:
       description: get user tip list
@@ -2630,163 +2709,163 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetUserTipsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取用户提示列表
       tags:
-      - user
+        - user
   /v1/users:
     get:
       description: get user info list
       operationId: getUserListV1
       parameters:
-      - description: filter user name
-        in: query
-        name: filter_user_name
-        type: string
-      - description: filter role name
-        in: query
-        name: filter_role_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: filter user name
+          in: query
+          name: filter_user_name
+          type: string
+        - description: filter role name
+          in: query
+          name: filter_role_name
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetUsersResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取用户信息列表
       tags:
-      - user
+        - user
     post:
       consumes:
-      - application/json
+        - application/json
       description: create user
       operationId: createUserV1
       parameters:
-      - description: create user
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateUserReqV1'
+        - description: create user
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateUserReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 创建用户
       tags:
-      - user
+        - user
   /v1/users/{user_name}/:
     delete:
       description: delete user
       operationId: deleteUserV1
       parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
+        - description: user name
+          in: path
+          name: user_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 删除用户
       tags:
-      - user
+        - user
     get:
       description: get user info
       operationId: getUserV1
       parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
+        - description: user name
+          in: path
+          name: user_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetUserDetailResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取用户信息
       tags:
-      - user
+        - user
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update user
       operationId: updateUserV1
       parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      - description: update user
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateUserReqV1'
+        - description: user name
+          in: path
+          name: user_name
+          required: true
+          type: string
+        - description: update user
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateUserReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新用户信息
       tags:
-      - user
+        - user
   /v1/users/{user_name}/password:
     patch:
       consumes:
-      - application/json
+        - application/json
       description: admin modifies the passwords of other users
       operationId: UpdateOtherUserPasswordV1
       parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      - description: change user's password
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
+        - description: user name
+          in: path
+          name: user_name
+          required: true
+          type: string
+        - description: change user's password
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: admin修改其他用户密码
       tags:
-      - user
+        - user
   /v1/workflow_template_tips:
     get:
       description: get workflow template tips
@@ -2797,372 +2876,372 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetWorkflowTemplateTipResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取审批流程模板提示信息
       tags:
-      - workflow
+        - workflow
   /v1/workflow_templates:
     get:
       description: get workflow template list
       operationId: getWorkflowTemplateListV1
       parameters:
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetWorkflowTemplatesResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取审批流程模板列表
       tags:
-      - workflow
+        - workflow
     post:
       consumes:
-      - application/json
+        - application/json
       description: create a workflow template
       operationId: createWorkflowTemplateV1
       parameters:
-      - description: create workflow template request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateWorkflowTemplateReqV1'
+        - description: create workflow template request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateWorkflowTemplateReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 创建Sql审批流程模板
       tags:
-      - workflow
+        - workflow
   /v1/workflow_templates/{workflow_template_name}/:
     delete:
       consumes:
-      - application/json
+        - application/json
       description: update the workflow template
       operationId: deleteWorkflowTemplateV1
       parameters:
-      - description: workflow template name
-        in: path
-        name: workflow_template_name
-        required: true
-        type: string
+        - description: workflow template name
+          in: path
+          name: workflow_template_name
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 删除Sql审批流程模板
       tags:
-      - workflow
+        - workflow
     get:
       description: get workflow template detail
       operationId: getWorkflowTemplateV1
       parameters:
-      - description: workflow template name
-        in: path
-        name: workflow_template_name
-        required: true
-        type: string
+        - description: workflow template name
+          in: path
+          name: workflow_template_name
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetWorkflowTemplateResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取审批流程模板详情
       tags:
-      - workflow
+        - workflow
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update the workflow template
       operationId: updateWorkflowTemplateV1
       parameters:
-      - description: workflow template name
-        in: path
-        name: workflow_template_name
-        required: true
-        type: string
-      - description: create workflow template
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateWorkflowTemplateReqV1'
+        - description: workflow template name
+          in: path
+          name: workflow_template_name
+          required: true
+          type: string
+        - description: create workflow template
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateWorkflowTemplateReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新Sql审批流程模板
       tags:
-      - workflow
+        - workflow
   /v1/workflows:
     get:
       description: get workflow list
       operationId: getWorkflowListV1
       parameters:
-      - description: filter subject
-        in: query
-        name: filter_subject
-        type: string
-      - description: filter create time from
-        in: query
-        name: filter_create_time_from
-        type: string
-      - description: filter create time to
-        in: query
-        name: filter_create_time_to
-        type: string
-      - description: filter create user name
-        in: query
-        name: filter_create_user_name
-        type: string
-      - description: filter current step type
-        enum:
-        - sql_review
-        - sql_execute
-        in: query
-        name: filter_current_step_type
-        type: string
-      - description: filter workflow status
-        enum:
-        - on_process
-        - finished
-        - rejected
-        - canceled
-        in: query
-        name: filter_status
-        type: string
-      - description: filter current step assignee user name
-        in: query
-        name: filter_current_step_assignee_user_name
-        type: string
-      - description: filter task status
-        enum:
-        - initialized
-        - audited
-        - executing
-        - exec_succeeded
-        - exec_failed
-        in: query
-        name: filter_task_status
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_task_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
+        - description: filter subject
+          in: query
+          name: filter_subject
+          type: string
+        - description: filter create time from
+          in: query
+          name: filter_create_time_from
+          type: string
+        - description: filter create time to
+          in: query
+          name: filter_create_time_to
+          type: string
+        - description: filter create user name
+          in: query
+          name: filter_create_user_name
+          type: string
+        - description: filter current step type
+          enum:
+            - sql_review
+            - sql_execute
+          in: query
+          name: filter_current_step_type
+          type: string
+        - description: filter workflow status
+          enum:
+            - on_process
+            - finished
+            - rejected
+            - canceled
+          in: query
+          name: filter_status
+          type: string
+        - description: filter current step assignee user name
+          in: query
+          name: filter_current_step_assignee_user_name
+          type: string
+        - description: filter task status
+          enum:
+            - initialized
+            - audited
+            - executing
+            - exec_succeeded
+            - exec_failed
+          in: query
+          name: filter_task_status
+          type: string
+        - description: filter instance name
+          in: query
+          name: filter_task_instance_name
+          type: string
+        - description: page index
+          in: query
+          name: page_index
+          type: integer
+        - description: size of per page
+          in: query
+          name: page_size
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetWorkflowsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取审批流程列表
       tags:
-      - workflow
+        - workflow
     post:
       consumes:
-      - application/json
+        - application/json
       description: create workflow
       operationId: createWorkflowV1
       parameters:
-      - description: create workflow request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateWorkflowReqV1'
+        - description: create workflow request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.CreateWorkflowReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 创建工单
       tags:
-      - workflow
+        - workflow
   /v1/workflows/{workflow_id}/:
     get:
       description: get workflow detail
       operationId: getWorkflowV1
       parameters:
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: integer
+        - description: workflow id
+          in: path
+          name: workflow_id
+          required: true
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetWorkflowResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 获取审批流程详情
       tags:
-      - workflow
+        - workflow
     patch:
       consumes:
-      - application/json
+        - application/json
       description: update workflow when it is rejected to creator.
       operationId: updateWorkflowV1
       parameters:
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      - description: update workflow request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateWorkflowReqV1'
+        - description: workflow id
+          in: path
+          name: workflow_id
+          required: true
+          type: string
+        - description: update workflow request
+          in: body
+          name: instance
+          required: true
+          schema:
+            $ref: '#/definitions/v1.UpdateWorkflowReqV1'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 更新审批流程（驳回后才可更新）
       tags:
-      - workflow
+        - workflow
   /v1/workflows/{workflow_id}/cancel:
     post:
       description: cancel workflow
       operationId: cancelWorkflowV1
       parameters:
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: string
+        - description: workflow id
+          in: path
+          name: workflow_id
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 审批关闭（中止）
       tags:
-      - workflow
+        - workflow
   /v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve:
     post:
       description: approve workflow
       operationId: approveWorkflowV1
       parameters:
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      - description: workflow step id
-        in: path
-        name: workflow_step_id
-        required: true
-        type: string
+        - description: workflow id
+          in: path
+          name: workflow_id
+          required: true
+          type: string
+        - description: workflow step id
+          in: path
+          name: workflow_step_id
+          required: true
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 审批通过
       tags:
-      - workflow
+        - workflow
   /v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject:
     post:
       description: reject workflow
       operationId: rejectWorkflowV1
       parameters:
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      - description: workflow step id
-        in: path
-        name: workflow_step_id
-        required: true
-        type: string
-      - description: workflow approve request
-        in: body
-        name: workflow_approve
-        required: true
-        schema:
-          $ref: '#/definitions/v1.RejectWorkflowReqV1'
+        - description: workflow id
+          in: path
+          name: workflow_id
+          required: true
+          type: string
+        - description: workflow step id
+          in: path
+          name: workflow_step_id
+          required: true
+          type: string
+        - description: workflow approve request
+          in: body
+          name: workflow_approve
+          required: true
+          schema:
+            $ref: '#/definitions/v1.RejectWorkflowReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 审批驳回
       tags:
-      - workflow
+        - workflow
   /v1/workflows/cancel:
     post:
       description: batch cancel workflows
       operationId: batchCancelWorkflowsV1
       parameters:
-      - description: batch cancel workflows request
-        in: body
-        name: BatchCancelWorkflowsReqV1
-        required: true
-        schema:
-          $ref: '#/definitions/v1.BatchCancelWorkflowsReqV1'
+        - description: batch cancel workflows request
+          in: body
+          name: BatchCancelWorkflowsReqV1
+          required: true
+          schema:
+            $ref: '#/definitions/v1.BatchCancelWorkflowsReqV1'
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/controller.BaseRes'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
       summary: 批量取消工单
       tags:
-      - workflow
+        - workflow
 securityDefinitions:
   ApiKeyAuth:
     in: header
