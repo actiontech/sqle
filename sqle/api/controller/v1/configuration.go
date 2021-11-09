@@ -95,20 +95,25 @@ type GetLDAPConfigurationResV1 struct {
 	Data LDAPConfigurationResV1 `json:"data"`
 }
 
-type UpdateLDAPConfigurationReqV1 struct {
-	controller.BaseRes
-	Data LDAPConfigurationResV1 `json:"data"`
+type LDAPConfigurationReqV1 struct {
+	EnableLdap          *bool   `json:"enable_ldap"`
+	LdapServerHost      *string `json:"ldap_server_host"`
+	LdapServerPort      *string `json:"ldap_server_port"`
+	LdapConnectDn       *string `json:"ldap_connect_dn"`
+	LdapConnectPwd      *string `json:"ldap_connect_pwd"`
+	LdapSearchBaseDn    *string `json:"ldap_search_base_dn"`
+	LdapUserNameRdnKey  *string `json:"ldap_user_name_rdn_key"`
+	LdapUserEmailRdnKey *string `json:"ldap_user_email_rdn_key"`
 }
 
 type LDAPConfigurationResV1 struct {
-	EnableLdap          bool
-	LdapServerHost      string
-	LdapServerPort      string
-	LdapConnectDn       string
-	LdapConnectPwd      string
-	LdapSearchBaseDn    string
-	LdapUserNameRdnKey  string
-	LdapUserEmailRdnKey string
+	EnableLdap          bool   `json:"enable_ldap"`
+	LdapServerHost      string `json:"ldap_server_host"`
+	LdapServerPort      string `json:"ldap_server_port"`
+	LdapConnectDn       string `json:"ldap_connect_dn"`
+	LdapSearchBaseDn    string `json:"ldap_search_base_dn"`
+	LdapUserNameRdnKey  string `json:"ldap_user_name_rdn_key"`
+	LdapUserEmailRdnKey string `json:"ldap_user_email_rdn_key"`
 }
 
 // @Summary 获取 LDAP 配置
@@ -131,7 +136,6 @@ func GetLDAPConfiguration(c echo.Context) error {
 			LdapServerHost:      ldapC.Host,
 			LdapServerPort:      ldapC.Port,
 			LdapConnectDn:       ldapC.ConnectDn,
-			LdapConnectPwd:      ldapC.ConnectPassword,
 			LdapSearchBaseDn:    ldapC.BaseDn,
 			LdapUserNameRdnKey:  ldapC.UserNameRdnKey,
 			LdapUserEmailRdnKey: ldapC.UserEmailRdnKey,
@@ -145,11 +149,11 @@ func GetLDAPConfiguration(c echo.Context) error {
 // @Id updateLDAPConfigurationV1
 // @Tags configuration
 // @Security ApiKeyAuth
-// @Param instance body v1.UpdateLDAPConfigurationReqV1 true "update LDAP configuration req"
+// @Param instance body v1.LDAPConfigurationReqV1 true "update LDAP configuration req"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/ldap [patch]
 func UpdateLDAPConfiguration(c echo.Context) error {
-	req := new(UpdateLDAPConfigurationReqV1)
+	req := new(LDAPConfigurationReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -159,19 +163,45 @@ func UpdateLDAPConfiguration(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if err := checkUpdateLdapConfigurationReq(req); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	{ // patch ldap config
 
+		if req.EnableLdap != nil {
+			ldapC.Enable = *req.EnableLdap
+		}
+
+		if req.LdapServerHost != nil {
+			ldapC.Host = *req.LdapServerHost
+		}
+
+		if req.LdapServerPort != nil {
+			ldapC.Port = *req.LdapServerPort
+		}
+
+		if req.LdapConnectDn != nil {
+			ldapC.ConnectDn = *req.LdapConnectDn
+		}
+
+		if req.LdapConnectPwd != nil {
+			ldapC.ConnectPassword = *req.LdapConnectPwd
+		}
+
+		if req.LdapSearchBaseDn != nil {
+			ldapC.BaseDn = *req.LdapSearchBaseDn
+		}
+
+		if req.LdapUserNameRdnKey != nil {
+			ldapC.UserNameRdnKey = *req.LdapUserNameRdnKey
+		}
+
+		if req.LdapUserEmailRdnKey != nil {
+			ldapC.UserEmailRdnKey = *req.LdapUserEmailRdnKey
+		}
+
+	}
 	if err := s.Save(ldapC); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
-}
-
-func checkUpdateLdapConfigurationReq(req *UpdateLDAPConfigurationReqV1) error {
-	// TODO Unrealized
-	return nil
 }
 
 type UpdateSystemVariablesReqV1 struct {
