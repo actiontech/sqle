@@ -90,6 +90,120 @@ func GetSMTPConfiguration(c echo.Context) error {
 	})
 }
 
+type GetLDAPConfigurationResV1 struct {
+	controller.BaseRes
+	Data LDAPConfigurationResV1 `json:"data"`
+}
+
+type LDAPConfigurationReqV1 struct {
+	EnableLdap          *bool   `json:"enable_ldap"`
+	LdapServerHost      *string `json:"ldap_server_host"`
+	LdapServerPort      *string `json:"ldap_server_port"`
+	LdapConnectDn       *string `json:"ldap_connect_dn"`
+	LdapConnectPwd      *string `json:"ldap_connect_pwd"`
+	LdapSearchBaseDn    *string `json:"ldap_search_base_dn"`
+	LdapUserNameRdnKey  *string `json:"ldap_user_name_rdn_key"`
+	LdapUserEmailRdnKey *string `json:"ldap_user_email_rdn_key"`
+}
+
+type LDAPConfigurationResV1 struct {
+	EnableLdap          bool   `json:"enable_ldap"`
+	LdapServerHost      string `json:"ldap_server_host"`
+	LdapServerPort      string `json:"ldap_server_port"`
+	LdapConnectDn       string `json:"ldap_connect_dn"`
+	LdapSearchBaseDn    string `json:"ldap_search_base_dn"`
+	LdapUserNameRdnKey  string `json:"ldap_user_name_rdn_key"`
+	LdapUserEmailRdnKey string `json:"ldap_user_email_rdn_key"`
+}
+
+// @Summary 获取 LDAP 配置
+// @Description get LDAP configuration
+// @Id getLDAPConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetLDAPConfigurationResV1
+// @router /v1/configurations/ldap [get]
+func GetLDAPConfiguration(c echo.Context) error {
+	s := model.GetStorage()
+	ldapC, _, err := s.GetLDAPConfiguration()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetLDAPConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: LDAPConfigurationResV1{
+			EnableLdap:          ldapC.Enable,
+			LdapServerHost:      ldapC.Host,
+			LdapServerPort:      ldapC.Port,
+			LdapConnectDn:       ldapC.ConnectDn,
+			LdapSearchBaseDn:    ldapC.BaseDn,
+			LdapUserNameRdnKey:  ldapC.UserNameRdnKey,
+			LdapUserEmailRdnKey: ldapC.UserEmailRdnKey,
+		},
+	})
+}
+
+// @Summary 添加 LDAP 配置
+// @Description update LDAP configuration
+// @Accept json
+// @Id updateLDAPConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param instance body v1.LDAPConfigurationReqV1 true "update LDAP configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/ldap [patch]
+func UpdateLDAPConfiguration(c echo.Context) error {
+	req := new(LDAPConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	ldapC, _, err := s.GetLDAPConfiguration()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	{ // patch ldap config
+
+		if req.EnableLdap != nil {
+			ldapC.Enable = *req.EnableLdap
+		}
+
+		if req.LdapServerHost != nil {
+			ldapC.Host = *req.LdapServerHost
+		}
+
+		if req.LdapServerPort != nil {
+			ldapC.Port = *req.LdapServerPort
+		}
+
+		if req.LdapConnectDn != nil {
+			ldapC.ConnectDn = *req.LdapConnectDn
+		}
+
+		if req.LdapConnectPwd != nil {
+			ldapC.ConnectPassword = *req.LdapConnectPwd
+		}
+
+		if req.LdapSearchBaseDn != nil {
+			ldapC.BaseDn = *req.LdapSearchBaseDn
+		}
+
+		if req.LdapUserNameRdnKey != nil {
+			ldapC.UserNameRdnKey = *req.LdapUserNameRdnKey
+		}
+
+		if req.LdapUserEmailRdnKey != nil {
+			ldapC.UserEmailRdnKey = *req.LdapUserEmailRdnKey
+		}
+
+	}
+	if err := s.Save(ldapC); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
 type UpdateSystemVariablesReqV1 struct {
 	WorkflowExpiredHours *int `json:"workflow_expired_hours" form:"workflow_expired_hours" example:"720"`
 }

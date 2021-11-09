@@ -556,6 +556,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetLDAPConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.LDAPConfigurationResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRoleTipsResV1:
     properties:
       code:
@@ -829,6 +841,42 @@ definitions:
       instance_name:
         type: string
       instance_type:
+        type: string
+    type: object
+  v1.LDAPConfigurationReqV1:
+    properties:
+      enable_ldap:
+        type: boolean
+      ldap_connect_dn:
+        type: string
+      ldap_connect_pwd:
+        type: string
+      ldap_search_base_dn:
+        type: string
+      ldap_server_host:
+        type: string
+      ldap_server_port:
+        type: string
+      ldap_user_email_rdn_key:
+        type: string
+      ldap_user_name_rdn_key:
+        type: string
+    type: object
+  v1.LDAPConfigurationResV1:
+    properties:
+      enable_ldap:
+        type: boolean
+      ldap_connect_dn:
+        type: string
+      ldap_search_base_dn:
+        type: string
+      ldap_server_host:
+        type: string
+      ldap_server_port:
+        type: string
+      ldap_user_email_rdn_key:
+        type: string
+      ldap_user_name_rdn_key:
         type: string
     type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
@@ -1719,6 +1767,42 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取当前 server 支持的审核类型
+      tags:
+      - configuration
+  /v1/configurations/ldap:
+    get:
+      description: get LDAP configuration
+      operationId: getLDAPConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetLDAPConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 LDAP 配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update LDAP configuration
+      operationId: updateLDAPConfigurationV1
+      parameters:
+      - description: update LDAP configuration req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.LDAPConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加 LDAP 配置
       tags:
       - configuration
   /v1/configurations/smtp:
