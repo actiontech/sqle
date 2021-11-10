@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
+	"github.com/go-ldap/ldap/v3"
 	"github.com/labstack/echo/v4"
 )
 
@@ -61,4 +62,104 @@ func Login(c echo.Context) error {
 			Token: t,
 		},
 	})
+}
+
+type LoginChecker interface {
+	login(password string) (err error)
+}
+
+type baseLoginChecker struct {
+	user *model.User
+}
+
+// ldapLoginV3 version 3 ldap login verification logic.
+type ldapLoginV3 struct {
+	baseLoginChecker
+	config    *model.LDAPConfiguration
+	email     string
+	userExist bool
+}
+
+func newLdapLoginV3WhenUserExist(configuration *model.LDAPConfiguration, user *model.User) *ldapLoginV3 {
+	return &ldapLoginV3{
+		config:    configuration,
+		userExist: true,
+		baseLoginChecker: baseLoginChecker{
+			user: user,
+		},
+	}
+}
+
+func newLdapLoginV3WhenUserNotExist(configuration *model.LDAPConfiguration, userName string) *ldapLoginV3 {
+	return &ldapLoginV3{
+		config:    configuration,
+		userExist: false,
+		baseLoginChecker: baseLoginChecker{
+			user: &model.User{
+				Name: userName,
+			},
+		},
+	}
+}
+
+func (l ldapLoginV3) login(password string) (err error) {
+	err = l.loginToLdap(password)
+	if err != nil {
+		return err
+	}
+	return l.autoRegisterUser()
+}
+
+func (l ldapLoginV3) loginToLdap(password string) (err error) {
+	ldapC, _, err := model.GetStorage().GetLDAPConfiguration()
+	if err != nil {
+		return err
+	}
+	url := fmt.Sprintf("ldap://%s:%s", ldapC.Host, ldapC.Port)
+	conn, err := ldap.DialURL(url)
+	if err != nil {
+		return fmt.Errorf("get ldap server connect failed: %v", err)
+	}
+	defer conn.Close()
+
+	if err = conn.Bind(ldapC.ConnectDn, ldapC.ConnectPassword); err != nil {
+		return fmt.Errorf("bind ldap manager user failed: %v", err)
+	}
+	searchRequest := ldap.NewSearchRequest(
+		ldapC.BaseDn,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,
+		0,
+		false,
+		fmt.Sprintf("(%s=%s)", ldapC.UserNameRdnKey, l.user.Name),
+		[]string{},
+		nil,
+	)
+	result, err := conn.Search(searchRequest)
+	if err != nil {
+		return fmt.Errorf("search user on ldap server failed: %v", err)
+	}
+	if len(result.Entries) != 1 {
+		return fmt.Errorf("search user on ldap ,result size(%v) not unique", len(result.Entries))
+	}
+	userDn := result.Entries[0].DN
+	if err = conn.Bind(userDn, password); err != nil {
+		return fmt.Errorf("ldap login failed, username and password do not match")
+	}
+	l.email = result.Entries[0].GetAttributeValue(ldapC.UserEmailRdnKey)
+	return nil
+}
+
+func (l ldapLoginV3) autoRegisterUser() (err error) {
+	if l.userExist {
+		return nil
+	}
+	user := &model.User{
+		Name:                   l.user.Name,
+		Password:               "this password will not be used",
+		Email:                  l.email,
+		UserAuthenticationType: model.UserAuthenticationTypeLDAP,
+	}
+	return model.GetStorage().Save(user)
 }
