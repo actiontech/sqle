@@ -24,6 +24,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/github/gh-ost v1.1.3-0.20210727153850-e484824bbd68
 	github.com/go-ini/ini v1.63.2
+	github.com/go-ldap/ldap/v3 v3.4.1
 	github.com/go-openapi/jsonreference v0.19.4 // indirect
 	github.com/go-openapi/spec v0.19.8 // indirect
 	github.com/go-openapi/swag v0.19.9 // indirect
