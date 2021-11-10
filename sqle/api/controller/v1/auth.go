@@ -41,14 +41,14 @@ func Login(c echo.Context) error {
 		return err
 	}
 
-	s := model.GetStorage()
-	user, exist, err := s.GetUserByName(req.UserName)
+
+	loginChecker, err := GetLoginCheckerByUserName(req.UserName)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
 	}
-	if !exist || !(req.UserName == user.Name && req.Password == user.Password) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail,
-			fmt.Errorf("password is wrong or user does not exist")))
+	err = loginChecker.login(req.UserName, req.Password)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
 	}
 
 	j := utils.NewJWT([]byte(utils.JWTSecret))
