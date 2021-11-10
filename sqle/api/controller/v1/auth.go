@@ -77,7 +77,7 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 	}
 
 	state := loginCheckerTypeUnknown
-	{ // fix user login method
+	{ // get login checker type
 		var u *model.User = nil
 		var l *model.LDAPConfiguration = nil
 		if userExist {
