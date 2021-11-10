@@ -143,3 +143,23 @@ func (l ldapLoginV3) autoRegisterUser(userName, password, email string) (err err
 	}
 	return s.Save(user)
 }
+
+// sqleLogin sqle login verification logic
+type sqleLogin struct {
+}
+
+func newSqleLogin() *sqleLogin {
+	return &sqleLogin{}
+}
+
+func (s sqleLogin) login(userName, password string) (err error) {
+	storage := model.GetStorage()
+	user, exist, err := storage.GetUserByName(userName)
+	if err != nil {
+		return err
+	}
+	if !exist || !(userName == user.Name && password == user.Password) {
+		return fmt.Errorf("password is wrong or user does not exist")
+	}
+	return nil
+}
