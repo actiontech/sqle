@@ -63,3 +63,83 @@ func Login(c echo.Context) error {
 		},
 	})
 }
+
+
+type LoginChecker interface {
+	login(userName, password string) (err error)
+}
+
+// ldapLoginV3 version 3 ldap login verification logic.
+type ldapLoginV3 struct {
+	config *model.LDAPConfiguration
+}
+
+func newLdapLoginV3(configuration *model.LDAPConfiguration) *ldapLoginV3 {
+	return &ldapLoginV3{config: configuration}
+}
+
+func (l ldapLoginV3) login(userName, password string) (err error) {
+	email, err := l.loginToLdap(userName, password)
+	if err != nil {
+		return err
+	}
+	return l.autoRegisterUser(userName, password, email)
+}
+
+func (l ldapLoginV3) loginToLdap(userName, password string) (email string, err error) {
+	ldapC, _, err := model.GetStorage().GetLDAPConfiguration()
+	if err != nil {
+		return "", err
+	}
+	url := fmt.Sprintf("ldap://%s:%s", ldapC.Host, ldapC.Port)
+	conn, err := ldap.DialURL(url)
+	if err != nil {
+		return "", fmt.Errorf("get ldap server connect failed: %v", err)
+	}
+	defer conn.Close()
+
+	if err = conn.Bind(ldapC.ConnectDn, ldapC.ConnectPassword); err != nil {
+		return "", fmt.Errorf("bind ldap manager user failed: %v", err)
+	}
+	searchRequest := ldap.NewSearchRequest(
+		ldapC.BaseDn,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,
+		0,
+		false,
+		fmt.Sprintf("(%s=%s)", ldapC.UserNameRdnKey, userName),
+		[]string{},
+		nil,
+	)
+	result, err := conn.Search(searchRequest)
+	if err != nil {
+		return "", fmt.Errorf("search user on ldap server failed: %v", err)
+	}
+	if len(result.Entries) != 1 {
+		return "", fmt.Errorf("search user on ldap ,result size(%v) not unique", len(result.Entries))
+	}
+	userDn := result.Entries[0].DN
+	if err = conn.Bind(userDn, password); err != nil {
+		return "", fmt.Errorf("ldap login failed, username and password do not match")
+	}
+
+	return result.Entries[0].GetAttributeValue(ldapC.UserEmailRdnKey), nil
+}
+
+func (l ldapLoginV3) autoRegisterUser(userName, password, email string) (err error) {
+	s := model.GetStorage()
+	_, exist, err := s.GetUserByName(userName)
+	if err != nil {
+		return err
+	}
+	if exist {
+		return nil
+	}
+	user := &model.User{
+		Name:     userName,
+		Password: password,
+		Email:    email,
+	}
+	return s.Save(user)
+}
