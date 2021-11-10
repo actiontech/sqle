@@ -2,7 +2,6 @@ package v1
 
 import (
 	"fmt"
-	"github.com/go-ldap/ldap/v3"
 	"net/http"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
+	"github.com/go-ldap/ldap/v3"
 	"github.com/labstack/echo/v4"
 )
 
@@ -41,14 +41,13 @@ func Login(c echo.Context) error {
 		return err
 	}
 
-	s := model.GetStorage()
-	user, exist, err := s.GetUserByName(req.UserName)
+	loginChecker, err := GetLoginCheckerByUserName(req.UserName)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
 	}
-	if !exist || !(req.UserName == user.Name && req.Password == user.Password) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail,
-			fmt.Errorf("password is wrong or user does not exist")))
+	err = loginChecker.login(req.Password)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
 	}
 
 	j := utils.NewJWT([]byte(utils.JWTSecret))
@@ -63,7 +62,6 @@ func Login(c echo.Context) error {
 		},
 	})
 }
-
 
 // GetLoginCheckerByUserName get login checker by user name and init login checker
 func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
@@ -133,6 +131,14 @@ func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) userS
 
 	// no alternative login method
 	return loginCheckerTypeUnknown
+}
+
+type LoginChecker interface {
+	login(password string) (err error)
+}
+
+type baseLoginChecker struct {
+	user *model.User
 }
 
 // ldapLoginV3 version 3 ldap login verification logic.
@@ -225,14 +231,6 @@ func (l ldapLoginV3) autoRegisterUser() (err error) {
 		UserAuthenticationType: model.UserAuthenticationTypeLDAP,
 	}
 	return model.GetStorage().Save(user)
-}
-
-type LoginChecker interface {
-	login(password string) (err error)
-}
-
-type baseLoginChecker struct {
-	user *model.User
 }
 
 // sqleLogin sqle login verification logic
