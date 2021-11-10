@@ -65,6 +65,37 @@ func Login(c echo.Context) error {
 }
 
 
+type userState int
+
+const (
+	loginCheckerTypeUnknown userState = iota
+	loginCheckerTypeSQLE
+	loginCheckerTypeLDAP
+	loginCheckerTypeLDAPUserNotExist
+)
+
+// determine whether the login conditions are met according to the order of login priority
+func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) userState {
+
+	// ldap login condition
+	if ldapC != nil && ldapC.Enable {
+		if user != nil && user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
+			return loginCheckerTypeLDAP
+		}
+		if user == nil {
+			return loginCheckerTypeLDAPUserNotExist
+		}
+	}
+
+	// sqle login condition
+	if user != nil && (user.UserAuthenticationType == model.UserAuthenticationTypeSQLE || user.UserAuthenticationType == "") {
+		return loginCheckerTypeSQLE
+	}
+
+	// no alternative login method
+	return loginCheckerTypeUnknown
+}
+
 // ldapLoginV3 version 3 ldap login verification logic.
 type ldapLoginV3 struct {
 	baseLoginChecker
