@@ -64,6 +64,45 @@ func Login(c echo.Context) error {
 	})
 }
 
+// GetLoginCheckerByUserName get login checker by user name and init login checker
+func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
+	// get user metadata and config
+	s := model.GetStorage()
+	user, userExist, err := s.GetUserByName(userName)
+	if err != nil {
+		return nil, err
+	}
+	ldapC, ldapExist, err := s.GetLDAPConfiguration()
+	if err != nil {
+		return nil, err
+	}
+
+	state := loginCheckerTypeUnknown
+	{ // fix user login method
+		var u *model.User = nil
+		var l *model.LDAPConfiguration = nil
+		if userExist {
+			u = user
+		}
+		if ldapExist {
+			l = ldapC
+		}
+		state = getLoginCheckerType(u, l)
+	}
+
+	// match login method
+	switch state {
+	case loginCheckerTypeLDAP:
+		return newLdapLoginV3WhenUserExist(ldapC, user), nil
+	case loginCheckerTypeLDAPUserNotExist:
+		return newLdapLoginV3WhenUserNotExist(ldapC, userName), nil
+	case loginCheckerTypeSQLE:
+		return newSqleLogin(user), nil
+	default:
+		return nil, fmt.Errorf("the user does not exist or the password is wrong")
+	}
+}
+
 type userState int
 
 const (
