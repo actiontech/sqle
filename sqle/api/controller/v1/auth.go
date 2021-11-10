@@ -64,6 +64,45 @@ func Login(c echo.Context) error {
 	})
 }
 
+// GetLoginCheckerByUserName get login checker by user name and init login checker
+func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
+	// get user metadata and config
+	user, userExist, err := model.GetStorage().GetUserByName(userName)
+	if err != nil {
+		return nil, err
+	}
+	ldapC, ldapExist, err := model.GetStorage().GetLDAPConfiguration()
+	if err != nil {
+		return nil, err
+	}
+
+	{ // fix user login method
+		if !userExist {
+			user.UserAuthenticationType = model.UserAuthenticationTypeLDAP
+		}
+		if user.UserAuthenticationType == "" {
+			user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
+		}
+		if (!ldapExist || !ldapC.Enable) && user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
+			user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
+		}
+	}
+
+	// match login method
+	switch user.UserAuthenticationType {
+	case model.UserAuthenticationTypeSQLE:
+		return newSqleLogin(), nil
+	case model.UserAuthenticationTypeLDAP:
+		ldapConfig, exist, err := model.GetStorage().GetLDAPConfiguration()
+		if err != nil {
+			return nil, fmt.Errorf("the user needs to be authenticated by ldap but get ldap configuration failed: %v", err)
+		} else if !exist {
+			return nil, fmt.Errorf("the user needs to be authenticated by ldap but the ldap configuration is not found")
+		}
+		return newLdapLoginV3(ldapConfig), nil
+	}
+	return nil, fmt.Errorf("can't find a suitable way to login")
+}
 
 type LoginChecker interface {
 	login(userName, password string) (err error)
