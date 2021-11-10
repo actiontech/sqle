@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
+	"github.com/go-ldap/ldap/v3"
 	"github.com/labstack/echo/v4"
 )
 
