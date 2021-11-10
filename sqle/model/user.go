@@ -12,14 +12,22 @@ import (
 
 const DefaultAdminUser = "admin"
 
+type UserAuthenticationType string
+
+const (
+	UserAuthenticationTypeLDAP UserAuthenticationType = "ldap" // user verify through ldap
+	UserAuthenticationTypeSQLE UserAuthenticationType = "sqle" //user verify through sqle
+)
+
 type User struct {
 	Model
 	// has created composite index: [id, login_name] by gorm#AddIndex
-	Name           string `gorm:"index;column:login_name"`
-	Email          string
-	Password       string  `json:"-" gorm:"-"`
-	SecretPassword string  `json:"secret_password" gorm:"not null;column:password"`
-	Roles          []*Role `gorm:"many2many:user_role;"`
+	Name                   string `gorm:"index;column:login_name"`
+	Email                  string
+	Password               string                 `json:"-" gorm:"-"`
+	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
+	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
+	Roles                  []*Role                `gorm:"many2many:user_role;"`
 
 	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
 }
