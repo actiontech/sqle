@@ -10,7 +10,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
-	"github.com/go-ldap/ldap/v3"
 	"github.com/labstack/echo/v4"
 )
 
@@ -62,4 +61,33 @@ func Login(c echo.Context) error {
 			Token: t,
 		},
 	})
+}
+
+
+type LoginChecker interface {
+	login(password string) (err error)
+}
+
+type baseLoginChecker struct {
+	user *model.User
+}
+
+// sqleLogin sqle login verification logic
+type sqleLogin struct {
+	baseLoginChecker
+}
+
+func newSqleLogin(user *model.User) *sqleLogin {
+	return &sqleLogin{
+		baseLoginChecker: baseLoginChecker{
+			user: user,
+		},
+	}
+}
+
+func (s sqleLogin) login(password string) (err error) {
+	if password != s.user.Password {
+		return fmt.Errorf("password is wrong or user does not exist")
+	}
+	return nil
 }
