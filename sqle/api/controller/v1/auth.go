@@ -171,7 +171,7 @@ func newLdapLoginV3WhenUserNotExist(configuration *model.LDAPConfiguration, user
 	}
 }
 
-func (l ldapLoginV3) login(password string) (err error) {
+func (l *ldapLoginV3) login(password string) (err error) {
 	err = l.loginToLdap(password)
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (l ldapLoginV3) login(password string) (err error) {
 	return l.autoRegisterUser()
 }
 
-func (l ldapLoginV3) loginToLdap(password string) (err error) {
+func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	ldapC, _, err := model.GetStorage().GetLDAPConfiguration()
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func (l ldapLoginV3) loginToLdap(password string) (err error) {
 	return nil
 }
 
-func (l ldapLoginV3) autoRegisterUser() (err error) {
+func (l *ldapLoginV3) autoRegisterUser() (err error) {
 	if l.userExist {
 		return nil
 	}
@@ -246,7 +246,7 @@ func newSqleLogin(user *model.User) *sqleLogin {
 	}
 }
 
-func (s sqleLogin) login(password string) (err error) {
+func (s *sqleLogin) login(password string) (err error) {
 	if password != s.user.Password {
 		return fmt.Errorf("password is wrong or user does not exist")
 	}
