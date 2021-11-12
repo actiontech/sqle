@@ -37,13 +37,11 @@ func (i *SMTPConfiguration) encryptPassword() error {
 	if i == nil {
 		return nil
 	}
-	if i.SecretPassword == "" {
-		data, err := utils.AesEncrypt(i.Password)
-		if err != nil {
-			return err
-		}
-		i.SecretPassword = data
+	data, err := utils.AesEncrypt(i.Password)
+	if err != nil {
+		return err
 	}
+	i.SecretPassword = data
 	return nil
 }
 
@@ -139,13 +137,11 @@ func (i *LDAPConfiguration) encryptPassword() error {
 	if i == nil {
 		return nil
 	}
-	if i.ConnectSecretPassword == "" {
-		data, err := utils.AesEncrypt(i.ConnectPassword)
-		if err != nil {
-			return err
-		}
-		i.ConnectSecretPassword = string(data)
+	data, err := utils.AesEncrypt(i.ConnectPassword)
+	if err != nil {
+		return err
 	}
+	i.ConnectSecretPassword = string(data)
 	return nil
 }
 
