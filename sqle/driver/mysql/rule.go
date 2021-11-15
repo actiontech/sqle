@@ -508,7 +508,6 @@ var RuleHandlers = []RuleHandler{
 		Func:         checkDMLWithBatchInsertMaxLimits,
 	},
 	{
-		// todo: level error -> warn
 		Rule: driver.Rule{
 			Name:     DDLCheckPKProhibitAutoIncrement,
 			Desc:     "主键禁止使用自增",
@@ -564,7 +563,6 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkWhereColumnImplicitConversion,
 	},
 	{
-		// todo: level error -> warn
 		Rule: driver.Rule{
 			Name:     DMLCheckLimitMustExist,
 			Desc:     "delete/update 语句必须有limit条件",
