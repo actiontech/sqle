@@ -170,7 +170,6 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/labstack/echo/v4
 github.com/labstack/echo/v4/middleware
 # github.com/labstack/gommon v0.2.8
-## explicit
 github.com/labstack/gommon/bytes
 github.com/labstack/gommon/color
 github.com/labstack/gommon/log
@@ -204,6 +203,7 @@ github.com/oklog/run
 github.com/openark/golib/log
 github.com/openark/golib/sqlutils
 # github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
+## explicit
 github.com/pingcap/errors
 # github.com/pingcap/log v0.0.0-20210317133921-96f4fcab92a4 => github.com/pingcap/log v0.0.0-20190715063458-479153f07ebd
 github.com/pingcap/log
