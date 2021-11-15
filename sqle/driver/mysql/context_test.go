@@ -3,7 +3,7 @@ package mysql
 import (
 	"testing"
 
-	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/driver"
 )
 
 func TestContext(t *testing.T) {
@@ -30,78 +30,78 @@ alter table not_exist_tb_1 drop column v1;
 		newTestResult(),
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(model.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb_1"),
+		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop column twice: column not exists(1)", DefaultMysqlInspect(),
 		`
-use exist_db;
-alter table exist_tb_1 drop column v1;
-alter table exist_tb_1 drop column v1;
-`,
+	use exist_db;
+	alter table exist_tb_1 drop column v1;
+	alter table exist_tb_1 drop column v1;
+	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(model.RuleLevelError, ColumnNotExistMessage, "v1"),
+		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v1"),
 	)
 	runDefaultRulesInspectCase(t, "drop column twice: column not exists(2)", DefaultMysqlInspect(),
 		`
-use exist_db;
-create table if not exists not_exist_tb_1 (
-id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
-v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
-PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
-alter table not_exist_tb_1 drop column v1;
-alter table not_exist_tb_1 drop column v1;
-`,
+	use exist_db;
+	create table if not exists not_exist_tb_1 (
+	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	PRIMARY KEY (id)
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+	alter table not_exist_tb_1 drop column v1;
+	alter table not_exist_tb_1 drop column v1;
+	`,
 		newTestResult(),
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(model.RuleLevelError, ColumnNotExistMessage, "v1"),
+		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "change and drop column: column not exists", DefaultMysqlInspect(),
 		`
-use exist_db;
-alter table exist_tb_1 change column v1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
-alter table exist_tb_1 drop column v1;
-`,
+	use exist_db;
+	alter table exist_tb_1 change column v1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
+	alter table exist_tb_1 drop column v1;
+	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(model.RuleLevelError, ColumnNotExistMessage, "v1"),
+		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "Add column twice: column exists", DefaultMysqlInspect(),
 		`
-use exist_db;
-alter table exist_tb_1 add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
-alter table exist_tb_1 add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
-`,
+	use exist_db;
+	alter table exist_tb_1 add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
+	alter table exist_tb_1 add column v3 varchar(255) DEFAULT "v3" COMMENT "uint test";
+	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(model.RuleLevelError, ColumnExistMessage, "v3"),
+		newTestResult().add(driver.RuleLevelError, ColumnExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop index twice: index not exists", DefaultMysqlInspect(),
 		`
-use exist_db;
-alter table exist_tb_1 drop index idx_1;
-alter table exist_tb_1 drop index idx_1;
-`,
+	use exist_db;
+	alter table exist_tb_1 drop index idx_1;
+	alter table exist_tb_1 drop index idx_1;
+	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(model.RuleLevelError, IndexNotExistMessage, "idx_1"),
+		newTestResult().add(driver.RuleLevelError, IndexNotExistMessage, "idx_1"),
 	)
 	runDefaultRulesInspectCase(t, "drop index, rename index: index not exists", DefaultMysqlInspect(),
 		`
-use exist_db;
-alter table exist_tb_1 rename index idx_1 to idx_2;
-alter table exist_tb_1 drop index idx_1;
-`,
+	use exist_db;
+	alter table exist_tb_1 rename index idx_1 to idx_2;
+	alter table exist_tb_1 drop index idx_1;
+	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(model.RuleLevelError, IndexNotExistMessage, "idx_1"),
+		newTestResult().add(driver.RuleLevelError, IndexNotExistMessage, "idx_1"),
 	)
 }
 
@@ -145,7 +145,7 @@ alter table not_exist_tb_1 drop column v1;
 		`
 alter table not_exist_tb_1 drop column v1;
 `,
-		newTestResult().add(model.RuleLevelError, ColumnNotExistMessage, "v1"),
+		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v1"),
 	)
 
 	inspect4 := DefaultMysqlInspect()
@@ -163,7 +163,7 @@ alter table not_exist_tb_1 add column v3 varchar(255) NOT NULL DEFAULT "unit tes
 		`
 insert into not_exist_tb_1 (id,v1,v2) values (1,"1","1");
 `,
-		newTestResult().add(model.RuleLevelError, ColumnNotExistMessage, "v1"),
+		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v1"),
 	)
 
 	inspect6 := DefaultMysqlInspect()
