@@ -2,27 +2,11 @@ package model
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
-
 	"github.com/jinzhu/gorm"
 )
-
-const (
-	RuleLevelNormal = "normal"
-	RuleLevelNotice = "notice"
-	RuleLevelWarn   = "warn"
-	RuleLevelError  = "error"
-)
-
-var RuleLevelMap = map[string]int{
-	RuleLevelNormal: 0,
-	RuleLevelNotice: 1,
-	RuleLevelWarn:   2,
-	RuleLevelError:  3,
-}
 
 type RuleTemplate struct {
 	Model
@@ -34,37 +18,18 @@ type RuleTemplate struct {
 }
 
 type Rule struct {
-	Name      string `json:"name" gorm:"primary_key; not null"`
-	DBType    string `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc      string `json:"desc"`
-	Value     string `json:"value"`
-	Level     string `json:"level" example:"error"` // notice, warn, error
-	Typ       string `json:"type" gorm:"column:type; not null"`
-	IsDefault bool   `json:"is_default" gorm:"default:false; not null"`
+	Name   string `json:"name" gorm:"primary_key; not null"`
+	DBType string `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
+	Desc   string `json:"desc"`
+	Value  string `json:"value"`
+	Level  string `json:"level" example:"error"` // notice, warn, error
+	Typ    string `json:"type" gorm:"column:type; not null"`
+	// todo:remove column, update storage
+	IsDefault bool `json:"is_default" gorm:"default:false; not null"`
 }
 
 func (r Rule) TableName() string {
 	return "rules"
-}
-
-func (r *Rule) GetValue() string {
-	if r == nil {
-		return ""
-	}
-	return r.Value
-}
-
-func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
-	value := r.GetValue()
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err == nil {
-		return i
-	}
-	i, err = strconv.ParseInt(defaultRule.GetValue(), 10, 64)
-	if err == nil {
-		return i
-	}
-	return 0
 }
 
 type RuleTemplateRule struct {

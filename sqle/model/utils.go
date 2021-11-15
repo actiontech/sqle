@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 
@@ -137,30 +138,53 @@ func (s *Storage) AutoMigrate() error {
 	return nil
 }
 
-func (s *Storage) CreateRulesIfNotExist(rules []*Rule) error {
-	for _, rule := range rules {
-		existedRule, exist, err := s.GetRule(rule.Name, rule.DBType)
-		if err != nil {
-			return err
-		}
-		if !exist || (existedRule.Value == "" && rule.Value != "") {
-			err = s.Save(rule)
+func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
+	for dbType, rules := range rules {
+		for _, rule := range rules {
+			existedRule, exist, err := s.GetRule(rule.Name, dbType)
 			if err != nil {
 				return err
+			}
+			if !exist || (existedRule.Value == "" && rule.Value != "") {
+
+				modelRule := &Rule{
+					Name:   rule.Name,
+					Desc:   rule.Desc,
+					Value:  rule.Value,
+					Level:  string(rule.Level),
+					Typ:    rule.Category,
+					DBType: dbType,
+				}
+
+				err = s.Save(modelRule)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 	return nil
 }
 
-func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
+func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 	defaultTemplates := make(map[string][]*Rule)
-	for _, rule := range rules {
-		defaultTemplates[rule.DBType] = append(defaultTemplates[rule.DBType], rule)
+
+	for dbType, r := range rules {
+		for _, rule := range r {
+			modelRule := &Rule{
+				Name:   rule.Name,
+				DBType: dbType,
+				Desc:   rule.Desc,
+				Value:  rule.Value,
+				Level:  string(rule.Level),
+				Typ:    rule.Category,
+			}
+			defaultTemplates[dbType] = append(defaultTemplates[dbType], modelRule)
+		}
 	}
 
 	for dbType, rs := range defaultTemplates {
-		templateName := fmt.Sprintf("default_%v", dbType)
+		templateName := s.GetDefaultRuleTemplateName(dbType)
 		_, exist, err := s.GetRuleTemplateByName(templateName)
 		if err != nil {
 			return err
@@ -177,7 +201,7 @@ func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
 
 			ruleList := make([]RuleTemplateRule, 0, len(rs))
 			for _, rule := range rs {
-				if rule.IsDefault {
+				if rule.Level == string(driver.RuleLevelError) {
 					ruleList = append(ruleList, RuleTemplateRule{
 						RuleTemplateId: t.ID,
 						RuleName:       rule.Name,
@@ -193,6 +217,10 @@ func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
 		}
 	}
 	return nil
+}
+
+func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
+	return fmt.Sprintf("default_%v", dbType)
 }
 
 func (s *Storage) CreateAdminUser() error {

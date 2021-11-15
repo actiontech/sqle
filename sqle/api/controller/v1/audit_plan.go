@@ -83,7 +83,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	if req.InstanceDatabase != "" {
-		d, err := driver.NewDriver(log.NewEntry(), instance, false, instance.DbType, "")
+		d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
