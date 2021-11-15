@@ -7,26 +7,10 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"
 )
-
-func (i *Inspect) GetAllRollbackSqlReversed(sqls []*model.RollbackSQL) []*model.RollbackSQL {
-	rollbackSqls := []*model.RollbackSQL{}
-	// Reverse order
-	var number uint = 1
-	for n := len(sqls) - 1; n >= 0; n-- {
-		rollbackSql := sqls[n]
-		if rollbackSql != nil {
-			rollbackSql.Number = number
-		}
-		rollbackSqls = append(rollbackSqls, rollbackSql)
-		number += 1
-	}
-	return rollbackSqls
-}
 
 func (i *Inspect) GenerateRollbackSql(node ast.Node) (string, string, error) {
 	switch node.(type) {
