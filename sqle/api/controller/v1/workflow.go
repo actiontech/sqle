@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/misc"
@@ -931,7 +930,7 @@ func ApproveWorkflow(c echo.Context) error {
 
 		// if instance is not connectable, exec sql must be failed;
 		// commit action unable to retry, so don't to exec it.
-		d, err := driver.NewDriver(log.NewEntry(), task.Instance, task.Instance == nil, task.Instance.DbType, "")
+		d, err := newDriverWithoutAudit(log.NewEntry(), task.Instance, "")
 		if err != nil {
 			return err
 		}

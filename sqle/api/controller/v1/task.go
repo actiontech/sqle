@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -132,7 +131,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	d, err := driver.NewDriver(log.NewEntry(), instance, instance == nil, instance.DbType, "")
+	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return err
 	}

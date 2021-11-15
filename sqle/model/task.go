@@ -13,11 +13,6 @@ import (
 )
 
 const (
-	SQLTypeDML = "dml"
-	SQLTypeDDL = "ddl"
-)
-
-const (
 	TaskStatusInit             = "initialized"
 	TaskStatusAudited          = "audited"
 	TaskStatusExecuting        = "executing"

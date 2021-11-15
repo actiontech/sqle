@@ -57,7 +57,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if req.DBType == "" {
-		req.DBType = model.DBTypeMySQL
+		req.DBType = driver.DriverTypeMySQL
 	}
 	instance := &model.Instance{
 		DbType:   req.DBType,
@@ -486,7 +486,7 @@ type InstanceConnectableResV1 struct {
 }
 
 func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
-	d, err := driver.NewDriver(log.NewEntry(), instance, instance == nil, instance.DbType, "")
+	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return err
 	}
@@ -559,7 +559,7 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		return err
 	}
 	if req.DBType == "" {
-		req.DBType = model.DBTypeMySQL
+		req.DBType = driver.DriverTypeMySQL
 	}
 	instance := &model.Instance{
 		DbType:   req.DBType,
@@ -604,7 +604,7 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	d, err := driver.NewDriver(log.NewEntry(), instance, instance == nil, instance.DbType, "")
+	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

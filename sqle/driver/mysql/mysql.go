@@ -9,21 +9,18 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
-	"github.com/actiontech/sqle/sqle/model"
-	"github.com/pkg/errors"
-
 	"github.com/pingcap/parser/ast"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 func init() {
-	var allRules []*model.Rule
+	var allRules []*driver.Rule
 	for i := range RuleHandlers {
-		RuleHandlers[i].Rule.DBType = model.DBTypeMySQL
 		allRules = append(allRules, &RuleHandlers[i].Rule)
 	}
 
-	driver.Register(model.DBTypeMySQL, newInspect, allRules)
+	driver.Register(driver.DriverTypeMySQL, newInspect, allRules)
 
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
@@ -37,7 +34,7 @@ type Inspect struct {
 	// cnf is task cnf, cnf variables record in rules.
 	cnf *Config
 
-	rules []*model.Rule
+	rules []*driver.Rule
 
 	// result keep inspect result for single audited SQL.
 	// It refresh on every Audit.
@@ -45,9 +42,9 @@ type Inspect struct {
 	// HasInvalidSql represent one of the commit sql base-validation failed.
 	HasInvalidSql bool
 	// currentRule is instance's rules.
-	currentRule model.Rule
+	currentRule driver.Rule
 
-	inst *model.Instance
+	inst *driver.DSN
 
 	log *logrus.Entry
 	// dbConn is a SQL driver for MySQL.
@@ -60,7 +57,9 @@ type Inspect struct {
 
 func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	ctx := NewContext(nil)
-	ctx.UseSchema(cfg.Schema)
+	if cfg.DSN != nil {
+		ctx.UseSchema(cfg.DSN.DatabaseName)
+	}
 
 	i := &Inspect{
 		log: log,
@@ -71,10 +70,10 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 			DDLGhostMinSize:    -1,
 		},
 
-		inst:           cfg.Inst,
+		inst:           cfg.DSN,
 		rules:          cfg.Rules,
 		result:         driver.NewInspectResults(),
-		isOfflineAudit: cfg.IsOfflineAudit,
+		isOfflineAudit: cfg.DSN == nil,
 	}
 
 	for _, rule := range cfg.Rules {
@@ -218,9 +217,9 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 		n.Text = nodes[i].Text()
 		switch nodes[i].(type) {
 		case ast.DMLNode:
-			n.Type = model.SQLTypeDML
+			n.Type = driver.SQLTypeDML
 		default:
-			n.Type = model.SQLTypeDDL
+			n.Type = driver.SQLTypeDDL
 		}
 
 		ns = append(ns, n)
@@ -244,7 +243,7 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		return nil, err
 	}
 
-	if i.result.Level() == model.RuleLevelError {
+	if i.result.Level() == driver.RuleLevelError {
 		i.HasInvalidSql = true
 		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), i.result.Message())
 	}
@@ -269,7 +268,7 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		return nil, err
 	}
 	if oscCommandLine != "" {
-		i.result.Add(model.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
+		i.result.Add(driver.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
 	i.updateContext(nodes[0])
 	return i.result, nil
@@ -336,7 +335,7 @@ func (i *Inspect) Context() *Context {
 }
 
 func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
-	stmts, err := parseSql(model.DBTypeMySQL, sql)
+	stmts, err := parseSql(sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql)
 		return nil, err
@@ -631,7 +630,7 @@ func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (
 
 // parseCreateTableStmt parse create table sql text to CreateTableStmt ast.
 func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
-	t, err := parseOneSql(model.DBTypeMySQL, sql)
+	t, err := parseOneSql(sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
 		return nil, err

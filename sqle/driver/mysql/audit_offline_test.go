@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/model"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +24,9 @@ func DefaultMysqlInspectOffline() *Inspect {
 }
 
 func TestCheckSelectAllOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "select_from: all columns", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(RuleHandlerMap[DMLDisableSelectAllColumn].Rule, t,
+		"select_from: all columns",
+		DefaultMysqlInspectOffline(),
 		"select * from exist_db.exist_tb_1 where id =1;",
 		newTestResult().addResult(DMLDisableSelectAllColumn),
 	)
@@ -80,115 +82,118 @@ DROP INDEX IF EXISTS idx_2 ON exist_db.exist_tb_1;
 }
 
 func TestCheckWhereInvalidOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "select_from: has where condition", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DMLCheckWhereIsInvalid].Rule
+	runSingleRuleInspectCase(rule, t, "select_from: has where condition", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where id > 1;",
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "select_from: no where condition(1)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "select_from: no where condition(1)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
-	runDefaultRulesInspectCase(t, "select_from: no where condition(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "select_from: no where condition(2)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
-	runDefaultRulesInspectCase(t, "select_from: no where condition(3)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "select_from: no where condition(3)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where id=id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
-	runDefaultRulesInspectCase(t, "select_from: no where condition(4)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "select_from: no where condition(4)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
-	runDefaultRulesInspectCase(t, "update: has where condition", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "update: has where condition", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1='v1' where id = 1;",
 		newTestResult())
 
-	runDefaultRulesInspectCase(t, "update: no where condition(1)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "update: no where condition(1)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1='v1';",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "update: no where condition(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "update: no where condition(2)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1='v1' where 1=1 and 2=2;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "update: no where condition(3)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "update: no where condition(3)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1='v1' where id=id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "update: no where condition(4)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "update: no where condition(4)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1='v1' where exist_tb_1.id=exist_tb_1.id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "delete: has where condition", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "delete: has where condition", DefaultMysqlInspectOffline(),
 		"delete from exist_db.exist_tb_1 where id = 1;",
 		newTestResult())
 
-	runDefaultRulesInspectCase(t, "delete: no where condition(1)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "delete: no where condition(1)", DefaultMysqlInspectOffline(),
 		"delete from exist_db.exist_tb_1;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "delete: no where condition(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "delete: no where condition(2)", DefaultMysqlInspectOffline(),
 		"delete from exist_db.exist_tb_1 where 1=1 and 2=2;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "delete: no where condition(3)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "delete: no where condition(3)", DefaultMysqlInspectOffline(),
 		"delete from exist_db.exist_tb_1 where 1=1 and id=id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "delete: no where condition(4)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "delete: no where condition(4)", DefaultMysqlInspectOffline(),
 		"delete from exist_db.exist_tb_1 where 1=1 and exist_tb_1.id=exist_tb_1.id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 }
 
 func TestCheckWhereInvalid_FPOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "[pf]select_from: has where condition(1)", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DMLCheckWhereIsInvalid].Rule
+
+	runSingleRuleInspectCase(rule, t, "[pf]select_from: has where condition(1)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where id=?;",
 		newTestResult(),
 	)
-	runDefaultRulesInspectCase(t, "[pf]select_from: has where condition(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]select_from: has where condition(2)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where exist_tb_1.id=?;",
 		newTestResult(),
 	)
-	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(1)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]select_from: no where condition(1)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where 1=? and 2=2;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
-	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]select_from: no where condition(2)", DefaultMysqlInspectOffline(),
 		"select id from exist_db.exist_tb_1 where ?=?;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid),
 	)
 
-	runDefaultRulesInspectCase(t, "[pf]update: has where condition", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]update: has where condition", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1='v1' where id = ?;",
 		newTestResult())
 
-	runDefaultRulesInspectCase(t, "[pf]update: no where condition(1)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]update: no where condition(1)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1=?;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "[pf]update: no where condition(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]update: no where condition(2)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1=? where 1=1 and 2=2;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "[pf]update: no where condition(3)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]update: no where condition(3)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1=? where id=id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "[pf]update: no where condition(4)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]update: no where condition(4)", DefaultMysqlInspectOffline(),
 		"update exist_db.exist_tb_1 set v1=? where exist_tb_1.id=exist_tb_1.id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "[pf]delete: no where condition(1)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]delete: no where condition(1)", DefaultMysqlInspectOffline(),
 		"delete from exist_db.exist_tb_1 where 1=? and ?=?;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 
-	runDefaultRulesInspectCase(t, "[pf]delete: no where condition(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[pf]delete: no where condition(2)", DefaultMysqlInspectOffline(),
 		"delete from exist_db.exist_tb_1 where 1=? and id=id;",
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 }
@@ -398,7 +403,8 @@ func TestCheckColumnCharLengthOffline(t *testing.T) {
 }
 
 func TestCheckIndexCountOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "create_table: index <= 5", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DDLCheckIndexCount].Rule
+	runSingleRuleInspectCase(rule, t, "create_table: index <= 5", DefaultMysqlInspectOffline(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -415,7 +421,7 @@ INDEX idx_5 (id)
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "create_table: index > 5", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "create_table: index > 5", DefaultMysqlInspectOffline(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -435,7 +441,8 @@ INDEX idx_6 (id)
 }
 
 func TestCheckCompositeIndexMaxOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "create_table: composite index columns <= 3", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DDLCheckCompositeIndexMax].Rule
+	runSingleRuleInspectCase(rule, t, "create_table: composite index columns <= 3", DefaultMysqlInspectOffline(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -450,7 +457,7 @@ INDEX idx_1 (id,v1,v2)
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "create_table: composite index columns > 3", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "create_table: composite index columns > 3", DefaultMysqlInspectOffline(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -554,7 +561,7 @@ FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 }
 
 func TestCheckTableCommentOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "create_table: table without comment", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(RuleHandlerMap[DDLCheckTableWithoutComment].Rule, t, "create_table: table without comment", DefaultMysqlInspectOffline(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -568,7 +575,8 @@ PRIMARY KEY (id)
 }
 
 func TestCheckColumnCommentOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "create_table: column without comment", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DDLCheckColumnWithoutComment].Rule
+	runSingleRuleInspectCase(rule, t, "create_table: column without comment", DefaultMysqlInspectOffline(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -580,14 +588,14 @@ PRIMARY KEY (id)
 		newTestResult().addResult(DDLCheckColumnWithoutComment),
 	)
 
-	runDefaultRulesInspectCase(t, "alter_table: column without comment(1)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "alter_table: column without comment(1)", DefaultMysqlInspectOffline(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL DEFAULT "unit test";
 `,
 		newTestResult().addResult(DDLCheckColumnWithoutComment),
 	)
 
-	runDefaultRulesInspectCase(t, "alter_table: column without comment(2)", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "alter_table: column without comment(2)", DefaultMysqlInspectOffline(),
 		`
 ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL DEFAULT "unit test" ;
 `,
@@ -636,7 +644,9 @@ CREATE INDEX index_1 ON exist_db.exist_tb_1(v1);
 }
 
 func TestCheckUniqueIndexPrefixOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "create_table: unique index prefix not uniq_", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DDLCheckUniqueIndexPrefix].Rule
+
+	runSingleRuleInspectCase(rule, t, "create_table: unique index prefix not uniq_", DefaultMysqlInspectOffline(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -649,14 +659,14 @@ UNIQUE INDEX index_1 (v1)
 		newTestResult().addResult(DDLCheckUniqueIndexPrefix),
 	)
 
-	runDefaultRulesInspectCase(t, "alter_table: unique index prefix not uniq_", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "alter_table: unique index prefix not uniq_", DefaultMysqlInspectOffline(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD UNIQUE INDEX index_1(v1);
 `,
 		newTestResult().addResult(DDLCheckUniqueIndexPrefix),
 	)
 
-	runDefaultRulesInspectCase(t, "create_index: unique index prefix not uniq_", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "create_index: unique index prefix not uniq_", DefaultMysqlInspectOffline(),
 		`
 CREATE UNIQUE INDEX index_1 ON exist_db.exist_tb_1(v1);
 `,
@@ -808,14 +818,15 @@ UPDATE exist_db.exist_tb_1 Set v1="2" where id=? limit ?;
 }
 
 func TestCheckDMLWithOrderByOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "update: with order by", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DMLCheckWithOrderBy].Rule
+	runSingleRuleInspectCase(rule, t, "update: with order by", DefaultMysqlInspectOffline(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by v1;
 `,
 		newTestResult().addResult(DMLCheckWithOrderBy),
 	)
 
-	runDefaultRulesInspectCase(t, "delete: with limit", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "delete: with limit", DefaultMysqlInspectOffline(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by v1;
 `,
@@ -824,14 +835,15 @@ UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by v1;
 }
 
 func TestCheckDMLWithOrderBy_FPOffline(t *testing.T) {
-	runDefaultRulesInspectCase(t, "[fp]update: with order by", DefaultMysqlInspectOffline(),
+	rule := RuleHandlerMap[DMLCheckWithOrderBy].Rule
+	runSingleRuleInspectCase(rule, t, "[fp]update: with order by", DefaultMysqlInspectOffline(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 order by ?;
 `,
 		newTestResult().addResult(DMLCheckWithOrderBy),
 	)
 
-	runDefaultRulesInspectCase(t, "[fp]delete: with limit", DefaultMysqlInspectOffline(),
+	runSingleRuleInspectCase(rule, t, "[fp]delete: with limit", DefaultMysqlInspectOffline(),
 		`
 UPDATE exist_db.exist_tb_1 Set v1=? where id=? order by ?;
 `,
@@ -1943,7 +1955,7 @@ SELECT * FROM exist_db.exist_tb_1;
 OPTIMIZE TABLE exist_db.exist_tb_1;
 SELECT * FROM exist_db.exist_tb_2;
 `, newTestResult().addResult(DMLCheckWhereIsInvalid),
-		newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持"),
+		newTestResult().add(driver.RuleLevelError, "语法错误或者解析器不支持"),
 		newTestResult().addResult(DMLCheckWhereIsInvalid))
 }
 
@@ -1974,7 +1986,7 @@ CREATE
 	BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');
 `,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持").addResult(DDLCheckCreateTrigger))
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driver.RuleLevelError, "语法错误或者解析器不支持").addResult(DDLCheckCreateTrigger))
 	}
 
 	for _, sql := range []string{
@@ -1984,7 +1996,7 @@ CREATE
 		`CREATE TRIGGER BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE TRIGGER my_trigger BEEEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持"))
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driver.RuleLevelError, "语法错误或者解析器不支持"))
 	}
 }
 
@@ -2001,7 +2013,7 @@ CREATE
 	RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');
 `,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持").addResult(DDLCheckCreateFunction))
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driver.RuleLevelError, "语法错误或者解析器不支持").addResult(DDLCheckCreateFunction))
 	}
 
 	for _, sql := range []string{
@@ -2010,7 +2022,7 @@ CREATE
 		`CREATE hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 		`CREATE DEFINER='sqle_op'@'localhost' hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 	} {
-		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持"))
+		runSingleRuleInspectCase(RuleHandlerMap[DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driver.RuleLevelError, "语法错误或者解析器不支持"))
 	}
 }
 
@@ -2057,7 +2069,7 @@ select * from t1;`,
 		runSingleRuleInspectCase(
 			RuleHandlerMap[DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持").
+			newTestResult().add(driver.RuleLevelError, "语法错误或者解析器不支持").
 				addResult(DDLCheckCreateProcedure))
 	}
 
@@ -2092,6 +2104,6 @@ end;`,
 		runSingleRuleInspectCase(
 			RuleHandlerMap[DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(model.RuleLevelError, "语法错误或者解析器不支持"))
+			newTestResult().add(driver.RuleLevelError, "语法错误或者解析器不支持"))
 	}
 }

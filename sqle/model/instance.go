@@ -10,11 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-const (
-	DBTypeMySQL      = "mysql"
-	DBTypePostgreSQL = "PostgreSQL"
-)
-
 // Instance is a table for database info
 type Instance struct {
 	Model

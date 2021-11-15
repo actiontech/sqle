@@ -9,12 +9,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
-	driver "github.com/pingcap/tidb/types/parser_driver"
+	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/ungerik/go-dry"
 )
 
@@ -105,9 +104,9 @@ const (
 )
 
 type RuleHandler struct {
-	Rule                 model.Rule
+	Rule                 driver.Rule
 	Message              string
-	Func                 func(model.Rule, *Inspect, ast.Node) error
+	Func                 func(driver.Rule, *Inspect, ast.Node) error
 	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
 }
@@ -129,79 +128,73 @@ var (
 
 	// DefaultTemplateRules only use for unit test now. It should be removed later,
 	// because Driver layer should not care about Rule template. TODO(@wy)
-	DefaultTemplateRules = []model.Rule{}
-	InitRules            = []model.Rule{}
+	DefaultTemplateRules = []driver.Rule{}
+	InitRules            = []driver.Rule{}
 )
 
 var RuleHandlers = []RuleHandler{
 	// config
 	{
-		Rule: model.Rule{
-			Name:      ConfigDMLRollbackMaxRows,
-			Desc:      "在 DML 语句中预计影响行数超过指定值则不回滚",
-			Value:     "1000",
-			Level:     model.RuleLevelNotice,
-			Typ:       RuleTypeGlobalConfig,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     ConfigDMLRollbackMaxRows,
+			Desc:     "在 DML 语句中预计影响行数超过指定值则不回滚",
+			Value:    "1000",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeGlobalConfig,
 		},
 		Func: nil,
 	},
 	{
-		Rule: model.Rule{
-			Name:      ConfigDDLOSCMinSize,
-			Desc:      "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
-			Value:     "16",
-			Level:     model.RuleLevelNormal,
-			Typ:       RuleTypeGlobalConfig,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     ConfigDDLOSCMinSize,
+			Desc:     "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
+			Value:    "16",
+			Level:    driver.RuleLevelNormal,
+			Category: RuleTypeGlobalConfig,
 		},
 		Func: nil,
 	},
 
 	{
-		Rule: model.Rule{
-			Name:      ConfigDDLGhostMinSize,
-			Desc:      "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
-			Value:     "16",
-			Level:     model.RuleLevelNormal,
-			Typ:       RuleTypeGlobalConfig,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     ConfigDDLGhostMinSize,
+			Desc:     "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
+			Value:    "16",
+			Level:    driver.RuleLevelNormal,
+			Category: RuleTypeGlobalConfig,
 		},
 		Func: nil,
 	},
 
 	// rule
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckPKWithoutIfNotExists,
-			Desc:      "新建表必须加入if not exists create，保证重复执行不报错",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeUsageSuggestion,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckPKWithoutIfNotExists,
+			Desc:     "新建表必须加入if not exists create，保证重复执行不报错",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "新建表必须加入if not exists create，保证重复执行不报错",
 		AllowOffline: true,
 		Func:         checkIfNotExist,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckObjectNameLength,
-			Desc:      "表名、列名、索引名的长度不能大于64字节",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeNamingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckObjectNameLength,
+			Desc:     "表名、列名、索引名的长度不能大于64字节",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "表名、列名、索引名的长度不能大于64字节",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckPKNotExist,
-			Desc:      "表必须有主键",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeIndexingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckPKNotExist,
+			Desc:     "表必须有主键",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:              "表必须有主键",
 		AllowOffline:         true,
@@ -209,12 +202,11 @@ var RuleHandlers = []RuleHandler{
 		Func:                 checkPrimaryKey,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckPKWithoutAutoIncrement,
-			Desc:      "主键建议使用自增",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeIndexingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckPKWithoutAutoIncrement,
+			Desc:     "主键建议使用自增",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:              "主键建议使用自增",
 		AllowOffline:         true,
@@ -222,12 +214,11 @@ var RuleHandlers = []RuleHandler{
 		Func:                 checkPrimaryKey,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckPKWithoutBigintUnsigned,
-			Desc:      "主键建议使用 bigint 无符号类型，即 bigint unsigned",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeIndexingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckPKWithoutBigintUnsigned,
+			Desc:     "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:              "主键建议使用 bigint 无符号类型，即 bigint unsigned",
 		AllowOffline:         true,
@@ -235,37 +226,34 @@ var RuleHandlers = []RuleHandler{
 		Func:                 checkPrimaryKey,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckColumnCharLength,
-			Desc:      "char长度大于20时，必须使用varchar类型",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnCharLength,
+			Desc:     "char长度大于20时，必须使用varchar类型",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "char长度大于20时，必须使用varchar类型",
 		AllowOffline: true,
 		Func:         checkStringType,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLDisableFK,
-			Desc:      "禁止使用外键",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeIndexingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLDisableFK,
+			Desc:     "禁止使用外键",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:      "禁止使用外键",
 		AllowOffline: true,
 		Func:         checkForeignKey,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckIndexCount,
-			Desc:      "索引个数建议不超过阈值",
-			Level:     model.RuleLevelNotice,
-			Value:     "5",
-			Typ:       RuleTypeIndexingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckIndexCount,
+			Desc:     "索引个数建议不超过阈值",
+			Level:    driver.RuleLevelNotice,
+			Value:    "5",
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:              "索引个数建议不超过%v个",
 		AllowOffline:         true,
@@ -273,13 +261,12 @@ var RuleHandlers = []RuleHandler{
 		Func:                 checkIndex,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckCompositeIndexMax,
-			Desc:      "复合索引的列数量不建议超过阈值",
-			Level:     model.RuleLevelNotice,
-			Value:     "3",
-			Typ:       RuleTypeIndexingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckCompositeIndexMax,
+			Desc:     "复合索引的列数量不建议超过阈值",
+			Level:    driver.RuleLevelNotice,
+			Value:    "3",
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:              "复合索引的列数量不建议超过%v个",
 		AllowOffline:         true,
@@ -287,48 +274,44 @@ var RuleHandlers = []RuleHandler{
 		Func:                 checkIndex,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckObjectNameUsingKeyword,
-			Desc:      "数据库对象命名禁止使用保留字",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeNamingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckObjectNameUsingKeyword,
+			Desc:     "数据库对象命名禁止使用保留字",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "数据库对象命名禁止使用保留字 %s",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckOBjectNameUseCN,
-			Desc:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeNamingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckOBjectNameUseCN,
+			Desc:     "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckTableWithoutInnoDBUTF8MB4,
-			Desc:      "建议使用Innodb引擎,utf8mb4字符集",
-			Level:     model.RuleLevelNotice,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckTableWithoutInnoDBUTF8MB4,
+			Desc:     "建议使用Innodb引擎,utf8mb4字符集",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "建议使用Innodb引擎,utf8mb4字符集",
 		AllowOffline: false,
 		Func:         checkEngineAndCharacterSet,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckIndexedColumnWithBolb,
-			Desc:      "禁止将blob类型的列加入索引",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeIndexingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckIndexedColumnWithBolb,
+			Desc:     "禁止将blob类型的列加入索引",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:              "禁止将blob类型的列加入索引",
 		AllowOffline:         true,
@@ -336,213 +319,201 @@ var RuleHandlers = []RuleHandler{
 		Func:                 disableAddIndexForColumnsTypeBlob,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DMLCheckWhereIsInvalid,
-			Desc:      "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDMLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DMLCheckWhereIsInvalid,
+			Desc:     "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckAlterTableNeedMerge,
-			Desc:      "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
-			Level:     model.RuleLevelNotice,
-			Typ:       RuleTypeUsageSuggestion,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckAlterTableNeedMerge,
+			Desc:     "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "已存在对该表的修改语句，建议合并成一个ALTER语句",
 		AllowOffline: false,
 		Func:         checkMergeAlterTable,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DMLDisableSelectAllColumn,
-			Desc:      "不建议使用select *",
-			Level:     model.RuleLevelNotice,
-			Typ:       RuleTypeDMLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DMLDisableSelectAllColumn,
+			Desc:     "不建议使用select *",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "不建议使用select *",
 		AllowOffline: true,
 		Func:         checkSelectAll,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLDisableDropStatement,
-			Desc:      "禁止除索引外的drop操作",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeUsageSuggestion,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLDisableDropStatement,
+			Desc:     "禁止除索引外的drop操作",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止除索引外的drop操作",
 		AllowOffline: true,
 		Func:         disableDropStmt,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckTableWithoutComment,
-			Desc:      "表建议添加注释",
-			Level:     model.RuleLevelNotice,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckTableWithoutComment,
+			Desc:     "表建议添加注释",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "表建议添加注释",
 		AllowOffline: true,
 		Func:         checkTableWithoutComment,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckColumnWithoutComment,
-			Desc:      "列建议添加注释",
-			Level:     model.RuleLevelNotice,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnWithoutComment,
+			Desc:     "列建议添加注释",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "列建议添加注释",
 		AllowOffline: true,
 		Func:         checkColumnWithoutComment,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckIndexPrefix,
-			Desc:      "普通索引必须要以\"idx_\"为前缀",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeNamingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckIndexPrefix,
+			Desc:     "普通索引必须要以\"idx_\"为前缀",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "普通索引必须要以\"idx_\"为前缀",
 		AllowOffline: true,
 		Func:         checkIndexPrefix,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckUniqueIndexPrefix,
-			Desc:      "unique索引必须要以\"uniq_\"为前缀",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeNamingConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckUniqueIndexPrefix,
+			Desc:     "unique索引必须要以\"uniq_\"为前缀",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "unique索引必须要以\"uniq_\"为前缀",
 		AllowOffline: true,
 		Func:         checkUniqIndexPrefix,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckUniqueIndex,
-			Desc:  "unique索引名必须使用 IDX_UK_表名_字段名",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeNamingConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckUniqueIndex,
+			Desc:     "unique索引名必须使用 IDX_UK_表名_字段名",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "unique索引名必须使用 IDX_UK_表名_字段名",
 		AllowOffline: true,
 		Func:         checkUniqIndex,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckColumnWithoutDefault,
-			Desc:      "除了自增列及大字段列之外，每个列都必须添加默认值",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnWithoutDefault,
+			Desc:     "除了自增列及大字段列之外，每个列都必须添加默认值",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "除了自增列及大字段列之外，每个列都必须添加默认值",
 		AllowOffline: true,
 		Func:         checkColumnWithoutDefault,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckColumnTimestampWitoutDefault,
-			Desc:      "timestamp 类型的列必须添加默认值",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnTimestampWitoutDefault,
+			Desc:     "timestamp 类型的列必须添加默认值",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "timestamp 类型的列必须添加默认值",
 		AllowOffline: true,
 		Func:         checkColumnTimestampWithoutDefault,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckColumnBlobWithNotNull,
-			Desc:      "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnBlobWithNotNull,
+			Desc:     "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
 		AllowOffline: true,
 		Func:         checkColumnBlobNotNull,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DDLCheckColumnBlobDefaultIsNotNull,
-			Desc:      "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDDLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnBlobDefaultIsNotNull,
+			Desc:     "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
 		AllowOffline: true,
 		Func:         checkColumnBlobDefaultNull,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DMLCheckWithLimit,
-			Desc:      "delete/update 语句不能有limit条件",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDMLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DMLCheckWithLimit,
+			Desc:     "delete/update 语句不能有limit条件",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "delete/update 语句不能有limit条件",
 		AllowOffline: true,
 		Func:         checkDMLWithLimit,
 	},
 	{
-		Rule: model.Rule{
-			Name:      DMLCheckWithOrderBy,
-			Desc:      "delete/update 语句不能有order by",
-			Level:     model.RuleLevelError,
-			Typ:       RuleTypeDMLConvention,
-			IsDefault: true,
+		Rule: driver.Rule{
+			Name:     DMLCheckWithOrderBy,
+			Desc:     "delete/update 语句不能有order by",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "delete/update 语句不能有order by",
 		AllowOffline: true,
 		Func:         checkDMLWithOrderBy,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckInsertColumnsExist,
-			Desc:  "insert 语句必须指定column",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeDMLConvention,
+		// TODO: 修改level以适配默认模板
+		Rule: driver.Rule{
+			Name:     DMLCheckInsertColumnsExist,
+			Desc:     "insert 语句必须指定column",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "insert 语句必须指定column",
 		AllowOffline: true,
 		Func:         checkDMLWithInsertColumnExist,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckBatchInsertListsMax,
-			Desc:  "单条insert语句，建议批量插入不超过阈值",
-			Level: model.RuleLevelNotice,
-			Value: "5000",
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckBatchInsertListsMax,
+			Desc:     "单条insert语句，建议批量插入不超过阈值",
+			Level:    driver.RuleLevelNotice,
+			Value:    "5000",
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "单条insert语句，建议批量插入不超过%v条",
 		AllowOffline: true,
 		Func:         checkDMLWithBatchInsertMaxLimits,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckPKProhibitAutoIncrement,
-			Desc:  "主键禁止使用自增",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeIndexingConvention,
+		// todo: level error -> warn
+		Rule: driver.Rule{
+			Name:     DDLCheckPKProhibitAutoIncrement,
+			Desc:     "主键禁止使用自增",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeIndexingConvention,
 		},
 		Message:              "主键禁止使用自增",
 		AllowOffline:         true,
@@ -550,332 +521,333 @@ var RuleHandlers = []RuleHandler{
 		Func:                 checkPrimaryKey,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckWhereExistFunc,
-			Desc:  "避免对条件字段使用函数操作",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckWhereExistFunc,
+			Desc:     "避免对条件字段使用函数操作",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "避免对条件字段使用函数操作",
 		AllowOffline: false,
 		Func:         checkWhereExistFunc,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckWhereExistNot,
-			Desc:  "不建议对条件字段使用负向查询",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckWhereExistNot,
+			Desc:     "不建议对条件字段使用负向查询",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "不建议对条件字段使用负向查询",
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLWhereExistNull,
-			Desc:  "不建议对条件字段使用 NULL 值判断",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLWhereExistNull,
+			Desc:     "不建议对条件字段使用 NULL 值判断",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "不建议对条件字段使用 NULL 值判断",
 		Func:         checkWhereExistNull,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckWhereExistImplicitConversion,
-			Desc:  "条件字段存在数值和字符的隐式转换",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckWhereExistImplicitConversion,
+			Desc:     "条件字段存在数值和字符的隐式转换",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message: "条件字段存在数值和字符的隐式转换",
 		Func:    checkWhereColumnImplicitConversion,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckLimitMustExist,
-			Desc:  "delete/update 语句必须有limit条件",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeDMLConvention,
+		// todo: level error -> warn
+		Rule: driver.Rule{
+			Name:     DMLCheckLimitMustExist,
+			Desc:     "delete/update 语句必须有limit条件",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "delete/update 语句必须有limit条件",
 		Func:         checkDMLLimitExist,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckWhereExistScalarSubquery,
-			Desc:  "避免使用标量子查询",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckWhereExistScalarSubquery,
+			Desc:     "避免使用标量子查询",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "避免使用标量子查询",
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckIndexesExistBeforeCreateConstraints,
-			Desc:  "建议创建约束前,先行创建索引",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeIndexingConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckIndexesExistBeforeCreateConstraints,
+			Desc:     "建议创建约束前,先行创建索引",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeIndexingConvention,
 		},
 		Message: "建议创建约束前,先行创建索引",
 		Func:    checkIndexesExistBeforeCreatConstraints,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckSelectForUpdate,
-			Desc:  "建议避免使用select for update",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckSelectForUpdate,
+			Desc:     "建议避免使用select for update",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "建议避免使用select for update",
 		Func:         checkDMLSelectForUpdate,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckDatabaseCollation,
-			Desc:  "建议使用规定的数据库排序规则",
-			Level: model.RuleLevelNotice,
-			Value: "utf8mb4_0900_ai_ci",
-			Typ:   RuleTypeDDLConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckDatabaseCollation,
+			Desc:     "建议使用规定的数据库排序规则",
+			Level:    driver.RuleLevelNotice,
+			Value:    "utf8mb4_0900_ai_ci",
+			Category: RuleTypeDDLConvention,
 		},
 		Message: "建议使用规定的数据库排序规则为%s",
 		Func:    checkCollationDatabase,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckDecimalTypeColumn,
-			Desc:  "精确浮点数建议使用DECIMAL",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDDLConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckDecimalTypeColumn,
+			Desc:     "精确浮点数建议使用DECIMAL",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "精确浮点数建议使用DECIMAL",
 		Func:         checkDecimalTypeColumn,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckNeedlessFunc,
-			Desc:  "避免使用不必要的内置函数",
-			Level: model.RuleLevelNotice,
-			Value: "sha(),sqrt(),md5()",
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckNeedlessFunc,
+			Desc:     "避免使用不必要的内置函数",
+			Level:    driver.RuleLevelNotice,
+			Value:    "sha(),sqrt(),md5()",
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "避免使用不必要的内置函数[%v]",
 		Func:         checkNeedlessFunc,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckDatabaseSuffix,
-			Desc:  "数据库名称建议以\"_DB\"结尾",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeNamingConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckDatabaseSuffix,
+			Desc:     "数据库名称建议以\"_DB\"结尾",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "数据库名称建议以\"_DB\"结尾",
 		Func:         checkDatabaseSuffix,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckPKName,
-			Desc:  "建议主键命名为\"PK_表名\"",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeNamingConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckPKName,
+			Desc:     "建议主键命名为\"PK_表名\"",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeNamingConvention,
 		},
 		Message:      "建议主键命名为\"PK_表名\"",
 		Func:         checkPKIndexName,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckTransactionIsolationLevel,
-			Desc:  "事物隔离级别建议设置成RC",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeUsageSuggestion,
+		Rule: driver.Rule{
+			Name:     DDLCheckTransactionIsolationLevel,
+			Desc:     "事物隔离级别建议设置成RC",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "事物隔离级别建议设置成RC",
 		Func:         checkTransactionIsolationLevel,
 		AllowOffline: true,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckFuzzySearch,
-			Desc:  "禁止使用全模糊搜索或左模糊搜索",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckFuzzySearch,
+			Desc:     "禁止使用全模糊搜索或左模糊搜索",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "禁止使用全模糊搜索或左模糊搜索",
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckTablePartition,
-			Desc:  "不建议使用分区表相关功能",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeUsageSuggestion,
+		Rule: driver.Rule{
+			Name:     DDLCheckTablePartition,
+			Desc:     "不建议使用分区表相关功能",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "不建议使用分区表相关功能",
 		AllowOffline: true,
 		Func:         checkTablePartition,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckNumberOfJoinTables,
-			Desc:  "使用JOIN连接表查询建议不超过阈值",
-			Level: model.RuleLevelNotice,
-			Value: "3",
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckNumberOfJoinTables,
+			Desc:     "使用JOIN连接表查询建议不超过阈值",
+			Level:    driver.RuleLevelNotice,
+			Value:    "3",
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "使用JOIN连接表查询建议不超过%v张",
 		AllowOffline: true,
 		Func:         checkNumberOfJoinTables,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckIfAfterUnionDistinct,
-			Desc:  "建议使用UNION ALL,替代UNION",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckIfAfterUnionDistinct,
+			Desc:     "建议使用UNION ALL,替代UNION",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "建议使用UNION ALL,替代UNION",
 		AllowOffline: true,
 		Func:         checkIsAfterUnionDistinct,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckIsExistLimitOffset,
-			Desc:  "使用LIMIT分页时,避免使用LIMIT M,N",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckIsExistLimitOffset,
+			Desc:     "使用LIMIT分页时,避免使用LIMIT M,N",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "使用LIMIT分页时,避免使用LIMIT M,N",
 		AllowOffline: true,
 		Func:         checkIsExistLimitOffset,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckIndexOption,
-			Desc:  "建议选择可选性超过阈值字段作为索引",
-			Level: model.RuleLevelNotice,
-			Value: "0.7",
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckIndexOption,
+			Desc:     "建议选择可选性超过阈值字段作为索引",
+			Level:    driver.RuleLevelNotice,
+			Value:    "0.7",
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "创建索引的字段可选性未超过阈值:%v",
 		AllowOffline: false,
 		Func:         checkIndexOption,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckColumnEnumNotice,
-			Desc:  "不建议使用 ENUM 类型",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDDLConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnEnumNotice,
+			Desc:     "不建议使用 ENUM 类型",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "不建议使用 ENUM 类型",
 		AllowOffline: true,
 		Func:         checkColumnEnumNotice,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckColumnSetNitice,
-			Desc:  "不建议使用 SET 类型",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDDLConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnSetNitice,
+			Desc:     "不建议使用 SET 类型",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "不建议使用 SET 类型",
 		AllowOffline: true,
 		Func:         checkColumnSetNotice,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckColumnBlobNotice,
-			Desc:  "不建议使用 BLOB 或 TEXT 类型",
-			Level: model.RuleLevelNotice,
-			Typ:   RuleTypeDDLConvention,
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnBlobNotice,
+			Desc:     "不建议使用 BLOB 或 TEXT 类型",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
 		},
 		Message:      "不建议使用 BLOB 或 TEXT 类型",
 		AllowOffline: true,
 		Func:         checkColumnBlobNotice,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckExplainAccessTypeAll,
-			Value: "10000",
-			Desc:  "查询的扫描不建议超过指定行数（默认值：10000）",
-			Level: model.RuleLevelWarn,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckExplainAccessTypeAll,
+			Value:    "10000",
+			Desc:     "查询的扫描不建议超过指定行数（默认值：10000）",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "该查询的扫描行数为%v",
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckExplainExtraUsingFilesort,
-			Desc:  "该查询使用了文件排序",
-			Level: model.RuleLevelWarn,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckExplainExtraUsingFilesort,
+			Desc:     "该查询使用了文件排序",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "该查询使用了文件排序",
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DMLCheckExplainExtraUsingTemporary,
-			Desc:  "该查询使用了临时表",
-			Level: model.RuleLevelWarn,
-			Typ:   RuleTypeDMLConvention,
+		Rule: driver.Rule{
+			Name:     DMLCheckExplainExtraUsingTemporary,
+			Desc:     "该查询使用了临时表",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
 		},
 		Message:      "该查询使用了临时表",
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckCreateView,
-			Desc:  "禁止使用视图",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeUsageSuggestion,
+		Rule: driver.Rule{
+			Name:     DDLCheckCreateView,
+			Desc:     "禁止使用视图",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用视图",
 		AllowOffline: true,
 		Func:         checkCreateView,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckCreateTrigger,
-			Desc:  "禁止使用触发器",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeUsageSuggestion,
+		Rule: driver.Rule{
+			Name:     DDLCheckCreateTrigger,
+			Desc:     "禁止使用触发器",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用触发器",
 		AllowOffline: true,
 		Func:         checkCreateTrigger,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckCreateFunction,
-			Desc:  "禁止使用自定义函数",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeUsageSuggestion,
+		Rule: driver.Rule{
+			Name:     DDLCheckCreateFunction,
+			Desc:     "禁止使用自定义函数",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用自定义函数",
 		AllowOffline: true,
 		Func:         checkCreateFunction,
 	},
 	{
-		Rule: model.Rule{
-			Name:  DDLCheckCreateProcedure,
-			Desc:  "禁止使用存储过程",
-			Level: model.RuleLevelError,
-			Typ:   RuleTypeUsageSuggestion,
+		Rule: driver.Rule{
+			Name:     DDLCheckCreateProcedure,
+			Desc:     "禁止使用存储过程",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用存储过程",
 		AllowOffline: true,
@@ -887,13 +859,13 @@ func init() {
 	for _, rh := range RuleHandlers {
 		RuleHandlerMap[rh.Rule.Name] = rh
 		InitRules = append(InitRules, rh.Rule)
-		if rh.Rule.IsDefault {
+		if rh.Rule.Level == driver.RuleLevelError {
 			DefaultTemplateRules = append(DefaultTemplateRules, rh.Rule)
 		}
 	}
 }
 
-func checkSelectAll(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkSelectAll(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// check select all column
@@ -908,7 +880,7 @@ func checkSelectAll(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkSelectWhere(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkSelectWhere(rule driver.Rule, i *Inspect, node ast.Node) error {
 
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -955,7 +927,7 @@ func checkWhere(i *Inspect, where ast.ExprNode) bool {
 	}
 	return isAddResult
 }
-func checkWhereExistNull(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkWhereExistNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		var existNull bool
 		scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -988,7 +960,7 @@ func getWhereExpr(node ast.Node) (where ast.ExprNode) {
 	return
 }
 
-func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkIndexesExistBeforeCreatConstraints(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		constraintMap := make(map[string]struct{})
@@ -1023,7 +995,7 @@ func checkIndexesExistBeforeCreatConstraints(rule model.Rule, i *Inspect, node a
 	return nil
 }
 
-func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
 	inspectCol := func(col *ast.ColumnDef) {
@@ -1153,7 +1125,7 @@ func checkPrimaryKey(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkMergeAlterTable(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkMergeAlterTable(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
@@ -1167,7 +1139,7 @@ func checkMergeAlterTable(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkEngineAndCharacterSet(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkEngineAndCharacterSet(rule driver.Rule, i *Inspect, node ast.Node) error {
 	var tableName *ast.TableName
 	var engine string
 	var characterSet string
@@ -1237,7 +1209,7 @@ func checkEngineAndCharacterSet(rule model.Rule, i *Inspect, node ast.Node) erro
 	return nil
 }
 
-func disableAddIndexForColumnsTypeBlob(rule model.Rule, i *Inspect, node ast.Node) error {
+func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.Node) error {
 	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
 	switch stmt := node.(type) {
@@ -1335,7 +1307,7 @@ func disableAddIndexForColumnsTypeBlob(rule model.Rule, i *Inspect, node ast.Nod
 	return nil
 }
 
-func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkNewObjectName(rule driver.Rule, i *Inspect, node ast.Node) error {
 	names := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
@@ -1425,7 +1397,7 @@ func checkNewObjectName(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkForeignKey(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkForeignKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 	hasFk := false
 
 	switch stmt := node.(type) {
@@ -1452,7 +1424,7 @@ func checkForeignKey(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIndex(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
 	value, err := strconv.Atoi(rule.Value)
@@ -1526,7 +1498,7 @@ func checkIndex(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkStringType(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkStringType(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
@@ -1549,7 +1521,7 @@ func checkStringType(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIfNotExist(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkIfNotExist(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
@@ -1560,7 +1532,7 @@ func checkIfNotExist(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func disableDropStmt(rule model.Rule, i *Inspect, node ast.Node) error {
+func disableDropStmt(rule driver.Rule, i *Inspect, node ast.Node) error {
 	// specific check
 	switch node.(type) {
 	case *ast.DropDatabaseStmt:
@@ -1571,7 +1543,7 @@ func disableDropStmt(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkTableWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkTableWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) error {
 	var tableHasComment bool
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -1594,7 +1566,7 @@ func checkTableWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error 
 	return nil
 }
 
-func checkColumnWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1634,7 +1606,7 @@ func checkColumnWithoutComment(rule model.Rule, i *Inspect, node ast.Node) error
 	return nil
 }
 
-func checkIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkIndexPrefix(rule driver.Rule, i *Inspect, node ast.Node) error {
 	indexesName := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -1667,20 +1639,20 @@ func checkIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkUniqIndexPrefix(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkUniqIndexPrefix(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return checkIfUniqIndexSatisfy(rule, i, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
 		return utils.HasPrefix(uniqIndexName, "uniq_", false)
 	})
 }
 
-func checkUniqIndex(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkUniqIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return checkIfUniqIndexSatisfy(rule, i, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
 		return strings.EqualFold(uniqIndexName, fmt.Sprintf("IDX_UK_%v_%v", tableName, strings.Join(indexedColNames, "_")))
 	})
 }
 
 func checkIfUniqIndexSatisfy(
-	rule model.Rule,
+	rule driver.Rule,
 	i *Inspect,
 	node ast.Node,
 	isSatisfy func(uniqIndexName, tableName string, indexedColNames []string) bool) error {
@@ -1729,7 +1701,7 @@ func checkIfUniqIndexSatisfy(
 	return nil
 }
 
-func checkColumnWithoutDefault(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1793,7 +1765,7 @@ func checkColumnWithoutDefault(rule model.Rule, i *Inspect, node ast.Node) error
 	return nil
 }
 
-func checkColumnTimestampWithoutDefault(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnTimestampWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1833,7 +1805,7 @@ func checkColumnTimestampWithoutDefault(rule model.Rule, i *Inspect, node ast.No
 	return nil
 }
 
-func checkColumnBlobNotNull(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnBlobNotNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1878,19 +1850,19 @@ func checkColumnBlobNotNull(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnEnumNotice(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnEnumNotice(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeEnum)
 }
 
-func checkColumnSetNotice(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnSetNotice(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeSet)
 }
 
-func checkColumnBlobNotice(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnBlobNotice(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob)
 }
 
-func checkColumnShouldNotBeType(rule model.Rule, i *Inspect, node ast.Node, colTypes ...byte) error {
+func checkColumnShouldNotBeType(rule driver.Rule, i *Inspect, node ast.Node, colTypes ...byte) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -1928,7 +1900,7 @@ func checkColumnShouldNotBeType(rule model.Rule, i *Inspect, node ast.Node, colT
 	return nil
 }
 
-func checkColumnBlobDefaultNull(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkColumnBlobDefaultNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1973,7 +1945,7 @@ func checkColumnBlobDefaultNull(rule model.Rule, i *Inspect, node ast.Node) erro
 	return nil
 }
 
-func checkDMLWithLimit(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithLimit(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit != nil {
@@ -1986,7 +1958,7 @@ func checkDMLWithLimit(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	return nil
 }
-func checkDMLLimitExist(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDMLLimitExist(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit == nil {
@@ -2000,7 +1972,7 @@ func checkDMLLimitExist(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkDMLWithOrderBy(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithOrderBy(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Order != nil {
@@ -2014,7 +1986,7 @@ func checkDMLWithOrderBy(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkDMLWithInsertColumnExist(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithInsertColumnExist(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		if len(stmt.Columns) == 0 {
@@ -2024,7 +1996,7 @@ func checkDMLWithInsertColumnExist(rule model.Rule, i *Inspect, node ast.Node) e
 	return nil
 }
 
-func checkDMLWithBatchInsertMaxLimits(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithBatchInsertMaxLimits(rule driver.Rule, i *Inspect, node ast.Node) error {
 	value, err := strconv.Atoi(rule.Value)
 	if err != nil {
 		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
@@ -2038,7 +2010,7 @@ func checkDMLWithBatchInsertMaxLimits(rule model.Rule, i *Inspect, node ast.Node
 	return nil
 }
 
-func checkWhereExistFunc(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -2114,7 +2086,7 @@ func checkExistFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) boo
 	return false
 }
 
-func checkWhereColumnImplicitConversion(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -2203,7 +2175,7 @@ func checkWhereColumnImplicitConversionFunc(i *Inspect, tables []*ast.TableName,
 	return false
 }
 
-func checkDMLSelectForUpdate(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDMLSelectForUpdate(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.LockTp == ast.SelectLockForUpdate {
@@ -2213,7 +2185,7 @@ func checkDMLSelectForUpdate(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkCollationDatabase(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkCollationDatabase(rule driver.Rule, i *Inspect, node ast.Node) error {
 	var tableName *ast.TableName
 	var collationDatabase string
 	var err error
@@ -2270,7 +2242,7 @@ func checkCollationDatabase(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	return nil
 }
-func checkDecimalTypeColumn(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDecimalTypeColumn(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -2292,7 +2264,7 @@ func checkDecimalTypeColumn(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkNeedlessFunc(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkNeedlessFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 	needlessFuncArr := strings.Split(rule.Value, ",")
 	sql := strings.ToLower(node.Text())
 	for _, needlessFunc := range needlessFuncArr {
@@ -2305,7 +2277,7 @@ func checkNeedlessFunc(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkDatabaseSuffix(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkDatabaseSuffix(rule driver.Rule, i *Inspect, node ast.Node) error {
 	databaseName := ""
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
@@ -2322,7 +2294,7 @@ func checkDatabaseSuffix(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkPKIndexName(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkPKIndexName(rule driver.Rule, i *Inspect, node ast.Node) error {
 	indexesName := ""
 	tableName := ""
 	switch stmt := node.(type) {
@@ -2353,13 +2325,13 @@ func checkPKIndexName(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkTransactionIsolationLevel(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkTransactionIsolationLevel(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SetStmt:
 		for _, variable := range stmt.Variables {
 			if dry.StringListContains([]string{"tx_isolation", "tx_isolation_one_shot"}, variable.Name) {
 				switch node := variable.Value.(type) {
-				case *driver.ValueExpr:
+				case *parserdriver.ValueExpr:
 					if node.Datum.GetString() != ast.ReadCommitted {
 						i.addResult(DDLCheckTransactionIsolationLevel)
 						return nil
@@ -2373,7 +2345,7 @@ func checkTransactionIsolationLevel(rule model.Rule, i *Inspect, node ast.Node) 
 	return nil
 }
 
-func checkTablePartition(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkTablePartition(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
@@ -2392,7 +2364,7 @@ func checkTablePartition(rule model.Rule, i *Inspect, node ast.Node) error {
 	}
 	return nil
 }
-func checkNumberOfJoinTables(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkNumberOfJoinTables(rule driver.Rule, i *Inspect, node ast.Node) error {
 	nums, err := strconv.Atoi(rule.Value)
 	if err != nil {
 		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
@@ -2411,7 +2383,7 @@ func checkNumberOfJoinTables(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIsAfterUnionDistinct(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkIsAfterUnionDistinct(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
@@ -2427,7 +2399,7 @@ func checkIsAfterUnionDistinct(rule model.Rule, i *Inspect, node ast.Node) error
 	return nil
 }
 
-func checkIsExistLimitOffset(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkIsExistLimitOffset(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.Limit.Offset != nil {
@@ -2439,7 +2411,7 @@ func checkIsExistLimitOffset(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkIndexOption(rule driver.Rule, i *Inspect, node ast.Node) error {
 
 	var tableName *ast.TableName
 	indexColumns := make([]string, 0)
@@ -2475,10 +2447,10 @@ func checkIndexOption(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkExplain(rule driver.Rule, i *Inspect, node ast.Node) error {
 	// sql from MyBatis XML file is not the executable sql. so can't do explain for it.
 	// TODO(@wy) ignore explain when audit Mybatis file
-	//if i.Task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+	//if i.Task.SQLSource == driver.TaskSQLSourceFromMyBatisXMLFile {
 	//	return nil
 	//}
 	switch node.(type) {
@@ -2509,7 +2481,7 @@ func checkExplain(rule model.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkCreateView(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkCreateView(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.CreateViewStmt:
 		i.addResult(rule.Name)
@@ -2532,7 +2504,7 @@ var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\
 //
 // For now, we do character matching for CREATE TRIGGER Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateTrigger(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkCreateTrigger(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createTriggerReg1.MatchString(node.Text()) ||
@@ -2555,7 +2527,7 @@ var createFunctionReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function
 // ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateFunction(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkCreateFunction(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createFunctionReg1.MatchString(node.Text()) ||
@@ -2577,7 +2549,7 @@ var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedu
 // ref: https://dev.mysql.com/doc/refman/8.0/en/create-procedure.html
 // For now, we do character matching for CREATE PROCEDURE Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateProcedure(rule model.Rule, i *Inspect, node ast.Node) error {
+func checkCreateProcedure(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createProcedureReg1.MatchString(node.Text()) ||

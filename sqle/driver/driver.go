@@ -5,10 +5,9 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -19,34 +18,110 @@ var (
 	drivers   = make(map[string]handler)
 	driversMu sync.RWMutex
 
-	rules   []*model.Rule
+	// rules store audit rules for each driver.
+	rules   map[string][]*Rule
 	rulesMu sync.RWMutex
 )
 
-type Config struct {
-	IsOfflineAudit bool
-	Schema         string
-	Inst           *model.Instance
-	Rules          []*model.Rule
+const (
+	SQLTypeDML = "dml"
+	SQLTypeDDL = "ddl"
+)
+
+const (
+	DriverTypeMySQL      = "mysql"
+	DriverTypePostgreSQL = "PostgreSQL"
+)
+
+// DSN provide necessary information to connect to database.
+type DSN struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+
+	// DatabaseName is the default database to connect.
+	DatabaseName string
 }
 
-func NewConfig(inst *model.Instance, rules []*model.Rule, schema string, isOfflineAudit bool) *Config {
-	return &Config{
-		Inst:           inst,
-		Rules:          rules,
-		Schema:         schema,
-		IsOfflineAudit: isOfflineAudit,
+type RuleLevel string
+
+const (
+	RuleLevelNormal RuleLevel = "normal"
+	RuleLevelNotice RuleLevel = "notice"
+	RuleLevelWarn   RuleLevel = "warn"
+	RuleLevelError  RuleLevel = "error"
+)
+
+var ruleLevelMap = map[RuleLevel]int{
+	RuleLevelNormal: 0,
+	RuleLevelNotice: 1,
+	RuleLevelWarn:   2,
+	RuleLevelError:  3,
+}
+
+type Rule struct {
+	Name string
+	Desc string
+
+	// Category is the category of the rule. Such as "Naming Conventions"...
+	// Rules will be displayed on the SQLE rule list page by category.
+	Category string
+
+	Level RuleLevel
+	Value string
+}
+
+func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
+	value := r.GetValue()
+	i, err := strconv.ParseInt(value, 10, 64)
+	if err == nil {
+		return i
 	}
+	i, err = strconv.ParseInt(defaultRule.GetValue(), 10, 64)
+	if err == nil {
+		return i
+	}
+	return 0
+}
+
+func (r *Rule) GetValue() string {
+	if r == nil {
+		return ""
+	}
+	return r.Value
+}
+
+// Config difine the configuration for driver.
+type Config struct {
+	DSN   *DSN
+	Rules []*Rule
+}
+
+// NewConfig return a config for driver.
+//
+// 1. dsn is nil, rules is not nil. Use drive to do Offline Audit.
+// 2. dsn is not nil, rule is nil. Use drive to communicate with databse only.
+// 3. dsn is not nil, rule is not nil. Most common usecase.
+func NewConfig(dsn *DSN, rules []*Rule) (*Config, error) {
+	if dsn == nil && rules == nil {
+		fmt.Println("dsn is nil, and rules is nil, nothing can be done by driver")
+	}
+
+	return &Config{
+		DSN:   dsn,
+		Rules: rules,
+	}, nil
 }
 
 // handler is a template which Driver plugin should provide such function signature.
-type handler func(log *logrus.Entry, config *Config) (Driver, error)
+type handler func(log *logrus.Entry, c *Config) (Driver, error)
 
 // Register like sql.Register.
 //
 // Register makes a database driver available by the provided driver name.
 // Driver's initialize handler and audit rules register by Register.
-func Register(name string, h handler, rs []*model.Rule) {
+func Register(name string, h handler, rs []*Rule) {
 	_, exist := drivers[name]
 	if exist {
 		panic("duplicated driver name")
@@ -57,7 +132,10 @@ func Register(name string, h handler, rs []*model.Rule) {
 	driversMu.Unlock()
 
 	rulesMu.Lock()
-	rules = append(rules, rs...)
+	if rules == nil {
+		rules = make(map[string][]*Rule)
+	}
+	rules[name] = rs
 	rulesMu.Unlock()
 }
 
@@ -70,38 +148,19 @@ func (e *ErrDriverNotSupported) Error() string {
 }
 
 // NewDriver return a new instantiated Driver.
-func NewDriver(log *logrus.Entry, inst *model.Instance, isOfflineAudit bool, dbType, schema string) (Driver, error) {
+func NewDriver(log *logrus.Entry, dbType string, cfg *Config) (Driver, error) {
 	driversMu.RLock()
 	defer driversMu.RUnlock()
 
 	d, exist := drivers[dbType]
 	if !exist {
-		return nil, fmt.Errorf("driver type %v is not supported", inst.DbType)
+		return nil, fmt.Errorf("driver type %v is not supported", dbType)
 	}
 
-	st := model.GetStorage()
-
-	var err error
-	var rules []*model.Rule
-
-	if isOfflineAudit {
-		// use default_{db_type}'s rules if audit is offline
-		// refer: model.utils.CreateDefaultTemplate
-		// TODO: add function to generate default rule template name
-		templateName := fmt.Sprintf("default_%v", dbType)
-		rules, err = st.GetRulesFromRuleTemplateByName(templateName)
-	} else {
-		rules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", inst.ID))
-	}
-
-	if err != nil {
-		return nil, errors.Wrap(err, "get rules for audit")
-	}
-
-	return d(log, NewConfig(inst, rules, schema, isOfflineAudit))
+	return d(log, cfg)
 }
 
-func AllRules() []*model.Rule {
+func AllRules() map[string][]*Rule {
 	rulesMu.RLock()
 	defer rulesMu.RUnlock()
 	return rules
@@ -164,7 +223,7 @@ type Registerer interface {
 	Name() string
 
 	// Rules returns all rules that plugin supported.
-	Rules() []*model.Rule
+	Rules() []*Rule
 }
 
 // Node is a interface which unify SQL ast tree. It produce by Driver.Parse.
@@ -195,7 +254,7 @@ type AuditResult struct {
 }
 
 type auditResult struct {
-	level   string
+	level   RuleLevel
 	message string
 }
 
@@ -206,11 +265,11 @@ func NewInspectResults() *AuditResult {
 }
 
 // Level find highest Level in result
-func (rs *AuditResult) Level() string {
-	level := model.RuleLevelNormal
-	for _, result := range rs.results {
-		if model.RuleLevelMap[level] < model.RuleLevelMap[result.level] {
-			level = result.level
+func (rs *AuditResult) Level() RuleLevel {
+	level := RuleLevelNormal
+	for _, curr := range rs.results {
+		if ruleLevelMap[curr.level] > ruleLevelMap[level] {
+			level = curr.level
 		}
 	}
 	return level
@@ -221,7 +280,7 @@ func (rs *AuditResult) Message() string {
 	for n, result := range rs.results {
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
-			model.RuleLevelError, model.RuleLevelWarn, model.RuleLevelNotice, model.RuleLevelNormal, "osc"),
+			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, "osc"),
 			result.message)
 		if match {
 			message = result.message
@@ -233,7 +292,7 @@ func (rs *AuditResult) Message() string {
 	return strings.Join(messages, "\n")
 }
 
-func (rs *AuditResult) Add(level, message string, args ...interface{}) {
+func (rs *AuditResult) Add(level RuleLevel, message string, args ...interface{}) {
 	if level == "" || message == "" {
 		return
 	}
