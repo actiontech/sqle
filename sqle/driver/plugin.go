@@ -85,49 +85,49 @@ func InitPlugins(pluginDir string) error {
 			})
 		}
 
-		Register(pluginMeta.Name,
-			// todo: define to func variable to make readability.
-			func(log *logrus.Entry, config *Config) (Driver, error) {
-				pluginCloseCh := make(chan struct{})
-				srv, err := getServerHandle(binaryPath, pluginCloseCh)
-				if err != nil {
-					return nil, err
-				}
+		handler := func(log *logrus.Entry, config *Config) (Driver, error) {
+			pluginCloseCh := make(chan struct{})
+			srv, err := getServerHandle(binaryPath, pluginCloseCh)
+			if err != nil {
+				return nil, err
+			}
 
-				// protoRules send to plugin for Audit.
-				var protoRules []*proto.Rule
-				for _, rule := range config.Rules {
-					protoRules = append(protoRules, &proto.Rule{
-						Name:     rule.Name,
-						Desc:     rule.Desc,
-						Value:    rule.Value,
-						Level:    string(rule.Level),
-						Category: rule.Category,
-					})
-				}
+			// protoRules send to plugin for Audit.
+			var protoRules []*proto.Rule
+			for _, rule := range config.Rules {
+				protoRules = append(protoRules, &proto.Rule{
+					Name:     rule.Name,
+					Desc:     rule.Desc,
+					Value:    rule.Value,
+					Level:    string(rule.Level),
+					Category: rule.Category,
+				})
+			}
 
-				initRequest := &proto.InitRequest{
-					Rules: protoRules,
-				}
-				if config.DSN != nil {
-					initRequest.Dsn = &proto.DSN{
-						Host:     config.DSN.Host,
-						Port:     config.DSN.Port,
-						User:     config.DSN.User,
-						Password: config.DSN.Password,
+			initRequest := &proto.InitRequest{
+				Rules: protoRules,
+			}
+			if config.DSN != nil {
+				initRequest.Dsn = &proto.DSN{
+					Host:     config.DSN.Host,
+					Port:     config.DSN.Port,
+					User:     config.DSN.User,
+					Password: config.DSN.Password,
 
-						// database is to open.
-						Database: config.DSN.DatabaseName,
-					}
+					// database is to open.
+					Database: config.DSN.DatabaseName,
 				}
+			}
 
-				_, err = srv.Init(context.TODO(), initRequest)
-				if err != nil {
-					return nil, err
-				}
-				return &driverPluginClient{srv, pluginCloseCh}, nil
+			_, err = srv.Init(context.TODO(), initRequest)
+			if err != nil {
+				return nil, err
+			}
+			return &driverPluginClient{srv, pluginCloseCh}, nil
 
-			}, driverRules)
+		}
+
+		Register(pluginMeta.Name, handler, driverRules)
 
 		log.Logger().WithFields(logrus.Fields{
 			"plugin_name": pluginMeta.Name,
