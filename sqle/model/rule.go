@@ -24,8 +24,6 @@ type Rule struct {
 	Value  string `json:"value"`
 	Level  string `json:"level" example:"error"` // notice, warn, error
 	Typ    string `json:"type" gorm:"column:type; not null"`
-	// todo:remove column, update storage
-	IsDefault bool `json:"is_default" gorm:"default:false; not null"`
 }
 
 func (r Rule) TableName() string {

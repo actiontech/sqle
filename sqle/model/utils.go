@@ -135,6 +135,12 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
+
+	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
+		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
+			return errors.New(errors.ConnectStorageError, err)
+		}
+	}
 	return nil
 }
 
