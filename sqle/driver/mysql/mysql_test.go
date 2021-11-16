@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,13 +16,13 @@ create table t1(id int);
 	`)
 	assert.NoError(t, err)
 	for _, node := range nodes {
-		assert.Equal(t, node.Type, model.SQLTypeDDL)
+		assert.Equal(t, node.Type, driver.SQLTypeDDL)
 	}
 
 	nodes, err = DefaultMysqlInspect().Parse(context.TODO(), "select * from t1")
 	assert.NoError(t, err)
 	assert.Len(t, nodes, 1)
-	assert.Equal(t, nodes[0].Type, model.SQLTypeDML)
+	assert.Equal(t, nodes[0].Type, driver.SQLTypeDML)
 }
 
 func TestInspect_onlineddlWithGhost(t *testing.T) {

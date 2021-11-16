@@ -2,13 +2,10 @@ package mysql
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -20,34 +17,25 @@ import (
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
-func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
-	switch dbType {
-	case model.DBTypeMySQL:
-		p := parser.New()
-		stmts, _, err := p.PerfectParse(sql, "", "")
-		if err != nil {
-			return nil, err
-		}
-		return stmts, nil
-	default:
-		return nil, errors.New("db type is invalid")
+func parseSql(sql string) ([]ast.StmtNode, error) {
+	p := parser.New()
+	stmts, _, err := p.PerfectParse(sql, "", "")
+	if err != nil {
+		return nil, err
 	}
+	return stmts, nil
 }
 
-func parseOneSql(dbType, sql string) (ast.StmtNode, error) {
-	switch dbType {
-	case model.DBTypeMySQL:
-		p := parser.New()
-		stmt, err := p.ParseOneStmt(sql, "", "")
-		if err != nil {
-			fmt.Printf("parse error: %v\nsql: %v", err, sql)
-			return nil, err
-		}
-		return stmt, nil
-	default:
-		return nil, errors.New("db type is invalid")
+func parseOneSql(sql string) (ast.StmtNode, error) {
+	p := parser.New()
+	stmt, err := p.ParseOneStmt(sql, "", "")
+	if err != nil {
+		fmt.Printf("parse error: %v\nsql: %v", err, sql)
+		return nil, err
 	}
+	return stmt, nil
 }
+
 func getNumberOfJoinTables(stmt *ast.Join) int {
 	nums := 0
 	if stmt == nil {
