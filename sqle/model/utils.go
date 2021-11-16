@@ -14,6 +14,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
+	xerrors "github.com/pkg/errors"
 )
 
 var storage *Storage
@@ -173,55 +174,45 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
 }
 
 func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
-	defaultTemplates := make(map[string][]*Rule)
-
 	for dbType, r := range rules {
-		for _, rule := range r {
-			modelRule := &Rule{
-				Name:   rule.Name,
-				DBType: dbType,
-				Desc:   rule.Desc,
-				Value:  rule.Value,
-				Level:  string(rule.Level),
-				Typ:    rule.Category,
-			}
-			defaultTemplates[dbType] = append(defaultTemplates[dbType], modelRule)
-		}
-	}
-
-	for dbType, rs := range defaultTemplates {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
 		_, exist, err := s.GetRuleTemplateByName(templateName)
 		if err != nil {
+			return xerrors.Wrap(err, "get rule template failed")
+		}
+		if exist {
+			continue
+		}
+
+		t := &RuleTemplate{
+			Name:   templateName,
+			Desc:   "默认规则模板",
+			DBType: dbType,
+		}
+		if err := s.Save(t); err != nil {
 			return err
 		}
-		if !exist {
-			t := &RuleTemplate{
-				Name:   templateName,
-				Desc:   "默认规则模板",
-				DBType: dbType,
-			}
-			if err := s.Save(t); err != nil {
-				return err
+
+		ruleList := make([]RuleTemplateRule, 0, len(r))
+		for _, rule := range r {
+			if rule.Level != driver.RuleLevelError {
+				continue
 			}
 
-			ruleList := make([]RuleTemplateRule, 0, len(rs))
-			for _, rule := range rs {
-				if rule.Level == string(driver.RuleLevelError) {
-					ruleList = append(ruleList, RuleTemplateRule{
-						RuleTemplateId: t.ID,
-						RuleName:       rule.Name,
-						RuleLevel:      rule.Level,
-						RuleValue:      rule.Value,
-						RuleDBType:     rule.DBType,
-					})
-				}
-			}
-			if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
-				return err
-			}
+			ruleList = append(ruleList, RuleTemplateRule{
+				RuleTemplateId: t.ID,
+				RuleName:       rule.Name,
+				RuleLevel:      string(rule.Level),
+				RuleValue:      rule.Value,
+				RuleDBType:     dbType,
+			})
+		}
+
+		if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
+			return xerrors.Wrap(err, "update rule template rules failed")
 		}
 	}
+
 	return nil
 }
 
