@@ -4,6 +4,7 @@
 #build
 /docs
 *.rpm
+*.rpm.md5
 *.log
 /sqled
 /sqled.yml*

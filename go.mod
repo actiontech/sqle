@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/actiontech/mybatis-mapper-2-sql v0.1.3-0.20210426090447-30154a3f590e
+	github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20211116051932-8d94d78be18a
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect

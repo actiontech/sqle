@@ -15,6 +15,9 @@ func ParseXML(data string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if n == nil {
+		return "", nil
+	}
 	stmt, err := n.GetStmt(ast.NewContext())
 	if err != nil {
 		return "", err
