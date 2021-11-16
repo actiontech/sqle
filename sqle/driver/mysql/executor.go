@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	mdriver "github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/model"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
@@ -36,18 +36,11 @@ type BaseConn struct {
 	conn *sql.Conn
 }
 
-func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*BaseConn, error) {
+func newConn(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*BaseConn, error) {
 	var db *sql.DB
 	var err error
-	switch instance.DbType {
-	case model.DBTypeMySQL:
-		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
-			instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
-	default:
-		err := fmt.Errorf("db type is not support")
-		entry.Error(err)
-		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
-	}
+	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
+		instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
 	if err != nil {
 		entry.Error(err)
 		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
@@ -56,13 +49,13 @@ func newConn(entry *logrus.Entry, instance *model.Instance, schema string) (*Bas
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
-	entry.Infof("connecting to %s %s:%s", instance.DbType, instance.Host, instance.Port)
+	entry.Infof("connecting to %s:%s", instance.Host, instance.Port)
 	conn, err := db.Conn(context.Background())
 	if err != nil {
 		entry.Error(err)
 		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
-	entry.Infof("connected to %s %s:%s", instance.DbType, instance.Host, instance.Port)
+	entry.Infof("connected to %s:%s", instance.Host, instance.Port)
 	return &BaseConn{
 		log:  entry,
 		host: instance.Host,
@@ -188,14 +181,11 @@ func (c *BaseConn) Logger() *logrus.Entry {
 }
 
 type Executor struct {
-	dbType string
-	Db     Db
+	Db Db
 }
 
-func NewExecutor(entry *logrus.Entry, instance *model.Instance, schema string) (*Executor, error) {
-	var executor = &Executor{
-		dbType: instance.DbType,
-	}
+func NewExecutor(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*Executor, error) {
+	var executor = &Executor{}
 	var conn Db
 	var err error
 	conn, err = newConn(entry, instance, schema)
@@ -206,22 +196,13 @@ func NewExecutor(entry *logrus.Entry, instance *model.Instance, schema string) (
 	return executor, nil
 }
 
-func Ping(entry *logrus.Entry, instance *model.Instance) error {
+func Ping(entry *logrus.Entry, instance *mdriver.DSN) error {
 	conn, err := NewExecutor(entry, instance, "")
 	if err != nil {
 		return err
 	}
 	defer conn.Db.Close()
 	return conn.Db.Ping()
-}
-
-func ShowDatabases(entry *logrus.Entry, instance *model.Instance) ([]string, error) {
-	conn, err := NewExecutor(entry, instance, "")
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Db.Close()
-	return conn.ShowDatabases(true)
 }
 
 func (c *Executor) ShowCreateTable(tableName string) (string, error) {
@@ -397,9 +378,6 @@ where table_schema = '%s' and table_name = '%s'`, schema, table)
 	return size, nil
 }
 func (c *Executor) ShowDefaultConfiguration(sql, column string) (string, error) {
-	if c.dbType != model.DBTypeMySQL {
-		return "", nil
-	}
 	result, err := c.Db.Query(sql)
 	if err != nil {
 		return "", err

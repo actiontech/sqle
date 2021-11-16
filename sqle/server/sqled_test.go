@@ -206,7 +206,7 @@ func Test_action_execute(t *testing.T) {
 					return errors.New("mock error: Storage.UpdateExecuteSQLs")
 				})
 
-				return driver.NewDriver(log.NewEntry(), nil, true, model.DBTypeMySQL, "")
+				return newDriverWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL)
 			},
 			sqls:    []string{"select * from t1"},
 			wantErr: false,
@@ -221,7 +221,7 @@ func Test_action_execute(t *testing.T) {
 					return errors.New("mock error: Storage.UpdateExecuteSqlStatus")
 				})
 
-				return driver.NewDriver(log.NewEntry(), nil, true, model.DBTypeMySQL, "")
+				return newDriverWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL)
 			},
 			sqls:    []string{"create table t1(id int)"},
 			wantErr: false,
@@ -236,7 +236,7 @@ func Test_action_execute(t *testing.T) {
 					return errors.New("mock error: Storage.UpdateExecuteSQLs")
 				})
 
-				return driver.NewDriver(log.NewEntry(), nil, true, model.DBTypeMySQL, "")
+				return newDriverWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL)
 			},
 			sqls:    []string{"select * from t1", "create table t1(id int)"},
 			wantErr: false,
