@@ -10,7 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver/proto"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/model"
+	"github.com/pingcap/errors"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
@@ -73,63 +73,61 @@ func InitPlugins(pluginDir string) error {
 		}
 		close(closeCh)
 
-		// modelRules get from plugin when plugin initialize.
-		var modelRules []*model.Rule
+		// driverRules get from plugin when plugin initialize.
+		var driverRules []*Rule
 		for _, rule := range pluginMeta.Rules {
-			modelRules = append(modelRules, &model.Rule{
-				Typ:       rule.Typ,
-				Name:      rule.Name,
-				Desc:      rule.Desc,
-				Value:     rule.Value,
-				Level:     rule.Level,
-				IsDefault: rule.IsDefault,
-
-				DBType: pluginMeta.Name,
+			driverRules = append(driverRules, &Rule{
+				Category: rule.Category,
+				Name:     rule.Name,
+				Desc:     rule.Desc,
+				Value:    rule.Value,
+				Level:    RuleLevel(rule.Level),
 			})
 		}
 
-		Register(pluginMeta.Name,
-			func(log *logrus.Entry, config *Config) (Driver, error) {
-				pluginCloseCh := make(chan struct{})
-				srv, err := getServerHandle(binaryPath, pluginCloseCh)
-				if err != nil {
-					return nil, err
-				}
+		handler := func(log *logrus.Entry, config *Config) (Driver, error) {
+			pluginCloseCh := make(chan struct{})
+			srv, err := getServerHandle(binaryPath, pluginCloseCh)
+			if err != nil {
+				return nil, err
+			}
 
-				// protoRules set to plugin for Audit.
-				var protoRules []*proto.Rule
-				for _, rule := range config.Rules {
-					protoRules = append(protoRules, &proto.Rule{
-						Name:      rule.Name,
-						Desc:      rule.Desc,
-						Value:     rule.Value,
-						Level:     rule.Level,
-						Typ:       rule.Typ,
-						IsDefault: rule.IsDefault,
-					})
-				}
+			// protoRules send to plugin for Audit.
+			var protoRules []*proto.Rule
+			for _, rule := range config.Rules {
+				protoRules = append(protoRules, &proto.Rule{
+					Name:     rule.Name,
+					Desc:     rule.Desc,
+					Value:    rule.Value,
+					Level:    string(rule.Level),
+					Category: rule.Category,
+				})
+			}
 
-				initRequest := &proto.InitRequest{
-					IsOffline: config.IsOfflineAudit,
-					Rules:     protoRules,
-				}
-				if config.Inst != nil {
-					initRequest.InstanceMeta = &proto.InstanceMeta{
-						InstanceHost: config.Inst.Host,
-						InstancePort: config.Inst.Port,
-						InstanceUser: config.Inst.User,
-						InstancePass: config.Inst.Password,
-						DatabaseOpen: config.Schema,
-					}
-				}
+			initRequest := &proto.InitRequest{
+				Rules: protoRules,
+			}
+			if config.DSN != nil {
+				initRequest.Dsn = &proto.DSN{
+					Host:     config.DSN.Host,
+					Port:     config.DSN.Port,
+					User:     config.DSN.User,
+					Password: config.DSN.Password,
 
-				_, err = srv.Init(context.TODO(), initRequest)
-				if err != nil {
-					return nil, err
+					// database is to open.
+					Database: config.DSN.DatabaseName,
 				}
-				return &driverPluginClient{srv, pluginCloseCh}, nil
-			},
-			modelRules)
+			}
+
+			_, err = srv.Init(context.TODO(), initRequest)
+			if err != nil {
+				return nil, err
+			}
+			return &driverPluginClient{srv, pluginCloseCh}, nil
+
+		}
+
+		Register(pluginMeta.Name, handler, driverRules)
 
 		log.Logger().WithFields(logrus.Fields{
 			"plugin_name": pluginMeta.Name,
@@ -264,7 +262,7 @@ func (s *driverPluginClient) Audit(ctx context.Context, sql string) (*AuditResul
 	ret := &AuditResult{}
 	for _, result := range resp.Results {
 		ret.results = append(ret.results, &auditResult{
-			level:   result.Level,
+			level:   RuleLevel(result.Level),
 			message: result.Message,
 		})
 	}
@@ -291,28 +289,33 @@ type driverGRPCServer struct {
 }
 
 func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
-	var modelRules []*model.Rule
+	var driverRules []*Rule
 	for _, rule := range req.GetRules() {
-		modelRules = append(modelRules, &model.Rule{
-			Name:      rule.Name,
-			Typ:       rule.Typ,
-			Desc:      rule.Desc,
-			Value:     rule.Value,
-			Level:     rule.Level,
-			IsDefault: rule.IsDefault,
+		driverRules = append(driverRules, &Rule{
+			Name:     rule.Name,
+			Category: rule.Category,
+			Desc:     rule.Desc,
+			Value:    rule.Value,
+			Level:    RuleLevel(rule.Level),
 		})
 	}
 
-	d.impl = d.newDriver(&Config{
-		Rules:          modelRules,
-		IsOfflineAudit: req.GetIsOffline(),
-		Schema:         req.GetInstanceMeta().GetDatabaseOpen(),
-		Inst: &model.Instance{
-			Host:     req.GetInstanceMeta().GetInstanceHost(),
-			Port:     req.GetInstanceMeta().GetInstancePort(),
-			User:     req.GetInstanceMeta().GetInstanceUser(),
-			Password: req.GetInstanceMeta().GetInstancePass(),
-		}})
+	var dsn *DSN
+	if req.GetDsn() != nil {
+		dsn = &DSN{
+			Host:         req.GetDsn().GetHost(),
+			Port:         req.GetDsn().GetPort(),
+			User:         req.GetDsn().GetUser(),
+			Password:     req.GetDsn().GetPassword(),
+			DatabaseName: req.GetDsn().GetDatabase(),
+		}
+	}
+
+	cfg, err := NewConfig(dsn, driverRules)
+	if err != nil {
+		return nil, errors.Wrap(err, "init config")
+	}
+	d.impl = d.newDriver(cfg)
 	return &proto.Empty{}, nil
 }
 
@@ -402,7 +405,7 @@ func (d *driverGRPCServer) Audit(ctx context.Context, req *proto.AuditRequest) (
 	resp := &proto.AuditResponse{}
 	for _, result := range auditResluts.results {
 		resp.Results = append(resp.Results, &proto.AuditResult{
-			Level:   result.level,
+			Level:   string(result.level),
 			Message: result.message,
 		})
 	}
@@ -422,12 +425,11 @@ func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.
 
 	for _, r := range d.r.Rules() {
 		protoRules = append(protoRules, &proto.Rule{
-			Name:      r.Name,
-			Desc:      r.Desc,
-			Level:     r.Level,
-			Value:     r.Value,
-			Typ:       r.Typ,
-			IsDefault: r.IsDefault,
+			Name:     r.Name,
+			Desc:     r.Desc,
+			Level:    string(r.Level),
+			Value:    r.Value,
+			Category: r.Category,
 		})
 	}
 

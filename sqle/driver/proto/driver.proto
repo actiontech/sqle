@@ -21,12 +21,12 @@ service Driver {
   rpc GenRollbackSQL(GenRollbackSQLRequest) returns (GenRollbackSQLResponse);
 }
 
-message InstanceMeta {
-  string instanceHost = 1;
-  string instancePort = 2;
-  string instanceUser = 3;
-  string instancePass = 4;
-  string databaseOpen = 5;
+message DSN {
+  string host = 1;
+  string port = 2;
+  string user = 3;
+  string password = 4;
+  string database = 5;
 }
 
 message Rule {
@@ -34,13 +34,11 @@ message Rule {
   string desc = 2;
   string value = 3;
   string level = 4;
-  string typ = 5;
-  bool isDefault = 6;
+  string category = 5;
 }
 
 message InitRequest {
-  InstanceMeta instanceMeta = 1;
-  bool   isOffline = 2;
+  DSN dsn = 1;
   repeated Rule rules = 3;
 }
 

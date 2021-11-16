@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/agiledragon/gomonkey"
@@ -28,12 +29,12 @@ func getGivenBeforeAddAP() (*model.AuditPlan, *model.User, *model.Instance, stri
 		Model:          model.Model{ID: 1},
 		Name:           "test_audit_plan",
 		CronExpression: "*/1 * * * *",
-		DBType:         model.DBTypeMySQL,
+		DBType:         driver.DriverTypeMySQL,
 		CreateUserID:   adminUser.ID,
 	}
 	inst := &model.Instance{
 		Name:   "test_inst",
-		DbType: model.DBTypePostgreSQL,
+		DbType: driver.DriverTypePostgreSQL,
 	}
 
 	token := "mock token"

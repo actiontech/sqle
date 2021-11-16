@@ -91,7 +91,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	action.task = task
 
 	// d will be closed in Sqled.do().
-	if d, err = driver.NewDriver(entry, task.Instance, task.Instance == nil, task.DBType, task.Schema); err != nil {
+	if d, err = newDriverWithAudit(entry, task.Instance, task.Schema, task.DBType); err != nil {
 		goto Error
 	}
 	action.driver = d
@@ -264,7 +264,7 @@ func (a *action) audit() (err error) {
 
 		result := driver.NewInspectResults()
 		if whitelistMatch {
-			result.Add(model.RuleLevelNormal, "白名单")
+			result.Add(driver.RuleLevelNormal, "白名单")
 		} else {
 			result, err = a.driver.Audit(context.TODO(), executeSQL.Content)
 			if err != nil {
@@ -273,7 +273,7 @@ func (a *action) audit() (err error) {
 		}
 
 		executeSQL.AuditStatus = model.SQLAuditStatusFinished
-		executeSQL.AuditLevel = result.Level()
+		executeSQL.AuditLevel = string(result.Level())
 		executeSQL.AuditResult = result.Message()
 		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(nodes[0].Fingerprint)...)))
 
@@ -287,7 +287,7 @@ func (a *action) audit() (err error) {
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else {
-		d, err := driver.NewDriver(a.entry, a.task.Instance, a.task.Instance == nil, a.task.DBType, a.task.Schema)
+		d, err := newDriverWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType)
 		if err != nil {
 			return xerrors.Wrap(err, "new driver for generate rollback SQL")
 		}
@@ -300,9 +300,9 @@ func (a *action) audit() (err error) {
 				return err
 			}
 			result := driver.NewInspectResults()
-			result.Add(executeSQL.AuditLevel, executeSQL.AuditResult)
-			result.Add(model.RuleLevelNotice, reason)
-			executeSQL.AuditLevel = result.Level()
+			result.Add(driver.RuleLevel(executeSQL.AuditLevel), executeSQL.AuditResult)
+			result.Add(driver.RuleLevelNotice, reason)
+			executeSQL.AuditLevel = string(result.Level())
 			executeSQL.AuditResult = result.Message()
 
 			rollbackSQLs = append(rollbackSQLs, &model.RollbackSQL{
@@ -327,7 +327,7 @@ func (a *action) audit() (err error) {
 
 	var normalCount float64
 	for _, executeSQL := range task.ExecuteSQLs {
-		if executeSQL.AuditLevel == model.RuleLevelNormal {
+		if executeSQL.AuditLevel == string(driver.RuleLevelNormal) {
 			normalCount += 1
 		}
 	}
@@ -364,7 +364,7 @@ outerLoop:
 		}
 
 		switch nodes[0].Type {
-		case model.SQLTypeDML:
+		case driver.SQLTypeDML:
 			txSQLs = append(txSQLs, executeSQL)
 
 			if i == len(task.ExecuteSQLs)-1 {
@@ -373,7 +373,7 @@ outerLoop:
 				}
 			}
 
-		case model.SQLTypeDDL:
+		case driver.SQLTypeDDL:
 			if len(txSQLs) > 0 {
 				if err = a.execSQLs(txSQLs); err != nil {
 					break outerLoop
@@ -506,4 +506,59 @@ ExecSQLs:
 		a.entry.Error("rollback SQL finished")
 	}
 	return execErr
+}
+
+func newDriverWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string) (driver.Driver, error) {
+	if inst == nil && dbType == "" {
+		return nil, xerrors.Errorf("instance is nil and dbType is nil")
+	}
+
+	if dbType == "" {
+		dbType = inst.DbType
+	}
+
+	st := model.GetStorage()
+
+	var err error
+	var dsn *driver.DSN
+	var modelRules []*model.Rule
+
+	if inst == nil {
+		templateName := st.GetDefaultRuleTemplateName(dbType)
+		modelRules, err = st.GetRulesFromRuleTemplateByName(templateName)
+	} else {
+		dsn = &driver.DSN{
+			Host:     inst.Host,
+			Port:     inst.Port,
+			User:     inst.User,
+			Password: inst.Password,
+
+			DatabaseName: database,
+		}
+
+		modelRules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", inst.ID))
+	}
+
+	if err != nil {
+		return nil, xerrors.Errorf("get rules error: %v", err)
+	}
+
+	var rules []*driver.Rule
+	for _, rule := range modelRules {
+		rules = append(rules, &driver.Rule{
+			Name:     rule.Name,
+			Desc:     rule.Desc,
+			Category: rule.Typ,
+
+			Value: rule.Value,
+			Level: driver.RuleLevel(rule.Level),
+		})
+	}
+
+	cfg, err := driver.NewConfig(dsn, rules)
+	if err != nil {
+		return nil, xerrors.Wrap(err, "new driver with audit")
+	}
+
+	return driver.NewDriver(l, dbType, cfg)
 }
