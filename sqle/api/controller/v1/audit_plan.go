@@ -87,6 +87,8 @@ func CreateAuditPlan(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		defer d.Close(context.TODO())
+
 		schemas, err := d.Schemas(context.TODO())
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -94,7 +96,6 @@ func CreateAuditPlan(c echo.Context) error {
 		if !dry.StringInSlice(req.InstanceDatabase, schemas) {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist in instance", req.InstanceDatabase)))
 		}
-		d.Close(context.TODO())
 	}
 	err = manager.AddDynamicAuditPlan(req.Name, req.Cron, req.InstanceName, req.InstanceDatabase, currentUserName)
 	return controller.JSONBaseErrorReq(c, err)
