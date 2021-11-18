@@ -140,6 +140,7 @@ github.com/golang/protobuf/ptypes/timestamp
 # github.com/grpc-ecosystem/grpc-gateway v1.15.1
 ## explicit
 # github.com/hashicorp/go-hclog v0.14.1
+## explicit
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-plugin v1.4.2
 ## explicit
@@ -149,6 +150,27 @@ github.com/hashicorp/go-plugin/internal/plugin
 github.com/hashicorp/yamux
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/jackc/chunkreader/v2 v2.0.1
+github.com/jackc/chunkreader/v2
+# github.com/jackc/pgconn v1.10.0
+github.com/jackc/pgconn
+github.com/jackc/pgconn/internal/ctxwatch
+github.com/jackc/pgconn/stmtcache
+# github.com/jackc/pgio v1.0.0
+github.com/jackc/pgio
+# github.com/jackc/pgpassfile v1.0.0
+github.com/jackc/pgpassfile
+# github.com/jackc/pgproto3/v2 v2.1.1
+github.com/jackc/pgproto3/v2
+# github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b
+github.com/jackc/pgservicefile
+# github.com/jackc/pgtype v1.8.1
+github.com/jackc/pgtype
+# github.com/jackc/pgx/v4 v4.13.0
+## explicit
+github.com/jackc/pgx/v4
+github.com/jackc/pgx/v4/internal/sanitize
+github.com/jackc/pgx/v4/stdlib
 # github.com/jinzhu/gorm v1.9.15
 ## explicit
 github.com/jinzhu/gorm
@@ -177,16 +199,14 @@ github.com/labstack/gommon/random
 # github.com/leodido/go-urn v1.2.1
 ## explicit
 github.com/leodido/go-urn
-# github.com/lib/pq v1.10.0
-## explicit
 # github.com/mailru/easyjson v0.7.1
 ## explicit
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
-# github.com/mattn/go-colorable v0.1.4
+# github.com/mattn/go-colorable v0.1.6
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.10
+# github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
 # github.com/mattn/go-sqlite3 v2.0.3+incompatible
 ## explicit
@@ -202,6 +222,9 @@ github.com/oklog/run
 ## explicit
 github.com/openark/golib/log
 github.com/openark/golib/sqlutils
+# github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
+## explicit
+github.com/percona/go-mysql/query
 # github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 ## explicit
 github.com/pingcap/errors
@@ -256,7 +279,7 @@ github.com/satori/go.uuid
 # github.com/shirou/gopsutil v2.18.10+incompatible
 github.com/shirou/gopsutil/internal/common
 github.com/shirou/gopsutil/mem
-# github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
+# github.com/shopspring/decimal v1.2.0
 github.com/shopspring/decimal
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
@@ -265,6 +288,14 @@ github.com/siddontang/go/hack
 # github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07
 github.com/siddontang/go-log/log
 github.com/siddontang/go-log/loggers
+# github.com/sijms/go-ora/v2 v2.2.15
+## explicit
+github.com/sijms/go-ora/v2
+github.com/sijms/go-ora/v2/advanced_nego
+github.com/sijms/go-ora/v2/converters
+github.com/sijms/go-ora/v2/network
+github.com/sijms/go-ora/v2/network/security
+github.com/sijms/go-ora/v2/trace
 # github.com/sirupsen/logrus v1.4.2
 ## explicit
 github.com/sirupsen/logrus
@@ -274,7 +305,7 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.6.1
+# github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
 # github.com/swaggo/echo-swagger v1.0.0
@@ -307,11 +338,12 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+# golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/md4
-# golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
+golang.org/x/crypto/pbkdf2
+# golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
@@ -322,11 +354,12 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
 golang.org/x/net/webdav
 golang.org/x/net/webdav/internal/xml
-# golang.org/x/sys v0.0.0-20201119102817-f84b799fce68
+# golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.6
+golang.org/x/text/cases
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/internal
@@ -336,9 +369,15 @@ golang.org/x/text/encoding/korean
 golang.org/x/text/encoding/simplifiedchinese
 golang.org/x/text/encoding/traditionalchinese
 golang.org/x/text/encoding/unicode
+golang.org/x/text/internal
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/tag
 golang.org/x/text/internal/utf8internal
+golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/secure/bidirule
+golang.org/x/text/secure/precis
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
