@@ -33,7 +33,7 @@ endif
 DOCKER_REGISTRY ?= 10.186.18.20
 
 ## Dynamic Parameter
-GO_COMPILER_IMAGE ?= golang:1.14
+GO_COMPILER_IMAGE ?= golang:1.16
 RPM_BUILD_IMAGE ?= rpmbuild/centos7
 
 ## Static Parameter, should not be overwrite

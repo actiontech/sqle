@@ -1,6 +1,6 @@
 module github.com/actiontech/sqle
 
-go 1.14
+go 1.16
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
@@ -21,7 +21,6 @@ require (
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/fatih/color v1.7.0
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/github/gh-ost v1.1.3-0.20210727153850-e484824bbd68
 	github.com/go-ini/ini v1.63.2
 	github.com/go-ldap/ldap/v3 v3.4.1
@@ -35,7 +34,6 @@ require (
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.5.0
 	github.com/google/uuid v1.1.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.15.1 // indirect
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jackc/pgx/v4 v4.13.0
@@ -48,8 +46,6 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
-	github.com/onsi/ginkgo v1.10.1 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
