@@ -33,10 +33,15 @@ const (
 )
 
 func (dt DatabaseType) String() string {
-	return [...]string{
-		"PostgreSQL",
-		"Oracle",
-		"SQL Server"}[dt]
+	switch dt {
+	case DatabaseTypePostgreSQL:
+		return "PostgreSQL"
+	case DatabaseTypeOracle:
+		return "Oracle"
+	case DatabaseTypeMSSQL:
+		return "SQL Server"
+	}
+	return ""
 }
 
 func (dt DatabaseType) getDefaultDriver(inst *driver.DSN) (driverName, dsn string) {
