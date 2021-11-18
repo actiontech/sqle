@@ -6,6 +6,7 @@ import (
 	_driver "database/sql/driver"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -375,7 +376,7 @@ func splitSQL(sqls string) ([]string, error) {
 
 	sqlArray := make([]string, 0, len(stmts))
 	for _, stmt := range stmts {
-		sqlArray = append(sqlArray, stmt.Text())
+		sqlArray = append(sqlArray, strings.TrimSpace(stmt.Text()))
 	}
 
 	return sqlArray, nil
