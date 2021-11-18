@@ -36,7 +36,9 @@ require (
 	github.com/golang/protobuf v1.5.0
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.15.1 // indirect
+	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.4.2
+	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jinzhu/gorm v1.9.15
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.3
@@ -44,12 +46,12 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo/v4 v4.0.0
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/lib/pq v1.10.0 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
+	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340
@@ -58,15 +60,16 @@ require (
 	github.com/prometheus/common v0.10.0 // indirect
 	github.com/prometheus/procfs v0.5.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/sijms/go-ora/v2 v2.2.15
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 	github.com/urfave/cli/v2 v2.1.1
-	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.27.1 // indirect
