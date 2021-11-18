@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	_driver "database/sql/driver"
-	"fmt"
 	"os"
 	"strings"
 
@@ -17,59 +16,7 @@ import (
 
 	// import for TiDB parser
 	_ "github.com/pingcap/tidb/types/parser_driver"
-
-	// DRIVER LIST:
-	// 	https://github.com/golang/go/wiki/SQLDrivers
-	_ "github.com/denisenkom/go-mssqldb"
-	_ "github.com/jackc/pgx/v4/stdlib"
-	_ "github.com/sijms/go-ora/v2"
 )
-
-type DatabaseType int
-
-const (
-	DatabaseTypePostgreSQL DatabaseType = iota
-	DatabaseTypeOracle
-	DatabaseTypeMSSQL
-)
-
-func (dt DatabaseType) String() string {
-	switch dt {
-	case DatabaseTypePostgreSQL:
-		return "PostgreSQL"
-	case DatabaseTypeOracle:
-		return "Oracle"
-	case DatabaseTypeMSSQL:
-		return "SQL Server"
-	}
-	return ""
-}
-
-func (dt DatabaseType) getDefaultDriver(inst *driver.DSN) (driverName, dsn string) {
-	switch dt {
-	case DatabaseTypePostgreSQL:
-		if inst.DatabaseName == "" {
-			inst.DatabaseName = "postgres"
-		}
-		return "pgx", fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-			inst.User, inst.Password, inst.Host, inst.Port, inst.DatabaseName)
-
-	case DatabaseTypeOracle:
-		if inst.DatabaseName == "" {
-			inst.DatabaseName = "xe"
-		}
-		return "oracle", fmt.Sprintf("oracle://%s:%s@%s:%s/%s",
-			inst.User, inst.Password, inst.Host, inst.Port, inst.DatabaseName)
-
-	case DatabaseTypeMSSQL:
-		// connect by:
-		// 1. host and port (we used)
-		// 2. host and instance
-		return "sqlserver", fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s",
-			inst.User, inst.Password, inst.Host, inst.Port, inst.DatabaseName)
-	}
-	return "", ""
-}
 
 // Adaptor is a wrapper for the sqle driver layer. It
 // privides a more simpler interface for the database plugin.
@@ -78,7 +25,7 @@ type Adaptor struct {
 
 	cfg *driver.Config
 
-	dt DatabaseType
+	dt Dialector
 
 	rules              map[*driver.Rule]rawSQLRuleHandler
 	rulesWithSQLparser map[*driver.Rule]astSQLRuleHandler
@@ -94,11 +41,11 @@ type adaptorOptions struct {
 	sqlParser func(string) (interface{}, error)
 }
 
-func newAdaptorOptions(dt DatabaseType, dsn *driver.DSN, opts ...AdaptorOption) *adaptorOptions {
+func newAdaptorOptions(d Dialector, dsn *driver.DSN, opts ...AdaptorOption) *adaptorOptions {
 	ao := &adaptorOptions{}
 
-	_, ao.dsn = dt.getDefaultDriver(dsn)
-	ao.showDatabaseSQL = getDefaultShowDatabaseSQL(dt)
+	_, ao.dsn = d.Dialect(dsn)
+	ao.showDatabaseSQL = d.ShowDatabaseSQL()
 
 	for _, opt := range opts {
 		opt.apply(ao)
@@ -109,26 +56,13 @@ func newAdaptorOptions(dt DatabaseType, dsn *driver.DSN, opts ...AdaptorOption) 
 	return ao
 }
 
-func getDefaultShowDatabaseSQL(dt DatabaseType) string {
-	switch dt {
-	case DatabaseTypePostgreSQL:
-		return "select datname from pg_database"
-	case DatabaseTypeMSSQL:
-		return "select name from sys.databases"
-	case DatabaseTypeOracle:
-		return "select global_name from global_name"
-	}
-
-	return ""
-}
-
 type rawSQLRuleHandler func(ctx context.Context, rule *driver.Rule, rawSQL string) (string, error)
 type astSQLRuleHandler func(ctx context.Context, rule *driver.Rule, astSQL interface{}) (string, error)
 
-// NewAdaptor create a database plugin Adaptor with name.
-func NewAdaptor(name DatabaseType) *Adaptor {
+// NewAdaptor create a database plugin Adaptor with dialector.
+func NewAdaptor(dt Dialector) *Adaptor {
 	return &Adaptor{
-		dt: name,
+		dt: dt,
 		l: hclog.New(&hclog.LoggerOptions{
 			JSONFormat: true,
 			Output:     os.Stderr,
@@ -163,7 +97,7 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 		rules = append(rules, rule)
 	}
 	r := &registererImpl{
-		name:  a.dt,
+		dt:    a.dt,
 		rules: rules,
 	}
 
@@ -177,7 +111,7 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 			return di
 		}
 
-		driverName, _ := a.dt.getDefaultDriver(cfg.DSN)
+		driverName, _ := a.dt.Dialect(cfg.DSN)
 		db, err := sql.Open(driverName, a.ao.dsn)
 		if err != nil {
 			panic(errors.Wrap(err, "open database failed when new driver"))
@@ -219,20 +153,6 @@ func (this *optionFunc) apply(a *adaptorOptions) {
 	this.f(a)
 }
 
-func WithShowDatabaseSQL(sql string) AdaptorOption {
-	return newOptionFunc(func(a *adaptorOptions) {
-		a.showDatabaseSQL = sql
-	})
-}
-
-// WithDSNMaker accept a closure which can configure a custom data source name to
-// specify driver.
-func WithDSNMaker(dsnMaker func(dsn *driver.DSN) string) AdaptorOption {
-	return newOptionFunc(func(a *adaptorOptions) {
-		a.dsnMaker = dsnMaker
-	})
-}
-
 // WithSQLParser define custom SQL parser. If set, the adaptor
 // will use it to parse the SQL. User can assert the SQL to correspond
 // ast structure in ruleHandler.
@@ -246,12 +166,12 @@ var _ driver.Driver = (*driverImpl)(nil)
 var _ driver.Registerer = (*registererImpl)(nil)
 
 type registererImpl struct {
-	name  DatabaseType
+	dt    Dialector
 	rules []*driver.Rule
 }
 
 func (r *registererImpl) Name() string {
-	return r.name.String()
+	return r.dt.String()
 }
 
 func (r *registererImpl) Rules() []*driver.Rule {
