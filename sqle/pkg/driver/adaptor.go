@@ -5,17 +5,13 @@ import (
 	"database/sql"
 	_driver "database/sql/driver"
 	"os"
-	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/hashicorp/go-hclog"
 	"github.com/percona/go-mysql/query"
-	"github.com/pingcap/parser"
 	"github.com/pkg/errors"
-
-	// import for TiDB parser
-	_ "github.com/pingcap/tidb/types/parser_driver"
+	"vitess.io/vitess/go/vt/sqlparser"
 )
 
 // Adaptor is a wrapper for the sqle driver layer. It
@@ -271,7 +267,10 @@ func (d *driverImpl) Schemas(ctx context.Context) ([]string, error) {
 }
 
 func (d *driverImpl) Parse(ctx context.Context, sql string) ([]driver.Node, error) {
-	sqls, err := splitSQL(sql)
+	sqls, err := sqlparser.SplitStatementToPieces(sql)
+	if err != nil {
+		return nil, errors.Wrap(err, "split sql")
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "split sql %s error", sql)
 	}
@@ -286,20 +285,6 @@ func (d *driverImpl) Parse(ctx context.Context, sql string) ([]driver.Node, erro
 		nodes = append(nodes, n)
 	}
 	return nodes, nil
-}
-
-func splitSQL(sqls string) ([]string, error) {
-	stmts, _, err := parser.New().PerfectParse(sqls, "", "")
-	if err != nil {
-		return nil, errors.Wrap(err, "split sql")
-	}
-
-	sqlArray := make([]string, 0, len(stmts))
-	for _, stmt := range stmts {
-		sqlArray = append(sqlArray, strings.TrimSpace(stmt.Text()))
-	}
-
-	return sqlArray, nil
 }
 
 func classifySQL(sql string) (sqlType string) {
