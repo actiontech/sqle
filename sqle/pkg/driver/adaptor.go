@@ -84,14 +84,18 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 		}
 	}()
 
-	if len(a.rules) == 0 {
-		a.l.Info("no rule in plugin adaptor", "name", a.dt)
-	}
-
 	rules := make([]*driver.Rule, 0, len(a.rules))
 	for rule := range a.rules {
 		rules = append(rules, rule)
 	}
+	for rule := range a.rulesWithSQLparser {
+		rules = append(rules, rule)
+	}
+
+	if len(rules) == 0 {
+		a.l.Info("no rule in plugin adaptor", "name", a.dt)
+	}
+
 	r := &registererImpl{
 		dt:    a.dt,
 		rules: rules,
