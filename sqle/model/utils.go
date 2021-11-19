@@ -7,12 +7,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
+	xerrors "github.com/pkg/errors"
 )
 
 var storage *Storage
@@ -134,65 +136,88 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
+
+	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
+		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
+			return errors.New(errors.ConnectStorageError, err)
+		}
+	}
 	return nil
 }
 
-func (s *Storage) CreateRulesIfNotExist(rules []*Rule) error {
-	for _, rule := range rules {
-		existedRule, exist, err := s.GetRule(rule.Name, rule.DBType)
-		if err != nil {
-			return err
-		}
-		if !exist || (existedRule.Value == "" && rule.Value != "") {
-			err = s.Save(rule)
+func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
+	for dbType, rules := range rules {
+		for _, rule := range rules {
+			existedRule, exist, err := s.GetRule(rule.Name, dbType)
 			if err != nil {
 				return err
 			}
+			if !exist || (existedRule.Value == "" && rule.Value != "") {
+
+				modelRule := &Rule{
+					Name:   rule.Name,
+					Desc:   rule.Desc,
+					Value:  rule.Value,
+					Level:  string(rule.Level),
+					Typ:    rule.Category,
+					DBType: dbType,
+				}
+
+				err = s.Save(modelRule)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
 }
 
-func (s *Storage) CreateDefaultTemplate(rules []*Rule) error {
-	defaultTemplates := make(map[string][]*Rule)
-	for _, rule := range rules {
-		defaultTemplates[rule.DBType] = append(defaultTemplates[rule.DBType], rule)
-	}
-
-	for dbType, rs := range defaultTemplates {
-		templateName := fmt.Sprintf("default_%v", dbType)
+func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
+	for dbType, r := range rules {
+		templateName := s.GetDefaultRuleTemplateName(dbType)
 		_, exist, err := s.GetRuleTemplateByName(templateName)
 		if err != nil {
+			return xerrors.Wrap(err, "get rule template failed")
+		}
+		if exist {
+			continue
+		}
+
+		t := &RuleTemplate{
+			Name:   templateName,
+			Desc:   "默认规则模板",
+			DBType: dbType,
+		}
+		if err := s.Save(t); err != nil {
 			return err
 		}
-		if !exist {
-			t := &RuleTemplate{
-				Name:   templateName,
-				Desc:   "默认规则模板",
-				DBType: dbType,
-			}
-			if err := s.Save(t); err != nil {
-				return err
+
+		ruleList := make([]RuleTemplateRule, 0, len(r))
+		for _, rule := range r {
+			if rule.Level != driver.RuleLevelError {
+				continue
 			}
 
-			ruleList := make([]RuleTemplateRule, 0, len(rs))
-			for _, rule := range rs {
-				if rule.IsDefault {
-					ruleList = append(ruleList, RuleTemplateRule{
-						RuleTemplateId: t.ID,
-						RuleName:       rule.Name,
-						RuleLevel:      rule.Level,
-						RuleValue:      rule.Value,
-						RuleDBType:     rule.DBType,
-					})
-				}
-			}
-			if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
-				return err
-			}
+			ruleList = append(ruleList, RuleTemplateRule{
+				RuleTemplateId: t.ID,
+				RuleName:       rule.Name,
+				RuleLevel:      string(rule.Level),
+				RuleValue:      rule.Value,
+				RuleDBType:     dbType,
+			})
+		}
+
+		if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
+			return xerrors.Wrap(err, "update rule template rules failed")
 		}
 	}
+
 	return nil
+}
+
+func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
+	return fmt.Sprintf("default_%v", dbType)
 }
 
 func (s *Storage) CreateAdminUser() error {

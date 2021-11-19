@@ -2,11 +2,9 @@ package mybatis
 
 import (
 	"context"
-	"errors"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql"
-	"github.com/actiontech/sqle/sqle/model"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 )
@@ -28,9 +26,9 @@ func Parse(_ context.Context, sqlText string) ([]driver.Node, error) {
 		n.Text = nodes[i].Text()
 		switch nodes[i].(type) {
 		case ast.DMLNode:
-			n.Type = model.SQLTypeDML
+			n.Type = driver.SQLTypeDML
 		default:
-			n.Type = model.SQLTypeDDL
+			n.Type = driver.SQLTypeDDL
 		}
 
 		ns = append(ns, n)
@@ -39,7 +37,7 @@ func Parse(_ context.Context, sqlText string) ([]driver.Node, error) {
 }
 
 func ParseSql(sql string) ([]ast.Node, error) {
-	stmts, err := parseSql(model.DBTypeMySQL, sql)
+	stmts, err := parseSql(sql)
 	if err != nil {
 		return nil, err
 	}
@@ -51,16 +49,11 @@ func ParseSql(sql string) ([]ast.Node, error) {
 	return nodes, nil
 }
 
-func parseSql(dbType, sql string) ([]ast.StmtNode, error) {
-	switch dbType {
-	case model.DBTypeMySQL:
-		p := parser.New()
-		stmts, _, err := p.PerfectParse(sql, "", "")
-		if err != nil {
-			return nil, err
-		}
-		return stmts, nil
-	default:
-		return nil, errors.New("db type is invalid")
+func parseSql(sql string) ([]ast.StmtNode, error) {
+	p := parser.New()
+	stmts, _, err := p.PerfectParse(sql, "", "")
+	if err != nil {
+		return nil, err
 	}
+	return stmts, nil
 }

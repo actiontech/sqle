@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -58,19 +57,19 @@ func TestInspectResults(t *testing.T) {
 	results := driver.NewInspectResults()
 	handler := RuleHandlerMap[DDLCheckPKWithoutIfNotExists]
 	results.Add(handler.Rule.Level, handler.Message)
-	assert.Equal(t, "error", results.Level())
+	assert.Equal(t, driver.RuleLevelError, results.Level())
 	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.Message())
 
-	results.Add(model.RuleLevelError, TableNotExistMessage, "not_exist_tb")
-	assert.Equal(t, "error", results.Level())
+	results.Add(driver.RuleLevelError, TableNotExistMessage, "not_exist_tb")
+	assert.Equal(t, driver.RuleLevelError, results.Level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
 [error]表 not_exist_tb 不存在`, results.Message())
 
 	results2 := driver.NewInspectResults()
 	results2.Add(results.Level(), results.Message())
-	results2.Add("notice", "test")
-	assert.Equal(t, "error", results2.Level())
+	results2.Add(driver.RuleLevelNotice, "test")
+	assert.Equal(t, driver.RuleLevelError, results2.Level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
 [error]表 not_exist_tb 不存在
@@ -78,8 +77,8 @@ func TestInspectResults(t *testing.T) {
 
 	results3 := driver.NewInspectResults()
 	results3.Add(results2.Level(), results2.Message())
-	results3.Add("notice", "[osc]test")
-	assert.Equal(t, "error", results3.Level())
+	results3.Add(driver.RuleLevelNotice, "[osc]test")
+	assert.Equal(t, driver.RuleLevelError, results3.Level())
 	assert.Equal(t,
 		`[error]新建表必须加入if not exists create，保证重复执行不报错
 [error]表 not_exist_tb 不存在
@@ -87,17 +86,17 @@ func TestInspectResults(t *testing.T) {
 [osc]test`, results3.Message())
 
 	results4 := driver.NewInspectResults()
-	results4.Add("notice", "[notice]test")
-	results4.Add("error", "[osc]test")
-	assert.Equal(t, "error", results4.Level())
+	results4.Add(driver.RuleLevelNotice, "[notice]test")
+	results4.Add(driver.RuleLevelError, "[osc]test")
+	assert.Equal(t, driver.RuleLevelError, results4.Level())
 	assert.Equal(t,
 		`[notice]test
 [osc]test`, results4.Message())
 
 	results5 := driver.NewInspectResults()
-	results5.Add("warn", "[warn]test")
-	results5.Add("notice", "[osc]test")
-	assert.Equal(t, "warn", results5.Level())
+	results5.Add(driver.RuleLevelWarn, "[warn]test")
+	results5.Add(driver.RuleLevelNotice, "[osc]test")
+	assert.Equal(t, driver.RuleLevelWarn, results5.Level())
 	assert.Equal(t,
 		`[warn]test
 [osc]test`, results5.Message())

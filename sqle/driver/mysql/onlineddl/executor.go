@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/driver"
 
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
@@ -26,7 +26,7 @@ type Executor struct {
 	mc *base.MigrationContext
 }
 
-func NewExecutor(logger *logrus.Entry, inst *model.Instance, schema string, query string) (*Executor, error) {
+func NewExecutor(logger *logrus.Entry, inst *driver.DSN, schema string, query string) (*Executor, error) {
 	logger = logger.WithFields(logrus.Fields{
 		"onlineddl": "gh-ost",
 		"host":      inst.Host,
