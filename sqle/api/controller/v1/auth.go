@@ -181,6 +181,11 @@ func (l *ldapLoginV3) login(password string) (err error) {
 	return l.autoRegisterUser()
 }
 
+const (
+	ldapLoginFailedError = "ldap login failed, username and password do not match"
+	ldapServerError      = "search user on ldap server failed: %v"
+)
+
 func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	ldapC, _, err := model.GetStorage().GetLDAPConfiguration()
 	if err != nil {
@@ -209,17 +214,17 @@ func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	)
 	result, err := conn.Search(searchRequest)
 	if err != nil {
-		return fmt.Errorf("search user on ldap server failed: %v", err)
+		return fmt.Errorf(ldapServerError, err)
 	}
 	if len(result.Entries) == 0 {
-		return fmt.Errorf("incorrect username or password, login failed")
+		return fmt.Errorf(ldapLoginFailedError)
 	}
 	if len(result.Entries) != 1 {
-		return fmt.Errorf("search user on ldap ,result size(%v) not unique", len(result.Entries))
+		return fmt.Errorf(ldapServerError+"result size(%v) not unique", "", len(result.Entries))
 	}
 	userDn := result.Entries[0].DN
 	if err = conn.Bind(userDn, password); err != nil {
-		return fmt.Errorf("ldap login failed, username and password do not match")
+		return fmt.Errorf(ldapLoginFailedError)
 	}
 	l.email = result.Entries[0].GetAttributeValue(ldapC.UserEmailRdnKey)
 	return nil
