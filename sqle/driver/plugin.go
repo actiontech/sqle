@@ -53,6 +53,10 @@ func InitPlugins(pluginDir string) error {
 
 	var plugins []os.FileInfo
 	filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return errors.Wrap(err, "init plugin")
+		}
+
 		if info.IsDir() || info.Mode()&0111 == 0 {
 			return nil
 		}
