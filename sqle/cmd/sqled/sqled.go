@@ -56,7 +56,7 @@ func main() {
 	rootCmd.Flags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
 	rootCmd.Flags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
 	rootCmd.Flags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
-	rootCmd.Flags().StringVarP(&pluginPath, "plugin-path", "", "./plugins", "plugin path")
+	rootCmd.Flags().StringVarP(&pluginPath, "plugin-path", "", "", "plugin path")
 
 	rootCmd.AddCommand(genSecretPasswordCmd())
 	rootCmd.Execute()
