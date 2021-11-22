@@ -76,7 +76,8 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 		return nil, err
 	}
 
-	state := loginCheckerTypeUnknown
+	checkerType := loginCheckerTypeUnknown
+	exist := false
 	{ // get login checker type
 		var u *model.User = nil
 		var l *model.LDAPConfiguration = nil
@@ -86,15 +87,17 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 		if ldapExist {
 			l = ldapC
 		}
-		state = getLoginCheckerType(u, l)
+		checkerType, exist = getLoginCheckerType(u, l)
+	}
+
+	if !exist {
+		return newLdapLoginV3WhenUserNotExist(ldapC, userName), nil
 	}
 
 	// match login method
-	switch state {
+	switch checkerType {
 	case loginCheckerTypeLDAP:
 		return newLdapLoginV3WhenUserExist(ldapC, user), nil
-	case loginCheckerTypeLDAPUserNotExist:
-		return newLdapLoginV3WhenUserNotExist(ldapC, userName), nil
 	case loginCheckerTypeSQLE:
 		return newSqleLogin(user), nil
 	default:
@@ -102,35 +105,34 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 	}
 }
 
-type userState int
+type checkerType int
 
 const (
-	loginCheckerTypeUnknown userState = iota
+	loginCheckerTypeUnknown checkerType = iota
 	loginCheckerTypeSQLE
 	loginCheckerTypeLDAP
-	loginCheckerTypeLDAPUserNotExist
 )
 
 // determine whether the login conditions are met according to the order of login priority
-func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) userState {
+func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) (checkerType checkerType, userExist bool) {
 
 	// ldap login condition
 	if ldapC != nil && ldapC.Enable {
 		if user != nil && user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
-			return loginCheckerTypeLDAP
+			return loginCheckerTypeLDAP, true
 		}
 		if user == nil {
-			return loginCheckerTypeLDAPUserNotExist
+			return loginCheckerTypeLDAP, false
 		}
 	}
 
 	// sqle login condition
 	if user != nil && (user.UserAuthenticationType == model.UserAuthenticationTypeSQLE || user.UserAuthenticationType == "") {
-		return loginCheckerTypeSQLE
+		return loginCheckerTypeSQLE, true
 	}
 
 	// no alternative login method
-	return loginCheckerTypeUnknown
+	return loginCheckerTypeUnknown, user != nil
 }
 
 type LoginChecker interface {
