@@ -209,6 +209,9 @@ func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	if err != nil {
 		return fmt.Errorf("search user on ldap server failed: %v", err)
 	}
+	if len(result.Entries) == 0 {
+		return fmt.Errorf("incorrect username or password, login failed")
+	}
 	if len(result.Entries) != 1 {
 		return fmt.Errorf("search user on ldap ,result size(%v) not unique", len(result.Entries))
 	}
