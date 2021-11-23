@@ -196,7 +196,7 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, error) {
 	query := `SELECT count(instances.id) FROM users
 JOIN user_role AS ur ON users.id = ur.user_id
-JOIN roles ON ur.role_id = roles.id
+JOIN roles ON ur.role_id = roles.id AND roles.deleted_at IS NULL
 JOIN instance_role AS ir ON roles.id = ir.role_id
 JOIN instances ON ir.instance_id = instances.id
 WHERE users.id = ? AND instances.id = ?
