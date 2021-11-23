@@ -1,6 +1,7 @@
 package v1
 
 import (
+	_errors "errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -76,7 +77,8 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 		return nil, err
 	}
 
-	state := loginCheckerTypeUnknown
+	checkerType := loginCheckerTypeUnknown
+	exist := false
 	{ // get login checker type
 		var u *model.User = nil
 		var l *model.LDAPConfiguration = nil
@@ -86,15 +88,17 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 		if ldapExist {
 			l = ldapC
 		}
-		state = getLoginCheckerType(u, l)
+		checkerType, exist = getLoginCheckerType(u, l)
+	}
+
+	if !exist {
+		return newLdapLoginV3WhenUserNotExist(ldapC, userName), nil
 	}
 
 	// match login method
-	switch state {
+	switch checkerType {
 	case loginCheckerTypeLDAP:
 		return newLdapLoginV3WhenUserExist(ldapC, user), nil
-	case loginCheckerTypeLDAPUserNotExist:
-		return newLdapLoginV3WhenUserNotExist(ldapC, userName), nil
 	case loginCheckerTypeSQLE:
 		return newSqleLogin(user), nil
 	default:
@@ -102,35 +106,34 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 	}
 }
 
-type userState int
+type checkerType int
 
 const (
-	loginCheckerTypeUnknown userState = iota
+	loginCheckerTypeUnknown checkerType = iota
 	loginCheckerTypeSQLE
 	loginCheckerTypeLDAP
-	loginCheckerTypeLDAPUserNotExist
 )
 
 // determine whether the login conditions are met according to the order of login priority
-func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) userState {
+func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) (checkerType checkerType, userExist bool) {
 
 	// ldap login condition
 	if ldapC != nil && ldapC.Enable {
 		if user != nil && user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
-			return loginCheckerTypeLDAP
+			return loginCheckerTypeLDAP, true
 		}
 		if user == nil {
-			return loginCheckerTypeLDAPUserNotExist
+			return loginCheckerTypeLDAP, false
 		}
 	}
 
 	// sqle login condition
 	if user != nil && (user.UserAuthenticationType == model.UserAuthenticationTypeSQLE || user.UserAuthenticationType == "") {
-		return loginCheckerTypeSQLE
+		return loginCheckerTypeSQLE, true
 	}
 
 	// no alternative login method
-	return loginCheckerTypeUnknown
+	return loginCheckerTypeUnknown, user != nil
 }
 
 type LoginChecker interface {
@@ -179,6 +182,10 @@ func (l *ldapLoginV3) login(password string) (err error) {
 	return l.autoRegisterUser()
 }
 
+var ldapLoginFailedError = _errors.New("ldap login failed, username and password do not match")
+
+const ldapServerErrorFormat = "search user on ldap server failed: %v"
+
 func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	ldapC, _, err := model.GetStorage().GetLDAPConfiguration()
 	if err != nil {
@@ -207,14 +214,17 @@ func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	)
 	result, err := conn.Search(searchRequest)
 	if err != nil {
-		return fmt.Errorf("search user on ldap server failed: %v", err)
+		return fmt.Errorf(ldapServerErrorFormat, err)
+	}
+	if len(result.Entries) == 0 {
+		return ldapLoginFailedError
 	}
 	if len(result.Entries) != 1 {
-		return fmt.Errorf("search user on ldap ,result size(%v) not unique", len(result.Entries))
+		return fmt.Errorf(ldapServerErrorFormat, "the queried user is not unique, please check whether the relevant configuration is correct")
 	}
 	userDn := result.Entries[0].DN
 	if err = conn.Bind(userDn, password); err != nil {
-		return fmt.Errorf("ldap login failed, username and password do not match")
+		return ldapLoginFailedError
 	}
 	l.email = result.Entries[0].GetAttributeValue(ldapC.UserEmailRdnKey)
 	return nil

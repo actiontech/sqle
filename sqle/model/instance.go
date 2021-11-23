@@ -127,6 +127,7 @@ func (s *Storage) GetUserInstanceTip(user *User, dbType string) ([]*Instance, er
 	db := s.db.Model(&Instance{}).Select("instances.name, instances.db_type")
 	if user.Name != DefaultAdminUser {
 		db = db.Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
+			Joins("JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL").
 			Joins("JOIN user_role AS ur ON ir.role_id = ur.role_id").
 			Joins("JOIN users ON ur.user_id = users.id AND users.id = ?", user.ID)
 	}
