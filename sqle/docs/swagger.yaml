@@ -1192,6 +1192,8 @@ definitions:
     properties:
       email:
         type: string
+      login_type:
+        type: string
       role_name_list:
         items:
           type: string
