@@ -4698,6 +4698,9 @@ var doc = `{
                 "email": {
                     "type": "string"
                 },
+                "login_type": {
+                    "type": "string"
+                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
