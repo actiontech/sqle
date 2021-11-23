@@ -1,6 +1,7 @@
 package v1
 
 import (
+	_errors "errors"
 	"fmt"
 	"net/http"
 
@@ -198,7 +199,9 @@ func UpdateOtherUserPassword(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
-
+	if user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
+		return controller.JSONBaseErrorReq(c, ldapUserCanNotChangePasswordError)
+	}
 	err = s.UpdatePassword(user, req.Password)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -319,6 +322,8 @@ type UpdateCurrentUserPasswordReqV1 struct {
 	NewPassword string `json:"new_password"  valid:"required"`
 }
 
+var ldapUserCanNotChangePasswordError = _errors.New("the password of the ldap user cannot be changed or reset, because this password is meaningless")
+
 // @Summary 用户修改密码
 // @Description update current user's password
 // @Id UpdateCurrentUserPasswordV1
@@ -338,7 +343,9 @@ func UpdateCurrentUserPassword(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	if user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
+		return controller.JSONBaseErrorReq(c, ldapUserCanNotChangePasswordError)
+	}
 	if user.Password != req.Password {
 		return controller.JSONBaseErrorReq(c,
 			errors.New(errors.LoginAuthFail, fmt.Errorf("password is wrong")))
@@ -366,9 +373,10 @@ type GetUsersResV1 struct {
 }
 
 type UserResV1 struct {
-	Name  string   `json:"user_name"`
-	Email string   `json:"email"`
-	Roles []string `json:"role_name_list,omitempty"`
+	Name      string   `json:"user_name"`
+	Email     string   `json:"email"`
+	LoginType string   `json:"login_type"`
+	Roles     []string `json:"role_name_list,omitempty"`
 }
 
 // @Summary 获取用户信息列表
@@ -407,10 +415,14 @@ func GetUsers(c echo.Context) error {
 
 	usersReq := []UserResV1{}
 	for _, user := range users {
+		if user.LoginType == "" {
+			user.LoginType = string(model.UserAuthenticationTypeSQLE)
+		}
 		userReq := UserResV1{
-			Name:  user.Name,
-			Email: user.Email,
-			Roles: user.RoleNames,
+			Name:      user.Name,
+			Email:     user.Email,
+			LoginType: user.LoginType,
+			Roles:     user.RoleNames,
 		}
 		usersReq = append(usersReq, userReq)
 	}
