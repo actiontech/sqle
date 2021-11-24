@@ -216,17 +216,22 @@ type GetUserDetailResV1 struct {
 }
 
 type UserDetailResV1 struct {
-	Name    string   `json:"user_name"`
-	Email   string   `json:"email"`
-	IsAdmin bool     `json:"is_admin"`
-	Roles   []string `json:"role_name_list,omitempty"`
+	Name      string   `json:"user_name"`
+	Email     string   `json:"email"`
+	IsAdmin   bool     `json:"is_admin"`
+	LoginType string   `json:"login_type"`
+	Roles     []string `json:"role_name_list,omitempty"`
 }
 
 func convertUserToRes(user *model.User) UserDetailResV1 {
+	if user.UserAuthenticationType == "" {
+		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
+	}
 	userReq := UserDetailResV1{
-		Name:    user.Name,
-		Email:   user.Email,
-		IsAdmin: user.Name == model.DefaultAdminUser,
+		Name:      user.Name,
+		Email:     user.Email,
+		LoginType: string(user.UserAuthenticationType),
+		IsAdmin:   user.Name == model.DefaultAdminUser,
 	}
 	roleNames := make([]string, 0, len(user.Roles))
 	for _, role := range user.Roles {
@@ -322,7 +327,7 @@ type UpdateCurrentUserPasswordReqV1 struct {
 	NewPassword string `json:"new_password"  valid:"required"`
 }
 
-var ldapUserCanNotChangePasswordError = _errors.New("the password of the ldap user cannot be changed or reset, because this password is meaningless")
+var ldapUserCanNotChangePasswordError = errors.New(errors.DataConflict, _errors.New("the password of the ldap user cannot be changed or reset, because this password is meaningless"))
 
 // @Summary 用户修改密码
 // @Description update current user's password
