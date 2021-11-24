@@ -25,11 +25,18 @@ type AuditPlan struct {
 
 type AuditPlanSQL struct {
 	Model
-	AuditPlanID          uint   `json:"audit_plan_id" gorm:"UNIQUE_INDEX:idx_audit_plan_sqls_audit_plan_id_fingerprint;not null"`
-	Fingerprint          string `json:"fingerprint" gorm:"UNIQUE_INDEX:idx_audit_plan_sqls_audit_plan_id_fingerprint;not null"`
+
+	// add unique index on fingerprint and audit_plan_id
+	// it's done by AutoMigrate() because gorm can't create index on TEXT column directly by tag.
+	AuditPlanID          uint   `json:"audit_plan_id" gorm:"not null"`
+	Fingerprint          string `json:"fingerprint" gorm:"type:text;not null"`
 	Counter              int    `json:"counter" gorm:"not null"`
-	LastSQL              string `json:"last_sql" gorm:"not null"`
+	LastSQL              string `json:"last_sql" gorm:"type:text;not null"`
 	LastReceiveTimestamp string `json:"last_receive_timestamp" gorm:"not null"`
+}
+
+func (a AuditPlanSQL) TableName() string {
+	return "audit_plan_sqls"
 }
 
 type AuditPlanReport struct {

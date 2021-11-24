@@ -90,7 +90,7 @@ func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPla
 		return err
 	}
 	if baseRes.Code != 0 {
-		return fmt.Errorf("failed to request %s", url)
+		return fmt.Errorf("failed to request %s, error:%s", url, baseRes.Message)
 	}
 	return nil
 }
@@ -109,7 +109,7 @@ func (sc *Client) TriggerAuditReq(auditPlanName string) (string, error) {
 		return "", err
 	}
 	if triggerRes.Code != 0 {
-		return "", fmt.Errorf("failed to request %s", url)
+		return "", fmt.Errorf("failed to request %s, error:%s", url, triggerRes.Message)
 	}
 	return triggerRes.Data.Id, nil
 }
