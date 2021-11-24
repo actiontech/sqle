@@ -1166,6 +1166,8 @@ definitions:
         type: string
       is_admin:
         type: boolean
+      login_type:
+        type: string
       role_name_list:
         items:
           type: string
@@ -1191,6 +1193,8 @@ definitions:
   v1.UserResV1:
     properties:
       email:
+        type: string
+      login_type:
         type: string
       role_name_list:
         items:
