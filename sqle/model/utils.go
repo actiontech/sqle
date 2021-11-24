@@ -136,12 +136,17 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
+	err = s.db.Model(AuditPlanSQL{}).AddIndex("idx_audit_plan_sqls_audit_plan_id_fingerprint", "audit_plan_id", "fingerprint(255)").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 
 	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
 		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
 			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
+
 	return nil
 }
 
