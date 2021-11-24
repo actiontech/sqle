@@ -91,13 +91,12 @@ func GetLoginCheckerByUserName(userName string) (LoginChecker, error) {
 		checkerType, exist = getLoginCheckerType(u, l)
 	}
 
-	if !exist {
-		return newLdapLoginV3WhenUserNotExist(ldapC, userName), nil
-	}
-
 	// match login method
 	switch checkerType {
 	case loginCheckerTypeLDAP:
+		if !exist {
+			return newLdapLoginV3WhenUserNotExist(ldapC, userName), nil
+		}
 		return newLdapLoginV3WhenUserExist(ldapC, user), nil
 	case loginCheckerTypeSQLE:
 		return newSqleLogin(user), nil
