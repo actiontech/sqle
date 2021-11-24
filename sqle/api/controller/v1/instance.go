@@ -485,28 +485,35 @@ type InstanceConnectableResV1 struct {
 	ConnectErrorMessage   string `json:"connect_error_message,omitempty"`
 }
 
-func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
-	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
-	if err != nil {
-		return err
-	}
-	defer d.Close(context.TODO())
-	if err := d.Ping(context.TODO()); err != nil {
-		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: InstanceConnectableResV1{
-				IsInstanceConnectable: false,
-				ConnectErrorMessage:   err.Error(),
-			},
-		})
-	} else {
-		return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
+func newGetInstanceConnectableResV1(err error) GetInstanceConnectableResV1 {
+	if err == nil {
+		return GetInstanceConnectableResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: InstanceConnectableResV1{
 				IsInstanceConnectable: true,
 			},
-		})
+		}
 	}
+	return GetInstanceConnectableResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: InstanceConnectableResV1{
+			IsInstanceConnectable: false,
+			ConnectErrorMessage:   err.Error(),
+		},
+	}
+}
+
+func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
+	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
+	if err != nil {
+		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+	}
+	defer d.Close(context.TODO())
+	if err := d.Ping(context.TODO()); err != nil {
+		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+	}
+
+	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(nil))
 }
 
 // CheckInstanceIsConnectableByName test instance db connection
