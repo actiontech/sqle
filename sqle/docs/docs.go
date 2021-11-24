@@ -4659,6 +4659,9 @@ var doc = `{
                 "is_admin": {
                     "type": "boolean"
                 },
+                "login_type": {
+                    "type": "string"
+                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
@@ -4696,6 +4699,9 @@ var doc = `{
             "type": "object",
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "login_type": {
                     "type": "string"
                 },
                 "role_name_list": {
