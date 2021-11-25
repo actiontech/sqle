@@ -5,8 +5,60 @@ linters:
   disable-all: true
   enable:
     - misspell
+    - asciicheck
+    - bidichk
+    - govet
+    - typecheck
+    - bodyclose
+    - sqlclosecheck
+    - goconst
+    - makezero
 
-linters-settings:
+    # enable folowing linters step by step
+
+    #- deadcode *3
+    #- ineffassign *5
+    #- structcheck *1    
+    #- unused *3
+    #- varcheck *1
+    #- unconvert *3
+    #- goimports *3
+    #- errcheck *18
+    #- staticcheck *10
+    #- durationcheck *1
+    #- forcetypeassert *3
+    # https://github.com/securego/gosec#available-rules
+    #- gosec
+    # https://github.com/jingyugao/rowserrcheck#analyzer
+    # - rowserrcheck
+    #- gosimple *18
+    # doc: https://github.com/alexkohler/dogsled
+    #- dogsled
+    #- dupl
+    # doc: https://github.com/Antonboom/errname
+    #- errname
+    # doc: https://go-critic.com/overview
+    #- gocritic
+    #- gofmt
+    #- goimports
+    # check magic number
+    #- gomnd
+    #- ifshort
+    #- lll
+    #- nlreturn
+    #- unparam
+    #- whitespace
+    #- wsl
+    #- gosimple *18
+    #- prealloc
+    # https://github.com/mgechev/revive#available-rules
+    #- revive    
+    # *6, doc: https://github.com/fzipp/gocyclo, default complexity is 30
+    #- gocyclo
+    # *60, limit function line and statement, doc:https://github.com/ultraware/funlen
+    #- funlen
+    # *29, doc:https://github.com/uudashr/gocognit
+    #- gocognit
 
 issues:
   exclude-rules:
