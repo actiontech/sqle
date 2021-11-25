@@ -32,9 +32,7 @@ type Adaptor struct {
 type adaptorOptions struct {
 	dsn             string
 	showDatabaseSQL string
-
-	dsnMaker  func(*driver.DSN) string
-	sqlParser func(string) (interface{}, error)
+	sqlParser       func(string) (interface{}, error)
 }
 
 func newAdaptorOptions(d Dialector, dsn *driver.DSN, opts ...AdaptorOption) *adaptorOptions {
@@ -45,9 +43,6 @@ func newAdaptorOptions(d Dialector, dsn *driver.DSN, opts ...AdaptorOption) *ada
 
 	for _, opt := range opts {
 		opt.apply(ao)
-	}
-	if ao.dsnMaker != nil {
-		ao.dsn = ao.dsnMaker(dsn)
 	}
 	return ao
 }
