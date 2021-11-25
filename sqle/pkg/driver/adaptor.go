@@ -30,21 +30,7 @@ type Adaptor struct {
 }
 
 type adaptorOptions struct {
-	dsn             string
-	showDatabaseSQL string
-	sqlParser       func(string) (interface{}, error)
-}
-
-func newAdaptorOptions(d Dialector, dsn *driver.DSN, opts ...AdaptorOption) *adaptorOptions {
-	ao := &adaptorOptions{}
-
-	_, ao.dsn = d.Dialect(dsn)
-	ao.showDatabaseSQL = d.ShowDatabaseSQL()
-
-	for _, opt := range opts {
-		opt.apply(ao)
-	}
-	return ao
+	sqlParser func(string) (interface{}, error)
 }
 
 type rawSQLRuleHandler func(ctx context.Context, rule *driver.Rule, rawSQL string) (string, error)
@@ -79,6 +65,11 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 		}
 	}()
 
+	ao := &adaptorOptions{}
+	for _, opt := range opts {
+		opt.apply(ao)
+	}
+
 	rules := make([]*driver.Rule, 0, len(a.rules))
 	for rule := range a.rules {
 		rules = append(rules, rule)
@@ -98,7 +89,6 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 
 	newDriver := func(cfg *driver.Config) driver.Driver {
 		a.cfg = cfg
-		a.ao = newAdaptorOptions(a.dt, cfg.DSN, opts...)
 
 		di := &driverImpl{a: a}
 
@@ -106,8 +96,8 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 			return di
 		}
 
-		driverName, _ := a.dt.Dialect(cfg.DSN)
-		db, err := sql.Open(driverName, a.ao.dsn)
+		driverName, dsnDetail := a.dt.Dialect(cfg.DSN)
+		db, err := sql.Open(driverName, dsnDetail)
 		if err != nil {
 			panic(errors.Wrap(err, "open database failed when new driver"))
 		}
@@ -243,7 +233,7 @@ func (d *driverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 }
 
 func (d *driverImpl) Schemas(ctx context.Context) ([]string, error) {
-	rows, err := d.conn.QueryContext(ctx, d.a.ao.showDatabaseSQL)
+	rows, err := d.conn.QueryContext(ctx, d.a.dt.ShowDatabaseSQL())
 	if err != nil {
 		return nil, errors.Wrap(err, "query database in driver adaptor")
 	}
