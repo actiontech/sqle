@@ -209,7 +209,6 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 				RuleName:       rule.Name,
 				RuleLevel:      string(rule.Level),
 				RuleValue:      rule.Value,
-				RuleDBType:     dbType,
 			})
 		}
 
