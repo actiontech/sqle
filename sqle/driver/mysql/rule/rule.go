@@ -113,6 +113,16 @@ type RuleHandler struct {
 	NotAllowOfflineStmts []ast.Node
 }
 
+func (i *Inspect) addResult(ruleName string, args ...interface{}) {
+	// if rule is not current rule, ignore save the message.
+	if ruleName != i.currentRule.Name {
+		return
+	}
+	level := i.currentRule.Level
+	message := RuleHandlerMap[ruleName].Message
+	i.result.Add(level, message, args...)
+}
+
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
 	if !rh.AllowOffline {
 		return false

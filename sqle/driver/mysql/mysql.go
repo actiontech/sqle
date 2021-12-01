@@ -355,16 +355,6 @@ func (i *Inspect) Logger() *logrus.Entry {
 	return i.log
 }
 
-func (i *Inspect) addResult(ruleName string, args ...interface{}) {
-	// if rule is not current rule, ignore save the message.
-	if ruleName != i.currentRule.Name {
-		return
-	}
-	level := i.currentRule.Level
-	message := RuleHandlerMap[ruleName].Message
-	i.result.Add(level, message, args...)
-}
-
 // getDbConn get db conn and just connect once.
 func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
