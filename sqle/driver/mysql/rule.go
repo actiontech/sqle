@@ -2437,7 +2437,7 @@ func checkIndexOption(rule driver.Rule, i *Inspect, node ast.Node) error {
 	if len(indexColumns) == 0 {
 		return nil
 	}
-	maxIndexOption, err := i.getMaxIndexOptionForTable(tableName, indexColumns)
+	maxIndexOption, err := i.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
 	if err != nil {
 		return err
 	}
