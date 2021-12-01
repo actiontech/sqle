@@ -10,8 +10,6 @@ import (
 
 	mdriver "github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
-
-	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/sirupsen/logrus"
 )
