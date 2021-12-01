@@ -10,24 +10,24 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-func alterTableStmtFormat(stmt *ast.AlterTableStmt) string {
+func AlterTableStmtFormat(stmt *ast.AlterTableStmt) string {
 	if len(stmt.Specs) <= 0 {
 		return ""
 	}
 	ops := make([]string, 0, len(stmt.Specs))
 	for _, spec := range stmt.Specs {
-		op := alterTableSpecFormat(spec)
+		op := AlterTableSpecFormat(spec)
 		if op != "" {
 			ops = append(ops, op)
 		}
 	}
-	return fmt.Sprintf("ALTER TABLE %s\n%s;", getTableNameWithQuote(stmt.Table), strings.Join(ops, ",\n"))
+	return fmt.Sprintf("ALTER TABLE %s\n%s;", GetTableNameWithQuote(stmt.Table), strings.Join(ops, ",\n"))
 }
 
-func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
+func AlterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 	switch stmt.Tp {
 	case ast.AlterTableRenameTable:
-		return fmt.Sprintf("RENAME AS %s", getTableNameWithQuote(stmt.NewTable))
+		return fmt.Sprintf("RENAME AS %s", GetTableNameWithQuote(stmt.NewTable))
 	case ast.AlterTableDropColumn:
 		return fmt.Sprintf("DROP COLUMN `%s`", stmt.OldColumnName)
 	case ast.AlterTableAddColumns:
@@ -56,7 +56,7 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 			col := stmt.NewColumns[0]
 			if col.Options != nil {
 				return fmt.Sprintf("ALTER COLUMN `%s` SET DEFAULT %s",
-					col.Name.Name.String(), exprFormat(col.Options[0].Expr))
+					col.Name.Name.String(), ExprFormat(col.Options[0].Expr))
 			} else {
 				return fmt.Sprintf("ALTER COLUMN `%s` DROP DEFAULT",
 					col.Name.Name.String())
@@ -88,7 +88,7 @@ func alterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 		}
 		// if option is not nil, this is add index/primary key stmt.
 		if constraint.Option != nil {
-			format = fmt.Sprintf("%s %s", format, indexOptionFormat(constraint.Option))
+			format = fmt.Sprintf("%s %s", format, IndexOptionFormat(constraint.Option))
 		}
 		return format
 
@@ -117,15 +117,15 @@ func columnDefFormat(col *ast.ColumnDef) string {
 	for _, op := range col.Options {
 		switch op.Tp {
 		case ast.ColumnOptionDefaultValue:
-			ops = append(ops, fmt.Sprintf("DEFAULT %s", exprFormat(op.Expr)))
+			ops = append(ops, fmt.Sprintf("DEFAULT %s", ExprFormat(op.Expr)))
 		case ast.ColumnOptionGenerated:
-			v := fmt.Sprintf("GENERATED ALWAYS AS (%s)", exprFormat(op.Expr))
+			v := fmt.Sprintf("GENERATED ALWAYS AS (%s)", ExprFormat(op.Expr))
 			if op.Stored {
 				v = fmt.Sprintf("%s STORED", v)
 			}
 			ops = append(ops, v)
 		case ast.ColumnOptionComment:
-			ops = append(ops, fmt.Sprintf("COMMENT %s", exprFormat(op.Expr)))
+			ops = append(ops, fmt.Sprintf("COMMENT %s", ExprFormat(op.Expr)))
 		default:
 			if v, ok := ColumnOptionMap[op.Tp]; ok {
 				ops = append(ops, v)
@@ -139,7 +139,7 @@ func columnDefFormat(col *ast.ColumnDef) string {
 	return format
 }
 
-func exprFormat(node ast.ExprNode) string {
+func ExprFormat(node ast.ExprNode) string {
 	switch node.(type) {
 	case *ast.DefaultExpr:
 		return "DEFAULT"
@@ -150,7 +150,7 @@ func exprFormat(node ast.ExprNode) string {
 	}
 }
 
-func indexOptionFormat(op *ast.IndexOption) string {
+func IndexOptionFormat(op *ast.IndexOption) string {
 	if op == nil {
 		return ""
 	}
@@ -188,7 +188,7 @@ func referDefFormat(refer *ast.ReferenceDef) string {
 	if refer == nil {
 		return ""
 	}
-	tableName := getTableNameWithQuote(refer.Table)
+	tableName := GetTableNameWithQuote(refer.Table)
 	indexColumns := indexColumnsFormat(refer.IndexColNames)
 	format := fmt.Sprintf("REFERENCES %s %s", tableName, indexColumns)
 	if refer.OnDelete.ReferOpt != ast.ReferOptionNoOption {

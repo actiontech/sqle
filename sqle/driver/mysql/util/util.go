@@ -17,7 +17,7 @@ import (
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
-func parseSql(sql string) ([]ast.StmtNode, error) {
+func ParseSql(sql string) ([]ast.StmtNode, error) {
 	p := parser.New()
 	stmts, _, err := p.PerfectParse(sql, "", "")
 	if err != nil {
@@ -26,7 +26,7 @@ func parseSql(sql string) ([]ast.StmtNode, error) {
 	return stmts, nil
 }
 
-func parseOneSql(sql string) (ast.StmtNode, error) {
+func ParseOneSql(sql string) (ast.StmtNode, error) {
 	p := parser.New()
 	stmt, err := p.ParseOneStmt(sql, "", "")
 	if err != nil {
@@ -36,7 +36,7 @@ func parseOneSql(sql string) (ast.StmtNode, error) {
 	return stmt, nil
 }
 
-func getNumberOfJoinTables(stmt *ast.Join) int {
+func GetNumberOfJoinTables(stmt *ast.Join) int {
 	nums := 0
 	if stmt == nil {
 		return nums
@@ -46,7 +46,7 @@ func getNumberOfJoinTables(stmt *ast.Join) int {
 		case *ast.TableSource:
 			return 1
 		case *ast.Join:
-			return getNumberOfJoinTables(t)
+			return GetNumberOfJoinTables(t)
 		}
 		return 0
 	}
@@ -54,7 +54,7 @@ func getNumberOfJoinTables(stmt *ast.Join) int {
 	return nums
 }
 
-func getTables(stmt *ast.Join) []*ast.TableName {
+func GetTables(stmt *ast.Join) []*ast.TableName {
 	tables := []*ast.TableName{}
 	if stmt == nil {
 		return tables
@@ -67,7 +67,7 @@ func getTables(stmt *ast.Join) []*ast.TableName {
 				tables = append(tables, tableName)
 			}
 		case *ast.Join:
-			tables = append(tables, getTables(t)...)
+			tables = append(tables, GetTables(t)...)
 		}
 	}
 	if n := stmt.Left; n != nil {
@@ -78,13 +78,13 @@ func getTables(stmt *ast.Join) []*ast.TableName {
 				tables = append(tables, tableName)
 			}
 		case *ast.Join:
-			tables = append(tables, getTables(t)...)
+			tables = append(tables, GetTables(t)...)
 		}
 	}
 	return tables
 }
 
-func getTableSources(stmt *ast.Join) []*ast.TableSource {
+func GetTableSources(stmt *ast.Join) []*ast.TableSource {
 	sources := []*ast.TableSource{}
 	if stmt == nil {
 		return sources
@@ -94,7 +94,7 @@ func getTableSources(stmt *ast.Join) []*ast.TableSource {
 		case *ast.TableSource:
 			sources = append(sources, t)
 		case *ast.Join:
-			sources = append(sources, getTableSources(t)...)
+			sources = append(sources, GetTableSources(t)...)
 		}
 	}
 	if n := stmt.Right; n != nil {
@@ -102,13 +102,13 @@ func getTableSources(stmt *ast.Join) []*ast.TableSource {
 		case *ast.TableSource:
 			sources = append(sources, t)
 		case *ast.Join:
-			sources = append(sources, getTableSources(t)...)
+			sources = append(sources, GetTableSources(t)...)
 		}
 	}
 	return sources
 }
 
-func getTableNameWithQuote(stmt *ast.TableName) string {
+func GetTableNameWithQuote(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
 		return fmt.Sprintf("`%s`", stmt.Name)
 	} else {
@@ -171,7 +171,7 @@ func MysqlDataTypeIsBlob(tp byte) bool {
 	}
 }
 
-func scanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode) {
+func ScanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode) {
 	for _, expr := range exprs {
 		if expr == nil {
 			continue
@@ -184,45 +184,45 @@ func scanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode
 		case *ast.ColumnNameExpr:
 		case *ast.SubqueryExpr:
 		case *ast.BinaryOperationExpr:
-			scanWhereStmt(fn, x.L, x.R)
+			ScanWhereStmt(fn, x.L, x.R)
 		case *ast.UnaryOperationExpr:
-			scanWhereStmt(fn, x.V)
+			ScanWhereStmt(fn, x.V)
 			// boolean_primary is true|false
 		case *ast.IsTruthExpr:
-			scanWhereStmt(fn, x.Expr)
+			ScanWhereStmt(fn, x.Expr)
 			// boolean_primary is (not) null
 		case *ast.IsNullExpr:
-			scanWhereStmt(fn, x.Expr)
+			ScanWhereStmt(fn, x.Expr)
 			// boolean_primary comparison_operator {ALL | ANY} (subquery)
 		case *ast.CompareSubqueryExpr:
-			scanWhereStmt(fn, x.L, x.R)
+			ScanWhereStmt(fn, x.L, x.R)
 		case *ast.ExistsSubqueryExpr:
-			scanWhereStmt(fn, x.Sel)
+			ScanWhereStmt(fn, x.Sel)
 			// boolean_primary IN (expr,...)
 		case *ast.PatternInExpr:
 			es := []ast.ExprNode{}
 			es = append(es, x.Expr)
 			es = append(es, x.Sel)
 			es = append(es, x.List...)
-			scanWhereStmt(fn, es...)
+			ScanWhereStmt(fn, es...)
 			// boolean_primary Between expr and expr
 		case *ast.BetweenExpr:
-			scanWhereStmt(fn, x.Expr, x.Left, x.Right)
+			ScanWhereStmt(fn, x.Expr, x.Left, x.Right)
 			// boolean_primary (not) like expr
 		case *ast.PatternLikeExpr:
-			scanWhereStmt(fn, x.Expr, x.Pattern)
+			ScanWhereStmt(fn, x.Expr, x.Pattern)
 			// boolean_primary (not) regexp expr
 		case *ast.PatternRegexpExpr:
-			scanWhereStmt(fn, x.Expr, x.Pattern)
+			ScanWhereStmt(fn, x.Expr, x.Pattern)
 		case *ast.RowExpr:
-			scanWhereStmt(fn, x.Values...)
+			ScanWhereStmt(fn, x.Values...)
 		}
 	}
 }
 
-func whereStmtHasSubQuery(where ast.ExprNode) bool {
+func WhereStmtHasSubQuery(where ast.ExprNode) bool {
 	hasSubQuery := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch expr.(type) {
 		case *ast.SubqueryExpr:
 			hasSubQuery = true
@@ -233,9 +233,9 @@ func whereStmtHasSubQuery(where ast.ExprNode) bool {
 	return hasSubQuery
 }
 
-func whereStmtHasOneColumn(where ast.ExprNode) bool {
+func WhereStmtHasOneColumn(where ast.ExprNode) bool {
 	hasColumn := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.FuncCallExpr:
 			hasColumn = true
@@ -261,9 +261,9 @@ func whereStmtHasOneColumn(where ast.ExprNode) bool {
 	return hasColumn
 }
 
-func isFuncUsedOnColumnInWhereStmt(cols map[string]struct{}, where ast.ExprNode) bool {
+func IsFuncUsedOnColumnInWhereStmt(cols map[string]struct{}, where ast.ExprNode) bool {
 	usedFunc := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.FuncCallExpr:
 			for _, columnNameExpr := range x.Args {
@@ -280,9 +280,9 @@ func isFuncUsedOnColumnInWhereStmt(cols map[string]struct{}, where ast.ExprNode)
 	return usedFunc
 }
 
-func isColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where ast.ExprNode) bool {
+func IsColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where ast.ExprNode) bool {
 	hasConversion := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.BinaryOperationExpr:
 			var valueExpr *driver.ValueExpr
@@ -324,9 +324,9 @@ func isColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where a
 	return hasConversion
 }
 
-func whereStmtExistNot(where ast.ExprNode) bool {
+func WhereStmtExistNot(where ast.ExprNode) bool {
 	existNOT := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.IsNullExpr:
 			existNOT = true
@@ -353,9 +353,9 @@ func whereStmtExistNot(where ast.ExprNode) bool {
 }
 
 //Check is exist a full fuzzy query or a left fuzzy query. E.g: %name% or %name
-func checkWhereFuzzySearch(where ast.ExprNode) bool {
+func CheckWhereFuzzySearch(where ast.ExprNode) bool {
 	isExist := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.PatternLikeExpr:
 			switch pattern := x.Pattern.(type) {
@@ -372,9 +372,9 @@ func checkWhereFuzzySearch(where ast.ExprNode) bool {
 	return isExist
 }
 
-func whereStmtExistScalarSubQueries(where ast.ExprNode) bool {
+func WhereStmtExistScalarSubQueries(where ast.ExprNode) bool {
 	existScalarSubQueries := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.SubqueryExpr:
 			if query, ok := x.Query.(*ast.SelectStmt); ok {
@@ -391,7 +391,7 @@ func whereStmtExistScalarSubQueries(where ast.ExprNode) bool {
 
 func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
 	hasSpecificColumn := false
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch cn := expr.(type) {
 		case *ast.ColumnNameExpr:
 			if cn.Name.Name.L == strings.ToLower(columnName) {
@@ -404,7 +404,7 @@ func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
 	return hasSpecificColumn
 }
 
-func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
+func GetAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
 	if specs == nil {
 		return s
@@ -419,14 +419,14 @@ func getAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType
 	return s
 }
 
-func newTableName(schema, table string) *ast.TableName {
+func NewTableName(schema, table string) *ast.TableName {
 	return &ast.TableName{
 		Name:   _model.NewCIStr(table),
 		Schema: _model.NewCIStr(schema),
 	}
 }
 
-func getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
+func GetPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
 	hasPk := false
 	pkColumnsName := map[string]struct{}{}
 	for _, constraint := range stmt.Constraints {
@@ -448,12 +448,12 @@ func getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool) {
 	return pkColumnsName, hasPk
 }
 
-func hasPrimaryKey(stmt *ast.CreateTableStmt) bool {
-	_, hasPk := getPrimaryKey(stmt)
+func HasPrimaryKey(stmt *ast.CreateTableStmt) bool {
+	_, hasPk := GetPrimaryKey(stmt)
 	return hasPk
 }
 
-func hasUniqIndex(stmt *ast.CreateTableStmt) bool {
+func HasUniqIndex(stmt *ast.CreateTableStmt) bool {
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
 		case ast.ConstraintUniq:
@@ -469,14 +469,14 @@ func replaceTableName(query, schema, table string) string {
 	return re.ReplaceAllString(query, fmt.Sprintf("`%s`", table))
 }
 
-func getLimitCount(limit *ast.Limit, _default int64) (int64, error) {
+func GetLimitCount(limit *ast.Limit, _default int64) (int64, error) {
 	if limit == nil {
 		return _default, nil
 	}
-	return strconv.ParseInt(exprFormat(limit.Count), 0, 64)
+	return strconv.ParseInt(ExprFormat(limit.Count), 0, 64)
 }
 
-func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTableStmt) (*ast.CreateTableStmt, error) {
+func MergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTableStmt) (*ast.CreateTableStmt, error) {
 	newTable := &ast.CreateTableStmt{
 		Table:       oldTable.Table,
 		Cols:        oldTable.Cols,
@@ -484,10 +484,10 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 		Options:     oldTable.Options,
 		Partition:   oldTable.Partition,
 	}
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableRenameTable) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableRenameTable) {
 		newTable.Table = spec.NewTable
 	}
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableDropColumn) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableDropColumn) {
 		colExists := false
 		for i, col := range newTable.Cols {
 			if col.Name.Name.L == spec.OldColumnName.Name.L {
@@ -499,7 +499,7 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 			return oldTable, nil
 		}
 	}
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableChangeColumn) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableChangeColumn) {
 		colExists := false
 		for i, col := range newTable.Cols {
 			if col.Name.Name.L == spec.OldColumnName.Name.L {
@@ -511,7 +511,7 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 			return oldTable, nil
 		}
 	}
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableModifyColumn) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableModifyColumn) {
 		colExists := false
 		for i, col := range newTable.Cols {
 			if col.Name.Name.L == spec.NewColumns[0].Name.Name.L {
@@ -523,7 +523,7 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 			return oldTable, nil
 		}
 	}
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableAlterColumn) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableAlterColumn) {
 		colExists := false
 		newCol := spec.NewColumns[0]
 		for _, col := range newTable.Cols {
@@ -554,7 +554,7 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableAddColumns) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableAddColumns) {
 		for _, newCol := range spec.NewColumns {
 			colExist := false
 			for _, col := range newTable.Cols {
@@ -569,9 +569,9 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableDropPrimaryKey) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableDropPrimaryKey) {
 		_ = spec
-		if !hasPrimaryKey(newTable) {
+		if !HasPrimaryKey(newTable) {
 			return oldTable, nil
 		}
 		for i, constraint := range newTable.Constraints {
@@ -590,7 +590,7 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableDropIndex) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableDropIndex) {
 		indexName := spec.Name
 		constraintExists := false
 		for i, constraint := range newTable.Constraints {
@@ -604,7 +604,7 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableRenameIndex) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableRenameIndex) {
 		oldName := spec.FromKey
 		newName := spec.ToKey
 		constraintExists := false
@@ -619,10 +619,10 @@ func mergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTable
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(alterTable.Specs, ast.AlterTableAddConstraint) {
+	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintPrimaryKey:
-			if hasPrimaryKey(newTable) {
+			if HasPrimaryKey(newTable) {
 				return oldTable, nil
 			}
 			newTable.Constraints = append(newTable.Constraints, spec.Constraint)
@@ -646,13 +646,13 @@ type TableChecker struct {
 	schemaTables map[string]map[string]*ast.CreateTableStmt
 }
 
-func newTableChecker() *TableChecker {
+func NewTableChecker() *TableChecker {
 	return &TableChecker{
 		schemaTables: map[string]map[string]*ast.CreateTableStmt{},
 	}
 }
 
-func (t *TableChecker) add(schemaName, tableName string, table *ast.CreateTableStmt) {
+func (t *TableChecker) Add(schemaName, tableName string, table *ast.CreateTableStmt) {
 	tables, ok := t.schemaTables[schemaName]
 	if ok {
 		tables[tableName] = table
@@ -661,7 +661,7 @@ func (t *TableChecker) add(schemaName, tableName string, table *ast.CreateTableS
 	}
 }
 
-func (t *TableChecker) checkColumnByName(colNameStmt *ast.ColumnName) (bool, bool) {
+func (t *TableChecker) CheckColumnByName(colNameStmt *ast.ColumnName) (bool, bool) {
 	schemaName := colNameStmt.Schema.String()
 	tableName := colNameStmt.Table.String()
 	colName := colNameStmt.Name.String()
@@ -669,7 +669,7 @@ func (t *TableChecker) checkColumnByName(colNameStmt *ast.ColumnName) (bool, boo
 	if schemaExists {
 		table, tableExists := tables[tableName]
 		if tableExists {
-			return tableExistCol(table, colName), false
+			return TableExistCol(table, colName), false
 		}
 	}
 	if schemaName != "" {
@@ -681,7 +681,7 @@ func (t *TableChecker) checkColumnByName(colNameStmt *ast.ColumnName) (bool, boo
 	for _, tables := range t.schemaTables {
 		table, tableExist := tables[tableName]
 		if tableExist {
-			exist := tableExistCol(table, colName)
+			exist := TableExistCol(table, colName)
 			if exist {
 				if colExists {
 					colIsAmbiguous = true
@@ -693,7 +693,7 @@ func (t *TableChecker) checkColumnByName(colNameStmt *ast.ColumnName) (bool, boo
 			continue
 		}
 		for _, table := range tables {
-			exist := tableExistCol(table, colName)
+			exist := TableExistCol(table, colName)
 			if exist {
 				if colExists {
 					colIsAmbiguous = true
@@ -705,7 +705,7 @@ func (t *TableChecker) checkColumnByName(colNameStmt *ast.ColumnName) (bool, boo
 	return colExists, colIsAmbiguous
 }
 
-func tableExistCol(table *ast.CreateTableStmt, colName string) bool {
+func TableExistCol(table *ast.CreateTableStmt, colName string) bool {
 	for _, col := range table.Cols {
 		if col.Name.Name.String() == colName {
 			return true

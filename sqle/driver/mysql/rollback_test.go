@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/stretchr/testify/assert"
 )
 
 func runRollbackCase(t *testing.T, desc string, i *Inspect, sql string, results string) {
-	stmts, err := parseSql(sql)
+	stmts, err := util.ParseSql(sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return
@@ -16,7 +17,7 @@ func runRollbackCase(t *testing.T, desc string, i *Inspect, sql string, results 
 
 	for _, stmt := range stmts {
 		sql, _, err := i.GenRollbackSQL(context.TODO(), stmt.Text())
-		_, err = parseSql(sql)
+		_, err = util.ParseSql(sql)
 		assert.NoError(t, err)
 		assert.Equal(t, results, sql, desc)
 	}

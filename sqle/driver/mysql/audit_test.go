@@ -8,6 +8,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/pingcap/parser/ast"
@@ -26,7 +27,7 @@ KEY idx_1 (v1),
 UNIQUE KEY uniq_1 (v1,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `
-	node, err := parseOneSql(baseCreateQuery)
+	node, err := util.ParseOneSql(baseCreateQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +46,7 @@ UNIQUE KEY uniq_1(id),
 CONSTRAINT pk_test_1 FOREIGN KEY (user_id) REFERENCES exist_db.exist_tb_1 (id) ON DELETE NO ACTION
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `
-	node, err := parseOneSql(baseCreateQuery)
+	node, err := util.ParseOneSql(baseCreateQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +68,7 @@ PARTITION p2 VALUES IN(4, 5, 6),
 PARTITION p3 VALUES IN(7, 8, 9)
 );
 `
-	node, err := parseOneSql(baseCreateQuery)
+	node, err := util.ParseOneSql(baseCreateQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -189,7 +190,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 }
 
 func inspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
-	stmts, err := parseSql(sql)
+	stmts, err := util.ParseSql(sql)
 	if err != nil {
 		t.Errorf("%s test failled, error: %v\n", desc, err)
 		return

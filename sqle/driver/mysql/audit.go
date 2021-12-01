@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
@@ -119,7 +120,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 		colName := col.Name.Name.L
 		colsName = append(colsName, colName)
 		colsNameMap[colName] = struct{}{}
-		if HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+		if util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 			pkCounter += 1
 		}
 	}
@@ -227,7 +228,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	indexNameMap := map[string]struct{}{}
 	for _, col := range createTableStmt.Cols {
 		colNameMap[col.Name.Name.L] = struct{}{}
-		if HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+		if util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 			hasPk = true
 		}
 	}
@@ -246,7 +247,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	needExistsColsName := []string{}
 
 	// check drop column
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
 		oldColName := spec.OldColumnName.Name.L
 		if _, ok := colNameMap[oldColName]; !ok {
 			needExistsColsName = append(needExistsColsName, oldColName)
@@ -256,7 +257,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	}
 
 	// check change column
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableChangeColumn) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableChangeColumn) {
 		oldColName := spec.OldColumnName.Name.L
 		if _, ok := colNameMap[oldColName]; !ok {
 			needExistsColsName = append(needExistsColsName, oldColName)
@@ -278,14 +279,14 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	}
 
 	// check add column
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		for _, col := range spec.NewColumns {
 			colName := col.Name.Name.L
 			if _, ok := colNameMap[colName]; ok {
 				needNotExistsColsName = append(needNotExistsColsName, colName)
 			} else {
 				colNameMap[colName] = struct{}{}
-				if hasPk && HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+				if hasPk && util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 					i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
 				} else {
 					hasPk = true
@@ -295,7 +296,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	}
 
 	// check alter column
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAlterColumn) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAlterColumn) {
 		for _, col := range spec.NewColumns {
 			colName := col.Name.Name.L
 			if _, ok := colNameMap[colName]; !ok {
@@ -308,19 +309,19 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	needExistsIndexesName := []string{}
 	needExistsKeyColsName := []string{}
 
-	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
+	if len(util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
 		// primary key not exist, can not drop primary key
 		i.result.Add(driver.RuleLevelError, PrimaryKeyNotExistMessage)
 	}
 
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
 		indexName := strings.ToLower(spec.Name)
 		if _, ok := indexNameMap[indexName]; !ok {
 			needExistsIndexesName = append(needExistsIndexesName, indexName)
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
 		oldIndexName := spec.FromKey.String()
 		newIndexName := spec.ToKey.String()
 		_, oldIndexExist := indexNameMap[oldIndexName]
@@ -337,7 +338,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 		}
 	}
 
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
@@ -632,7 +633,7 @@ insert into ... values ...
 ------------------------------------------------------------------
 */
 func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt) error {
-	tables := getTables(stmt.Table.TableRefs)
+	tables := util.GetTables(stmt.Table.TableRefs)
 	table := tables[0]
 	schemaName := i.getSchemaName(table)
 	schemaExist, err := i.isSchemaExist(schemaName)
@@ -712,7 +713,7 @@ update ... set  ... where ...
 func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	tables := []*ast.TableName{}
 	tableAlias := map[*ast.TableName]string{}
-	tableSources := getTableSources(stmt.TableRefs.TableRefs)
+	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 	for _, tableSource := range tableSources {
 		switch source := tableSource.Source.(type) {
 		case *ast.TableName:
@@ -759,7 +760,7 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		return nil
 	}
 
-	tc := newTableChecker()
+	tc := util.NewTableChecker()
 	for _, table := range tables {
 		schemaName := table.Schema.String()
 		if schemaName == "" {
@@ -773,14 +774,14 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		if err != nil || !exist {
 			return err
 		}
-		tc.add(schemaName, tableName, createStmt)
+		tc.Add(schemaName, tableName, createStmt)
 	}
 
 	needExistColsName := []string{}
 	ambiguousColsName := []string{}
 	for _, list := range stmt.List {
 		col := list.Column
-		colExists, colIsAmbiguous := tc.checkColumnByName(col)
+		colExists, colIsAmbiguous := tc.CheckColumnByName(col)
 		if colIsAmbiguous {
 			ambiguousColsName = append(ambiguousColsName, col.String())
 			continue
@@ -790,11 +791,11 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		}
 	}
 
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.ColumnNameExpr:
 			col := x.Name
-			colExists, colIsAmbiguous := tc.checkColumnByName(col)
+			colExists, colIsAmbiguous := tc.CheckColumnByName(col)
 			if colIsAmbiguous {
 				ambiguousColsName = append(ambiguousColsName, col.String())
 			}
@@ -827,7 +828,7 @@ delete from ... where ...
 ------------------------------------------------------------------
 */
 func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
-	tables := getTables(stmt.TableRefs.TableRefs)
+	tables := util.GetTables(stmt.TableRefs.TableRefs)
 	needExistsSchemasName := []string{}
 	needExistsTablesName := []string{}
 	for _, table := range tables {
@@ -860,7 +861,7 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 		return nil
 	}
 
-	tc := newTableChecker()
+	tc := util.NewTableChecker()
 	for _, table := range tables {
 		schemaName := table.Schema.String()
 		if schemaName == "" {
@@ -871,16 +872,16 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 		if err != nil || !exist {
 			return err
 		}
-		tc.add(schemaName, tableName, createStmt)
+		tc.Add(schemaName, tableName, createStmt)
 	}
 
 	needExistColsName := []string{}
 	ambiguousColsName := []string{}
-	scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+	util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.ColumnNameExpr:
 			col := x.Name
-			colExists, colIsAmbiguous := tc.checkColumnByName(col)
+			colExists, colIsAmbiguous := tc.CheckColumnByName(col)
 			if colIsAmbiguous {
 				ambiguousColsName = append(ambiguousColsName, col.String())
 			}
@@ -916,7 +917,7 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		return nil
 	}
 	tables := []*ast.TableName{}
-	tableSources := getTableSources(stmt.From.TableRefs)
+	tableSources := util.GetTableSources(stmt.From.TableRefs)
 	// not select from table statement
 	if len(tableSources) < 1 {
 		return nil

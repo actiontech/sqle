@@ -11,6 +11,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
@@ -908,19 +909,19 @@ func checkSelectWhere(rule driver.Rule, i *Inspect, node ast.Node) error {
 func checkWhere(i *Inspect, where ast.ExprNode) bool {
 	isAddResult := false
 
-	if where == nil || !whereStmtHasOneColumn(where) {
+	if where == nil || !util.WhereStmtHasOneColumn(where) {
 		i.addResult(DMLCheckWhereIsInvalid)
 		isAddResult = true
 	}
-	if where != nil && whereStmtExistNot(where) {
+	if where != nil && util.WhereStmtExistNot(where) {
 		i.addResult(DMLCheckWhereExistNot)
 		isAddResult = true
 	}
-	if where != nil && whereStmtExistScalarSubQueries(where) {
+	if where != nil && util.WhereStmtExistScalarSubQueries(where) {
 		i.addResult(DMLCheckWhereExistScalarSubquery)
 		isAddResult = true
 	}
-	if where != nil && checkWhereFuzzySearch(where) {
+	if where != nil && util.CheckWhereFuzzySearch(where) {
 		i.addResult(DMLCheckFuzzySearch)
 		isAddResult = true
 	}
@@ -929,7 +930,7 @@ func checkWhere(i *Inspect, where ast.ExprNode) bool {
 func checkWhereExistNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		var existNull bool
-		scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			if _, ok := expr.(*ast.IsNullExpr); ok {
 				existNull = true
 				return true
@@ -964,7 +965,7 @@ func checkIndexesExistBeforeCreatConstraints(rule driver.Rule, i *Inspect, node 
 	case *ast.AlterTableStmt:
 		constraintMap := make(map[string]struct{})
 		cols := []string{}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			if spec.Constraint != nil && (spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
 				spec.Constraint.Tp == ast.ConstraintUniq || spec.Constraint.Tp == ast.ConstraintUniqKey) {
 				for _, key := range spec.Constraint.Keys {
@@ -998,7 +999,7 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
 	inspectCol := func(col *ast.ColumnDef) {
-		if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+		if util.IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 			pkIsAutoIncrement = true
 		}
 		if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
@@ -1023,7 +1024,7 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 			);
 		*/
 		for _, col := range stmt.Cols {
-			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+			if util.IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 				hasPk = true
 				pkColumnExist = true
 				inspectCol(col)
@@ -1069,7 +1070,7 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 				switch spec.Tp {
 				case ast.AlterTableAddColumns:
 					for _, newColumn := range spec.NewColumns {
-						if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
+						if util.IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
 							alterPK = true
 							inspectCol(newColumn)
 						}
@@ -1088,7 +1089,7 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 				}
 			}
 
-			if originPK, exist := getPrimaryKey(originTable); exist {
+			if originPK, exist := util.GetPrimaryKey(originTable); exist {
 				for _, spec := range stmt.Specs {
 					switch spec.Tp {
 					case ast.AlterTableModifyColumn:
@@ -1214,8 +1215,8 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
-			if MysqlDataTypeIsBlob(col.Tp.Tp) {
-				if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
+			if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
+				if util.HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
 					indexDataTypeIsBlob = true
 					break
 				}
@@ -1243,7 +1244,7 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 		}
 		if exist {
 			for _, col := range createTableStmt.Cols {
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
+				if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 					isTypeBlobCols[col.Name.Name.String()] = true
 				} else {
 					isTypeBlobCols[col.Name.Name.String()] = false
@@ -1251,14 +1252,14 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 			}
 		}
 		// collect columns type from alter table
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
 			ast.AlterTableChangeColumn) {
 			if spec.NewColumns == nil {
 				continue
 			}
 			for _, col := range spec.NewColumns {
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
-					if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
+				if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
+					if util.HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
 						indexDataTypeIsBlob = true
 						break
 					}
@@ -1268,7 +1269,7 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 				}
 			}
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
 			case ast.ConstraintIndex, ast.ConstraintUniq:
 				for _, col := range spec.Constraint.Keys {
@@ -1285,7 +1286,7 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 			return err
 		}
 		for _, col := range createTableStmt.Cols {
-			if MysqlDataTypeIsBlob(col.Tp.Tp) {
+			if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 				isTypeBlobCols[col.Name.Name.String()] = true
 			} else {
 				isTypeBlobCols[col.Name.Name.String()] = false
@@ -1391,7 +1392,7 @@ func checkNewObjectName(rule driver.Rule, i *Inspect, node ast.Node) error {
 	}
 	if len(invalidNames) > 0 {
 		i.addResult(DDLCheckObjectNameUsingKeyword,
-			strings.Join(RemoveArrayRepeat(invalidNames), ", "))
+			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
 	}
 	return nil
 }
@@ -1587,7 +1588,7 @@ func checkColumnWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) erro
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
 			for _, col := range spec.NewColumns {
 				columnHasComment := false
 				for _, op := range col.Options {
@@ -1616,7 +1617,7 @@ func checkIndexPrefix(rule driver.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 	case *ast.AlterTableStmt:
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
 			case ast.ConstraintIndex:
 				indexesName = append(indexesName, spec.Constraint.Name)
@@ -1672,7 +1673,7 @@ func checkIfUniqIndexSatisfy(
 		}
 	case *ast.AlterTableStmt:
 		tableName = stmt.Table.Name.String()
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
 			case ast.ConstraintUniq:
 				for _, key := range spec.Constraint.Keys {
@@ -1713,13 +1714,13 @@ func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) erro
 			isAutoIncrementColumn := false
 			isBlobColumn := false
 			columnHasDefault := false
-			if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+			if util.HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 				isAutoIncrementColumn = true
 			}
-			if MysqlDataTypeIsBlob(col.Tp.Tp) {
+			if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 				isBlobColumn = true
 			}
-			if HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+			if util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
 				columnHasDefault = true
 			}
 			if isAutoIncrementColumn || isBlobColumn {
@@ -1734,20 +1735,20 @@ func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) erro
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
 			ast.AlterTableModifyColumn) {
 			for _, col := range spec.NewColumns {
 				isAutoIncrementColumn := false
 				isBlobColumn := false
 				columnHasDefault := false
 
-				if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+				if util.HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 					isAutoIncrementColumn = true
 				}
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
+				if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 					isBlobColumn = true
 				}
-				if HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+				if util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
 					columnHasDefault = true
 				}
 
@@ -1786,7 +1787,7 @@ func checkColumnTimestampWithoutDefault(rule driver.Rule, i *Inspect, node ast.N
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
 			for _, col := range spec.NewColumns {
 				columnHasDefault := false
 				for _, op := range col.Options {
@@ -1828,7 +1829,7 @@ func checkColumnBlobNotNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
 			ast.AlterTableModifyColumn) {
 			for _, col := range spec.NewColumns {
 				if col.Tp == nil {
@@ -1877,7 +1878,7 @@ func checkColumnShouldNotBeType(rule driver.Rule, i *Inspect, node ast.Node, col
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(
+		for _, spec := range util.GetAlterTableSpecByTp(
 			stmt.Specs,
 			ast.AlterTableAddColumns,
 			ast.AlterTableModifyColumn,
@@ -1923,7 +1924,7 @@ func checkColumnBlobDefaultNull(rule driver.Rule, i *Inspect, node ast.Node) err
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn, ast.AlterTableAlterColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn, ast.AlterTableAlterColumn,
 			ast.AlterTableChangeColumn, ast.AlterTableAddColumns) {
 			for _, col := range spec.NewColumns {
 				if col.Tp == nil {
@@ -2014,7 +2015,7 @@ func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.From.TableRefs)
+			tableSources := util.GetTableSources(stmt.From.TableRefs)
 			// not select from table statement
 			if len(tableSources) < 1 {
 				break
@@ -2029,7 +2030,7 @@ func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.TableRefs.TableRefs)
+			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 			for _, tableSource := range tableSources {
 				switch source := tableSource.Source.(type) {
 				case *ast.TableName:
@@ -2040,11 +2041,11 @@ func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			checkExistFunc(i, getTables(stmt.TableRefs.TableRefs), stmt.Where)
+			checkExistFunc(i, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			tableSources := getTableSources(ss.From.TableRefs)
+			tableSources := util.GetTableSources(ss.From.TableRefs)
 			if len(tableSources) < 1 {
 				continue
 			}
@@ -2078,7 +2079,7 @@ func checkExistFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) boo
 	for _, col := range cols {
 		colMap[col.Name.String()] = struct{}{}
 	}
-	if isFuncUsedOnColumnInWhereStmt(colMap, where) {
+	if util.IsFuncUsedOnColumnInWhereStmt(colMap, where) {
 		i.addResult(DMLCheckWhereExistFunc)
 		return true
 	}
@@ -2090,7 +2091,7 @@ func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.N
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.From.TableRefs)
+			tableSources := util.GetTableSources(stmt.From.TableRefs)
 			// not select from table statement
 			if len(tableSources) < 1 {
 				break
@@ -2105,7 +2106,7 @@ func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.N
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.TableRefs.TableRefs)
+			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 			for _, tableSource := range tableSources {
 				switch source := tableSource.Source.(type) {
 				case *ast.TableName:
@@ -2116,11 +2117,11 @@ func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.N
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			checkWhereColumnImplicitConversionFunc(i, getTables(stmt.TableRefs.TableRefs), stmt.Where)
+			checkWhereColumnImplicitConversionFunc(i, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			tableSources := getTableSources(ss.From.TableRefs)
+			tableSources := util.GetTableSources(ss.From.TableRefs)
 			if len(tableSources) < 1 {
 				continue
 			}
@@ -2167,7 +2168,7 @@ func checkWhereColumnImplicitConversionFunc(i *Inspect, tables []*ast.TableName,
 		}
 
 	}
-	if isColumnImplicitConversionInWhereStmt(colMap, where) {
+	if util.IsColumnImplicitConversionInWhereStmt(colMap, where) {
 		i.addResult(DMLCheckWhereExistImplicitConversion)
 		return true
 	}
@@ -2373,7 +2374,7 @@ func checkNumberOfJoinTables(rule driver.Rule, i *Inspect, node ast.Node) error 
 		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
 			return nil
 		}
-		if nums < getNumberOfJoinTables(stmt.From.TableRefs) {
+		if nums < util.GetNumberOfJoinTables(stmt.From.TableRefs) {
 			i.addResult(DMLCheckNumberOfJoinTables, rule.Value)
 		}
 	default:
@@ -2417,7 +2418,7 @@ func checkIndexOption(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		tableName = stmt.Table
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			if spec.Constraint == nil {
 				continue
 			}

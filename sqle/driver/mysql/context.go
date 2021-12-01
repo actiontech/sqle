@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser/ast"
 )
 
@@ -267,7 +268,7 @@ func (i *Inspect) updateContext(node ast.Node) {
 					return
 				}
 			}
-			info.MergedTable, _ = mergeAlterToTable(oldTable, s)
+			info.MergedTable, _ = util.MergeAlterToTable(oldTable, s)
 			info.AlterTables = append(info.AlterTables, s)
 			// rename table
 			if s.Table.Name.L != info.MergedTable.Table.Name.L {
