@@ -409,20 +409,3 @@ func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{},
 	}
 	return pkColumnsName, hasPk, nil
 }
-
-func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
-	if ep, ok := i.Ctx.GetExecutionPlan(sql); ok {
-		return ep, nil
-	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return nil, err
-	}
-
-	records, err := conn.Explain(sql)
-	if err != nil {
-		return nil, err
-	}
-	i.Ctx.AddExecutionPlan(sql, records)
-	return records, nil
-}
