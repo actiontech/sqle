@@ -471,13 +471,6 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 	return i.Ctx.HasTable(schemaName, stmt.Name.String()), nil
 }
 
-// getTableInfo get table info if table exist.
-func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
-	schema := i.Ctx.GetSchemaName(stmt)
-	table := stmt.Name.String()
-	return i.Ctx.GetTable(schema, table)
-}
-
 // getTableSize get table size.
 func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 	exist, err := i.isTableExist(stmt)
@@ -488,7 +481,7 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 		return 0, nil
 	}
 
-	info, _ := i.getTableInfo(stmt)
+	info, _ := i.Ctx.GetTableInfo(stmt)
 	if !info.sizeLoad {
 		conn, err := i.getDbConn()
 		if err != nil {
@@ -557,7 +550,7 @@ func (i *Inspect) getSchemaCharacter(stmt *ast.TableName, schemaName string) (st
 }
 
 func (i *Inspect) getMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (string, error) {
-	ti, exist := i.getTableInfo(stmt)
+	ti, exist := i.Ctx.GetTableInfo(stmt)
 	if !exist || !ti.isLoad {
 		return "", nil
 	}
@@ -631,7 +624,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return nil, exist, nil
 	}
 
-	info, _ := i.getTableInfo(stmt)
+	info, _ := i.Ctx.GetTableInfo(stmt)
 	if info.MergedTable != nil {
 		return info.MergedTable, exist, nil
 	}

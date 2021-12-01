@@ -255,7 +255,7 @@ func (c *Context) UpdateContext(node ast.Node) {
 		}
 
 	case *ast.AlterTableStmt:
-		info, exist := c.getTableInfo(s.Table)
+		info, exist := c.GetTableInfo(s.Table)
 		if exist {
 			var oldTable *ast.CreateTableStmt
 			var err error
@@ -289,9 +289,9 @@ func (c *Context) GetSchemaName(stmt *ast.TableName) string {
 	return stmt.Schema.String()
 }
 
-// TODO: export and remove duplicated code
-func (c *Context) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
-	schema := c.getSchemaName(stmt)
+// GetTableInfo get table info from context.
+func (c *Context) GetTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
+	schema := c.GetSchemaName(stmt)
 	table := stmt.Name.String()
 	return c.GetTable(schema, table)
 }
