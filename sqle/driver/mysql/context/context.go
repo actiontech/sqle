@@ -574,9 +574,9 @@ func (c *Context) GetSchemaEngine(stmt *ast.TableName, schemaName string) (strin
 	return engine, nil
 }
 
-// getTableSize get table size.
-func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
-	exist, err := i.Ctx.IsTableExist(stmt)
+// GetTableSize get table size.
+func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
+	exist, err := c.IsTableExist(stmt)
 	if err != nil {
 		return 0, errors.Wrapf(err, "check table exist when get table size")
 	}
@@ -584,13 +584,12 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 		return 0, nil
 	}
 
-	info, _ := i.Ctx.GetTableInfo(stmt)
+	info, _ := c.GetTableInfo(stmt)
 	if !info.sizeLoad {
-		conn, err := i.getDbConn()
-		if err != nil {
-			return 0, err
+		if c.e == nil {
+			return 0, nil
 		}
-		size, err := conn.ShowTableSizeMB(i.Ctx.GetSchemaName(stmt), stmt.Name.String())
+		size, err := c.e.ShowTableSizeMB(c.GetSchemaName(stmt), stmt.Name.String())
 		if err != nil {
 			return 0, err
 		}

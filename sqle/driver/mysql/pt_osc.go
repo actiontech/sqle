@@ -48,7 +48,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	tableSize, err := i.getTableSize(stmt.Table)
+	tableSize, err := i.Ctx.GetTableSize(stmt.Table)
 	if err != nil {
 		return "", err
 	}
