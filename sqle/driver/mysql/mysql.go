@@ -401,31 +401,6 @@ func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
 	return fmt.Sprintf("`%s`", name)
 }
 
-// getTableSize get table size.
-func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
-	exist, err := i.Ctx.IsTableExist(stmt)
-	if err != nil {
-		return 0, errors.Wrapf(err, "check table exist when get table size")
-	}
-	if !exist {
-		return 0, nil
-	}
-
-	info, _ := i.Ctx.GetTableInfo(stmt)
-	if !info.sizeLoad {
-		conn, err := i.getDbConn()
-		if err != nil {
-			return 0, err
-		}
-		size, err := conn.ShowTableSizeMB(i.Ctx.GetSchemaName(stmt), stmt.Name.String())
-		if err != nil {
-			return 0, err
-		}
-		info.Size = size
-	}
-	return info.Size, nil
-}
-
 // getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
 	pkColumnsName, hasPk := util.GetPrimaryKey(stmt)
