@@ -213,7 +213,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
-	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
 		return err
 	}
@@ -535,7 +535,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) error {
 		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
-	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
 		return err
 	}
@@ -601,7 +601,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
-	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
 		return err
 	}
@@ -644,7 +644,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
-	createTableStmt, tableExist, err := i.getCreateTableStmt(table)
+	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil {
 		return err
 	}
@@ -770,7 +770,7 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		if alias, ok := tableAlias[table]; ok {
 			tableName = alias
 		}
-		createStmt, exist, err := i.getCreateTableStmt(table)
+		createStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 		if err != nil || !exist {
 			return err
 		}
@@ -868,7 +868,7 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 			schemaName = i.Ctx.CurrentSchema()
 		}
 		tableName := table.Name.String()
-		createStmt, exist, err := i.getCreateTableStmt(table)
+		createStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 		if err != nil || !exist {
 			return err
 		}

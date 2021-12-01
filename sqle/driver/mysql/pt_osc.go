@@ -57,7 +57,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		return "", err
 	}
 
-	createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if !exist || err != nil {
 		return "", err
 	}

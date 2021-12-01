@@ -72,7 +72,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
-	createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil || !exist {
 		return "", "", err
 	}
@@ -303,7 +303,7 @@ func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (str
 func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, string, error) {
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
-		stmt, tableExist, err := i.getCreateTableStmt(table)
+		stmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
 		if err != nil {
 			return "", "", err
 		}
@@ -324,7 +324,7 @@ func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (str
 // generateDropIndexRollbackSql generate create index SQL for drop index.
 func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, string, error) {
 	indexName := stmt.IndexName
-	createTableStmt, tableExist, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
 		return "", "", err
 	}
@@ -366,7 +366,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 		return "", NotSupportOnDuplicatStatementRollback, nil
 	}
 	table := tables[0]
-	createTableStmt, exist, err := i.getCreateTableStmt(table)
+	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil {
 		return "", "", err
 	}
@@ -458,7 +458,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 	var err error
 	tables := util.GetTables(stmt.TableRefs.TableRefs)
 	table := tables[0]
-	createTableStmt, exist, err := i.getCreateTableStmt(table)
+	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
 		return "", "", err
 	}
@@ -543,7 +543,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 	default:
 		return "", NotSupportStatementRollback, nil
 	}
-	createTableStmt, exist, err := i.getCreateTableStmt(table)
+	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
 		return "", "", err
 	}
