@@ -214,25 +214,24 @@ func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, bool)
 	return records, ok
 }
 
-func (i *Inspect) updateContext(node ast.Node) {
-	ctx := i.Ctx
+func (c *Context) UpdateContext(node ast.Node) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
-		if ctx.HasSchema(s.DBName) {
-			ctx.UseSchema(s.DBName)
+		if c.HasSchema(s.DBName) {
+			c.UseSchema(s.DBName)
 		}
 	case *ast.CreateDatabaseStmt:
-		if ctx.HasLoadSchemas() {
-			ctx.AddSchema(s.Name)
+		if c.HasLoadSchemas() {
+			c.AddSchema(s.Name)
 		}
 	case *ast.CreateTableStmt:
-		schemaName := i.getSchemaName(s.Table)
+		schemaName := c.getSchemaName(s.Table)
 		tableName := s.Table.Name.L
-		if ctx.HasTable(schemaName, tableName) {
+		if c.HasTable(schemaName, tableName) {
 			return
 		}
-		ctx.AddTable(schemaName, tableName,
+		c.AddTable(schemaName, tableName,
 			&TableInfo{
 				Size:          0, // table is empty after create
 				sizeLoad:      true,
@@ -241,29 +240,29 @@ func (i *Inspect) updateContext(node ast.Node) {
 				AlterTables:   []*ast.AlterTableStmt{},
 			})
 	case *ast.DropDatabaseStmt:
-		if ctx.HasLoadSchemas() {
-			ctx.DelSchema(s.Name)
+		if c.HasLoadSchemas() {
+			c.DelSchema(s.Name)
 		}
 	case *ast.DropTableStmt:
-		if ctx.HasLoadSchemas() {
+		if c.HasLoadSchemas() {
 			for _, table := range s.Tables {
-				schemaName := i.getSchemaName(table)
+				schemaName := c.getSchemaName(table)
 				tableName := table.Name.L
-				if ctx.HasTable(schemaName, tableName) {
-					ctx.DelTable(schemaName, tableName)
+				if c.HasTable(schemaName, tableName) {
+					c.DelTable(schemaName, tableName)
 				}
 			}
 		}
 
 	case *ast.AlterTableStmt:
-		info, exist := i.getTableInfo(s.Table)
+		info, exist := c.getTableInfo(s.Table)
 		if exist {
 			var oldTable *ast.CreateTableStmt
 			var err error
 			if info.MergedTable != nil {
 				oldTable = info.MergedTable
 			} else if info.OriginalTable != nil {
-				oldTable, err = i.parseCreateTableStmt(info.OriginalTable.Text())
+				oldTable, err = util.ParseCreateTableStmt(info.OriginalTable.Text())
 				if err != nil {
 					return
 				}
@@ -272,11 +271,27 @@ func (i *Inspect) updateContext(node ast.Node) {
 			info.AlterTables = append(info.AlterTables, s)
 			// rename table
 			if s.Table.Name.L != info.MergedTable.Table.Name.L {
-				schemaName := i.getSchemaName(s.Table)
-				i.Ctx.DelTable(schemaName, s.Table.Name.L)
-				i.Ctx.AddTable(schemaName, info.MergedTable.Table.Name.L, info)
+				schemaName := c.getSchemaName(s.Table)
+				c.DelTable(schemaName, s.Table.Name.L)
+				c.AddTable(schemaName, info.MergedTable.Table.Name.L, info)
 			}
 		}
 	default:
 	}
+}
+
+// TODO: export and remove duplicated code
+func (c *Context) getSchemaName(stmt *ast.TableName) string {
+	if stmt.Schema.String() == "" {
+		return c.currentSchema
+	} else {
+		return stmt.Schema.String()
+	}
+}
+
+// TODO: export and remove duplicated code
+func (c *Context) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
+	schema := c.getSchemaName(stmt)
+	table := stmt.Name.String()
+	return c.GetTable(schema, table)
 }
