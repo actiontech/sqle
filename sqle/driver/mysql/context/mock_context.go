@@ -7,8 +7,9 @@ import (
 )
 
 // NewMockContext creates a new mock context for unit test.
-func NewMockContext() *Context {
+func NewMockContext(e *executor.Executor) *Context {
 	return &Context{
+		e:             e,
 		currentSchema: "exist_db",
 		schemaHasLoad: true,
 		executionPlan: map[string][]*executor.ExplainRecord{},
