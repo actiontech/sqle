@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/pingcap/parser/ast"
 )
 
@@ -41,7 +42,7 @@ type Context struct {
 	schemaHasLoad bool
 
 	// executionPlan store batch SQLs' execution plan during one inspect context.
-	executionPlan map[string][]*ExplainRecord
+	executionPlan map[string][]*executor.ExplainRecord
 
 	// sysVars keep some MySQL global system variables during one inspect context.
 	sysVars map[string]string
@@ -50,7 +51,7 @@ type Context struct {
 func NewContext(parent *Context) *Context {
 	ctx := &Context{
 		schemas:       map[string]*SchemaInfo{},
-		executionPlan: map[string][]*ExplainRecord{},
+		executionPlan: map[string][]*executor.ExplainRecord{},
 		sysVars:       map[string]string{},
 	}
 	if parent == nil {
@@ -203,11 +204,11 @@ func (c *Context) UseSchema(schema string) {
 	c.currentSchema = schema
 }
 
-func (c *Context) AddExecutionPlan(sql string, records []*ExplainRecord) {
+func (c *Context) AddExecutionPlan(sql string, records []*executor.ExplainRecord) {
 	c.executionPlan[sql] = records
 }
 
-func (c *Context) GetExecutionPlan(sql string) ([]*ExplainRecord, bool) {
+func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, bool) {
 	records, ok := c.executionPlan[sql]
 	return records, ok
 }

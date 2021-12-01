@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
@@ -48,7 +49,7 @@ type Inspect struct {
 
 	log *logrus.Entry
 	// dbConn is a SQL driver for MySQL.
-	dbConn *Executor
+	dbConn *executor.Executor
 	// isConnected represent dbConn has Connected.
 	isConnected bool
 	// isOfflineAudit represent Audit without instance.
@@ -363,11 +364,11 @@ func (i *Inspect) addResult(ruleName string, args ...interface{}) {
 }
 
 // getDbConn get db conn and just connect once.
-func (i *Inspect) getDbConn() (*Executor, error) {
+func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := NewExecutor(i.log, i.inst, i.Ctx.currentSchema)
+	conn, err := executor.NewExecutor(i.log, i.inst, i.Ctx.currentSchema)
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
@@ -687,7 +688,7 @@ func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{},
 	return pkColumnsName, hasPk, nil
 }
 
-func (i *Inspect) getExecutionPlan(sql string) ([]*ExplainRecord, error) {
+func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
 	if ep, ok := i.Ctx.GetExecutionPlan(sql); ok {
 		return ep, nil
 	}
