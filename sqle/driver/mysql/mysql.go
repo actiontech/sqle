@@ -58,42 +58,51 @@ type Inspect struct {
 }
 
 func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
-	ctx := session.NewContext(nil)
+	var inspect = &Inspect{}
+
 	if cfg.DSN != nil {
+		conn, err := executor.NewExecutor(log, cfg.DSN, cfg.DSN.DatabaseName)
+		if err != nil {
+			return nil, errors.Wrap(err, "new executor in inspect")
+		}
+		inspect.isConnected = true
+		inspect.dbConn = conn
+
+		ctx := session.NewContext(nil, session.WithExecutor(conn))
 		ctx.SetCurrentSchema(cfg.DSN.DatabaseName)
+
+		inspect.Ctx = ctx
+	} else {
+		ctx := session.NewContext(nil)
+		inspect.Ctx = ctx
 	}
 
-	i := &Inspect{
-		log: log,
-		Ctx: ctx,
-		cnf: &Config{
-			DMLRollbackMaxRows: -1,
-			DDLOSCMinSize:      -1,
-			DDLGhostMinSize:    -1,
-		},
+	inspect.log = log
+	inspect.rules = cfg.Rules
+	inspect.result = driver.NewInspectResults()
+	inspect.isOfflineAudit = cfg.DSN == nil
 
-		inst:           cfg.DSN,
-		rules:          cfg.Rules,
-		result:         driver.NewInspectResults(),
-		isOfflineAudit: cfg.DSN == nil,
+	inspect.cnf = &Config{
+		DMLRollbackMaxRows: -1,
+		DDLOSCMinSize:      -1,
+		DDLGhostMinSize:    -1,
 	}
-
 	for _, rule := range cfg.Rules {
 		if rule.Name == rulepkg.ConfigDMLRollbackMaxRows {
 			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDMLRollbackMaxRows].Rule
-			i.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+			inspect.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
 		}
 		if rule.Name == rulepkg.ConfigDDLOSCMinSize {
 			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDDLOSCMinSize].Rule
-			i.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+			inspect.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
 		}
 		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
 			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDDLGhostMinSize].Rule
-			i.cnf.DDLGhostMinSize = rule.GetValueInt(&defaultRule)
+			inspect.cnf.DDLGhostMinSize = rule.GetValueInt(&defaultRule)
 		}
 	}
 
-	return i, nil
+	return inspect, nil
 }
 
 func (i *Inspect) IsOfflineAudit() bool {
