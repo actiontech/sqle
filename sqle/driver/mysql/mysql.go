@@ -171,7 +171,7 @@ func (i *Inspect) onlineddlWithGhost(query string) (bool, error) {
 		return false, nil
 	}
 
-	tableSize, err := i.getTableSize(stmt.Table)
+	tableSize, err := i.Ctx.GetTableSize(stmt.Table)
 	if err != nil {
 		return false, errors.Wrap(err, "get table size")
 	}
