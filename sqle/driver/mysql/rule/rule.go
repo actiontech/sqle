@@ -113,14 +113,19 @@ type RuleHandler struct {
 	NotAllowOfflineStmts []ast.Node
 }
 
-func (i *Inspect) addResult(ruleName string, args ...interface{}) {
+// In order to reuse some code, some rules use the same rule handler.
+// Then following code is the side effect of the purpose.
+//
+// It's not a good idea to use the same rule handler for different rules.
+// FIXME: once we map one rule to one rule handler, we should remove the side effect.
+func addResult(result *driver.AuditResult, currentRule driver.Rule, ruleName string, args ...interface{}) {
 	// if rule is not current rule, ignore save the message.
-	if ruleName != i.currentRule.Name {
+	if ruleName != currentRule.Name {
 		return
 	}
-	level := i.currentRule.Level
+	level := currentRule.Level
 	message := RuleHandlerMap[ruleName].Message
-	i.result.Add(level, message, args...)
+	result.Add(level, message, args...)
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
