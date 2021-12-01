@@ -204,7 +204,7 @@ func (i *Inspect) Parse(ctx _context.Context, sqlText string) ([]driver.Node, er
 		return nil, err
 	}
 
-	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	lowerCaseTableNames, err := i.Ctx.GetSystemVariable(context.SysVarLowerCaseTableNames)
 	if err != nil {
 		return nil, err
 	}
