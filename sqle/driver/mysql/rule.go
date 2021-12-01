@@ -973,7 +973,7 @@ func checkIndexesExistBeforeCreatConstraints(rule driver.Rule, i *Inspect, node 
 				}
 			}
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -1065,7 +1065,7 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 		}
 	case *ast.AlterTableStmt:
 		var alterPK bool
-		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
+		if originTable, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table); err == nil && exist {
 			for _, spec := range stmt.Specs {
 				switch spec.Tp {
 				case ast.AlterTableAddColumns:
@@ -1238,7 +1238,7 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 		}
 	case *ast.AlterTableStmt:
 		// collect columns type from original table
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -1281,7 +1281,7 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 			}
 		}
 	case *ast.CreateIndexStmt:
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil || !exist {
 			return err
 		}
@@ -1456,7 +1456,7 @@ func checkIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
 				}
 			}
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -1474,7 +1474,7 @@ func checkIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
 		if compositeIndexMax < len(stmt.IndexColNames) {
 			compositeIndexMax = len(stmt.IndexColNames)
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -2070,7 +2070,7 @@ func checkExistFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) boo
 	}
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
-		createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+		createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(tableName)
 		if exist && err == nil {
 			cols = append(cols, createTableStmt.Cols...)
 		}
@@ -2146,7 +2146,7 @@ func checkWhereColumnImplicitConversionFunc(i *Inspect, tables []*ast.TableName,
 	}
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
-		createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+		createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(tableName)
 		if exist && err == nil {
 			cols = append(cols, createTableStmt.Cols...)
 		}

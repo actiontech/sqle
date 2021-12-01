@@ -419,9 +419,9 @@ func (c *Context) GetSystemVariable(name string) (string, error) {
 	return value.String, nil
 }
 
-// getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
-func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
-	exist, err := i.Ctx.IsTableExist(stmt)
+// GetCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
+func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
+	exist, err := c.IsTableExist(stmt)
 	if err != nil {
 		return nil, exist, err
 	}
@@ -429,7 +429,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return nil, exist, nil
 	}
 
-	info, _ := i.Ctx.GetTableInfo(stmt)
+	info, _ := c.GetTableInfo(stmt)
 	if info.MergedTable != nil {
 		return info.MergedTable, exist, nil
 	}
@@ -437,12 +437,11 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return info.OriginalTable, exist, nil
 	}
 
-	// create from connection
-	conn, err := i.getDbConn()
-	if err != nil {
-		return nil, exist, err
+	if c.e == nil {
+		return nil, false, nil
 	}
-	createTableSql, err := conn.ShowCreateTable(util.GetTableNameWithQuote(stmt))
+
+	createTableSql, err := c.e.ShowCreateTable(util.GetTableNameWithQuote(stmt))
 	if err != nil {
 		return nil, exist, err
 	}
