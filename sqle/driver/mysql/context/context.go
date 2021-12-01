@@ -331,7 +331,7 @@ func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
 		c.LoadSchemas(schemas)
 	}
 
-	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	lowerCaseTableNames, err := c.GetSystemVariable(SysVarLowerCaseTableNames)
 	if err != nil {
 		return false, err
 	}
@@ -370,7 +370,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 		c.LoadTables(schemaName, tables)
 	}
 
-	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	lowerCaseTableNames, err := c.GetSystemVariable(SysVarLowerCaseTableNames)
 	if err != nil {
 		return false, err
 	}
@@ -395,20 +395,18 @@ const (
 	SysVarLowerCaseTableNames = "lower_case_table_names"
 )
 
-func (i *Inspect) getSystemVariable(name string) (string, error) {
-	v, exist := i.Ctx.GetSysVar(name)
+// GetSystemVariable get system variable.
+func (c *Context) GetSystemVariable(name string) (string, error) {
+	v, exist := c.GetSysVar(name)
 	if exist {
 		return v, nil
 	}
-	if i.IsOfflineAudit() {
+
+	if c.e == nil {
 		return "", nil
 	}
 
-	conn, err := i.getDbConn()
-	if err != nil {
-		return "", err
-	}
-	results, err := conn.Db.Query(fmt.Sprintf(`SHOW GLOBAL VARIABLES LIKE '%v'`, name))
+	results, err := c.e.Db.Query(fmt.Sprintf(`SHOW GLOBAL VARIABLES LIKE '%v'`, name))
 	if err != nil {
 		return "", err
 	}
@@ -417,6 +415,6 @@ func (i *Inspect) getSystemVariable(name string) (string, error) {
 	}
 
 	value := results[0]["Value"]
-	i.Ctx.AddSysVar(name, value.String)
+	c.AddSysVar(name, value.String)
 	return value.String, nil
 }
