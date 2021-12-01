@@ -205,6 +205,11 @@ func (c *Context) UseSchema(schema string) {
 	c.currentSchema = schema
 }
 
+// CurrentSchema return current schema.
+func (c *Context) CurrentSchema() string {
+	return c.currentSchema
+}
+
 func (c *Context) AddExecutionPlan(sql string, records []*executor.ExplainRecord) {
 	c.executionPlan[sql] = records
 }
