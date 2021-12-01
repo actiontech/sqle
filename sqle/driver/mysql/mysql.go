@@ -408,7 +408,7 @@ func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 
 	if lowerCaseTableNames != "0" {
 		capitalizedSchema := make(map[string]struct{})
-		for name := range i.Ctx.schemas {
+		for name := range i.Ctx.Schemas() {
 			capitalizedSchema[strings.ToUpper(name)] = struct{}{}
 		}
 		_, exist := capitalizedSchema[strings.ToUpper(schemaName)]
@@ -462,7 +462,12 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 
 	if lowerCaseTableNames != "0" {
 		capitalizedTable := make(map[string]struct{})
-		for name := range i.Ctx.schemas[schemaName].Tables {
+		schemaInfo, ok := i.Ctx.GetSchema(schemaName)
+		if !ok {
+			return false, fmt.Errorf("schema %s not exist", schemaName)
+		}
+
+		for name := range schemaInfo.Tables {
 			capitalizedTable[strings.ToUpper(name)] = struct{}{}
 		}
 		_, exist := capitalizedTable[strings.ToUpper(stmt.Name.String())]
