@@ -597,3 +597,20 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 	}
 	return info.Size, nil
 }
+
+func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
+	if ep, ok := i.Ctx.GetExecutionPlan(sql); ok {
+		return ep, nil
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+
+	records, err := conn.Explain(sql)
+	if err != nil {
+		return nil, err
+	}
+	i.Ctx.AddExecutionPlan(sql, records)
+	return records, nil
+}
