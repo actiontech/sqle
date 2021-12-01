@@ -453,32 +453,6 @@ func (i *Inspect) getSchemaEngine(stmt *ast.TableName, schemaName string) (strin
 	return engine, nil
 }
 
-// getSchemaCharacter get schema default character.
-func (i *Inspect) getSchemaCharacter(stmt *ast.TableName, schemaName string) (string, error) {
-	if schemaName == "" {
-		schemaName = i.Ctx.GetSchemaName(stmt)
-	}
-	schema, schemaExist := i.Ctx.GetSchema(schemaName)
-	if schemaExist {
-		if schema.characterLoad {
-			return schema.DefaultCharacter, nil
-		}
-	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return "", err
-	}
-	character, err := conn.ShowDefaultConfiguration("select @@character_set_database", "@@character_set_database")
-	if err != nil {
-		return "", err
-	}
-	if schemaExist {
-		schema.DefaultCharacter = character
-		schema.characterLoad = true
-	}
-	return character, nil
-}
-
 // getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
 	pkColumnsName, hasPk := util.GetPrimaryKey(stmt)
