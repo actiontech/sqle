@@ -520,30 +520,6 @@ func (i *Inspect) getMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 	return maxIndexOption, nil
 }
 
-func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (string, error) {
-	if schemaName == "" {
-		schemaName = i.Ctx.GetSchemaName(stmt)
-	}
-	schema, schemaExist := i.Ctx.GetSchema(schemaName)
-	if schemaExist && schema.collationLoad {
-		return schema.DefaultCollation, nil
-	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return "", err
-	}
-
-	collation, err := conn.ShowDefaultConfiguration("select @@collation_database", "@@collation_database")
-	if err != nil {
-		return "", err
-	}
-	if schemaExist {
-		schema.DefaultCollation = collation
-		schema.collationLoad = true
-	}
-	return collation, nil
-}
-
 // getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
 	pkColumnsName, hasPk := util.GetPrimaryKey(stmt)

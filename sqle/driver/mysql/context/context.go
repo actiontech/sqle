@@ -452,3 +452,27 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	info.OriginalTable = createStmt
 	return createStmt, exist, nil
 }
+
+func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (string, error) {
+	if schemaName == "" {
+		schemaName = i.Ctx.GetSchemaName(stmt)
+	}
+	schema, schemaExist := i.Ctx.GetSchema(schemaName)
+	if schemaExist && schema.collationLoad {
+		return schema.DefaultCollation, nil
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+
+	collation, err := conn.ShowDefaultConfiguration("select @@collation_database", "@@collation_database")
+	if err != nil {
+		return "", err
+	}
+	if schemaExist {
+		schema.DefaultCollation = collation
+		schema.collationLoad = true
+	}
+	return collation, nil
+}
