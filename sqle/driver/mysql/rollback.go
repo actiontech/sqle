@@ -287,7 +287,7 @@ func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (str
 		return "", "", nil
 	}
 
-	tableExist, err := i.isTableExist(stmt.Table)
+	tableExist, err := i.Ctx.IsTableExist(stmt.Table)
 	if err != nil {
 		return "", "", err
 	}

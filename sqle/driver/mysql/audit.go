@@ -94,7 +94,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 	if !schemaExist {
 		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
 	} else {
-		tableExist, err := i.isTableExist(stmt.Table)
+		tableExist, err := i.Ctx.IsTableExist(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 				i.getTableName(stmt.Table))
 		}
 		if stmt.ReferTable != nil {
-			referTableExist, err := i.isTableExist(stmt.ReferTable)
+			referTableExist, err := i.Ctx.IsTableExist(stmt.ReferTable)
 			if err != nil {
 				return err
 			}
@@ -433,7 +433,7 @@ func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.isTableExist(table)
+			tableExist, err := i.Ctx.IsTableExist(table)
 			if err != nil {
 				return err
 			}
@@ -738,7 +738,7 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.isTableExist(table)
+			tableExist, err := i.Ctx.IsTableExist(table)
 			if err != nil {
 				return err
 			}
@@ -840,7 +840,7 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.isTableExist(table)
+			tableExist, err := i.Ctx.IsTableExist(table)
 			if err != nil {
 				return err
 			}
@@ -942,7 +942,7 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.isTableExist(table)
+			tableExist, err := i.Ctx.IsTableExist(table)
 			if err != nil {
 				return err
 			}

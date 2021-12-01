@@ -347,27 +347,27 @@ func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
 	return c.HasSchema(schemaName), nil
 }
 
-// isTableExist determine if the table exists in the SQL ctx;
-// and lazy load table info from db to SQL ctx.
-func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
-	schemaName := i.Ctx.GetSchemaName(stmt)
-	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
+// IsTableExist check table is exist or not.
+func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
+	schemaName := c.GetSchemaName(stmt)
+	schemaExist, err := c.IsSchemaExist(schemaName)
 	if err != nil {
 		return schemaExist, err
 	}
 	if !schemaExist {
 		return false, nil
 	}
-	if !i.Ctx.HasLoadTables(schemaName) {
-		conn, err := i.getDbConn()
+
+	if !c.HasLoadTables(schemaName) {
+		if c.e == nil {
+			return false, nil
+		}
+
+		tables, err := c.e.ShowSchemaTables(schemaName)
 		if err != nil {
 			return false, err
 		}
-		tables, err := conn.ShowSchemaTables(schemaName)
-		if err != nil {
-			return false, err
-		}
-		i.Ctx.LoadTables(schemaName, tables)
+		c.LoadTables(schemaName, tables)
 	}
 
 	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
@@ -377,7 +377,7 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 
 	if lowerCaseTableNames != "0" {
 		capitalizedTable := make(map[string]struct{})
-		schemaInfo, ok := i.Ctx.GetSchema(schemaName)
+		schemaInfo, ok := c.GetSchema(schemaName)
 		if !ok {
 			return false, fmt.Errorf("schema %s not exist", schemaName)
 		}
@@ -388,5 +388,5 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 		_, exist := capitalizedTable[strings.ToUpper(stmt.Name.String())]
 		return exist, nil
 	}
-	return i.Ctx.HasTable(schemaName, stmt.Name.String()), nil
+	return c.HasTable(schemaName, stmt.Name.String()), nil
 }
