@@ -519,22 +519,23 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 	return maxIndexOption, nil
 }
 
-// getSchemaCharacter get schema default character.
-func (i *Inspect) getSchemaCharacter(stmt *ast.TableName, schemaName string) (string, error) {
+// GetSchemaCharacter get schema default character.
+func (c *Context) GetSchemaCharacter(stmt *ast.TableName, schemaName string) (string, error) {
 	if schemaName == "" {
-		schemaName = i.Ctx.GetSchemaName(stmt)
+		schemaName = c.GetSchemaName(stmt)
 	}
-	schema, schemaExist := i.Ctx.GetSchema(schemaName)
+	schema, schemaExist := c.GetSchema(schemaName)
 	if schemaExist {
 		if schema.characterLoad {
 			return schema.DefaultCharacter, nil
 		}
 	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return "", err
+
+	if c.e == nil {
+		return "", nil
 	}
-	character, err := conn.ShowDefaultConfiguration("select @@character_set_database", "@@character_set_database")
+
+	character, err := c.e.ShowDefaultConfiguration("select @@character_set_database", "@@character_set_database")
 	if err != nil {
 		return "", err
 	}
