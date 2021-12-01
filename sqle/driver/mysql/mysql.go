@@ -61,7 +61,7 @@ type Inspect struct {
 func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	ctx := context.NewContext(nil)
 	if cfg.DSN != nil {
-		ctx.UseSchema(cfg.DSN.DatabaseName)
+		ctx.SetCurrentSchema(cfg.DSN.DatabaseName)
 	}
 
 	i := &Inspect{
