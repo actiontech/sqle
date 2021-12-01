@@ -806,3 +806,15 @@ func (f *FingerprintVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool
 func (f *FingerprintVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
 }
+
+func ParseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
+	t, err := ParseOneSql(sql)
+	if err != nil {
+		return nil, err
+	}
+	createStmt, ok := t.(*ast.CreateTableStmt)
+	if !ok {
+		return nil, fmt.Errorf("stmt not support")
+	}
+	return createStmt, nil
+}

@@ -273,7 +273,7 @@ func (i *Inspect) Audit(ctx _context.Context, sql string) (*driver.AuditResult, 
 	if oscCommandLine != "" {
 		i.result.Add(driver.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
-	i.updateContext(nodes[0])
+	i.Ctx.UpdateContext(nodes[0])
 	return i.result, nil
 }
 
@@ -295,7 +295,7 @@ func (i *Inspect) GenRollbackSQL(ctx _context.Context, sql string) (string, stri
 		return "", "", err
 	}
 
-	i.updateContext(nodes[0])
+	i.Ctx.UpdateContext(nodes[0])
 
 	return rollback, reason, nil
 }
@@ -631,21 +631,6 @@ func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (
 	return collation, nil
 }
 
-// parseCreateTableStmt parse create table sql text to CreateTableStmt ast.
-func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
-	t, err := util.ParseOneSql(sql)
-	if err != nil {
-		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
-		return nil, err
-	}
-	createStmt, ok := t.(*ast.CreateTableStmt)
-	if !ok {
-		i.Logger().Error("parse sql from show create failed, not createTableStmt")
-		return nil, fmt.Errorf("stmt not support")
-	}
-	return createStmt, nil
-}
-
 // getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
 func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
 	exist, err := i.isTableExist(stmt)
@@ -673,7 +658,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	if err != nil {
 		return nil, exist, err
 	}
-	createStmt, err := i.parseCreateTableStmt(createTableSql)
+	createStmt, err := util.ParseCreateTableStmt(createTableSql)
 	if err != nil {
 		return nil, exist, err
 	}
