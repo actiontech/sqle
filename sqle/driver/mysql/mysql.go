@@ -544,41 +544,6 @@ func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (
 	return collation, nil
 }
 
-// getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
-func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
-	exist, err := i.Ctx.IsTableExist(stmt)
-	if err != nil {
-		return nil, exist, err
-	}
-	if !exist {
-		return nil, exist, nil
-	}
-
-	info, _ := i.Ctx.GetTableInfo(stmt)
-	if info.MergedTable != nil {
-		return info.MergedTable, exist, nil
-	}
-	if info.OriginalTable != nil {
-		return info.OriginalTable, exist, nil
-	}
-
-	// create from connection
-	conn, err := i.getDbConn()
-	if err != nil {
-		return nil, exist, err
-	}
-	createTableSql, err := conn.ShowCreateTable(util.GetTableNameWithQuote(stmt))
-	if err != nil {
-		return nil, exist, err
-	}
-	createStmt, err := util.ParseCreateTableStmt(createTableSql)
-	if err != nil {
-		return nil, exist, err
-	}
-	info.OriginalTable = createStmt
-	return createStmt, exist, nil
-}
-
 // getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
 	pkColumnsName, hasPk := util.GetPrimaryKey(stmt)
