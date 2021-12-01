@@ -265,7 +265,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 // generateCreateSchemaRollbackSql generate drop database SQL for create database.
 func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, string, error) {
 	schemaName := stmt.Name
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return "", "", err
 	}
@@ -278,7 +278,7 @@ func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) 
 
 // generateCreateTableRollbackSql generate drop table SQL for create table.
 func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, string, error) {
-	schemaExist, err := i.isSchemaExist(i.Ctx.GetSchemaName(stmt.Table))
+	schemaExist, err := i.Ctx.IsSchemaExist(i.Ctx.GetSchemaName(stmt.Table))
 	if err != nil {
 		return "", "", err
 	}

@@ -36,7 +36,15 @@ type SchemaInfo struct {
 	Tables           map[string]*TableInfo
 }
 
+// Context is a database information cache.
+//
+// Is provides many methods to get database information.
+//
+// It do lazy load and cache the information if executor
+// provided. Otherwise, it only return from cache.
 type Context struct {
+	e *executor.Executor
+
 	// currentSchema will change after sql "use database"
 	currentSchema string
 
@@ -308,19 +316,18 @@ func (c *Context) GetTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 	return c.GetTable(schema, table)
 }
 
-// isSchemaExist determine if the schema exists in the SQL ctx;
-// and lazy load schema info from db to SQL ctx.
-func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
-	if !i.Ctx.HasLoadSchemas() {
-		conn, err := i.getDbConn()
+// IsSchemaExist check schema is exist or not.
+func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
+	if !c.HasLoadSchemas() {
+		if c.e == nil {
+			return false, nil
+		}
+
+		schemas, err := c.e.ShowDatabases(false)
 		if err != nil {
 			return false, err
 		}
-		schemas, err := conn.ShowDatabases(false)
-		if err != nil {
-			return false, err
-		}
-		i.Ctx.LoadSchemas(schemas)
+		c.LoadSchemas(schemas)
 	}
 
 	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
@@ -330,11 +337,11 @@ func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 
 	if lowerCaseTableNames != "0" {
 		capitalizedSchema := make(map[string]struct{})
-		for name := range i.Ctx.Schemas() {
+		for name := range c.Schemas() {
 			capitalizedSchema[strings.ToUpper(name)] = struct{}{}
 		}
 		_, exist := capitalizedSchema[strings.ToUpper(schemaName)]
 		return exist, nil
 	}
-	return i.Ctx.HasSchema(schemaName), nil
+	return c.HasSchema(schemaName), nil
 }

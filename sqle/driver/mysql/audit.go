@@ -87,7 +87,7 @@ create table ...
 */
 func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ alter table ...
 */
 func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
 	needExistsTablesName := []string{}
 	for _, table := range stmt.Tables {
 		schemaName := i.Ctx.GetSchemaName(table)
-		schemaExist, err := i.isSchemaExist(schemaName)
+		schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 		if err != nil {
 			return err
 		}
@@ -461,7 +461,7 @@ use database ...
 ------------------------------------------------------------------
 */
 func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt) error {
-	schemaExist, err := i.isSchemaExist(stmt.DBName)
+	schemaExist, err := i.Ctx.IsSchemaExist(stmt.DBName)
 	if err != nil {
 		return err
 	}
@@ -483,7 +483,7 @@ func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt) error
 		return nil
 	}
 	schemaName := stmt.Name
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
@@ -505,7 +505,7 @@ func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt) error {
 		return nil
 	}
 	schemaName := stmt.Name
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
@@ -527,7 +527,7 @@ create index ...
 */
 func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) error {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
@@ -593,7 +593,7 @@ func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		return nil
 	}
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
@@ -636,7 +636,7 @@ func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt) error {
 	tables := util.GetTables(stmt.Table.TableRefs)
 	table := tables[0]
 	schemaName := i.Ctx.GetSchemaName(table)
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return err
 	}
@@ -731,7 +731,7 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	needExistsTablesName := []string{}
 	for _, table := range tables {
 		schemaName := i.Ctx.GetSchemaName(table)
-		schemaExist, err := i.isSchemaExist(schemaName)
+		schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 		if err != nil {
 			return err
 		}
@@ -833,7 +833,7 @@ func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 	needExistsTablesName := []string{}
 	for _, table := range tables {
 		schemaName := i.Ctx.GetSchemaName(table)
-		schemaExist, err := i.isSchemaExist(schemaName)
+		schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 		if err != nil {
 			return err
 		}
@@ -935,7 +935,7 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 	needExistsTablesName := []string{}
 	for _, table := range tables {
 		schemaName := i.Ctx.GetSchemaName(table)
-		schemaExist, err := i.isSchemaExist(schemaName)
+		schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 		if err != nil {
 			return err
 		}

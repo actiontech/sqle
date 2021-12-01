@@ -386,37 +386,6 @@ func (i *Inspect) closeDbConn() {
 	}
 }
 
-// isSchemaExist determine if the schema exists in the SQL ctx;
-// and lazy load schema info from db to SQL ctx.
-func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
-	if !i.Ctx.HasLoadSchemas() {
-		conn, err := i.getDbConn()
-		if err != nil {
-			return false, err
-		}
-		schemas, err := conn.ShowDatabases(false)
-		if err != nil {
-			return false, err
-		}
-		i.Ctx.LoadSchemas(schemas)
-	}
-
-	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
-	if err != nil {
-		return false, err
-	}
-
-	if lowerCaseTableNames != "0" {
-		capitalizedSchema := make(map[string]struct{})
-		for name := range i.Ctx.Schemas() {
-			capitalizedSchema[strings.ToUpper(name)] = struct{}{}
-		}
-		_, exist := capitalizedSchema[strings.ToUpper(schemaName)]
-		return exist, nil
-	}
-	return i.Ctx.HasSchema(schemaName), nil
-}
-
 // getTableName get table name from TableName ast.
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
 	schema := i.Ctx.GetSchemaName(stmt)
@@ -436,7 +405,7 @@ func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
 // and lazy load table info from db to SQL ctx.
 func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 	schemaName := i.Ctx.GetSchemaName(stmt)
-	schemaExist, err := i.isSchemaExist(schemaName)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
 		return schemaExist, err
 	}
