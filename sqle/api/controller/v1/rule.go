@@ -20,9 +20,63 @@ type CreateRuleTemplateReqV1 struct {
 }
 
 type RuleReqV1 struct {
-	Name  string `json:"name" form:"name" valid:"required" example:"ddl_check_index_count"`
-	Level string `json:"level" form:"level" valid:"required" example:"error"`
-	Value string `json:"value" form:"value" example:"1"`
+	Name   string           `json:"name" form:"name" valid:"required" example:"ddl_check_index_count"`
+	Level  string           `json:"level" form:"level" valid:"required" example:"error"`
+	Params []RuleParamReqV1 `json:"params" form:"params" valid:"dive,required"`
+}
+
+type RuleParamReqV1 struct {
+	Key   string `json:"key" form:"key" valid:"required"`
+	Value string `json:"value" form:"value" valid:"required"`
+}
+
+func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) ([]model.RuleTemplateRule, error) {
+	s := model.GetStorage()
+	var rules map[string]model.Rule
+	var err error
+
+	ruleNames := make([]string, 0, len(rulesReq))
+	for _, r := range rulesReq {
+		ruleNames = append(ruleNames, r.Name)
+	}
+	rules, err = s.GetAndCheckRuleExist(ruleNames, template.DBType)
+	if err != nil {
+		return nil, err
+	}
+
+	templateRules := make([]model.RuleTemplateRule, 0, len(rulesReq))
+	for _, r := range rulesReq {
+		rule := rules[r.Name]
+		params := rule.Params
+
+		// check request params is equal rule params.
+		if len(r.Params) != len(params.Params) {
+			reqParamsKey := make([]string, 0, len(r.Params))
+			for _, p := range r.Params {
+				reqParamsKey = append(reqParamsKey, p.Key)
+			}
+			paramsKey := make([]string, 0, len(params.Params))
+			for _, p := range params.Params {
+				paramsKey = append(paramsKey, p.Key)
+			}
+			return nil, fmt.Errorf("request rule \"%s'| params key is [%s], but need [%s]",
+				r.Name, reqParamsKey, paramsKey)
+		}
+		for _, p := range r.Params {
+			// set and valid param.
+			err := params.Params.SetParamValue(p.Key, p.Value)
+			if err != nil {
+				return nil, fmt.Errorf("set rule %s param error: %s", r.Name, err)
+			}
+		}
+		templateRules = append(templateRules, model.NewRuleTemplateRule(template, &model.Rule{
+			Name:   r.Name,
+			Level:  r.Level,
+			DBType: template.DBType,
+			Params: params,
+		}))
+	}
+	return templateRules, nil
 }
 
 // @Summary 添加规则模板
@@ -53,15 +107,11 @@ func CreateRuleTemplate(c echo.Context) error {
 		Desc:   req.Desc,
 		DBType: req.DBType,
 	}
-
-	ruleNames := make([]string, 0, len(req.RuleList))
-	for _, r := range req.RuleList {
-		ruleNames = append(ruleNames, r.Name)
-	}
+	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
 	if req.RuleList != nil || len(req.RuleList) > 0 {
-		_, err := s.GetAndCheckRuleExist(ruleNames, req.DBType)
+		templateRules, err = checkAndGenerateRules(req.RuleList, ruleTemplate)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
 	}
 
@@ -88,16 +138,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	ruleList := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	for _, rule := range req.RuleList {
-		ruleList = append(ruleList, model.NewRuleTemplateRule(ruleTemplate, &model.Rule{
-			Name:   rule.Name,
-			Value:  rule.Value,
-			Level:  rule.Level,
-			DBType: req.DBType,
-		}))
-	}
-	err = s.UpdateRuleTemplateRules(ruleTemplate, ruleList...)
+	err = s.UpdateRuleTemplateRules(ruleTemplate, templateRules...)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -139,24 +180,11 @@ func UpdateRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
 
-	var ruleList = make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	var ruleNames = make([]string, 0, len(req.RuleList))
-	for _, r := range req.RuleList {
-		ruleNames = append(ruleNames, r.Name)
-	}
-
-	if len(req.RuleList) > 0 {
-		_, err := s.GetAndCheckRuleExist(ruleNames, template.DBType)
+	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
+	if req.RuleList != nil || len(req.RuleList) > 0 {
+		templateRules, err = checkAndGenerateRules(req.RuleList, template)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		for _, rule := range req.RuleList {
-			ruleList = append(ruleList, model.NewRuleTemplateRule(template, &model.Rule{
-				Name:   rule.Name,
-				Value:  rule.Value,
-				Level:  rule.Level,
-				DBType: template.DBType,
-			}))
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
 	}
 
@@ -186,7 +214,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 	if req.RuleList != nil {
-		err = s.UpdateRuleTemplateRules(template, ruleList...)
+		err = s.UpdateRuleTemplateRules(template, templateRules...)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -221,14 +249,7 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 	}
 	ruleList := make([]RuleResV1, 0, len(template.RuleList))
 	for _, r := range template.RuleList {
-		ruleList = append(ruleList, RuleResV1{
-			Name:   r.RuleName,
-			Value:  r.RuleValue,
-			Level:  r.RuleLevel,
-			Typ:    r.Rule.Typ,
-			Desc:   r.Rule.Desc,
-			DBType: r.Rule.DBType,
-		})
+		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
 	}
 	return &RuleTemplateDetailResV1{
 		Name:      template.Name,
@@ -367,25 +388,49 @@ type GetRulesResV1 struct {
 }
 
 type RuleResV1 struct {
-	Name   string `json:"rule_name"`
-	Desc   string `json:"desc"`
-	Value  string `json:"value"`
-	Level  string `json:"level" example:"error" enums:"normal,notice,warn,error"`
-	Typ    string `json:"type" example:"全局配置" `
-	DBType string `json:"db_type" example:"mysql"`
+	Name   string           `json:"rule_name"`
+	Desc   string           `json:"desc"`
+	Level  string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Typ    string           `json:"type" example:"全局配置" `
+	DBType string           `json:"db_type" example:"mysql"`
+	Params []RuleParamResV1 `json:"params,omitempty"`
+}
+
+type RuleParamResV1 struct {
+	Key   string `json:"key" form:"key"`
+	Value string `json:"value" form:"value"`
+	Desc  string `json:"desc" form:"desc"`
+	Type  string `json:"type" form:"type" enums:"string,int,bool"`
+}
+
+func convertRuleToRes(rule *model.Rule) RuleResV1 {
+	ruleRes := RuleResV1{
+		Name:   rule.Name,
+		Desc:   rule.Desc,
+		Level:  rule.Level,
+		Typ:    rule.Typ,
+		DBType: rule.DBType,
+	}
+	if rule.Params != nil && len(rule.Params.Params) > 0 {
+		paramsRes := make([]RuleParamResV1, 0, len(rule.Params.Params))
+		for _, p := range rule.Params.Params {
+			paramRes := RuleParamResV1{
+				Key:   p.Key,
+				Desc:  p.Desc,
+				Type:  string(p.Type),
+				Value: p.Value,
+			}
+			paramsRes = append(paramsRes, paramRes)
+		}
+		ruleRes.Params = paramsRes
+	}
+	return ruleRes
 }
 
 func convertRulesToRes(rules []*model.Rule) []RuleResV1 {
 	rulesRes := make([]RuleResV1, 0, len(rules))
 	for _, rule := range rules {
-		rulesRes = append(rulesRes, RuleResV1{
-			Name:   rule.Name,
-			Desc:   rule.Desc,
-			Value:  rule.Value,
-			Level:  rule.Level,
-			Typ:    rule.Typ,
-			DBType: rule.DBType,
-		})
+		rulesRes = append(rulesRes, convertRuleToRes(rule))
 	}
 	return rulesRes
 }
