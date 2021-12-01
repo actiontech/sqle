@@ -370,7 +370,7 @@ func (i *Inspect) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
-	conn, err := executor.NewExecutor(i.log, i.inst, i.Ctx.currentSchema)
+	conn, err := executor.NewExecutor(i.log, i.inst, i.Ctx.CurrentSchema())
 	if err == nil {
 		i.isConnected = true
 		i.dbConn = conn
