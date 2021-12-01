@@ -911,6 +911,28 @@ definitions:
       role_name:
         type: string
     type: object
+  v1.RuleParamReqV1:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
+  v1.RuleParamResV1:
+    properties:
+      desc:
+        type: string
+      key:
+        type: string
+      type:
+        enum:
+        - string
+        - int
+        - bool
+        type: string
+      value:
+        type: string
+    type: object
   v1.RuleReqV1:
     properties:
       level:
@@ -919,9 +941,10 @@ definitions:
       name:
         example: ddl_check_index_count
         type: string
-      value:
-        example: "1"
-        type: string
+      params:
+        items:
+          $ref: '#/definitions/v1.RuleParamReqV1'
+        type: array
     type: object
   v1.RuleResV1:
     properties:
@@ -938,12 +961,14 @@ definitions:
         - error
         example: error
         type: string
+      params:
+        items:
+          $ref: '#/definitions/v1.RuleParamResV1'
+        type: array
       rule_name:
         type: string
       type:
         example: 全局配置
-        type: string
-      value:
         type: string
     type: object
   v1.RuleTemplateDetailResV1:

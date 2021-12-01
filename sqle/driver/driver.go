@@ -60,6 +60,62 @@ var ruleLevelMap = map[RuleLevel]int{
 	RuleLevelError:  3,
 }
 
+type RuleParamType string
+
+const (
+	RuleParamTypeString RuleParamType = "string"
+	RuleParamTypeInt    RuleParamType = "int"
+	RuleParamTypeBool   RuleParamType = "bool"
+)
+
+type RuleParam struct {
+	Key   string        `json:"key"`
+	Value string        `json:"value"`
+	Desc  string        `json:"desc"`
+	Type  RuleParamType `json:"type"`
+}
+
+type RuleParams []*RuleParam
+
+
+
+func (r *RuleParams) SetParamValue(key, value string) error {
+	paramNotFoundErrMsg := "param %s not found"
+	if r == nil {
+		return fmt.Errorf(paramNotFoundErrMsg, key)
+	}
+	for _, p := range *r {
+		var err error
+		if p.Key == key {
+			switch p.Type {
+			case RuleParamTypeBool:
+				_, err = strconv.ParseBool(value)
+			case RuleParamTypeInt:
+				_, err = strconv.Atoi(value)
+			default:
+			}
+			if err != nil {
+				return fmt.Errorf("param %s value don't match \"%s\"", key, p.Type)
+			}
+			p.Value = value
+			return nil
+		}
+	}
+	return fmt.Errorf(paramNotFoundErrMsg, key)
+}
+
+func (r *RuleParams) GetParamValue(key string) (string, bool) {
+	if r == nil {
+		return "", false
+	}
+	for _, p := range *r {
+		if p.Key == key {
+			return p.Value, true
+		}
+	}
+	return "", false
+}
+
 type Rule struct {
 	Name string
 	Desc string

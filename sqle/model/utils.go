@@ -157,18 +157,8 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
 			if err != nil {
 				return err
 			}
-			if !exist || (existedRule.Value == "" && rule.Value != "") {
-
-				modelRule := &Rule{
-					Name:   rule.Name,
-					Desc:   rule.Desc,
-					Value:  rule.Value,
-					Level:  string(rule.Level),
-					Typ:    rule.Category,
-					DBType: dbType,
-				}
-
-				err = s.Save(modelRule)
+			if !exist || (existedRule.Params.Params == nil && rule.Value != "") {
+				err = s.Save(GenerateRuleByDriverRule(rule, dbType))
 				if err != nil {
 					return err
 				}
@@ -203,16 +193,14 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 			if rule.Level != driver.RuleLevelError {
 				continue
 			}
-
+			modelRule := GenerateRuleByDriverRule(rule, dbType)
 			ruleList = append(ruleList, RuleTemplateRule{
 				RuleTemplateId: t.ID,
-				RuleName:       rule.Name,
-				RuleLevel:      string(rule.Level),
-				RuleValue:      rule.Value,
-				RuleDBType:     dbType,
+				RuleName:       modelRule.Name,
+				RuleLevel:      string(modelRule.Level),
+				RuleParams:     modelRule.Params,
 			})
 		}
-
 		if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
 			return xerrors.Wrap(err, "update rule template rules failed")
 		}
