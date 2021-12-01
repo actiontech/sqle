@@ -401,53 +401,9 @@ func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
 	return fmt.Sprintf("`%s`", name)
 }
 
-// isTableExist determine if the table exists in the SQL ctx;
-// and lazy load table info from db to SQL ctx.
-func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
-	schemaName := i.Ctx.GetSchemaName(stmt)
-	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
-	if err != nil {
-		return schemaExist, err
-	}
-	if !schemaExist {
-		return false, nil
-	}
-	if !i.Ctx.HasLoadTables(schemaName) {
-		conn, err := i.getDbConn()
-		if err != nil {
-			return false, err
-		}
-		tables, err := conn.ShowSchemaTables(schemaName)
-		if err != nil {
-			return false, err
-		}
-		i.Ctx.LoadTables(schemaName, tables)
-	}
-
-	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
-	if err != nil {
-		return false, err
-	}
-
-	if lowerCaseTableNames != "0" {
-		capitalizedTable := make(map[string]struct{})
-		schemaInfo, ok := i.Ctx.GetSchema(schemaName)
-		if !ok {
-			return false, fmt.Errorf("schema %s not exist", schemaName)
-		}
-
-		for name := range schemaInfo.Tables {
-			capitalizedTable[strings.ToUpper(name)] = struct{}{}
-		}
-		_, exist := capitalizedTable[strings.ToUpper(stmt.Name.String())]
-		return exist, nil
-	}
-	return i.Ctx.HasTable(schemaName, stmt.Name.String()), nil
-}
-
 // getTableSize get table size.
 func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
-	exist, err := i.isTableExist(stmt)
+	exist, err := i.Ctx.IsTableExist(stmt)
 	if err != nil {
 		return 0, errors.Wrapf(err, "check table exist when get table size")
 	}
@@ -590,7 +546,7 @@ func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (
 
 // getCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
 func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
-	exist, err := i.isTableExist(stmt)
+	exist, err := i.Ctx.IsTableExist(stmt)
 	if err != nil {
 		return nil, exist, err
 	}
