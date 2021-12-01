@@ -1197,7 +1197,7 @@ func checkEngineAndCharacterSet(rule driver.Rule, i *Inspect, node ast.Node) err
 		}
 	}
 	if characterSet == "" {
-		characterSet, err = i.getSchemaCharacter(tableName, schemaName)
+		characterSet, err = i.Ctx.GetSchemaCharacter(tableName, schemaName)
 		if err != nil {
 			return err
 		}
