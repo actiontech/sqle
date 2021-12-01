@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/context"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
@@ -19,8 +20,8 @@ import (
 
 func init() {
 	var allRules []*driver.Rule
-	for i := range RuleHandlers {
-		allRules = append(allRules, &RuleHandlers[i].Rule)
+	for i := range rulepkg.RuleHandlers {
+		allRules = append(allRules, &rulepkg.RuleHandlers[i].Rule)
 	}
 
 	driver.Register(driver.DriverTypeMySQL, newInspect, allRules)
@@ -78,16 +79,16 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	}
 
 	for _, rule := range cfg.Rules {
-		if rule.Name == ConfigDMLRollbackMaxRows {
-			defaultRule := RuleHandlerMap[ConfigDMLRollbackMaxRows].Rule
+		if rule.Name == rulepkg.ConfigDMLRollbackMaxRows {
+			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDMLRollbackMaxRows].Rule
 			i.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
 		}
-		if rule.Name == ConfigDDLOSCMinSize {
-			defaultRule := RuleHandlerMap[ConfigDDLOSCMinSize].Rule
+		if rule.Name == rulepkg.ConfigDDLOSCMinSize {
+			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDDLOSCMinSize].Rule
 			i.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
 		}
-		if rule.Name == ConfigDDLGhostMinSize {
-			defaultRule := RuleHandlerMap[ConfigDDLGhostMinSize].Rule
+		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
+			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDDLGhostMinSize].Rule
 			i.cnf.DDLGhostMinSize = rule.GetValueInt(&defaultRule)
 		}
 	}
@@ -250,7 +251,7 @@ func (i *Inspect) Audit(ctx _context.Context, sql string) (*driver.AuditResult, 
 	}
 
 	for _, rule := range i.rules {
-		handler, ok := RuleHandlerMap[rule.Name]
+		handler, ok := rulepkg.RuleHandlerMap[rule.Name]
 		if !ok || handler.Func == nil {
 			continue
 		}
