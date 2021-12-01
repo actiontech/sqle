@@ -65,7 +65,7 @@ func DefaultMysqlInspect() *Inspect {
 			Password:     "123456",
 			DatabaseName: "mysql",
 		},
-		Ctx: contextpkg.NewMockContext(),
+		Ctx: contextpkg.NewMockContext(nil),
 		cnf: &Config{
 			DDLOSCMinSize:      16,
 			DDLGhostMinSize:    16,
