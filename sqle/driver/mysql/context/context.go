@@ -114,6 +114,11 @@ func (c *Context) LoadSchemas(schemas []string) {
 	c.SetSchemasLoad()
 }
 
+// Schemas return all schemas info in current context.
+func (c *Context) Schemas() map[string]*SchemaInfo {
+	return c.schemas
+}
+
 func (c *Context) GetSchema(schemaName string) (*SchemaInfo, bool) {
 	schema, has := c.schemas[schemaName]
 	return schema, has
