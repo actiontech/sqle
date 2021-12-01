@@ -2459,7 +2459,7 @@ func checkExplain(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 
-	epRecords, err := i.getExecutionPlan(node.Text())
+	epRecords, err := i.Ctx.GetExecutionPlan(node.Text())
 	if err != nil {
 		// TODO: check dml related table or database is created, if not exist, explain will executed failure.
 		i.Logger().Errorf("do explain error: %v, sql: %s", err, node.Text())

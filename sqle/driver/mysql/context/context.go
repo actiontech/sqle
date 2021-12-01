@@ -227,15 +227,6 @@ func (c *Context) CurrentSchema() string {
 	return c.currentSchema
 }
 
-func (c *Context) AddExecutionPlan(sql string, records []*executor.ExplainRecord) {
-	c.executionPlan[sql] = records
-}
-
-func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, bool) {
-	records, ok := c.executionPlan[sql]
-	return records, ok
-}
-
 func (c *Context) UpdateContext(node ast.Node) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
@@ -598,19 +589,21 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 	return info.Size, nil
 }
 
-func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
-	if ep, ok := i.Ctx.GetExecutionPlan(sql); ok {
+// GetExecutionPlan get execution plan of SQL.
+func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
+	if ep, ok := c.executionPlan[sql]; ok {
 		return ep, nil
 	}
-	conn, err := i.getDbConn()
+
+	if c.e == nil {
+		return nil, nil
+	}
+
+	records, err := c.e.Explain(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	records, err := conn.Explain(sql)
-	if err != nil {
-		return nil, err
-	}
-	i.Ctx.AddExecutionPlan(sql, records)
+	c.executionPlan[sql] = records
 	return records, nil
 }
