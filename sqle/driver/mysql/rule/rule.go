@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/context"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -108,7 +109,7 @@ const (
 type RuleHandler struct {
 	Rule                 driver.Rule
 	Message              string
-	Func                 func(driver.Rule, *Inspect, ast.Node) error
+	Func                 func(*context.Context, driver.Rule, *driver.AuditResult, ast.Node) error
 	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
 }

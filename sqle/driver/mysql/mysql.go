@@ -44,8 +44,6 @@ type Inspect struct {
 	result *driver.AuditResult
 	// HasInvalidSql represent one of the commit sql base-validation failed.
 	HasInvalidSql bool
-	// currentRule is instance's rules.
-	currentRule driver.Rule
 
 	inst *driver.DSN
 
@@ -252,7 +250,6 @@ func (i *Inspect) Audit(ctx _context.Context, sql string) (*driver.AuditResult, 
 	}
 
 	for _, rule := range i.rules {
-		i.currentRule = *rule
 		handler, ok := RuleHandlerMap[rule.Name]
 		if !ok || handler.Func == nil {
 			continue
@@ -260,7 +257,7 @@ func (i *Inspect) Audit(ctx _context.Context, sql string) (*driver.AuditResult, 
 		if i.IsOfflineAudit() && !handler.IsAllowOfflineRule(nodes[0]) {
 			continue
 		}
-		if err := handler.Func(*rule, i, nodes[0]); err != nil {
+		if err := handler.Func(i.Ctx, *rule, i.result, nodes[0]); err != nil {
 			return nil, err
 		}
 	}
