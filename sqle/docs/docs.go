@@ -4281,6 +4281,39 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleParamReqV1": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RuleParamResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "string",
+                        "int",
+                        "bool"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RuleReqV1": {
             "type": "object",
             "properties": {
@@ -4292,9 +4325,11 @@ var doc = `{
                     "type": "string",
                     "example": "ddl_check_index_count"
                 },
-                "value": {
-                    "type": "string",
-                    "example": "1"
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleParamReqV1"
+                    }
                 }
             }
         },
@@ -4318,15 +4353,18 @@ var doc = `{
                     ],
                     "example": "error"
                 },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleParamResV1"
+                    }
+                },
                 "rule_name": {
                     "type": "string"
                 },
                 "type": {
                     "type": "string",
                     "example": "全局配置"
-                },
-                "value": {
-                    "type": "string"
                 }
             }
         },
