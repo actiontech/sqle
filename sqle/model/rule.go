@@ -1,9 +1,12 @@
 package model
 
 import (
+	sql_driver "database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
@@ -17,13 +20,83 @@ type RuleTemplate struct {
 	RuleList  []RuleTemplateRule `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
 
+type RuleParams struct {
+	Params driver.RuleParams
+}
+
+// Scan impl sql.Scanner interface
+func (r *RuleParams) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal json value: %v", value)
+	}
+	if len(bytes) == 0 {
+		r.Params = nil
+		return nil
+	}
+	result := driver.RuleParams{}
+	err := json.Unmarshal(bytes, &result)
+	r.Params = result
+	return err
+}
+
+// Value impl driver.Valuer interface
+func (r *RuleParams) Value() (sql_driver.Value, error) {
+	if r == nil {
+		return []byte{}, nil
+	}
+	if r.Params == nil {
+		return []byte{}, nil
+	}
+	v, err := json.Marshal(r.Params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal json value: %v", v)
+	}
+	return v, err
+}
+
+func GenerateRuleByDriverRule(dr *driver.Rule, dbType string) *Rule {
+	var params driver.RuleParams
+	// TODO: deprecate driver.Value and using driver.RuleParams.
+	if dr.Value != "" {
+		params = append(params, &driver.RuleParam{
+			Key:   "value",
+			Desc:  "规则值",
+			Type:  "string",
+			Value: dr.Value,
+		})
+	}
+	return &Rule{
+		Name:   dr.Name,
+		Desc:   dr.Desc,
+		Level:  string(dr.Level),
+		Typ:    dr.Category,
+		DBType: dbType,
+		Params: &RuleParams{Params: params},
+	}
+}
+
+func ConvertRuleToDriverRule(r *Rule) *driver.Rule {
+	var value string
+	if r.Params.Params != nil {
+		value, _ = r.Params.Params.GetParamValue("value")
+	}
+	return &driver.Rule{
+		Name:     r.Name,
+		Desc:     r.Desc,
+		Category: r.Typ,
+		Value:    value,
+		Level:    driver.RuleLevel(r.Level),
+	}
+}
+
 type Rule struct {
-	Name   string `json:"name" gorm:"primary_key; not null"`
-	DBType string `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc   string `json:"desc"`
-	Value  string `json:"value"`
-	Level  string `json:"level" example:"error"` // notice, warn, error
-	Typ    string `json:"type" gorm:"column:type; not null"`
+	Name   string      `json:"name" gorm:"primary_key; not null"`
+	DBType string      `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
+	Desc   string      `json:"desc"`
+	Level  string      `json:"level" example:"error"` // notice, warn, error
+	Typ    string      `json:"type" gorm:"column:type; not null"`
+	Params *RuleParams `json:"params" gorm:"type:varchar(1000)"`
 }
 
 func (r Rule) TableName() string {
@@ -31,11 +104,10 @@ func (r Rule) TableName() string {
 }
 
 type RuleTemplateRule struct {
-	RuleTemplateId uint   `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
-	RuleName       string `json:"name" gorm:"primary_key;"`
-	RuleLevel      string `json:"level" gorm:"column:level;"`
-	RuleValue      string `json:"value" gorm:"column:value;" `
-	RuleDBType     string `json:"rule_db_type" gorm:"column:db_type; not null; default:'mysql'"`
+	RuleTemplateId uint        `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
+	RuleName       string      `json:"name" gorm:"primary_key;"`
+	RuleLevel      string      `json:"level" gorm:"column:level;"`
+	RuleParams     *RuleParams `json:"value" gorm:"column:rule_params;type:varchar(1000)"`
 
 	Rule *Rule `json:"-" gorm:"foreignkey:Name,DBType;association_foreignkey:RuleName,RuleDBType"`
 }
@@ -49,9 +121,19 @@ func NewRuleTemplateRule(t *RuleTemplate, r *Rule) RuleTemplateRule {
 		RuleTemplateId: t.ID,
 		RuleName:       r.Name,
 		RuleLevel:      r.Level,
-		RuleValue:      r.Value,
-		RuleDBType:     r.DBType,
+		RuleParams:     r.Params,
 	}
+}
+
+func (rtr *RuleTemplateRule) GetRule() *Rule {
+	rule := rtr.Rule
+	if rtr.RuleLevel != "" {
+		rule.Level = rtr.RuleLevel
+	}
+	if rtr.RuleParams != nil && len(rtr.RuleParams.Params) > 0 {
+		rule.Params = rtr.RuleParams
+	}
+	return rule
 }
 
 func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, error) {
@@ -71,16 +153,22 @@ func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]*Rule, error) {
 
 	rules := make([]*Rule, 0, len(tpl.RuleList))
 	for _, r := range tpl.RuleList {
-		if r.RuleLevel != "" {
-			r.Rule.Level = r.RuleLevel
-		}
-		if r.RuleValue != "" {
-			r.Rule.Value = r.RuleValue
-		}
-		rules = append(rules, r.Rule)
+		rules = append(rules, r.GetRule())
 	}
+	return rules, nil
+}
 
-	return rules, errors.New(errors.ConnectStorageError, err)
+func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
+	instance, _, err := s.GetInstanceById(instanceId)
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	templates := instance.RuleTemplates
+	if len(templates) <= 0 {
+		return nil, nil
+	}
+	tplName := templates[0].Name
+	return s.GetRulesFromRuleTemplateByName(tplName)
 }
 
 func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error) {
@@ -164,38 +252,6 @@ func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
-	instance, _, err := s.GetInstanceById(instanceId)
-	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-	templates := instance.RuleTemplates
-	if len(templates) <= 0 {
-		return nil, nil
-	}
-
-	tplName := templates[0].Name
-	tpl, exist, err := s.GetRuleTemplateDetailByName(tplName)
-	if !exist {
-		return nil, errors.New(errors.DataNotExist, err)
-	}
-	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-
-	var rules []*Rule
-	for _, r := range tpl.RuleList {
-		if r.RuleLevel != "" {
-			r.Rule.Level = r.RuleLevel
-		}
-		if r.RuleValue != "" {
-			r.Rule.Value = r.RuleValue
-		}
-		rules = append(rules, r.Rule)
-	}
-	return rules, errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) GetRuleTemplatesByNames(names []string) ([]*RuleTemplate, error) {
 	templates := []*RuleTemplate{}
 	err := s.db.Where("name in (?)", names).Find(&templates).Error
@@ -230,24 +286,24 @@ func (s *Storage) GetRulesByNames(names []string, dbType string) ([]Rule, error)
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (rules []Rule, err error) {
-	rules, err = s.GetRulesByNames(ruleNames, dbType)
+func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[string]Rule, error) {
+	rules, err := s.GetRulesByNames(ruleNames, dbType)
 	if err != nil {
-		return rules, err
+		return nil, err
 	}
-	existRuleNames := map[string]struct{}{}
-	for _, user := range rules {
-		existRuleNames[user.Name] = struct{}{}
+	existRules := map[string]Rule{}
+	for _, rule := range rules {
+		existRules[rule.Name] = rule
 	}
 	notExistRuleNames := []string{}
 	for _, userName := range ruleNames {
-		if _, ok := existRuleNames[userName]; !ok {
+		if _, ok := existRules[userName]; !ok {
 			notExistRuleNames = append(notExistRuleNames, userName)
 		}
 	}
 	if len(notExistRuleNames) > 0 {
-		return rules, errors.New(errors.DataNotExist,
+		return nil, errors.New(errors.DataNotExist,
 			fmt.Errorf("rule %s not exist", strings.Join(notExistRuleNames, ", ")))
 	}
-	return rules, nil
+	return existRules, nil
 }
