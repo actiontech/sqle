@@ -1,6 +1,7 @@
 package context
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -344,4 +345,48 @@ func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
 		return exist, nil
 	}
 	return c.HasSchema(schemaName), nil
+}
+
+// isTableExist determine if the table exists in the SQL ctx;
+// and lazy load table info from db to SQL ctx.
+func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
+	schemaName := i.Ctx.GetSchemaName(stmt)
+	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
+	if err != nil {
+		return schemaExist, err
+	}
+	if !schemaExist {
+		return false, nil
+	}
+	if !i.Ctx.HasLoadTables(schemaName) {
+		conn, err := i.getDbConn()
+		if err != nil {
+			return false, err
+		}
+		tables, err := conn.ShowSchemaTables(schemaName)
+		if err != nil {
+			return false, err
+		}
+		i.Ctx.LoadTables(schemaName, tables)
+	}
+
+	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return false, err
+	}
+
+	if lowerCaseTableNames != "0" {
+		capitalizedTable := make(map[string]struct{})
+		schemaInfo, ok := i.Ctx.GetSchema(schemaName)
+		if !ok {
+			return false, fmt.Errorf("schema %s not exist", schemaName)
+		}
+
+		for name := range schemaInfo.Tables {
+			capitalizedTable[strings.ToUpper(name)] = struct{}{}
+		}
+		_, exist := capitalizedTable[strings.ToUpper(stmt.Name.String())]
+		return exist, nil
+	}
+	return i.Ctx.HasTable(schemaName, stmt.Name.String()), nil
 }
