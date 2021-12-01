@@ -545,3 +545,30 @@ func (c *Context) GetSchemaCharacter(stmt *ast.TableName, schemaName string) (st
 	}
 	return character, nil
 }
+
+// getSchemaEngine get schema default engine.
+func (i *Inspect) getSchemaEngine(stmt *ast.TableName, schemaName string) (string, error) {
+	if schemaName == "" {
+		schemaName = i.Ctx.GetSchemaName(stmt)
+	}
+	schema, schemaExist := i.Ctx.GetSchema(schemaName)
+	if schemaExist {
+		if schema.engineLoad {
+			return schema.DefaultEngine, nil
+		}
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+
+	engine, err := conn.ShowDefaultConfiguration("select @@default_storage_engine", "@@default_storage_engine")
+	if err != nil {
+		return "", err
+	}
+	if schemaExist {
+		schema.DefaultEngine = engine
+		schema.engineLoad = true
+	}
+	return engine, nil
+}
