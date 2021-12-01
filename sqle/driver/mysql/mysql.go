@@ -604,33 +604,3 @@ func (i *Inspect) getExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 	i.Ctx.AddExecutionPlan(sql, records)
 	return records, nil
 }
-
-const (
-	SysVarLowerCaseTableNames = "lower_case_table_names"
-)
-
-func (i *Inspect) getSystemVariable(name string) (string, error) {
-	v, exist := i.Ctx.GetSysVar(name)
-	if exist {
-		return v, nil
-	}
-	if i.IsOfflineAudit() {
-		return "", nil
-	}
-
-	conn, err := i.getDbConn()
-	if err != nil {
-		return "", err
-	}
-	results, err := conn.Db.Query(fmt.Sprintf(`SHOW GLOBAL VARIABLES LIKE '%v'`, name))
-	if err != nil {
-		return "", err
-	}
-	if len(results) != 1 {
-		return "", fmt.Errorf("unexpeted results when query system variable")
-	}
-
-	value := results[0]["Value"]
-	i.Ctx.AddSysVar(name, value.String)
-	return value.String, nil
-}
