@@ -1,13 +1,14 @@
 package mysql
 
 import (
-	"context"
+	_context "context"
 	"database/sql"
 	_driver "database/sql/driver"
 	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/context"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -32,7 +33,7 @@ func init() {
 // Inspect implements driver.Driver interface
 type Inspect struct {
 	// Ctx is SQL context.
-	Ctx *Context
+	Ctx *context.Context
 	// cnf is task cnf, cnf variables record in rules.
 	cnf *Config
 
@@ -58,7 +59,7 @@ type Inspect struct {
 }
 
 func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
-	ctx := NewContext(nil)
+	ctx := context.NewContext(nil)
 	if cfg.DSN != nil {
 		ctx.UseSchema(cfg.DSN.DatabaseName)
 	}
@@ -100,7 +101,7 @@ func (i *Inspect) IsOfflineAudit() bool {
 	return i.isOfflineAudit
 }
 
-func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
+func (i *Inspect) Exec(ctx _context.Context, query string) (_driver.Result, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
 	}
@@ -178,7 +179,7 @@ func (i *Inspect) onlineddlWithGhost(query string) (bool, error) {
 	return int64(tableSize) > i.cnf.DDLGhostMinSize, nil
 }
 
-func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+func (i *Inspect) Tx(ctx _context.Context, queries ...string) ([]_driver.Result, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
 	}
@@ -189,7 +190,7 @@ func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, 
 	return conn.Db.Transact(queries...)
 }
 
-func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+func (i *Inspect) Query(ctx _context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
@@ -197,7 +198,7 @@ func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) 
 	return conn.Db.Query(query, args...)
 }
 
-func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, error) {
+func (i *Inspect) Parse(ctx _context.Context, sqlText string) ([]driver.Node, error) {
 	nodes, err := i.ParseSql(sqlText)
 	if err != nil {
 		return nil, err
@@ -229,7 +230,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 	return ns, nil
 }
 
-func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
+func (i *Inspect) Audit(ctx _context.Context, sql string) (*driver.AuditResult, error) {
 	i.result = driver.NewInspectResults()
 
 	nodes, err := i.ParseSql(sql)
@@ -276,7 +277,7 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 	return i.result, nil
 }
 
-func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+func (i *Inspect) GenRollbackSQL(ctx _context.Context, sql string) (string, string, error) {
 	if i.IsOfflineAudit() {
 		return "", "", nil
 	}
@@ -299,11 +300,11 @@ func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, strin
 	return rollback, reason, nil
 }
 
-func (i *Inspect) Close(ctx context.Context) {
+func (i *Inspect) Close(ctx _context.Context) {
 	i.closeDbConn()
 }
 
-func (i *Inspect) Ping(ctx context.Context) error {
+func (i *Inspect) Ping(ctx _context.Context) error {
 	if i.IsOfflineAudit() {
 		return nil
 	}
@@ -315,7 +316,7 @@ func (i *Inspect) Ping(ctx context.Context) error {
 	return conn.Db.Ping()
 }
 
-func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
+func (i *Inspect) Schemas(ctx _context.Context) ([]string, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
 	}
@@ -332,7 +333,7 @@ type Config struct {
 	DDLGhostMinSize    int64
 }
 
-func (i *Inspect) Context() *Context {
+func (i *Inspect) Context() *context.Context {
 	return i.Ctx
 }
 
