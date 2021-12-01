@@ -1191,7 +1191,7 @@ func checkEngineAndCharacterSet(rule driver.Rule, i *Inspect, node ast.Node) err
 		return nil
 	}
 	if engine == "" {
-		engine, err = i.getSchemaEngine(tableName, schemaName)
+		engine, err = i.Ctx.GetSchemaEngine(tableName, schemaName)
 		if err != nil {
 			return err
 		}
