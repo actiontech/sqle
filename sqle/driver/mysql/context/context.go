@@ -1,6 +1,8 @@
 package context
 
 import (
+	"strings"
+
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser/ast"
@@ -304,4 +306,35 @@ func (c *Context) GetTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 	schema := c.GetSchemaName(stmt)
 	table := stmt.Name.String()
 	return c.GetTable(schema, table)
+}
+
+// isSchemaExist determine if the schema exists in the SQL ctx;
+// and lazy load schema info from db to SQL ctx.
+func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
+	if !i.Ctx.HasLoadSchemas() {
+		conn, err := i.getDbConn()
+		if err != nil {
+			return false, err
+		}
+		schemas, err := conn.ShowDatabases(false)
+		if err != nil {
+			return false, err
+		}
+		i.Ctx.LoadSchemas(schemas)
+	}
+
+	lowerCaseTableNames, err := i.getSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return false, err
+	}
+
+	if lowerCaseTableNames != "0" {
+		capitalizedSchema := make(map[string]struct{})
+		for name := range i.Ctx.Schemas() {
+			capitalizedSchema[strings.ToUpper(name)] = struct{}{}
+		}
+		_, exist := capitalizedSchema[strings.ToUpper(schemaName)]
+		return exist, nil
+	}
+	return i.Ctx.HasSchema(schemaName), nil
 }
