@@ -201,7 +201,7 @@ func (c *Context) DelTable(schemaName, tableName string) {
 	delete(schema.Tables, tableName)
 }
 
-func (c *Context) UseSchema(schema string) {
+func (c *Context) SetCurrentSchema(schema string) {
 	c.currentSchema = schema
 }
 
@@ -224,7 +224,7 @@ func (c *Context) UpdateContext(node ast.Node) {
 	case *ast.UseStmt:
 		// change current schema
 		if c.HasSchema(s.DBName) {
-			c.UseSchema(s.DBName)
+			c.SetCurrentSchema(s.DBName)
 		}
 	case *ast.CreateDatabaseStmt:
 		if c.HasLoadSchemas() {
