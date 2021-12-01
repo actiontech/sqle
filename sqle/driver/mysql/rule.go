@@ -1129,7 +1129,7 @@ func checkMergeAlterTable(rule driver.Rule, i *Inspect, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
-		info, exist := i.getTableInfo(stmt.Table)
+		info, exist := i.Ctx.GetTableInfo(stmt.Table)
 		if exist {
 			if info.AlterTables != nil && len(info.AlterTables) > 0 {
 				i.addResult(DDLCheckAlterTableNeedMerge)
