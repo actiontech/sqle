@@ -2232,7 +2232,7 @@ func checkCollationDatabase(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if collationDatabase == "" && (tableName != nil || schemaName != "") {
-		collationDatabase, err = i.getCollationDatabase(tableName, schemaName)
+		collationDatabase, err = i.Ctx.GetCollationDatabase(tableName, schemaName)
 		if err != nil {
 			return err
 		}

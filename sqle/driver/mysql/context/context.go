@@ -453,20 +453,21 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	return createStmt, exist, nil
 }
 
-func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (string, error) {
+// GetCollationDatabase get collation database.
+func (c *Context) GetCollationDatabase(stmt *ast.TableName, schemaName string) (string, error) {
 	if schemaName == "" {
-		schemaName = i.Ctx.GetSchemaName(stmt)
+		schemaName = c.GetSchemaName(stmt)
 	}
-	schema, schemaExist := i.Ctx.GetSchema(schemaName)
+	schema, schemaExist := c.GetSchema(schemaName)
 	if schemaExist && schema.collationLoad {
 		return schema.DefaultCollation, nil
 	}
-	conn, err := i.getDbConn()
-	if err != nil {
-		return "", err
+
+	if c.e == nil {
+		return "", nil
 	}
 
-	collation, err := conn.ShowDefaultConfiguration("select @@collation_database", "@@collation_database")
+	collation, err := c.e.ShowDefaultConfiguration("select @@collation_database", "@@collation_database")
 	if err != nil {
 		return "", err
 	}
