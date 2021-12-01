@@ -3,9 +3,11 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver"
 	contextpkg "github.com/actiontech/sqle/sqle/driver/mysql/context"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -14,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 type testResult struct {
@@ -71,6 +74,27 @@ func DefaultMysqlInspect() *Inspect {
 			DDLGhostMinSize:    16,
 			DMLRollbackMaxRows: 1000,
 		},
+	}
+}
+
+func NewMockInspect(e *executor.Executor) *Inspect {
+	log.Logger().SetLevel(logrus.ErrorLevel)
+	return &Inspect{
+		log: log.NewEntry(),
+		inst: &driver.DSN{
+			Host:         "127.0.0.1",
+			Port:         "3306",
+			User:         "root",
+			Password:     "123456",
+			DatabaseName: "mysql",
+		},
+		Ctx: contextpkg.NewMockContext(e),
+		cnf: &Config{
+			DDLOSCMinSize:      16,
+			DDLGhostMinSize:    16,
+			DMLRollbackMaxRows: 1000,
+		},
+		dbConn: e,
 	}
 }
 
@@ -2858,58 +2882,56 @@ ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 }
 
 func Test_CheckExplain_ShouldNotError(t *testing.T) {
-	inspect1 := DefaultMysqlInspect()
-	inspect1.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
-		Type: "ALL",
-		Rows: 10,
-	}})
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).AddRow("ALL", "10"))
+
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainAccessTypeAll].Rule, t, "", inspect1, "select * from exist_tb_1", newTestResult())
 
-	inspect2 := DefaultMysqlInspect()
-	inspect2.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
-		Type: "ALL",
-		Rows: 10,
-	}})
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).AddRow("ALL", "10"))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect2, "select * from exist_tb_1", newTestResult())
 
-	inspect3 := DefaultMysqlInspect()
-	inspect3.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
-		Type: "ALL",
-		Rows: 10,
-	}})
+	inspect3 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).AddRow("ALL", "10"))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult())
+
+	assert.NoError(t, handler.ExpectationsWereMet())
 }
 
 func Test_CheckExplain_ShouldError(t *testing.T) {
-	inspect1 := DefaultMysqlInspect()
-	inspect1.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
-		Type: "ALL",
-		Rows: 10001,
-	}})
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).
+			AddRow("ALL", "10001"))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainAccessTypeAll].Rule, t, "", inspect1, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLCheckExplainAccessTypeAll, 10001))
 
-	inspect2 := DefaultMysqlInspect()
-	inspect2.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
-		Type:  "ALL",
-		Rows:  10,
-		Extra: executor.ExplainRecordExtraUsingTemporary,
-	}})
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows", "Extra"}).
+			AddRow("ALL", "10", executor.ExplainRecordExtraUsingTemporary))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingTemporary].Rule, t, "", inspect2, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingTemporary))
 
-	inspect3 := DefaultMysqlInspect()
-	inspect3.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
-		Type:  "ALL",
-		Rows:  10,
-		Extra: executor.ExplainRecordExtraUsingFilesort,
-	}})
+	inspect3 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows", "Extra"}).
+			AddRow("ALL", "10", executor.ExplainRecordExtraUsingFilesort))
+
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingFilesort))
 
-	inspect4 := DefaultMysqlInspect()
-	inspect4.Ctx.AddExecutionPlan("select * from exist_tb_1", []*executor.ExplainRecord{{
-		Type:  "ALL",
-		Rows:  100001,
-		Extra: strings.Join([]string{executor.ExplainRecordExtraUsingFilesort, executor.ExplainRecordExtraUsingTemporary}, ";"),
-	}})
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows", "Extra"}).
+			AddRow("ALL", "100001", strings.Join([]string{executor.ExplainRecordExtraUsingFilesort, executor.ExplainRecordExtraUsingTemporary}, ";")))
 
 	ruleDMLCheckExplainExtraUsingFilesort := rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule
 	ruleDMLCheckExplainExtraUsingTemporary := rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingTemporary].Rule
@@ -2923,17 +2945,18 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	inspectCase(t, "", inspect4, "select * from exist_tb_1",
 		newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingFilesort).addResult(rulepkg.DMLCheckExplainExtraUsingTemporary).addResult(rulepkg.DMLCheckExplainAccessTypeAll, 100001))
 
-	inspect5 := DefaultMysqlInspect()
-	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1;", []*executor.ExplainRecord{{
-		Type: "ALL",
-		Rows: 100001,
-	}})
-	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1 where id = 1;", []*executor.ExplainRecord{{
-		Extra: executor.ExplainRecordExtraUsingFilesort,
-	}})
-	inspect5.Ctx.AddExecutionPlan("select * from exist_tb_1 where id = 2;", []*executor.ExplainRecord{{
-		Extra: executor.ExplainRecordExtraUsingTemporary,
-	}})
+	inspect5 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).
+			AddRow("ALL", "100001"))
+
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 1;")).
+		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).
+			AddRow(executor.ExplainRecordExtraUsingFilesort))
+
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 2;")).
+		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).
+			AddRow(executor.ExplainRecordExtraUsingTemporary))
 
 	inspect5.rules = []*driver.Rule{
 		&ruleDMLCheckExplainExtraUsingFilesort,
@@ -2942,6 +2965,8 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 
 	inspectCase(t, "", inspect5, "select * from exist_tb_1;select * from exist_tb_1 where id = 1;select * from exist_tb_1 where id = 2;",
 		newTestResult().addResult(rulepkg.DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingTemporary))
+
+	assert.NoError(t, handler.ExpectationsWereMet())
 }
 
 func Test_DDL_CHECK_PK_NAME(t *testing.T) {
