@@ -9,9 +9,9 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver"
-	contextpkg "github.com/actiontech/sqle/sqle/driver/mysql/context"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/log"
 	_ "github.com/pingcap/tidb/types/parser_driver"
@@ -68,7 +68,7 @@ func DefaultMysqlInspect() *Inspect {
 			Password:     "123456",
 			DatabaseName: "mysql",
 		},
-		Ctx: contextpkg.NewMockContext(nil),
+		Ctx: session.NewMockContext(nil),
 		cnf: &Config{
 			DDLOSCMinSize:      16,
 			DDLGhostMinSize:    16,
@@ -88,7 +88,7 @@ func NewMockInspect(e *executor.Executor) *Inspect {
 			Password:     "123456",
 			DatabaseName: "mysql",
 		},
-		Ctx: contextpkg.NewMockContext(e),
+		Ctx: session.NewMockContext(e),
 		cnf: &Config{
 			DDLOSCMinSize:      16,
 			DDLGhostMinSize:    16,
@@ -158,7 +158,7 @@ func TestCheckInvalidUse(t *testing.T) {
 	)
 
 	inspect1 := DefaultMysqlInspect()
-	inspect1.Ctx.AddSysVar(contextpkg.SysVarLowerCaseTableNames, "1")
+	inspect1.Ctx.AddSysVar(session.SysVarLowerCaseTableNames, "1")
 	runDefaultRulesInspectCase(t, "", inspect1,
 		"use EXIST_DB",
 		newTestResult(),
@@ -174,7 +174,7 @@ select id from exist_db.EXIST_TB_1 where id = 1;
 			TableNotExistMessage, "exist_db.EXIST_TB_1"))
 
 	inspect1 := DefaultMysqlInspect()
-	inspect1.Ctx.AddSysVar(contextpkg.SysVarLowerCaseTableNames, "1")
+	inspect1.Ctx.AddSysVar(session.SysVarLowerCaseTableNames, "1")
 	runDefaultRulesInspectCase(t, "", inspect1,
 		`
 select id from exist_db.EXIST_TB_1 where id = 1;
@@ -2621,7 +2621,7 @@ PRIMARY KEY (id)
 `,
 			newTestResult(),
 		)
-		inspector.Ctx = contextpkg.NewContext(parent.Ctx)
+		inspector.Ctx = session.NewContext(parent.Ctx)
 	}
 
 	for desc, sql := range map[string]string{
@@ -2675,7 +2675,7 @@ PRIMARY KEY (id)
 `,
 			newTestResult(),
 		)
-		inspector.Ctx = contextpkg.NewContext(parent.Ctx)
+		inspector.Ctx = session.NewContext(parent.Ctx)
 	}
 
 	for desc, sql := range map[string]string{

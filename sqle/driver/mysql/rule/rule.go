@@ -10,9 +10,9 @@ import (
 	"unicode"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/driver/mysql/context"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
@@ -110,7 +110,7 @@ const (
 type RuleHandler struct {
 	Rule                 driver.Rule
 	Message              string
-	Func                 func(*context.Context, driver.Rule, *driver.AuditResult, ast.Node) error
+	Func                 func(*session.Context, driver.Rule, *driver.AuditResult, ast.Node) error
 	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
 }
@@ -882,7 +882,7 @@ func init() {
 	}
 }
 
-func checkSelectAll(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkSelectAll(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// check select all column
@@ -897,7 +897,7 @@ func checkSelectAll(ctx *context.Context, rule driver.Rule, res *driver.AuditRes
 	return nil
 }
 
-func checkSelectWhere(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkSelectWhere(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -944,7 +944,7 @@ func checkWhere(rule driver.Rule, res *driver.AuditResult, where ast.ExprNode) b
 	}
 	return isAddResult
 }
-func checkWhereExistNull(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkWhereExistNull(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		var existNull bool
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -977,7 +977,7 @@ func getWhereExpr(node ast.Node) (where ast.ExprNode) {
 	return
 }
 
-func checkIndexesExistBeforeCreatConstraints(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkIndexesExistBeforeCreatConstraints(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		constraintMap := make(map[string]struct{})
@@ -1012,7 +1012,7 @@ func checkIndexesExistBeforeCreatConstraints(ctx *context.Context, rule driver.R
 	return nil
 }
 
-func checkPrimaryKey(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkPrimaryKey(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
 	inspectCol := func(col *ast.ColumnDef) {
@@ -1142,7 +1142,7 @@ func checkPrimaryKey(ctx *context.Context, rule driver.Rule, res *driver.AuditRe
 	return nil
 }
 
-func checkMergeAlterTable(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkMergeAlterTable(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
@@ -1156,7 +1156,7 @@ func checkMergeAlterTable(ctx *context.Context, rule driver.Rule, res *driver.Au
 	return nil
 }
 
-func checkEngineAndCharacterSet(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var engine string
 	var characterSet string
@@ -1226,7 +1226,7 @@ func checkEngineAndCharacterSet(ctx *context.Context, rule driver.Rule, res *dri
 	return nil
 }
 
-func disableAddIndexForColumnsTypeBlob(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func disableAddIndexForColumnsTypeBlob(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
 	switch stmt := node.(type) {
@@ -1324,7 +1324,7 @@ func disableAddIndexForColumnsTypeBlob(ctx *context.Context, rule driver.Rule, r
 	return nil
 }
 
-func checkNewObjectName(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkNewObjectName(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	names := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
@@ -1414,7 +1414,7 @@ func checkNewObjectName(ctx *context.Context, rule driver.Rule, res *driver.Audi
 	return nil
 }
 
-func checkForeignKey(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkForeignKey(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	hasFk := false
 
 	switch stmt := node.(type) {
@@ -1441,7 +1441,7 @@ func checkForeignKey(ctx *context.Context, rule driver.Rule, res *driver.AuditRe
 	return nil
 }
 
-func checkIndex(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
 	value, err := strconv.Atoi(rule.Value)
@@ -1515,7 +1515,7 @@ func checkIndex(ctx *context.Context, rule driver.Rule, res *driver.AuditResult,
 	return nil
 }
 
-func checkStringType(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkStringType(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
@@ -1538,7 +1538,7 @@ func checkStringType(ctx *context.Context, rule driver.Rule, res *driver.AuditRe
 	return nil
 }
 
-func checkIfNotExist(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkIfNotExist(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
@@ -1549,7 +1549,7 @@ func checkIfNotExist(ctx *context.Context, rule driver.Rule, res *driver.AuditRe
 	return nil
 }
 
-func disableDropStmt(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func disableDropStmt(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	// specific check
 	switch node.(type) {
 	case *ast.DropDatabaseStmt:
@@ -1560,7 +1560,7 @@ func disableDropStmt(ctx *context.Context, rule driver.Rule, res *driver.AuditRe
 	return nil
 }
 
-func checkTableWithoutComment(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkTableWithoutComment(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableHasComment bool
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -1583,7 +1583,7 @@ func checkTableWithoutComment(ctx *context.Context, rule driver.Rule, res *drive
 	return nil
 }
 
-func checkColumnWithoutComment(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnWithoutComment(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1623,7 +1623,7 @@ func checkColumnWithoutComment(ctx *context.Context, rule driver.Rule, res *driv
 	return nil
 }
 
-func checkIndexPrefix(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexesName := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -1656,13 +1656,13 @@ func checkIndexPrefix(ctx *context.Context, rule driver.Rule, res *driver.AuditR
 	return nil
 }
 
-func checkUniqIndexPrefix(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkUniqIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	return checkIfUniqIndexSatisfy(rule, res, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
 		return utils.HasPrefix(uniqIndexName, "uniq_", false)
 	})
 }
 
-func checkUniqIndex(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkUniqIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	return checkIfUniqIndexSatisfy(rule, res, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
 		return strings.EqualFold(uniqIndexName, fmt.Sprintf("IDX_UK_%v_%v", tableName, strings.Join(indexedColNames, "_")))
 	})
@@ -1718,7 +1718,7 @@ func checkIfUniqIndexSatisfy(
 	return nil
 }
 
-func checkColumnWithoutDefault(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnWithoutDefault(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1782,7 +1782,7 @@ func checkColumnWithoutDefault(ctx *context.Context, rule driver.Rule, res *driv
 	return nil
 }
 
-func checkColumnTimestampWithoutDefault(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnTimestampWithoutDefault(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1822,7 +1822,7 @@ func checkColumnTimestampWithoutDefault(ctx *context.Context, rule driver.Rule, 
 	return nil
 }
 
-func checkColumnBlobNotNull(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnBlobNotNull(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1867,15 +1867,15 @@ func checkColumnBlobNotNull(ctx *context.Context, rule driver.Rule, res *driver.
 	return nil
 }
 
-func checkColumnEnumNotice(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnEnumNotice(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	return checkColumnShouldNotBeType(rule, res, node, mysql.TypeEnum)
 }
 
-func checkColumnSetNotice(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnSetNotice(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	return checkColumnShouldNotBeType(rule, res, node, mysql.TypeSet)
 }
 
-func checkColumnBlobNotice(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnBlobNotice(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	return checkColumnShouldNotBeType(rule, res, node, mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob)
 }
 
@@ -1917,7 +1917,7 @@ func checkColumnShouldNotBeType(rule driver.Rule, res *driver.AuditResult, node 
 	return nil
 }
 
-func checkColumnBlobDefaultNull(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkColumnBlobDefaultNull(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1962,7 +1962,7 @@ func checkColumnBlobDefaultNull(ctx *context.Context, rule driver.Rule, res *dri
 	return nil
 }
 
-func checkDMLWithLimit(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDMLWithLimit(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit != nil {
@@ -1975,7 +1975,7 @@ func checkDMLWithLimit(ctx *context.Context, rule driver.Rule, res *driver.Audit
 	}
 	return nil
 }
-func checkDMLLimitExist(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDMLLimitExist(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit == nil {
@@ -1989,7 +1989,7 @@ func checkDMLLimitExist(ctx *context.Context, rule driver.Rule, res *driver.Audi
 	return nil
 }
 
-func checkDMLWithOrderBy(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDMLWithOrderBy(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Order != nil {
@@ -2003,7 +2003,7 @@ func checkDMLWithOrderBy(ctx *context.Context, rule driver.Rule, res *driver.Aud
 	return nil
 }
 
-func checkDMLWithInsertColumnExist(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDMLWithInsertColumnExist(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		if len(stmt.Columns) == 0 {
@@ -2013,7 +2013,7 @@ func checkDMLWithInsertColumnExist(ctx *context.Context, rule driver.Rule, res *
 	return nil
 }
 
-func checkDMLWithBatchInsertMaxLimits(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDMLWithBatchInsertMaxLimits(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	value, err := strconv.Atoi(rule.Value)
 	if err != nil {
 		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
@@ -2027,7 +2027,7 @@ func checkDMLWithBatchInsertMaxLimits(ctx *context.Context, rule driver.Rule, re
 	return nil
 }
 
-func checkWhereExistFunc(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkWhereExistFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -2082,7 +2082,7 @@ func checkWhereExistFunc(ctx *context.Context, rule driver.Rule, res *driver.Aud
 	return nil
 }
 
-func checkExistFunc(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, tables []*ast.TableName, where ast.ExprNode) bool {
+func checkExistFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, tables []*ast.TableName, where ast.ExprNode) bool {
 	if where == nil {
 		return false
 	}
@@ -2104,7 +2104,7 @@ func checkExistFunc(ctx *context.Context, rule driver.Rule, res *driver.AuditRes
 	return false
 }
 
-func checkWhereColumnImplicitConversion(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkWhereColumnImplicitConversion(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -2158,7 +2158,7 @@ func checkWhereColumnImplicitConversion(ctx *context.Context, rule driver.Rule, 
 	}
 	return nil
 }
-func checkWhereColumnImplicitConversionFunc(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, tables []*ast.TableName, where ast.ExprNode) bool {
+func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, tables []*ast.TableName, where ast.ExprNode) bool {
 	if where == nil {
 		return false
 	}
@@ -2193,7 +2193,7 @@ func checkWhereColumnImplicitConversionFunc(ctx *context.Context, rule driver.Ru
 	return false
 }
 
-func checkDMLSelectForUpdate(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDMLSelectForUpdate(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.LockTp == ast.SelectLockForUpdate {
@@ -2203,7 +2203,7 @@ func checkDMLSelectForUpdate(ctx *context.Context, rule driver.Rule, res *driver
 	return nil
 }
 
-func checkCollationDatabase(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkCollationDatabase(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var collationDatabase string
 	var err error
@@ -2260,7 +2260,7 @@ func checkCollationDatabase(ctx *context.Context, rule driver.Rule, res *driver.
 	}
 	return nil
 }
-func checkDecimalTypeColumn(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDecimalTypeColumn(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -2282,7 +2282,7 @@ func checkDecimalTypeColumn(ctx *context.Context, rule driver.Rule, res *driver.
 	return nil
 }
 
-func checkNeedlessFunc(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkNeedlessFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	needlessFuncArr := strings.Split(rule.Value, ",")
 	sql := strings.ToLower(node.Text())
 	for _, needlessFunc := range needlessFuncArr {
@@ -2295,7 +2295,7 @@ func checkNeedlessFunc(ctx *context.Context, rule driver.Rule, res *driver.Audit
 	return nil
 }
 
-func checkDatabaseSuffix(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkDatabaseSuffix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	databaseName := ""
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
@@ -2312,7 +2312,7 @@ func checkDatabaseSuffix(ctx *context.Context, rule driver.Rule, res *driver.Aud
 	return nil
 }
 
-func checkPKIndexName(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkPKIndexName(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexesName := ""
 	tableName := ""
 	switch stmt := node.(type) {
@@ -2343,7 +2343,7 @@ func checkPKIndexName(ctx *context.Context, rule driver.Rule, res *driver.AuditR
 	return nil
 }
 
-func checkTransactionIsolationLevel(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkTransactionIsolationLevel(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SetStmt:
 		for _, variable := range stmt.Variables {
@@ -2363,7 +2363,7 @@ func checkTransactionIsolationLevel(ctx *context.Context, rule driver.Rule, res 
 	return nil
 }
 
-func checkTablePartition(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkTablePartition(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
@@ -2382,7 +2382,7 @@ func checkTablePartition(ctx *context.Context, rule driver.Rule, res *driver.Aud
 	}
 	return nil
 }
-func checkNumberOfJoinTables(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkNumberOfJoinTables(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	nums, err := strconv.Atoi(rule.Value)
 	if err != nil {
 		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
@@ -2401,7 +2401,7 @@ func checkNumberOfJoinTables(ctx *context.Context, rule driver.Rule, res *driver
 	return nil
 }
 
-func checkIsAfterUnionDistinct(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkIsAfterUnionDistinct(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
@@ -2417,7 +2417,7 @@ func checkIsAfterUnionDistinct(ctx *context.Context, rule driver.Rule, res *driv
 	return nil
 }
 
-func checkIsExistLimitOffset(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkIsExistLimitOffset(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.Limit.Offset != nil {
@@ -2429,7 +2429,7 @@ func checkIsExistLimitOffset(ctx *context.Context, rule driver.Rule, res *driver
 	return nil
 }
 
-func checkIndexOption(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkIndexOption(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 
 	var tableName *ast.TableName
 	indexColumns := make([]string, 0)
@@ -2465,7 +2465,7 @@ func checkIndexOption(ctx *context.Context, rule driver.Rule, res *driver.AuditR
 	return nil
 }
 
-func checkExplain(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkExplain(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	// sql from MyBatis XML file is not the executable sql. so can't do explain for it.
 	// TODO(@wy) ignore explain when audit Mybatis file
 	//if i.Task.SQLSource == driver.TaskSQLSourceFromMyBatisXMLFile {
@@ -2498,7 +2498,7 @@ func checkExplain(ctx *context.Context, rule driver.Rule, res *driver.AuditResul
 	return nil
 }
 
-func checkCreateView(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkCreateView(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.CreateViewStmt:
 		addResult(res, rule, rule.Name)
@@ -2521,7 +2521,7 @@ var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\
 //
 // For now, we do character matching for CREATE TRIGGER Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateTrigger(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkCreateTrigger(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createTriggerReg1.MatchString(node.Text()) ||
@@ -2544,7 +2544,7 @@ var createFunctionReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function
 // ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateFunction(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkCreateFunction(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createFunctionReg1.MatchString(node.Text()) ||
@@ -2566,7 +2566,7 @@ var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedu
 // ref: https://dev.mysql.com/doc/refman/8.0/en/create-procedure.html
 // For now, we do character matching for CREATE PROCEDURE Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateProcedure(ctx *context.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkCreateProcedure(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createProcedureReg1.MatchString(node.Text()) ||
