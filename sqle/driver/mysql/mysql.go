@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -210,7 +211,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 	var ns []driver.Node
 	for i := range nodes {
 		n := driver.Node{}
-		fingerprint, err := Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
+		fingerprint, err := util.Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
 		if err != nil {
 			return nil, err
 		}
@@ -336,7 +337,7 @@ func (i *Inspect) Context() *Context {
 }
 
 func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
-	stmts, err := parseSql(sql)
+	stmts, err := util.ParseSql(sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql)
 		return nil, err
@@ -571,7 +572,7 @@ func (i *Inspect) getMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 	}
 
 	for _, columnName := range columnNames {
-		if !tableExistCol(ti.OriginalTable, columnName) {
+		if !util.TableExistCol(ti.OriginalTable, columnName) {
 			return "", nil
 		}
 	}
@@ -631,7 +632,7 @@ func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (
 
 // parseCreateTableStmt parse create table sql text to CreateTableStmt ast.
 func (i *Inspect) parseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
-	t, err := parseOneSql(sql)
+	t, err := util.ParseOneSql(sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql from show create failed, error: %v", err)
 		return nil, err
@@ -667,7 +668,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	if err != nil {
 		return nil, exist, err
 	}
-	createTableSql, err := conn.ShowCreateTable(getTableNameWithQuote(stmt))
+	createTableSql, err := conn.ShowCreateTable(util.GetTableNameWithQuote(stmt))
 	if err != nil {
 		return nil, exist, err
 	}
@@ -681,7 +682,7 @@ func (i *Inspect) getCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 
 // getPrimaryKey get table's primary key.
 func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
-	pkColumnsName, hasPk := getPrimaryKey(stmt)
+	pkColumnsName, hasPk := util.GetPrimaryKey(stmt)
 	if !hasPk {
 		return pkColumnsName, hasPk, nil
 	}

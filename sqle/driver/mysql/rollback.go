@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/pingcap/parser/ast"
@@ -76,20 +77,20 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		return "", "", err
 	}
 	rollbackStmt := &ast.AlterTableStmt{
-		Table: newTableName(schemaName, tableName),
+		Table: util.NewTableName(schemaName, tableName),
 		Specs: []*ast.AlterTableSpec{},
 	}
 	// rename table
-	if specs := getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable); len(specs) > 0 {
+	if specs := util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable); len(specs) > 0 {
 		spec := specs[len(specs)-1]
-		rollbackStmt.Table = newTableName(schemaName, spec.NewTable.Name.String())
+		rollbackStmt.Table = util.NewTableName(schemaName, spec.NewTable.Name.String())
 		rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
 			Tp:       ast.AlterTableRenameTable,
-			NewTable: newTableName(schemaName, tableName),
+			NewTable: util.NewTableName(schemaName, tableName),
 		})
 	}
 	// Add columns need drop columns
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		if spec.NewColumns == nil {
 			continue
 		}
@@ -101,7 +102,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		}
 	}
 	// drop columns need add columns
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropColumn) {
 		colName := spec.OldColumnName.String()
 		for _, col := range createTableStmt.Cols {
 			if col.Name.String() == colName {
@@ -113,7 +114,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		}
 	}
 	// change column need change
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableChangeColumn) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableChangeColumn) {
 		if spec.NewColumns == nil {
 			continue
 		}
@@ -129,7 +130,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 	}
 
 	// modify column need modify
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn) {
 		if spec.NewColumns == nil {
 			continue
 		}
@@ -154,7 +155,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 			2. alter column v1 DROP DEFAULT, -> no nothing,
 		+------------------------------------------------------------------------------------+
 	*/
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAlterColumn) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAlterColumn) {
 		if spec.NewColumns == nil {
 			continue
 		}
@@ -169,7 +170,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		}
 		for _, col := range createTableStmt.Cols {
 			if col.Name.String() == newColumn.Name.String() {
-				if HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+				if util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
 					for _, op := range col.Options {
 						if op.Tp == ast.ColumnOptionDefaultValue {
 							newSpec.NewColumns[0].Options = []*ast.ColumnOption{
@@ -192,7 +193,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		}
 	}
 	// drop index need add
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
 		for _, constraint := range createTableStmt.Constraints {
 			if constraint.Name == spec.Name {
 				rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
@@ -203,7 +204,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		}
 	}
 	// drop primary key need add
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey) {
 		_ = spec
 		for _, constraint := range createTableStmt.Constraints {
 			if constraint.Tp == ast.ConstraintPrimaryKey {
@@ -216,7 +217,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 	}
 
 	// drop foreign key need add
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropForeignKey) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropForeignKey) {
 		for _, constraint := range createTableStmt.Constraints {
 			if constraint.Name == spec.Name {
 				rollbackStmt.Specs = append(rollbackStmt.Specs, &ast.AlterTableSpec{
@@ -228,13 +229,13 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 	}
 
 	// rename index
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
 		spec.FromKey, spec.ToKey = spec.ToKey, spec.FromKey
 		rollbackStmt.Specs = append(rollbackStmt.Specs, spec)
 	}
 
 	// Add constraint (index key, primary key ...) need drop
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintIndex, ast.ConstraintUniq:
 			// Add index without index name, index name will be created by db
@@ -257,7 +258,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 		}
 	}
 
-	rollbackSql := alterTableStmtFormat(rollbackStmt)
+	rollbackSql := util.AlterTableStmtFormat(rollbackStmt)
 	return rollbackSql, "", nil
 }
 
@@ -346,7 +347,7 @@ func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string,
 				return "", NotSupportStatementRollback, nil
 			}
 			if constraint.Option != nil {
-				sql = fmt.Sprintf("%s %s", sql, indexOptionFormat(constraint.Option))
+				sql = fmt.Sprintf("%s %s", sql, util.IndexOptionFormat(constraint.Option))
 			}
 			rollbackSql = sql
 		}
@@ -356,7 +357,7 @@ func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string,
 
 // generateInsertRollbackSql generate delete SQL for insert.
 func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, string, error) {
-	tables := getTables(stmt.Table.TableRefs)
+	tables := util.GetTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(tables) != 1 {
 		return "", NotSupportMultiTableStatementRollback, nil
@@ -408,7 +409,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 			for n, name := range columnsName {
 				_, isPk := pkColumnsName[name]
 				if isPk {
-					where = append(where, fmt.Sprintf("%s = '%s'", name, exprFormat(value[n])))
+					where = append(where, fmt.Sprintf("%s = '%s'", name, util.ExprFormat(value[n])))
 				}
 			}
 			if len(where) != len(pkColumnsName) {
@@ -430,7 +431,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 			name := setExpr.Column.Name.String()
 			_, isPk := pkColumnsName[name]
 			if isPk {
-				where = append(where, fmt.Sprintf("%s = '%s'", name, exprFormat(setExpr.Expr)))
+				where = append(where, fmt.Sprintf("%s = '%s'", name, util.ExprFormat(setExpr.Expr)))
 			}
 		}
 		if len(where) != len(pkColumnsName) {
@@ -450,12 +451,12 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 		return "", NotSupportMultiTableStatementRollback, nil
 	}
 	// sub query statement
-	if whereStmtHasSubQuery(stmt.Where) {
+	if util.WhereStmtHasSubQuery(stmt.Where) {
 		i.Logger().Infof("not support generate rollback sql with sub query")
 		return "", NotSupportSubQueryStatementRollback, nil
 	}
 	var err error
-	tables := getTables(stmt.TableRefs.TableRefs)
+	tables := util.GetTables(stmt.TableRefs.TableRefs)
 	table := tables[0]
 	createTableStmt, exist, err := i.getCreateTableStmt(table)
 	if err != nil || !exist {
@@ -470,7 +471,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 	}
 
 	var max = i.cnf.DMLRollbackMaxRows
-	limit, err := getLimitCount(stmt.Limit, max+1)
+	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return "", "", err
 	}
@@ -516,14 +517,14 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 
 // generateUpdateRollbackSql generate update SQL for update.
 func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, string, error) {
-	tableSources := getTableSources(stmt.TableRefs.TableRefs)
+	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tableSources) != 1 {
 		i.Logger().Infof("not support generate rollback sql with multi-update statement")
 		return "", NotSupportMultiTableStatementRollback, nil
 	}
 	// sub query statement
-	if whereStmtHasSubQuery(stmt.Where) {
+	if util.WhereStmtHasSubQuery(stmt.Where) {
 		i.Logger().Infof("not support generate rollback sql with sub query")
 		return "", NotSupportSubQueryStatementRollback, nil
 	}
@@ -555,7 +556,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 	}
 
 	var max = i.cnf.DMLRollbackMaxRows
-	limit, err := getLimitCount(stmt.Limit, max+1)
+	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return "", "", err
 	}
@@ -592,7 +593,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 					colChanged = true
 					if isPk {
 						isPkChanged = true
-						pkValue = exprFormat(l.Expr)
+						pkValue = util.ExprFormat(l.Expr)
 					}
 				}
 			}
@@ -666,17 +667,17 @@ ERROR:
 // generateGetRecordsSql generate select SQL.
 func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) string {
-	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, getTableNameWithQuote(tableName))
+	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, util.GetTableNameWithQuote(tableName))
 	if tableAlias != "" {
 		recordSql = fmt.Sprintf("%s AS %s", recordSql, tableAlias)
 	}
 	if where != nil {
-		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, exprFormat(where))
+		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, util.ExprFormat(where))
 	}
 	if order != nil {
 		recordSql = fmt.Sprintf("%s ORDER BY", recordSql)
 		for _, item := range order.Items {
-			recordSql = fmt.Sprintf("%s %s", recordSql, exprFormat(item.Expr))
+			recordSql = fmt.Sprintf("%s %s", recordSql, util.ExprFormat(item.Expr))
 			if item.Desc {
 				recordSql = fmt.Sprintf("%s DESC", recordSql)
 			}
