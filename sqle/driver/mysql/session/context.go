@@ -61,12 +61,24 @@ type Context struct {
 	sysVars map[string]string
 }
 
-func NewContext(parent *Context) *Context {
+type contextOption func(*Context)
+
+func (o contextOption) apply(c *Context) {
+	o(c)
+}
+
+// NewContext creates a new context.
+func NewContext(parent *Context, opts ...contextOption) *Context {
 	ctx := &Context{
 		schemas:       map[string]*SchemaInfo{},
 		executionPlan: map[string][]*executor.ExplainRecord{},
 		sysVars:       map[string]string{},
 	}
+
+	for _, opt := range opts {
+		opt.apply(ctx)
+	}
+
 	if parent == nil {
 		return ctx
 	}
@@ -96,6 +108,12 @@ func NewContext(parent *Context) *Context {
 		ctx.sysVars[k] = v
 	}
 	return ctx
+}
+
+func WithExecutor(e *executor.Executor) contextOption {
+	return func(ctx *Context) {
+		ctx.e = e
+	}
 }
 
 func (c *Context) GetSysVar(name string) (string, bool) {
