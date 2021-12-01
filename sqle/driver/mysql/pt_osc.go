@@ -132,7 +132,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		"Host":   i.inst.Host,
 		"Port":   i.inst.Port,
 		"User":   i.inst.User,
-		"Schema": i.getSchemaName(stmt.Table),
+		"Schema": i.Ctx.GetSchemaName(stmt.Table),
 		"Table":  stmt.Table.Name.String(),
 	})
 	return buff.String(), err

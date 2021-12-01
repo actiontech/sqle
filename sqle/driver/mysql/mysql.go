@@ -117,7 +117,7 @@ func (i *Inspect) Exec(ctx _context.Context, query string) (_driver.Result, erro
 			return nil, errors.Wrap(err, "parse SQL")
 		}
 		stmt := node[0].(*ast.AlterTableStmt)
-		schema := i.getSchemaName(stmt.Table)
+		schema := i.Ctx.GetSchemaName(stmt.Table)
 
 		run := func(dryRun bool) error {
 			executor, err := onlineddl.NewExecutor(i.log, i.inst, schema, query)
@@ -386,16 +386,6 @@ func (i *Inspect) closeDbConn() {
 	}
 }
 
-// getSchemaName get schema name from TableName ast;
-// if schema name is default, using current schema from SQL ctx.
-func (i *Inspect) getSchemaName(stmt *ast.TableName) string {
-	if stmt.Schema.String() == "" {
-		return i.Ctx.currentSchema
-	} else {
-		return stmt.Schema.String()
-	}
-}
-
 // isSchemaExist determine if the schema exists in the SQL ctx;
 // and lazy load schema info from db to SQL ctx.
 func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
@@ -429,7 +419,7 @@ func (i *Inspect) isSchemaExist(schemaName string) (bool, error) {
 
 // getTableName get table name from TableName ast.
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
-	schema := i.getSchemaName(stmt)
+	schema := i.Ctx.GetSchemaName(stmt)
 	if schema == "" {
 		return fmt.Sprintf("%s", stmt.Name)
 	}
@@ -445,7 +435,7 @@ func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
 // isTableExist determine if the table exists in the SQL ctx;
 // and lazy load table info from db to SQL ctx.
 func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
-	schemaName := i.getSchemaName(stmt)
+	schemaName := i.Ctx.GetSchemaName(stmt)
 	schemaExist, err := i.isSchemaExist(schemaName)
 	if err != nil {
 		return schemaExist, err
@@ -483,7 +473,7 @@ func (i *Inspect) isTableExist(stmt *ast.TableName) (bool, error) {
 
 // getTableInfo get table info if table exist.
 func (i *Inspect) getTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
-	schema := i.getSchemaName(stmt)
+	schema := i.Ctx.GetSchemaName(stmt)
 	table := stmt.Name.String()
 	return i.Ctx.GetTable(schema, table)
 }
@@ -504,7 +494,7 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		size, err := conn.ShowTableSizeMB(i.getSchemaName(stmt), stmt.Name.String())
+		size, err := conn.ShowTableSizeMB(i.Ctx.GetSchemaName(stmt), stmt.Name.String())
 		if err != nil {
 			return 0, err
 		}
@@ -516,7 +506,7 @@ func (i *Inspect) getTableSize(stmt *ast.TableName) (float64, error) {
 // getSchemaEngine get schema default engine.
 func (i *Inspect) getSchemaEngine(stmt *ast.TableName, schemaName string) (string, error) {
 	if schemaName == "" {
-		schemaName = i.getSchemaName(stmt)
+		schemaName = i.Ctx.GetSchemaName(stmt)
 	}
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
 	if schemaExist {
@@ -543,7 +533,7 @@ func (i *Inspect) getSchemaEngine(stmt *ast.TableName, schemaName string) (strin
 // getSchemaCharacter get schema default character.
 func (i *Inspect) getSchemaCharacter(stmt *ast.TableName, schemaName string) (string, error) {
 	if schemaName == "" {
-		schemaName = i.getSchemaName(stmt)
+		schemaName = i.Ctx.GetSchemaName(stmt)
 	}
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
 	if schemaExist {
@@ -609,7 +599,7 @@ func (i *Inspect) getMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 
 func (i *Inspect) getCollationDatabase(stmt *ast.TableName, schemaName string) (string, error) {
 	if schemaName == "" {
-		schemaName = i.getSchemaName(stmt)
+		schemaName = i.Ctx.GetSchemaName(stmt)
 	}
 	schema, schemaExist := i.Ctx.GetSchema(schemaName)
 	if schemaExist && schema.collationLoad {

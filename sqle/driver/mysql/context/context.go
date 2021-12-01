@@ -226,7 +226,7 @@ func (c *Context) UpdateContext(node ast.Node) {
 			c.AddSchema(s.Name)
 		}
 	case *ast.CreateTableStmt:
-		schemaName := c.getSchemaName(s.Table)
+		schemaName := c.GetSchemaName(s.Table)
 		tableName := s.Table.Name.L
 		if c.HasTable(schemaName, tableName) {
 			return
@@ -246,7 +246,7 @@ func (c *Context) UpdateContext(node ast.Node) {
 	case *ast.DropTableStmt:
 		if c.HasLoadSchemas() {
 			for _, table := range s.Tables {
-				schemaName := c.getSchemaName(table)
+				schemaName := c.GetSchemaName(table)
 				tableName := table.Name.L
 				if c.HasTable(schemaName, tableName) {
 					c.DelTable(schemaName, tableName)
@@ -271,7 +271,7 @@ func (c *Context) UpdateContext(node ast.Node) {
 			info.AlterTables = append(info.AlterTables, s)
 			// rename table
 			if s.Table.Name.L != info.MergedTable.Table.Name.L {
-				schemaName := c.getSchemaName(s.Table)
+				schemaName := c.GetSchemaName(s.Table)
 				c.DelTable(schemaName, s.Table.Name.L)
 				c.AddTable(schemaName, info.MergedTable.Table.Name.L, info)
 			}
@@ -280,13 +280,13 @@ func (c *Context) UpdateContext(node ast.Node) {
 	}
 }
 
-// TODO: export and remove duplicated code
-func (c *Context) getSchemaName(stmt *ast.TableName) string {
+// GetSchemaName get schema name from AST or current schema.
+func (c *Context) GetSchemaName(stmt *ast.TableName) string {
 	if stmt.Schema.String() == "" {
 		return c.currentSchema
-	} else {
-		return stmt.Schema.String()
 	}
+
+	return stmt.Schema.String()
 }
 
 // TODO: export and remove duplicated code
