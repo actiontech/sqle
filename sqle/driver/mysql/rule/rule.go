@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/context"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
@@ -1402,7 +1403,7 @@ func checkNewObjectName(ctx *context.Context, rule driver.Rule, res *driver.Audi
 	// check keyword
 	invalidNames := []string{}
 	for _, name := range names {
-		if IsMysqlReservedKeyword(name) {
+		if keyword.IsMysqlReservedKeyword(name) {
 			invalidNames = append(invalidNames, name)
 		}
 	}
