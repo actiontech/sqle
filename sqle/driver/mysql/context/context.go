@@ -477,3 +477,44 @@ func (c *Context) GetCollationDatabase(stmt *ast.TableName, schemaName string) (
 	}
 	return collation, nil
 }
+
+func (i *Inspect) getMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (string, error) {
+	ti, exist := i.Ctx.GetTableInfo(stmt)
+	if !exist || !ti.isLoad {
+		return "", nil
+	}
+
+	for _, columnName := range columnNames {
+		if !util.TableExistCol(ti.OriginalTable, columnName) {
+			return "", nil
+		}
+	}
+
+	conn, err := i.getDbConn()
+	if err != nil {
+		return "", err
+	}
+	sqls := make([]string, 0, len(columnNames))
+	for _, col := range columnNames {
+		sqls = append(sqls, fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) AS %v", col, col))
+	}
+	queryIndexOptionSql := fmt.Sprintf("SELECT %v FROM %v", strings.Join(sqls, ","), stmt.Name)
+
+	result, err := conn.Db.Query(queryIndexOptionSql)
+	if err != nil {
+		return "", fmt.Errorf("query max index option for table error: %v", err)
+	}
+	maxIndexOption := ""
+	for _, r := range result {
+		for _, value := range r {
+			if maxIndexOption == "" {
+				maxIndexOption = value.String
+				continue
+			}
+			if strings.Compare(value.String, maxIndexOption) > 0 {
+				maxIndexOption = value.String
+			}
+		}
+	}
+	return maxIndexOption, nil
+}
