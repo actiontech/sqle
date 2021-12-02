@@ -667,7 +667,7 @@ ERROR:
 // generateGetRecordsSql generate select SQL.
 func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) string {
-	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, util.GetTableNameWithQuote(tableName))
+	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, i.getTableNameWithQuote(tableName))
 	if tableAlias != "" {
 		recordSql = fmt.Sprintf("%s AS %s", recordSql, tableAlias)
 	}
