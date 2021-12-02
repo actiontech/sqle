@@ -1,4 +1,4 @@
-package mysql
+package rule
 
 import (
 	"bytes"
@@ -10,6 +10,10 @@ import (
 	"unicode"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
@@ -106,9 +110,24 @@ const (
 type RuleHandler struct {
 	Rule                 driver.Rule
 	Message              string
-	Func                 func(driver.Rule, *Inspect, ast.Node) error
+	Func                 func(*session.Context, driver.Rule, *driver.AuditResult, ast.Node) error
 	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
+}
+
+// In order to reuse some code, some rules use the same rule handler.
+// Then following code is the side effect of the purpose.
+//
+// It's not a good idea to use the same rule handler for different rules.
+// FIXME: once we map one rule to one rule handler, we should remove the side effect.
+func addResult(result *driver.AuditResult, currentRule driver.Rule, ruleName string, args ...interface{}) {
+	// if rule is not current rule, ignore save the message.
+	if ruleName != currentRule.Name {
+		return
+	}
+	level := currentRule.Level
+	message := RuleHandlerMap[ruleName].Message
+	result.Add(level, message, args...)
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
@@ -863,14 +882,14 @@ func init() {
 	}
 }
 
-func checkSelectAll(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkSelectAll(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		// check select all column
 		if stmt.Fields != nil && stmt.Fields.Fields != nil {
 			for _, field := range stmt.Fields.Fields {
 				if field.WildCard != nil {
-					i.addResult(DMLDisableSelectAllColumn)
+					addResult(res, rule, DMLDisableSelectAllColumn)
 				}
 			}
 		}
@@ -878,22 +897,22 @@ func checkSelectAll(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkSelectWhere(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkSelectWhere(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
 			return nil
 		}
-		checkWhere(i, stmt.Where)
+		checkWhere(rule, res, stmt.Where)
 
 	case *ast.UpdateStmt:
-		checkWhere(i, stmt.Where)
+		checkWhere(rule, res, stmt.Where)
 	case *ast.DeleteStmt:
-		checkWhere(i, stmt.Where)
+		checkWhere(rule, res, stmt.Where)
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			if checkWhere(i, ss.Where) {
+			if checkWhere(rule, res, ss.Where) {
 				break
 			}
 		}
@@ -904,31 +923,31 @@ func checkSelectWhere(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkWhere(i *Inspect, where ast.ExprNode) bool {
+func checkWhere(rule driver.Rule, res *driver.AuditResult, where ast.ExprNode) bool {
 	isAddResult := false
 
-	if where == nil || !whereStmtHasOneColumn(where) {
-		i.addResult(DMLCheckWhereIsInvalid)
+	if where == nil || !util.WhereStmtHasOneColumn(where) {
+		addResult(res, rule, DMLCheckWhereIsInvalid)
 		isAddResult = true
 	}
-	if where != nil && whereStmtExistNot(where) {
-		i.addResult(DMLCheckWhereExistNot)
+	if where != nil && util.WhereStmtExistNot(where) {
+		addResult(res, rule, DMLCheckWhereExistNot)
 		isAddResult = true
 	}
-	if where != nil && whereStmtExistScalarSubQueries(where) {
-		i.addResult(DMLCheckWhereExistScalarSubquery)
+	if where != nil && util.WhereStmtExistScalarSubQueries(where) {
+		addResult(res, rule, DMLCheckWhereExistScalarSubquery)
 		isAddResult = true
 	}
-	if where != nil && checkWhereFuzzySearch(where) {
-		i.addResult(DMLCheckFuzzySearch)
+	if where != nil && util.CheckWhereFuzzySearch(where) {
+		addResult(res, rule, DMLCheckFuzzySearch)
 		isAddResult = true
 	}
 	return isAddResult
 }
-func checkWhereExistNull(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkWhereExistNull(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		var existNull bool
-		scanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			if _, ok := expr.(*ast.IsNullExpr); ok {
 				existNull = true
 				return true
@@ -936,7 +955,7 @@ func checkWhereExistNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 			return false
 		}, where)
 		if existNull {
-			i.addResult(rule.Name)
+			addResult(res, rule, rule.Name)
 		}
 	}
 	return nil
@@ -958,12 +977,12 @@ func getWhereExpr(node ast.Node) (where ast.ExprNode) {
 	return
 }
 
-func checkIndexesExistBeforeCreatConstraints(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkIndexesExistBeforeCreatConstraints(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		constraintMap := make(map[string]struct{})
 		cols := []string{}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			if spec.Constraint != nil && (spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
 				spec.Constraint.Tp == ast.ConstraintUniq || spec.Constraint.Tp == ast.ConstraintUniqKey) {
 				for _, key := range spec.Constraint.Keys {
@@ -971,7 +990,7 @@ func checkIndexesExistBeforeCreatConstraints(rule driver.Rule, i *Inspect, node 
 				}
 			}
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -985,7 +1004,7 @@ func checkIndexesExistBeforeCreatConstraints(rule driver.Rule, i *Inspect, node 
 		}
 		for _, col := range cols {
 			if _, ok := constraintMap[col]; !ok {
-				i.addResult(DDLCheckIndexesExistBeforeCreateConstraints)
+				addResult(res, rule, DDLCheckIndexesExistBeforeCreateConstraints)
 				return nil
 			}
 		}
@@ -993,11 +1012,11 @@ func checkIndexesExistBeforeCreatConstraints(rule driver.Rule, i *Inspect, node 
 	return nil
 }
 
-func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkPrimaryKey(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var pkIsAutoIncrement = false
 	var pkIsBigIntUnsigned = false
 	inspectCol := func(col *ast.ColumnDef) {
-		if IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+		if util.IsAllInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 			pkIsAutoIncrement = true
 		}
 		if col.Tp.Tp == mysql.TypeLonglong && mysql.HasUnsignedFlag(col.Tp.Flag) {
@@ -1022,7 +1041,7 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 			);
 		*/
 		for _, col := range stmt.Cols {
-			if IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+			if util.IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
 				hasPk = true
 				pkColumnExist = true
 				inspectCol(col)
@@ -1050,25 +1069,25 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 		if !hasPk {
-			i.addResult(DDLCheckPKNotExist)
+			addResult(res, rule, DDLCheckPKNotExist)
 		}
 		if hasPk && pkColumnExist && !pkIsAutoIncrement {
-			i.addResult(DDLCheckPKWithoutAutoIncrement)
+			addResult(res, rule, DDLCheckPKWithoutAutoIncrement)
 		}
 		if hasPk && pkColumnExist && pkIsAutoIncrement {
-			i.addResult(DDLCheckPKProhibitAutoIncrement)
+			addResult(res, rule, DDLCheckPKProhibitAutoIncrement)
 		}
 		if hasPk && pkColumnExist && !pkIsBigIntUnsigned {
-			i.addResult(DDLCheckPKWithoutBigintUnsigned)
+			addResult(res, rule, DDLCheckPKWithoutBigintUnsigned)
 		}
 	case *ast.AlterTableStmt:
 		var alterPK bool
-		if originTable, exist, err := i.getCreateTableStmt(stmt.Table); err == nil && exist {
+		if originTable, exist, err := ctx.GetCreateTableStmt(stmt.Table); err == nil && exist {
 			for _, spec := range stmt.Specs {
 				switch spec.Tp {
 				case ast.AlterTableAddColumns:
 					for _, newColumn := range spec.NewColumns {
-						if IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
+						if util.IsAllInOptions(newColumn.Options, ast.ColumnOptionPrimaryKey) {
 							alterPK = true
 							inspectCol(newColumn)
 						}
@@ -1087,7 +1106,7 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 				}
 			}
 
-			if originPK, exist := getPrimaryKey(originTable); exist {
+			if originPK, exist := util.GetPrimaryKey(originTable); exist {
 				for _, spec := range stmt.Specs {
 					switch spec.Tp {
 					case ast.AlterTableModifyColumn:
@@ -1109,13 +1128,13 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 		if alterPK && !pkIsAutoIncrement {
-			i.addResult(DDLCheckPKWithoutAutoIncrement)
+			addResult(res, rule, DDLCheckPKWithoutAutoIncrement)
 		}
 		if alterPK && pkIsAutoIncrement {
-			i.addResult(DDLCheckPKProhibitAutoIncrement)
+			addResult(res, rule, DDLCheckPKProhibitAutoIncrement)
 		}
 		if alterPK && !pkIsBigIntUnsigned {
-			i.addResult(DDLCheckPKWithoutBigintUnsigned)
+			addResult(res, rule, DDLCheckPKWithoutBigintUnsigned)
 		}
 	default:
 		return nil
@@ -1123,21 +1142,21 @@ func checkPrimaryKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkMergeAlterTable(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkMergeAlterTable(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		// merge alter table
-		info, exist := i.getTableInfo(stmt.Table)
+		info, exist := ctx.GetTableInfo(stmt.Table)
 		if exist {
 			if info.AlterTables != nil && len(info.AlterTables) > 0 {
-				i.addResult(DDLCheckAlterTableNeedMerge)
+				addResult(res, rule, DDLCheckAlterTableNeedMerge)
 			}
 		}
 	}
 	return nil
 }
 
-func checkEngineAndCharacterSet(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var engine string
 	var characterSet string
@@ -1189,13 +1208,13 @@ func checkEngineAndCharacterSet(rule driver.Rule, i *Inspect, node ast.Node) err
 		return nil
 	}
 	if engine == "" {
-		engine, err = i.getSchemaEngine(tableName, schemaName)
+		engine, err = ctx.GetSchemaEngine(tableName, schemaName)
 		if err != nil {
 			return err
 		}
 	}
 	if characterSet == "" {
-		characterSet, err = i.getSchemaCharacter(tableName, schemaName)
+		characterSet, err = ctx.GetSchemaCharacter(tableName, schemaName)
 		if err != nil {
 			return err
 		}
@@ -1203,18 +1222,18 @@ func checkEngineAndCharacterSet(rule driver.Rule, i *Inspect, node ast.Node) err
 	if strings.ToLower(engine) == "innodb" && strings.ToLower(characterSet) == "utf8mb4" {
 		return nil
 	}
-	i.addResult(DDLCheckTableWithoutInnoDBUTF8MB4)
+	addResult(res, rule, DDLCheckTableWithoutInnoDBUTF8MB4)
 	return nil
 }
 
-func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.Node) error {
+func disableAddIndexForColumnsTypeBlob(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	isTypeBlobCols := map[string]bool{}
 	indexDataTypeIsBlob := false
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
-			if MysqlDataTypeIsBlob(col.Tp.Tp) {
-				if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
+			if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
+				if util.HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
 					indexDataTypeIsBlob = true
 					break
 				}
@@ -1236,13 +1255,13 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 		}
 	case *ast.AlterTableStmt:
 		// collect columns type from original table
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
 		if exist {
 			for _, col := range createTableStmt.Cols {
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
+				if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 					isTypeBlobCols[col.Name.Name.String()] = true
 				} else {
 					isTypeBlobCols[col.Name.Name.String()] = false
@@ -1250,14 +1269,14 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 			}
 		}
 		// collect columns type from alter table
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
 			ast.AlterTableChangeColumn) {
 			if spec.NewColumns == nil {
 				continue
 			}
 			for _, col := range spec.NewColumns {
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
-					if HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
+				if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
+					if util.HasOneInOptions(col.Options, ast.ColumnOptionUniqKey) {
 						indexDataTypeIsBlob = true
 						break
 					}
@@ -1267,7 +1286,7 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 				}
 			}
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
 			case ast.ConstraintIndex, ast.ConstraintUniq:
 				for _, col := range spec.Constraint.Keys {
@@ -1279,12 +1298,12 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 			}
 		}
 	case *ast.CreateIndexStmt:
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil || !exist {
 			return err
 		}
 		for _, col := range createTableStmt.Cols {
-			if MysqlDataTypeIsBlob(col.Tp.Tp) {
+			if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 				isTypeBlobCols[col.Name.Name.String()] = true
 			} else {
 				isTypeBlobCols[col.Name.Name.String()] = false
@@ -1300,12 +1319,12 @@ func disableAddIndexForColumnsTypeBlob(rule driver.Rule, i *Inspect, node ast.No
 		return nil
 	}
 	if indexDataTypeIsBlob {
-		i.addResult(DDLCheckIndexedColumnWithBolb)
+		addResult(res, rule, DDLCheckIndexedColumnWithBolb)
 	}
 	return nil
 }
 
-func checkNewObjectName(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkNewObjectName(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	names := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
@@ -1359,7 +1378,7 @@ func checkNewObjectName(rule driver.Rule, i *Inspect, node ast.Node) error {
 	// check length
 	for _, name := range names {
 		if len(name) > 64 {
-			i.addResult(DDLCheckObjectNameLength)
+			addResult(res, rule, DDLCheckObjectNameLength)
 			break
 		}
 	}
@@ -1376,7 +1395,7 @@ func checkNewObjectName(rule driver.Rule, i *Inspect, node ast.Node) error {
 				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
 			}) != -1 {
 
-			i.addResult(DDLCheckOBjectNameUseCN)
+			addResult(res, rule, DDLCheckOBjectNameUseCN)
 			break
 		}
 	}
@@ -1384,18 +1403,18 @@ func checkNewObjectName(rule driver.Rule, i *Inspect, node ast.Node) error {
 	// check keyword
 	invalidNames := []string{}
 	for _, name := range names {
-		if IsMysqlReservedKeyword(name) {
+		if keyword.IsMysqlReservedKeyword(name) {
 			invalidNames = append(invalidNames, name)
 		}
 	}
 	if len(invalidNames) > 0 {
-		i.addResult(DDLCheckObjectNameUsingKeyword,
-			strings.Join(RemoveArrayRepeat(invalidNames), ", "))
+		addResult(res, rule, DDLCheckObjectNameUsingKeyword,
+			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
 	}
 	return nil
 }
 
-func checkForeignKey(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkForeignKey(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	hasFk := false
 
 	switch stmt := node.(type) {
@@ -1417,12 +1436,12 @@ func checkForeignKey(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if hasFk {
-		i.addResult(DDLDisableFK)
+		addResult(res, rule, DDLDisableFK)
 	}
 	return nil
 }
 
-func checkIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
 	value, err := strconv.Atoi(rule.Value)
@@ -1454,7 +1473,7 @@ func checkIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
 				}
 			}
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -1472,7 +1491,7 @@ func checkIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
 		if compositeIndexMax < len(stmt.IndexColNames) {
 			compositeIndexMax = len(stmt.IndexColNames)
 		}
-		createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -1488,28 +1507,28 @@ func checkIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if indexCounter > value {
-		i.addResult(DDLCheckIndexCount, value)
+		addResult(res, rule, DDLCheckIndexCount, value)
 	}
 	if compositeIndexMax > value {
-		i.addResult(DDLCheckCompositeIndexMax, value)
+		addResult(res, rule, DDLCheckCompositeIndexMax, value)
 	}
 	return nil
 }
 
-func checkStringType(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkStringType(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// if char length >20 using varchar.
 		for _, col := range stmt.Cols {
 			if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-				i.addResult(DDLCheckColumnCharLength)
+				addResult(res, rule, DDLCheckColumnCharLength)
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, col := range spec.NewColumns {
 				if col.Tp != nil && col.Tp.Tp == mysql.TypeString && col.Tp.Flen > 20 {
-					i.addResult(DDLCheckColumnCharLength)
+					addResult(res, rule, DDLCheckColumnCharLength)
 				}
 			}
 		}
@@ -1519,29 +1538,29 @@ func checkStringType(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkIfNotExist(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkIfNotExist(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check `if not exists`
 		if !stmt.IfNotExists {
-			i.addResult(DDLCheckPKWithoutIfNotExists)
+			addResult(res, rule, DDLCheckPKWithoutIfNotExists)
 		}
 	}
 	return nil
 }
 
-func disableDropStmt(rule driver.Rule, i *Inspect, node ast.Node) error {
+func disableDropStmt(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	// specific check
 	switch node.(type) {
 	case *ast.DropDatabaseStmt:
-		i.addResult(DDLDisableDropStatement)
+		addResult(res, rule, DDLDisableDropStatement)
 	case *ast.DropTableStmt:
-		i.addResult(DDLDisableDropStatement)
+		addResult(res, rule, DDLDisableDropStatement)
 	}
 	return nil
 }
 
-func checkTableWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkTableWithoutComment(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableHasComment bool
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -1558,13 +1577,13 @@ func checkTableWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) error
 			}
 		}
 		if !tableHasComment {
-			i.addResult(DDLCheckTableWithoutComment)
+			addResult(res, rule, DDLCheckTableWithoutComment)
 		}
 	}
 	return nil
 }
 
-func checkColumnWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkColumnWithoutComment(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1578,7 +1597,7 @@ func checkColumnWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) erro
 				}
 			}
 			if !columnHasComment {
-				i.addResult(DDLCheckColumnWithoutComment)
+				addResult(res, rule, DDLCheckColumnWithoutComment)
 				return nil
 			}
 		}
@@ -1586,7 +1605,7 @@ func checkColumnWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) erro
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
 			for _, col := range spec.NewColumns {
 				columnHasComment := false
 				for _, op := range col.Options {
@@ -1595,7 +1614,7 @@ func checkColumnWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) erro
 					}
 				}
 				if !columnHasComment {
-					i.addResult(DDLCheckColumnWithoutComment)
+					addResult(res, rule, DDLCheckColumnWithoutComment)
 					return nil
 				}
 			}
@@ -1604,7 +1623,7 @@ func checkColumnWithoutComment(rule driver.Rule, i *Inspect, node ast.Node) erro
 	return nil
 }
 
-func checkIndexPrefix(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexesName := []string{}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
@@ -1615,7 +1634,7 @@ func checkIndexPrefix(rule driver.Rule, i *Inspect, node ast.Node) error {
 			}
 		}
 	case *ast.AlterTableStmt:
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
 			case ast.ConstraintIndex:
 				indexesName = append(indexesName, spec.Constraint.Name)
@@ -1630,28 +1649,28 @@ func checkIndexPrefix(rule driver.Rule, i *Inspect, node ast.Node) error {
 	}
 	for _, name := range indexesName {
 		if !utils.HasPrefix(name, "idx_", false) {
-			i.addResult(DDLCheckIndexPrefix)
+			addResult(res, rule, DDLCheckIndexPrefix)
 			return nil
 		}
 	}
 	return nil
 }
 
-func checkUniqIndexPrefix(rule driver.Rule, i *Inspect, node ast.Node) error {
-	return checkIfUniqIndexSatisfy(rule, i, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
+func checkUniqIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	return checkIfUniqIndexSatisfy(rule, res, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
 		return utils.HasPrefix(uniqIndexName, "uniq_", false)
 	})
 }
 
-func checkUniqIndex(rule driver.Rule, i *Inspect, node ast.Node) error {
-	return checkIfUniqIndexSatisfy(rule, i, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
+func checkUniqIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	return checkIfUniqIndexSatisfy(rule, res, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
 		return strings.EqualFold(uniqIndexName, fmt.Sprintf("IDX_UK_%v_%v", tableName, strings.Join(indexedColNames, "_")))
 	})
 }
 
 func checkIfUniqIndexSatisfy(
 	rule driver.Rule,
-	i *Inspect,
+	res *driver.AuditResult,
 	node ast.Node,
 	isSatisfy func(uniqIndexName, tableName string, indexedColNames []string) bool) error {
 
@@ -1671,7 +1690,7 @@ func checkIfUniqIndexSatisfy(
 		}
 	case *ast.AlterTableStmt:
 		tableName = stmt.Table.Name.String()
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
 			case ast.ConstraintUniq:
 				for _, key := range spec.Constraint.Keys {
@@ -1692,14 +1711,14 @@ func checkIfUniqIndexSatisfy(
 
 	for index, indexedCols := range indexes {
 		if !isSatisfy(index, tableName, indexedCols) {
-			i.addResult(rule.Name)
+			addResult(res, rule, rule.Name)
 			return nil
 		}
 	}
 	return nil
 }
 
-func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkColumnWithoutDefault(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1712,20 +1731,20 @@ func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) erro
 			isAutoIncrementColumn := false
 			isBlobColumn := false
 			columnHasDefault := false
-			if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+			if util.HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 				isAutoIncrementColumn = true
 			}
-			if MysqlDataTypeIsBlob(col.Tp.Tp) {
+			if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 				isBlobColumn = true
 			}
-			if HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+			if util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
 				columnHasDefault = true
 			}
 			if isAutoIncrementColumn || isBlobColumn {
 				continue
 			}
 			if !columnHasDefault {
-				i.addResult(DDLCheckColumnWithoutDefault)
+				addResult(res, rule, DDLCheckColumnWithoutDefault)
 				return nil
 			}
 		}
@@ -1733,20 +1752,20 @@ func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) erro
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
 			ast.AlterTableModifyColumn) {
 			for _, col := range spec.NewColumns {
 				isAutoIncrementColumn := false
 				isBlobColumn := false
 				columnHasDefault := false
 
-				if HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
+				if util.HasOneInOptions(col.Options, ast.ColumnOptionAutoIncrement) {
 					isAutoIncrementColumn = true
 				}
-				if MysqlDataTypeIsBlob(col.Tp.Tp) {
+				if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 					isBlobColumn = true
 				}
-				if HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+				if util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
 					columnHasDefault = true
 				}
 
@@ -1754,7 +1773,7 @@ func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) erro
 					continue
 				}
 				if !columnHasDefault {
-					i.addResult(DDLCheckColumnWithoutDefault)
+					addResult(res, rule, DDLCheckColumnWithoutDefault)
 					return nil
 				}
 			}
@@ -1763,7 +1782,7 @@ func checkColumnWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) erro
 	return nil
 }
 
-func checkColumnTimestampWithoutDefault(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkColumnTimestampWithoutDefault(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1777,7 +1796,7 @@ func checkColumnTimestampWithoutDefault(rule driver.Rule, i *Inspect, node ast.N
 				}
 			}
 			if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
-				i.addResult(DDLCheckColumnTimestampWitoutDefault)
+				addResult(res, rule, DDLCheckColumnTimestampWitoutDefault)
 				return nil
 			}
 		}
@@ -1785,7 +1804,7 @@ func checkColumnTimestampWithoutDefault(rule driver.Rule, i *Inspect, node ast.N
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
 			for _, col := range spec.NewColumns {
 				columnHasDefault := false
 				for _, op := range col.Options {
@@ -1794,7 +1813,7 @@ func checkColumnTimestampWithoutDefault(rule driver.Rule, i *Inspect, node ast.N
 					}
 				}
 				if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
-					i.addResult(DDLCheckColumnTimestampWitoutDefault)
+					addResult(res, rule, DDLCheckColumnTimestampWitoutDefault)
 					return nil
 				}
 			}
@@ -1803,7 +1822,7 @@ func checkColumnTimestampWithoutDefault(rule driver.Rule, i *Inspect, node ast.N
 	return nil
 }
 
-func checkColumnBlobNotNull(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkColumnBlobNotNull(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1817,7 +1836,7 @@ func checkColumnBlobNotNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 				for _, opt := range col.Options {
 					if opt.Tp == ast.ColumnOptionNotNull {
-						i.addResult(DDLCheckColumnBlobWithNotNull)
+						addResult(res, rule, DDLCheckColumnBlobWithNotNull)
 						return nil
 					}
 				}
@@ -1827,7 +1846,7 @@ func checkColumnBlobNotNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn,
 			ast.AlterTableModifyColumn) {
 			for _, col := range spec.NewColumns {
 				if col.Tp == nil {
@@ -1837,7 +1856,7 @@ func checkColumnBlobNotNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 					for _, opt := range col.Options {
 						if opt.Tp == ast.ColumnOptionNotNull {
-							i.addResult(DDLCheckColumnBlobWithNotNull)
+							addResult(res, rule, DDLCheckColumnBlobWithNotNull)
 							return nil
 						}
 					}
@@ -1848,19 +1867,19 @@ func checkColumnBlobNotNull(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkColumnEnumNotice(rule driver.Rule, i *Inspect, node ast.Node) error {
-	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeEnum)
+func checkColumnEnumNotice(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	return checkColumnShouldNotBeType(rule, res, node, mysql.TypeEnum)
 }
 
-func checkColumnSetNotice(rule driver.Rule, i *Inspect, node ast.Node) error {
-	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeSet)
+func checkColumnSetNotice(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	return checkColumnShouldNotBeType(rule, res, node, mysql.TypeSet)
 }
 
-func checkColumnBlobNotice(rule driver.Rule, i *Inspect, node ast.Node) error {
-	return checkColumnShouldNotBeType(rule, i, node, mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob)
+func checkColumnBlobNotice(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	return checkColumnShouldNotBeType(rule, res, node, mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob)
 }
 
-func checkColumnShouldNotBeType(rule driver.Rule, i *Inspect, node ast.Node, colTypes ...byte) error {
+func checkColumnShouldNotBeType(rule driver.Rule, res *driver.AuditResult, node ast.Node, colTypes ...byte) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -1868,7 +1887,7 @@ func checkColumnShouldNotBeType(rule driver.Rule, i *Inspect, node ast.Node, col
 				continue
 			}
 			if bytes.Contains(colTypes, []byte{col.Tp.Tp}) {
-				i.addResult(rule.Name)
+				addResult(res, rule, rule.Name)
 				return nil
 			}
 		}
@@ -1876,7 +1895,7 @@ func checkColumnShouldNotBeType(rule driver.Rule, i *Inspect, node ast.Node, col
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(
+		for _, spec := range util.GetAlterTableSpecByTp(
 			stmt.Specs,
 			ast.AlterTableAddColumns,
 			ast.AlterTableModifyColumn,
@@ -1888,7 +1907,7 @@ func checkColumnShouldNotBeType(rule driver.Rule, i *Inspect, node ast.Node, col
 				}
 
 				if bytes.Contains(colTypes, []byte{newCol.Tp.Tp}) {
-					i.addResult(rule.Name)
+					addResult(res, rule, rule.Name)
 					return nil
 				}
 			}
@@ -1898,7 +1917,7 @@ func checkColumnShouldNotBeType(rule driver.Rule, i *Inspect, node ast.Node, col
 	return nil
 }
 
-func checkColumnBlobDefaultNull(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkColumnBlobDefaultNull(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1912,7 +1931,7 @@ func checkColumnBlobDefaultNull(rule driver.Rule, i *Inspect, node ast.Node) err
 			case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 				for _, opt := range col.Options {
 					if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
-						i.addResult(DDLCheckColumnBlobDefaultIsNotNull)
+						addResult(res, rule, DDLCheckColumnBlobDefaultIsNotNull)
 						return nil
 					}
 				}
@@ -1922,7 +1941,7 @@ func checkColumnBlobDefaultNull(rule driver.Rule, i *Inspect, node ast.Node) err
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn, ast.AlterTableAlterColumn,
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableModifyColumn, ast.AlterTableAlterColumn,
 			ast.AlterTableChangeColumn, ast.AlterTableAddColumns) {
 			for _, col := range spec.NewColumns {
 				if col.Tp == nil {
@@ -1932,7 +1951,7 @@ func checkColumnBlobDefaultNull(rule driver.Rule, i *Inspect, node ast.Node) err
 				case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
 					for _, opt := range col.Options {
 						if opt.Tp == ast.ColumnOptionDefaultValue && opt.Expr.GetType().Tp != mysql.TypeNull {
-							i.addResult(DDLCheckColumnBlobDefaultIsNotNull)
+							addResult(res, rule, DDLCheckColumnBlobDefaultIsNotNull)
 							return nil
 						}
 					}
@@ -1943,58 +1962,58 @@ func checkColumnBlobDefaultNull(rule driver.Rule, i *Inspect, node ast.Node) err
 	return nil
 }
 
-func checkDMLWithLimit(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithLimit(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit != nil {
-			i.addResult(DMLCheckWithLimit)
+			addResult(res, rule, DMLCheckWithLimit)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Limit != nil {
-			i.addResult(DMLCheckWithLimit)
+			addResult(res, rule, DMLCheckWithLimit)
 		}
 	}
 	return nil
 }
-func checkDMLLimitExist(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDMLLimitExist(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Limit == nil {
-			i.addResult(DMLCheckLimitMustExist)
+			addResult(res, rule, DMLCheckLimitMustExist)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Limit == nil {
-			i.addResult(DMLCheckLimitMustExist)
+			addResult(res, rule, DMLCheckLimitMustExist)
 		}
 	}
 	return nil
 }
 
-func checkDMLWithOrderBy(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithOrderBy(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		if stmt.Order != nil {
-			i.addResult(DMLCheckWithOrderBy)
+			addResult(res, rule, DMLCheckWithOrderBy)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Order != nil {
-			i.addResult(DMLCheckWithOrderBy)
+			addResult(res, rule, DMLCheckWithOrderBy)
 		}
 	}
 	return nil
 }
 
-func checkDMLWithInsertColumnExist(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithInsertColumnExist(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		if len(stmt.Columns) == 0 {
-			i.addResult(DMLCheckInsertColumnsExist)
+			addResult(res, rule, DMLCheckInsertColumnsExist)
 		}
 	}
 	return nil
 }
 
-func checkDMLWithBatchInsertMaxLimits(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDMLWithBatchInsertMaxLimits(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	value, err := strconv.Atoi(rule.Value)
 	if err != nil {
 		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
@@ -2002,18 +2021,18 @@ func checkDMLWithBatchInsertMaxLimits(rule driver.Rule, i *Inspect, node ast.Nod
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		if len(stmt.Lists) > value {
-			i.addResult(DMLCheckBatchInsertListsMax, value)
+			addResult(res, rule, DMLCheckBatchInsertListsMax, value)
 		}
 	}
 	return nil
 }
 
-func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkWhereExistFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.From.TableRefs)
+			tableSources := util.GetTableSources(stmt.From.TableRefs)
 			// not select from table statement
 			if len(tableSources) < 1 {
 				break
@@ -2024,26 +2043,26 @@ func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 					tables = append(tables, source)
 				}
 			}
-			checkExistFunc(i, tables, stmt.Where)
+			checkExistFunc(ctx, rule, res, tables, stmt.Where)
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.TableRefs.TableRefs)
+			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 			for _, tableSource := range tableSources {
 				switch source := tableSource.Source.(type) {
 				case *ast.TableName:
 					tables = append(tables, source)
 				}
 			}
-			checkExistFunc(i, tables, stmt.Where)
+			checkExistFunc(ctx, rule, res, tables, stmt.Where)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			checkExistFunc(i, getTables(stmt.TableRefs.TableRefs), stmt.Where)
+			checkExistFunc(ctx, rule, res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			tableSources := getTableSources(ss.From.TableRefs)
+			tableSources := util.GetTableSources(ss.From.TableRefs)
 			if len(tableSources) < 1 {
 				continue
 			}
@@ -2053,7 +2072,7 @@ func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 					tables = append(tables, source)
 				}
 			}
-			if checkExistFunc(i, tables, ss.Where) {
+			if checkExistFunc(ctx, rule, res, tables, ss.Where) {
 				break
 			}
 		}
@@ -2062,13 +2081,14 @@ func checkWhereExistFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
 	}
 	return nil
 }
-func checkExistFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) bool {
+
+func checkExistFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, tables []*ast.TableName, where ast.ExprNode) bool {
 	if where == nil {
 		return false
 	}
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
-		createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+		createTableStmt, exist, err := ctx.GetCreateTableStmt(tableName)
 		if exist && err == nil {
 			cols = append(cols, createTableStmt.Cols...)
 		}
@@ -2077,19 +2097,19 @@ func checkExistFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) boo
 	for _, col := range cols {
 		colMap[col.Name.String()] = struct{}{}
 	}
-	if isFuncUsedOnColumnInWhereStmt(colMap, where) {
-		i.addResult(DMLCheckWhereExistFunc)
+	if util.IsFuncUsedOnColumnInWhereStmt(colMap, where) {
+		addResult(res, rule, DMLCheckWhereExistFunc)
 		return true
 	}
 	return false
 }
 
-func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkWhereColumnImplicitConversion(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.From.TableRefs)
+			tableSources := util.GetTableSources(stmt.From.TableRefs)
 			// not select from table statement
 			if len(tableSources) < 1 {
 				break
@@ -2100,26 +2120,26 @@ func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.N
 					tables = append(tables, source)
 				}
 			}
-			checkWhereColumnImplicitConversionFunc(i, tables, stmt.Where)
+			checkWhereColumnImplicitConversionFunc(ctx, rule, res, tables, stmt.Where)
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
-			tableSources := getTableSources(stmt.TableRefs.TableRefs)
+			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 			for _, tableSource := range tableSources {
 				switch source := tableSource.Source.(type) {
 				case *ast.TableName:
 					tables = append(tables, source)
 				}
 			}
-			checkWhereColumnImplicitConversionFunc(i, tables, stmt.Where)
+			checkWhereColumnImplicitConversionFunc(ctx, rule, res, tables, stmt.Where)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			checkWhereColumnImplicitConversionFunc(i, getTables(stmt.TableRefs.TableRefs), stmt.Where)
+			checkWhereColumnImplicitConversionFunc(ctx, rule, res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			tableSources := getTableSources(ss.From.TableRefs)
+			tableSources := util.GetTableSources(ss.From.TableRefs)
 			if len(tableSources) < 1 {
 				continue
 			}
@@ -2129,7 +2149,7 @@ func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.N
 					tables = append(tables, source)
 				}
 			}
-			if checkWhereColumnImplicitConversionFunc(i, tables, ss.Where) {
+			if checkWhereColumnImplicitConversionFunc(ctx, rule, res, tables, ss.Where) {
 				break
 			}
 		}
@@ -2138,13 +2158,13 @@ func checkWhereColumnImplicitConversion(rule driver.Rule, i *Inspect, node ast.N
 	}
 	return nil
 }
-func checkWhereColumnImplicitConversionFunc(i *Inspect, tables []*ast.TableName, where ast.ExprNode) bool {
+func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, tables []*ast.TableName, where ast.ExprNode) bool {
 	if where == nil {
 		return false
 	}
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
-		createTableStmt, exist, err := i.getCreateTableStmt(tableName)
+		createTableStmt, exist, err := ctx.GetCreateTableStmt(tableName)
 		if exist && err == nil {
 			cols = append(cols, createTableStmt.Cols...)
 		}
@@ -2166,24 +2186,24 @@ func checkWhereColumnImplicitConversionFunc(i *Inspect, tables []*ast.TableName,
 		}
 
 	}
-	if isColumnImplicitConversionInWhereStmt(colMap, where) {
-		i.addResult(DMLCheckWhereExistImplicitConversion)
+	if util.IsColumnImplicitConversionInWhereStmt(colMap, where) {
+		addResult(res, rule, DMLCheckWhereExistImplicitConversion)
 		return true
 	}
 	return false
 }
 
-func checkDMLSelectForUpdate(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDMLSelectForUpdate(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.LockTp == ast.SelectLockForUpdate {
-			i.addResult(DMLCheckSelectForUpdate)
+			addResult(res, rule, DMLCheckSelectForUpdate)
 		}
 	}
 	return nil
 }
 
-func checkCollationDatabase(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkCollationDatabase(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var collationDatabase string
 	var err error
@@ -2230,29 +2250,29 @@ func checkCollationDatabase(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if collationDatabase == "" && (tableName != nil || schemaName != "") {
-		collationDatabase, err = i.getCollationDatabase(tableName, schemaName)
+		collationDatabase, err = ctx.GetCollationDatabase(tableName, schemaName)
 		if err != nil {
 			return err
 		}
 	}
 	if !strings.EqualFold(collationDatabase, rule.Value) {
-		i.addResult(DDLCheckDatabaseCollation, rule.Value)
+		addResult(res, rule, DDLCheckDatabaseCollation, rule.Value)
 	}
 	return nil
 }
-func checkDecimalTypeColumn(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDecimalTypeColumn(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
 			if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
-				i.addResult(DDLCheckDecimalTypeColumn)
+				addResult(res, rule, DDLCheckDecimalTypeColumn)
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, col := range spec.NewColumns {
 				if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
-					i.addResult(DDLCheckDecimalTypeColumn)
+					addResult(res, rule, DDLCheckDecimalTypeColumn)
 				}
 			}
 		}
@@ -2262,20 +2282,20 @@ func checkDecimalTypeColumn(rule driver.Rule, i *Inspect, node ast.Node) error {
 	return nil
 }
 
-func checkNeedlessFunc(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkNeedlessFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	needlessFuncArr := strings.Split(rule.Value, ",")
 	sql := strings.ToLower(node.Text())
 	for _, needlessFunc := range needlessFuncArr {
 		needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, ")"))
 		if strings.Contains(sql, needlessFunc) {
-			i.addResult(DMLCheckNeedlessFunc, rule.Value)
+			addResult(res, rule, DMLCheckNeedlessFunc, rule.Value)
 			return nil
 		}
 	}
 	return nil
 }
 
-func checkDatabaseSuffix(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkDatabaseSuffix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	databaseName := ""
 	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
@@ -2286,13 +2306,13 @@ func checkDatabaseSuffix(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if databaseName != "" && !utils.HasSuffix(databaseName, "_DB", false) {
-		i.addResult(DDLCheckDatabaseSuffix)
+		addResult(res, rule, DDLCheckDatabaseSuffix)
 		return nil
 	}
 	return nil
 }
 
-func checkPKIndexName(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkPKIndexName(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexesName := ""
 	tableName := ""
 	switch stmt := node.(type) {
@@ -2317,13 +2337,13 @@ func checkPKIndexName(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 	if indexesName != "" && !strings.EqualFold(indexesName, "PK_"+tableName) {
-		i.addResult(DDLCheckPKName)
+		addResult(res, rule, DDLCheckPKName)
 		return nil
 	}
 	return nil
 }
 
-func checkTransactionIsolationLevel(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkTransactionIsolationLevel(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SetStmt:
 		for _, variable := range stmt.Variables {
@@ -2331,7 +2351,7 @@ func checkTransactionIsolationLevel(rule driver.Rule, i *Inspect, node ast.Node)
 				switch node := variable.Value.(type) {
 				case *parserdriver.ValueExpr:
 					if node.Datum.GetString() != ast.ReadCommitted {
-						i.addResult(DDLCheckTransactionIsolationLevel)
+						addResult(res, rule, DDLCheckTransactionIsolationLevel)
 						return nil
 					}
 				}
@@ -2343,18 +2363,18 @@ func checkTransactionIsolationLevel(rule driver.Rule, i *Inspect, node ast.Node)
 	return nil
 }
 
-func checkTablePartition(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkTablePartition(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			if spec.PartitionNames != nil || spec.PartDefinitions != nil || spec.Partition != nil {
-				i.addResult(DDLCheckTablePartition)
+				addResult(res, rule, DDLCheckTablePartition)
 				return nil
 			}
 		}
 	case *ast.CreateTableStmt:
 		if stmt.Partition != nil {
-			i.addResult(DDLCheckTablePartition)
+			addResult(res, rule, DDLCheckTablePartition)
 			return nil
 		}
 	default:
@@ -2362,7 +2382,7 @@ func checkTablePartition(rule driver.Rule, i *Inspect, node ast.Node) error {
 	}
 	return nil
 }
-func checkNumberOfJoinTables(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkNumberOfJoinTables(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	nums, err := strconv.Atoi(rule.Value)
 	if err != nil {
 		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
@@ -2372,8 +2392,8 @@ func checkNumberOfJoinTables(rule driver.Rule, i *Inspect, node ast.Node) error 
 		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
 			return nil
 		}
-		if nums < getNumberOfJoinTables(stmt.From.TableRefs) {
-			i.addResult(DMLCheckNumberOfJoinTables, rule.Value)
+		if nums < util.GetNumberOfJoinTables(stmt.From.TableRefs) {
+			addResult(res, rule, DMLCheckNumberOfJoinTables, rule.Value)
 		}
 	default:
 		return nil
@@ -2381,12 +2401,12 @@ func checkNumberOfJoinTables(rule driver.Rule, i *Inspect, node ast.Node) error 
 	return nil
 }
 
-func checkIsAfterUnionDistinct(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkIsAfterUnionDistinct(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
 			if ss.IsAfterUnionDistinct {
-				i.addResult(DMLCheckIfAfterUnionDistinct)
+				addResult(res, rule, DMLCheckIfAfterUnionDistinct)
 				return nil
 			}
 		}
@@ -2397,11 +2417,11 @@ func checkIsAfterUnionDistinct(rule driver.Rule, i *Inspect, node ast.Node) erro
 	return nil
 }
 
-func checkIsExistLimitOffset(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkIsExistLimitOffset(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.Limit.Offset != nil {
-			i.addResult(DDLCheckIsExistLimitOffset)
+			addResult(res, rule, DDLCheckIsExistLimitOffset)
 		}
 	default:
 		return nil
@@ -2409,14 +2429,14 @@ func checkIsExistLimitOffset(rule driver.Rule, i *Inspect, node ast.Node) error 
 	return nil
 }
 
-func checkIndexOption(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkIndexOption(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 
 	var tableName *ast.TableName
 	indexColumns := make([]string, 0)
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		tableName = stmt.Table
-		for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			if spec.Constraint == nil {
 				continue
 			}
@@ -2435,17 +2455,17 @@ func checkIndexOption(rule driver.Rule, i *Inspect, node ast.Node) error {
 	if len(indexColumns) == 0 {
 		return nil
 	}
-	maxIndexOption, err := i.getMaxIndexOptionForTable(tableName, indexColumns)
+	maxIndexOption, err := ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
 	if err != nil {
 		return err
 	}
 	if maxIndexOption != "" && strings.Compare(rule.Value, maxIndexOption) > 0 {
-		i.addResult(rule.Name, rule.Value)
+		addResult(res, rule, rule.Name, rule.Value)
 	}
 	return nil
 }
 
-func checkExplain(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkExplain(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	// sql from MyBatis XML file is not the executable sql. so can't do explain for it.
 	// TODO(@wy) ignore explain when audit Mybatis file
 	//if i.Task.SQLSource == driver.TaskSQLSourceFromMyBatisXMLFile {
@@ -2457,32 +2477,31 @@ func checkExplain(rule driver.Rule, i *Inspect, node ast.Node) error {
 		return nil
 	}
 
-	epRecords, err := i.getExecutionPlan(node.Text())
+	epRecords, err := ctx.GetExecutionPlan(node.Text())
 	if err != nil {
 		// TODO: check dml related table or database is created, if not exist, explain will executed failure.
-		i.Logger().Errorf("do explain error: %v, sql: %s", err, node.Text())
 		return nil
 	}
 	for _, record := range epRecords {
-		if strings.Contains(record.Extra, ExplainRecordExtraUsingFilesort) {
-			i.addResult(DMLCheckExplainExtraUsingFilesort)
+		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingFilesort) {
+			addResult(res, rule, DMLCheckExplainExtraUsingFilesort)
 		}
-		if strings.Contains(record.Extra, ExplainRecordExtraUsingTemporary) {
-			i.addResult(DMLCheckExplainExtraUsingTemporary)
+		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingTemporary) {
+			addResult(res, rule, DMLCheckExplainExtraUsingTemporary)
 		}
 
 		defaultRule := RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule
-		if record.Type == ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
-			i.addResult(DMLCheckExplainAccessTypeAll, record.Rows)
+		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
+			addResult(res, rule, DMLCheckExplainAccessTypeAll, record.Rows)
 		}
 	}
 	return nil
 }
 
-func checkCreateView(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkCreateView(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.CreateViewStmt:
-		i.addResult(rule.Name)
+		addResult(res, rule, rule.Name)
 	}
 	return nil
 }
@@ -2502,12 +2521,12 @@ var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\
 //
 // For now, we do character matching for CREATE TRIGGER Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateTrigger(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkCreateTrigger(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createTriggerReg1.MatchString(node.Text()) ||
 			createTriggerReg2.MatchString(node.Text()) {
-			i.addResult(rule.Name)
+			addResult(res, rule, rule.Name)
 		}
 	}
 	return nil
@@ -2525,12 +2544,12 @@ var createFunctionReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function
 // ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateFunction(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkCreateFunction(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createFunctionReg1.MatchString(node.Text()) ||
 			createFunctionReg2.MatchString(node.Text()) {
-			i.addResult(rule.Name)
+			addResult(res, rule, rule.Name)
 		}
 	}
 	return nil
@@ -2547,12 +2566,12 @@ var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedu
 // ref: https://dev.mysql.com/doc/refman/8.0/en/create-procedure.html
 // For now, we do character matching for CREATE PROCEDURE Statement. Maybe we need
 // more accurate match by adding such syntax support to parser.
-func checkCreateProcedure(rule driver.Rule, i *Inspect, node ast.Node) error {
+func checkCreateProcedure(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.UnparsedStmt:
 		if createProcedureReg1.MatchString(node.Text()) ||
 			createProcedureReg2.MatchString(node.Text()) {
-			i.addResult(rule.Name)
+			addResult(res, rule, rule.Name)
 		}
 	}
 	return nil

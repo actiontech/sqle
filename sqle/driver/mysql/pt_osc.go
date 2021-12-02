@@ -9,6 +9,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser/ast"
 )
 
@@ -47,7 +48,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	tableSize, err := i.getTableSize(stmt.Table)
+	tableSize, err := i.Ctx.GetTableSize(stmt.Table)
 	if err != nil {
 		return "", err
 	}
@@ -56,7 +57,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		return "", err
 	}
 
-	createTableStmt, exist, err := i.getCreateTableStmt(stmt.Table)
+	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if !exist || err != nil {
 		return "", err
 	}
@@ -64,21 +65,21 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	// In almost all cases a PRIMARY KEY or UNIQUE INDEX needs to be present in the table.
 	// This is necessary because the tool creates a DELETE trigger to keep the new table
 	// updated while the process is running.
-	if !hasPrimaryKey(createTableStmt) && !hasUniqIndex(createTableStmt) {
+	if !util.HasPrimaryKey(createTableStmt) && !util.HasUniqIndex(createTableStmt) {
 		return PTOSCNoUniqueIndexOrPrimaryKey, nil
 	}
 
 	// The RENAME clause cannot be used to rename the table.
-	if len(getAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable)) > 0 {
+	if len(util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable)) > 0 {
 		return PTOSCAvoidRenameTable, nil
 	}
 
 	// If you add a column without a default value and make it NOT NULL, the tool will fail,
 	// as it will not try to guess a default value for you; You must specify the default.
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		for _, col := range spec.NewColumns {
-			if HasOneInOptions(col.Options, ast.ColumnOptionNotNull) {
-				if !HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
+			if util.HasOneInOptions(col.Options, ast.ColumnOptionNotNull) {
+				if !util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
 					return PTOSCAvoidNoDefaultValueOnNotNullColumn, nil
 				}
 			}
@@ -88,7 +89,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 	// Avoid pt-online-schema-change to run if the specified statement for --alter is trying to add an unique index.
 	// Since pt-online-schema-change uses INSERT IGNORE to copy rows to the new table, if the row being written
 	// produces a duplicate key, it will fail silently and data will be lost.
-	for _, spec := range getAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintUniq:
 			return PTOSCAvoidUniqueIndex, nil
@@ -108,7 +109,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		if spec.Tp == ast.AlterTableDropPrimaryKey {
 			spec.Name = fmt.Sprintf("_%s", spec.Name)
 		}
-		change := alterTableSpecFormat(spec)
+		change := util.AlterTableSpecFormat(spec)
 		if change != "" {
 			changes = append(changes, change)
 		}
@@ -131,7 +132,7 @@ func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
 		"Host":   i.inst.Host,
 		"Port":   i.inst.Port,
 		"User":   i.inst.User,
-		"Schema": i.getSchemaName(stmt.Table),
+		"Schema": i.Ctx.GetSchemaName(stmt.Table),
 		"Table":  stmt.Table.Name.String(),
 	})
 	return buff.String(), err
