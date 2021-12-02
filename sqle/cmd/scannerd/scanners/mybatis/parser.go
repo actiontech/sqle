@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/driver/mysql"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 )
@@ -18,7 +18,7 @@ func Parse(_ context.Context, sqlText string) ([]driver.Node, error) {
 	var ns []driver.Node
 	for i := range nodes {
 		n := driver.Node{}
-		fingerprint, err := mysql.Fingerprint(nodes[i].Text(), true)
+		fingerprint, err := util.Fingerprint(nodes[i].Text(), true)
 		if err != nil {
 			return nil, err
 		}
