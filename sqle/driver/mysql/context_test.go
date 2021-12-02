@@ -112,7 +112,8 @@ func TestParentContext(t *testing.T) {
 	delete(rule.RuleHandlerMap, rule.DDLCheckAlterTableNeedMerge)
 	// It's trick :),
 	// elegant method: unit test support MySQL.
-	delete(rule.RuleHandlerMap, rule.DDLCheckTableWithoutInnoDBUTF8MB4)
+	delete(rule.RuleHandlerMap, rule.DDLCheckTableDBEngine)
+	delete(rule.RuleHandlerMap, rule.DDLCheckTableCharacterSet)
 	defer func() {
 		rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge] = handler
 	}()
