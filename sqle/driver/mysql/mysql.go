@@ -89,16 +89,16 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	}
 	for _, rule := range cfg.Rules {
 		if rule.Name == rulepkg.ConfigDMLRollbackMaxRows {
-			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDMLRollbackMaxRows].Rule
-			inspect.cnf.DMLRollbackMaxRows = rule.GetValueInt(&defaultRule)
+			max := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
+			inspect.cnf.DMLRollbackMaxRows = int64(max)
 		}
 		if rule.Name == rulepkg.ConfigDDLOSCMinSize {
-			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDDLOSCMinSize].Rule
-			inspect.cnf.DDLOSCMinSize = rule.GetValueInt(&defaultRule)
+			min := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
+			inspect.cnf.DDLOSCMinSize = int64(min)
 		}
 		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
-			defaultRule := rulepkg.RuleHandlerMap[rulepkg.ConfigDDLGhostMinSize].Rule
-			inspect.cnf.DDLGhostMinSize = rule.GetValueInt(&defaultRule)
+			min := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
+			inspect.cnf.DDLGhostMinSize = int64(min)
 		}
 	}
 

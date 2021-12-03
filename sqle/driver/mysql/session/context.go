@@ -507,7 +507,7 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 
 	sqls := make([]string, 0, len(columnNames))
 	for _, col := range columnNames {
-		sqls = append(sqls, fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) AS %v", col, col))
+		sqls = append(sqls, fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", col, col))
 	}
 
 	result, err := c.e.Db.Query(fmt.Sprintf("SELECT %v FROM %v", strings.Join(sqls, ","), stmt.Name))
