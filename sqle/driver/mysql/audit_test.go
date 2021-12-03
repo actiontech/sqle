@@ -43,8 +43,8 @@ func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult
 	}
 	level := handler.Rule.Level
 	message := handler.Message
-	if len(args) == 0 && handler.Rule.Value != "" {
-		message = fmt.Sprintf(message, handler.Rule.Value)
+	if len(args) == 0 {
+		message = fmt.Sprintf(message)
 	}
 	return t.add(level, message, args...)
 }
@@ -344,7 +344,7 @@ INDEX (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
-			"v1").addResult(rulepkg.DDLCheckIndexPrefix))
+			"v1").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
 		`
@@ -495,7 +495,7 @@ ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (id,id);
 ALTER TABLE exist_db.exist_tb_1 Add index (id,id);
 `,
 		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
-			"id").addResult(rulepkg.DDLCheckIndexPrefix),
+			"id").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 }
 
@@ -1057,7 +1057,7 @@ func TestCheckObjectNameUsingKeyword(t *testing.T) {
 			"INDEX `show` (v1)"+
 			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT=\"unit test\";",
 		newTestResult().addResult(rulepkg.DDLCheckObjectNameUsingKeyword, "select, create, show").
-			addResult(rulepkg.DDLCheckIndexPrefix),
+			addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 
 }
@@ -1096,7 +1096,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: columns length > 64", DefaultMysqlInspect(),
@@ -1107,7 +1107,7 @@ id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: index length > 64", DefaultMysqlInspect(),
@@ -1119,37 +1119,37 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_%s (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: table length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 RENAME %s;`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:Add column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:change column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 ADD index idx_%s (v1);`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:rename index length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 RENAME index idx_1 TO idx_%s;`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 }
 
@@ -1283,7 +1283,7 @@ INDEX idx_5 (id),
 INDEX idx_6 (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexCount),
+		newTestResult().addResult(rulepkg.DDLCheckIndexCount, 5),
 	)
 }
 
@@ -1317,7 +1317,7 @@ PRIMARY KEY (id),
 INDEX idx_1 (id,v1,v2,v3,v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckCompositeIndexMax),
+		newTestResult().addResult(rulepkg.DDLCheckCompositeIndexMax, 3),
 	)
 }
 
@@ -1481,21 +1481,21 @@ PRIMARY KEY (id),
 INDEX index_1 (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix),
+		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: index prefix not idx_", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD INDEX index_1(v1);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix),
+		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: index prefix not idx_", DefaultMysqlInspect(),
 		`
 CREATE INDEX index_1 ON exist_db.exist_tb_1(v1);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix),
+		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 
 	for _, sql := range []string{
@@ -1522,21 +1522,21 @@ PRIMARY KEY (id),
 UNIQUE INDEX index_1 (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckUniqueIndexPrefix),
+		newTestResult().addResult(rulepkg.DDLCheckUniqueIndexPrefix, "uniq_"),
 	)
 
 	runSingleRuleInspectCase(rule, t, "alter_table: unique index prefix not uniq_", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD UNIQUE INDEX index_1(v1);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckUniqueIndexPrefix),
+		newTestResult().addResult(rulepkg.DDLCheckUniqueIndexPrefix, "uniq_"),
 	)
 
 	runSingleRuleInspectCase(rule, t, "create_index: unique index prefix not uniq_", DefaultMysqlInspect(),
 		`
 CREATE UNIQUE INDEX index_1 ON exist_db.exist_tb_1(v1);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckUniqueIndexPrefix),
+		newTestResult().addResult(rulepkg.DDLCheckUniqueIndexPrefix, "uniq_"),
 	)
 
 	for _, sql := range []string{
@@ -1752,12 +1752,12 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?);
 func TestCheckBatchInsertListsMax(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckBatchInsertListsMax].Rule
 	// defult 5000,  unit testing :4
-	rule.Value = "4"
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
 	runSingleRuleInspectCase(rule, t, "insert:check batch insert lists max", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2"),(3,"3","3"),(4,"4","4"),(5,"5","5");
 `,
-		newTestResult().addResult(rulepkg.DMLCheckBatchInsertListsMax, rule.Value),
+		newTestResult().addResult(rulepkg.DMLCheckBatchInsertListsMax, 4),
 	)
 
 	runSingleRuleInspectCase(rule, t, "insert: passing the check batch insert lists max", DefaultMysqlInspect(),
@@ -1771,12 +1771,13 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2"),(3,"3"
 func TestCheckBatchInsertListsMax_FP(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckBatchInsertListsMax].Rule
 	// defult 5000, unit testing :4
-	rule.Value = "4"
+	//rule.Value = "4"
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
 	runSingleRuleInspectCase(rule, t, "[fp]insert:check batch insert lists max", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?),(?,?,?),(?,?,?),(?,?,?);
 `,
-		newTestResult().addResult(rulepkg.DMLCheckBatchInsertListsMax, rule.Value),
+		newTestResult().addResult(rulepkg.DMLCheckBatchInsertListsMax, 4),
 	)
 
 	runSingleRuleInspectCase(rule, t, "[fp]insert: passing the check batch insert lists max", DefaultMysqlInspect(),
@@ -2144,7 +2145,7 @@ func TestCheckCollationDatabase(t *testing.T) {
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(rulepkg.DDLCheckDatabaseCollation))
+			newTestResult().addResult(rulepkg.DDLCheckDatabaseCollation, "utf8mb4_0900_ai_ci"))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2397,7 +2398,7 @@ func TestCheckNeedlessFunc(t *testing.T) {
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(rulepkg.DMLCheckNeedlessFunc))
+			newTestResult().addResult(rulepkg.DMLCheckNeedlessFunc, "sha(),sqrt(),md5()"))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2423,7 +2424,7 @@ func TestCheckNeedlessFunc_FP(t *testing.T) {
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(rulepkg.DMLCheckNeedlessFunc))
+			newTestResult().addResult(rulepkg.DMLCheckNeedlessFunc, "sha(),sqrt(),md5()"))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2449,7 +2450,7 @@ func TestCheckDatabaseSuffix(t *testing.T) {
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(rulepkg.DDLCheckDatabaseSuffix))
+			newTestResult().addResult(rulepkg.DDLCheckDatabaseSuffix, "_DB"))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2638,7 +2639,7 @@ JOIN exist_db.exist_tb_4 ON exist_db.exist_tb_3.id = exist_db.exist_tb_4.id
 			desc,
 			inspector,
 			sql,
-			newTestResult().addResult(rulepkg.DMLCheckNumberOfJoinTables))
+			newTestResult().addResult(rulepkg.DMLCheckNumberOfJoinTables, 3))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2693,7 +2694,7 @@ WHERE exist_db.exist_tb_1.v1 = ? AND exist_db.exist_tb_1.v2 = ?
 			desc,
 			inspector,
 			sql,
-			newTestResult().addResult(rulepkg.DMLCheckNumberOfJoinTables))
+			newTestResult().addResult(rulepkg.DMLCheckNumberOfJoinTables, 3))
 	}
 
 	for desc, sql := range map[string]string{
