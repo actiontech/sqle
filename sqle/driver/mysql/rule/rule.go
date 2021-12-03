@@ -44,7 +44,8 @@ const (
 	DDLDisableFK                                = "ddl_disable_fk"
 	DDLCheckIndexCount                          = "ddl_check_index_count"
 	DDLCheckCompositeIndexMax                   = "ddl_check_composite_index_max"
-	DDLCheckTableWithoutInnoDBUTF8MB4           = "ddl_check_table_without_innodb_utf8mb4"
+	DDLCheckTableDBEngine                       = "ddl_check_table_db_engine"
+	DDLCheckTableCharacterSet                   = "ddl_check_table_character_set"
 	DDLCheckIndexedColumnWithBolb               = "ddl_check_index_column_with_blob"
 	DDLCheckAlterTableNeedMerge                 = "ddl_check_alter_table_need_merge"
 	DDLDisableDropStatement                     = "ddl_disable_drop_statement"
@@ -200,11 +201,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckObjectNameLength,
-			Desc:     "表名、列名、索引名的长度不能大于64字节",
+			Desc:     "表名、列名、索引名的长度不能大于指定字节",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
+			Value:    "64",
 		},
-		Message:      "表名、列名、索引名的长度不能大于64字节",
+		Message:      "表名、列名、索引名的长度不能大于%v字节",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
@@ -316,12 +318,25 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckTableWithoutInnoDBUTF8MB4,
-			Desc:     "建议使用Innodb引擎,utf8mb4字符集",
+			Name:     DDLCheckTableDBEngine,
+			Desc:     "必须使用指定数据库引擎",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
+			Value:    "Innodb",
 		},
-		Message:      "建议使用Innodb引擎,utf8mb4字符集",
+		Message:      "必须使用%v数据库引擎",
+		AllowOffline: false,
+		Func:         checkEngineAndCharacterSet,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckTableCharacterSet,
+			Desc:     "必须使用指定数据库字符集",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
+			Value:    "utf8mb4",
+		},
+		Message:      "必须使用%v数据库字符集",
 		AllowOffline: false,
 		Func:         checkEngineAndCharacterSet,
 	},
@@ -406,22 +421,24 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckIndexPrefix,
-			Desc:     "普通索引必须要以\"idx_\"为前缀",
+			Desc:     "普通索引必须使用固定前缀",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
+			Value:    "idx_",
 		},
-		Message:      "普通索引必须要以\"idx_\"为前缀",
+		Message:      "普通索引必须要以\"%v\"为前缀",
 		AllowOffline: true,
 		Func:         checkIndexPrefix,
 	},
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckUniqueIndexPrefix,
-			Desc:     "unique索引必须要以\"uniq_\"为前缀",
+			Desc:     "unique索引必须使用固定前缀",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
+			Value:    "uniq_",
 		},
-		Message:      "unique索引必须要以\"uniq_\"为前缀",
+		Message:      "unique索引必须要以\"%v\"为前缀",
 		AllowOffline: true,
 		Func:         checkUniqIndexPrefix,
 	},
@@ -661,11 +678,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckDatabaseSuffix,
-			Desc:     "数据库名称建议以\"_DB\"结尾",
+			Desc:     "数据库名称必须使用固定后缀结尾",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeNamingConvention,
+			Value:    "_DB",
 		},
-		Message:      "数据库名称建议以\"_DB\"结尾",
+		Message:      "数据库名称必须以\"%v\"结尾",
 		Func:         checkDatabaseSuffix,
 		AllowOffline: true,
 	},
@@ -1207,22 +1225,29 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 	default:
 		return nil
 	}
-	if engine == "" {
-		engine, err = ctx.GetSchemaEngine(tableName, schemaName)
-		if err != nil {
-			return err
+	if rule.Name == DDLCheckTableDBEngine {
+		if engine == "" {
+			engine, err = ctx.GetSchemaEngine(tableName, schemaName)
+			if err != nil {
+				return err
+			}
+		}
+		if strings.ToLower(engine) != rule.Value {
+			addResult(res, rule, DDLCheckTableDBEngine, rule.Value)
+			return nil
+		}
+	} else if rule.Name == DDLCheckTableCharacterSet {
+		if characterSet == "" {
+			characterSet, err = ctx.GetSchemaCharacter(tableName, schemaName)
+			if err != nil {
+				return err
+			}
+		}
+		if strings.ToLower(characterSet) != rule.Value {
+			addResult(res, rule, DDLCheckTableCharacterSet, rule.Value)
+			return nil
 		}
 	}
-	if characterSet == "" {
-		characterSet, err = ctx.GetSchemaCharacter(tableName, schemaName)
-		if err != nil {
-			return err
-		}
-	}
-	if strings.ToLower(engine) == "innodb" && strings.ToLower(characterSet) == "utf8mb4" {
-		return nil
-	}
-	addResult(res, rule, DDLCheckTableWithoutInnoDBUTF8MB4)
 	return nil
 }
 
@@ -1376,10 +1401,16 @@ func checkNewObjectName(ctx *session.Context, rule driver.Rule, res *driver.Audi
 	}
 
 	// check length
-	for _, name := range names {
-		if len(name) > 64 {
-			addResult(res, rule, DDLCheckObjectNameLength)
-			break
+	if rule.Name == DDLCheckObjectNameLength {
+		length, err := strconv.Atoi(rule.Value)
+		if err != nil {
+			return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
+		}
+		for _, name := range names {
+			if len(name) > length {
+				addResult(res, rule, DDLCheckObjectNameLength, length)
+				break
+			}
 		}
 	}
 
@@ -1648,8 +1679,8 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 		return nil
 	}
 	for _, name := range indexesName {
-		if !utils.HasPrefix(name, "idx_", false) {
-			addResult(res, rule, DDLCheckIndexPrefix)
+		if !utils.HasPrefix(name, rule.Value, false) {
+			addResult(res, rule, DDLCheckIndexPrefix, rule.Value)
 			return nil
 		}
 	}
@@ -1657,23 +1688,28 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 }
 
 func checkUniqIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	return checkIfUniqIndexSatisfy(rule, res, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
-		return utils.HasPrefix(uniqIndexName, "uniq_", false)
-	})
+	_, indexes := getTableUniqIndex(node)
+	for index, _ := range indexes {
+		if !utils.HasPrefix(index, rule.Value, false) {
+			addResult(res, rule, DDLCheckUniqueIndexPrefix, rule.Value)
+			return nil
+		}
+	}
+	return nil
 }
 
 func checkUniqIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	return checkIfUniqIndexSatisfy(rule, res, node, func(uniqIndexName, tableName string, indexedColNames []string) bool {
-		return strings.EqualFold(uniqIndexName, fmt.Sprintf("IDX_UK_%v_%v", tableName, strings.Join(indexedColNames, "_")))
-	})
+	tableName, indexes := getTableUniqIndex(node)
+	for index, indexedCols := range indexes {
+		if !strings.EqualFold(index, fmt.Sprintf("IDX_UK_%v_%v", tableName, strings.Join(indexedCols, "_"))) {
+			addResult(res, rule, DDLCheckUniqueIndex)
+			return nil
+		}
+	}
+	return nil
 }
 
-func checkIfUniqIndexSatisfy(
-	rule driver.Rule,
-	res *driver.AuditResult,
-	node ast.Node,
-	isSatisfy func(uniqIndexName, tableName string, indexedColNames []string) bool) error {
-
+func getTableUniqIndex(node ast.Node) (string, map[string][]string) {
 	var tableName string
 	var indexes = make(map[string] /*unique index name*/ []string /*indexed columns*/)
 
@@ -1706,16 +1742,8 @@ func checkIfUniqIndexSatisfy(
 			}
 		}
 	default:
-		return nil
 	}
-
-	for index, indexedCols := range indexes {
-		if !isSatisfy(index, tableName, indexedCols) {
-			addResult(res, rule, rule.Name)
-			return nil
-		}
-	}
-	return nil
+	return tableName, indexes
 }
 
 func checkColumnWithoutDefault(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
@@ -2305,8 +2333,8 @@ func checkDatabaseSuffix(ctx *session.Context, rule driver.Rule, res *driver.Aud
 	default:
 		return nil
 	}
-	if databaseName != "" && !utils.HasSuffix(databaseName, "_DB", false) {
-		addResult(res, rule, DDLCheckDatabaseSuffix)
+	if databaseName != "" && !utils.HasSuffix(databaseName, rule.Value, false) {
+		addResult(res, rule, DDLCheckDatabaseSuffix, rule.Value)
 		return nil
 	}
 	return nil

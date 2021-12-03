@@ -364,7 +364,8 @@ INDEX idx_2 (v1,v2,v2)
 func TestCheckInvalidAlterTable(t *testing.T) {
 	// It's trick :),
 	// elegant method: unit test support MySQL.
-	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableWithoutInnoDBUTF8MB4)
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableDBEngine)
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableCharacterSet)
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
@@ -1340,7 +1341,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckTableWithoutInnoDBUTF8MB4),
+		newTestResult().addResult(rulepkg.DDLCheckTableDBEngine, "InnoDB"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table charset not utf8mb4", DefaultMysqlInspect(),
@@ -1351,7 +1352,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1  COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckTableWithoutInnoDBUTF8MB4),
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
 	)
 }
 
