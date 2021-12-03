@@ -17,6 +17,44 @@ import (
 	"google.golang.org/grpc"
 )
 
+func convertRuleFromProtoToDriver(rule *proto.Rule) *Rule {
+	var params = make(RuleParams, 0, len(rule.Params))
+	for _, p := range rule.Params {
+		params = append(params, &RuleParam{
+			Key:   p.Key,
+			Value: p.Value,
+			Desc:  p.Desc,
+			Type:  RuleParamType(p.Type),
+		})
+	}
+	return &Rule{
+		Name:     rule.Name,
+		Category: rule.Category,
+		Desc:     rule.Desc,
+		Level:    RuleLevel(rule.Level),
+		Params:   params,
+	}
+}
+
+func convertRuleFromDriverToProto(rule *Rule) *proto.Rule {
+	var params = make([]*proto.Param, 0, len(rule.Params))
+	for _, p := range rule.Params {
+		params = append(params, &proto.Param{
+			Key:   p.Key,
+			Value: p.Value,
+			Desc:  p.Desc,
+			Type:  string(p.Type),
+		})
+	}
+	return &proto.Rule{
+		Name:     rule.Name,
+		Desc:     rule.Desc,
+		Level:    string(rule.Level),
+		Category: rule.Category,
+		Params:   params,
+	}
+}
+
 // InitPlugins init plugins at plugins directory. It should be called on host process.
 func InitPlugins(pluginDir string) error {
 	if pluginDir == "" {
@@ -78,15 +116,9 @@ func InitPlugins(pluginDir string) error {
 		close(closeCh)
 
 		// driverRules get from plugin when plugin initialize.
-		var driverRules []*Rule
+		var driverRules = make([]*Rule, 0, len(pluginMeta.Rules))
 		for _, rule := range pluginMeta.Rules {
-			driverRules = append(driverRules, &Rule{
-				Category: rule.Category,
-				Name:     rule.Name,
-				Desc:     rule.Desc,
-				Value:    rule.Value,
-				Level:    RuleLevel(rule.Level),
-			})
+			driverRules = append(driverRules, convertRuleFromProtoToDriver(rule))
 		}
 
 		handler := func(log *logrus.Entry, config *Config) (Driver, error) {
@@ -99,13 +131,7 @@ func InitPlugins(pluginDir string) error {
 			// protoRules send to plugin for Audit.
 			var protoRules []*proto.Rule
 			for _, rule := range config.Rules {
-				protoRules = append(protoRules, &proto.Rule{
-					Name:     rule.Name,
-					Desc:     rule.Desc,
-					Value:    rule.Value,
-					Level:    string(rule.Level),
-					Category: rule.Category,
-				})
+				protoRules = append(protoRules, convertRuleFromDriverToProto(rule))
 			}
 
 			initRequest := &proto.InitRequest{
@@ -293,15 +319,9 @@ type driverGRPCServer struct {
 }
 
 func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
-	var driverRules []*Rule
+	var driverRules = make([]*Rule, 0, len(req.GetRules()))
 	for _, rule := range req.GetRules() {
-		driverRules = append(driverRules, &Rule{
-			Name:     rule.Name,
-			Category: rule.Category,
-			Desc:     rule.Desc,
-			Value:    rule.Value,
-			Level:    RuleLevel(rule.Level),
-		})
+		driverRules = append(driverRules, convertRuleFromProtoToDriver(rule))
 	}
 
 	var dsn *DSN
@@ -428,13 +448,7 @@ func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.
 	var protoRules []*proto.Rule
 
 	for _, r := range d.r.Rules() {
-		protoRules = append(protoRules, &proto.Rule{
-			Name:     r.Name,
-			Desc:     r.Desc,
-			Level:    string(r.Level),
-			Value:    r.Value,
-			Category: r.Category,
-		})
+		protoRules = append(protoRules, convertRuleFromDriverToProto(r))
 	}
 
 	return &proto.MetasResponse{
