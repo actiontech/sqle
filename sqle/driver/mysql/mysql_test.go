@@ -39,7 +39,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 		{
 			name: "alter stmt(true); config onlineddl(true); table size enough(true)",
 			setUp: func(i *Inspect) *Inspect {
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 17
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
 			},
 			args:    args{query: "alter table exist_db.exist_tb_1 add column col1 varchar(100);"},
@@ -50,7 +50,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 		{
 			name: "alter stmt(true); config onlineddl(true); table size enough(false)",
 			setUp: func(i *Inspect) *Inspect {
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 15
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
 			},
 			args:    args{query: "alter table exist_db.exist_tb_1 add column col1 varchar(100);"},
@@ -62,7 +62,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 			name: "alter stmt(true); config onlineddl(false); table size enough(true)",
 			setUp: func(i *Inspect) *Inspect {
 				i.cnf.DDLGhostMinSize = -1
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 17
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
 			},
 			args:    args{query: "alter table exist_db.exist_tb_1 add column col1 varchar(100);"},
@@ -73,7 +73,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 		{
 			name: "alter stmt(false); config onlineddl(true); table size enough(true)",
 			setUp: func(i *Inspect) *Inspect {
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 17
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
 			},
 			args:    args{query: "create index idx_exist_db_exist_tb_1 on exist_db(v2);"},
@@ -85,7 +85,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 			name: "alter stmt(false); config onlineddl(false); table size enough(true)",
 			setUp: func(i *Inspect) *Inspect {
 				i.cnf.DDLGhostMinSize = -1
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 17
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
 			},
 			args:    args{query: "create index idx_exist_db_exist_tb_1 on exist_db(v2);"},
@@ -96,7 +96,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 		{
 			name: "alter stmt(false); config onlineddl(true); table size enough(false)",
 			setUp: func(i *Inspect) *Inspect {
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 15
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
 			},
 			args:    args{query: "create index idx_exist_db_exist_tb_1 on exist_db(v2);"},
@@ -108,7 +108,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 			name: "alter stmt(true); config onlineddl(false); table size enough(false)",
 			setUp: func(i *Inspect) *Inspect {
 				i.cnf.DDLGhostMinSize = -1
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 15
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
 			},
 			args:    args{query: "alter table exist_db.exist_tb_1 add column col1 varchar(100);"},
@@ -120,7 +120,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 			name: "alter stmt(false); config onlineddl(false); table size enough(false)",
 			setUp: func(i *Inspect) *Inspect {
 				i.cnf.DDLGhostMinSize = -1
-				i.Ctx.schemas["exist_db"].Tables["exist_tb_1"].Size = 15
+				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
 			},
 			args:    args{query: "create index idx_exist_db_exist_tb_1 on exist_db(v2);"},

@@ -56,37 +56,27 @@ func (r *RuleParams) Value() (sql_driver.Value, error) {
 }
 
 func GenerateRuleByDriverRule(dr *driver.Rule, dbType string) *Rule {
-	var params driver.RuleParams
-	// TODO: deprecate driver.Value and using driver.RuleParams.
-	if dr.Value != "" {
-		params = append(params, &driver.RuleParam{
-			Key:   "value",
-			Desc:  "规则值",
-			Type:  "string",
-			Value: dr.Value,
-		})
-	}
 	return &Rule{
 		Name:   dr.Name,
 		Desc:   dr.Desc,
 		Level:  string(dr.Level),
 		Typ:    dr.Category,
 		DBType: dbType,
-		Params: &RuleParams{Params: params},
+		Params: &RuleParams{Params: dr.Params},
 	}
 }
 
 func ConvertRuleToDriverRule(r *Rule) *driver.Rule {
-	var value string
-	if r.Params.Params != nil {
-		value, _ = r.Params.Params.GetParamValue("value")
+	var params driver.RuleParams
+	if r.Params != nil {
+		params = r.Params.Params
 	}
 	return &driver.Rule{
 		Name:     r.Name,
 		Desc:     r.Desc,
 		Category: r.Typ,
-		Value:    value,
 		Level:    driver.RuleLevel(r.Level),
+		Params:   params,
 	}
 }
 

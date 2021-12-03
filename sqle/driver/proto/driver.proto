@@ -32,9 +32,17 @@ message DSN {
 message Rule {
   string name = 1;
   string desc = 2;
-  string value = 3;
+  string value = 3 [deprecated=true];
   string level = 4;
   string category = 5;
+  repeated Param params = 6;
+}
+
+message Param {
+  string key = 1;
+  string value = 2;
+  string desc = 3;
+  string type = 4;
 }
 
 message InitRequest {

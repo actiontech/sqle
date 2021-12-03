@@ -4,13 +4,15 @@ import (
 	"testing"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 )
 
 func TestContext(t *testing.T) {
-	handler := RuleHandlerMap[DDLCheckAlterTableNeedMerge]
-	delete(RuleHandlerMap, DDLCheckAlterTableNeedMerge)
+	handler := rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge]
+	delete(rule.RuleHandlerMap, rule.DDLCheckAlterTableNeedMerge)
 	defer func() {
-		RuleHandlerMap[DDLCheckAlterTableNeedMerge] = handler
+		rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge] = handler
 	}()
 
 	runDefaultRulesInspectCase(t, "rename table and drop column: table not exists", DefaultMysqlInspect(),
@@ -106,13 +108,14 @@ alter table not_exist_tb_1 drop column v1;
 }
 
 func TestParentContext(t *testing.T) {
-	handler := RuleHandlerMap[DDLCheckAlterTableNeedMerge]
-	delete(RuleHandlerMap, DDLCheckAlterTableNeedMerge)
+	handler := rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge]
+	delete(rule.RuleHandlerMap, rule.DDLCheckAlterTableNeedMerge)
 	// It's trick :),
 	// elegant method: unit test support MySQL.
-	delete(RuleHandlerMap, DDLCheckTableWithoutInnoDBUTF8MB4)
+	delete(rule.RuleHandlerMap, rule.DDLCheckTableDBEngine)
+	delete(rule.RuleHandlerMap, rule.DDLCheckTableCharacterSet)
 	defer func() {
-		RuleHandlerMap[DDLCheckAlterTableNeedMerge] = handler
+		rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge] = handler
 	}()
 
 	inspect1 := DefaultMysqlInspect()
@@ -131,7 +134,7 @@ PRIMARY KEY (id)
 	)
 
 	inspect2 := DefaultMysqlInspect()
-	inspect2.Ctx = NewContext(inspect1.Ctx)
+	inspect2.Ctx = session.NewContext(inspect1.Ctx)
 	runDefaultRulesInspectCase(t, "ddl 2: drop column, ok", inspect2,
 		`
 alter table not_exist_tb_1 drop column v1;
@@ -140,7 +143,7 @@ alter table not_exist_tb_1 drop column v1;
 	)
 
 	inspect3 := DefaultMysqlInspect()
-	inspect3.Ctx = NewContext(inspect2.Ctx)
+	inspect3.Ctx = session.NewContext(inspect2.Ctx)
 	runDefaultRulesInspectCase(t, "ddl 3: drop column, column not exist", inspect3,
 		`
 alter table not_exist_tb_1 drop column v1;
@@ -149,7 +152,7 @@ alter table not_exist_tb_1 drop column v1;
 	)
 
 	inspect4 := DefaultMysqlInspect()
-	inspect4.Ctx = NewContext(inspect2.Ctx)
+	inspect4.Ctx = session.NewContext(inspect2.Ctx)
 	runDefaultRulesInspectCase(t, "ddl 4: add column, ok", inspect4,
 		`
 alter table not_exist_tb_1 add column v3 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
@@ -158,7 +161,7 @@ alter table not_exist_tb_1 add column v3 varchar(255) NOT NULL DEFAULT "unit tes
 	)
 
 	inspect5 := DefaultMysqlInspect()
-	inspect5.Ctx = NewContext(inspect4.Ctx)
+	inspect5.Ctx = session.NewContext(inspect4.Ctx)
 	runDefaultRulesInspectCase(t, "dml 1: insert, column not exist", inspect5,
 		`
 insert into not_exist_tb_1 (id,v1,v2) values (1,"1","1");
@@ -167,7 +170,7 @@ insert into not_exist_tb_1 (id,v1,v2) values (1,"1","1");
 	)
 
 	inspect6 := DefaultMysqlInspect()
-	inspect6.Ctx = NewContext(inspect4.Ctx)
+	inspect6.Ctx = session.NewContext(inspect4.Ctx)
 	runDefaultRulesInspectCase(t, "dml 2: insert, ok", inspect6,
 		`
 insert into not_exist_tb_1 (id,v2,v3) values (1,"1","1");
