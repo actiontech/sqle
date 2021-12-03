@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -152,36 +151,62 @@ var (
 	InitRules            = []driver.Rule{}
 )
 
+const DefaultSingleParamKeyName = "first_key" // For most of the rules, it is just has one param, this is first params.
+
 var RuleHandlers = []RuleHandler{
 	// config
 	{
 		Rule: driver.Rule{
-			Name:     ConfigDMLRollbackMaxRows,
-			Desc:     "在 DML 语句中预计影响行数超过指定值则不回滚",
-			Value:    "1000",
+			Name: ConfigDMLRollbackMaxRows,
+			Desc: "在 DML 语句中预计影响行数超过指定值则不回滚",
+			//Value:    "1000",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeGlobalConfig,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "1000",
+					Desc:  "最大影响行数",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Func: nil,
 	},
 	{
 		Rule: driver.Rule{
-			Name:     ConfigDDLOSCMinSize,
-			Desc:     "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
-			Value:    "16",
+			Name: ConfigDDLOSCMinSize,
+			Desc: "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
+			//Value:    "16",
 			Level:    driver.RuleLevelNormal,
 			Category: RuleTypeGlobalConfig,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "16",
+					Desc:  "表空间大小（MB）",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Func: nil,
 	},
 
 	{
 		Rule: driver.Rule{
-			Name:     ConfigDDLGhostMinSize,
-			Desc:     "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
-			Value:    "16",
+			Name: ConfigDDLGhostMinSize,
+			Desc: "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
+			//Value:    "16",
 			Level:    driver.RuleLevelNormal,
 			Category: RuleTypeGlobalConfig,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "16",
+					Desc:  "表空间大小（MB）",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Func: nil,
 	},
@@ -204,7 +229,15 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "表名、列名、索引名的长度不能大于指定字节",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
-			Value:    "64",
+			//Value:    "64",
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "64",
+					Desc:  "最大长度（字节）",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Message:      "表名、列名、索引名的长度不能大于%v字节",
 		AllowOffline: true,
@@ -270,11 +303,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckIndexCount,
-			Desc:     "索引个数建议不超过阈值",
-			Level:    driver.RuleLevelNotice,
-			Value:    "5",
+			Name:  DDLCheckIndexCount,
+			Desc:  "索引个数建议不超过阈值",
+			Level: driver.RuleLevelNotice,
+			//Value:    "5",
 			Category: RuleTypeIndexingConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "5",
+					Desc:  "最大索引个数",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Message:              "索引个数建议不超过%v个",
 		AllowOffline:         true,
@@ -283,11 +324,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckCompositeIndexMax,
-			Desc:     "复合索引的列数量不建议超过阈值",
-			Level:    driver.RuleLevelNotice,
-			Value:    "3",
+			Name:  DDLCheckCompositeIndexMax,
+			Desc:  "复合索引的列数量不建议超过阈值",
+			Level: driver.RuleLevelNotice,
+			//Value:    "3",
 			Category: RuleTypeIndexingConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "3",
+					Desc:  "最大索引列数量",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Message:              "复合索引的列数量不建议超过%v个",
 		AllowOffline:         true,
@@ -322,7 +371,15 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "必须使用指定数据库引擎",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
-			Value:    "Innodb",
+			//Value:    "Innodb",
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "Innodb",
+					Desc:  "数据库引擎",
+					Type:  driver.RuleParamTypeString,
+				},
+			},
 		},
 		Message:      "必须使用%v数据库引擎",
 		AllowOffline: false,
@@ -334,7 +391,15 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "必须使用指定数据库字符集",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
-			Value:    "utf8mb4",
+			//Value:    "utf8mb4",
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "utf8mb4",
+					Desc:  "数据库字符集",
+					Type:  driver.RuleParamTypeString,
+				},
+			},
 		},
 		Message:      "必须使用%v数据库字符集",
 		AllowOffline: false,
@@ -424,7 +489,15 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "普通索引必须使用固定前缀",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
-			Value:    "idx_",
+			//Value:    "idx_",
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "idx_",
+					Desc:  "索引前缀",
+					Type:  driver.RuleParamTypeString,
+				},
+			},
 		},
 		Message:      "普通索引必须要以\"%v\"为前缀",
 		AllowOffline: true,
@@ -436,7 +509,15 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "unique索引必须使用固定前缀",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
-			Value:    "uniq_",
+			//Value:    "uniq_",
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "uniq_",
+					Desc:  "索引前缀",
+					Type:  driver.RuleParamTypeString,
+				},
+			},
 		},
 		Message:      "unique索引必须要以\"%v\"为前缀",
 		AllowOffline: true,
@@ -533,11 +614,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckBatchInsertListsMax,
-			Desc:     "单条insert语句，建议批量插入不超过阈值",
-			Level:    driver.RuleLevelNotice,
-			Value:    "5000",
+			Name:  DMLCheckBatchInsertListsMax,
+			Desc:  "单条insert语句，建议批量插入不超过阈值",
+			Level: driver.RuleLevelNotice,
+			//Value:    "5000",
 			Category: RuleTypeDMLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "5000",
+					Desc:  "最大插入行数",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Message:      "单条insert语句，建议批量插入不超过%v条",
 		AllowOffline: true,
@@ -643,11 +732,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckDatabaseCollation,
-			Desc:     "建议使用规定的数据库排序规则",
-			Level:    driver.RuleLevelNotice,
-			Value:    "utf8mb4_0900_ai_ci",
+			Name:  DDLCheckDatabaseCollation,
+			Desc:  "建议使用规定的数据库排序规则",
+			Level: driver.RuleLevelNotice,
+			//Value:    "utf8mb4_0900_ai_ci",
 			Category: RuleTypeDDLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "utf8mb4_0900_ai_ci",
+					Desc:  "数据库排序规则",
+					Type:  driver.RuleParamTypeString,
+				},
+			},
 		},
 		Message: "建议使用规定的数据库排序规则为%s",
 		Func:    checkCollationDatabase,
@@ -665,11 +762,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckNeedlessFunc,
-			Desc:     "避免使用不必要的内置函数",
-			Level:    driver.RuleLevelNotice,
-			Value:    "sha(),sqrt(),md5()",
+			Name:  DMLCheckNeedlessFunc,
+			Desc:  "避免使用不必要的内置函数",
+			Level: driver.RuleLevelNotice,
+			//Value:    "sha(),sqrt(),md5()",
 			Category: RuleTypeDMLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "sha(),sqrt(),md5()",
+					Desc:  "指定的函数集合（逗号分割）",
+					Type:  driver.RuleParamTypeString,
+				},
+			},
 		},
 		Message:      "避免使用不必要的内置函数[%v]",
 		Func:         checkNeedlessFunc,
@@ -681,7 +786,15 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "数据库名称必须使用固定后缀结尾",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeNamingConvention,
-			Value:    "_DB",
+			//Value:    "_DB",
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "_DB",
+					Desc:  "数据库名称后缀",
+					Type:  driver.RuleParamTypeString,
+				},
+			},
 		},
 		Message:      "数据库名称必须以\"%v\"结尾",
 		Func:         checkDatabaseSuffix,
@@ -733,11 +846,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckNumberOfJoinTables,
-			Desc:     "使用JOIN连接表查询建议不超过阈值",
-			Level:    driver.RuleLevelNotice,
-			Value:    "3",
+			Name:  DMLCheckNumberOfJoinTables,
+			Desc:  "使用JOIN连接表查询建议不超过阈值",
+			Level: driver.RuleLevelNotice,
+			//Value:    "3",
 			Category: RuleTypeDMLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "3",
+					Desc:  "最大连接表个数",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Message:      "使用JOIN连接表查询建议不超过%v张",
 		AllowOffline: true,
@@ -767,11 +888,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckIndexOption,
-			Desc:     "建议选择可选性超过阈值字段作为索引",
-			Level:    driver.RuleLevelNotice,
-			Value:    "0.7",
+			Name:  DDLCheckIndexOption,
+			Desc:  "建议选择可选性超过阈值字段作为索引",
+			Level: driver.RuleLevelNotice,
+			//Value:    "0.7",
 			Category: RuleTypeDMLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "70",
+					Desc:  "可选择性（百分比）",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Message:      "创建索引的字段可选性未超过阈值:%v",
 		AllowOffline: false,
@@ -812,11 +941,19 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckExplainAccessTypeAll,
-			Value:    "10000",
+			Name: DMLCheckExplainAccessTypeAll,
+			//Value:    "10000",
 			Desc:     "查询的扫描不建议超过指定行数（默认值：10000）",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10000",
+					Desc:  "最大扫描行数",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
 		},
 		Message:      "该查询的扫描行数为%v",
 		AllowOffline: false,
@@ -1232,8 +1369,9 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 				return err
 			}
 		}
-		if strings.ToLower(engine) != rule.Value {
-			addResult(res, rule, DDLCheckTableDBEngine, rule.Value)
+		expectEngine := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+		if strings.ToLower(engine) != expectEngine {
+			addResult(res, rule, DDLCheckTableDBEngine, expectEngine)
 			return nil
 		}
 	} else if rule.Name == DDLCheckTableCharacterSet {
@@ -1243,8 +1381,9 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 				return err
 			}
 		}
-		if strings.ToLower(characterSet) != rule.Value {
-			addResult(res, rule, DDLCheckTableCharacterSet, rule.Value)
+		expectCS := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+		if strings.ToLower(characterSet) != expectCS {
+			addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
 			return nil
 		}
 	}
@@ -1402,10 +1541,11 @@ func checkNewObjectName(ctx *session.Context, rule driver.Rule, res *driver.Audi
 
 	// check length
 	if rule.Name == DDLCheckObjectNameLength {
-		length, err := strconv.Atoi(rule.Value)
-		if err != nil {
-			return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
-		}
+		length := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+		//length, err := strconv.Atoi(rule.Value)
+		//if err != nil {
+		//	return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
+		//}
 		for _, name := range names {
 			if len(name) > length {
 				addResult(res, rule, DDLCheckObjectNameLength, length)
@@ -1475,10 +1615,6 @@ func checkForeignKey(ctx *session.Context, rule driver.Rule, res *driver.AuditRe
 func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
-	value, err := strconv.Atoi(rule.Value)
-	if err != nil {
-		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
-	}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check index
@@ -1537,11 +1673,16 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	default:
 		return nil
 	}
-	if indexCounter > value {
-		addResult(res, rule, DDLCheckIndexCount, value)
+	//value, err := strconv.Atoi(rule.Value)
+	//if err != nil {
+	//	return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
+	//}
+	expectCounter := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if rule.Name == DDLCheckIndexCount && indexCounter > expectCounter {
+		addResult(res, rule, DDLCheckIndexCount, expectCounter)
 	}
-	if compositeIndexMax > value {
-		addResult(res, rule, DDLCheckCompositeIndexMax, value)
+	if rule.Name == DDLCheckCompositeIndexMax && compositeIndexMax > expectCounter {
+		addResult(res, rule, DDLCheckCompositeIndexMax, expectCounter)
 	}
 	return nil
 }
@@ -1678,9 +1819,10 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 	default:
 		return nil
 	}
+	prefix := rule.Params.GetParam(DefaultSingleParamKeyName).String()
 	for _, name := range indexesName {
-		if !utils.HasPrefix(name, rule.Value, false) {
-			addResult(res, rule, DDLCheckIndexPrefix, rule.Value)
+		if !utils.HasPrefix(name, prefix, false) {
+			addResult(res, rule, DDLCheckIndexPrefix, prefix)
 			return nil
 		}
 	}
@@ -1689,9 +1831,10 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 
 func checkUniqIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	_, indexes := getTableUniqIndex(node)
+	prefix := rule.Params.GetParam(DefaultSingleParamKeyName).String()
 	for index, _ := range indexes {
-		if !utils.HasPrefix(index, rule.Value, false) {
-			addResult(res, rule, DDLCheckUniqueIndexPrefix, rule.Value)
+		if !utils.HasPrefix(index, prefix, false) {
+			addResult(res, rule, DDLCheckUniqueIndexPrefix, prefix)
 			return nil
 		}
 	}
@@ -2042,14 +2185,15 @@ func checkDMLWithInsertColumnExist(ctx *session.Context, rule driver.Rule, res *
 }
 
 func checkDMLWithBatchInsertMaxLimits(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	value, err := strconv.Atoi(rule.Value)
-	if err != nil {
-		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
-	}
+	max := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	//value, err := strconv.Atoi(rule.Value)
+	//if err != nil {
+	//	return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
+	//}
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
-		if len(stmt.Lists) > value {
-			addResult(res, rule, DMLCheckBatchInsertListsMax, value)
+		if len(stmt.Lists) > max {
+			addResult(res, rule, DMLCheckBatchInsertListsMax, max)
 		}
 	}
 	return nil
@@ -2283,8 +2427,9 @@ func checkCollationDatabase(ctx *session.Context, rule driver.Rule, res *driver.
 			return err
 		}
 	}
-	if !strings.EqualFold(collationDatabase, rule.Value) {
-		addResult(res, rule, DDLCheckDatabaseCollation, rule.Value)
+	expectCollation := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	if !strings.EqualFold(collationDatabase, expectCollation) {
+		addResult(res, rule, DDLCheckDatabaseCollation, expectCollation)
 	}
 	return nil
 }
@@ -2311,12 +2456,13 @@ func checkDecimalTypeColumn(ctx *session.Context, rule driver.Rule, res *driver.
 }
 
 func checkNeedlessFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	needlessFuncArr := strings.Split(rule.Value, ",")
+	funcArrStr := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	needlessFuncArr := strings.Split(funcArrStr, ",")
 	sql := strings.ToLower(node.Text())
 	for _, needlessFunc := range needlessFuncArr {
 		needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, ")"))
 		if strings.Contains(sql, needlessFunc) {
-			addResult(res, rule, DMLCheckNeedlessFunc, rule.Value)
+			addResult(res, rule, DMLCheckNeedlessFunc, funcArrStr)
 			return nil
 		}
 	}
@@ -2333,8 +2479,9 @@ func checkDatabaseSuffix(ctx *session.Context, rule driver.Rule, res *driver.Aud
 	default:
 		return nil
 	}
-	if databaseName != "" && !utils.HasSuffix(databaseName, rule.Value, false) {
-		addResult(res, rule, DDLCheckDatabaseSuffix, rule.Value)
+	suffix := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	if databaseName != "" && !utils.HasSuffix(databaseName, suffix, false) {
+		addResult(res, rule, DDLCheckDatabaseSuffix, suffix)
 		return nil
 	}
 	return nil
@@ -2411,17 +2558,18 @@ func checkTablePartition(ctx *session.Context, rule driver.Rule, res *driver.Aud
 	return nil
 }
 func checkNumberOfJoinTables(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	nums, err := strconv.Atoi(rule.Value)
-	if err != nil {
-		return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
-	}
+	nums := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	//nums, err := strconv.Atoi(rule.Value)
+	//if err != nil {
+	//	return fmt.Errorf("parsing rule[%v] value error: %v", rule.Name, err)
+	//}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
 			return nil
 		}
 		if nums < util.GetNumberOfJoinTables(stmt.From.TableRefs) {
-			addResult(res, rule, DMLCheckNumberOfJoinTables, rule.Value)
+			addResult(res, rule, DMLCheckNumberOfJoinTables, nums)
 		}
 	default:
 		return nil
@@ -2487,8 +2635,10 @@ func checkIndexOption(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 	if err != nil {
 		return err
 	}
-	if maxIndexOption != "" && strings.Compare(rule.Value, maxIndexOption) > 0 {
-		addResult(res, rule, rule.Name, rule.Value)
+	// todo: using number compare, don't use string compare
+	max := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	if maxIndexOption != "" && strings.Compare(max, maxIndexOption) > 0 {
+		addResult(res, rule, rule.Name, max)
 	}
 	return nil
 }
@@ -2518,8 +2668,9 @@ func checkExplain(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 			addResult(res, rule, DMLCheckExplainExtraUsingTemporary)
 		}
 
-		defaultRule := RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule
-		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > rule.GetValueInt(&defaultRule) {
+		//defaultRule := RuleHandlerMap[DMLCheckExplainAccessTypeAll].Rule
+		max := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > int64(max) {
 			addResult(res, rule, DMLCheckExplainAccessTypeAll, record.Rows)
 		}
 	}

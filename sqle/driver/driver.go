@@ -77,8 +77,6 @@ type RuleParam struct {
 
 type RuleParams []*RuleParam
 
-
-
 func (r *RuleParams) SetParamValue(key, value string) error {
 	paramNotFoundErrMsg := "param %s not found"
 	if r == nil {
@@ -104,16 +102,45 @@ func (r *RuleParams) SetParamValue(key, value string) error {
 	return fmt.Errorf(paramNotFoundErrMsg, key)
 }
 
-func (r *RuleParams) GetParamValue(key string) (string, bool) {
+func (r *RuleParams) GetParam(key string) *RuleParam {
 	if r == nil {
-		return "", false
+		return nil
 	}
 	for _, p := range *r {
 		if p.Key == key {
-			return p.Value, true
+			return p
 		}
 	}
-	return "", false
+	return nil
+}
+
+func (r *RuleParam) String() string {
+	if r == nil {
+		return ""
+	}
+	return r.Value
+}
+
+func (r *RuleParam) Int() int {
+	if r == nil {
+		return 0
+	}
+	i, err := strconv.Atoi(r.Value)
+	if err != nil {
+		return 0
+	}
+	return i
+}
+
+func (r *RuleParam) Bool() bool {
+	if r == nil {
+		return false
+	}
+	b, err := strconv.ParseBool(r.Value)
+	if err != nil {
+		return false
+	}
+	return b
 }
 
 type Rule struct {
@@ -123,30 +150,42 @@ type Rule struct {
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
 	Category string
-
-	Level RuleLevel
-	Value string
+	Level    RuleLevel
+	Params   RuleParams
 }
 
-func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
-	value := r.GetValue()
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err == nil {
-		return i
-	}
-	i, err = strconv.ParseInt(defaultRule.GetValue(), 10, 64)
-	if err == nil {
-		return i
-	}
-	return 0
-}
+//func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
+//	value := r.getValue(DefaultSingleParamKeyName, defaultRule)
+//	i, err := strconv.ParseInt(value, 10, 64)
+//	if err != nil {
+//		return 0
+//	}
+//	return i
+//}
+//
+//func (r *Rule) GetSingleValue() string {
+//	value, _ := r.Params.GetParamValue(DefaultSingleParamKeyName)
+//	return value
+//}
+//
+//func (r *Rule) GetSingleValueInt() int {
+//	value := r.GetSingleValue()
+//	i, err := strconv.Atoi(value)
+//	if err != nil {
+//		return 0
+//	}
+//	return i
+//}
 
-func (r *Rule) GetValue() string {
-	if r == nil {
-		return ""
-	}
-	return r.Value
-}
+//func (r *Rule) getValue(key string, defaultRule *Rule) string {
+//	var value string
+//	var exist bool
+//	value, exist = r.Params.GetParamValue(key)
+//	if !exist {
+//		value, _ = defaultRule.Params.GetParamValue(key)
+//	}
+//	return value
+//}
 
 // Config difine the configuration for driver.
 type Config struct {
