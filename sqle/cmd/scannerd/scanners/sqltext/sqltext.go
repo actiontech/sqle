@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -122,7 +123,7 @@ func (mb *SqlText) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		return err
 	}
 
-	if mb.audit { //trigger audit immediately 立即触发审核
+	if mb.audit == true || strconv.FormatBool(mb.audit) == "true" { //trigger audit immediately 立即触发审核
 		reportID, err := mb.c.TriggerAuditReq(mb.apName)
 		if err != nil {
 			return err
