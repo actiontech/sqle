@@ -1,0 +1,12 @@
+SELECT * FROM `fruits`;
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `category`="cats";
+SELECT `name`,`category`,`price` FROM `fruits` WHERE 1=1 AND `category`="aa" AND `price`="fafaa" AND `name`="Fuji" order by id desc;
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `category`="apple" OR `price`=200;
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `category`="apple" AND `price`=20;
+UPDATE `fruits` SET `category`="fafa", `price`=20  WHERE `name`="apple";
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `name`="origne" AND `category`="aaa" AND `price`=50 AND `category`="apple";
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `category`="apple" AND (`name`="app" OR `name`="xiaomi");
+INSERT INTO `fruits` (`name`,`category`,`price`) VALUES ("aaa","a",111),("bb","ss",20);
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `name` LIKE "nihao";
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `name` LIKE "aaa";
+SELECT `name`,`category`,`price` FROM `fruits` WHERE `name` LIKE "ccc";
