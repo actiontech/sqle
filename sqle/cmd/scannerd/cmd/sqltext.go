@@ -17,7 +17,7 @@ import (
 var (
 	sql    string
 	sqldir string
-	audit  bool
+	audit  string
 
 	sqltextCmd = &cobra.Command{
 		Use:   "sqltext",
@@ -51,7 +51,7 @@ var (
 func init() {
 	sqltextCmd.Flags().StringVarP(&sql, "sql", "S", "", "sql query")
 	sqltextCmd.Flags().StringVarP(&sqldir, "dir", "D", "", "sql directory")
-	sqltextCmd.Flags().BoolVarP(&audit, "audit", "U", true, "trigger audit immediately")
+	sqltextCmd.Flags().StringVarP(&audit, "audit", "U", "true", "trigger audit immediately")
 	//sqltextCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(sqltextCmd)
 }

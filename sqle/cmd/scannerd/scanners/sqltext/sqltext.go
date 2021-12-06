@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -31,14 +30,14 @@ type SqlText struct {
 	apName string
 	sqlDir string
 	sql    string
-	audit  bool
+	audit  string
 }
 
 type Params struct {
 	SQL    string
 	SQLDir string
 	APName string
-	AUDIT  bool
+	AUDIT  string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SqlText, error) {
@@ -123,7 +122,7 @@ func (mb *SqlText) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		return err
 	}
 
-	if mb.audit == true || strconv.FormatBool(mb.audit) == "true" { //trigger audit immediately 立即触发审核
+	if mb.audit == "1" || mb.audit == "true" { //trigger audit immediately 立即触发审核
 		reportID, err := mb.c.TriggerAuditReq(mb.apName)
 		if err != nil {
 			return err
