@@ -29,20 +29,23 @@ type SqlText struct {
 
 	apName string
 	sqlDir string
-	sql string
+	sql    string
+	audit  bool
 }
 
 type Params struct {
-	SQL string
+	SQL    string
 	SQLDir string
 	APName string
+	AUDIT  bool
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SqlText, error) {
 	return &SqlText{
-		sql: params.SQL,
+		sql:    params.SQL,
 		sqlDir: params.SQLDir,
 		apName: params.APName,
+		audit:  params.AUDIT,
 		l:      l,
 		c:      c,
 		getAll: make(chan struct{}),
@@ -50,7 +53,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SqlText, error) {
 }
 
 func (mb *SqlText) Run(ctx context.Context) error {
-	sqls , err := GetSQLFromCli(mb.sql)
+	sqls, err := GetSQLFromCli(mb.sql)
 
 	if sqls == nil {
 		sqls, err = GetSQLFromPath(mb.sqlDir)
@@ -119,11 +122,15 @@ func (mb *SqlText) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		return err
 	}
 
-	reportID, err := mb.c.TriggerAuditReq(mb.apName)
-	if err != nil {
-		return err
+	if mb.audit { //trigger audit immediately 立即触发审核
+		reportID, err := mb.c.TriggerAuditReq(mb.apName)
+		if err != nil {
+			return err
+		}
+		return mb.c.GetAuditReportReq(mb.apName, reportID)
 	}
-	return mb.c.GetAuditReportReq(mb.apName, reportID)
+
+	return nil
 }
 
 func GetSQLFromPath(pathName string) (allSQL []driver.Node, err error) {

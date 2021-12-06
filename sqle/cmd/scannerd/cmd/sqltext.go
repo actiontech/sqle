@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	sql string
+	sql    string
 	sqldir string
+	audit  bool
 
 	sqltextCmd = &cobra.Command{
 		Use:   "sqltext",
@@ -24,9 +25,10 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 
 			param := &sqltext.Params{
-				SQL:sql,
+				SQL:    sql,
 				SQLDir: sqldir,
 				APName: rootCmdFlags.auditPlanName,
+				AUDIT:  audit,
 			}
 			log := logrus.WithField("scanner", "sqltext")
 			client := scanner.NewSQLEClient(time.Second, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
@@ -47,8 +49,9 @@ var (
 )
 
 func init() {
-	sqltextCmd.Flags().StringVarP(&sql, "sql", "s", "", "sql query")
+	sqltextCmd.Flags().StringVarP(&sql, "sql", "S", "", "sql query")
 	sqltextCmd.Flags().StringVarP(&sqldir, "dir", "D", "", "sql directory")
+	sqltextCmd.Flags().BoolVarP(&audit, "audit", "A", true, "trigger audit immediately")
 	//sqltextCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(sqltextCmd)
 }
