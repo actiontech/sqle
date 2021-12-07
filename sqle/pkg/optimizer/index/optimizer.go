@@ -45,6 +45,8 @@
 // contains all the columns required for an index-only access path.
 package index
 
+import "github.com/actiontech/sqle/sqle/utils"
+
 // Optimizer give best index advice for the single table query.
 type Optimizer struct {
 }
@@ -66,7 +68,7 @@ func (o *Optimizer) Optimize(ast SelectAST) (columns []string, err error) {
 
 	columns = append(columns, ast.ColumnsInProjection()...)
 
-	return
+	return utils.RemoveDuplicate(columns), nil
 }
 
 type optimizerOption func(*Optimizer)
