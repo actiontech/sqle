@@ -45,20 +45,13 @@
 // contains all the columns required for an index-only access path.
 package index
 
-const (
-	defaultCompositeIndexMaxColumn = 3
-)
-
 // Optimizer give best index advice for the single table query.
 type Optimizer struct {
-	compositeIndexMaxColumn int
 }
 
 // NewOptimizer creates a new optimizer.
 func NewOptimizer(opts ...optimizerOption) *Optimizer {
-	optimizer := &Optimizer{
-		compositeIndexMaxColumn: defaultCompositeIndexMaxColumn,
-	}
+	optimizer := &Optimizer{}
 
 	for _, opt := range opts {
 		opt.apply(optimizer)
@@ -73,10 +66,6 @@ func (o *Optimizer) Optimize(ast SelectAST) (columns []string, err error) {
 
 	columns = append(columns, ast.ColumnsInProjection()...)
 
-	if len(columns) > o.compositeIndexMaxColumn {
-		columns = columns[:o.compositeIndexMaxColumn]
-	}
-
 	return
 }
 
@@ -84,11 +73,4 @@ type optimizerOption func(*Optimizer)
 
 func (opt optimizerOption) apply(o *Optimizer) {
 	opt(o)
-}
-
-// WithCompositeIndexMaxColumn sets the max column number of the composite index.
-func WithCompositeIndexMaxColumn(column int) optimizerOption {
-	return func(o *Optimizer) {
-		o.compositeIndexMaxColumn = column
-	}
 }
