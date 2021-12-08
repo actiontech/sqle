@@ -18,6 +18,7 @@ var (
 	sql    string
 	sqldir string
 	audit  string
+	synctype  string
 
 	sqltextCmd = &cobra.Command{
 		Use:   "sqltext",
@@ -29,6 +30,7 @@ var (
 				SQLDir: sqldir,
 				APName: rootCmdFlags.auditPlanName,
 				AUDIT:  audit,
+				SYNCTYPE:synctype,
 			}
 			log := logrus.WithField("scanner", "sqltext")
 			client := scanner.NewSQLEClient(time.Second, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
@@ -52,6 +54,7 @@ func init() {
 	sqltextCmd.Flags().StringVarP(&sql, "sql", "S", "", "sql query")
 	sqltextCmd.Flags().StringVarP(&sqldir, "dir", "D", "", "sql directory")
 	sqltextCmd.Flags().StringVarP(&audit, "audit", "U", "true", "trigger audit immediately")
+	sqltextCmd.Flags().StringVarP(&synctype, "synctype", "T", "1", "sync type 1:full,2:partial")
 	//sqltextCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(sqltextCmd)
 }

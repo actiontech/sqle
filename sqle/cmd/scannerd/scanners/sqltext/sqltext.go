@@ -31,6 +31,7 @@ type SqlText struct {
 	sqlDir string
 	sql    string
 	audit  string
+	synctype string
 }
 
 type Params struct {
@@ -38,6 +39,7 @@ type Params struct {
 	SQLDir string
 	APName string
 	AUDIT  string
+	SYNCTYPE string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SqlText, error) {
@@ -46,6 +48,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SqlText, error) {
 		sqlDir: params.SQLDir,
 		apName: params.APName,
 		audit:  params.AUDIT,
+		synctype:  params.SYNCTYPE,
 		l:      l,
 		c:      c,
 		getAll: make(chan struct{}),
@@ -117,7 +120,12 @@ func (mb *SqlText) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		})
 	}
 
-	err := mb.c.UploadReq(scanner.FullUpload, mb.apName, reqBody)
+	reqUrl :=  scanner.FullUpload
+	if  mb.synctype == "2" {
+		reqUrl = scanner.PartialUpload
+	}
+
+	err := mb.c.UploadReq(reqUrl, mb.apName, reqBody)
 	if err != nil {
 		return err
 	}
