@@ -21,8 +21,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.port, "port", "P", "10000", "sqle port")
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.auditPlanName, "name", "N", "", "audit plan name")
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.token, "token", "A", "", "sqle token")
-	rootCmd.MarkPersistentFlagRequired("name")
-	rootCmd.MarkPersistentFlagRequired("token")
+	_ = rootCmd.MarkPersistentFlagRequired("name")
+	_ = rootCmd.MarkPersistentFlagRequired("token")
 }
 
 func Execute() error {
