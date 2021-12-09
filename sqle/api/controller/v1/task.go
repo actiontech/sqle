@@ -383,14 +383,17 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	buff := &bytes.Buffer{}
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	cw := csv.NewWriter(buff)
-	cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句"})
+	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句"})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	for _, td := range taskSQLsDetail {
 		taskSql := &model.ExecuteSQL{
 			AuditResult: td.AuditResult,
 			AuditStatus: td.AuditStatus,
 		}
 		taskSql.ExecStatus = td.ExecStatus
-		cw.Write([]string{
+		err := cw.Write([]string{
 			strconv.FormatUint(uint64(td.Number), 10),
 			td.ExecSQL,
 			taskSql.GetAuditStatusDesc(),
@@ -399,6 +402,9 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			td.ExecResult,
 			td.RollbackSQL.String,
 		})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 	cw.Flush()
 	fileName := fmt.Sprintf("SQL审核报告_%v_%v.csv", task.InstanceName(), taskId)

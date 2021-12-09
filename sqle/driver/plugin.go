@@ -90,7 +90,7 @@ func InitPlugins(pluginDir string) error {
 	}
 
 	var plugins []os.FileInfo
-	filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "init plugin")
 		}
@@ -100,7 +100,10 @@ func InitPlugins(pluginDir string) error {
 		}
 		plugins = append(plugins, info)
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
 	for _, p := range plugins {
 		binaryPath := filepath.Join(pluginDir, p.Name())
 
