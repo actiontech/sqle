@@ -747,3 +747,27 @@ func Fingerprint(oneSql string, isCaseSensitive bool) (fingerprint string, err e
 	}
 	return
 }
+
+// ExtractIndexFromCreateTableStmt extract index from create table statement.
+func ExtractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*index name*/ []string /*indexed column*/ {
+	var result = make(map[string][]string)
+
+	for _, constraint := range table.Constraints {
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			// The name of a PRIMARY KEY is always PRIMARY,
+			// which thus cannot be used as the name for any other kind of index.
+			result["PRIMARY"] = []string{constraint.Keys[0].Column.Name.L}
+		}
+
+		if constraint.Tp == ast.ConstraintIndex ||
+			constraint.Tp == ast.ConstraintKey ||
+			constraint.Tp == ast.ConstraintUniq ||
+			constraint.Tp == ast.ConstraintUniqIndex ||
+			constraint.Tp == ast.ConstraintUniqKey {
+			for _, key := range constraint.Keys {
+				result[constraint.Name] = append(result[constraint.Name], key.Column.Name.L)
+			}
+		}
+	}
+	return result
+}

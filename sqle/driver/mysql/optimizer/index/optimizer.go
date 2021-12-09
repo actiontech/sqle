@@ -311,7 +311,7 @@ func (o *Optimizer) needIndex(tbl string, columns ...string) (bool, error) {
 		return false, fmt.Errorf("table %s not found on session context when check index", tbl)
 	}
 
-	for _, index := range extractIndexFromCreateTableStmt(cts) {
+	for _, index := range util.ExtractIndexFromCreateTableStmt(cts) {
 		if reflect.DeepEqual(index, columns) {
 			return false, nil
 		}
@@ -407,29 +407,5 @@ func removeDrivingTable(records []*executor.ExplainRecord) []*executor.ExplainRe
 		j++
 	}
 
-	return result
-}
-
-// extractIndexFromCreateTableStmt extract index from create table statement.
-func extractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*index name*/ []string /*indexed column*/ {
-	var result = make(map[string][]string)
-
-	for _, constraint := range table.Constraints {
-		if constraint.Tp == ast.ConstraintPrimaryKey {
-			// The name of a PRIMARY KEY is always PRIMARY,
-			// which thus cannot be used as the name for any other kind of index.
-			result["PRIMARY"] = []string{constraint.Keys[0].Column.Name.L}
-		}
-
-		if constraint.Tp == ast.ConstraintIndex ||
-			constraint.Tp == ast.ConstraintKey ||
-			constraint.Tp == ast.ConstraintUniq ||
-			constraint.Tp == ast.ConstraintUniqIndex ||
-			constraint.Tp == ast.ConstraintUniqKey {
-			for _, key := range constraint.Keys {
-				result[constraint.Name] = append(result[constraint.Name], key.Column.Name.L)
-			}
-		}
-	}
 	return result
 }
