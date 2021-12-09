@@ -138,3 +138,33 @@ func Test_removeDrivingTable(t *testing.T) {
 		})
 	}
 }
+
+func TestOptimizer_needIndex(t *testing.T) {
+	tests := []struct {
+		tableName   string
+		indexColumn []string
+		want        bool
+	}{
+		{"exist_tb_1", []string{"v2", "v1"}, true},
+		{"exist_tb_3", []string{"v1", "v2", "v3"}, true},
+
+		{"exist_tb_1", []string{"id"}, false},
+		{"exist_tb_1", []string{"v1", "v2"}, false},
+		{"exist_tb_1", []string{"v1"}, false},
+	}
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			e, _, err := executor.NewMockExecutor()
+			assert.NoError(t, err)
+
+			o := NewOptimizer(testLogger.WithField("test", "test"), session.NewMockContext(e))
+			mockSelect := fmt.Sprintf("select * from %s", tt.tableName)
+			stmt, err := parser.New().ParseOneStmt(mockSelect, "", "")
+			assert.NoError(t, err)
+			o.tables[tt.tableName] = &tableInSelect{singleTableSel: stmt.(*ast.SelectStmt)}
+			got, err := o.needIndex(tt.tableName, tt.indexColumn...)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

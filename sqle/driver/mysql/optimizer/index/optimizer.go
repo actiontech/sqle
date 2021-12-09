@@ -3,6 +3,7 @@ package index
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -293,7 +294,31 @@ func (o *Optimizer) needOptimize(record *executor.ExplainRecord) bool {
 
 // needIndex check need add index on tbl.columns or not.
 func (o *Optimizer) needIndex(tbl string, columns ...string) (bool, error) {
-	// todo
+	table, ok := o.tables[tbl]
+	if !ok {
+		return false, fmt.Errorf("table %s not found when check index", tbl)
+	}
+
+	if table.singleTableSel == nil {
+		return false, fmt.Errorf("table %s do not have select statement when check index", tbl)
+	}
+
+	cts, exist, err := o.GetCreateTableStmt(extractTableNameFromAST(table.singleTableSel, tbl))
+	if err != nil {
+		return false, errors.Wrap(err, "get create table statement when check index")
+	}
+	if !exist {
+		return false, fmt.Errorf("table %s not found on session context when check index", tbl)
+	}
+
+	for _, index := range util.ExtractIndexFromCreateTableStmt(cts) {
+		if reflect.DeepEqual(index, columns) {
+			return false, nil
+		}
+		if strings.HasPrefix(strings.Join(index, ","), strings.Join(columns, ",")) {
+			return false, nil
+		}
+	}
 	return true, nil
 }
 
