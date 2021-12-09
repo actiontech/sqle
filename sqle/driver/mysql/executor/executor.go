@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/log"
 	"strconv"
 	"time"
 
@@ -105,13 +106,13 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 	}
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
 			c.Logger().Error("rollback sql transact")
+			log.AutoPrintError(c.Logger(), tx.Rollback, "rollback sql transact failed")
 			panic(p)
 		}
 		if err != nil {
-			tx.Rollback()
 			c.Logger().Error("rollback sql transact")
+			log.AutoPrintError(c.Logger(), tx.Rollback, "rollback sql transact failed")
 			return
 		}
 		err = tx.Commit()
