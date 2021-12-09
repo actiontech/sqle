@@ -81,3 +81,36 @@ func (cp *CapitalizeProcessor) Enter(in ast.Node) (node ast.Node, skipChildren b
 func (cp *CapitalizeProcessor) Leave(in ast.Node) (node ast.Node, skipChildren bool) {
 	return in, false
 }
+
+// TableNameExtractor implements ast.Visitor interface.
+type TableNameExtractor struct {
+	TableNames map[string] /*lower case table name without database name*/ *ast.TableName
+}
+
+func (te *TableNameExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.TableName:
+		te.TableNames[stmt.Name.L] = stmt
+	}
+	return in, false
+}
+
+func (te *TableNameExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
+
+type SelectStmtExtractor struct {
+	SelectStmts []*ast.SelectStmt
+}
+
+func (se *SelectStmtExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.SelectStmt:
+		se.SelectStmts = append(se.SelectStmts, stmt)
+	}
+	return in, false
+}
+
+func (se *SelectStmtExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
