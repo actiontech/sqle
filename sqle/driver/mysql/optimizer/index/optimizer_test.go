@@ -18,41 +18,139 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func mockExplain(mocker sqlmock.Sqlmock, rows [][]string) {
-	e := mocker.ExpectQuery(regexp.QuoteMeta("EXPLAIN"))
-	r := sqlmock.NewRows([]string{"id", "table", "type"})
-	for _, row := range rows {
-		e.WillReturnRows(r.AddRow(row[0], row[1], row[2]))
-	}
-}
-
 var testLogger = logrus.New()
 
 func TestOptimizer_Optimize(t *testing.T) {
+	mockExplain := func(mocker sqlmock.Sqlmock, rows [][]string) {
+		e := mocker.ExpectQuery(regexp.QuoteMeta("EXPLAIN"))
+		r := sqlmock.NewRows([]string{"id", "table", "type"})
+		for _, row := range rows {
+			e.WillReturnRows(r.AddRow(row[0], row[1], row[2]))
+		}
+	}
+
+	mockShowTableStatus := func(mocker sqlmock.Sqlmock, row []string) {
+		e := mocker.ExpectQuery(regexp.QuoteMeta("show table status"))
+		r := sqlmock.NewRows([]string{"Name", "Rows"})
+		if len(row) == 2 {
+			e.WillReturnRows(r.AddRow(row[0], row[1]))
+		}
+	}
+
+	mockCalculateCardinality := func(mocker sqlmock.Sqlmock, column string, cardinality int) {
+		e := mocker.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf("select count(distinct `%s`)", column)))
+		r := sqlmock.NewRows([]string{"cardinality"})
+		e.WillReturnRows(r.AddRow(cardinality))
+	}
+
 	entry := testLogger.WithFields(logrus.Fields{"test": "optimizer"})
 	var optimizerTests = []struct {
-		SQL             string
+		SQL string
+
+		// following are SQL returns
 		explain         [][]string
+		showTableStatus []string
+		cardinalities   []cardinality
+
 		optimizerOption []optimizerOption
 
+		// output
 		output []*OptimizeResult
 	}{
 		// single table, single select
-		{"select 1", [][]string{}, nil, nil},
-		{"select * from t where id = 1", [][]string{{"1", "t", "const"}}, nil, nil},
-		{"select * from t where c1 = 1", [][]string{{"1", "t", executor.ExplainRecordAccessTypeAll}}, nil, []*OptimizeResult{{"t", []string{"c1"}, ""}}},
-		{"select * from t where c1 = 1", [][]string{{"1", "t", executor.ExplainRecordAccessTypeIndex}}, nil, []*OptimizeResult{{"t", []string{"c1"}, ""}}},
-		{"select * from t where c1 = 1 and c2 = 2 and c3 > 3", [][]string{{"1", "t", executor.ExplainRecordAccessTypeIndex}}, nil, []*OptimizeResult{{"t", []string{"c1", "c2"}, ""}}},
-		{"select c1,c2,c3 from t where c2 = 1 and c1 = 2 and c3 > 3", [][]string{{"1", "t", executor.ExplainRecordAccessTypeIndex}}, nil, []*OptimizeResult{{"t", []string{"c2", "c1", "c3"}, ""}}},
-		{"select c1,c2,c3,c4 from t where c2 = 1 and c1 = 2 and c3 > 3", [][]string{{"1", "t", executor.ExplainRecordAccessTypeIndex}}, []optimizerOption{WithCompositeIndexMaxColumn(4)}, []*OptimizeResult{{"t", []string{"c2", "c1", "c3", "c4"}, ""}}},
+		{
+			"select 1",
+			[][]string{},
+			[]string{},
+			nil,
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_1 where id = 1",
+			[][]string{{"1", "exist_tb_1", "const"}},
+			[]string{"exist_tb_1", "1000"},
+			nil,
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_3 where v1 = 1",
+			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}},
+			[]string{"exist_tb_3", "1000"},
+			nil,
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v1"}, ""}},
+		},
+		{
+			"select * from exist_tb_3 where v1 = 1",
+			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
+			[]string{"exist_tb_3", "1000"},
+			nil,
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v1"}, ""}},
+		},
+		{
+			"select * from exist_tb_3 where v1 = 1 and v2 = 2 and v3 > 3",
+			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
+			[]string{"exist_tb_3", "1000"},
+			[]cardinality{{"v1", 100}, {"v2", 101}},
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1"}, ""}},
+		},
+		{
+			"select * from exist_tb_3 where v1 = 1 and v2 = 2 and v3 > 3",
+			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
+			[]string{"exist_tb_3", "1000"},
+			[]cardinality{{"v1", 101}, {"v2", 100}},
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v1", "v2"}, ""}},
+		},
+		{
+			"select v1,v2,v3 from exist_tb_3 where v2 = 1 and v1 = 2 and v3 > 3",
+			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
+			[]string{"exist_tb_3", "1000"},
+			[]cardinality{{"v2", 102}, {"v1", 101}, {"v3", 100}},
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1", "v3"}, ""}},
+		},
+		{
+			"select v1,v2,v3 from exist_tb_3 where v2 = 1 and v1 = 2 and v3 > 3",
+			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
+			[]string{"exist_tb_3", "1000"},
+			[]cardinality{{"v2", 102}, {"v1", 101}},
+			[]optimizerOption{WithCompositeIndexMaxColumn(2)},
+			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1"}, ""}},
+		},
 
 		// multi table, single select
-		{"select * from t1 join t2 on t1.c1 = t2.c1", [][]string{{"1", "t1", executor.ExplainRecordAccessTypeAll}, {"1", "t2", executor.ExplainRecordAccessTypeAll}}, nil, []*OptimizeResult{{"t2", []string{"c1"}, ""}}},
-		{"select * from t1 join t2 on t1.c1 = t2.c1", [][]string{{"1", "t2", executor.ExplainRecordAccessTypeAll}, {"1", "t1", executor.ExplainRecordAccessTypeAll}}, nil, []*OptimizeResult{{"t1", []string{"c1"}, ""}}},
-		{"select * from t1 join t2 on t1.c1 = t2.c1", [][]string{{"1", "t1", executor.ExplainRecordAccessTypeAll}, {"1", "t2", "ref"}}, nil, nil},
+		{
+			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
+			[][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll},
+				{"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}},
+			[]string{"exist_tb_1", "1000"},
+			nil,
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
+		},
+		{
+			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
+			[][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}},
+			[]string{"exist_tb_1", "1000"},
+			nil,
+			nil,
+			nil,
+		},
 
 		// subqueries
-		{"select * from (select c1,c2 from t2 where c1 = 2) as t1", [][]string{{"1", "t2", executor.ExplainRecordAccessTypeIndex}}, nil, []*OptimizeResult{{"t2", []string{"c1", "c2"}, ""}}},
+		{
+			"select * from (select v1,v2 from exist_tb_2 where v1 = 2) as t1",
+			[][]string{{"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}},
+			[]string{"exist_tb_2", "1000"},
+			[]cardinality{{"v1", 100}, {"v2", 101}},
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"v2", "v1"}, ""}},
+		},
 	}
 	for i, tt := range optimizerTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
@@ -62,6 +160,11 @@ func TestOptimizer_Optimize(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockExplain(mocker, tt.explain)
+			mockShowTableStatus(mocker, tt.showTableStatus)
+			for _, c := range tt.cardinalities {
+				mockCalculateCardinality(mocker, c.columnName, c.cardinality)
+			}
+
 			o := NewOptimizer(entry, session.NewMockContext(e), tt.optimizerOption...)
 
 			gots, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
