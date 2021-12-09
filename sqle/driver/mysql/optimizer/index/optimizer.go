@@ -3,6 +3,7 @@ package index
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -293,7 +294,31 @@ func (o *Optimizer) needOptimize(record *executor.ExplainRecord) bool {
 
 // needIndex check need add index on tbl.columns or not.
 func (o *Optimizer) needIndex(tbl string, columns ...string) (bool, error) {
-	// todo
+	table, ok := o.tables[tbl]
+	if !ok {
+		return false, fmt.Errorf("table %s not found when check index", tbl)
+	}
+
+	if table.singleTableSel == nil {
+		return false, fmt.Errorf("table %s do not have select statement when check index", tbl)
+	}
+
+	cts, exist, err := o.GetCreateTableStmt(extractTableNameFromAST(table.singleTableSel, tbl))
+	if err != nil {
+		return false, errors.Wrap(err, "get create table statement when check index")
+	}
+	if !exist {
+		return false, fmt.Errorf("table %s not found on session context when check index", tbl)
+	}
+
+	for _, index := range extractIndexFromCreateTableStmt(cts) {
+		if reflect.DeepEqual(index, columns) {
+			return false, nil
+		}
+		if strings.HasPrefix(strings.Join(index, ","), strings.Join(columns, ",")) {
+			return false, nil
+		}
+	}
 	return true, nil
 }
 
@@ -382,5 +407,29 @@ func removeDrivingTable(records []*executor.ExplainRecord) []*executor.ExplainRe
 		j++
 	}
 
+	return result
+}
+
+// extractIndexFromCreateTableStmt extract index from create table statement.
+func extractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*index name*/ []string /*indexed column*/ {
+	var result = make(map[string][]string)
+
+	for _, constraint := range table.Constraints {
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			// The name of a PRIMARY KEY is always PRIMARY,
+			// which thus cannot be used as the name for any other kind of index.
+			result["PRIMARY"] = []string{constraint.Keys[0].Column.Name.L}
+		}
+
+		if constraint.Tp == ast.ConstraintIndex ||
+			constraint.Tp == ast.ConstraintKey ||
+			constraint.Tp == ast.ConstraintUniq ||
+			constraint.Tp == ast.ConstraintUniqIndex ||
+			constraint.Tp == ast.ConstraintUniqKey {
+			for _, key := range constraint.Keys {
+				result[constraint.Name] = append(result[constraint.Name], key.Column.Name.L)
+			}
+		}
+	}
 	return result
 }
