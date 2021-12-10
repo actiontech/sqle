@@ -142,6 +142,11 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 		},
 
+		// will not give advice when join without condition
+		{"select * from exist_tb_1 join exist_tb_2", [][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}, []string{"exist_tb_1", "1000"}, nil, nil, nil},
+		{"select * from exist_tb_1, exist_tb_2", [][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}, []string{"exist_tb_1", "1000"}, nil, nil, nil},
+		{"select * from exist_tb_1 cross join exist_tb_2", [][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}, []string{"exist_tb_1", "1000"}, nil, nil, nil},
+
 		// subqueries
 		{
 			"select * from (select v1,v2 from exist_tb_2 where v1 = 2) as t1",
