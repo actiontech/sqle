@@ -724,51 +724,6 @@ func restoreToSqlWithFlag(restoreFlag format.RestoreFlags, node ast.Node) (sqlSt
 	return buf.String(), nil
 }
 
-// CapitalizeProcessor capitalize identifiers as needed.
-//
-// format.RestoreNameUppercase can not control name comparisons accurate.
-// CASE:
-// Database/Table/Table-alias names are case-insensitive when lower_case_table_names equals 1.
-// Some identifiers, such as Tablespace names are case-sensitive which not affected by lower_case_table_names.
-// ref: https://dev.mysql.com/doc/refman/5.7/en/identifier-case-sensitivity.html
-type CapitalizeProcessor struct {
-	capitalizeTableName      bool
-	capitalizeTableAliasName bool
-	capitalizeDatabaseName   bool
-}
-
-func (cp *CapitalizeProcessor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
-	switch stmt := in.(type) {
-	case *ast.TableSource:
-		if cp.capitalizeTableAliasName {
-			stmt.AsName.O = strings.ToUpper(stmt.AsName.O)
-		}
-	case *ast.TableName:
-		if cp.capitalizeTableName {
-			stmt.Name.O = strings.ToUpper(stmt.Name.O)
-		}
-		if cp.capitalizeDatabaseName {
-			stmt.Schema.O = strings.ToUpper(stmt.Schema.O)
-		}
-	}
-
-	if cp.capitalizeDatabaseName {
-		switch stmt := in.(type) {
-		case *ast.DropDatabaseStmt:
-			stmt.Name = strings.ToUpper(stmt.Name)
-		case *ast.CreateDatabaseStmt:
-			stmt.Name = strings.ToUpper(stmt.Name)
-		case *ast.AlterDatabaseStmt:
-			stmt.Name = strings.ToUpper(stmt.Name)
-		}
-	}
-	return in, false
-}
-
-func (cp *CapitalizeProcessor) Leave(in ast.Node) (node ast.Node, skipChildren bool) {
-	return in, false
-}
-
 func Fingerprint(oneSql string, isCaseSensitive bool) (fingerprint string, err error) {
 	stmts, _, err := parser.New().PerfectParse(oneSql, "", "")
 	if err != nil {
@@ -793,28 +748,26 @@ func Fingerprint(oneSql string, isCaseSensitive bool) (fingerprint string, err e
 	return
 }
 
-type FingerprintVisitor struct{}
+// ExtractIndexFromCreateTableStmt extract index from create table statement.
+func ExtractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*index name*/ []string /*indexed column*/ {
+	var result = make(map[string][]string)
 
-func (f *FingerprintVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
-	if v, ok := n.(*driver.ValueExpr); ok {
-		v.Type.Charset = ""
-		v.SetValue([]byte("?"))
-	}
-	return n, false
-}
+	for _, constraint := range table.Constraints {
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			// The name of a PRIMARY KEY is always PRIMARY,
+			// which thus cannot be used as the name for any other kind of index.
+			result["PRIMARY"] = []string{constraint.Keys[0].Column.Name.L}
+		}
 
-func (f *FingerprintVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
-	return n, true
-}
-
-func ParseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
-	t, err := ParseOneSql(sql)
-	if err != nil {
-		return nil, err
+		if constraint.Tp == ast.ConstraintIndex ||
+			constraint.Tp == ast.ConstraintKey ||
+			constraint.Tp == ast.ConstraintUniq ||
+			constraint.Tp == ast.ConstraintUniqIndex ||
+			constraint.Tp == ast.ConstraintUniqKey {
+			for _, key := range constraint.Keys {
+				result[constraint.Name] = append(result[constraint.Name], key.Column.Name.L)
+			}
+		}
 	}
-	createStmt, ok := t.(*ast.CreateTableStmt)
-	if !ok {
-		return nil, fmt.Errorf("stmt not support")
-	}
-	return createStmt, nil
+	return result
 }
