@@ -237,6 +237,30 @@ func (o *Optimizer) optimizeJoinTable(tbl string) *OptimizeResult {
 
 // doSpecifiedOptimization optimize single table select.
 func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
+	//if selectStmt.Where == nil {
+	//	for _, field := range selectStmt.Fields.Fields {
+	//		tableSource := selectStmt.From.TableRefs.Left.(*ast.TableSource)
+	//		tableName := tableSource.Source.(*ast.TableName).Name.L
+	//
+	//		if field.WildCard == nil {
+	//			switch e := field.Expr.(type) {
+	//			case *ast.AggregateFuncExpr:
+	//				if e.F == ast.AggFuncMin || e.F == ast.AggFuncMax {
+	//					for _, arg := range e.Args {
+	//						if cne, ok := arg.(*ast.ColumnNameExpr); ok {
+	//							return &OptimizeResult{
+	//								TableName:      tableName,
+	//								IndexedColumns: []string{cne.Name.Name.L},
+	//								Reason:         "利用索引有序的性质快速找到记录",
+	//							}, nil
+	//						}
+	//					}
+	//
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 	return nil, nil
 }
@@ -414,7 +438,7 @@ func defaultCreateIndexStatement(tableName string, columns ...string) string {
 
 func restoreSelectStmt(ss *ast.SelectStmt) (string, error) {
 	var buf strings.Builder
-	rc := format.NewRestoreCtx(0, &buf)
+	rc := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
 
 	if err := ss.Restore(rc); err != nil {
 		return "", errors.Wrap(err, "restore select statement")
