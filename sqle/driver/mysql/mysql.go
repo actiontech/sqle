@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/optimizer/index"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
@@ -99,6 +101,11 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
 			min := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
 			inspect.cnf.DDLGhostMinSize = int64(min)
+		}
+		if rule.Name == rulepkg.ConfigOptimizeIndexEnabled {
+			inspect.cnf.optimizeIndexEnabled = true
+			inspect.cnf.calculateCardinalityMaxRow = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Int()
+			inspect.cnf.compositeIndexMaxColumn = rule.Params.GetParam(rulepkg.DefaultMultiParamsSecondKeyName).Int()
 		}
 	}
 
@@ -272,6 +279,34 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		}
 	}
 
+	if ss, ok := nodes[0].(*ast.SelectStmt); ok && i.cnf.optimizeIndexEnabled && ss.From != nil {
+		// if table do not exist in database, we will get error message when explain select statement.
+		exist, err := i.Ctx.IsTableExistInDatabase(ss.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
+		if err != nil {
+			return nil, errors.Wrap(err, "check table exist in database or not")
+		}
+		if exist {
+			optimizer := index.NewOptimizer(i.log, i.Ctx,
+				index.WithCalculateCardinalityMaxRow(i.cnf.calculateCardinalityMaxRow),
+				index.WithCompositeIndexMaxColumn(i.cnf.compositeIndexMaxColumn))
+			advices, err := optimizer.Optimize(ctx, ss)
+			if err != nil {
+				return nil, errors.Wrap(err, "optimize sql")
+			}
+
+			var buf strings.Builder
+			for _, advice := range advices {
+				buf.WriteString(fmt.Sprintf("建议为表 %s 列 %s 添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
+				if advice.Reason == "" {
+					buf.WriteString("\n")
+				} else {
+					buf.WriteString(fmt.Sprintf(", 原因：%s\n", advice.Reason))
+				}
+			}
+			i.result.Add(driver.RuleLevelNotice, buf.String())
+		}
+	}
+
 	// print osc
 	oscCommandLine, err := i.generateOSCCommandLine(nodes[0])
 	if err != nil {
@@ -338,6 +373,10 @@ type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
 	DDLGhostMinSize    int64
+
+	optimizeIndexEnabled       bool
+	calculateCardinalityMaxRow int
+	compositeIndexMaxColumn    int
 }
 
 func (i *Inspect) Context() *session.Context {
