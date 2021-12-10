@@ -288,7 +288,8 @@ const (
 	ExplainRecordExtraUsingFilesort  = "Using filesort"
 	ExplainRecordExtraUsingTemporary = "Using temporary"
 
-	ExplainRecordAccessTypeAll = "ALL"
+	ExplainRecordAccessTypeAll   = "ALL"
+	ExplainRecordAccessTypeIndex = "index"
 )
 
 func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
