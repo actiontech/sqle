@@ -340,7 +340,9 @@ func (o *Optimizer) sortColumnsByCardinality(tbl string, indexedColumns []string
 		})
 	}
 
+	o.l.Infof("column cardinalities(before sort): %+v", cardinalities)
 	sort.Sort(cardinalities)
+	o.l.Infof("column cardinalities(after sort): %+v", cardinalities)
 
 	for _, c := range cardinalities {
 		sortedColumns = append(sortedColumns, c.columnName)
