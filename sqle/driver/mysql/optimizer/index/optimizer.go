@@ -109,7 +109,8 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 	for _, tbl := range needOptimizedTables {
 		table, ok := o.tables[tbl]
 		if !ok {
-			return nil, errors.Errorf("table %s not found when index optimize", tbl)
+			// given SQL: select * from t1 join t2, there is not join on condition,
+			continue
 		}
 
 		var result *OptimizeResult
