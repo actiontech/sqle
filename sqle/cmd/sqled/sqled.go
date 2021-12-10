@@ -7,6 +7,7 @@ import (
 
 	sqled "github.com/actiontech/sqle/sqle"
 	"github.com/actiontech/sqle/sqle/config"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/spf13/cobra"
@@ -60,7 +61,8 @@ func main() {
 
 	rootCmd.AddCommand(genSecretPasswordCmd())
 	if err := rootCmd.Execute(); err != nil {
-		panic(err)
+		log.NewEntry().Error("sqle abnormal termination:", err)
+		os.Exit(1)
 	}
 }
 
