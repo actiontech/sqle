@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -27,7 +28,8 @@ type Optimizer struct {
 	l *logrus.Entry
 
 	// tables key is table name, use to match in execution plan.
-	tables map[string]*tableInSelect
+	tables             map[string]*tableInSelect
+	tableNameExtractor util.TableNameExtractor
 
 	// optimizer options:
 	calculateCardinalityMaxRow int
@@ -113,6 +115,9 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 		var result *OptimizeResult
 		if table.joinOnColumn == "" {
 			result, err = o.optimizeSingleTable(ctx, tbl, table.singleTableSel)
+			if err != nil {
+				return nil, errors.Wrapf(err, "optimize single table %s", tbl)
+			}
 		} else {
 			result = o.optimizeJoinTable(tbl)
 		}
@@ -128,6 +133,10 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 //   2. single select on multiple tables, such join
 //   3. multi select on multiple tables, such subqueries
 func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
+	tne := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
+	ss.Accept(&tne)
+	o.tableNameExtractor = tne
+
 	visitor := util.SelectStmtExtractor{}
 	ss.Accept(&visitor)
 
@@ -171,13 +180,13 @@ func (o *Optimizer) optimizeSingleTable(ctx context.Context, tbl string, ss *ast
 		optimizeResult *OptimizeResult
 	)
 
-	optimizeResult, err = o.doGeneralOptimization(ctx, ss)
+	optimizeResult, err = o.doSpecifiedOptimization(ctx, ss)
 	if err != nil {
 		return nil, err
 	}
 
 	if optimizeResult == nil {
-		optimizeResult, err = o.doSpecifiedOptimization(ctx, ss)
+		optimizeResult, err = o.doGeneralOptimization(ctx, ss)
 		if err != nil {
 			return nil, err
 		}
@@ -202,14 +211,16 @@ func (o *Optimizer) optimizeSingleTable(ctx context.Context, tbl string, ss *ast
 
 	o.l.Infof("table:%s, indexed columns:%v, reason:%s", optimizeResult.TableName, optimizeResult.IndexedColumns, optimizeResult.Reason)
 
-	rowCount, err := o.GetTableRowCount(extractTableNameFromAST(ss, tbl))
-	if err != nil {
-		return nil, errors.Wrap(err, "get table row count when optimize")
-	}
-	if rowCount < o.calculateCardinalityMaxRow {
-		optimizeResult.IndexedColumns, err = o.sortColumnsByCardinality(ctx, optimizeResult.IndexedColumns)
+	if len(optimizeResult.IndexedColumns) > 1 {
+		rowCount, err := o.GetTableRowCount(extractTableNameFromAST(ss, tbl))
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "get table row count when optimize")
+		}
+		if rowCount < o.calculateCardinalityMaxRow {
+			optimizeResult.IndexedColumns, err = o.sortColumnsByCardinality(tbl, optimizeResult.IndexedColumns)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -226,7 +237,31 @@ func (o *Optimizer) optimizeJoinTable(tbl string) *OptimizeResult {
 
 // doSpecifiedOptimization optimize single table select.
 func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
-	// todo
+	//if selectStmt.Where == nil {
+	//	for _, field := range selectStmt.Fields.Fields {
+	//		tableSource := selectStmt.From.TableRefs.Left.(*ast.TableSource)
+	//		tableName := tableSource.Source.(*ast.TableName).Name.L
+	//
+	//		if field.WildCard == nil {
+	//			switch e := field.Expr.(type) {
+	//			case *ast.AggregateFuncExpr:
+	//				if e.F == ast.AggFuncMin || e.F == ast.AggFuncMax {
+	//					for _, arg := range e.Args {
+	//						if cne, ok := arg.(*ast.ColumnNameExpr); ok {
+	//							return &OptimizeResult{
+	//								TableName:      tableName,
+	//								IndexedColumns: []string{cne.Name.Name.L},
+	//								Reason:         "利用索引有序的性质快速找到记录",
+	//							}, nil
+	//						}
+	//					}
+	//
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+
 	return nil, nil
 }
 
@@ -262,9 +297,55 @@ func (o *Optimizer) doGeneralOptimization(ctx context.Context, selectStmt *ast.S
 	}, nil
 }
 
-func (o *Optimizer) sortColumnsByCardinality(ctx context.Context, indexedColumns []string) (sortedColumns []string, err error) {
-	// todo
-	return indexedColumns, nil
+type cardinality struct {
+	columnName  string
+	cardinality int
+}
+
+type cardinalities []cardinality
+
+func (c cardinalities) Len() int {
+	return len(c)
+}
+
+func (c cardinalities) Less(i, j int) bool {
+	return c[i].cardinality > c[j].cardinality
+}
+
+func (c cardinalities) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+
+func (o *Optimizer) sortColumnsByCardinality(tbl string, indexedColumns []string) (sortedColumns []string, err error) {
+	var tn *ast.TableName
+	for tableName, currTN := range o.tableNameExtractor.TableNames {
+		if tableName == tbl {
+			tn = currTN
+			break
+		}
+	}
+	if tn == nil {
+		return nil, errors.Errorf("table %s not found when sort columns by cardinality", tbl)
+	}
+
+	var cardinalities cardinalities
+	for _, column := range indexedColumns {
+		c, err := o.GetColumnCardinality(tn, column)
+		if err != nil {
+			return nil, errors.Wrap(err, "get column cardinality")
+		}
+		cardinalities = append(cardinalities, cardinality{
+			columnName:  column,
+			cardinality: c,
+		})
+	}
+
+	sort.Sort(cardinalities)
+
+	for _, c := range cardinalities {
+		sortedColumns = append(sortedColumns, c.columnName)
+	}
+	return sortedColumns, nil
 }
 
 // needOptimize check table need optimize index of table or not.
@@ -357,7 +438,7 @@ func defaultCreateIndexStatement(tableName string, columns ...string) string {
 
 func restoreSelectStmt(ss *ast.SelectStmt) (string, error) {
 	var buf strings.Builder
-	rc := format.NewRestoreCtx(0, &buf)
+	rc := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
 
 	if err := ss.Restore(rc); err != nil {
 		return "", errors.Wrap(err, "restore select statement")
