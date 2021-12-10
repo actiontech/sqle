@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -10,7 +11,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+type columnInfo struct {
+	cardinality *int
+}
+
 type TableInfo struct {
+	columns map[string]*columnInfo
+
+	// SHOW TABLE STATUS
+	tableStatus struct {
+		rows *int
+	}
+
 	Size     float64
 	sizeLoad bool
 
@@ -624,4 +636,91 @@ func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 
 	c.executionPlan[sql] = records
 	return records, nil
+}
+
+// GetTableRowCount get table row count by show table status.
+func (c *Context) GetTableRowCount(tn *ast.TableName) (int, error) {
+	ti, exist := c.GetTableInfo(tn)
+	if !exist {
+		return 0, nil
+	}
+	if !ti.isLoad {
+		return 0, nil
+	}
+
+	if ti.tableStatus.rows == nil {
+		if c.e == nil {
+			return 0, nil
+		}
+		records, err := c.e.Db.Query(fmt.Sprintf("show table status from %s where name = '%s'", c.GetSchemaName(tn), tn.Name.String()))
+		if err != nil {
+			return 0, errors.Wrap(err, "get table row count error")
+		}
+
+		if len(records) != 1 {
+			return 0, fmt.Errorf("get table row count error, records count: %v", len(records))
+		}
+		rows, err := strconv.Atoi(records[0]["Rows"].String)
+		if err != nil {
+			return 0, errors.Wrap(err, "get table row count error when parse rows")
+		}
+		ti.tableStatus.rows = &rows
+	}
+
+	return *ti.tableStatus.rows, nil
+}
+
+// IsTableExistInDatabase check table exist in database.
+// Sometimes, we need explain on SQL, if table not exist, we will get error.
+func (c *Context) IsTableExistInDatabase(tn *ast.TableName) (bool, error) {
+	exist, err := c.IsTableExist(tn)
+	if err != nil {
+		return false, err
+	}
+	if !exist {
+		return false, nil
+	}
+
+	ti, _ := c.GetTableInfo(tn)
+	return ti.isLoad == true, nil
+}
+
+func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (int, error) {
+	exist, err := c.IsTableExist(tn)
+	if err != nil {
+		return 0, errors.Wrap(err, "check table exist when get column cardinality")
+	}
+	if !exist {
+		return 0, nil
+	}
+
+	ti, _ := c.GetTableInfo(tn)
+	if ti.columns == nil || ti.columns[columnName] == nil {
+		if c.e == nil {
+			return 0, nil
+		}
+
+		record, err := c.e.Db.Query(fmt.Sprintf("select count(distinct `%s`) as cardinality from `%s`.`%s`", columnName, c.GetSchemaName(tn), tn.Name.L))
+		if err != nil {
+			return 0, errors.Wrap(err, "get column cardinality error")
+		}
+
+		if len(record) != 1 {
+			return 0, fmt.Errorf("get column cardinality error, records count: %v", len(record))
+		}
+
+		cardinality, err := strconv.Atoi(record[0]["cardinality"].String)
+		if err != nil {
+			return 0, errors.Wrap(err, "get column cardinality error when parse cardinality")
+		}
+
+		if ti.columns == nil {
+			ti.columns = make(map[string]*columnInfo)
+		}
+		ti.columns[columnName] = &columnInfo{
+			cardinality: &cardinality,
+		}
+	}
+
+	return *ti.columns[columnName].cardinality, nil
 }
