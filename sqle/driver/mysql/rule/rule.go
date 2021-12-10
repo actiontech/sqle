@@ -28,6 +28,7 @@ const (
 	RuleTypeDDLConvention      = "DDL规范"
 	RuleTypeDMLConvention      = "DML规范"
 	RuleTypeUsageSuggestion    = "使用建议"
+	RuleTypeIndexOptimization  = "索引优化"
 )
 
 // inspector DDL rules
@@ -203,7 +204,7 @@ var RuleHandlers = []RuleHandler{
 			Name:     ConfigOptimizeIndexEnabled,
 			Desc:     "开启索引优化",
 			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeGlobalConfig,
+			Category: RuleTypeIndexOptimization,
 			Params: driver.RuleParams{
 				&driver.RuleParam{
 					Key:   DefaultMultiParamsFirstKeyName,
