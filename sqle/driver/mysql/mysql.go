@@ -297,10 +297,8 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 			var buf strings.Builder
 			for _, advice := range advices {
 				buf.WriteString(fmt.Sprintf("建议为表 %s 列 %s 添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
-				if advice.Reason == "" {
-					buf.WriteString("\n")
-				} else {
-					buf.WriteString(fmt.Sprintf(", 原因：%s\n", advice.Reason))
+				if advice.Reason != "" {
+					buf.WriteString(fmt.Sprintf(", 原因(%s)", advice.Reason))
 				}
 			}
 			i.result.Add(driver.RuleLevelNotice, buf.String())
