@@ -141,6 +141,22 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 			nil,
 		},
+		{
+			"select * from exist_tb_1 join exist_tb_2 using(v1)",
+			[][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}},
+			[]string{"exist_tb_1", "1000"},
+			nil,
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
+		},
+		{
+			"select * from exist_tb_1 join exist_tb_2 using(v1)",
+			[][]string{{"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}},
+			[]string{"exist_tb_1", "1000"},
+			nil,
+			nil,
+			[]*OptimizeResult{{"exist_tb_1", []string{"v1"}, ""}},
+		},
 
 		// will not give advice when join without condition
 		{"select * from exist_tb_1 join exist_tb_2", [][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}, []string{"exist_tb_1", "1000"}, nil, nil, nil},
@@ -174,9 +190,9 @@ func TestOptimizer_Optimize(t *testing.T) {
 
 			gots, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
 			assert.NoError(t, err)
-			for i, got := range gots {
-				assert.Equal(t, tt.output[i].TableName, got.TableName)
-				assert.Equal(t, tt.output[i].IndexedColumns, got.IndexedColumns)
+			for i, want := range tt.output {
+				assert.Equal(t, want.TableName, gots[i].TableName)
+				assert.Equal(t, want.IndexedColumns, gots[i].IndexedColumns)
 			}
 			mocker.MatchExpectationsInOrder(true)
 		})
