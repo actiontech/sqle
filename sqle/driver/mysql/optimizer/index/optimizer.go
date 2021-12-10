@@ -146,8 +146,11 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 			continue
 		}
 
-		if ss.From.TableRefs.Right == nil {
-			leftTable, ok := ss.From.TableRefs.Left.(*ast.TableSource)
+		left := ss.From.TableRefs.Left
+		right := ss.From.TableRefs.Right
+
+		if right == nil {
+			leftTable, ok := left.(*ast.TableSource)
 			if !ok {
 				continue
 			}
@@ -157,7 +160,6 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 			} else {
 				o.tables[leftTable.Source.(*ast.TableName).Name.L] = &tableInSelect{singleTableSel: ss}
 			}
-
 		} else {
 			if ss.From.TableRefs.On != nil {
 				boe, ok := ss.From.TableRefs.On.Expr.(*ast.BinaryOperationExpr)
@@ -170,6 +172,13 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 
 				o.tables[leftCNE.Name.Table.L] = &tableInSelect{joinOnColumn: leftCNE.Name.Name.L}
 				o.tables[rightCNE.Name.Table.L] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
+			} else if ss.From.TableRefs.Using != nil {
+				leftTableName := left.(*ast.TableSource).Source.(*ast.TableName).Name.L
+				rightTableName := right.(*ast.TableSource).Source.(*ast.TableName).Name.L
+				for _, col := range ss.From.TableRefs.Using {
+					o.tables[leftTableName] = &tableInSelect{joinOnColumn: col.Name.L}
+					o.tables[rightTableName] = &tableInSelect{joinOnColumn: col.Name.L}
+				}
 			}
 		}
 	}
