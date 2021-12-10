@@ -59,7 +59,9 @@ func main() {
 	rootCmd.Flags().StringVarP(&pluginPath, "plugin-path", "", "", "plugin path")
 
 	rootCmd.AddCommand(genSecretPasswordCmd())
-	panic(rootCmd.Execute())
+	if err := rootCmd.Execute(); err != nil {
+		panic(err)
+	}
 }
 
 func run(cmd *cobra.Command, _ []string) error {
