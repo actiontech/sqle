@@ -109,7 +109,7 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 	for _, tbl := range needOptimizedTables {
 		table, ok := o.tables[tbl]
 		if !ok {
-			// given SQL: select * from t1 join t2, there is not join on condition,
+			// given SQL: select * from t1 join t2, there is no join on condition,
 			continue
 		}
 
@@ -247,30 +247,29 @@ func (o *Optimizer) optimizeJoinTable(tbl string) *OptimizeResult {
 
 // doSpecifiedOptimization optimize single table select.
 func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
-	//if selectStmt.Where == nil {
-	//	for _, field := range selectStmt.Fields.Fields {
-	//		tableSource := selectStmt.From.TableRefs.Left.(*ast.TableSource)
-	//		tableName := tableSource.Source.(*ast.TableName).Name.L
-	//
-	//		if field.WildCard == nil {
-	//			switch e := field.Expr.(type) {
-	//			case *ast.AggregateFuncExpr:
-	//				if e.F == ast.AggFuncMin || e.F == ast.AggFuncMax {
-	//					for _, arg := range e.Args {
-	//						if cne, ok := arg.(*ast.ColumnNameExpr); ok {
-	//							return &OptimizeResult{
-	//								TableName:      tableName,
-	//								IndexedColumns: []string{cne.Name.Name.L},
-	//								Reason:         "利用索引有序的性质快速找到记录",
-	//							}, nil
-	//						}
-	//					}
-	//
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
+	if selectStmt.Where == nil {
+		for _, field := range selectStmt.Fields.Fields {
+			tableSource := selectStmt.From.TableRefs.Left.(*ast.TableSource)
+			tableName := tableSource.Source.(*ast.TableName).Name.L
+
+			if field.WildCard == nil {
+				switch e := field.Expr.(type) {
+				case *ast.AggregateFuncExpr:
+					if e.F == ast.AggFuncMin || e.F == ast.AggFuncMax {
+						for _, arg := range e.Args {
+							if cne, ok := arg.(*ast.ColumnNameExpr); ok {
+								return &OptimizeResult{
+									TableName:      tableName,
+									IndexedColumns: []string{cne.Name.Name.L},
+									Reason:         "利用索引有序的性质快速找到记录",
+								}, nil
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	return nil, nil
 }
