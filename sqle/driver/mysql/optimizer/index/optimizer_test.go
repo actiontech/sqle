@@ -47,7 +47,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_1 where id = 1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", "const"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_1", "1000"}}},
 			},
 			nil,
 			nil,
@@ -56,7 +55,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_3 where v1 = 1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
 			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v1"}, ""}},
@@ -65,7 +63,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_3 where v1 = 1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
 			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v1"}, ""}},
@@ -111,7 +108,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
 				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"102"}}},
 				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"101"}}},
-				{"select count(distinct `v3`)", [][]string{cardinalityHead, {"100"}}},
 			}, []optimizerOption{WithCompositeIndexMaxColumn(2)},
 			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1"}, ""}},
 		},
@@ -120,7 +116,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_1", "1000"}}},
 			}, nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
 		},
@@ -128,14 +123,12 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_1", "1000"}}},
 			}, nil, nil,
 		},
 		{
 			"select * from exist_tb_1 join exist_tb_2 using(v1)",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_1", "1000"}}},
 			}, nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
 		},
@@ -144,21 +137,18 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_1 join exist_tb_2",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_1", "1000"}}},
 			}, nil, nil,
 		},
 		{
 			"select * from exist_tb_1 cross join exist_tb_2",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_1", "1000"}}},
 			}, nil, nil,
 		},
 		{
 			"select * from exist_tb_1, exist_tb_2",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_1", "1000"}}},
 			}, nil, nil,
 		},
 		// sub-queries
@@ -177,7 +167,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
 				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.6.12"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
 			}, nil, nil,
 		},
 		{
@@ -185,7 +174,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
 				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.7.3"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
 			}, nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
 		},
@@ -194,7 +182,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
 				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "8.0.14"}}},
-				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
 			}, nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
 		},
@@ -228,6 +215,7 @@ func TestOptimizer_Optimize(t *testing.T) {
 				assert.Equal(t, want.IndexedColumns, gots[i].IndexedColumns)
 			}
 			mocker.MatchExpectationsInOrder(true)
+			assert.NoError(t, mocker.ExpectationsWereMet())
 		})
 	}
 }
