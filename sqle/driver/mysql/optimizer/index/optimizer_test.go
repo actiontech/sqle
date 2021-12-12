@@ -202,6 +202,38 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
 		},
+		{
+			"select * from exist_tb_2 where v3 like 'mike%'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"v3"}, ""}},
+		},
+		{
+			"select * from exist_tb_2 where v3 like '_mike%'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_2 where v3 like '%mike%'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_2 where v3 like '%mike%' and v1 = 1",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
+		},
 	}
 	for i, tt := range optimizerTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
