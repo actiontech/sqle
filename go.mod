@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20211116051932-8d94d78be18a
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
