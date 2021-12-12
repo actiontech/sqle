@@ -282,6 +282,32 @@ func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast
 		}
 	}
 
+	if selectStmt.Where == nil {
+		var cols []string
+		for _, field := range selectStmt.Fields.Fields {
+			if field.Expr != nil {
+				afe, ok := field.Expr.(*ast.AggregateFuncExpr)
+				if !ok {
+					continue
+				}
+				if afe.F == ast.AggFuncMin ||
+					afe.F == ast.AggFuncMax {
+					cne, ok := afe.Args[0].(*ast.ColumnNameExpr)
+					if ok {
+						cols = append(cols, cne.Name.Name.L)
+					}
+				}
+			}
+		}
+		if len(cols) > 0 {
+			return &OptimizeResult{
+				TableName:      getTableNameFromSingleSelect(selectStmt),
+				IndexedColumns: cols,
+				Reason:         "利用索引有序的性质快速找到最值",
+			}, nil
+		}
+	}
+
 	return nil, nil
 }
 
