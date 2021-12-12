@@ -124,8 +124,9 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 		} else {
 			result = o.optimizeJoinTable(tbl)
 		}
-
-		results = append(results, result)
+		if result != nil {
+			results = append(results, result)
+		}
 	}
 
 	return results, nil

@@ -259,6 +259,7 @@ func TestOptimizer_Optimize(t *testing.T) {
 
 			gots, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
 			assert.NoError(t, err)
+			assert.Equal(t, len(tt.output), len(gots))
 			for i, want := range tt.output {
 				assert.Equal(t, want.TableName, gots[i].TableName)
 				assert.Equal(t, want.IndexedColumns, gots[i].IndexedColumns)
