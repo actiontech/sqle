@@ -14,6 +14,7 @@ import (
 	indexoptimizer "github.com/actiontech/sqle/sqle/pkg/optimizer/index"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -248,17 +249,33 @@ func (o *Optimizer) optimizeJoinTable(tbl string) *OptimizeResult {
 
 // doSpecifiedOptimization optimize single table select.
 func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
-	// check function in select stmt
 	if where := selectStmt.Where; where != nil {
 		if boe, ok := where.(*ast.BinaryOperationExpr); ok {
-			fce, ok := boe.L.(*ast.FuncCallExpr)
-			if ok {
+			// check function in select stmt
+			if fce, ok := boe.L.(*ast.FuncCallExpr); ok {
 				result, err := o.optimizeOnFunctionCallExpression(getTableNameFromSingleSelect(selectStmt), fce)
 				if err != nil {
 					return nil, err
 				}
 				if result != nil {
 					return result, nil
+				}
+			}
+		}
+
+		// check where like 'mike%'
+		if ple, ok := where.(*ast.PatternLikeExpr); ok {
+			if cne, ok := ple.Expr.(*ast.ColumnNameExpr); ok {
+				if ve, ok := ple.Pattern.(*driver.ValueExpr); ok {
+					datum := ve.Datum.GetString()
+					if !strings.HasPrefix(datum, "%") &&
+						!strings.HasPrefix(datum, "_") {
+						return &OptimizeResult{
+							TableName:      getTableNameFromSingleSelect(selectStmt),
+							IndexedColumns: []string{cne.Name.Name.L},
+							Reason:         "为前缀模式匹配添加前缀索引",
+						}, nil
+					}
 				}
 			}
 		}
