@@ -98,7 +98,8 @@ func TestOptimizer_Optimize(t *testing.T) {
 				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"102"}}},
 				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"101"}}},
 				{"select count(distinct `v3`)", [][]string{cardinalityHead, {"100"}}},
-			}, nil,
+			},
+			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1", "v3"}, ""}},
 		},
 		{
@@ -108,7 +109,8 @@ func TestOptimizer_Optimize(t *testing.T) {
 				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
 				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"102"}}},
 				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"101"}}},
-			}, []optimizerOption{WithCompositeIndexMaxColumn(2)},
+			},
+			[]optimizerOption{WithCompositeIndexMaxColumn(2)},
 			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1"}, ""}},
 		},
 		// multi table, single select
@@ -116,20 +118,24 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}},
-			}, nil,
+			},
+			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
 		},
 		{
 			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-			}, nil, nil,
+			},
+			nil,
+			nil,
 		},
 		{
 			"select * from exist_tb_1 join exist_tb_2 using(v1)",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}},
-			}, nil,
+			},
+			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
 		},
 		// will not give advice when join without condition
@@ -137,19 +143,25 @@ func TestOptimizer_Optimize(t *testing.T) {
 			"select * from exist_tb_1 join exist_tb_2",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-			}, nil, nil,
+			},
+			nil,
+			nil,
 		},
 		{
 			"select * from exist_tb_1 cross join exist_tb_2",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-			}, nil, nil,
+			},
+			nil,
+			nil,
 		},
 		{
 			"select * from exist_tb_1, exist_tb_2",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
-			}, nil, nil,
+			},
+			nil,
+			nil,
 		},
 		// sub-queries
 		{
@@ -159,7 +171,8 @@ func TestOptimizer_Optimize(t *testing.T) {
 				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
 				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"100"}}},
 				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"101"}}},
-			}, nil,
+			},
+			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v2", "v1"}, ""}},
 		},
 		{
@@ -167,14 +180,17 @@ func TestOptimizer_Optimize(t *testing.T) {
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
 				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.6.12"}}},
-			}, nil, nil,
+			},
+			nil,
+			nil,
 		},
 		{
 			"select * from exist_tb_2 where left(v3, 5) = 'hello'",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
 				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.7.3"}}},
-			}, nil,
+			},
+			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
 		},
 		{
@@ -182,7 +198,8 @@ func TestOptimizer_Optimize(t *testing.T) {
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
 				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "8.0.14"}}},
-			}, nil,
+			},
+			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
 		},
 	}
