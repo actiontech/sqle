@@ -32,6 +32,7 @@ func TestOptimizer_Optimize(t *testing.T) {
 	explainHead := []string{"id", "table", "type"}
 	showTableStatusHead := []string{"Name", "Rows"}
 	cardinalityHead := []string{"cardinality"}
+	showGlobalVariableHead := []string{"Variable_name", "Value"}
 
 	var optimizerTests = []struct {
 		SQL             string
@@ -170,6 +171,32 @@ func TestOptimizer_Optimize(t *testing.T) {
 				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"101"}}},
 			}, nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v2", "v1"}, ""}},
+		},
+		{
+			"select * from exist_tb_2 where left(v3, 5) = 'hello'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.6.12"}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
+			}, nil, nil,
+		},
+		{
+			"select * from exist_tb_2 where left(v3, 5) = 'hello'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.7.3"}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
+			}, nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
+		},
+		{
+			"select * from exist_tb_2 where left(v3, 5) = 'hello'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "8.0.14"}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
+			}, nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
 		},
 	}
 	for i, tt := range optimizerTests {
