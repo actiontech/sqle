@@ -234,6 +234,32 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
 		},
+
+		{
+			"select max(v3) from exist_tb_3",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v3"}, ""}},
+		},
+
+		{
+			"select min(v3) from exist_tb_3",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v3"}, ""}},
+		},
+		{
+			"select sum(v3) from exist_tb_3",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
+			},
+			nil,
+			nil,
+		},
 	}
 	for i, tt := range optimizerTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
