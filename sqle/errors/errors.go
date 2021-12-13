@@ -10,6 +10,7 @@ const (
 	ConnectRemoteDatabaseError ErrorCode = 5002
 	ReadUploadFileError        ErrorCode = 5003
 	ParseMyBatisXMLFileError   ErrorCode = 5006
+	WriteDataToTheFileError    ErrorCode = 5007
 
 	TaskNotExist      ErrorCode = 4006
 	TaskActionInvalid ErrorCode = 4009

@@ -44,7 +44,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// custom handler http error
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		if _, ok := err.(*errors.CodeError); ok {
-			controller.JSONBaseErrorReq(c, err)
+			if err = controller.JSONBaseErrorReq(c, err); err != nil {
+				log.NewEntry().Error("send json error response failed, error:", err)
+			}
 		} else {
 			e.DefaultHTTPErrorHandler(err, c)
 		}

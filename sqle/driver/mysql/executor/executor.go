@@ -105,13 +105,17 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 	}
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
 			c.Logger().Error("rollback sql transact")
+			if err := tx.Rollback(); err != nil {
+				c.Logger().Error("rollback sql transact failed, err:", err)
+			}
 			panic(p)
 		}
 		if err != nil {
-			tx.Rollback()
 			c.Logger().Error("rollback sql transact")
+			if err := tx.Rollback(); err != nil {
+				c.Logger().Error("rollback sql transact failed, err:", err)
+			}
 			return
 		}
 		err = tx.Commit()

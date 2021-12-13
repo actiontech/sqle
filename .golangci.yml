@@ -4,7 +4,7 @@ run:
 linters:
   disable-all: true
   enable:
-    #- errcheck
+    - errcheck
     - govet
     - bodyclose
     #- durationcheck

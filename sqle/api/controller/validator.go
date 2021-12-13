@@ -56,9 +56,9 @@ func init() {
 	cv.validate.SetTagName("valid")
 
 	// register custom validator
-	cv.validate.RegisterValidation(ValidNameTag, ValidateName)
-	cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
-	cv.validate.RegisterValidation(ValidCronTag, ValidateCron)
+	_ = cv.validate.RegisterValidation(ValidNameTag, ValidateName)
+	_ = cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
+	_ = cv.validate.RegisterValidation(ValidCronTag, ValidateCron)
 
 	type registerTranslationArgs struct {
 		tag    string
