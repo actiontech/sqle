@@ -12,7 +12,7 @@ linters:
     - nilerr
     #- rowserrcheck
     - sqlclosecheck
-    #- staticcheck
+    - staticcheck
     #- forcetypeassert
     #- prealloc
     #- deadcode
