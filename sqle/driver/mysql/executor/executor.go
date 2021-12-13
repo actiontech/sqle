@@ -373,7 +373,7 @@ where table_schema = '%s' and table_name = '%s'`, schema, table)
 	if sizeStr == "" {
 		return 0, nil
 	}
-	size, err := strconv.ParseFloat(sizeStr, 10)
+	size, err := strconv.ParseFloat(sizeStr, 64)
 	if err != nil {
 		c.Db.Logger().Error(err)
 		return 0, errors.New(errors.ConnectRemoteDatabaseError, err)
