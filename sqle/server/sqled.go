@@ -132,7 +132,11 @@ func (s *Sqled) taskLoop() {
 		case <-s.exit:
 			return
 		case action := <-s.queue:
-			go s.do(action)
+			go func() {
+				if err := s.do(action); err != nil {
+					log.NewEntry().Error("sqled task loop do action failed, error:", err)
+				}
+			}()
 		}
 	}
 }

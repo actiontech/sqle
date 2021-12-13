@@ -370,7 +370,7 @@ func checkMigrationContext(mc *base.MigrationContext) error {
 		if !mc.TestOnReplica {
 			return errors.New("--test-on-replica-skip-replica-stop requires --test-on-replica to be enabled")
 		}
-		mc.Log.Warning("--test-on-replica-skip-replica-stop enabled. We will not stop replication before cut-over. Ensure you have a plugin that does this.")
+		_ = mc.Log.Warning("--test-on-replica-skip-replica-stop enabled. We will not stop replication before cut-over. Ensure you have a plugin that does this.")
 	}
 	return nil
 }
