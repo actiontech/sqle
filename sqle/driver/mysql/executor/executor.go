@@ -141,10 +141,6 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 		c.Logger().Errorf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
 			c.host, c.port, c.user, query, err.Error())
 		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
-	} else if rows.Err() != nil {
-		c.Logger().Errorf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
-			c.host, c.port, c.user, query, rows.Err().Error())
-		return nil, errors.New(errors.DataParseFail, rows.Err())
 	} else {
 		c.Logger().Infof("query sql success; host: %s, port: %s, user: %s, query: %s\n",
 			c.host, c.port, c.user, query)
@@ -174,6 +170,9 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 			value[k] = v
 		}
 		result = append(result, value)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
