@@ -7,7 +7,7 @@ linters:
     #- errcheck
     - govet
     - bodyclose
-    #- durationcheck
+    - durationcheck
     - makezero
     #- nilerr
     #- rowserrcheck
