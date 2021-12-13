@@ -48,8 +48,14 @@ func BindAndValidateReq(c echo.Context, i interface{}) error {
 }
 
 func GetUserName(c echo.Context) string {
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
+	user, ok := c.Get("user").(*jwt.Token)
+	if !ok {
+		return ""
+	}
+	claims, ok := user.Claims.(jwt.MapClaims)
+	if !ok {
+		return ""
+	}
 	return claims["name"].(string)
 }
 
