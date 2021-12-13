@@ -175,6 +175,9 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 		}
 		result = append(result, value)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 

@@ -216,12 +216,16 @@ func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	buff := &bytes.Buffer{}
 	for rows.Next() {
 		var content string
-		if err = rows.Scan(&content); err != nil {
+		if err := rows.Scan(&content); err != nil {
 			return nil, errors.New(errors.DataInvalid, err)
 		}
 		buff.WriteString(strings.TrimRight(content, ";"))
 		buff.WriteString(";\n")
 	}
+	if rows.Err() != nil {
+		return nil, errors.New(errors.DataParseFail, rows.Err())
+	}
+
 	return buff.Bytes(), nil
 }
 
