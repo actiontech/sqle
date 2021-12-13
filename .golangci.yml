@@ -10,7 +10,7 @@ linters:
     #- durationcheck
     - makezero
     - nilerr
-    #- rowserrcheck
+    - rowserrcheck
     - sqlclosecheck
     #- staticcheck
     #- forcetypeassert
