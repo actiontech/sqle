@@ -199,6 +199,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		tlsConfig := new(tls.Config)
 		tlsConfig.Certificates = make([]tls.Certificate, 1)
 		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.CertFilePath, config.KeyFilePath)
+		if err != nil {
+			log.Logger().Fatal("load x509 key pair failed, error:", err)
+			return
+		}
 		e.TLSServer.TLSConfig = tlsConfig
 		e.TLSListener = tls.NewListener(l, tlsConfig)
 
