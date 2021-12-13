@@ -212,6 +212,9 @@ func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
+	if rows.Err() != nil {
+		return nil, errors.New(errors.DataParseFail, rows.Err())
+	}
 	defer rows.Close()
 	buff := &bytes.Buffer{}
 	for rows.Next() {
