@@ -355,7 +355,7 @@ func (d *driverGRPCServer) Ping(ctx context.Context, req *proto.Empty) (*proto.E
 func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*proto.ExecResponse, error) {
 	result, err := d.impl.Exec(ctx, req.GetQuery())
 	if err != nil {
-		return &proto.ExecResponse{}, nil
+		return &proto.ExecResponse{}, err
 	}
 
 	resp := &proto.ExecResponse{}
@@ -375,7 +375,7 @@ func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*p
 func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto.TxResponse, error) {
 	resluts, err := d.impl.Tx(ctx, req.GetQueries()...)
 	if err != nil {
-		return &proto.TxResponse{}, nil
+		return &proto.TxResponse{}, err
 	}
 
 	txResp := &proto.TxResponse{}
@@ -423,7 +423,7 @@ func (d *driverGRPCServer) Parse(ctx context.Context, req *proto.ParseRequest) (
 func (d *driverGRPCServer) Audit(ctx context.Context, req *proto.AuditRequest) (*proto.AuditResponse, error) {
 	auditResluts, err := d.impl.Audit(ctx, req.GetSql())
 	if err != nil {
-		return &proto.AuditResponse{}, nil
+		return &proto.AuditResponse{}, err
 	}
 
 	resp := &proto.AuditResponse{}
