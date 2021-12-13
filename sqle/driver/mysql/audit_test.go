@@ -43,9 +43,7 @@ func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult
 	}
 	level := handler.Rule.Level
 	message := handler.Message
-	if len(args) == 0 {
-		message = fmt.Sprintf(message)
-	}
+
 	return t.add(level, message, args...)
 }
 
