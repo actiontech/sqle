@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -164,7 +163,7 @@ type SystemVariable struct {
 	Value string `gorm:"not null"`
 }
 
-func (s *Storage) GetWorkflowExpiredHoursOrDefault() (time.Duration, error) {
+func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 	var svs []SystemVariable
 	err := s.db.Find(&svs).Error
 	if err != nil {
@@ -173,13 +172,13 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (time.Duration, error) {
 
 	for _, sv := range svs {
 		if sv.Key == SystemVariableWorkflowExpiredHours {
-			wfExpiredHs, err := strconv.Atoi(sv.Value)
+			wfExpiredHs, err := strconv.ParseInt(sv.Value, 10, 64)
 			if err != nil {
 				return 0, err
 			}
-			return time.Duration(wfExpiredHs), nil
+			return wfExpiredHs, nil
 		}
 	}
 
-	return time.Duration(30 * 24), nil
+	return 30 * 24, nil
 }
