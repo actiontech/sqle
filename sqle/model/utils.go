@@ -310,12 +310,16 @@ func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
 	}
 	err = fn(tx)
 	if err != nil {
-		log.AutoPrintError(log.NewEntry(), tx.Rollback, "rollback sql transact failed")
+		if err := tx.Rollback(); err != nil {
+			log.NewEntry().Error("rollback sql transact failed, err:", err)
+		}
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		log.AutoPrintError(log.NewEntry(), tx.Rollback, "rollback sql transact failed")
+		if err := tx.Rollback(); err != nil {
+			log.NewEntry().Error("rollback sql transact failed, err:", err)
+		}
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	return nil
