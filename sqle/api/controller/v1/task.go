@@ -403,7 +403,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			td.RollbackSQL.String,
 		})
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+			return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 		}
 	}
 	cw.Flush()
