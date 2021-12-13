@@ -9,7 +9,7 @@ linters:
     - bodyclose
     #- durationcheck
     - makezero
-    #- nilerr
+    - nilerr
     #- rowserrcheck
     - sqlclosecheck
     #- staticcheck
