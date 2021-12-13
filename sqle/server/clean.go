@@ -40,7 +40,7 @@ func (s *Sqled) CleanExpiredWorkflows(entry *logrus.Entry) {
 		return
 	}
 
-	start := time.Now().Add(-expiredHours * time.Hour)
+	start := time.Now().Add(time.Duration(-expiredHours * int64(time.Hour)))
 	workflows, err := st.GetExpiredWorkflows(start)
 	if err != nil {
 		entry.Errorf("get workflows from storage error: %v", err)
