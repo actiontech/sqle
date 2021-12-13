@@ -43,6 +43,8 @@ func ParseSql(sql string) ([]ast.Node, error) {
 	}
 	nodes := make([]ast.Node, 0, len(stmts))
 	for _, stmt := range stmts {
+		// node can only be ast.Node
+		//nolint:forcetypeassert
 		node := stmt.(ast.Node)
 		nodes = append(nodes, node)
 	}
