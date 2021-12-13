@@ -3,6 +3,7 @@ package rule
 import (
 	"bytes"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -2688,6 +2689,7 @@ func checkExplain(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	epRecords, err := ctx.GetExecutionPlan(node.Text())
 	if err != nil {
 		// TODO: check dml related table or database is created, if not exist, explain will executed failure.
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", node.Text(), err)
 		return nil
 	}
 	for _, record := range epRecords {
