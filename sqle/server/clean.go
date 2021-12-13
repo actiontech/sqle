@@ -16,7 +16,8 @@ const (
 )
 
 func (s *Sqled) cleanLoop() {
-	tick := time.Tick(1 * time.Hour)
+	tick := time.NewTicker(1 * time.Hour)
+	defer tick.Stop()
 	entry := log.NewEntry().WithField("type", "cron")
 	s.CleanExpiredWorkflows(entry)
 	s.CleanExpiredTasks(entry)
@@ -24,7 +25,7 @@ func (s *Sqled) cleanLoop() {
 		select {
 		case <-s.exit:
 			return
-		case <-tick:
+		case <-tick.C:
 			s.CleanExpiredWorkflows(entry)
 			s.CleanExpiredTasks(entry)
 		}

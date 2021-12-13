@@ -17,6 +17,7 @@ func runRollbackCase(t *testing.T, desc string, i *Inspect, sql string, results 
 
 	for _, stmt := range stmts {
 		sql, _, err := i.GenRollbackSQL(context.TODO(), stmt.Text())
+		assert.NoError(t, err)
 		_, err = util.ParseSql(sql)
 		assert.NoError(t, err)
 		assert.Equal(t, results, sql, desc)
