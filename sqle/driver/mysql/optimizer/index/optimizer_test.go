@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"regexp"
 	"strings"
@@ -21,156 +22,243 @@ import (
 var testLogger = logrus.New()
 
 func TestOptimizer_Optimize(t *testing.T) {
-	mockExplain := func(mocker sqlmock.Sqlmock, rows [][]string) {
-		e := mocker.ExpectQuery(regexp.QuoteMeta("EXPLAIN"))
-		r := sqlmock.NewRows([]string{"id", "table", "type"})
-		for _, row := range rows {
-			e.WillReturnRows(r.AddRow(row[0], row[1], row[2]))
-		}
-	}
-
-	mockShowTableStatus := func(mocker sqlmock.Sqlmock, row []string) {
-		e := mocker.ExpectQuery(regexp.QuoteMeta("show table status"))
-		r := sqlmock.NewRows([]string{"Name", "Rows"})
-		if len(row) == 2 {
-			e.WillReturnRows(r.AddRow(row[0], row[1]))
-		}
-	}
-
-	mockCalculateCardinality := func(mocker sqlmock.Sqlmock, column string, cardinality int) {
-		e := mocker.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf("select count(distinct `%s`)", column)))
-		r := sqlmock.NewRows([]string{"cardinality"})
-		e.WillReturnRows(r.AddRow(cardinality))
-	}
-
 	entry := testLogger.WithFields(logrus.Fields{"test": "optimizer"})
+
+	type databaseMock struct {
+		expectQuery string
+		rows        [][]string
+	}
+
+	explainHead := []string{"id", "table", "type"}
+	showTableStatusHead := []string{"Name", "Rows"}
+	cardinalityHead := []string{"cardinality"}
+	showGlobalVariableHead := []string{"Variable_name", "Value"}
+
 	var optimizerTests = []struct {
-		SQL string
-
-		// following are SQL returns
-		explain         [][]string
-		showTableStatus []string
-		cardinalities   []cardinality
-
+		SQL             string
+		databaseMocks   []databaseMock
 		optimizerOption []optimizerOption
 
 		// output
 		output []*OptimizeResult
 	}{
-		// single table, single select
-		{
-			"select 1",
-			[][]string{},
-			[]string{},
-			nil,
-			nil,
-			nil,
-		},
+		{"select 1", []databaseMock{}, nil, nil},
 		{
 			"select * from exist_tb_1 where id = 1",
-			[][]string{{"1", "exist_tb_1", "const"}},
-			[]string{"exist_tb_1", "1000"},
-			nil,
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", "const"}}},
+			},
 			nil,
 			nil,
 		},
 		{
 			"select * from exist_tb_3 where v1 = 1",
-			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}},
-			[]string{"exist_tb_3", "1000"},
-			nil,
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v1"}, ""}},
 		},
 		{
 			"select * from exist_tb_3 where v1 = 1",
-			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
-			[]string{"exist_tb_3", "1000"},
-			nil,
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v1"}, ""}},
 		},
 		{
 			"select * from exist_tb_3 where v1 = 1 and v2 = 2 and v3 > 3",
-			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
-			[]string{"exist_tb_3", "1000"},
-			[]cardinality{{"v1", 100}, {"v2", 101}},
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"100"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"101"}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1"}, ""}},
 		},
+
 		{
 			"select * from exist_tb_3 where v1 = 1 and v2 = 2 and v3 > 3",
-			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
-			[]string{"exist_tb_3", "1000"},
-			[]cardinality{{"v1", 101}, {"v2", 100}},
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"101"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"100"}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v1", "v2"}, ""}},
 		},
 		{
 			"select v1,v2,v3 from exist_tb_3 where v2 = 1 and v1 = 2 and v3 > 3",
-			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
-			[]string{"exist_tb_3", "1000"},
-			[]cardinality{{"v2", 102}, {"v1", 101}, {"v3", 100}},
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"102"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"101"}}},
+				{"select count(distinct `v3`)", [][]string{cardinalityHead, {"100"}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1", "v3"}, ""}},
 		},
 		{
 			"select v1,v2,v3 from exist_tb_3 where v2 = 1 and v1 = 2 and v3 > 3",
-			[][]string{{"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}},
-			[]string{"exist_tb_3", "1000"},
-			[]cardinality{{"v2", 102}, {"v1", 101}},
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeIndex}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_3", "1000"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"102"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"101"}}},
+			},
 			[]optimizerOption{WithCompositeIndexMaxColumn(2)},
 			[]*OptimizeResult{{"exist_tb_3", []string{"v2", "v1"}, ""}},
 		},
-
 		// multi table, single select
 		{
 			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
-			[][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll},
-				{"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}},
-			[]string{"exist_tb_1", "1000"},
-			nil,
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
 		},
 		{
 			"select * from exist_tb_1 join exist_tb_2 on exist_tb_1.v1 = exist_tb_2.v1",
-			[][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}},
-			[]string{"exist_tb_1", "1000"},
-			nil,
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
+			},
 			nil,
 			nil,
 		},
 		{
 			"select * from exist_tb_1 join exist_tb_2 using(v1)",
-			[][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}},
-			[]string{"exist_tb_1", "1000"},
-			nil,
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
 		},
-		{
-			"select * from exist_tb_1 join exist_tb_2 using(v1)",
-			[][]string{{"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}},
-			[]string{"exist_tb_1", "1000"},
-			nil,
-			nil,
-			[]*OptimizeResult{{"exist_tb_1", []string{"v1"}, ""}},
-		},
-
 		// will not give advice when join without condition
-		{"select * from exist_tb_1 join exist_tb_2", [][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}, []string{"exist_tb_1", "1000"}, nil, nil, nil},
-		{"select * from exist_tb_1, exist_tb_2", [][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}, []string{"exist_tb_1", "1000"}, nil, nil, nil},
-		{"select * from exist_tb_1 cross join exist_tb_2", [][]string{{"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeAll}}, []string{"exist_tb_1", "1000"}, nil, nil, nil},
-
-		// subqueries
+		{
+			"select * from exist_tb_1 join exist_tb_2",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
+			},
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_1 cross join exist_tb_2",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
+			},
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_1, exist_tb_2",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_1", executor.ExplainRecordAccessTypeAll}, {"1", "exist_tb_2", "ref"}}},
+			},
+			nil,
+			nil,
+		},
+		// sub-queries
 		{
 			"select * from (select v1,v2 from exist_tb_2 where v1 = 2) as t1",
-			[][]string{{"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}},
-			[]string{"exist_tb_2", "1000"},
-			[]cardinality{{"v1", 100}, {"v2", 101}},
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+				{"show table status", [][]string{showTableStatusHead, {"exist_tb_2", "1000"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"100"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"101"}}},
+			},
 			nil,
 			[]*OptimizeResult{{"exist_tb_2", []string{"v2", "v1"}, ""}},
+		},
+		{
+			"select * from exist_tb_2 where left(v3, 5) = 'hello'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.6.12"}}},
+			},
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_2 where left(v3, 5) = 'hello'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "5.7.3"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
+		},
+		{
+			"select * from exist_tb_2 where left(v3, 5) = 'hello'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+				{"SHOW GLOBAL VARIABLES", [][]string{showGlobalVariableHead, {"version", "8.0.14"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"LEFT(`v3`, 5)"}, ""}},
+		},
+		{
+			"select * from exist_tb_2 where v3 like 'mike%'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"v3"}, ""}},
+		},
+		{
+			"select * from exist_tb_2 where v3 like '_mike%'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_2 where v3 like '%mike%'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			nil,
+		},
+		{
+			"select * from exist_tb_2 where v3 like '%mike%' and v1 = 1",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_2", executor.ExplainRecordAccessTypeIndex}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_2", []string{"v1"}, ""}},
+		},
+
+		{
+			"select max(v3) from exist_tb_3",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v3"}, ""}},
+		},
+
+		{
+			"select min(v3) from exist_tb_3",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
+			},
+			nil,
+			[]*OptimizeResult{{"exist_tb_3", []string{"v3"}, ""}},
+		},
+		{
+			"select sum(v3) from exist_tb_3",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
+			},
+			nil,
+			nil,
 		},
 	}
 	for i, tt := range optimizerTests {
@@ -180,21 +268,30 @@ func TestOptimizer_Optimize(t *testing.T) {
 			e, mocker, err := executor.NewMockExecutor()
 			assert.NoError(t, err)
 
-			mockExplain(mocker, tt.explain)
-			mockShowTableStatus(mocker, tt.showTableStatus)
-			for _, c := range tt.cardinalities {
-				mockCalculateCardinality(mocker, c.columnName, c.cardinality)
+			for _, mock := range tt.databaseMocks {
+				e := mocker.ExpectQuery(regexp.QuoteMeta(mock.expectQuery))
+				rows := sqlmock.NewRows(mock.rows[0])
+				for _, row := range mock.rows[1:] {
+					var rowI []driver.Value
+					for _, v := range row {
+						rowI = append(rowI, v)
+					}
+					rows.AddRow(rowI...)
+				}
+				e.WillReturnRows(rows)
 			}
 
 			o := NewOptimizer(entry, session.NewMockContext(e), tt.optimizerOption...)
 
 			gots, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
 			assert.NoError(t, err)
+			assert.Equal(t, len(tt.output), len(gots))
 			for i, want := range tt.output {
 				assert.Equal(t, want.TableName, gots[i].TableName)
 				assert.Equal(t, want.IndexedColumns, gots[i].IndexedColumns)
 			}
 			mocker.MatchExpectationsInOrder(true)
+			assert.NoError(t, mocker.ExpectationsWereMet())
 		})
 	}
 }

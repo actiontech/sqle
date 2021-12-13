@@ -5,6 +5,9 @@ github.com/Azure/go-ntlmssp
 github.com/DATA-DOG/go-sqlmock
 # github.com/KyleBanks/depth v1.2.1
 github.com/KyleBanks/depth
+# github.com/Masterminds/semver/v3 v3.1.1
+## explicit
+github.com/Masterminds/semver/v3
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
