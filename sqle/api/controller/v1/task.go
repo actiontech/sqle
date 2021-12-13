@@ -385,7 +385,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	cw := csv.NewWriter(buff)
 	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句"})
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 	}
 	for _, td := range taskSQLsDetail {
 		taskSql := &model.ExecuteSQL{
