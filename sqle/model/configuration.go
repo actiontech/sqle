@@ -172,7 +172,7 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 
 	for _, sv := range svs {
 		if sv.Key == SystemVariableWorkflowExpiredHours {
-			wfExpiredHs, err := strconv.ParseInt(sv.Value,10,64)
+			wfExpiredHs, err := strconv.ParseInt(sv.Value, 10, 64)
 			if err != nil {
 				return 0, err
 			}
