@@ -113,13 +113,13 @@ func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 
 func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*WorkflowStepTemplate) error {
 	return s.TxExec(func(tx *sql.Tx) error {
-		result, err := tx.Exec("UPDATE workflow_step_templates SET workflow_template_id = NULL WHERE workflow_template_id = ?",
+		_, err := tx.Exec("UPDATE workflow_step_templates SET workflow_template_id = NULL WHERE workflow_template_id = ?",
 			templateId)
 		if err != nil {
 			return err
 		}
 		for _, step := range steps {
-			result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`) values (?,?,?,?)",
+			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`) values (?,?,?,?)",
 				step.Number, templateId, step.Typ, step.Desc)
 			if err != nil {
 				return err

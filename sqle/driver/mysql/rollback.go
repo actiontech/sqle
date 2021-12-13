@@ -185,8 +185,6 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 					// if *ast.ColumnDef.Options is nil, it is "DROP DEFAULT",
 					if newColumn.Options != nil {
 						rollbackStmt.Specs = append(rollbackStmt.Specs, newSpec)
-					} else {
-						// do nothing
 					}
 				}
 			}
@@ -485,7 +483,9 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 		}
 	}
 	records, err := i.getRecords(table, "", stmt.Where, stmt.Order, limit)
-
+	if err != nil {
+		return "", "", err
+	}
 	values := []string{}
 
 	columnsName := []string{}
@@ -570,7 +570,9 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 		}
 	}
 	records, err := i.getRecords(table, tableAlias, stmt.Where, stmt.Order, limit)
-
+	if err != nil {
+		return "", "", err
+	}
 	columnsName := []string{}
 	rollbackSql := ""
 	for _, col := range createTableStmt.Cols {
