@@ -21,7 +21,7 @@ import (
 )
 
 func init() {
-	allRules := make([]*driver.Rule, len(rulepkg.InitRules))
+	allRules := make([]*driver.Rule, len(rulepkg.RuleHandlers))
 	for i := range rulepkg.RuleHandlers {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
