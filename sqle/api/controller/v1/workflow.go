@@ -1100,13 +1100,13 @@ func BatchCancelWorkflows(c echo.Context) error {
 		return err
 	}
 
-	var workflows []*model.Workflow
-	for _, workflowId := range req.WorkflowIds {
+	workflows := make([]*model.Workflow, len(req.WorkflowIds))
+	for i, workflowId := range req.WorkflowIds {
 		workflow, err := checkCancelWorkflow(workflowId)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		workflows = append(workflows, workflow)
+		workflows[i] = workflow
 
 		workflow.Record.Status = model.WorkflowStatusCancel
 		workflow.Record.CurrentWorkflowStepId = 0

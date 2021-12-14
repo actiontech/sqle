@@ -14,8 +14,8 @@ linters:
     - sqlclosecheck
     - staticcheck
     - forcetypeassert
-    #- prealloc
-    #- deadcode
+    - prealloc
+    - deadcode
     - gosimple
     #- unconvert
     #- errname
