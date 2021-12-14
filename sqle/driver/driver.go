@@ -234,11 +234,11 @@ func Register(name string, h handler, rs []*Rule) {
 	rulesMu.Unlock()
 }
 
-type ErrDriverNotSupported struct {
+type DriverNotSupportedError struct {
 	DriverTyp string
 }
 
-func (e *ErrDriverNotSupported) Error() string {
+func (e *DriverNotSupportedError) Error() string {
 	return fmt.Sprintf("driver type %v is not supported", e.DriverTyp)
 }
 
