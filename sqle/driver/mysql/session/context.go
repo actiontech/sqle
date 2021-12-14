@@ -135,7 +135,6 @@ func (c *Context) GetSysVar(name string) (string, bool) {
 
 func (c *Context) AddSysVar(name, value string) {
 	c.sysVars[name] = value
-	return
 }
 
 func (c *Context) HasLoadSchemas() bool {
@@ -682,7 +681,7 @@ func (c *Context) IsTableExistInDatabase(tn *ast.TableName) (bool, error) {
 	}
 
 	ti, _ := c.GetTableInfo(tn)
-	return ti.isLoad == true, nil
+	return ti.isLoad, nil
 }
 
 func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (int, error) {

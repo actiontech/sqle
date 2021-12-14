@@ -61,7 +61,7 @@ func (sa *selectAST) ColumnsInOrderBy() []string {
 				if item.Desc {
 					columns = append(columns, fmt.Sprintf("%s desc", col.Name.Name.L))
 				} else {
-					columns = append(columns, fmt.Sprintf("%s", col.Name.Name.L))
+					columns = append(columns, col.Name.Name.L)
 				}
 			}
 		}
