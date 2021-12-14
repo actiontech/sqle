@@ -389,21 +389,6 @@ func WhereStmtExistScalarSubQueries(where ast.ExprNode) bool {
 	return existScalarSubQueries
 }
 
-func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
-	hasSpecificColumn := false
-	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
-		switch cn := expr.(type) {
-		case *ast.ColumnNameExpr:
-			if cn.Name.Name.L == strings.ToLower(columnName) {
-				hasSpecificColumn = true
-				return true
-			}
-		}
-		return false
-	}, where)
-	return hasSpecificColumn
-}
-
 func GetAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
 	if specs == nil {

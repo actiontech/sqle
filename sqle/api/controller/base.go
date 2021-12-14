@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
@@ -104,15 +103,4 @@ func ReadFileContent(c echo.Context, name string) (content string, fileExist boo
 		return "", false, errors.New(errors.ReadUploadFileError, err)
 	}
 	return string(data), true, nil
-}
-
-func unescapeParamString(params []*string) error {
-	for i, p := range params {
-		r, err := url.QueryUnescape(*p)
-		if nil != err {
-			return fmt.Errorf("unescape param [%v] failed: %v", params, err)
-		}
-		*params[i] = r
-	}
-	return nil
 }
