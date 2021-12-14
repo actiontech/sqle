@@ -85,6 +85,8 @@ func InitPlugins(pluginDir string) error {
 		if err != nil {
 			return nil, err
 		}
+		// srv can only be proto.DriverClient
+		//nolint:forcetypeassert
 		srv := rawI.(proto.DriverClient)
 		return srv, nil
 	}

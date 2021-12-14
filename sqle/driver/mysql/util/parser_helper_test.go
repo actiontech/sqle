@@ -127,6 +127,7 @@ SELECT * FROM db1.t1 AS t1_alias;
 		assert.NoError(t, err)
 
 		for i, stmt := range stmts {
+			//nolint:forcetypeassert
 			assert.Panics(t, func() { _ = stmt.(*ast.UnparsedStmt) })
 			stmt.Accept(c.visitor)
 			restoredSQL, err := restoreToSqlWithFlag(0, stmt)

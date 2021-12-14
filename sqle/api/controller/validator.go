@@ -23,6 +23,8 @@ func Validate(i interface{}) error {
 	if err == nil {
 		return nil
 	}
+	// errs can only be validator.ValidationErrors
+	//nolint:forcetypeassert
 	errs := err.(validator.ValidationErrors)
 	errMsgs := make([]string, 0, len(errs))
 	for _, err := range errs {

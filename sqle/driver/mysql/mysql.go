@@ -131,7 +131,11 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 		if err != nil {
 			return nil, errors.Wrap(err, "parse SQL")
 		}
-		stmt := node[0].(*ast.AlterTableStmt)
+
+		stmt, ok := node[0].(*ast.AlterTableStmt)
+		if !ok {
+			return nil, errors.New("type assertion failed, unable to convert to expected type")
+		}
 		schema := i.Ctx.GetSchemaName(stmt.Table)
 
 		run := func(dryRun bool) error {
@@ -389,6 +393,8 @@ func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
 	}
 	nodes := make([]ast.Node, 0, len(stmts))
 	for _, stmt := range stmts {
+		// node can only be ast.Node
+		//nolint:forcetypeassert
 		node := stmt.(ast.Node)
 		nodes = append(nodes, node)
 	}
