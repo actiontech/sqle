@@ -251,14 +251,14 @@ func (s *driverPluginClient) Tx(ctx context.Context, queries ...string) ([]drive
 		return nil, err
 	}
 
-	var ret []driver.Result
-	for _, result := range resp.Resluts {
-		ret = append(ret, &dbDriverResult{
+	ret := make([]driver.Result, len(resp.Resluts))
+	for i, result := range resp.Resluts {
+		ret[i] = &dbDriverResult{
 			lastInsertId:    result.LastInsertId,
 			lastInsertIdErr: result.LastInsertIdError,
 			rowsAffected:    result.RowsAffected,
 			rowsAffectedErr: result.RowsAffectedError,
-		})
+		}
 	}
 	return ret, nil
 }
@@ -277,13 +277,13 @@ func (s *driverPluginClient) Parse(ctx context.Context, sqlText string) ([]Node,
 		return nil, err
 	}
 
-	var nodes []Node
-	for _, node := range resp.Nodes {
-		nodes = append(nodes, Node{
+	nodes := make([]Node, len(resp.Nodes))
+	for i, node := range resp.Nodes {
+		nodes[i] = Node{
 			Type:        node.Type,
 			Text:        node.Text,
 			Fingerprint: node.Fingerprint,
-		})
+		}
 	}
 	return nodes, nil
 }
@@ -450,10 +450,10 @@ func (d *driverGRPCServer) GenRollbackSQL(ctx context.Context, req *proto.GenRol
 }
 
 func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.MetasResponse, error) {
-	var protoRules []*proto.Rule
+	protoRules := make([]*proto.Rule, len(d.r.Rules()))
 
-	for _, r := range d.r.Rules() {
-		protoRules = append(protoRules, convertRuleFromDriverToProto(r))
+	for i, r := range d.r.Rules() {
+		protoRules[i] = convertRuleFromDriverToProto(r)
 	}
 
 	return &proto.MetasResponse{

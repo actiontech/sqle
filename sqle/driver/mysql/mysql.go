@@ -21,9 +21,9 @@ import (
 )
 
 func init() {
-	var allRules []*driver.Rule
+	allRules := make([]*driver.Rule, len(rulepkg.RuleHandlers))
 	for i := range rulepkg.RuleHandlers {
-		allRules = append(allRules, &rulepkg.RuleHandlers[i].Rule)
+		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
 	driver.Register(driver.DriverTypeMySQL, newInspect, allRules)
@@ -228,7 +228,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 		return nil, err
 	}
 
-	var ns []driver.Node
+	ns := make([]driver.Node, len(nodes))
 	for i := range nodes {
 		n := driver.Node{}
 		fingerprint, err := util.Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
@@ -244,7 +244,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 			n.Type = driver.SQLTypeDDL
 		}
 
-		ns = append(ns, n)
+		ns[i] = n
 	}
 	return ns, nil
 }
