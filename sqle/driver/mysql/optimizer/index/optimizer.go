@@ -170,9 +170,14 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 					continue
 				}
 
-				leftCNE := boe.L.(*ast.ColumnNameExpr)
-				rightCNE := boe.R.(*ast.ColumnNameExpr)
-
+				leftCNE, ok := boe.L.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
+				rightCNE, ok := boe.R.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
 				o.tables[leftCNE.Name.Table.L] = &tableInSelect{joinOnColumn: leftCNE.Name.Name.L}
 				o.tables[rightCNE.Name.Table.L] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
 			} else if ss.From.TableRefs.Using != nil {
