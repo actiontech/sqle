@@ -211,7 +211,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		e.Listener = l
 		log.Logger().Fatal(e.Start(""))
 	}
-	return
 }
 
 // AdminUserAllowed is a `echo` middleware, only allow admin user to access next.

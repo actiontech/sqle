@@ -42,10 +42,8 @@ func InitManager(s *model.Storage) chan struct{} {
 	exitCh := make(chan struct{})
 
 	go func() {
-		select {
-		case <-exitCh:
-			manager.stop()
-		}
+		<-exitCh
+		manager.stop()
 	}()
 
 	return exitCh

@@ -711,10 +711,7 @@ func GetInstanceRules(c echo.Context) error {
 }
 
 func CheckInstanceCanBindOneRuleTemplate(ruleTemplates []string) bool {
-	if len(ruleTemplates) <= 1 {
-		return true
-	}
-	return false
+	return len(ruleTemplates) <= 1
 }
 
 func CheckInstanceAndRuleTemplateDbType(ruleTemplates []*model.RuleTemplate, instances ...*model.Instance) error {
