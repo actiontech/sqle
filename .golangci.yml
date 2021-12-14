@@ -14,11 +14,11 @@ linters:
     - sqlclosecheck
     - staticcheck
     - forcetypeassert
-    #- prealloc
-    #- deadcode
-    #- gosimple
+    - prealloc
+    - deadcode
+    - gosimple
     - unconvert
-    #- errname
+    - errname
     #- dupl
     - misspell
 
