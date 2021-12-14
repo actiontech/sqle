@@ -38,6 +38,8 @@ type Task struct {
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
 	CreateUserId uint
+	ExecStartAt  *time.Time
+	ExecEndAt    *time.Time
 
 	CreateUser   *User          `gorm:"foreignkey:CreateUserId"`
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`

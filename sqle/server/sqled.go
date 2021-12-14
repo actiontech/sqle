@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
@@ -349,12 +350,17 @@ func (a *action) audit() (err error) {
 }
 
 func (a *action) execute() (err error) {
+	st := model.GetStorage()
 	task := a.task
 
 	a.entry.Info("start execution...")
 
-	if err = model.GetStorage().UpdateTaskStatusById(task.ID, model.TaskStatusExecuting); nil != err {
-		return
+	attrs := map[string]interface{}{
+		"status":        model.TaskStatusExecuting,
+		"exec_start_at": time.Now(),
+	}
+	if err = st.UpdateTask(task, attrs); err != nil {
+		return err
 	}
 
 	// txSQLs keep adjacent DMLs, execute in one transaction.
@@ -408,7 +414,12 @@ outerLoop:
 	}
 
 	a.entry.WithField("task_status", taskStatus).Infof("execution is complated, err:%v", err)
-	return model.GetStorage().UpdateTaskStatusById(task.ID, taskStatus)
+
+	attrs = map[string]interface{}{
+		"status":      taskStatus,
+		"exec_end_at": time.Now(),
+	}
+	return st.UpdateTask(task, attrs)
 }
 
 // execSQL execute SQL and update SQL's executed status to storage.
