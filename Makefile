@@ -33,6 +33,7 @@ endif
 DOCKER_REGISTRY ?= 10.186.18.20
 
 ## Dynamic Parameter
+GOLANGCI_LINT_IMAGE ?=golangci/golangci-lint:v1.43.0
 GO_COMPILER_IMAGE ?= golang:1.16
 RPM_BUILD_IMAGE ?= rpmbuild/centos7
 
@@ -51,7 +52,7 @@ test: swagger parser
 	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./...
 
 clean:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean	
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
 
 install: swagger parser
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
@@ -84,6 +85,8 @@ upload:
 	curl --ftp-create-dirs -T $(shell pwd)/$(RPM_NAME).md5 ftp://$(RELEASE_FTPD_HOST)/actiontech-$(PROJECT_NAME)/$(EDITION)/qa/$(PROJECT_VERSION)/$(RPM_NAME).md5
 
 ###################################### docker #####################################################
+docker_lint:
+	$(DOCKER) run -v $(shell pwd):/universe -w /universe --rm $(GOLANGCI_LINT_IMAGE) golangci-lint run -c ./.golangci.yml
 
 docker_test:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make test ${MAKEFLAGS}"
