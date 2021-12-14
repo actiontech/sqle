@@ -552,6 +552,7 @@ type WorkflowRecordResV1 struct {
 	TaskId            uint                 `json:"task_id"`
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
 	Status            string               `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
+	ScheduleTime      *time.Time           `json:"schedule_time,omitempty"`
 	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
@@ -745,6 +746,7 @@ type WorkflowDetailResV1 struct {
 	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
 	Status                  string     `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
+	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`
 }
 
 // @Summary 获取审批流程列表
@@ -1242,4 +1244,35 @@ func FormatStringToInt(s string) (ret int, err error) {
 		}
 	}
 	return ret, nil
+}
+
+type UpdateWorkflowScheduleV1 struct {
+	ScheduleTime *time.Time `json:"schedule_time"`
+}
+
+// @Summary 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+// @Description update workflow schedule.
+// @Tags workflow
+// @Accept json
+// @Produce json
+// @Id updateWorkflowScheduleV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Param instance body v1.UpdateWorkflowScheduleV1 true "update workflow schedule request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/workflows/{workflow_id}/schedule [put]
+func UpdateWorkflowSchedule(c echo.Context) error {
+	return nil
+}
+
+// @Summary 工单提交 SQL 上线
+// @Description execute task on workflow
+// @Tags workflow
+// @Id executeTaskOnWorkflowV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/workflows/{workflow_id}/task/execute [post]
+func ExecuteTaskOnWorkflow(c echo.Context) error {
+	return nil
 }
