@@ -53,7 +53,7 @@ func (i *Instance) decryptPassword() error {
 		if err != nil {
 			return err
 		} else {
-			i.Password = string(data)
+			i.Password = data
 		}
 	}
 	return nil
@@ -68,7 +68,7 @@ func (i *Instance) encryptPassword() error {
 		if err != nil {
 			return err
 		}
-		i.SecretPassword = string(data)
+		i.SecretPassword = data
 	}
 	return nil
 }
