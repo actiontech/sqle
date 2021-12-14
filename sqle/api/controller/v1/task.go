@@ -52,6 +52,8 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		PassRate:       task.PassRate,
 		Status:         task.Status,
 		SQLSource:      task.SQLSource,
+		ExecStartTime:  task.ExecStartAt,
+		ExecEndTime:    task.ExecEndAt,
 	}
 }
 
