@@ -2,10 +2,11 @@ package controller
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/model"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
