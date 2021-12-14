@@ -422,23 +422,23 @@ func (o *Optimizer) sortColumnsByCardinality(tbl string, indexedColumns []string
 		return nil, errors.Errorf("table %s not found when sort columns by cardinality", tbl)
 	}
 
-	var cardinalities cardinalities
-	for _, column := range indexedColumns {
+	cardinalitySlice := make(cardinalities, len(indexedColumns))
+	for i, column := range indexedColumns {
 		c, err := o.GetColumnCardinality(tn, column)
 		if err != nil {
 			return nil, errors.Wrap(err, "get column cardinality")
 		}
-		cardinalities = append(cardinalities, cardinality{
+		cardinalitySlice[i] = cardinality{
 			columnName:  column,
 			cardinality: c,
-		})
+		}
 	}
 
-	o.l.Debugf("table %s column cardinalities(before sort): %+v", tbl, cardinalities)
-	sort.Sort(cardinalities)
-	o.l.Debugf("table %s column cardinalities(after sort): %+v", tbl, cardinalities)
+	o.l.Debugf("table %s column cardinalities(before sort): %+v", tbl, cardinalitySlice)
+	sort.Sort(cardinalitySlice)
+	o.l.Debugf("table %s column cardinalities(after sort): %+v", tbl, cardinalitySlice)
 
-	for _, c := range cardinalities {
+	for _, c := range cardinalitySlice {
 		sortedColumns = append(sortedColumns, c.columnName)
 	}
 	return sortedColumns, nil

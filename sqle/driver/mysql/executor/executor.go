@@ -309,10 +309,10 @@ func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
 		return nil, fmt.Errorf("no explain record for sql %v", query)
 	}
 
-	var ret []*ExplainRecord
-	for _, record := range records {
+	ret := make([]*ExplainRecord, len(records))
+	for i, record := range records {
 		rows, _ := strconv.ParseInt(record["rows"].String, 10, 64)
-		ret = append(ret, &ExplainRecord{
+		ret[i] = &ExplainRecord{
 			Id:           record["id"].String,
 			SelectType:   record["select_type"].String,
 			Table:        record["table"].String,
@@ -325,7 +325,7 @@ func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
 			Rows:         rows,
 			Filtered:     record["filtered"].String,
 			Extra:        record["Extra"].String,
-		})
+		}
 	}
 	return ret, nil
 }

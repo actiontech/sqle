@@ -29,7 +29,8 @@ func TestMyBatis(t *testing.T) {
 	go scanner.Run(context.TODO())
 
 	var sqlCh = scanner.SQLs()
-	var sqlBuf []scanners.SQL
+	sqlBuf := []scanners.SQL{}
+
 	for v := range sqlCh {
 		sqlBuf = append(sqlBuf, v)
 	}
