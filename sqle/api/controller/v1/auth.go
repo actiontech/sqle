@@ -181,7 +181,7 @@ func (l *ldapLoginV3) login(password string) (err error) {
 	return l.autoRegisterUser()
 }
 
-var ldapLoginFailedError = _errors.New("ldap login failed, username and password do not match")
+var errLdapLoginFailed = _errors.New("ldap login failed, username and password do not match")
 
 const ldapServerErrorFormat = "search user on ldap server failed: %v"
 
@@ -216,14 +216,14 @@ func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 		return fmt.Errorf(ldapServerErrorFormat, err)
 	}
 	if len(result.Entries) == 0 {
-		return ldapLoginFailedError
+		return errLdapLoginFailed
 	}
 	if len(result.Entries) != 1 {
 		return fmt.Errorf(ldapServerErrorFormat, "the queried user is not unique, please check whether the relevant configuration is correct")
 	}
 	userDn := result.Entries[0].DN
 	if err = conn.Bind(userDn, password); err != nil {
-		return ldapLoginFailedError
+		return errLdapLoginFailed
 	}
 	l.email = result.Entries[0].GetAttributeValue(ldapC.UserEmailRdnKey)
 	return nil

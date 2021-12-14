@@ -52,7 +52,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	if !dry.StringInSlice(req.InstanceType, driver.AllDrivers()) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driver.ErrDriverNotSupported{DriverTyp: req.InstanceType}))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driver.DriverNotSupportedError{DriverTyp: req.InstanceType}))
 	}
 
 	if req.InstanceDatabase != "" && req.InstanceName == "" {
@@ -79,7 +79,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, instanceNotExistError))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, errInstanceNotExist))
 	}
 
 	if req.InstanceDatabase != "" {

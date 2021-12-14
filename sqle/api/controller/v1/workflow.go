@@ -18,8 +18,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var WorkflowNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
-var ForbidMyBatisXMLTaskError = errors.New(errors.DataConflict,
+var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
+var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
 	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
 
 type GetWorkflowTemplateResV1 struct {
@@ -469,7 +469,7 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -477,7 +477,7 @@ func CreateWorkflow(c echo.Context) error {
 	}
 
 	if task.Instance == nil {
-		return controller.JSONBaseErrorReq(c, instanceNotExistError)
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -490,7 +490,7 @@ func CreateWorkflow(c echo.Context) error {
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		return controller.JSONBaseErrorReq(c, ForbidMyBatisXMLTaskError)
+		return controller.JSONBaseErrorReq(c, ErrForbidMyBatisXMLTask)
 	}
 
 	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
@@ -581,7 +581,7 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 		return err
 	}
 	if !access {
-		return WorkflowNoAccessError
+		return ErrWorkflowNoAccess
 	}
 	return nil
 }
@@ -701,7 +701,7 @@ func GetWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 	history, err := s.GetWorkflowHistoryById(workflowId)
 	if err != nil {
@@ -863,7 +863,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusRunning {
@@ -925,7 +925,7 @@ func ApproveWorkflow(c echo.Context) error {
 				errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
 		}
 		if task.Instance == nil {
-			return controller.JSONBaseErrorReq(c, instanceNotExistError)
+			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 		}
 
 		// if instance is not connectable, exec sql must be failed;
@@ -992,7 +992,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusRunning {
@@ -1126,7 +1126,7 @@ func checkCancelWorkflow(id string) (*model.Workflow, error) {
 		return nil, err
 	}
 	if !exist {
-		return nil, WorkflowNoAccessError
+		return nil, ErrWorkflowNoAccess
 	}
 	if !(workflow.Record.Status == model.WorkflowStatusRunning ||
 		workflow.Record.Status == model.WorkflowStatusReject) {
@@ -1174,7 +1174,7 @@ func UpdateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -1182,7 +1182,7 @@ func UpdateWorkflow(c echo.Context) error {
 	}
 
 	if task.Instance == nil {
-		return controller.JSONBaseErrorReq(c, instanceNotExistError)
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -1196,7 +1196,7 @@ func UpdateWorkflow(c echo.Context) error {
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		return controller.JSONBaseErrorReq(c, ForbidMyBatisXMLTaskError)
+		return controller.JSONBaseErrorReq(c, ErrForbidMyBatisXMLTask)
 	}
 
 	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
@@ -1213,7 +1213,7 @@ func UpdateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusReject {
