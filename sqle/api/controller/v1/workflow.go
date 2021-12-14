@@ -825,6 +825,24 @@ func GetWorkflows(c echo.Context) error {
 	})
 }
 
+func checkUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
+	if workflow.Record.Status != model.WorkflowStatusRunning {
+		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+	if uint(stepId) != workflow.CurrentStep().ID {
+		return fmt.Errorf("workflow current step is not %d", stepId)
+	}
+
+	if !workflow.IsOperationUser(user) {
+		return fmt.Errorf("you are not allow to operate the workflow")
+	}
+	return nil
+}
+
 // @Summary 审批通过
 // @Description approve workflow
 // @Tags workflow
@@ -854,6 +872,11 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
@@ -863,29 +886,9 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
 
-	if workflow.Record.Status != model.WorkflowStatusRunning {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
-	}
-
-	if workflow.CurrentStep() == nil {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step not found")))
-	}
-
-	if uint(stepId) != workflow.CurrentStep().ID {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepId)))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	err = checkUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if !workflow.IsOperationUser(user) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("you are not allow to operate the workflow")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
 	currentStep := workflow.CurrentStep()
@@ -983,6 +986,11 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
@@ -992,28 +1000,9 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
 	}
 
-	if workflow.Record.Status != model.WorkflowStatusRunning {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
-	}
-
-	if workflow.CurrentStep() == nil {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step not found")))
-	}
-
-	if uint(stepId) != workflow.CurrentStep().ID {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepId)))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	err = checkUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !workflow.IsOperationUser(user) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("you are not allow to operate the workflow")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
 	currentStep := workflow.CurrentStep()
