@@ -892,6 +892,12 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 
 	currentStep := workflow.CurrentStep()
+
+	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow has been approved, you should to execute it")))
+	}
+
 	currentStep.State = model.WorkflowStepStateApprove
 	now := time.Now()
 	currentStep.OperateAt = &now
@@ -912,38 +918,6 @@ func ApproveWorkflow(c echo.Context) error {
 
 	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
 		log.Logger().Errorf("after approve workflow, send email error: %v", err)
-	}
-
-	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
-		taskId := fmt.Sprintf("%d", workflow.Record.TaskId)
-		task, exist, err := s.GetTaskDetailById(taskId)
-		if err != nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-		}
-		if !exist {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(
-				errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-		}
-		if task.Instance == nil {
-			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
-		}
-
-		// if instance is not connectable, exec sql must be failed;
-		// commit action unable to retry, so don't to exec it.
-		d, err := newDriverWithoutAudit(log.NewEntry(), task.Instance, "")
-		if err != nil {
-			return err
-		}
-		defer d.Close(context.TODO())
-		if err := d.Ping(context.TODO()); err != nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-		}
-
-		sqledServer := server.GetSqled()
-		err = sqledServer.AddTask(taskId, server.ActionTypeExecute)
-		if err != nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-		}
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1263,5 +1237,94 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows/{workflow_id}/task/execute [post]
 func ExecuteTaskOnWorkflow(c echo.Context) error {
-	return nil
+	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+
+	if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first")))
+	}
+
+	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	// get task and check connection before to execute it.
+	taskId := fmt.Sprintf("%d", workflow.Record.TaskId)
+	task, exist, err := s.GetTaskDetailById(taskId)
+	if err != nil {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(
+			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
+	}
+	if task.Instance == nil {
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+	}
+
+	// if instance is not connectable, exec sql must be failed;
+	// commit action unable to retry, so don't to exec it.
+	d, err := newDriverWithoutAudit(log.NewEntry(), task.Instance, "")
+	if err != nil {
+		return err
+	}
+	defer d.Close(context.TODO())
+	if err := d.Ping(context.TODO()); err != nil {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	}
+
+	// update workflow
+	currentStep.State = model.WorkflowStepStateApprove
+	now := time.Now()
+	currentStep.OperateAt = &now
+	currentStep.OperationUserId = user.ID
+
+	if currentStep == workflow.FinalStep() {
+		workflow.Record.Status = model.WorkflowStatusFinish
+		workflow.Record.CurrentWorkflowStepId = 0
+	} else {
+		nextStep := workflow.NextStep()
+		workflow.Record.CurrentWorkflowStepId = nextStep.ID
+	}
+
+	err = s.UpdateWorkflowStatus(workflow, currentStep)
+	if err != nil {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	}
+
+	sqledServer := server.GetSqled()
+	err = sqledServer.AddTask(taskId, server.ActionTypeExecute)
+	if err != nil {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
