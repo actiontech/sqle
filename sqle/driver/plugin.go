@@ -71,10 +71,8 @@ func InitPlugins(pluginDir string) error {
 			AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
 		})
 		go func() {
-			select {
-			case <-closeCh:
-				client.Kill()
-			}
+			<-closeCh
+			client.Kill()
 		}()
 
 		gRPCClient, err := client.Client()

@@ -1863,7 +1863,7 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 func checkUniqIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	_, indexes := getTableUniqIndex(node)
 	prefix := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-	for index, _ := range indexes {
+	for index := range indexes {
 		if !utils.HasPrefix(index, prefix, false) {
 			addResult(res, rule, DDLCheckUniqueIndexPrefix, prefix)
 			return nil

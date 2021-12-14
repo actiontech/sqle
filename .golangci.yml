@@ -16,7 +16,7 @@ linters:
     - forcetypeassert
     - prealloc
     - deadcode
-    #- gosimple
+    - gosimple
     #- unconvert
     - errname
     #- dupl

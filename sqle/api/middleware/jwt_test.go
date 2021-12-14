@@ -58,7 +58,7 @@ func TestScannerVerifier(t *testing.T) {
 		ctx, res := newContextFunc(token, apName)
 		err = mw(h)(ctx)
 		assert.NoError(t, err)
-		assert.Contains(t, string(res.Body.Bytes()), "hello, world")
+		assert.Contains(t, res.Body.String(), "hello, world")
 	}
 
 	{
@@ -68,6 +68,6 @@ func TestScannerVerifier(t *testing.T) {
 		ctx, res := newContextFunc(tokenWithSchema, apName)
 		err = mw(h)(ctx)
 		assert.NoError(t, err)
-		assert.Contains(t, string(res.Body.Bytes()), "hello, world")
+		assert.Contains(t, res.Body.String(), "hello, world")
 	}
 }
