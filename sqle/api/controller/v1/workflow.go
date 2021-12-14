@@ -113,7 +113,7 @@ type WorkFlowStepTemplateReqV1 struct {
 }
 
 func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
-	if steps == nil || len(steps) == 0 {
+	if len(steps) == 0 {
 		return fmt.Errorf("workflow steps cannot be empty")
 	}
 	if len(steps) > 5 {

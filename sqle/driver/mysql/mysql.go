@@ -430,7 +430,7 @@ func (i *Inspect) closeDbConn() {
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
 	schema := i.Ctx.GetSchemaName(stmt)
 	if schema == "" {
-		return fmt.Sprintf("%s", stmt.Name)
+		return stmt.Name.String()
 	}
 	return fmt.Sprintf("%s.%s", schema, stmt.Name)
 }
