@@ -200,7 +200,7 @@ func UpdateOtherUserPassword(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 	if user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
-		return controller.JSONBaseErrorReq(c, ldapUserCanNotChangePasswordError)
+		return controller.JSONBaseErrorReq(c, errLdapUserCanNotChangePassword)
 	}
 	err = s.UpdatePassword(user, req.Password)
 	if err != nil {
@@ -327,7 +327,7 @@ type UpdateCurrentUserPasswordReqV1 struct {
 	NewPassword string `json:"new_password"  valid:"required"`
 }
 
-var ldapUserCanNotChangePasswordError = errors.New(errors.DataConflict, _errors.New("the password of the ldap user cannot be changed or reset, because this password is meaningless"))
+var errLdapUserCanNotChangePassword = errors.New(errors.DataConflict, _errors.New("the password of the ldap user cannot be changed or reset, because this password is meaningless"))
 
 // @Summary 用户修改密码
 // @Description update current user's password
@@ -349,7 +349,7 @@ func UpdateCurrentUserPassword(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if user.UserAuthenticationType == model.UserAuthenticationTypeLDAP {
-		return controller.JSONBaseErrorReq(c, ldapUserCanNotChangePasswordError)
+		return controller.JSONBaseErrorReq(c, errLdapUserCanNotChangePassword)
 	}
 	if user.Password != req.Password {
 		return controller.JSONBaseErrorReq(c,

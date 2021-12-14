@@ -165,7 +165,7 @@ func IndexOptionFormat(op *ast.IndexOption) string {
 		ops = append(ops, fmt.Sprintf("COMMENT '%s'", op.Comment))
 	}
 	if len(ops) > 0 {
-		return fmt.Sprintf("%s", strings.Join(ops, " "))
+		return strings.Join(ops, " ")
 	}
 	return ""
 }

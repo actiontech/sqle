@@ -547,9 +547,9 @@ func newDriverWithAudit(l *logrus.Entry, inst *model.Instance, database string, 
 		return nil, xerrors.Errorf("get rules error: %v", err)
 	}
 
-	var rules []*driver.Rule
-	for _, rule := range modelRules {
-		rules = append(rules, model.ConvertRuleToDriverRule(rule))
+	rules := make([]*driver.Rule, len(modelRules))
+	for i, rule := range modelRules {
+		rules[i] = model.ConvertRuleToDriverRule(rule)
 	}
 
 	cfg, err := driver.NewConfig(dsn, rules)

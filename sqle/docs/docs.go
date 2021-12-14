@@ -2626,9 +2626,12 @@ var doc = `{
                     {
                         "enum": [
                             "on_process",
-                            "finished",
                             "rejected",
-                            "canceled"
+                            "canceled",
+                            "exec_scheduled",
+                            "executing",
+                            "exec_failed",
+                            "finished"
                         ],
                         "type": "string",
                         "description": "filter workflow status",
@@ -2639,19 +2642,6 @@ var doc = `{
                         "type": "string",
                         "description": "filter current step assignee user name",
                         "name": "filter_current_step_assignee_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "initialized",
-                            "audited",
-                            "executing",
-                            "exec_succeeded",
-                            "exec_failed"
-                        ],
-                        "type": "string",
-                        "description": "filter task status",
-                        "name": "filter_task_status",
                         "in": "query"
                     },
                     {
@@ -4831,9 +4821,12 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "on_process",
-                        "finished",
                         "rejected",
-                        "canceled"
+                        "canceled",
+                        "exec_scheduled",
+                        "executing",
+                        "exec_failed",
+                        "finished"
                     ]
                 },
                 "subject": {
@@ -4847,16 +4840,6 @@ var doc = `{
                 },
                 "task_pass_rate": {
                     "type": "number"
-                },
-                "task_status": {
-                    "type": "string",
-                    "enum": [
-                        "initialized",
-                        "audited",
-                        "executing",
-                        "exec_succeeded",
-                        "exec_failed"
-                    ]
                 },
                 "workflow_id": {
                     "type": "integer"
@@ -4873,9 +4856,12 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "on_process",
-                        "finished",
                         "rejected",
-                        "canceled"
+                        "canceled",
+                        "exec_scheduled",
+                        "executing",
+                        "exec_failed",
+                        "finished"
                     ]
                 },
                 "task_id": {

@@ -53,8 +53,7 @@ func Run(config *config.Config) error {
 			return fmt.Errorf("create default workflow template failed while auto migrateing table: %v", err)
 		}
 	}
-
-	exitChan := make(chan struct{}, 0)
+	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
 	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
 

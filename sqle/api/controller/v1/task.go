@@ -20,7 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
+var ErrTaskNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
 
 type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
@@ -123,7 +123,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	err = checkCurrentUserCanAccessInstance(c, instance)
@@ -202,14 +202,14 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 		return err
 	}
 	if !exist {
-		return TaskNoAccessError
+		return ErrTaskNoAccess
 	}
 	access, err := s.UserCanAccessWorkflow(user, workflow)
 	if err != nil {
 		return err
 	}
 	if !access {
-		return TaskNoAccessError
+		return ErrTaskNoAccess
 	}
 	return nil
 }
@@ -230,7 +230,7 @@ func GetTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -293,7 +293,7 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -364,7 +364,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -429,7 +429,7 @@ func DownloadTaskSQLFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -472,7 +472,7 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {

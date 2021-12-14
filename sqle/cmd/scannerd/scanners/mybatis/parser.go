@@ -15,7 +15,7 @@ func Parse(_ context.Context, sqlText string) ([]driver.Node, error) {
 		return nil, err
 	}
 
-	var ns []driver.Node
+	ns := make([]driver.Node, len(nodes))
 	for i := range nodes {
 		n := driver.Node{}
 		fingerprint, err := util.Fingerprint(nodes[i].Text(), true)
@@ -31,7 +31,7 @@ func Parse(_ context.Context, sqlText string) ([]driver.Node, error) {
 			n.Type = driver.SQLTypeDDL
 		}
 
-		ns = append(ns, n)
+		ns[i] = n
 	}
 	return ns, nil
 }

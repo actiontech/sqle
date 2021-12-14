@@ -166,10 +166,13 @@ type Workflow struct {
 }
 
 const (
-	WorkflowStatusRunning = "on_process"
-	WorkflowStatusFinish  = "finished"
-	WorkflowStatusReject  = "rejected"
-	WorkflowStatusCancel  = "canceled"
+	WorkflowStatusRunning       = "on_process"
+	WorkflowStatusReject        = "rejected"
+	WorkflowStatusCancel        = "canceled"
+	WorkflowStatusExecScheduled = "exec_scheduled"
+	WorkflowStatusExecuting     = "executing"
+	WorkflowStatusExecFailed    = "exec_failed"
+	WorkflowStatusFinish        = "finished"
 )
 
 type WorkflowRecord struct {

@@ -15,9 +15,9 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var instanceNotExistError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
-var instanceNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
-var instanceBindError = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+var errInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
+var errInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
+var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 
 type CreateInstanceReqV1 struct {
 	Name                 string   `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
@@ -99,7 +99,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
-		return controller.JSONBaseErrorReq(c, instanceBindError)
+		return controller.JSONBaseErrorReq(c, errInstanceBind)
 	}
 
 	err = CheckInstanceAndRuleTemplateDbType(templates, instance)
@@ -138,7 +138,7 @@ func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance)
 		return err
 	}
 	if !access {
-		return instanceNoAccessError
+		return errInstanceNoAccess
 	}
 	return nil
 }
@@ -206,7 +206,7 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	err = checkCurrentUserCanAccessInstance(c, instance)
@@ -237,7 +237,7 @@ func DeleteInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNotExistError)
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 	}
 
 	tasks, err := s.GetTaskByInstanceId(instance.ID)
@@ -299,11 +299,11 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNotExistError)
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 	}
 
 	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
-		return controller.JSONBaseErrorReq(c, instanceBindError)
+		return controller.JSONBaseErrorReq(c, errInstanceBind)
 	}
 
 	ruleTemplates, err := s.GetRuleTemplatesByNames(req.RuleTemplates)
@@ -533,7 +533,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 	err = checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
@@ -604,7 +604,7 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 	err = checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
@@ -711,10 +711,7 @@ func GetInstanceRules(c echo.Context) error {
 }
 
 func CheckInstanceCanBindOneRuleTemplate(ruleTemplates []string) bool {
-	if len(ruleTemplates) <= 1 {
-		return true
-	}
-	return false
+	return len(ruleTemplates) <= 1
 }
 
 func CheckInstanceAndRuleTemplateDbType(ruleTemplates []*model.RuleTemplate, instances ...*model.Instance) error {

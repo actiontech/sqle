@@ -1280,9 +1280,12 @@ definitions:
       status:
         enum:
         - on_process
-        - finished
         - rejected
         - canceled
+        - exec_scheduled
+        - executing
+        - exec_failed
+        - finished
         type: string
       subject:
         type: string
@@ -1292,14 +1295,6 @@ definitions:
         type: string
       task_pass_rate:
         type: number
-      task_status:
-        enum:
-        - initialized
-        - audited
-        - executing
-        - exec_succeeded
-        - exec_failed
-        type: string
       workflow_id:
         type: integer
     type: object
@@ -1310,9 +1305,12 @@ definitions:
       status:
         enum:
         - on_process
-        - finished
         - rejected
         - canceled
+        - exec_scheduled
+        - executing
+        - exec_failed
+        - finished
         type: string
       task_id:
         type: integer
@@ -3066,25 +3064,18 @@ paths:
       - description: filter workflow status
         enum:
         - on_process
-        - finished
         - rejected
         - canceled
+        - exec_scheduled
+        - executing
+        - exec_failed
+        - finished
         in: query
         name: filter_status
         type: string
       - description: filter current step assignee user name
         in: query
         name: filter_current_step_assignee_user_name
-        type: string
-      - description: filter task status
-        enum:
-        - initialized
-        - audited
-        - executing
-        - exec_succeeded
-        - exec_failed
-        in: query
-        name: filter_task_status
         type: string
       - description: filter instance name
         in: query

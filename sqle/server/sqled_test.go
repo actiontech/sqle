@@ -43,9 +43,7 @@ type mockDriver struct {
 	parseError bool
 }
 
-func (d *mockDriver) Close(ctx context.Context) {
-	return
-}
+func (d *mockDriver) Close(ctx context.Context) {}
 
 func (d *mockDriver) Ping(ctx context.Context) error {
 	return nil

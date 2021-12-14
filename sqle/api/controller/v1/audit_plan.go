@@ -52,7 +52,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	if !dry.StringInSlice(req.InstanceType, driver.AllDrivers()) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driver.ErrDriverNotSupported{DriverTyp: req.InstanceType}))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driver.DriverNotSupportedError{DriverTyp: req.InstanceType}))
 	}
 
 	if req.InstanceDatabase != "" && req.InstanceName == "" {
@@ -79,7 +79,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, instanceNotExistError))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, errInstanceNotExist))
 	}
 
 	if req.InstanceDatabase != "" {
@@ -219,9 +219,9 @@ func GetAuditPlans(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var auditPlansResV1 []AuditPlanResV1
-	for _, auditPlan := range auditPlans {
-		auditPlansResV1 = append(auditPlansResV1, AuditPlanResV1{
+	auditPlansResV1 := make([]AuditPlanResV1, len(auditPlans))
+	for i, auditPlan := range auditPlans {
+		auditPlansResV1[i] = AuditPlanResV1{
 			Name:             auditPlan.Name,
 			Cron:             auditPlan.Cron,
 			DBType:           auditPlan.DBType,
@@ -229,7 +229,7 @@ func GetAuditPlans(c echo.Context) error {
 			InstanceDatabase: auditPlan.InstanceDatabase,
 
 			Token: auditPlan.Token,
-		})
+		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlansResV1{
 		BaseRes:   controller.NewBaseReq(nil),
@@ -336,12 +336,12 @@ func GetAuditPlanReports(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var auditPlanReportsResV1 []AuditPlanReportResV1
-	for _, auditPlanReport := range auditPlanReports {
-		auditPlanReportsResV1 = append(auditPlanReportsResV1, AuditPlanReportResV1{
+	auditPlanReportsResV1 := make([]AuditPlanReportResV1, len(auditPlanReports))
+	for i, auditPlanReport := range auditPlanReports {
+		auditPlanReportsResV1[i] = AuditPlanReportResV1{
 			Id:        auditPlanReport.ID,
 			Timestamp: auditPlanReport.CreateAt,
-		})
+		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanReportsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
@@ -409,14 +409,14 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var auditPlanReportSQLsResV1 []AuditPlanReportSQLResV1
-	for _, auditPlanReportSQL := range auditPlanReportSQLs {
-		auditPlanReportSQLsResV1 = append(auditPlanReportSQLsResV1, AuditPlanReportSQLResV1{
+	auditPlanReportSQLsResV1 := make([]AuditPlanReportSQLResV1, len(auditPlanReportSQLs))
+	for i, auditPlanReportSQL := range auditPlanReportSQLs {
+		auditPlanReportSQLsResV1[i] = AuditPlanReportSQLResV1{
 			Fingerprint:          auditPlanReportSQL.Fingerprint,
 			LastReceiveText:      auditPlanReportSQL.LastReceiveText,
 			LastReceiveTimestamp: auditPlanReportSQL.LastReceiveTimestamp,
 			AuditResult:          auditPlanReportSQL.AuditResult,
-		})
+		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanReportSQLsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
@@ -508,18 +508,18 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil, errAuditPlanNotExist
 	}
 
-	var sqls []*model.AuditPlanSQL
-	for _, reqSQL := range reqSQLs {
+	sqls := make([]*model.AuditPlanSQL, len(reqSQLs))
+	for i, reqSQL := range reqSQLs {
 		counter, err := strconv.ParseInt(reqSQL.Counter, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		sqls = append(sqls, &model.AuditPlanSQL{
+		sqls[i] = &model.AuditPlanSQL{
 			Fingerprint:          reqSQL.Fingerprint,
 			Counter:              int(counter),
 			LastSQL:              reqSQL.LastReceiveText,
 			LastReceiveTimestamp: reqSQL.LastReceiveTimestamp,
-		})
+		}
 	}
 	return sqls, nil
 }
@@ -581,14 +581,14 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var auditPlanSQLsResV1 []AuditPlanSQLResV1
-	for _, auditPlanSQL := range auditPlanSQLs {
-		auditPlanSQLsResV1 = append(auditPlanSQLsResV1, AuditPlanSQLResV1{
+	auditPlanSQLsResV1 := make([]AuditPlanSQLResV1, len(auditPlanSQLs))
+	for i, auditPlanSQL := range auditPlanSQLs {
+		auditPlanSQLsResV1[i] = AuditPlanSQLResV1{
 			Fingerprint:          auditPlanSQL.Fingerprint,
 			LastReceiveText:      auditPlanSQL.LastReceiveText,
 			LastReceiveTimestamp: auditPlanSQL.LastReceiveTimestamp,
 			Counter:              auditPlanSQL.Counter,
-		})
+		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanSQLsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
