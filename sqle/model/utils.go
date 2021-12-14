@@ -209,7 +209,7 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 			ruleList = append(ruleList, RuleTemplateRule{
 				RuleTemplateId: t.ID,
 				RuleName:       modelRule.Name,
-				RuleLevel:      string(modelRule.Level),
+				RuleLevel:      modelRule.Level,
 				RuleParams:     modelRule.Params,
 			})
 		}

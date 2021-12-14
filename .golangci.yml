@@ -17,7 +17,7 @@ linters:
     - prealloc
     - deadcode
     - gosimple
-    #- unconvert
+    - unconvert
     - errname
     #- dupl
     - misspell
