@@ -126,7 +126,7 @@ func (i *LDAPConfiguration) decryptPassword() error {
 		if err != nil {
 			return err
 		} else {
-			i.ConnectPassword = string(data)
+			i.ConnectPassword = data
 		}
 	}
 	return nil
@@ -140,7 +140,7 @@ func (i *LDAPConfiguration) encryptPassword() error {
 	if err != nil {
 		return err
 	}
-	i.ConnectSecretPassword = string(data)
+	i.ConnectSecretPassword = data
 	return nil
 }
 

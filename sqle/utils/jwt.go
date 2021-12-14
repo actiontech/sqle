@@ -29,7 +29,7 @@ func (j *JWT) CreateToken(userName string, expireUnix int64, customClaims ...Cus
 		cc.apply(claims)
 	}
 
-	t, err := token.SignedString([]byte(j.key))
+	t, err := token.SignedString(j.key)
 	if err != nil {
 		return "", err
 	}
