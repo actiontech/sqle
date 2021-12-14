@@ -18,7 +18,7 @@ linters:
     - deadcode
     #- gosimple
     #- unconvert
-    #- errname
+    - errname
     #- dupl
     - misspell
 

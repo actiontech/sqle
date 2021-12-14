@@ -599,10 +599,10 @@ func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, in
 			return err
 		}
 		if len(currentBindTemplates) > 1 {
-			return instanceBindError
+			return errInstanceBind
 		}
 		if len(currentBindTemplates) == 1 && currentBindTemplates[0].Name != tplName {
-			return instanceBindError
+			return errInstanceBind
 		}
 	}
 	return nil
