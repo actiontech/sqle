@@ -383,15 +383,15 @@ func parseAlterTableOptions(alter string) (schema, table, alterOpts string, err 
 		return "", "", "", fmt.Errorf("want alter stmt, but got %v", alter)
 	}
 
-	var alterOptPart []string
+	alterOptPart := make([]string, len(alterStmt.Specs))
 	var builder strings.Builder
-	for _, spec := range alterStmt.Specs {
+	for i, spec := range alterStmt.Specs {
 		builder.Reset()
 		restoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &builder)
 		if err = spec.Restore(restoreCtx); err != nil {
 			return "", "", "", errors.Wrap(err, "")
 		}
-		alterOptPart = append(alterOptPart, builder.String())
+		alterOptPart[i] = builder.String()
 	}
 
 	schema = alterStmt.Table.Schema.String()

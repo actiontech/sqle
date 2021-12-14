@@ -16,7 +16,8 @@ import (
 
 var version string
 var port int
-var user string
+
+//var user string
 var mysqlUser string
 var mysqlPass string
 var mysqlHost string
