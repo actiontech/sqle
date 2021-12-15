@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+//nolint:dupl
 func TestHasPrefix(t *testing.T) {
 	type args struct {
 		s             string
@@ -30,6 +31,7 @@ func TestHasPrefix(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func TestHasSuffix(t *testing.T) {
 	type args struct {
 		s             string

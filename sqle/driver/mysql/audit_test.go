@@ -1071,6 +1071,7 @@ ALTER TABLE exist_db.exist_tb_1 Add column v6 varchar(255) NOT NULL DEFAULT "uni
 	)
 }
 
+//nolint:dupl
 func TestCheckObjectNameLength(t *testing.T) {
 	length64 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcd"
 	length65 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcde"

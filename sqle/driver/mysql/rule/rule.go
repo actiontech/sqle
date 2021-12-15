@@ -2230,6 +2230,7 @@ func checkDMLWithBatchInsertMaxLimits(ctx *session.Context, rule driver.Rule, re
 	return nil
 }
 
+//nolint:dupl
 func checkWhereExistFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {
@@ -2307,6 +2308,7 @@ func checkExistFunc(ctx *session.Context, rule driver.Rule, res *driver.AuditRes
 	return false
 }
 
+//nolint:dupl
 func checkWhereColumnImplicitConversion(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	tables := []*ast.TableName{}
 	switch stmt := node.(type) {

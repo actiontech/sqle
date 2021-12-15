@@ -228,6 +228,7 @@ func TestCheckObjectNameUsingKeywordOffline(t *testing.T) {
 	)
 }
 
+//nolint:dupl
 func TestCheckObjectNameLengthOffline(t *testing.T) {
 	length64 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcd"
 	length65 := "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcde"
