@@ -165,7 +165,9 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 
 func Test_action_execute(t *testing.T) {
 	mockUpdateTaskStatus := func(t *testing.T) {
-		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTaskStatusById", func(_ *model.Storage, _ uint, status string) error {
+		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTask", func(_ *model.Storage, _ *model.Task, attr ...interface{}) error {
+			a := attr[0].(map[string]interface{})
+			status := a["status"].(string)
 			if status == model.TaskStatusExecuting {
 				return nil
 			}
