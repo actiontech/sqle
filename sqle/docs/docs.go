@@ -2854,6 +2854,53 @@ var doc = `{
                 }
             }
         },
+        "/v1/workflows/{workflow_id}/schedule": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update workflow schedule.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
+                "operationId": "updateWorkflowScheduleV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update workflow schedule request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowScheduleV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve": {
             "post": {
                 "security": [
@@ -2929,6 +2976,38 @@ var doc = `{
                         "schema": {
                             "$ref": "#/definitions/v1.RejectWorkflowReqV1"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/{workflow_id}/task/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute task on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "工单提交 SQL 上线",
+                "operationId": "executeTaskOnWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3064,6 +3143,12 @@ var doc = `{
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
+                "exec_end_time": {
+                    "type": "string"
+                },
+                "exec_start_time": {
+                    "type": "string"
+                },
                 "instance_name": {
                     "type": "string"
                 },
@@ -4658,6 +4743,14 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateWorkflowScheduleV1": {
+            "type": "object",
+            "properties": {
+                "schedule_time": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateWorkflowTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -4817,6 +4910,9 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "schedule_time": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
@@ -4851,6 +4947,9 @@ var doc = `{
             "properties": {
                 "current_step_number": {
                     "type": "integer"
+                },
+                "schedule_time": {
+                    "type": "string"
                 },
                 "status": {
                     "type": "string",
