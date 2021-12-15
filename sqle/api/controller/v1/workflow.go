@@ -1225,7 +1225,61 @@ type UpdateWorkflowScheduleV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows/{workflow_id}/schedule [put]
 func UpdateWorkflowSchedule(c echo.Context) error {
-	return nil
+	req := new(UpdateWorkflowScheduleV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+
+	if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first")))
+	}
+
+	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()){
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
+			"request schedule time is too early")))
+	}
+
+	workflow.Record.ScheduledAt = req.ScheduleTime
+	err = s.UpdateWorkflowSchedule(workflow, req.ScheduleTime)
+	if err !=nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // @Summary 工单提交 SQL 上线
@@ -1275,6 +1329,11 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	if workflow.Record.ScheduledAt != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow has been set to scheduled execution, not allowed to be executed")))
 	}
 
 	// get task and check connection before to execute it.
