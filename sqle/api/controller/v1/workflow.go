@@ -902,14 +902,8 @@ func ApproveWorkflow(c echo.Context) error {
 	now := time.Now()
 	currentStep.OperateAt = &now
 	currentStep.OperationUserId = user.ID
-
-	if currentStep == workflow.FinalStep() {
-		workflow.Record.Status = model.WorkflowStatusFinish
-		workflow.Record.CurrentWorkflowStepId = 0
-	} else {
-		nextStep := workflow.NextStep()
-		workflow.Record.CurrentWorkflowStepId = nextStep.ID
-	}
+	nextStep := workflow.NextStep()
+	workflow.Record.CurrentWorkflowStepId = nextStep.ID
 
 	err = s.UpdateWorkflowStatus(workflow, currentStep)
 	if err != nil {
@@ -1366,14 +1360,8 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	now := time.Now()
 	currentStep.OperateAt = &now
 	currentStep.OperationUserId = user.ID
-
-	if currentStep == workflow.FinalStep() {
-		workflow.Record.Status = model.WorkflowStatusFinish
-		workflow.Record.CurrentWorkflowStepId = 0
-	} else {
-		nextStep := workflow.NextStep()
-		workflow.Record.CurrentWorkflowStepId = nextStep.ID
-	}
+	workflow.Record.Status = model.WorkflowStatusFinish
+	workflow.Record.CurrentWorkflowStepId = 0
 
 	err = s.UpdateWorkflowStatus(workflow, currentStep)
 	if err != nil {
