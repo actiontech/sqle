@@ -4,6 +4,7 @@ import (
 	"context"
 	_driver "database/sql/driver"
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"testing"
@@ -166,8 +167,16 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 func Test_action_execute(t *testing.T) {
 	mockUpdateTaskStatus := func(t *testing.T) {
 		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTask", func(_ *model.Storage, _ *model.Task, attr ...interface{}) error {
-			a := attr[0].(map[string]interface{})
-			status := a["status"].(string)
+			a, ok := attr[0].(map[string]interface{})
+			if !ok {
+				assert.Error(t, fmt.Errorf("updateTask args type expect is map[string]interface{}"))
+				return nil
+			}
+			status, ok := a["status"].(string)
+			if !ok {
+				assert.Error(t, fmt.Errorf("updateTask args attr[\"status\"] type expect is string"))
+				return nil
+			}
 			if status == model.TaskStatusExecuting {
 				return nil
 			}
