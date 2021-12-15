@@ -3,6 +3,7 @@ package rule
 import (
 	"bytes"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -1862,7 +1863,7 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 func checkUniqIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	_, indexes := getTableUniqIndex(node)
 	prefix := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-	for index, _ := range indexes {
+	for index := range indexes {
 		if !utils.HasPrefix(index, prefix, false) {
 			addResult(res, rule, DDLCheckUniqueIndexPrefix, prefix)
 			return nil
@@ -2688,6 +2689,7 @@ func checkExplain(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	epRecords, err := ctx.GetExecutionPlan(node.Text())
 	if err != nil {
 		// TODO: check dml related table or database is created, if not exist, explain will executed failure.
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", node.Text(), err)
 		return nil
 	}
 	for _, record := range epRecords {

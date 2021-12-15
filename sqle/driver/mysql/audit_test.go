@@ -43,9 +43,7 @@ func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult
 	}
 	level := handler.Rule.Level
 	message := handler.Message
-	if len(args) == 0 {
-		message = fmt.Sprintf(message)
-	}
+
 	return t.add(level, message, args...)
 }
 
@@ -104,7 +102,7 @@ func runSingleRuleInspectCase(rule driver.Rule, t *testing.T, desc string, i *In
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
-	var ptrRules []*driver.Rule
+	ptrRules := []*driver.Rule{}
 	for i := range rulepkg.DefaultTemplateRules {
 		// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
 		if rulepkg.DefaultTemplateRules[i].Name == rulepkg.DDLCheckOBjectNameUseCN {

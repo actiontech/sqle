@@ -21,9 +21,9 @@ import (
 )
 
 func init() {
-	var allRules []*driver.Rule
+	allRules := make([]*driver.Rule, len(rulepkg.RuleHandlers))
 	for i := range rulepkg.RuleHandlers {
-		allRules = append(allRules, &rulepkg.RuleHandlers[i].Rule)
+		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
 	driver.Register(driver.DriverTypeMySQL, newInspect, allRules)
@@ -131,7 +131,11 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 		if err != nil {
 			return nil, errors.Wrap(err, "parse SQL")
 		}
-		stmt := node[0].(*ast.AlterTableStmt)
+
+		stmt, ok := node[0].(*ast.AlterTableStmt)
+		if !ok {
+			return nil, errors.New("type assertion failed, unable to convert to expected type")
+		}
 		schema := i.Ctx.GetSchemaName(stmt.Table)
 
 		run := func(dryRun bool) error {
@@ -224,7 +228,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 		return nil, err
 	}
 
-	var ns []driver.Node
+	ns := make([]driver.Node, len(nodes))
 	for i := range nodes {
 		n := driver.Node{}
 		fingerprint, err := util.Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
@@ -240,7 +244,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 			n.Type = driver.SQLTypeDDL
 		}
 
-		ns = append(ns, n)
+		ns[i] = n
 	}
 	return ns, nil
 }
@@ -389,6 +393,8 @@ func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
 	}
 	nodes := make([]ast.Node, 0, len(stmts))
 	for _, stmt := range stmts {
+		// node can only be ast.Node
+		//nolint:forcetypeassert
 		node := stmt.(ast.Node)
 		nodes = append(nodes, node)
 	}
@@ -424,7 +430,7 @@ func (i *Inspect) closeDbConn() {
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
 	schema := i.Ctx.GetSchemaName(stmt)
 	if schema == "" {
-		return fmt.Sprintf("%s", stmt.Name)
+		return stmt.Name.String()
 	}
 	return fmt.Sprintf("%s.%s", schema, stmt.Name)
 }

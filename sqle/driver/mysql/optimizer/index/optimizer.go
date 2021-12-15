@@ -7,12 +7,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	indexoptimizer "github.com/actiontech/sqle/sqle/pkg/optimizer/index"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -109,7 +111,7 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 	for _, tbl := range needOptimizedTables {
 		table, ok := o.tables[tbl]
 		if !ok {
-			// given SQL: select * from t1 join t2, there is not join on condition,
+			// given SQL: select * from t1 join t2, there is no join on condition,
 			continue
 		}
 
@@ -122,8 +124,9 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 		} else {
 			result = o.optimizeJoinTable(tbl)
 		}
-
-		results = append(results, result)
+		if result != nil {
+			results = append(results, result)
+		}
 	}
 
 	return results, nil
@@ -167,9 +170,14 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 					continue
 				}
 
-				leftCNE := boe.L.(*ast.ColumnNameExpr)
-				rightCNE := boe.R.(*ast.ColumnNameExpr)
-
+				leftCNE, ok := boe.L.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
+				rightCNE, ok := boe.R.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
 				o.tables[leftCNE.Name.Table.L] = &tableInSelect{joinOnColumn: leftCNE.Name.Name.L}
 				o.tables[rightCNE.Name.Table.L] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
 			} else if ss.From.TableRefs.Using != nil {
@@ -247,32 +255,108 @@ func (o *Optimizer) optimizeJoinTable(tbl string) *OptimizeResult {
 
 // doSpecifiedOptimization optimize single table select.
 func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
-	//if selectStmt.Where == nil {
-	//	for _, field := range selectStmt.Fields.Fields {
-	//		tableSource := selectStmt.From.TableRefs.Left.(*ast.TableSource)
-	//		tableName := tableSource.Source.(*ast.TableName).Name.L
-	//
-	//		if field.WildCard == nil {
-	//			switch e := field.Expr.(type) {
-	//			case *ast.AggregateFuncExpr:
-	//				if e.F == ast.AggFuncMin || e.F == ast.AggFuncMax {
-	//					for _, arg := range e.Args {
-	//						if cne, ok := arg.(*ast.ColumnNameExpr); ok {
-	//							return &OptimizeResult{
-	//								TableName:      tableName,
-	//								IndexedColumns: []string{cne.Name.Name.L},
-	//								Reason:         "利用索引有序的性质快速找到记录",
-	//							}, nil
-	//						}
-	//					}
-	//
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
+	if where := selectStmt.Where; where != nil {
+		if boe, ok := where.(*ast.BinaryOperationExpr); ok {
+			// check function in select stmt
+			if fce, ok := boe.L.(*ast.FuncCallExpr); ok {
+				result, err := o.optimizeOnFunctionCallExpression(getTableNameFromSingleSelect(selectStmt), fce)
+				if err != nil {
+					return nil, err
+				}
+				if result != nil {
+					return result, nil
+				}
+			}
+		}
+
+		// check where like 'mike%'
+		if ple, ok := where.(*ast.PatternLikeExpr); ok {
+			if cne, ok := ple.Expr.(*ast.ColumnNameExpr); ok {
+				if ve, ok := ple.Pattern.(*driver.ValueExpr); ok {
+					datum := ve.Datum.GetString()
+					if !strings.HasPrefix(datum, "%") &&
+						!strings.HasPrefix(datum, "_") {
+						return &OptimizeResult{
+							TableName:      getTableNameFromSingleSelect(selectStmt),
+							IndexedColumns: []string{cne.Name.Name.L},
+							Reason:         "为前缀模式匹配添加前缀索引",
+						}, nil
+					}
+				}
+			}
+		}
+	}
+
+	if selectStmt.Where == nil {
+		var cols []string
+		for _, field := range selectStmt.Fields.Fields {
+			if field.Expr != nil {
+				afe, ok := field.Expr.(*ast.AggregateFuncExpr)
+				if !ok {
+					continue
+				}
+				if afe.F == ast.AggFuncMin ||
+					afe.F == ast.AggFuncMax {
+					cne, ok := afe.Args[0].(*ast.ColumnNameExpr)
+					if ok {
+						cols = append(cols, cne.Name.Name.L)
+					}
+				}
+			}
+		}
+		if len(cols) > 0 {
+			return &OptimizeResult{
+				TableName:      getTableNameFromSingleSelect(selectStmt),
+				IndexedColumns: cols,
+				Reason:         "利用索引有序的性质快速找到最值",
+			}, nil
+		}
+	}
 
 	return nil, nil
+}
+
+func (o *Optimizer) optimizeOnFunctionCallExpression(tbl string, fce *ast.FuncCallExpr) (*OptimizeResult, error) {
+	var cols []string
+	for _, arg := range fce.Args {
+		if cne, ok := arg.(*ast.ColumnNameExpr); ok {
+			cols = append(cols, cne.Name.Name.L)
+		}
+	}
+	if len(cols) == 0 {
+		return nil, nil
+	}
+
+	var buf strings.Builder
+	if err := fce.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)); err != nil {
+		return nil, errors.Wrap(err, "restore func call expr when do specified optimization")
+	}
+
+	versionWithFlavor, err := o.GetSystemVariable("version")
+	if err != nil {
+		return nil, errors.Wrap(err, "get version when do specified optimization")
+	}
+
+	curVersion, err := semver.NewVersion(versionWithFlavor)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse version when do specified optimization")
+	}
+	if curVersion.LessThan(semver.MustParse("5.7.0")) {
+		return nil, nil
+	}
+	if curVersion.LessThan(semver.MustParse("8.0.13")) {
+		return &OptimizeResult{
+			TableName:      tbl,
+			IndexedColumns: []string{buf.String()},
+			Reason:         "MySQL5.7以上版本需要在虚拟列上创建索引",
+		}, nil
+	}
+
+	return &OptimizeResult{
+		TableName:      tbl,
+		IndexedColumns: []string{buf.String()},
+		Reason:         "MySQL8.0.13以上版本支持直接创建函数索引",
+	}, nil
 }
 
 // doGeneralOptimization optimize single table select.
@@ -338,23 +422,23 @@ func (o *Optimizer) sortColumnsByCardinality(tbl string, indexedColumns []string
 		return nil, errors.Errorf("table %s not found when sort columns by cardinality", tbl)
 	}
 
-	var cardinalities cardinalities
-	for _, column := range indexedColumns {
+	cardinalitySlice := make(cardinalities, len(indexedColumns))
+	for i, column := range indexedColumns {
 		c, err := o.GetColumnCardinality(tn, column)
 		if err != nil {
 			return nil, errors.Wrap(err, "get column cardinality")
 		}
-		cardinalities = append(cardinalities, cardinality{
+		cardinalitySlice[i] = cardinality{
 			columnName:  column,
 			cardinality: c,
-		})
+		}
 	}
 
-	o.l.Debugf("table %s column cardinalities(before sort): %+v", tbl, cardinalities)
-	sort.Sort(cardinalities)
-	o.l.Debugf("table %s column cardinalities(after sort): %+v", tbl, cardinalities)
+	o.l.Debugf("table %s column cardinalities(before sort): %+v", tbl, cardinalitySlice)
+	sort.Sort(cardinalitySlice)
+	o.l.Debugf("table %s column cardinalities(after sort): %+v", tbl, cardinalitySlice)
 
-	for _, c := range cardinalities {
+	for _, c := range cardinalitySlice {
 		sortedColumns = append(sortedColumns, c.columnName)
 	}
 	return sortedColumns, nil

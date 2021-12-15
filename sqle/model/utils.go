@@ -209,7 +209,7 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 			ruleList = append(ruleList, RuleTemplateRule{
 				RuleTemplateId: t.ID,
 				RuleName:       modelRule.Name,
-				RuleLevel:      string(modelRule.Level),
+				RuleLevel:      modelRule.Level,
 				RuleParams:     modelRule.Params,
 			})
 		}
@@ -310,12 +310,16 @@ func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
 	}
 	err = fn(tx)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			log.NewEntry().Error("rollback sql transact failed, err:", err)
+		}
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			log.NewEntry().Error("rollback sql transact failed, err:", err)
+		}
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	return nil

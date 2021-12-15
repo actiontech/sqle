@@ -4,21 +4,21 @@ run:
 linters:
   disable-all: true
   enable:
-    #- errcheck
+    - errcheck
     - govet
     - bodyclose
-    #- durationcheck
+    - durationcheck
     - makezero
-    #- nilerr
-    #- rowserrcheck
+    - nilerr
+    - rowserrcheck
     - sqlclosecheck
-    #- staticcheck
-    #- forcetypeassert
-    #- prealloc
-    #- deadcode
-    #- gosimple
-    #- unconvert
-    #- errname
+    - staticcheck
+    - forcetypeassert
+    - prealloc
+    - deadcode
+    - gosimple
+    - unconvert
+    - errname
     #- dupl
     - misspell
 

@@ -38,6 +38,8 @@ type Task struct {
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
 	CreateUserId uint
+	ExecStartAt  *time.Time
+	ExecEndAt    *time.Time
 
 	CreateUser   *User          `gorm:"foreignkey:CreateUserId"`
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
@@ -216,10 +218,16 @@ func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	buff := &bytes.Buffer{}
 	for rows.Next() {
 		var content string
-		rows.Scan(&content)
+		if err := rows.Scan(&content); err != nil {
+			return nil, errors.New(errors.DataInvalid, err)
+		}
 		buff.WriteString(strings.TrimRight(content, ";"))
 		buff.WriteString(";\n")
 	}
+	if rows.Err() != nil {
+		return nil, errors.New(errors.DataParseFail, rows.Err())
+	}
+
 	return buff.Bytes(), nil
 }
 

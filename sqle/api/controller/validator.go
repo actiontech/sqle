@@ -23,6 +23,8 @@ func Validate(i interface{}) error {
 	if err == nil {
 		return nil
 	}
+	// errs can only be validator.ValidationErrors
+	//nolint:forcetypeassert
 	errs := err.(validator.ValidationErrors)
 	errMsgs := make([]string, 0, len(errs))
 	for _, err := range errs {
@@ -56,9 +58,9 @@ func init() {
 	cv.validate.SetTagName("valid")
 
 	// register custom validator
-	cv.validate.RegisterValidation(ValidNameTag, ValidateName)
-	cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
-	cv.validate.RegisterValidation(ValidCronTag, ValidateCron)
+	_ = cv.validate.RegisterValidation(ValidNameTag, ValidateName)
+	_ = cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
+	_ = cv.validate.RegisterValidation(ValidCronTag, ValidateCron)
 
 	type registerTranslationArgs struct {
 		tag    string

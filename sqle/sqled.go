@@ -53,8 +53,7 @@ func Run(config *config.Config) error {
 			return fmt.Errorf("create default workflow template failed while auto migrateing table: %v", err)
 		}
 	}
-
-	exitChan := make(chan struct{}, 0)
+	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
 	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
 
@@ -62,7 +61,8 @@ func Run(config *config.Config) error {
 	go api.StartApi(net, exitChan, config.Server.SqleCnf)
 
 	killChan := make(chan os.Signal, 1)
-	signal.Notify(killChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGUSR2 /*graceful-shutdown*/)
+	// os.Kill is like kill -9 which kills a process immediately, can't be caught
+	signal.Notify(killChan, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR2 /*graceful-shutdown*/)
 	select {
 	case <-exitChan:
 		auditPlanMgrQuitCh <- struct{}{}

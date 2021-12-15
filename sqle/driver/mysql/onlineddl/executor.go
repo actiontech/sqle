@@ -370,7 +370,7 @@ func checkMigrationContext(mc *base.MigrationContext) error {
 		if !mc.TestOnReplica {
 			return errors.New("--test-on-replica-skip-replica-stop requires --test-on-replica to be enabled")
 		}
-		mc.Log.Warning("--test-on-replica-skip-replica-stop enabled. We will not stop replication before cut-over. Ensure you have a plugin that does this.")
+		_ = mc.Log.Warning("--test-on-replica-skip-replica-stop enabled. We will not stop replication before cut-over. Ensure you have a plugin that does this.")
 	}
 	return nil
 }
@@ -383,15 +383,15 @@ func parseAlterTableOptions(alter string) (schema, table, alterOpts string, err 
 		return "", "", "", fmt.Errorf("want alter stmt, but got %v", alter)
 	}
 
-	var alterOptPart []string
+	alterOptPart := make([]string, len(alterStmt.Specs))
 	var builder strings.Builder
-	for _, spec := range alterStmt.Specs {
+	for i, spec := range alterStmt.Specs {
 		builder.Reset()
 		restoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &builder)
 		if err = spec.Restore(restoreCtx); err != nil {
 			return "", "", "", errors.Wrap(err, "")
 		}
-		alterOptPart = append(alterOptPart, builder.String())
+		alterOptPart[i] = builder.String()
 	}
 
 	schema = alterStmt.Table.Schema.String()
