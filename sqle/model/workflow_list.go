@@ -20,6 +20,7 @@ type WorkflowListDetail struct {
 	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
 	Status                  string         `json:"status"`
+	ScheduleTime	*time.Time	`json:"schedule_time"`
 }
 
 var workflowsQueryTpl = `SELECT w.id AS workflow_id, w.subject, w.desc, wr.status,
@@ -27,7 +28,8 @@ tasks.status AS task_status, tasks.pass_rate AS task_pass_rate,tasks.instance_sc
 inst.name AS task_instance_name, inst.deleted_at AS task_instance_deleted_at,
 create_user.login_name AS create_user_name, create_user.deleted_at AS create_user_deleted_at,
 w.created_at AS create_time, curr_wst.type AS current_step_type, 
-GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name,'')) AS current_step_assignee_user_name_list
+GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name,'')) AS current_step_assignee_user_name_list,
+wr.scheduled_at AS schedule_time
 
 {{- template "body" . -}} 
 
@@ -93,6 +95,10 @@ AND curr_wst.type = :filter_current_step_type
 
 {{- if .filter_status }}
 AND wr.status = :filter_status
+{{- end }}
+
+{{- if .is_scheduled }}
+AND wr.scheduled_at IS NOT NULL
 {{- end }}
 
 {{- if .filter_current_step_assignee_user_name }}
