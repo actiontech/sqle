@@ -19,7 +19,7 @@ linters:
     - gosimple
     - unconvert
     - errname
-    #- dupl
+    - dupl
     - misspell
 
 linters-settings:
