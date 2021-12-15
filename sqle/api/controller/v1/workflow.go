@@ -1252,7 +1252,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 	currentStep := workflow.CurrentStep()
 	if currentStep == nil {
