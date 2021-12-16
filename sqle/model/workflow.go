@@ -572,6 +572,17 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 	return workflows, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
+	workflows := []*Workflow{}
+	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
+		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
+		Where("workflow_records.scheduled_at IS NOT NULL "+
+			"AND workflow_records.scheduled_at <= ? "+
+			"AND workflow_records.status = \"on_process\"", time.Now()).
+		Scan(&workflows).Error
+	return workflows, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) {
 	workflow := &Workflow{Subject: subject}
 	err := s.db.Where(*workflow).First(workflow).Error
