@@ -26,6 +26,7 @@ const (
 	DataParseFail ErrorCode = 4014
 
 	DriverNotExist ErrorCode = 5001
+	LoadDriverFail ErrorCode = 5008
 
 	FeatureNotImplemented ErrorCode = 7001
 )
