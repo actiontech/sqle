@@ -56,7 +56,7 @@ func (s *Sqled) WorkflowSchedule(entry *logrus.Entry) {
 		}
 
 		entry.Infof("start schedule workflow %s", w.Subject)
-		err = ExecuteWorkflow(w, w.CreateUserId) // TODO: The executor should be the person who sets the schedule time.
+		err = ExecuteWorkflow(w, w.Record.ScheduleUserId)
 		if err != nil {
 			entry.Errorf("execute workflow %s error: %v", w.Subject, err)
 		} else {
