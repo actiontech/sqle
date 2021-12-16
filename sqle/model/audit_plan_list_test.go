@@ -30,10 +30,10 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 		"filter_audit_plan_db_type": "mysql",
 		"limit":                     100,
 		"offset":                    10}
-	reslut, count, err := GetStorage().GetAuditPlansByReq(nameFields)
+	result, count, err := GetStorage().GetAuditPlansByReq(nameFields)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count)
-	assert.Len(t, reslut, 1)
+	assert.Len(t, result, 1)
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
 	mockDB.Close()
@@ -60,10 +60,10 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 		"current_user_is_admin": true,
 		"limit":                 100,
 		"offset":                10}
-	reslut, count, err = GetStorage().GetAuditPlansByReq(nameFields)
+	result, count, err = GetStorage().GetAuditPlansByReq(nameFields)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count)
-	assert.Len(t, reslut, 1)
+	assert.Len(t, result, 1)
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
 	mockDB.Close()
@@ -91,10 +91,10 @@ func TestStorage_GetAuditPlanSQLsByReq(t *testing.T) {
 		"audit_plan_name": "audit_plan_for_jave_repo",
 		"limit":           100,
 		"offset":          10}
-	reslut, count, err := GetStorage().GetAuditPlanSQLsByReq(nameFields)
+	result, count, err := GetStorage().GetAuditPlanSQLsByReq(nameFields)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count)
-	assert.Len(t, reslut, 1)
+	assert.Len(t, result, 1)
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
 }
@@ -121,10 +121,10 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 		"audit_plan_name": "audit_plan_for_jave_repo",
 		"limit":           100,
 		"offset":          10}
-	reslut, count, err := GetStorage().GetAuditPlanReportsByReq(nameFields)
+	result, count, err := GetStorage().GetAuditPlanReportsByReq(nameFields)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count)
-	assert.Len(t, reslut, 1)
+	assert.Len(t, result, 1)
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
 }
@@ -156,10 +156,10 @@ func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 		"audit_plan_report_id": 1,
 		"limit":                100,
 		"offset":               10}
-	reslut, count, err := GetStorage().GetAuditPlanReportSQLsByReq(nameFields)
+	result, count, err := GetStorage().GetAuditPlanReportSQLsByReq(nameFields)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count)
-	assert.Len(t, reslut, 1)
+	assert.Len(t, result, 1)
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
 }

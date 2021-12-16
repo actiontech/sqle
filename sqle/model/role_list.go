@@ -114,11 +114,11 @@ func (s *Storage) getListResult(bodyTpl, queryTpl string, data map[string]interf
 	}
 
 	sqlxDb := GetSqlxDb()
-	nstmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
+	nameStmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
 	if err != nil {
 		return err
 	}
-	err = nstmtTasksQuery.Select(result, data)
+	err = nameStmtTasksQuery.Select(result, data)
 	if err != nil {
 		return err
 	}
@@ -131,12 +131,12 @@ func (s *Storage) getCountResult(bodyTpl, countTpl string, data map[string]inter
 	if err != nil {
 		return 0, err
 	}
-	nstmtCountQuery, err := sqlxDb.PrepareNamed(countQuery)
+	nameStmtCountQuery, err := sqlxDb.PrepareNamed(countQuery)
 	if err != nil {
 		return 0, err
 	}
 	var count uint64
-	err = nstmtCountQuery.Get(&count, data)
+	err = nameStmtCountQuery.Get(&count, data)
 	if err != nil {
 		return 0, err
 	}
