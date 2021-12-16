@@ -79,8 +79,8 @@ func AlterTableSpecFormat(stmt *ast.AlterTableSpec) string {
 		default:
 			log.NewEntry().Errorf("constraint tp %d not support on format alterTableStmt", constraint.Tp)
 		}
-		if indexColums := indexColumnsFormat(constraint.Keys); indexColums != "" {
-			format = fmt.Sprintf("%s %s", format, indexColums)
+		if indexColumns := indexColumnsFormat(constraint.Keys); indexColumns != "" {
+			format = fmt.Sprintf("%s %s", format, indexColumns)
 		}
 		// if refer is not nil, this is add foreign key stmt.
 		if constraint.Refer != nil {

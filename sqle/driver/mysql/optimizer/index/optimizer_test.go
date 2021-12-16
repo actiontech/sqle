@@ -283,12 +283,12 @@ func TestOptimizer_Optimize(t *testing.T) {
 
 			o := NewOptimizer(entry, session.NewMockContext(e), tt.optimizerOption...)
 
-			gots, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
+			optimizeResults, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
 			assert.NoError(t, err)
-			assert.Equal(t, len(tt.output), len(gots))
+			assert.Equal(t, len(tt.output), len(optimizeResults))
 			for i, want := range tt.output {
-				assert.Equal(t, want.TableName, gots[i].TableName)
-				assert.Equal(t, want.IndexedColumns, gots[i].IndexedColumns)
+				assert.Equal(t, want.TableName, optimizeResults[i].TableName)
+				assert.Equal(t, want.IndexedColumns, optimizeResults[i].IndexedColumns)
 			}
 			mocker.MatchExpectationsInOrder(true)
 			assert.NoError(t, mocker.ExpectationsWereMet())

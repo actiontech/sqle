@@ -23,7 +23,7 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 
 	cfg, err := driver.NewConfig(dsn, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "new driver witout audit")
+		return nil, errors.Wrap(err, "new driver without audit")
 	}
 
 	return driver.NewDriver(l, inst.DbType, cfg)

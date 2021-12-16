@@ -105,7 +105,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 	ptrRules := []*driver.Rule{}
 	for i := range rulepkg.DefaultTemplateRules {
 		// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
-		if rulepkg.DefaultTemplateRules[i].Name == rulepkg.DDLCheckOBjectNameUseCN {
+		if rulepkg.DefaultTemplateRules[i].Name == rulepkg.DDLCheckObjectNameUseCN {
 			continue
 		}
 
@@ -119,12 +119,12 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 func inspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
 	stmts, err := util.ParseSql(sql)
 	if err != nil {
-		t.Errorf("%s test failled, error: %v\n", desc, err)
+		t.Errorf("%s test failed, error: %v\n", desc, err)
 		return
 	}
 
 	if len(stmts) != len(results) {
-		t.Errorf("%s test failled, error: result is unknow\n", desc)
+		t.Errorf("%s test failed, error: result is unknow\n", desc)
 		return
 	}
 
@@ -135,7 +135,7 @@ func inspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*
 			return
 		}
 		if result.Level() != results[idx].level() || result.Message() != results[idx].message() {
-			t.Errorf("%s test failled, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
+			t.Errorf("%s test failed, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
 				desc, stmt.Text(), results[idx].level(), results[idx].message(), result.Level(), result.Message())
 		} else {
 			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, result.Level(), result.Message()))
@@ -1366,7 +1366,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspect(),
@@ -1379,7 +1379,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -1403,10 +1403,10 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit 
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
 		newTestResult(),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
 	)
 }
 
@@ -1598,14 +1598,14 @@ v1 timestamp COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWitoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWitoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
 	)
 }
 
@@ -1749,7 +1749,7 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?);
 
 func TestCheckBatchInsertListsMax(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckBatchInsertListsMax].Rule
-	// defult 5000,  unit testing :4
+	// default 5000,  unit testing :4
 	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
 	runSingleRuleInspectCase(rule, t, "insert:check batch insert lists max", DefaultMysqlInspect(),
 		`
@@ -1768,7 +1768,7 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2"),(3,"3"
 
 func TestCheckBatchInsertListsMax_FP(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckBatchInsertListsMax].Rule
-	// defult 5000, unit testing :4
+	// default 5000, unit testing :4
 	//rule.Value = "4"
 	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
 	runSingleRuleInspectCase(rule, t, "[fp]insert:check batch insert lists max", DefaultMysqlInspect(),
@@ -2235,12 +2235,12 @@ func TestCheckColumnTypeSet(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 SET("male", "female");`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNitice].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(rulepkg.DDLCheckColumnSetNitice))
+			newTestResult().addResult(rulepkg.DDLCheckColumnSetNotice))
 	}
 
 	for desc, sql := range map[string]string{
@@ -2250,7 +2250,7 @@ func TestCheckColumnTypeSet(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 BLOB;`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNitice].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -2821,12 +2821,12 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldError(t *testing.T) {
 		`(4)create index`:    `CREATE INDEX 1_idx ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckOBjectNameUseCN].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckObjectNameUseCN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
 			sql,
-			newTestResult().addResult(rulepkg.DDLCheckOBjectNameUseCN))
+			newTestResult().addResult(rulepkg.DDLCheckObjectNameUseCN))
 	}
 }
 
@@ -2841,7 +2841,7 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldNotError(t *testing.T) {
 		`(1)create index`:    `CREATE INDEX idx_ ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckOBjectNameUseCN].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckObjectNameUseCN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspect(),
@@ -3239,7 +3239,7 @@ func TestWhitelist(t *testing.T) {
 // 	var ptrRules []*driver.Rule
 // 	for i := range DefaultTemplateRules {
 // 		// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
-// 		if DefaultTemplateRules[i].Name == DDLCheckOBjectNameUseCN {
+// 		if DefaultTemplateRules[i].Name == DDLCheckObjectNameUseCN {
 // 			continue
 // 		}
 

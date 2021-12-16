@@ -299,7 +299,7 @@ func (m *TxRequest) GetQueries() []string {
 }
 
 type TxResponse struct {
-	Resluts []*ExecResponse `protobuf:"bytes,1,rep,name=resluts" json:"resluts,omitempty"`
+	Results []*ExecResponse `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"`
 }
 
 func (m *TxResponse) Reset()                    { *m = TxResponse{} }
@@ -307,9 +307,9 @@ func (m *TxResponse) String() string            { return proto1.CompactTextStrin
 func (*TxResponse) ProtoMessage()               {}
 func (*TxResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
-func (m *TxResponse) GetResluts() []*ExecResponse {
+func (m *TxResponse) GetResults() []*ExecResponse {
 	if m != nil {
-		return m.Resluts
+		return m.Results
 	}
 	return nil
 }
@@ -550,7 +550,7 @@ type DriverClient interface {
 	// Metas returns some base info from plugin server.
 	Metas(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetasResponse, error)
 	// Init will should be called at first before calling following methods.
-	// It will pass some necessary info to plugin server. In the begginning,
+	// It will pass some necessary info to plugin server. In the beginning,
 	// we consider that put this info to the executable binary environment.
 	// We put all communication on gRPC for unification in the end.
 	Init(ctx context.Context, in *InitRequest, opts ...grpc.CallOption) (*Empty, error)
@@ -668,7 +668,7 @@ type DriverServer interface {
 	// Metas returns some base info from plugin server.
 	Metas(context.Context, *Empty) (*MetasResponse, error)
 	// Init will should be called at first before calling following methods.
-	// It will pass some necessary info to plugin server. In the begginning,
+	// It will pass some necessary info to plugin server. In the beginning,
 	// we consider that put this info to the executable binary environment.
 	// We put all communication on gRPC for unification in the end.
 	Init(context.Context, *InitRequest) (*Empty, error)

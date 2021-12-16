@@ -47,7 +47,7 @@ const (
 	DDLCheckCompositeIndexMax                   = "ddl_check_composite_index_max"
 	DDLCheckTableDBEngine                       = "ddl_check_table_db_engine"
 	DDLCheckTableCharacterSet                   = "ddl_check_table_character_set"
-	DDLCheckIndexedColumnWithBolb               = "ddl_check_index_column_with_blob"
+	DDLCheckIndexedColumnWithBlob               = "ddl_check_index_column_with_blob"
 	DDLCheckAlterTableNeedMerge                 = "ddl_check_alter_table_need_merge"
 	DDLDisableDropStatement                     = "ddl_disable_drop_statement"
 	DDLCheckTableWithoutComment                 = "ddl_check_table_without_comment"
@@ -56,11 +56,11 @@ const (
 	DDLCheckUniqueIndexPrefix                   = "ddl_check_unique_index_prefix"
 	DDLCheckUniqueIndex                         = "ddl_check_unique_index"
 	DDLCheckColumnWithoutDefault                = "ddl_check_column_without_default"
-	DDLCheckColumnTimestampWitoutDefault        = "ddl_check_column_timestamp_without_default"
+	DDLCheckColumnTimestampWithoutDefault       = "ddl_check_column_timestamp_without_default"
 	DDLCheckColumnBlobWithNotNull               = "ddl_check_column_blob_with_not_null"
 	DDLCheckColumnBlobDefaultIsNotNull          = "ddl_check_column_blob_default_is_not_null"
 	DDLCheckColumnEnumNotice                    = "ddl_check_column_enum_notice"
-	DDLCheckColumnSetNitice                     = "ddl_check_column_set_notice"
+	DDLCheckColumnSetNotice                     = "ddl_check_column_set_notice"
 	DDLCheckColumnBlobNotice                    = "ddl_check_column_blob_notice"
 	DDLCheckIndexesExistBeforeCreateConstraints = "ddl_check_indexes_exist_before_creat_constraints"
 	DDLCheckDatabaseCollation                   = "ddl_check_collation_database"
@@ -71,7 +71,7 @@ const (
 	DDLCheckTablePartition                      = "ddl_check_table_partition"
 	DDLCheckIsExistLimitOffset                  = "ddl_check_is_exist_limit_offset"
 	DDLCheckIndexOption                         = "ddl_check_index_option"
-	DDLCheckOBjectNameUseCN                     = "ddl_check_object_name_using_cn"
+	DDLCheckObjectNameUseCN                     = "ddl_check_object_name_using_cn"
 	DDLCheckCreateView                          = "ddl_check_create_view"
 	DDLCheckCreateTrigger                       = "ddl_check_create_trigger"
 	DDLCheckCreateFunction                      = "ddl_check_create_function"
@@ -387,7 +387,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckOBjectNameUseCN,
+			Name:     DDLCheckObjectNameUseCN,
 			Desc:     "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
@@ -438,7 +438,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckIndexedColumnWithBolb,
+			Name:     DDLCheckIndexedColumnWithBlob,
 			Desc:     "禁止将blob类型的列加入索引",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeIndexingConvention,
@@ -578,7 +578,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnTimestampWitoutDefault,
+			Name:     DDLCheckColumnTimestampWithoutDefault,
 			Desc:     "timestamp 类型的列必须添加默认值",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
@@ -950,7 +950,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnSetNitice,
+			Name:     DDLCheckColumnSetNotice,
 			Desc:     "不建议使用 SET 类型",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
@@ -1514,7 +1514,7 @@ func disableAddIndexForColumnsTypeBlob(ctx *session.Context, rule driver.Rule, r
 		return nil
 	}
 	if indexDataTypeIsBlob {
-		addResult(res, rule, DDLCheckIndexedColumnWithBolb)
+		addResult(res, rule, DDLCheckIndexedColumnWithBlob)
 	}
 	return nil
 }
@@ -1597,7 +1597,7 @@ func checkNewObjectName(ctx *session.Context, rule driver.Rule, res *driver.Audi
 				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
 			}) != -1 {
 
-			addResult(res, rule, DDLCheckOBjectNameUseCN)
+			addResult(res, rule, DDLCheckObjectNameUseCN)
 			break
 		}
 	}
@@ -1998,7 +1998,7 @@ func checkColumnTimestampWithoutDefault(ctx *session.Context, rule driver.Rule, 
 				}
 			}
 			if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
-				addResult(res, rule, DDLCheckColumnTimestampWitoutDefault)
+				addResult(res, rule, DDLCheckColumnTimestampWithoutDefault)
 				return nil
 			}
 		}
@@ -2015,7 +2015,7 @@ func checkColumnTimestampWithoutDefault(ctx *session.Context, rule driver.Rule, 
 					}
 				}
 				if !columnHasDefault && (col.Tp.Tp == mysql.TypeTimestamp || col.Tp.Tp == mysql.TypeDatetime) {
-					addResult(res, rule, DDLCheckColumnTimestampWitoutDefault)
+					addResult(res, rule, DDLCheckColumnTimestampWithoutDefault)
 					return nil
 				}
 			}

@@ -14,6 +14,7 @@ attrs
 auditplan
 backoff
 bcda
+beeefore
 bigint
 binlog
 btree
@@ -24,6 +25,7 @@ createdefiner
 createprocedure
 crypted
 datetime
+datname
 dbtype
 debugf
 decrypter
@@ -34,6 +36,7 @@ dgrijalva
 dialector
 distinctrow
 elseif
+encrypter
 enums
 errore
 errorf
@@ -47,6 +50,7 @@ fatih
 favicon
 fdbb
 filepath
+filesort
 flen
 fname
 forcetypeassert

@@ -1144,7 +1144,7 @@ definitions:
   v1.UpdateSMTPConfigurationReqV1:
     properties:
       smtp_host:
-        example: smtp.exmail.qq.com
+        example: smtp.email.qq.com
         type: string
       smtp_password:
         example: "123"
