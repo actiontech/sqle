@@ -181,6 +181,7 @@ type WorkflowRecord struct {
 	CurrentWorkflowStepId uint
 	Status                string `gorm:"default:\"on_process\""`
 	ScheduledAt           *time.Time
+	ScheduleUserId        uint
 
 	CurrentStep *WorkflowStep   `gorm:"foreignkey:CurrentWorkflowStepId"`
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
@@ -406,9 +407,11 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 	})
 }
 
-func (s *Storage) UpdateWorkflowSchedule(w *Workflow, scheduleTime *time.Time) error {
-	err := s.db.Model(&WorkflowRecord{}).Where("id = ?", w.Record.ID).Update(
-		"scheduled_at", scheduleTime).Error
+func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime *time.Time) error {
+	err := s.db.Model(&WorkflowRecord{}).Where("id = ?", w.Record.ID).Update(map[string]interface{}{
+		"scheduled_at":     scheduleTime,
+		"schedule_user_id": userId,
+	}).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
@@ -568,6 +571,17 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 			"AND (workflow_records.status = \"finished\" "+
 			"OR workflow_records.status = \"canceled\" "+
 			"OR workflow_records.status IS NULL)", start).
+		Scan(&workflows).Error
+	return workflows, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
+	workflows := []*Workflow{}
+	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
+		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
+		Where("workflow_records.scheduled_at IS NOT NULL "+
+			"AND workflow_records.scheduled_at <= ? "+
+			"AND workflow_records.status = \"on_process\"", time.Now()).
 		Scan(&workflows).Error
 	return workflows, errors.New(errors.ConnectStorageError, err)
 }

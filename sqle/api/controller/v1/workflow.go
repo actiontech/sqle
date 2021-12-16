@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -1315,8 +1314,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 			"request schedule time is too early")))
 	}
 
-	workflow.Record.ScheduledAt = req.ScheduleTime
-	err = s.UpdateWorkflowSchedule(workflow, req.ScheduleTime)
+	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1377,48 +1375,9 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 			fmt.Errorf("workflow has been set to scheduled execution, not allowed to be executed")))
 	}
 
-	// get task and check connection before to execute it.
-	taskId := fmt.Sprintf("%d", workflow.Record.TaskId)
-	task, exist, err := s.GetTaskDetailById(taskId)
+	err = server.ExecuteWorkflow(workflow, user.ID)
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(
-			errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-	}
-	if task.Instance == nil {
-		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
-	}
-
-	// if instance is not connectable, exec sql must be failed;
-	// commit action unable to retry, so don't to exec it.
-	d, err := newDriverWithoutAudit(log.NewEntry(), task.Instance, "")
-	if err != nil {
-		return err
-	}
-	defer d.Close(context.TODO())
-	if err := d.Ping(context.TODO()); err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-
-	// update workflow
-	currentStep.State = model.WorkflowStepStateApprove
-	now := time.Now()
-	currentStep.OperateAt = &now
-	currentStep.OperationUserId = user.ID
-	workflow.Record.Status = model.WorkflowStatusFinish
-	workflow.Record.CurrentWorkflowStepId = 0
-
-	err = s.UpdateWorkflowStatus(workflow, currentStep)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-	}
-
-	sqledServer := server.GetSqled()
-	err = sqledServer.AddTask(taskId, server.ActionTypeExecute)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
