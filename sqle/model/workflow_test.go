@@ -3,10 +3,11 @@ package model
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
 )
 
 type AnyTime struct{}
@@ -23,15 +24,15 @@ func TestStorage_UpdateWorkflowSchedule(t *testing.T) {
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
 	mock.ExpectBegin()
-	mock.ExpectExec("UPDATE `workflow_records` SET `scheduled_at` = ?, `updated_at` = ? WHERE `workflow_records`.`deleted_at` IS NULL AND ((id = ?))").
-		WithArgs(AnyTime{}, AnyTime{}, 1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("UPDATE `workflow_records` SET `schedule_user_id` = ?, `scheduled_at` = ?, `updated_at` = ? WHERE `workflow_records`.`deleted_at` IS NULL AND ((id = ?))").
+		WithArgs(1, AnyTime{}, AnyTime{}, 1).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 	record := &WorkflowRecord{
 		Model: Model{ID: 1},
 	}
 	workflow := &Workflow{Record: record}
-	scheduleTime:= time.Date(2021, 12, 1, 12, 00, 00, 00, time.Local)
-	err = GetStorage().UpdateWorkflowSchedule(workflow, &scheduleTime)
+	scheduleTime := time.Date(2021, 12, 1, 12, 00, 00, 00, time.Local)
+	err = GetStorage().UpdateWorkflowSchedule(workflow, 1, &scheduleTime)
 	assert.NoError(t, err)
 	mockDB.Close()
 	err = mock.ExpectationsWereMet()
@@ -42,16 +43,16 @@ func TestStorage_UpdateWorkflowSchedule(t *testing.T) {
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
 	mock.ExpectBegin()
-	mock.ExpectExec("UPDATE `workflow_records` SET `scheduled_at` = ?, `updated_at` = ? WHERE `workflow_records`.`deleted_at` IS NULL AND ((id = ?))").
-		WithArgs(nil, AnyTime{}, 2).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("UPDATE `workflow_records` SET `schedule_user_id` = ?, `scheduled_at` = ?, `updated_at` = ? WHERE `workflow_records`.`deleted_at` IS NULL AND ((id = ?))").
+		WithArgs(2, nil, AnyTime{}, 2).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	record = &WorkflowRecord{
 		Model: Model{ID: 2},
 	}
 	workflow = &Workflow{Record: record}
-	err = GetStorage().UpdateWorkflowSchedule(workflow, nil)
-	if err !=nil {
+	err = GetStorage().UpdateWorkflowSchedule(workflow, 2, nil)
+	if err != nil {
 		fmt.Printf("err: [%v]", err)
 	}
 	assert.NoError(t, err)

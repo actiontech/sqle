@@ -124,6 +124,7 @@ func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
 func (s *Sqled) Start() {
 	go s.taskLoop()
 	go s.cleanLoop()
+	go s.workflowScheduleLoop()
 }
 
 // taskLoop is a task loop used to receive action from queue.
