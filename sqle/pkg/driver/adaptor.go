@@ -15,7 +15,7 @@ import (
 )
 
 // Adaptor is a wrapper for the sqle driver layer. It
-// privides a more simpler interface for the database plugin.
+// provides a more simpler interface for the database plugin.
 type Adaptor struct {
 	l hclog.Logger
 

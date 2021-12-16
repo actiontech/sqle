@@ -413,7 +413,7 @@ outerLoop:
 		}
 	}
 
-	a.entry.WithField("task_status", taskStatus).Infof("execution is complated, err:%v", err)
+	a.entry.WithField("task_status", taskStatus).Infof("execution is completed, err:%v", err)
 
 	attrs = map[string]interface{}{
 		"status":      taskStatus,

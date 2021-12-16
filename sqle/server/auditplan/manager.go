@@ -56,7 +56,7 @@ func GetManager() *Manager {
 // Manager is the struct managing the persistent AuditPlans. It
 // is *goroutine-safe*, since all exported methods are protected by a lock.
 //
-// All audit plan oprations except select should go through Manager.
+// All audit plan operations except select should go through Manager.
 type Manager struct {
 	mu sync.Mutex
 

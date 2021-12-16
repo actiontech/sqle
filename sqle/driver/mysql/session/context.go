@@ -432,7 +432,7 @@ func (c *Context) GetSystemVariable(name string) (string, error) {
 		return "", err
 	}
 	if len(results) != 1 {
-		return "", fmt.Errorf("unexpeted results when query system variable")
+		return "", fmt.Errorf("unexpected results when query system variable")
 	}
 
 	value := results[0]["Value"]

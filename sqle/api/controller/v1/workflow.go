@@ -18,7 +18,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
+var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
 var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
 	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
 
@@ -1263,14 +1263,14 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
-	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()){
+	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
 			"request schedule time is too early")))
 	}
 
 	workflow.Record.ScheduledAt = req.ScheduleTime
 	err = s.UpdateWorkflowSchedule(workflow, req.ScheduleTime)
-	if err !=nil {
+	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
