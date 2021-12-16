@@ -552,6 +552,7 @@ type WorkflowRecordResV1 struct {
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
 	Status            string               `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
 	ScheduleTime      *time.Time           `json:"schedule_time,omitempty"`
+	ScheduleUser      string               `json:"schedule_user,omitempty"`
 	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
@@ -602,6 +603,17 @@ func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowR
 	for _, step := range recordRes.Steps {
 		if step.Id != 0 && step.Id == workflow.Record.CurrentWorkflowStepId {
 			recordRes.CurrentStepNumber = step.Number
+		}
+	}
+
+	// find schedule user name by id in final step(sql execute step),
+	// only the person specified in the final step can set the schedule time.
+	finalStep := workflow.FinalStep()
+	if workflow.Record.ScheduledAt != nil && finalStep.Template.Users != nil {
+		for _, user := range finalStep.Template.Users {
+			if user.ID == workflow.Record.ScheduleUserId {
+				recordRes.ScheduleUser = user.Name
+			}
 		}
 	}
 	recordRes.Status = convertWorkflowStatusToRes(workflow.Record.Status, task.Status, workflow.Record.ScheduledAt)
