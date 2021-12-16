@@ -181,6 +181,7 @@ type WorkflowRecord struct {
 	CurrentWorkflowStepId uint
 	Status                string `gorm:"default:\"on_process\""`
 	ScheduledAt           *time.Time
+	ScheduleUserId        uint
 
 	CurrentStep *WorkflowStep   `gorm:"foreignkey:CurrentWorkflowStepId"`
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
@@ -406,9 +407,11 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 	})
 }
 
-func (s *Storage) UpdateWorkflowSchedule(w *Workflow, scheduleTime *time.Time) error {
-	err := s.db.Model(&WorkflowRecord{}).Where("id = ?", w.Record.ID).Update(
-		"scheduled_at", scheduleTime).Error
+func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime *time.Time) error {
+	err := s.db.Model(&WorkflowRecord{}).Where("id = ?", w.Record.ID).Update(map[string]interface{}{
+		"scheduled_at":     scheduleTime,
+		"schedule_user_id": userId,
+	}).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 

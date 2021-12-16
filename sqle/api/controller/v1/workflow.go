@@ -1314,8 +1314,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 			"request schedule time is too early")))
 	}
 
-	workflow.Record.ScheduledAt = req.ScheduleTime
-	err = s.UpdateWorkflowSchedule(workflow, req.ScheduleTime)
+	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
