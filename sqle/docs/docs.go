@@ -4951,6 +4951,9 @@ var doc = `{
                 "schedule_time": {
                     "type": "string"
                 },
+                "schedule_user": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
