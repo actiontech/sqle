@@ -330,7 +330,7 @@ func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 		}
 		_, newIndexExist := indexNameMap[newIndexName]
 		if newIndexExist {
-			needNotExistsIndexesName = append(needNotExistsIndexesName)
+			needNotExistsIndexesName = append(needNotExistsIndexesName, newIndexName)
 		}
 		if oldIndexExist && !newIndexExist {
 			delete(indexNameMap, oldIndexName)

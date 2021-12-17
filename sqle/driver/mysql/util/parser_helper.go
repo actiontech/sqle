@@ -389,21 +389,6 @@ func WhereStmtExistScalarSubQueries(where ast.ExprNode) bool {
 	return existScalarSubQueries
 }
 
-func whereStmtHasSpecificColumn(where ast.ExprNode, columnName string) bool {
-	hasSpecificColumn := false
-	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
-		switch cn := expr.(type) {
-		case *ast.ColumnNameExpr:
-			if cn.Name.Name.L == strings.ToLower(columnName) {
-				hasSpecificColumn = true
-				return true
-			}
-		}
-		return false
-	}, where)
-	return hasSpecificColumn
-}
-
 func GetAlterTableSpecByTp(specs []*ast.AlterTableSpec, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
 	if specs == nil {
@@ -746,4 +731,28 @@ func Fingerprint(oneSql string, isCaseSensitive bool) (fingerprint string, err e
 		return "", err
 	}
 	return
+}
+
+// ExtractIndexFromCreateTableStmt extract index from create table statement.
+func ExtractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*index name*/ []string /*indexed column*/ {
+	var result = make(map[string][]string)
+
+	for _, constraint := range table.Constraints {
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			// The name of a PRIMARY KEY is always PRIMARY,
+			// which thus cannot be used as the name for any other kind of index.
+			result["PRIMARY"] = []string{constraint.Keys[0].Column.Name.L}
+		}
+
+		if constraint.Tp == ast.ConstraintIndex ||
+			constraint.Tp == ast.ConstraintKey ||
+			constraint.Tp == ast.ConstraintUniq ||
+			constraint.Tp == ast.ConstraintUniqIndex ||
+			constraint.Tp == ast.ConstraintUniqKey {
+			for _, key := range constraint.Keys {
+				result[constraint.Name] = append(result[constraint.Name], key.Column.Name.L)
+			}
+		}
+	}
+	return result
 }

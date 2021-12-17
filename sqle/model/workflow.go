@@ -113,13 +113,13 @@ func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 
 func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*WorkflowStepTemplate) error {
 	return s.TxExec(func(tx *sql.Tx) error {
-		result, err := tx.Exec("UPDATE workflow_step_templates SET workflow_template_id = NULL WHERE workflow_template_id = ?",
+		_, err := tx.Exec("UPDATE workflow_step_templates SET workflow_template_id = NULL WHERE workflow_template_id = ?",
 			templateId)
 		if err != nil {
 			return err
 		}
 		for _, step := range steps {
-			result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`) values (?,?,?,?)",
+			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`) values (?,?,?,?)",
 				step.Number, templateId, step.Typ, step.Desc)
 			if err != nil {
 				return err
@@ -166,10 +166,13 @@ type Workflow struct {
 }
 
 const (
-	WorkflowStatusRunning = "on_process"
-	WorkflowStatusFinish  = "finished"
-	WorkflowStatusReject  = "rejected"
-	WorkflowStatusCancel  = "canceled"
+	WorkflowStatusRunning       = "on_process"
+	WorkflowStatusReject        = "rejected"
+	WorkflowStatusCancel        = "canceled"
+	WorkflowStatusExecScheduled = "exec_scheduled"
+	WorkflowStatusExecuting     = "executing"
+	WorkflowStatusExecFailed    = "exec_failed"
+	WorkflowStatusFinish        = "finished"
 )
 
 type WorkflowRecord struct {
@@ -177,6 +180,8 @@ type WorkflowRecord struct {
 	TaskId                uint `gorm:"index"`
 	CurrentWorkflowStepId uint
 	Status                string `gorm:"default:\"on_process\""`
+	ScheduledAt           *time.Time
+	ScheduleUserId        uint
 
 	CurrentStep *WorkflowStep   `gorm:"foreignkey:CurrentWorkflowStepId"`
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
@@ -402,6 +407,14 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 	})
 }
 
+func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime *time.Time) error {
+	err := s.db.Model(&WorkflowRecord{}).Where("id = ?", w.Record.ID).Update(map[string]interface{}{
+		"scheduled_at":     scheduleTime,
+		"schedule_user_id": userId,
+	}).Error
+	return errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, error) {
 	steps := []*WorkflowStep{}
 	err := s.db.Where("workflow_record_id in (?)", ids).
@@ -558,6 +571,17 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 			"AND (workflow_records.status = \"finished\" "+
 			"OR workflow_records.status = \"canceled\" "+
 			"OR workflow_records.status IS NULL)", start).
+		Scan(&workflows).Error
+	return workflows, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
+	workflows := []*Workflow{}
+	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
+		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
+		Where("workflow_records.scheduled_at IS NOT NULL "+
+			"AND workflow_records.scheduled_at <= ? "+
+			"AND workflow_records.status = \"on_process\"", time.Now()).
 		Scan(&workflows).Error
 	return workflows, errors.New(errors.ConnectStorageError, err)
 }

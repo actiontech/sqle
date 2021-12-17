@@ -49,7 +49,7 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}))
 	mock.ExpectClose()
-	ap, exist, err = GetStorage().GetAuditPlanByName("audit_plan_for_java_repo1")
+	_, exist, err = GetStorage().GetAuditPlanByName("audit_plan_for_java_repo1")
 	assert.NoError(t, err)
 	assert.False(t, exist)
 	mockDB.Close()

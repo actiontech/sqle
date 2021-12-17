@@ -45,6 +45,6 @@ var (
 
 func init() {
 	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
-	mybatisCmd.MarkFlagRequired("dir")
+	_ = mybatisCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(mybatisCmd)
 }

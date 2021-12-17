@@ -71,10 +71,8 @@ func InitPlugins(pluginDir string) error {
 			AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
 		})
 		go func() {
-			select {
-			case <-closeCh:
-				client.Kill()
-			}
+			<-closeCh
+			client.Kill()
 		}()
 
 		gRPCClient, err := client.Client()
@@ -85,12 +83,14 @@ func InitPlugins(pluginDir string) error {
 		if err != nil {
 			return nil, err
 		}
+		// srv can only be proto.DriverClient
+		//nolint:forcetypeassert
 		srv := rawI.(proto.DriverClient)
 		return srv, nil
 	}
 
 	var plugins []os.FileInfo
-	filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "init plugin")
 		}
@@ -100,7 +100,10 @@ func InitPlugins(pluginDir string) error {
 		}
 		plugins = append(plugins, info)
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
 	for _, p := range plugins {
 		binaryPath := filepath.Join(pluginDir, p.Name())
 
@@ -246,14 +249,14 @@ func (s *driverPluginClient) Tx(ctx context.Context, queries ...string) ([]drive
 		return nil, err
 	}
 
-	var ret []driver.Result
-	for _, result := range resp.Resluts {
-		ret = append(ret, &dbDriverResult{
+	ret := make([]driver.Result, len(resp.Resluts))
+	for i, result := range resp.Resluts {
+		ret[i] = &dbDriverResult{
 			lastInsertId:    result.LastInsertId,
 			lastInsertIdErr: result.LastInsertIdError,
 			rowsAffected:    result.RowsAffected,
 			rowsAffectedErr: result.RowsAffectedError,
-		})
+		}
 	}
 	return ret, nil
 }
@@ -272,13 +275,13 @@ func (s *driverPluginClient) Parse(ctx context.Context, sqlText string) ([]Node,
 		return nil, err
 	}
 
-	var nodes []Node
-	for _, node := range resp.Nodes {
-		nodes = append(nodes, Node{
+	nodes := make([]Node, len(resp.Nodes))
+	for i, node := range resp.Nodes {
+		nodes[i] = Node{
 			Type:        node.Type,
 			Text:        node.Text,
 			Fingerprint: node.Fingerprint,
-		})
+		}
 	}
 	return nodes, nil
 }
@@ -355,7 +358,7 @@ func (d *driverGRPCServer) Ping(ctx context.Context, req *proto.Empty) (*proto.E
 func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*proto.ExecResponse, error) {
 	result, err := d.impl.Exec(ctx, req.GetQuery())
 	if err != nil {
-		return &proto.ExecResponse{}, nil
+		return &proto.ExecResponse{}, err
 	}
 
 	resp := &proto.ExecResponse{}
@@ -375,7 +378,7 @@ func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*p
 func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto.TxResponse, error) {
 	resluts, err := d.impl.Tx(ctx, req.GetQueries()...)
 	if err != nil {
-		return &proto.TxResponse{}, nil
+		return &proto.TxResponse{}, err
 	}
 
 	txResp := &proto.TxResponse{}
@@ -423,7 +426,7 @@ func (d *driverGRPCServer) Parse(ctx context.Context, req *proto.ParseRequest) (
 func (d *driverGRPCServer) Audit(ctx context.Context, req *proto.AuditRequest) (*proto.AuditResponse, error) {
 	auditResluts, err := d.impl.Audit(ctx, req.GetSql())
 	if err != nil {
-		return &proto.AuditResponse{}, nil
+		return &proto.AuditResponse{}, err
 	}
 
 	resp := &proto.AuditResponse{}
@@ -445,10 +448,10 @@ func (d *driverGRPCServer) GenRollbackSQL(ctx context.Context, req *proto.GenRol
 }
 
 func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.MetasResponse, error) {
-	var protoRules []*proto.Rule
+	protoRules := make([]*proto.Rule, len(d.r.Rules()))
 
-	for _, r := range d.r.Rules() {
-		protoRules = append(protoRules, convertRuleFromDriverToProto(r))
+	for i, r := range d.r.Rules() {
+		protoRules[i] = convertRuleFromDriverToProto(r)
 	}
 
 	return &proto.MetasResponse{

@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -18,8 +17,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var WorkflowNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
-var ForbidMyBatisXMLTaskError = errors.New(errors.DataConflict,
+var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("worrkflow is not exist or you can't access it"))
+var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
 	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
 
 type GetWorkflowTemplateResV1 struct {
@@ -113,7 +112,7 @@ type WorkFlowStepTemplateReqV1 struct {
 }
 
 func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
-	if steps == nil || len(steps) == 0 {
+	if len(steps) == 0 {
 		return fmt.Errorf("workflow steps cannot be empty")
 	}
 	if len(steps) > 5 {
@@ -469,7 +468,7 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -477,7 +476,7 @@ func CreateWorkflow(c echo.Context) error {
 	}
 
 	if task.Instance == nil {
-		return controller.JSONBaseErrorReq(c, instanceNotExistError)
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -490,7 +489,7 @@ func CreateWorkflow(c echo.Context) error {
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		return controller.JSONBaseErrorReq(c, ForbidMyBatisXMLTaskError)
+		return controller.JSONBaseErrorReq(c, ErrForbidMyBatisXMLTask)
 	}
 
 	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
@@ -551,7 +550,9 @@ type WorkflowResV1 struct {
 type WorkflowRecordResV1 struct {
 	TaskId            uint                 `json:"task_id"`
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
-	Status            string               `json:"status" enums:"on_process,finished,rejected,canceled"`
+	Status            string               `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
+	ScheduleTime      *time.Time           `json:"schedule_time,omitempty"`
+	ScheduleUser      string               `json:"schedule_user,omitempty"`
 	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
@@ -581,12 +582,12 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 		return err
 	}
 	if !access {
-		return WorkflowNoAccessError
+		return ErrWorkflowNoAccess
 	}
 	return nil
 }
 
-func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV1 {
+func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowResV1 {
 	workflowRes := &WorkflowResV1{
 		Id:         workflow.ID,
 		Subject:    workflow.Subject,
@@ -604,6 +605,18 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV1 {
 			recordRes.CurrentStepNumber = step.Number
 		}
 	}
+
+	// find schedule user name by id in final step(sql execute step),
+	// only the person specified in the final step can set the schedule time.
+	finalStep := workflow.FinalStep()
+	if workflow.Record.ScheduledAt != nil && finalStep.Template.Users != nil {
+		for _, user := range finalStep.Template.Users {
+			if user.ID == workflow.Record.ScheduleUserId {
+				recordRes.ScheduleUser = user.Name
+			}
+		}
+	}
+	recordRes.Status = convertWorkflowStatusToRes(workflow.Record.Status, task.Status, workflow.Record.ScheduledAt)
 	workflowRes.Record = recordRes
 
 	// convert workflow record history
@@ -647,9 +660,10 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 		step.Number = number
 	}
 	return &WorkflowRecordResV1{
-		TaskId: record.TaskId,
-		Status: record.Status,
-		Steps:  steps,
+		TaskId:       record.TaskId,
+		Status:       record.Status,
+		ScheduleTime: record.ScheduledAt,
+		Steps:        steps,
 	}
 }
 
@@ -672,6 +686,22 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV1 {
 		}
 	}
 	return stepRes
+}
+
+func convertWorkflowStatusToRes(workflowStatus, taskStatus string, scheduleTime *time.Time) string {
+	var status = workflowStatus
+	switch taskStatus {
+	case model.TaskStatusExecuting:
+		status = model.WorkflowStatusExecuting
+	case model.TaskStatusExecuteSucceeded:
+		status = model.WorkflowStatusFinish
+	case model.TaskStatusExecuteFailed:
+		status = model.WorkflowStatusExecFailed
+	}
+	if status == model.WorkflowStatusRunning && scheduleTime != nil {
+		status = model.WorkflowStatusExecScheduled
+	}
+	return status
 }
 
 // @Summary 获取审批流程详情
@@ -701,16 +731,25 @@ func GetWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 	history, err := s.GetWorkflowHistoryById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	workflow.RecordHistory = history
+
+	task, exist, err := s.GetTaskById(strconv.Itoa(int(workflow.Record.TaskId)))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+	}
+
 	return c.JSON(http.StatusOK, &GetWorkflowResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToRes(workflow),
+		Data:    convertWorkflowToRes(workflow, task),
 	})
 }
 
@@ -720,9 +759,8 @@ type GetWorkflowsReqV1 struct {
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
 	FilterCurrentStepType             string `json:"filter_current_step_type" query:"filter_current_step_type" valid:"omitempty,oneof=sql_review sql_execute"`
-	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=on_process finished rejected canceled"`
+	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=on_process rejected canceled exec_scheduled executing exec_failed finished"`
 	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
-	FilterTaskStatus                  string `json:"filter_task_status" query:"filter_task_status" valid:"omitempty,oneof=initialized audited executing exec_succeeded exec_failed"`
 	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
 	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required"`
@@ -738,7 +776,6 @@ type WorkflowDetailResV1 struct {
 	Id                      uint       `json:"workflow_id"`
 	Subject                 string     `json:"subject"`
 	Desc                    string     `json:"desc"`
-	TaskStatus              string     `json:"task_status" enums:"initialized,audited,executing,exec_succeeded,exec_failed"`
 	TaskPassRate            float64    `json:"task_pass_rate"`
 	TaskInstance            string     `json:"task_instance_name"`
 	TaskInstanceSchema      string     `json:"task_instance_schema"`
@@ -746,7 +783,8 @@ type WorkflowDetailResV1 struct {
 	CreateTime              *time.Time `json:"create_time"`
 	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string     `json:"status" enums:"on_process,finished,rejected,canceled"`
+	Status                  string     `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
+	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`
 }
 
 // @Summary 获取审批流程列表
@@ -759,9 +797,8 @@ type WorkflowDetailResV1 struct {
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_create_user_name query string false "filter create user name"
 // @Param filter_current_step_type query string false "filter current step type" Enums(sql_review, sql_execute)
-// @Param filter_status query string false "filter workflow status" Enums(on_process, finished, rejected, canceled)
+// @Param filter_status query string false "filter workflow status" Enums(on_process, rejected, canceled, exec_scheduled, executing, exec_failed, finished)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
-// @Param filter_task_status query string false "filter task status" Enums(initialized, audited, executing, exec_succeeded, exec_failed)
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
@@ -782,15 +819,42 @@ func GetWorkflows(c echo.Context) error {
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
+	var workflowStatus string
+	var taskStatus string
+	var isScheduled bool
+	var notScheduled bool
+	// filter task status
+	switch req.FilterStatus {
+	case model.WorkflowStatusExecuting:
+		taskStatus = model.TaskStatusExecuting
+	case model.WorkflowStatusExecFailed:
+		taskStatus = model.TaskStatusExecuteFailed
+	case model.WorkflowStatusFinish:
+		taskStatus = model.TaskStatusExecuteSucceeded
+	}
+	// filter workflow status
+	switch req.FilterStatus {
+	case model.WorkflowStatusRunning:
+		workflowStatus = model.WorkflowStatusRunning
+		notScheduled = true
+	case model.WorkflowStatusExecScheduled:
+		workflowStatus = model.WorkflowStatusRunning
+		isScheduled = true
+	case model.WorkflowStatusCancel, model.WorkflowStatusReject:
+		workflowStatus = req.FilterStatus
+	}
+
 	data := map[string]interface{}{
 		"filter_subject":                         req.FilterSubject,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
 		"filter_create_user_name":                req.FilterCreateUserName,
-		"filter_status":                          req.FilterStatus,
+		"filter_status":                          workflowStatus,
+		"filter_task_status":                     taskStatus,
+		"is_scheduled":                           isScheduled,
+		"not_scheduled":                          notScheduled,
 		"filter_current_step_type":               req.FilterCurrentStepType,
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
-		"filter_task_status":                     req.FilterTaskStatus,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
 		"current_user_id":                        user.ID,
 		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
@@ -809,7 +873,6 @@ func GetWorkflows(c echo.Context) error {
 			Id:                      workflow.Id,
 			Subject:                 workflow.Subject,
 			Desc:                    workflow.Desc,
-			TaskStatus:              workflow.TaskStatus,
 			TaskPassRate:            workflow.TaskPassRate,
 			TaskInstance:            utils.AddDelTag(workflow.TaskInstanceDeletedAt, workflow.TaskInstance.String),
 			TaskInstanceSchema:      workflow.TaskInstanceSchema,
@@ -817,7 +880,8 @@ func GetWorkflows(c echo.Context) error {
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
-			Status:                  workflow.Status,
+			Status:                  convertWorkflowStatusToRes(workflow.Status, workflow.TaskStatus, workflow.ScheduleTime),
+			ScheduleTime:            workflow.ScheduleTime,
 		}
 		workflowsReq = append(workflowsReq, workflowReq)
 	}
@@ -826,6 +890,24 @@ func GetWorkflows(c echo.Context) error {
 		Data:      workflowsReq,
 		TotalNums: count,
 	})
+}
+
+func checkUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
+	if workflow.Record.Status != model.WorkflowStatusRunning {
+		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+	if uint(stepId) != workflow.CurrentStep().ID {
+		return fmt.Errorf("workflow current step is not %d", stepId)
+	}
+
+	if !workflow.IsOperationUser(user) {
+		return fmt.Errorf("you are not allow to operate the workflow")
+	}
+	return nil
 }
 
 // @Summary 审批通过
@@ -857,53 +939,38 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	if workflow.Record.Status != model.WorkflowStatusRunning {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
-	}
-
-	if workflow.CurrentStep() == nil {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step not found")))
-	}
-
-	if uint(stepId) != workflow.CurrentStep().ID {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepId)))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	err = checkUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if !workflow.IsOperationUser(user) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("you are not allow to operate the workflow")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
 	currentStep := workflow.CurrentStep()
+
+	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow has been approved, you should to execute it")))
+	}
+
 	currentStep.State = model.WorkflowStepStateApprove
 	now := time.Now()
 	currentStep.OperateAt = &now
 	currentStep.OperationUserId = user.ID
-
-	if currentStep == workflow.FinalStep() {
-		workflow.Record.Status = model.WorkflowStatusFinish
-		workflow.Record.CurrentWorkflowStepId = 0
-	} else {
-		nextStep := workflow.NextStep()
-		workflow.Record.CurrentWorkflowStepId = nextStep.ID
-	}
+	nextStep := workflow.NextStep()
+	workflow.Record.CurrentWorkflowStepId = nextStep.ID
 
 	err = s.UpdateWorkflowStatus(workflow, currentStep)
 	if err != nil {
@@ -912,38 +979,6 @@ func ApproveWorkflow(c echo.Context) error {
 
 	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
 		log.Logger().Errorf("after approve workflow, send email error: %v", err)
-	}
-
-	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
-		taskId := fmt.Sprintf("%d", workflow.Record.TaskId)
-		task, exist, err := s.GetTaskDetailById(taskId)
-		if err != nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-		}
-		if !exist {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(
-				errors.New(errors.DataNotExist, fmt.Errorf("task is not exist"))))
-		}
-		if task.Instance == nil {
-			return controller.JSONBaseErrorReq(c, instanceNotExistError)
-		}
-
-		// if instance is not connectable, exec sql must be failed;
-		// commit action unable to retry, so don't to exec it.
-		d, err := newDriverWithoutAudit(log.NewEntry(), task.Instance, "")
-		if err != nil {
-			return err
-		}
-		defer d.Close(context.TODO())
-		if err := d.Ping(context.TODO()); err != nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-		}
-
-		sqledServer := server.GetSqled()
-		err = sqledServer.AddTask(taskId, server.ActionTypeExecute)
-		if err != nil {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(err))
-		}
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -986,37 +1021,23 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	if workflow.Record.Status != model.WorkflowStatusRunning {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
-	}
-
-	if workflow.CurrentStep() == nil {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step not found")))
-	}
-
-	if uint(stepId) != workflow.CurrentStep().ID {
-		return controller.JSONBaseErrorReq(c, errors.New(
-			errors.DataInvalid, fmt.Errorf("workflow current step is not %d", stepId)))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	err = checkUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !workflow.IsOperationUser(user) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("you are not allow to operate the workflow")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
 	currentStep := workflow.CurrentStep()
@@ -1100,13 +1121,13 @@ func BatchCancelWorkflows(c echo.Context) error {
 		return err
 	}
 
-	var workflows []*model.Workflow
-	for _, workflowId := range req.WorkflowIds {
+	workflows := make([]*model.Workflow, len(req.WorkflowIds))
+	for i, workflowId := range req.WorkflowIds {
 		workflow, err := checkCancelWorkflow(workflowId)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		workflows = append(workflows, workflow)
+		workflows[i] = workflow
 
 		workflow.Record.Status = model.WorkflowStatusCancel
 		workflow.Record.CurrentWorkflowStepId = 0
@@ -1126,7 +1147,7 @@ func checkCancelWorkflow(id string) (*model.Workflow, error) {
 		return nil, err
 	}
 	if !exist {
-		return nil, WorkflowNoAccessError
+		return nil, ErrWorkflowNoAccess
 	}
 	if !(workflow.Record.Status == model.WorkflowStatusRunning ||
 		workflow.Record.Status == model.WorkflowStatusReject) {
@@ -1174,7 +1195,7 @@ func UpdateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -1182,7 +1203,7 @@ func UpdateWorkflow(c echo.Context) error {
 	}
 
 	if task.Instance == nil {
-		return controller.JSONBaseErrorReq(c, instanceNotExistError)
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -1196,7 +1217,7 @@ func UpdateWorkflow(c echo.Context) error {
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-		return controller.JSONBaseErrorReq(c, ForbidMyBatisXMLTaskError)
+		return controller.JSONBaseErrorReq(c, ErrForbidMyBatisXMLTask)
 	}
 
 	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
@@ -1213,7 +1234,7 @@ func UpdateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, WorkflowNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusReject {
@@ -1247,4 +1268,137 @@ func FormatStringToInt(s string) (ret int, err error) {
 		}
 	}
 	return ret, nil
+}
+
+type UpdateWorkflowScheduleV1 struct {
+	ScheduleTime *time.Time `json:"schedule_time"`
+}
+
+// @Summary 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+// @Description update workflow schedule.
+// @Tags workflow
+// @Accept json
+// @Produce json
+// @Id updateWorkflowScheduleV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Param instance body v1.UpdateWorkflowScheduleV1 true "update workflow schedule request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/workflows/{workflow_id}/schedule [put]
+func UpdateWorkflowSchedule(c echo.Context) error {
+	req := new(UpdateWorkflowScheduleV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+
+	if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first")))
+	}
+
+	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
+			"request schedule time is too early")))
+	}
+
+	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+// @Summary 工单提交 SQL 上线
+// @Description execute task on workflow
+// @Tags workflow
+// @Id executeTaskOnWorkflowV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/workflows/{workflow_id}/task/execute [post]
+func ExecuteTaskOnWorkflow(c echo.Context) error {
+	workflowId := c.Param("workflow_id")
+	id, err := FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+
+	if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first")))
+	}
+
+	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	if workflow.Record.ScheduledAt != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow has been set to scheduled execution, not allowed to be executed")))
+	}
+
+	err = server.ExecuteWorkflow(workflow, user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }

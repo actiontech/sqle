@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/optimizer/index"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
@@ -19,9 +21,9 @@ import (
 )
 
 func init() {
-	var allRules []*driver.Rule
+	allRules := make([]*driver.Rule, len(rulepkg.RuleHandlers))
 	for i := range rulepkg.RuleHandlers {
-		allRules = append(allRules, &rulepkg.RuleHandlers[i].Rule)
+		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
 	driver.Register(driver.DriverTypeMySQL, newInspect, allRules)
@@ -100,6 +102,11 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 			min := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
 			inspect.cnf.DDLGhostMinSize = int64(min)
 		}
+		if rule.Name == rulepkg.ConfigOptimizeIndexEnabled {
+			inspect.cnf.optimizeIndexEnabled = true
+			inspect.cnf.calculateCardinalityMaxRow = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Int()
+			inspect.cnf.compositeIndexMaxColumn = rule.Params.GetParam(rulepkg.DefaultMultiParamsSecondKeyName).Int()
+		}
 	}
 
 	return inspect, nil
@@ -124,7 +131,11 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 		if err != nil {
 			return nil, errors.Wrap(err, "parse SQL")
 		}
-		stmt := node[0].(*ast.AlterTableStmt)
+
+		stmt, ok := node[0].(*ast.AlterTableStmt)
+		if !ok {
+			return nil, errors.New("type assertion failed, unable to convert to expected type")
+		}
 		schema := i.Ctx.GetSchemaName(stmt.Table)
 
 		run := func(dryRun bool) error {
@@ -217,7 +228,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 		return nil, err
 	}
 
-	var ns []driver.Node
+	ns := make([]driver.Node, len(nodes))
 	for i := range nodes {
 		n := driver.Node{}
 		fingerprint, err := util.Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
@@ -233,7 +244,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 			n.Type = driver.SQLTypeDDL
 		}
 
-		ns = append(ns, n)
+		ns[i] = n
 	}
 	return ns, nil
 }
@@ -269,6 +280,32 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		}
 		if err := handler.Func(i.Ctx, *rule, i.result, nodes[0]); err != nil {
 			return nil, err
+		}
+	}
+
+	if ss, ok := nodes[0].(*ast.SelectStmt); ok && i.cnf.optimizeIndexEnabled && ss.From != nil {
+		// if table do not exist in database, we will get error message when explain select statement.
+		exist, err := i.Ctx.IsTableExistInDatabase(ss.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
+		if err != nil {
+			return nil, errors.Wrap(err, "check table exist in database or not")
+		}
+		if exist {
+			optimizer := index.NewOptimizer(i.log, i.Ctx,
+				index.WithCalculateCardinalityMaxRow(i.cnf.calculateCardinalityMaxRow),
+				index.WithCompositeIndexMaxColumn(i.cnf.compositeIndexMaxColumn))
+			advices, err := optimizer.Optimize(ctx, ss)
+			if err != nil {
+				return nil, errors.Wrap(err, "optimize sql")
+			}
+
+			var buf strings.Builder
+			for _, advice := range advices {
+				buf.WriteString(fmt.Sprintf("建议为表 %s 列 %s 添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
+				if advice.Reason != "" {
+					buf.WriteString(fmt.Sprintf(", 原因(%s)", advice.Reason))
+				}
+			}
+			i.result.Add(driver.RuleLevelNotice, buf.String())
 		}
 	}
 
@@ -338,6 +375,10 @@ type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
 	DDLGhostMinSize    int64
+
+	optimizeIndexEnabled       bool
+	calculateCardinalityMaxRow int
+	compositeIndexMaxColumn    int
 }
 
 func (i *Inspect) Context() *session.Context {
@@ -352,6 +393,8 @@ func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
 	}
 	nodes := make([]ast.Node, 0, len(stmts))
 	for _, stmt := range stmts {
+		// node can only be ast.Node
+		//nolint:forcetypeassert
 		node := stmt.(ast.Node)
 		nodes = append(nodes, node)
 	}
@@ -387,7 +430,7 @@ func (i *Inspect) closeDbConn() {
 func (i *Inspect) getTableName(stmt *ast.TableName) string {
 	schema := i.Ctx.GetSchemaName(stmt)
 	if schema == "" {
-		return fmt.Sprintf("%s", stmt.Name)
+		return stmt.Name.String()
 	}
 	return fmt.Sprintf("%s.%s", schema, stmt.Name)
 }

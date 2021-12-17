@@ -44,7 +44,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// custom handler http error
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		if _, ok := err.(*errors.CodeError); ok {
-			controller.JSONBaseErrorReq(c, err)
+			if err = controller.JSONBaseErrorReq(c, err); err != nil {
+				log.NewEntry().Error("send json error response failed, error:", err)
+			}
 		} else {
 			e.DefaultHTTPErrorHandler(err, c)
 		}
@@ -142,6 +144,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
 	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)
+	v1Router.PUT("/workflows/:workflow_id/schedule", v1.UpdateWorkflowSchedule)
+	v1Router.POST("/workflows/:workflow_id/task/execute", v1.ExecuteTaskOnWorkflow)
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
@@ -197,6 +201,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		tlsConfig := new(tls.Config)
 		tlsConfig.Certificates = make([]tls.Certificate, 1)
 		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.CertFilePath, config.KeyFilePath)
+		if err != nil {
+			log.Logger().Fatal("load x509 key pair failed, error:", err)
+			return
+		}
 		e.TLSServer.TLSConfig = tlsConfig
 		e.TLSListener = tls.NewListener(l, tlsConfig)
 
@@ -205,7 +213,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		e.Listener = l
 		log.Logger().Fatal(e.Start(""))
 	}
-	return
 }
 
 // AdminUserAllowed is a `echo` middleware, only allow admin user to access next.

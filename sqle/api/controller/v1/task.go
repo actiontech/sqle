@@ -20,7 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var TaskNoAccessError = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
+var ErrTaskNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
 
 type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
@@ -34,12 +34,14 @@ type GetAuditTaskResV1 struct {
 }
 
 type AuditTaskResV1 struct {
-	Id             uint    `json:"task_id"`
-	InstanceName   string  `json:"instance_name"`
-	InstanceSchema string  `json:"instance_schema" example:"db1"`
-	PassRate       float64 `json:"pass_rate"`
-	Status         string  `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
-	SQLSource      string  `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
+	Id             uint       `json:"task_id"`
+	InstanceName   string     `json:"instance_name"`
+	InstanceSchema string     `json:"instance_schema" example:"db1"`
+	PassRate       float64    `json:"pass_rate"`
+	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
+	SQLSource      string     `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
+	ExecStartTime  *time.Time `json:"exec_start_time,omitempty"`
+	ExecEndTime    *time.Time `json:"exec_end_time,omitempty"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
@@ -50,6 +52,8 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		PassRate:       task.PassRate,
 		Status:         task.Status,
 		SQLSource:      task.SQLSource,
+		ExecStartTime:  task.ExecStartAt,
+		ExecEndTime:    task.ExecEndAt,
 	}
 }
 
@@ -123,7 +127,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, instanceNoAccessError)
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	err = checkCurrentUserCanAccessInstance(c, instance)
@@ -202,14 +206,14 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 		return err
 	}
 	if !exist {
-		return TaskNoAccessError
+		return ErrTaskNoAccess
 	}
 	access, err := s.UserCanAccessWorkflow(user, workflow)
 	if err != nil {
 		return err
 	}
 	if !access {
-		return TaskNoAccessError
+		return ErrTaskNoAccess
 	}
 	return nil
 }
@@ -230,7 +234,7 @@ func GetTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -293,7 +297,7 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -364,7 +368,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -383,14 +387,17 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	buff := &bytes.Buffer{}
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	cw := csv.NewWriter(buff)
-	cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句"})
+	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句"})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
+	}
 	for _, td := range taskSQLsDetail {
 		taskSql := &model.ExecuteSQL{
 			AuditResult: td.AuditResult,
 			AuditStatus: td.AuditStatus,
 		}
 		taskSql.ExecStatus = td.ExecStatus
-		cw.Write([]string{
+		err := cw.Write([]string{
 			strconv.FormatUint(uint64(td.Number), 10),
 			td.ExecSQL,
 			taskSql.GetAuditStatusDesc(),
@@ -399,6 +406,9 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			td.ExecResult,
 			td.RollbackSQL.String,
 		})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
+		}
 	}
 	cw.Flush()
 	fileName := fmt.Sprintf("SQL审核报告_%v_%v.csv", task.InstanceName(), taskId)
@@ -423,7 +433,7 @@ func DownloadTaskSQLFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {
@@ -466,7 +476,7 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, TaskNoAccessError)
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 	err = checkCurrentUserCanAccessTask(c, task)
 	if err != nil {

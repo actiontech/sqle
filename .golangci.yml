@@ -4,6 +4,22 @@ run:
 linters:
   disable-all: true
   enable:
+    - errcheck
+    - govet
+    - bodyclose
+    - durationcheck
+    - makezero
+    - nilerr
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - forcetypeassert
+    - prealloc
+    - deadcode
+    - gosimple
+    - unconvert
+    - errname
+    #- dupl
     - misspell
 
 linters-settings:

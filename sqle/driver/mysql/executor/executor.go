@@ -105,13 +105,17 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 	}
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
 			c.Logger().Error("rollback sql transact")
+			if err := tx.Rollback(); err != nil {
+				c.Logger().Error("rollback sql transact failed, err:", err)
+			}
 			panic(p)
 		}
 		if err != nil {
-			tx.Rollback()
 			c.Logger().Error("rollback sql transact")
+			if err := tx.Rollback(); err != nil {
+				c.Logger().Error("rollback sql transact failed, err:", err)
+			}
 			return
 		}
 		err = tx.Commit()
@@ -170,6 +174,9 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 			value[k] = v
 		}
 		result = append(result, value)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
@@ -288,7 +295,8 @@ const (
 	ExplainRecordExtraUsingFilesort  = "Using filesort"
 	ExplainRecordExtraUsingTemporary = "Using temporary"
 
-	ExplainRecordAccessTypeAll = "ALL"
+	ExplainRecordAccessTypeAll   = "ALL"
+	ExplainRecordAccessTypeIndex = "index"
 )
 
 func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
@@ -301,10 +309,10 @@ func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
 		return nil, fmt.Errorf("no explain record for sql %v", query)
 	}
 
-	var ret []*ExplainRecord
-	for _, record := range records {
+	ret := make([]*ExplainRecord, len(records))
+	for i, record := range records {
 		rows, _ := strconv.ParseInt(record["rows"].String, 10, 64)
-		ret = append(ret, &ExplainRecord{
+		ret[i] = &ExplainRecord{
 			Id:           record["id"].String,
 			SelectType:   record["select_type"].String,
 			Table:        record["table"].String,
@@ -317,7 +325,7 @@ func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
 			Rows:         rows,
 			Filtered:     record["filtered"].String,
 			Extra:        record["Extra"].String,
-		})
+		}
 	}
 	return ret, nil
 }
@@ -368,7 +376,7 @@ where table_schema = '%s' and table_name = '%s'`, schema, table)
 	if sizeStr == "" {
 		return 0, nil
 	}
-	size, err := strconv.ParseFloat(sizeStr, 10)
+	size, err := strconv.ParseFloat(sizeStr, 64)
 	if err != nil {
 		c.Db.Logger().Error(err)
 		return 0, errors.New(errors.ConnectRemoteDatabaseError, err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	_driver "database/sql/driver"
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"testing"
@@ -43,9 +44,7 @@ type mockDriver struct {
 	parseError bool
 }
 
-func (d *mockDriver) Close(ctx context.Context) {
-	return
-}
+func (d *mockDriver) Close(ctx context.Context) {}
 
 func (d *mockDriver) Ping(ctx context.Context) error {
 	return nil
@@ -167,7 +166,17 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 
 func Test_action_execute(t *testing.T) {
 	mockUpdateTaskStatus := func(t *testing.T) {
-		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTaskStatusById", func(_ *model.Storage, _ uint, status string) error {
+		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTask", func(_ *model.Storage, _ *model.Task, attr ...interface{}) error {
+			a, ok := attr[0].(map[string]interface{})
+			if !ok {
+				assert.Error(t, fmt.Errorf("updateTask args type expect is map[string]interface{}"))
+				return nil
+			}
+			status, ok := a["status"].(string)
+			if !ok {
+				assert.Error(t, fmt.Errorf("updateTask args attr[\"status\"] type expect is string"))
+				return nil
+			}
 			if status == model.TaskStatusExecuting {
 				return nil
 			}

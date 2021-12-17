@@ -19,6 +19,8 @@ func NewJWT(signingKey []byte) *JWT {
 
 func (j *JWT) CreateToken(userName string, expireUnix int64, customClaims ...CustomClaimOption) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
+	// claims can only be jwt.MapClaims
+	//nolint:forcetypeassert
 	claims := token.Claims.(jwt.MapClaims)
 	claims["name"] = userName
 	claims["exp"] = expireUnix
@@ -27,7 +29,7 @@ func (j *JWT) CreateToken(userName string, expireUnix int64, customClaims ...Cus
 		cc.apply(claims)
 	}
 
-	t, err := token.SignedString([]byte(j.key))
+	t, err := token.SignedString(j.key)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +67,8 @@ func ParseAuditPlanName(tokenString string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	// claims can only be jwt.MapClaims
+	//nolint:forcetypeassert
 	claims := token.Claims.(jwt.MapClaims)
 	apn, ok := claims["apn"]
 	if !ok {

@@ -44,6 +44,6 @@ var (
 
 func init() {
 	slowlogCmd.Flags().StringVarP(&logFilePath, "log-file", "", "", "log file absolute path")
-	slowlogCmd.MarkFlagRequired("log-file")
+	_ = slowlogCmd.MarkFlagRequired("log-file")
 	rootCmd.AddCommand(slowlogCmd)
 }

@@ -3,6 +3,7 @@ package rule
 import (
 	"bytes"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -28,6 +29,7 @@ const (
 	RuleTypeDDLConvention      = "DDL规范"
 	RuleTypeDMLConvention      = "DML规范"
 	RuleTypeUsageSuggestion    = "使用建议"
+	RuleTypeIndexOptimization  = "索引优化"
 )
 
 // inspector DDL rules
@@ -102,9 +104,10 @@ const (
 
 // inspector config code
 const (
-	ConfigDMLRollbackMaxRows = "dml_rollback_max_rows"
-	ConfigDDLOSCMinSize      = "ddl_osc_min_size"
-	ConfigDDLGhostMinSize    = "ddl_ghost_min_size"
+	ConfigDMLRollbackMaxRows   = "dml_rollback_max_rows"
+	ConfigDDLOSCMinSize        = "ddl_osc_min_size"
+	ConfigDDLGhostMinSize      = "ddl_ghost_min_size"
+	ConfigOptimizeIndexEnabled = "optimize_index_enabled"
 )
 
 type RuleHandler struct {
@@ -153,6 +156,11 @@ var (
 
 const DefaultSingleParamKeyName = "first_key" // For most of the rules, it is just has one param, this is first params.
 
+const (
+	DefaultMultiParamsFirstKeyName  = "multi_params_first_key"
+	DefaultMultiParamsSecondKeyName = "multi_params_second_key"
+)
+
 var RuleHandlers = []RuleHandler{
 	// config
 	{
@@ -190,6 +198,29 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		Func: nil,
+	},
+
+	{
+		Rule: driver.Rule{
+			Name:     ConfigOptimizeIndexEnabled,
+			Desc:     "开启索引优化",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeIndexOptimization,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultMultiParamsFirstKeyName,
+					Value: "1000000",
+					Desc:  "计算列基数阈值",
+					Type:  driver.RuleParamTypeInt,
+				},
+				&driver.RuleParam{
+					Key:   DefaultMultiParamsSecondKeyName,
+					Value: "3",
+					Desc:  "联合索引最大列数",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
+		},
 	},
 
 	{
@@ -1832,7 +1863,7 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 func checkUniqIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	_, indexes := getTableUniqIndex(node)
 	prefix := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-	for index, _ := range indexes {
+	for index := range indexes {
 		if !utils.HasPrefix(index, prefix, false) {
 			addResult(res, rule, DDLCheckUniqueIndexPrefix, prefix)
 			return nil
@@ -2658,6 +2689,7 @@ func checkExplain(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	epRecords, err := ctx.GetExecutionPlan(node.Text())
 	if err != nil {
 		// TODO: check dml related table or database is created, if not exist, explain will executed failure.
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", node.Text(), err)
 		return nil
 	}
 	for _, record := range epRecords {

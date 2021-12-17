@@ -10,6 +10,7 @@ const (
 	ConnectRemoteDatabaseError ErrorCode = 5002
 	ReadUploadFileError        ErrorCode = 5003
 	ParseMyBatisXMLFileError   ErrorCode = 5006
+	WriteDataToTheFileError    ErrorCode = 5007
 
 	TaskNotExist      ErrorCode = 4006
 	TaskActionInvalid ErrorCode = 4009
@@ -22,8 +23,10 @@ const (
 	DataNotExist  ErrorCode = 4011
 	DataConflict  ErrorCode = 4012
 	DataInvalid   ErrorCode = 4013
+	DataParseFail ErrorCode = 4014
 
 	DriverNotExist ErrorCode = 5001
+	LoadDriverFail ErrorCode = 5008
 
 	FeatureNotImplemented ErrorCode = 7001
 )

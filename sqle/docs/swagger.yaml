@@ -86,6 +86,10 @@ definitions:
     type: object
   v1.AuditTaskResV1:
     properties:
+      exec_end_time:
+        type: string
+      exec_start_time:
+        type: string
       instance_name:
         type: string
       instance_schema:
@@ -1172,6 +1176,11 @@ definitions:
       task_id:
         type: string
     type: object
+  v1.UpdateWorkflowScheduleV1:
+    properties:
+      schedule_time:
+        type: string
+    type: object
   v1.UpdateWorkflowTemplateReqV1:
     properties:
       desc:
@@ -1277,12 +1286,17 @@ definitions:
         type: string
       desc:
         type: string
+      schedule_time:
+        type: string
       status:
         enum:
         - on_process
-        - finished
         - rejected
         - canceled
+        - exec_scheduled
+        - executing
+        - exec_failed
+        - finished
         type: string
       subject:
         type: string
@@ -1292,14 +1306,6 @@ definitions:
         type: string
       task_pass_rate:
         type: number
-      task_status:
-        enum:
-        - initialized
-        - audited
-        - executing
-        - exec_succeeded
-        - exec_failed
-        type: string
       workflow_id:
         type: integer
     type: object
@@ -1307,12 +1313,19 @@ definitions:
     properties:
       current_step_number:
         type: integer
+      schedule_time:
+        type: string
+      schedule_user:
+        type: string
       status:
         enum:
         - on_process
-        - finished
         - rejected
         - canceled
+        - exec_scheduled
+        - executing
+        - exec_failed
+        - finished
         type: string
       task_id:
         type: integer
@@ -3066,25 +3079,18 @@ paths:
       - description: filter workflow status
         enum:
         - on_process
-        - finished
         - rejected
         - canceled
+        - exec_scheduled
+        - executing
+        - exec_failed
+        - finished
         in: query
         name: filter_status
         type: string
       - description: filter current step assignee user name
         in: query
         name: filter_current_step_assignee_user_name
-        type: string
-      - description: filter task status
-        enum:
-        - initialized
-        - audited
-        - executing
-        - exec_succeeded
-        - exec_failed
-        in: query
-        name: filter_task_status
         type: string
       - description: filter instance name
         in: query
@@ -3201,6 +3207,36 @@ paths:
       summary: 审批关闭（中止）
       tags:
       - workflow
+  /v1/workflows/{workflow_id}/schedule:
+    put:
+      consumes:
+      - application/json
+      description: update workflow schedule.
+      operationId: updateWorkflowScheduleV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: update workflow schedule request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWorkflowScheduleV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+      tags:
+      - workflow
   /v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve:
     post:
       description: approve workflow
@@ -3255,6 +3291,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 审批驳回
+      tags:
+      - workflow
+  /v1/workflows/{workflow_id}/task/execute:
+    post:
+      description: execute task on workflow
+      operationId: executeTaskOnWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单提交 SQL 上线
       tags:
       - workflow
   /v1/workflows/cancel:
