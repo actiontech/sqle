@@ -101,6 +101,10 @@ AND wr.status = :filter_status
 AND wr.scheduled_at IS NOT NULL
 {{- end }}
 
+{{- if .not_scheduled }}
+AND wr.scheduled_at IS NULL
+{{- end }}
+
 {{- if .filter_current_step_assignee_user_name }}
 AND curr_ass_user.login_name = :filter_current_step_assignee_user_name
 {{- end }}
