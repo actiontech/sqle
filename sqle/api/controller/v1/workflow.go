@@ -822,6 +822,8 @@ func GetWorkflows(c echo.Context) error {
 	var workflowStatus string
 	var taskStatus string
 	var isScheduled bool
+	var notScheduled bool
+	// filter task status
 	switch req.FilterStatus {
 	case model.WorkflowStatusExecuting:
 		taskStatus = model.TaskStatusExecuting
@@ -829,10 +831,16 @@ func GetWorkflows(c echo.Context) error {
 		taskStatus = model.TaskStatusExecuteFailed
 	case model.WorkflowStatusFinish:
 		taskStatus = model.TaskStatusExecuteSucceeded
+	}
+	// filter workflow status
+	switch req.FilterStatus {
+	case model.WorkflowStatusRunning:
+		workflowStatus = model.WorkflowStatusRunning
+		notScheduled = true
 	case model.WorkflowStatusExecScheduled:
 		workflowStatus = model.WorkflowStatusRunning
 		isScheduled = true
-	default:
+	case model.WorkflowStatusCancel, model.WorkflowStatusReject:
 		workflowStatus = req.FilterStatus
 	}
 
@@ -844,6 +852,7 @@ func GetWorkflows(c echo.Context) error {
 		"filter_status":                          workflowStatus,
 		"filter_task_status":                     taskStatus,
 		"is_scheduled":                           isScheduled,
+		"not_scheduled":                          notScheduled,
 		"filter_current_step_type":               req.FilterCurrentStepType,
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
