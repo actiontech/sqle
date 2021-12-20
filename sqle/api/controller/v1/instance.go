@@ -23,7 +23,7 @@ type CreateInstanceReqV1 struct {
 	Name                 string   `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
 	DBType               string   `json:"db_type" form:"db_type" example:"mysql"`
 	User                 string   `json:"db_user" form:"db_user" example:"root" valid:"required"`
-	Host                 string   `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ipv4"`
+	Host                 string   `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required"`
 	Port                 string   `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
 	Password             string   `json:"db_password" form:"db_password" example:"123456" valid:"required"`
 	Desc                 string   `json:"desc" example:"this is a test instance"`
@@ -267,7 +267,7 @@ func DeleteInstance(c echo.Context) error {
 type UpdateInstanceReqV1 struct {
 	DBType               *string  `json:"db_type" form:"db_type" example:"mysql"`
 	User                 *string  `json:"db_user" form:"db_user" example:"root"`
-	Host                 *string  `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ipv4"`
+	Host                 *string  `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty"`
 	Port                 *string  `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
 	Password             *string  `json:"db_password" form:"db_password" example:"123456"`
 	Desc                 *string  `json:"desc" example:"this is a test instance"`
@@ -545,7 +545,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 type GetInstanceConnectableReqV1 struct {
 	DBType   string `json:"db_type" form:"db_type" example:"mysql"`
 	User     string `json:"user" form:"db_user" example:"root" valid:"required"`
-	Host     string `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ipv4"`
+	Host     string `json:"host" form:"db_host" example:"10.10.10.10" valid:"required"`
 	Port     string `json:"port" form:"db_port" example:"3306" valid:"required,port"`
 	Password string `json:"password" form:"db_password" example:"123456"`
 }
