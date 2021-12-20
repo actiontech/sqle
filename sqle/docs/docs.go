@@ -4696,7 +4696,7 @@ var doc = `{
             "properties": {
                 "smtp_host": {
                     "type": "string",
-                    "example": "smtp.exmail.qq.com"
+                    "example": "smtp.email.qq.com"
                 },
                 "smtp_password": {
                     "type": "string",

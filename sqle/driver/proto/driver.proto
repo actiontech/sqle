@@ -7,7 +7,7 @@ service Driver {
   rpc Metas(Empty) returns (MetasResponse);
 
   // Init will should be called at first before calling following methods.
-  // It will pass some necessary info to plugin server. In the begginning,
+  // It will pass some necessary info to plugin server. In the beginning,
   // we consider that put this info to the executable binary environment.
   // We put all communication on gRPC for unification in the end.
   rpc Init(InitRequest) returns (Empty);
@@ -68,7 +68,7 @@ message TxRequest {
 }
 
 message TxResponse {
-  repeated ExecResponse resluts = 1;
+  repeated ExecResponse results = 1;
 }
 
 message DatabasesResponse {
