@@ -69,6 +69,7 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 		}
 		inspect.isConnected = true
 		inspect.dbConn = conn
+		inspect.inst = cfg.DSN
 
 		ctx := session.NewContext(nil, session.WithExecutor(conn))
 		ctx.SetCurrentSchema(cfg.DSN.DatabaseName)
