@@ -61,12 +61,12 @@ func AesEncrypt(origData string) (string, error) {
 	return base64.StdEncoding.EncodeToString(crypted), nil
 }
 
-func AesDecrypt(crypted string) (string, error) {
-	crytedByte, err := base64.StdEncoding.DecodeString(crypted)
+func AesDecrypt(encrypted string) (string, error) {
+	encryptedByte, err := base64.StdEncoding.DecodeString(encrypted)
 	if err != nil {
 		return "", err
 	}
-	origByte, err := aesDecrypt(crytedByte, AES_KEY)
+	origByte, err := aesDecrypt(encryptedByte, AES_KEY)
 	return string(origByte), err
 }
 
