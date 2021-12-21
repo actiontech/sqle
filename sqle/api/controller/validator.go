@@ -10,7 +10,7 @@ import (
 	"github.com/go-playground/locales/en"
 	"github.com/go-playground/locales/zh"
 	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator"
+	validator "github.com/go-playground/validator/v10"
 	cron "github.com/robfig/cron/v3"
 )
 
