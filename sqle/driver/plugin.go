@@ -195,7 +195,7 @@ var handshakeConfig = goPlugin.HandshakeConfig{
 type driverPluginClient struct {
 	plugin proto.DriverClient
 
-	// driverQuitCh pruduce a singal for telling caller that it's time to Client.Kill() plugin process.
+	// driverQuitCh produce a singal for telling caller that it's time to Client.Kill() plugin process.
 	driverQuitCh chan struct{}
 }
 
@@ -249,8 +249,8 @@ func (s *driverPluginClient) Tx(ctx context.Context, queries ...string) ([]drive
 		return nil, err
 	}
 
-	ret := make([]driver.Result, len(resp.Resluts))
-	for i, result := range resp.Resluts {
+	ret := make([]driver.Result, len(resp.Results))
+	for i, result := range resp.Results {
 		ret[i] = &dbDriverResult{
 			lastInsertId:    result.LastInsertId,
 			lastInsertIdErr: result.LastInsertIdError,
@@ -376,13 +376,13 @@ func (d *driverGRPCServer) Exec(ctx context.Context, req *proto.ExecRequest) (*p
 }
 
 func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto.TxResponse, error) {
-	resluts, err := d.impl.Tx(ctx, req.GetQueries()...)
+	results, err := d.impl.Tx(ctx, req.GetQueries()...)
 	if err != nil {
 		return &proto.TxResponse{}, err
 	}
 
 	txResp := &proto.TxResponse{}
-	for _, result := range resluts {
+	for _, result := range results {
 		resp := &proto.ExecResponse{}
 
 		lastInsertId, lastInsertIdErr := result.LastInsertId()
@@ -396,7 +396,7 @@ func (d *driverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*proto
 			resp.RowsAffectedError = rowsAffectedErr.Error()
 		}
 
-		txResp.Resluts = append(txResp.Resluts, resp)
+		txResp.Results = append(txResp.Results, resp)
 	}
 	return txResp, nil
 }
@@ -424,13 +424,13 @@ func (d *driverGRPCServer) Parse(ctx context.Context, req *proto.ParseRequest) (
 }
 
 func (d *driverGRPCServer) Audit(ctx context.Context, req *proto.AuditRequest) (*proto.AuditResponse, error) {
-	auditResluts, err := d.impl.Audit(ctx, req.GetSql())
+	auditResults, err := d.impl.Audit(ctx, req.GetSql())
 	if err != nil {
 		return &proto.AuditResponse{}, err
 	}
 
 	resp := &proto.AuditResponse{}
-	for _, result := range auditResluts.results {
+	for _, result := range auditResults.results {
 		resp.Results = append(resp.Results, &proto.AuditResult{
 			Level:   string(result.level),
 			Message: result.message,

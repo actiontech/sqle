@@ -61,7 +61,7 @@ func SendEmailIfConfigureSMTP(workflowId string) error {
 	port, _ := strconv.Atoi(smtpC.Port)
 	dialer := gomail.NewDialer(smtpC.Host, port, smtpC.Username, smtpC.Password)
 	if err := dialer.DialAndSend(message); err != nil {
-		log.NewEntry().Errorf("send emial to %v error: %v", emails, err)
+		log.NewEntry().Errorf("send email to %v error: %v", emails, err)
 		return err
 	}
 
