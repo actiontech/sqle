@@ -187,7 +187,7 @@ type Rule struct {
 //	return value
 //}
 
-// Config difine the configuration for driver.
+// Config define the configuration for driver.
 type Config struct {
 	DSN   *DSN
 	Rules []*Rule
@@ -196,7 +196,7 @@ type Config struct {
 // NewConfig return a config for driver.
 //
 // 1. dsn is nil, rules is not nil. Use drive to do Offline Audit.
-// 2. dsn is not nil, rule is nil. Use drive to communicate with databse only.
+// 2. dsn is not nil, rule is nil. Use drive to communicate with database only.
 // 3. dsn is not nil, rule is not nil. Most common usecase.
 func NewConfig(dsn *DSN, rules []*Rule) (*Config, error) {
 	if dsn == nil && rules == nil {
@@ -279,7 +279,7 @@ var ErrNodesCountExceedOne = errors.New("after parse, nodes count exceed one")
 // It's implementation maybe on the same process or over gRPC(by go-plugin).
 //
 // Driver is responsible for two primary things:
-// 1. privode handle to communicate with database
+// 1. provides handle to communicate with database
 // 2. audit SQL with rules
 type Driver interface {
 	Close(ctx context.Context)

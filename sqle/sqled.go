@@ -50,7 +50,7 @@ func Run(config *config.Config) error {
 			return fmt.Errorf("create default admin user failed while auto migrating table: %v", err)
 		}
 		if err := s.CreateDefaultWorkflowTemplate(); err != nil {
-			return fmt.Errorf("create default workflow template failed while auto migrateing table: %v", err)
+			return fmt.Errorf("create default workflow template failed while auto migrating table: %v", err)
 		}
 	}
 	exitChan := make(chan struct{})

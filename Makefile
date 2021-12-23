@@ -34,6 +34,7 @@ DOCKER_REGISTRY ?= 10.186.18.20
 
 ## Dynamic Parameter
 GOLANGCI_LINT_IMAGE ?=golangci/golangci-lint:v1.43.0
+SCSPELL_IMAGE ?=gerrywastaken/scspell
 GO_COMPILER_IMAGE ?= golang:1.16
 RPM_BUILD_IMAGE ?= rpmbuild/centos7
 
@@ -88,8 +89,14 @@ upload:
 docker_lint:
 	$(DOCKER) run -v $(shell pwd):/universe -w /universe --rm $(GOLANGCI_LINT_IMAGE) golangci-lint run -c ./.golangci.yml
 
+docker_scspell:
+	$(DOCKER) run -v $(shell pwd):/universe -w /universe --rm $(SCSPELL_IMAGE) sh -c "python scspell.py sqle"
+
+
 docker_test:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make test ${MAKEFLAGS}"
+
+docker_check: docker_lint docker_scspell docker_test
 
 docker_clean:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make clean ${MAKEFLAGS}"

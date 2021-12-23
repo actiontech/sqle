@@ -523,7 +523,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspectOffline(),
@@ -536,7 +536,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBolb),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -736,14 +736,14 @@ v1 timestamp COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWitoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspectOffline(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWitoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
 	)
 }
 
@@ -889,7 +889,7 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?);
 
 func TestCheckBatchInsertListsMaxOffline(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckBatchInsertListsMax].Rule
-	// defult 5000,  unit testing :4
+	// default 5000,  unit testing :4
 	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
 	runSingleRuleInspectCase(rule, t, "insert:check batch insert lists max", DefaultMysqlInspectOffline(),
 		`
@@ -908,7 +908,7 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2"),(3,"3"
 
 func TestCheckBatchInsertListsMax_FPOffline(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckBatchInsertListsMax].Rule
-	// defult 5000, unit testing :4
+	// default 5000, unit testing :4
 	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
 	runSingleRuleInspectCase(rule, t, "[fp]insert:check batch insert lists max", DefaultMysqlInspectOffline(),
 		`
@@ -1288,12 +1288,12 @@ func TestCheckColumnTypeSetOffline(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 SET("male", "female");`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNitice].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspectOffline(),
 			sql,
-			newTestResult().addResult(rulepkg.DDLCheckColumnSetNitice))
+			newTestResult().addResult(rulepkg.DDLCheckColumnSetNotice))
 	}
 
 	for desc, sql := range map[string]string{
@@ -1303,7 +1303,7 @@ func TestCheckColumnTypeSetOffline(t *testing.T) {
 		`(3)alter table`: `ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v1 BLOB;`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNitice].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnSetNotice].Rule,
 			t,
 			desc,
 			DefaultMysqlInspectOffline(),
@@ -1874,12 +1874,12 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldErrorOffline(t *testing.T) {
 		`(4)create index`:    `CREATE INDEX 1_idx ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckOBjectNameUseCN].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckObjectNameUseCN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspectOffline(),
 			sql,
-			newTestResult().addResult(rulepkg.DDLCheckOBjectNameUseCN))
+			newTestResult().addResult(rulepkg.DDLCheckObjectNameUseCN))
 	}
 }
 
@@ -1894,7 +1894,7 @@ func Test_DDLCheckNameUseENAndUnderline_ShouldNotErrorOffline(t *testing.T) {
 		`(1)create index`:    `CREATE INDEX idx_ ON exist_db.exist_tb_1(v1)`,
 	} {
 		runSingleRuleInspectCase(
-			rulepkg.RuleHandlerMap[rulepkg.DDLCheckOBjectNameUseCN].Rule,
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckObjectNameUseCN].Rule,
 			t,
 			desc,
 			DefaultMysqlInspectOffline(),

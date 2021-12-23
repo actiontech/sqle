@@ -11,7 +11,7 @@ import (
 func runRollbackCase(t *testing.T, desc string, i *Inspect, sql string, results string) {
 	stmts, err := util.ParseSql(sql)
 	if err != nil {
-		t.Errorf("%s test failled, error: %v\n", desc, err)
+		t.Errorf("%s test failed, error: %v\n", desc, err)
 		return
 	}
 
