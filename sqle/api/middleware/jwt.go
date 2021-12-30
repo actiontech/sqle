@@ -57,24 +57,3 @@ func ScannerVerifier() echo.MiddlewareFunc {
 		}
 	}
 }
-
-var JWTConfig = middleware.JWTConfig{
-	ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
-		keyFunc := func(t *jwt.Token) (interface{}, error) {
-			if t.Method.Alg() != "HS256" {
-				return nil, fmt.Errorf("unexpected jwt signing method=%v", t.Header["alg"])
-			}
-			return []byte(utils.JWTSecret), nil
-		}
-
-		// claims are of type `jwt.MapClaims` when token is created with `jwt.Parse`
-		token, err := jwt.Parse(auth, keyFunc)
-		if err != nil {
-			return nil, err
-		}
-		if !token.Valid {
-			return nil, errors.New("invalid token")
-		}
-		return token, nil
-	},
-}
