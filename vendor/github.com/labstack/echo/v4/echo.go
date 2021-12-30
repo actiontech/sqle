@@ -43,11 +43,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	stdLog "log"
 	"net"
 	"net/http"
 	"net/url"
-	"path"
+	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -56,18 +57,26 @@ import (
 
 	"github.com/labstack/gommon/color"
 	"github.com/labstack/gommon/log"
+	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 type (
 	// Echo is the top-level framework instance.
 	Echo struct {
+		common
+		// startupMutex is mutex to lock Echo instance access during server configuration and startup. Useful for to get
+		// listener address info (on which interface/port was listener binded) without having data races.
+		startupMutex     sync.RWMutex
 		StdLogger        *stdLog.Logger
 		colorer          *color.Color
 		premiddleware    []MiddlewareFunc
 		middleware       []MiddlewareFunc
 		maxParam         *int
 		router           *Router
+		routers          map[string]*Router
 		notFoundHandler  HandlerFunc
 		pool             sync.Pool
 		Server           *http.Server
@@ -81,9 +90,12 @@ type (
 		HidePort         bool
 		HTTPErrorHandler HTTPErrorHandler
 		Binder           Binder
+		JSONSerializer   JSONSerializer
 		Validator        Validator
 		Renderer         Renderer
 		Logger           Logger
+		IPExtractor      IPExtractor
+		ListenerNetwork  string
 	}
 
 	// Route contains a handler and information for matching against requests.
@@ -95,9 +107,9 @@ type (
 
 	// HTTPError represents an error that occurred while handling a request.
 	HTTPError struct {
-		Code     int
-		Message  interface{}
-		Internal error // Stores the error returned by an external dependency
+		Code     int         `json:"-"`
+		Message  interface{} `json:"message"`
+		Internal error       `json:"-"` // Stores the error returned by an external dependency
 	}
 
 	// MiddlewareFunc defines a function to process middleware.
@@ -114,6 +126,12 @@ type (
 		Validate(i interface{}) error
 	}
 
+	// JSONSerializer is the interface that encodes and decodes JSON to and from interfaces.
+	JSONSerializer interface {
+		Serialize(c Context, i interface{}, indent string) error
+		Deserialize(c Context, i interface{}) error
+	}
+
 	// Renderer is the interface that wraps the Render function.
 	Renderer interface {
 		Render(io.Writer, string, interface{}, Context) error
@@ -122,10 +140,8 @@ type (
 	// Map defines a generic map of type `map[string]interface{}`.
 	Map map[string]interface{}
 
-	// i is the interface for Echo and Group.
-	i interface {
-		GET(string, HandlerFunc, ...MiddlewareFunc) *Route
-	}
+	// Common struct for Echo & Group.
+	common struct{}
 )
 
 // HTTP methods
@@ -168,6 +184,8 @@ const (
 	charsetUTF8 = "charset=UTF-8"
 	// PROPFIND Method can be used on collection and property resources.
 	PROPFIND = "PROPFIND"
+	// REPORT Method can be used to get information about a resource, see rfc 3253
+	REPORT = "REPORT"
 )
 
 // Headers
@@ -211,17 +229,19 @@ const (
 	HeaderAccessControlMaxAge           = "Access-Control-Max-Age"
 
 	// Security
-	HeaderStrictTransportSecurity = "Strict-Transport-Security"
-	HeaderXContentTypeOptions     = "X-Content-Type-Options"
-	HeaderXXSSProtection          = "X-XSS-Protection"
-	HeaderXFrameOptions           = "X-Frame-Options"
-	HeaderContentSecurityPolicy   = "Content-Security-Policy"
-	HeaderXCSRFToken              = "X-CSRF-Token"
+	HeaderStrictTransportSecurity         = "Strict-Transport-Security"
+	HeaderXContentTypeOptions             = "X-Content-Type-Options"
+	HeaderXXSSProtection                  = "X-XSS-Protection"
+	HeaderXFrameOptions                   = "X-Frame-Options"
+	HeaderContentSecurityPolicy           = "Content-Security-Policy"
+	HeaderContentSecurityPolicyReportOnly = "Content-Security-Policy-Report-Only"
+	HeaderXCSRFToken                      = "X-CSRF-Token"
+	HeaderReferrerPolicy                  = "Referrer-Policy"
 )
 
 const (
 	// Version of Echo
-	Version = "4.0.0"
+	Version = "4.6.1"
 	website = "https://echo.labstack.com"
 	// http://patorjk.com/software/taag/#p=display&f=Small%20Slant&t=Echo
 	banner = `
@@ -248,6 +268,7 @@ var (
 		PROPFIND,
 		http.MethodPut,
 		http.MethodTrace,
+		REPORT,
 	}
 )
 
@@ -269,6 +290,8 @@ var (
 	ErrRendererNotRegistered       = errors.New("renderer not registered")
 	ErrInvalidRedirectCode         = errors.New("invalid redirect status code")
 	ErrCookieNotFound              = errors.New("cookie not found")
+	ErrInvalidCertOrKeyType        = errors.New("invalid cert or key type, must be string or []byte")
+	ErrInvalidListenerNetwork      = errors.New("invalid listener network")
 )
 
 // Error handlers
@@ -290,20 +313,23 @@ func New() (e *Echo) {
 		AutoTLSManager: autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 		},
-		Logger:   log.New("echo"),
-		colorer:  color.New(),
-		maxParam: new(int),
+		Logger:          log.New("echo"),
+		colorer:         color.New(),
+		maxParam:        new(int),
+		ListenerNetwork: "tcp",
 	}
 	e.Server.Handler = e
 	e.TLSServer.Handler = e
 	e.HTTPErrorHandler = e.DefaultHTTPErrorHandler
 	e.Binder = &DefaultBinder{}
+	e.JSONSerializer = &DefaultJSONSerializer{}
 	e.Logger.SetLevel(log.ERROR)
 	e.StdLogger = stdLog.New(e.Logger.Output(), e.Logger.Prefix()+": ", 0)
 	e.pool.New = func() interface{} {
 		return e.NewContext(nil, nil)
 	}
 	e.router = NewRouter(e)
+	e.routers = map[string]*Router{}
 	return
 }
 
@@ -319,44 +345,62 @@ func (e *Echo) NewContext(r *http.Request, w http.ResponseWriter) Context {
 	}
 }
 
-// Router returns router.
+// Router returns the default router.
 func (e *Echo) Router() *Router {
 	return e.router
 }
 
+// Routers returns the map of host => router.
+func (e *Echo) Routers() map[string]*Router {
+	return e.routers
+}
+
 // DefaultHTTPErrorHandler is the default HTTP error handler. It sends a JSON response
 // with status code.
+//
+// NOTE: In case errors happens in middleware call-chain that is returning from handler (which did not return an error).
+// When handler has already sent response (ala c.JSON()) and there is error in middleware that is returning from
+// handler. Then the error that global error handler received will be ignored because we have already "commited" the
+// response and status code header has been sent to the client.
 func (e *Echo) DefaultHTTPErrorHandler(err error, c Context) {
-	var (
-		code = http.StatusInternalServerError
-		msg  interface{}
-	)
 
-	if he, ok := err.(*HTTPError); ok {
-		code = he.Code
-		msg = he.Message
-		if he.Internal != nil {
-			err = fmt.Errorf("%v, %v", err, he.Internal)
-		}
-	} else if e.Debug {
-		msg = err.Error()
-	} else {
-		msg = http.StatusText(code)
+	if c.Response().Committed {
+		return
 	}
-	if _, ok := msg.(string); ok {
-		msg = Map{"message": msg}
+
+	he, ok := err.(*HTTPError)
+	if ok {
+		if he.Internal != nil {
+			if herr, ok := he.Internal.(*HTTPError); ok {
+				he = herr
+			}
+		}
+	} else {
+		he = &HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: http.StatusText(http.StatusInternalServerError),
+		}
+	}
+
+	// Issue #1426
+	code := he.Code
+	message := he.Message
+	if m, ok := he.Message.(string); ok {
+		if e.Debug {
+			message = Map{"message": m, "error": err.Error()}
+		} else {
+			message = Map{"message": m}
+		}
 	}
 
 	// Send response
-	if !c.Response().Committed {
-		if c.Request().Method == http.MethodHead { // Issue #608
-			err = c.NoContent(code)
-		} else {
-			err = c.JSON(code, msg)
-		}
-		if err != nil {
-			e.Logger.Error(err)
-		}
+	if c.Request().Method == http.MethodHead { // Issue #608
+		err = c.NoContent(he.Code)
+	} else {
+		err = c.JSON(code, message)
+	}
+	if err != nil {
+		e.Logger.Error(err)
 	}
 }
 
@@ -450,43 +494,61 @@ func (e *Echo) Static(prefix, root string) *Route {
 	if root == "" {
 		root = "." // For security we want to restrict to CWD.
 	}
-	return static(e, prefix, root)
+	return e.static(prefix, root, e.GET)
 }
 
-func static(i i, prefix, root string) *Route {
+func (common) static(prefix, root string, get func(string, HandlerFunc, ...MiddlewareFunc) *Route) *Route {
 	h := func(c Context) error {
 		p, err := url.PathUnescape(c.Param("*"))
 		if err != nil {
 			return err
 		}
-		name := filepath.Join(root, path.Clean("/"+p)) // "/"+ for security
+
+		name := filepath.Join(root, filepath.Clean("/"+p)) // "/"+ for security
+		fi, err := os.Stat(name)
+		if err != nil {
+			// The access path does not exist
+			return NotFoundHandler(c)
+		}
+
+		// If the request is for a directory and does not end with "/"
+		p = c.Request().URL.Path // path must not be empty.
+		if fi.IsDir() && p[len(p)-1] != '/' {
+			// Redirect to ends with "/"
+			return c.Redirect(http.StatusMovedPermanently, p+"/")
+		}
 		return c.File(name)
 	}
-	i.GET(prefix, h)
-	if prefix == "/" {
-		return i.GET(prefix+"*", h)
+	// Handle added routes based on trailing slash:
+	// 	/prefix  => exact route "/prefix" + any route "/prefix/*"
+	// 	/prefix/ => only any route "/prefix/*"
+	if prefix != "" {
+		if prefix[len(prefix)-1] == '/' {
+			// Only add any route for intentional trailing slash
+			return get(prefix+"*", h)
+		}
+		get(prefix, h)
 	}
-
-	return i.GET(prefix+"/*", h)
+	return get(prefix+"/*", h)
 }
 
-// File registers a new route with path to serve a static file with optional route-level middleware.
-func (e *Echo) File(path, file string, m ...MiddlewareFunc) *Route {
-	return e.GET(path, func(c Context) error {
+func (common) file(path, file string, get func(string, HandlerFunc, ...MiddlewareFunc) *Route,
+	m ...MiddlewareFunc) *Route {
+	return get(path, func(c Context) error {
 		return c.File(file)
 	}, m...)
 }
 
-// Add registers a new route for an HTTP method and path with matching handler
-// in the router with optional route-level middleware.
-func (e *Echo) Add(method, path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Route {
+// File registers a new route with path to serve a static file with optional route-level middleware.
+func (e *Echo) File(path, file string, m ...MiddlewareFunc) *Route {
+	return e.file(path, file, e.GET, m...)
+}
+
+func (e *Echo) add(host, method, path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Route {
 	name := handlerName(handler)
-	e.router.Add(method, path, func(c Context) error {
-		h := handler
-		// Chain middleware
-		for i := len(middleware) - 1; i >= 0; i-- {
-			h = middleware[i](h)
-		}
+	router := e.findRouter(host)
+	router.Add(method, path, func(c Context) error {
+		h := applyMiddleware(handler, middleware...)
 		return h(c)
 	})
 	r := &Route{
@@ -496,6 +558,20 @@ func (e *Echo) Add(method, path string, handler HandlerFunc, middleware ...Middl
 	}
 	e.router.routes[method+path] = r
 	return r
+}
+
+// Add registers a new route for an HTTP method and path with matching handler
+// in the router with optional route-level middleware.
+func (e *Echo) Add(method, path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Route {
+	return e.add("", method, path, handler, middleware...)
+}
+
+// Host creates a new router group for the provided host and optional host-level middleware.
+func (e *Echo) Host(name string, m ...MiddlewareFunc) (g *Group) {
+	e.routers[name] = NewRouter(e)
+	g = &Group{host: name, echo: e}
+	g.Use(m...)
+	return
 }
 
 // Group creates a new router group with prefix and optional group-level middleware.
@@ -524,7 +600,7 @@ func (e *Echo) Reverse(name string, params ...interface{}) string {
 	for _, r := range e.router.routes {
 		if r.Name == name {
 			for i, l := 0, len(r.Path); i < l; i++ {
-				if r.Path[i] == ':' && n < ln {
+				if (r.Path[i] == ':' || r.Path[i] == '*') && n < ln {
 					for ; i < l && r.Path[i] != '/'; i++ {
 					}
 					uri.WriteString(fmt.Sprintf("%v", params[n]))
@@ -566,27 +642,20 @@ func (e *Echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Acquire context
 	c := e.pool.Get().(*context)
 	c.Reset(r, w)
-
 	h := NotFoundHandler
 
 	if e.premiddleware == nil {
-		e.router.Find(r.Method, getPath(r), c)
+		e.findRouter(r.Host).Find(r.Method, GetPath(r), c)
 		h = c.Handler()
-		for i := len(e.middleware) - 1; i >= 0; i-- {
-			h = e.middleware[i](h)
-		}
+		h = applyMiddleware(h, e.middleware...)
 	} else {
 		h = func(c Context) error {
-			e.router.Find(r.Method, getPath(r), c)
+			e.findRouter(r.Host).Find(r.Method, GetPath(r), c)
 			h := c.Handler()
-			for i := len(e.middleware) - 1; i >= 0; i-- {
-				h = e.middleware[i](h)
-			}
+			h = applyMiddleware(h, e.middleware...)
 			return h(c)
 		}
-		for i := len(e.premiddleware) - 1; i >= 0; i-- {
-			h = e.premiddleware[i](h)
-		}
+		h = applyMiddleware(h, e.premiddleware...)
 	}
 
 	// Execute chain
@@ -600,44 +669,102 @@ func (e *Echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Start starts an HTTP server.
 func (e *Echo) Start(address string) error {
+	e.startupMutex.Lock()
 	e.Server.Addr = address
-	return e.StartServer(e.Server)
+	if err := e.configureServer(e.Server); err != nil {
+		e.startupMutex.Unlock()
+		return err
+	}
+	e.startupMutex.Unlock()
+	return e.Server.Serve(e.Listener)
 }
 
 // StartTLS starts an HTTPS server.
-func (e *Echo) StartTLS(address string, certFile, keyFile string) (err error) {
-	if certFile == "" || keyFile == "" {
-		return errors.New("invalid tls configuration")
+// If `certFile` or `keyFile` is `string` the values are treated as file paths.
+// If `certFile` or `keyFile` is `[]byte` the values are treated as the certificate or key as-is.
+func (e *Echo) StartTLS(address string, certFile, keyFile interface{}) (err error) {
+	e.startupMutex.Lock()
+	var cert []byte
+	if cert, err = filepathOrContent(certFile); err != nil {
+		e.startupMutex.Unlock()
+		return
 	}
+
+	var key []byte
+	if key, err = filepathOrContent(keyFile); err != nil {
+		e.startupMutex.Unlock()
+		return
+	}
+
 	s := e.TLSServer
 	s.TLSConfig = new(tls.Config)
 	s.TLSConfig.Certificates = make([]tls.Certificate, 1)
-	s.TLSConfig.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
+	if s.TLSConfig.Certificates[0], err = tls.X509KeyPair(cert, key); err != nil {
+		e.startupMutex.Unlock()
 		return
 	}
-	return e.startTLS(address)
+
+	e.configureTLS(address)
+	if err := e.configureServer(s); err != nil {
+		e.startupMutex.Unlock()
+		return err
+	}
+	e.startupMutex.Unlock()
+	return s.Serve(e.TLSListener)
+}
+
+func filepathOrContent(fileOrContent interface{}) (content []byte, err error) {
+	switch v := fileOrContent.(type) {
+	case string:
+		return ioutil.ReadFile(v)
+	case []byte:
+		return v, nil
+	default:
+		return nil, ErrInvalidCertOrKeyType
+	}
 }
 
 // StartAutoTLS starts an HTTPS server using certificates automatically installed from https://letsencrypt.org.
 func (e *Echo) StartAutoTLS(address string) error {
+	e.startupMutex.Lock()
 	s := e.TLSServer
 	s.TLSConfig = new(tls.Config)
 	s.TLSConfig.GetCertificate = e.AutoTLSManager.GetCertificate
-	return e.startTLS(address)
+	s.TLSConfig.NextProtos = append(s.TLSConfig.NextProtos, acme.ALPNProto)
+
+	e.configureTLS(address)
+	if err := e.configureServer(s); err != nil {
+		e.startupMutex.Unlock()
+		return err
+	}
+	e.startupMutex.Unlock()
+	return s.Serve(e.TLSListener)
 }
 
-func (e *Echo) startTLS(address string) error {
+func (e *Echo) configureTLS(address string) {
 	s := e.TLSServer
 	s.Addr = address
 	if !e.DisableHTTP2 {
 		s.TLSConfig.NextProtos = append(s.TLSConfig.NextProtos, "h2")
 	}
-	return e.StartServer(e.TLSServer)
 }
 
 // StartServer starts a custom http server.
 func (e *Echo) StartServer(s *http.Server) (err error) {
+	e.startupMutex.Lock()
+	if err := e.configureServer(s); err != nil {
+		e.startupMutex.Unlock()
+		return err
+	}
+	if s.TLSConfig != nil {
+		e.startupMutex.Unlock()
+		return s.Serve(e.TLSListener)
+	}
+	e.startupMutex.Unlock()
+	return s.Serve(e.Listener)
+}
+
+func (e *Echo) configureServer(s *http.Server) (err error) {
 	// Setup
 	e.colorer.SetOutput(e.Logger.Output())
 	s.ErrorLog = e.StdLogger
@@ -652,7 +779,7 @@ func (e *Echo) StartServer(s *http.Server) (err error) {
 
 	if s.TLSConfig == nil {
 		if e.Listener == nil {
-			e.Listener, err = newListener(s.Addr)
+			e.Listener, err = newListener(s.Addr, e.ListenerNetwork)
 			if err != nil {
 				return err
 			}
@@ -660,10 +787,10 @@ func (e *Echo) StartServer(s *http.Server) (err error) {
 		if !e.HidePort {
 			e.colorer.Printf("⇨ http server started on %s\n", e.colorer.Green(e.Listener.Addr()))
 		}
-		return s.Serve(e.Listener)
+		return nil
 	}
 	if e.TLSListener == nil {
-		l, err := newListener(s.Addr)
+		l, err := newListener(s.Addr, e.ListenerNetwork)
 		if err != nil {
 			return err
 		}
@@ -672,12 +799,65 @@ func (e *Echo) StartServer(s *http.Server) (err error) {
 	if !e.HidePort {
 		e.colorer.Printf("⇨ https server started on %s\n", e.colorer.Green(e.TLSListener.Addr()))
 	}
-	return s.Serve(e.TLSListener)
+	return nil
+}
+
+// ListenerAddr returns net.Addr for Listener
+func (e *Echo) ListenerAddr() net.Addr {
+	e.startupMutex.RLock()
+	defer e.startupMutex.RUnlock()
+	if e.Listener == nil {
+		return nil
+	}
+	return e.Listener.Addr()
+}
+
+// TLSListenerAddr returns net.Addr for TLSListener
+func (e *Echo) TLSListenerAddr() net.Addr {
+	e.startupMutex.RLock()
+	defer e.startupMutex.RUnlock()
+	if e.TLSListener == nil {
+		return nil
+	}
+	return e.TLSListener.Addr()
+}
+
+// StartH2CServer starts a custom http/2 server with h2c (HTTP/2 Cleartext).
+func (e *Echo) StartH2CServer(address string, h2s *http2.Server) (err error) {
+	e.startupMutex.Lock()
+	// Setup
+	s := e.Server
+	s.Addr = address
+	e.colorer.SetOutput(e.Logger.Output())
+	s.ErrorLog = e.StdLogger
+	s.Handler = h2c.NewHandler(e, h2s)
+	if e.Debug {
+		e.Logger.SetLevel(log.DEBUG)
+	}
+
+	if !e.HideBanner {
+		e.colorer.Printf(banner, e.colorer.Red("v"+Version), e.colorer.Blue(website))
+	}
+
+	if e.Listener == nil {
+		e.Listener, err = newListener(s.Addr, e.ListenerNetwork)
+		if err != nil {
+			e.startupMutex.Unlock()
+			return err
+		}
+	}
+	if !e.HidePort {
+		e.colorer.Printf("⇨ http server started on %s\n", e.colorer.Green(e.Listener.Addr()))
+	}
+	e.startupMutex.Unlock()
+	return s.Serve(e.Listener)
 }
 
 // Close immediately stops the server.
 // It internally calls `http.Server#Close()`.
 func (e *Echo) Close() error {
+	e.startupMutex.Lock()
+	defer e.startupMutex.Unlock()
 	if err := e.TLSServer.Close(); err != nil {
 		return err
 	}
@@ -687,6 +867,8 @@ func (e *Echo) Close() error {
 // Shutdown stops the server gracefully.
 // It internally calls `http.Server#Shutdown()`.
 func (e *Echo) Shutdown(ctx stdContext.Context) error {
+	e.startupMutex.Lock()
+	defer e.startupMutex.Unlock()
 	if err := e.TLSServer.Shutdown(ctx); err != nil {
 		return err
 	}
@@ -704,13 +886,21 @@ func NewHTTPError(code int, message ...interface{}) *HTTPError {
 
 // Error makes it compatible with `error` interface.
 func (he *HTTPError) Error() string {
-	return fmt.Sprintf("code=%d, message=%v", he.Code, he.Message)
+	if he.Internal == nil {
+		return fmt.Sprintf("code=%d, message=%v", he.Code, he.Message)
+	}
+	return fmt.Sprintf("code=%d, message=%v, internal=%v", he.Code, he.Message, he.Internal)
 }
 
 // SetInternal sets error to HTTPError.Internal
 func (he *HTTPError) SetInternal(err error) *HTTPError {
 	he.Internal = err
 	return he
+}
+
+// Unwrap satisfies the Go 1.13 error wrapper interface.
+func (he *HTTPError) Unwrap() error {
+	return he.Internal
 }
 
 // WrapHandler wraps `http.Handler` into `echo.HandlerFunc`.
@@ -727,6 +917,7 @@ func WrapMiddleware(m func(http.Handler) http.Handler) MiddlewareFunc {
 		return func(c Context) (err error) {
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
+				c.SetResponse(NewResponse(w, c.Echo()))
 				err = next(c)
 			})).ServeHTTP(c.Response(), c.Request())
 			return
@@ -734,12 +925,25 @@ func WrapMiddleware(m func(http.Handler) http.Handler) MiddlewareFunc {
 	}
 }
 
-func getPath(r *http.Request) string {
+// GetPath returns RawPath, if it's empty returns Path from URL
+// Difference between RawPath and Path is:
+//  * Path is where request path is stored. Value is stored in decoded form: /%47%6f%2f becomes /Go/.
+//  * RawPath is an optional field which only gets set if the default encoding is different from Path.
+func GetPath(r *http.Request) string {
 	path := r.URL.RawPath
 	if path == "" {
 		path = r.URL.Path
 	}
 	return path
+}
+
+func (e *Echo) findRouter(host string) *Router {
+	if len(e.routers) > 0 {
+		if r, ok := e.routers[host]; ok {
+			return r
+		}
+	}
+	return e.router
 }
 
 func handlerName(h HandlerFunc) string {
@@ -764,19 +968,31 @@ type tcpKeepAliveListener struct {
 }
 
 func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
-	tc, err := ln.AcceptTCP()
-	if err != nil {
+	if c, err = ln.AcceptTCP(); err != nil {
+		return
+	} else if err = c.(*net.TCPConn).SetKeepAlive(true); err != nil {
 		return
 	}
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
-	return tc, nil
+	// Ignore error from setting the KeepAlivePeriod as some systems, such as
+	// OpenBSD, do not support setting TCP_USER_TIMEOUT on IPPROTO_TCP
+	_ = c.(*net.TCPConn).SetKeepAlivePeriod(3 * time.Minute)
+	return
 }
 
-func newListener(address string) (*tcpKeepAliveListener, error) {
-	l, err := net.Listen("tcp", address)
+func newListener(address, network string) (*tcpKeepAliveListener, error) {
+	if network != "tcp" && network != "tcp4" && network != "tcp6" {
+		return nil, ErrInvalidListenerNetwork
+	}
+	l, err := net.Listen(network, address)
 	if err != nil {
 		return nil, err
 	}
 	return &tcpKeepAliveListener{l.(*net.TCPListener)}, nil
+}
+
+func applyMiddleware(h HandlerFunc, middleware ...MiddlewareFunc) HandlerFunc {
+	for i := len(middleware) - 1; i >= 0; i-- {
+		h = middleware[i](h)
+	}
+	return h
 }
