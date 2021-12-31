@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/log"
 	indexoptimizer "github.com/actiontech/sqle/sqle/pkg/optimizer/index"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
@@ -89,7 +90,9 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 
 	executionPlan, err := o.GetExecutionPlan(restoredSQL)
 	if err != nil {
-		return nil, errors.Wrap(err, "get execution plan when optimize")
+		// TODO: explain will executed failure, if SQL is collect from MyBatis, it not executable SQL.
+		log.NewEntry().Errorf("get execution plan failed, sql: %v, error: %v", restoredSQL, err)
+		return nil, nil
 	}
 
 	executionPlan = removeDrivingTable(executionPlan)
