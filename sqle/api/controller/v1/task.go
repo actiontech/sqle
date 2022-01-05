@@ -25,7 +25,7 @@ var ErrTaskNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("task is not ex
 type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
-	Sql            string `json:"sql" example:"alter table tb1 drop columns c1"`
+	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 }
 
 type GetAuditTaskResV1 struct {
