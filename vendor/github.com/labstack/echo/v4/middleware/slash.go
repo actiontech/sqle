@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"strings"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -51,7 +49,7 @@ func AddTrailingSlashWithConfig(config TrailingSlashConfig) echo.MiddlewareFunc 
 			url := req.URL
 			path := url.Path
 			qs := c.QueryString()
-			if !strings.HasSuffix(path, "/") {
+			if path != "/" && path[len(path)-1] != '/' {
 				path += "/"
 				uri := path
 				if qs != "" {
@@ -60,7 +58,7 @@ func AddTrailingSlashWithConfig(config TrailingSlashConfig) echo.MiddlewareFunc 
 
 				// Redirect
 				if config.RedirectCode != 0 {
-					return c.Redirect(config.RedirectCode, sanitizeURI(uri))
+					return c.Redirect(config.RedirectCode, uri)
 				}
 
 				// Forward
@@ -99,7 +97,7 @@ func RemoveTrailingSlashWithConfig(config TrailingSlashConfig) echo.MiddlewareFu
 			path := url.Path
 			qs := c.QueryString()
 			l := len(path) - 1
-			if l > 0 && strings.HasSuffix(path, "/") {
+			if l >= 0 && path != "/" && path[l] == '/' {
 				path = path[:l]
 				uri := path
 				if qs != "" {
@@ -108,7 +106,7 @@ func RemoveTrailingSlashWithConfig(config TrailingSlashConfig) echo.MiddlewareFu
 
 				// Redirect
 				if config.RedirectCode != 0 {
-					return c.Redirect(config.RedirectCode, sanitizeURI(uri))
+					return c.Redirect(config.RedirectCode, uri)
 				}
 
 				// Forward
@@ -118,13 +116,4 @@ func RemoveTrailingSlashWithConfig(config TrailingSlashConfig) echo.MiddlewareFu
 			return next(c)
 		}
 	}
-}
-
-func sanitizeURI(uri string) string {
-	// double slash `\\`, `//` or even `\/` is absolute uri for browsers and by redirecting request to that uri
-	// we are vulnerable to open redirect attack. so replace all slashes from the beginning with single slash
-	if len(uri) > 1 && (uri[0] == '\\' || uri[0] == '/') && (uri[1] == '\\' || uri[1] == '/') {
-		uri = "/" + strings.TrimLeft(uri, `/\`)
-	}
-	return uri
 }
