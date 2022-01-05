@@ -3,10 +3,10 @@ package middleware
 import (
 	"errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/model"
 	"net/http"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
