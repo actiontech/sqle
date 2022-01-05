@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -22,7 +21,6 @@ type (
 		// - "header:<name>"
 		// - "query:<name>"
 		// - "form:<name>"
-		// - "cookie:<name>"
 		KeyLookup string `yaml:"key_lookup"`
 
 		// AuthScheme to be used in the Authorization header.
@@ -32,19 +30,12 @@ type (
 		// Validator is a function to validate key.
 		// Required.
 		Validator KeyAuthValidator
-
-		// ErrorHandler defines a function which is executed for an invalid key.
-		// It may be used to define a custom error.
-		ErrorHandler KeyAuthErrorHandler
 	}
 
 	// KeyAuthValidator defines a function to validate KeyAuth credentials.
 	KeyAuthValidator func(string, echo.Context) (bool, error)
 
 	keyExtractor func(echo.Context) (string, error)
-
-	// KeyAuthErrorHandler defines a function which is executed for an invalid key.
-	KeyAuthErrorHandler func(error, echo.Context) error
 )
 
 var (
@@ -93,8 +84,6 @@ func KeyAuthWithConfig(config KeyAuthConfig) echo.MiddlewareFunc {
 		extractor = keyFromQuery(parts[1])
 	case "form":
 		extractor = keyFromForm(parts[1])
-	case "cookie":
-		extractor = keyFromCookie(parts[1])
 	}
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -106,24 +95,15 @@ func KeyAuthWithConfig(config KeyAuthConfig) echo.MiddlewareFunc {
 			// Extract and verify key
 			key, err := extractor(c)
 			if err != nil {
-				if config.ErrorHandler != nil {
-					return config.ErrorHandler(err, c)
-				}
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			valid, err := config.Validator(key, c)
 			if err != nil {
-				if config.ErrorHandler != nil {
-					return config.ErrorHandler(err, c)
-				}
-				return &echo.HTTPError{
-					Code:     http.StatusUnauthorized,
-					Message:  "invalid key",
-					Internal: err,
-				}
+				return err
 			} else if valid {
 				return next(c)
 			}
+
 			return echo.ErrUnauthorized
 		}
 	}
@@ -166,16 +146,5 @@ func keyFromForm(param string) keyExtractor {
 			return "", errors.New("missing key in the form")
 		}
 		return key, nil
-	}
-}
-
-// keyFromCookie returns a `keyExtractor` that extracts key from the form.
-func keyFromCookie(cookieName string) keyExtractor {
-	return func(c echo.Context) (string, error) {
-		key, err := c.Cookie(cookieName)
-		if err != nil {
-			return "", fmt.Errorf("missing key in cookies: %w", err)
-		}
-		return key.Value, nil
 	}
 }

@@ -66,10 +66,6 @@ func Fchmodat(dirfd int, path string, mode uint32, flags int) (err error) {
 	return fchmodat(dirfd, path, mode)
 }
 
-func InotifyInit() (fd int, err error) {
-	return InotifyInit1(0)
-}
-
 //sys	ioctl(fd int, req uint, arg uintptr) (err error) = SYS_IOCTL
 //sys	ioctlPtr(fd int, req uint, arg unsafe.Pointer) (err error) = SYS_IOCTL
 
@@ -172,7 +168,27 @@ func Utimes(path string, tv []Timeval) error {
 //sys	utimensat(dirfd int, path string, times *[2]Timespec, flags int) (err error)
 
 func UtimesNano(path string, ts []Timespec) error {
-	return UtimesNanoAt(AT_FDCWD, path, ts, 0)
+	if ts == nil {
+		err := utimensat(AT_FDCWD, path, nil, 0)
+		if err != ENOSYS {
+			return err
+		}
+		return utimes(path, nil)
+	}
+	if len(ts) != 2 {
+		return EINVAL
+	}
+	err := utimensat(AT_FDCWD, path, (*[2]Timespec)(unsafe.Pointer(&ts[0])), 0)
+	if err != ENOSYS {
+		return err
+	}
+	// If the utimensat syscall isn't available (utimensat was added to Linux
+	// in 2.6.22, Released, 8 July 2007) then fall back to utimes
+	var tv [2]Timeval
+	for i := 0; i < 2; i++ {
+		tv[i] = NsecToTimeval(TimespecToNsec(ts[i]))
+	}
+	return utimes(path, (*[2]Timeval)(unsafe.Pointer(&tv[0])))
 }
 
 func UtimesNanoAt(dirfd int, path string, ts []Timespec, flags int) error {
@@ -1213,7 +1229,11 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 func Accept(fd int) (nfd int, sa Sockaddr, err error) {
 	var rsa RawSockaddrAny
 	var len _Socklen = SizeofSockaddrAny
+	// Try accept4 first for Android, then try accept for kernel older than 2.6.28
 	nfd, err = accept4(fd, &rsa, &len, 0)
+	if err == ENOSYS {
+		nfd, err = accept(fd, &rsa, &len)
+	}
 	if err != nil {
 		return
 	}
@@ -2287,9 +2307,6 @@ type RemoteIovec struct {
 
 //sys	ProcessVMReadv(pid int, localIov []Iovec, remoteIov []RemoteIovec, flags uint) (n int, err error) = SYS_PROCESS_VM_READV
 //sys	ProcessVMWritev(pid int, localIov []Iovec, remoteIov []RemoteIovec, flags uint) (n int, err error) = SYS_PROCESS_VM_WRITEV
-
-//sys	PidfdOpen(pid int, flags int) (fd int, err error) = SYS_PIDFD_OPEN
-//sys	PidfdGetfd(pidfd int, targetfd int, flags int) (fd int, err error) = SYS_PIDFD_GETFD
 
 /*
  * Unimplemented

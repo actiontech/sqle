@@ -56,21 +56,18 @@ func (r *Response) WriteHeader(code int) {
 		r.echo.Logger.Warn("response already committed")
 		return
 	}
-	r.Status = code
 	for _, fn := range r.beforeFuncs {
 		fn()
 	}
-	r.Writer.WriteHeader(r.Status)
+	r.Status = code
+	r.Writer.WriteHeader(code)
 	r.Committed = true
 }
 
 // Write writes the data to the connection as part of an HTTP reply.
 func (r *Response) Write(b []byte) (n int, err error) {
 	if !r.Committed {
-		if r.Status == 0 {
-			r.Status = http.StatusOK
-		}
-		r.WriteHeader(r.Status)
+		r.WriteHeader(http.StatusOK)
 	}
 	n, err = r.Writer.Write(b)
 	r.Size += int64(n)

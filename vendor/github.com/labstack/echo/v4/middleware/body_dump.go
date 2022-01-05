@@ -40,7 +40,7 @@ var (
 
 // BodyDump returns a BodyDump middleware.
 //
-// BodyDump middleware captures the request and response payload and calls the
+// BodyLimit middleware captures the request and response payload and calls the
 // registered handler.
 func BodyDump(handler BodyDumpHandler) echo.MiddlewareFunc {
 	c := DefaultBodyDumpConfig

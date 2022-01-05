@@ -14,9 +14,6 @@ type (
 		// Generator defines a function to generate an ID.
 		// Optional. Default value random.String(32).
 		Generator func() string
-
-		// RequestIDHandler defines a function which is executed for a request id.
-		RequestIDHandler func(echo.Context, string)
 	}
 )
 
@@ -56,9 +53,6 @@ func RequestIDWithConfig(config RequestIDConfig) echo.MiddlewareFunc {
 				rid = config.Generator()
 			}
 			res.Header().Set(echo.HeaderXRequestID, rid)
-			if config.RequestIDHandler != nil {
-				config.RequestIDHandler(c, rid)
-			}
 
 			return next(c)
 		}
