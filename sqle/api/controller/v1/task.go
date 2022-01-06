@@ -282,7 +282,7 @@ type AuditTaskSQLResV1 struct {
 // @Param task_id path string true "task id"
 // @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed)
 // @Param filter_audit_status query string false "filter: audit status of task sql" Enums(initialized,doing,finished)
-// @Param filter_audit_status query string false "filter: audit level of task sql" Enums(normal,notice,warn,error)
+// @Param filter_audit_level query string false "filter: audit level of task sql" Enums(normal,notice,warn,error)
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
 // @Param page_index query string false "page index"
 // @Param page_size query string false "page size"

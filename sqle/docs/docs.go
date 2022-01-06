@@ -2011,7 +2011,7 @@ var doc = `{
                         ],
                         "type": "string",
                         "description": "filter: audit level of task sql",
-                        "name": "filter_audit_status",
+                        "name": "filter_audit_level",
                         "in": "query"
                     },
                     {
