@@ -2003,6 +2003,18 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "filter: audit level of task sql",
+                        "name": "filter_audit_status",
+                        "in": "query"
+                    },
+                    {
                         "type": "boolean",
                         "description": "select unique (fingerprint and audit result) for task sql",
                         "name": "no_duplicate",
