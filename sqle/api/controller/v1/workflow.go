@@ -524,6 +524,14 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("the task instance is not bound workflow template")))
 	}
+	// because the early review process template did not allow the level configuration to be submitted, it needs to be compatible
+	if template.AllowSubmitWhenLessAuditLevel == "" {
+		template.AllowSubmitWhenLessAuditLevel = string(driver.RuleLevelError)
+	}
+	if driver.RuleLevel(task.AuditLevel).More(driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("there is an error level(%v) that is not allowed to be submitted in the audit result, please modify and create a ticket", template.AllowSubmitWhenLessAuditLevel)))
+	}
 	stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
 	if err != nil {
 		return err
