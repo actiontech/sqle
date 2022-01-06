@@ -374,6 +374,10 @@ AND e_sql.exec_status = :filter_exec_status
 AND e_sql.audit_status = :filter_audit_status
 {{- end }}
 
+{{- if .filter_audit_level}}
+AND e_sql.audit_level = :filter_audit_level
+{{- end}}
+
 {{- if .no_duplicate }}
 AND e_sql.id IN (
 SELECT SQL_BIG_RESULT MIN(id) AS id FROM execute_sql_detail WHERE task_id = :task_id 

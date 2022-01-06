@@ -316,6 +316,7 @@ func GetTaskSQLs(c echo.Context) error {
 		"task_id":             taskId,
 		"filter_exec_status":  req.FilterExecStatus,
 		"filter_audit_status": req.FilterAuditStatus,
+		"filter_audit_level":  req.FilterAuditLevel,
 		"no_duplicate":        req.NoDuplicate,
 		"limit":               req.PageSize,
 		"offset":              offset,
