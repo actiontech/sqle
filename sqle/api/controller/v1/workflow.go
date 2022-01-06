@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,7 +30,7 @@ type GetWorkflowTemplateResV1 struct {
 type WorkflowTemplateDetailResV1 struct {
 	Name                          string                       `json:"workflow_template_name"`
 	Desc                          string                       `json:"desc,omitempty"`
-	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
 	Instances                     []string                     `json:"instance_name_list,omitempty"`
 }
@@ -66,8 +67,9 @@ func GetWorkflowTemplate(c echo.Context) error {
 	}
 	template.Steps = steps
 	res := &WorkflowTemplateDetailResV1{
-		Name: template.Name,
-		Desc: template.Desc,
+		Name:                          template.Name,
+		Desc:                          template.Desc,
+		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
 	}
 	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(steps))
 	for _, step := range steps {
@@ -102,7 +104,7 @@ func GetWorkflowTemplate(c echo.Context) error {
 type CreateWorkflowTemplateReqV1 struct {
 	Name                          string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required,name"`
 	Desc                          string                       `json:"desc" form:"desc"`
-	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required,dive,required"`
 	Instances                     []string                     `json:"instance_name_list" form:"instance_name_list"`
 }
@@ -185,10 +187,14 @@ func CreateWorkflowTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	allowSubmitWhenLessAuditLevel := string(driver.RuleLevelWarn)
+	if req.AllowSubmitWhenLessAuditLevel != "" {
+		allowSubmitWhenLessAuditLevel = req.AllowSubmitWhenLessAuditLevel
+	}
 	workflowTemplate := &model.WorkflowTemplate{
-		Name: req.Name,
-		Desc: req.Desc,
+		Name:                          req.Name,
+		Desc:                          req.Desc,
+		AllowSubmitWhenLessAuditLevel: allowSubmitWhenLessAuditLevel,
 	}
 	steps := make([]*model.WorkflowStepTemplate, 0, len(req.Steps))
 	for i, step := range req.Steps {
@@ -297,12 +303,18 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
 	if req.Desc != nil {
 		workflowTemplate.Desc = *req.Desc
-		err = s.Save(workflowTemplate)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	}
+
+	if req.AllowSubmitWhenLessAuditLevel != nil {
+		workflowTemplate.AllowSubmitWhenLessAuditLevel = *req.AllowSubmitWhenLessAuditLevel
+	}
+
+	err = s.Save(workflowTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if req.Instances != nil {
