@@ -3175,6 +3175,9 @@ var doc = `{
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
                 "exec_end_time": {
                     "type": "string"
                 },
@@ -3187,9 +3190,6 @@ var doc = `{
                 "instance_schema": {
                     "type": "string",
                     "example": "db1"
-                },
-                "max_error_level": {
-                    "type": "string"
                 },
                 "pass_rate": {
                     "type": "number"
@@ -3493,7 +3493,7 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "prohibit_submit_audit_failure_workflow": {
+                "prohibited_audit_level": {
                     "type": "boolean"
                 },
                 "workflow_step_template_list": {
@@ -4818,7 +4818,7 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "prohibit_submit_audit_failure_workflow": {
+                "prohibited_audit_level": {
                     "type": "boolean"
                 },
                 "workflow_step_template_list": {
@@ -5140,7 +5140,7 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "prohibit_submit_audit_failure_workflow": {
+                "prohibited_audit_level": {
                     "type": "boolean"
                 },
                 "workflow_step_template_list": {

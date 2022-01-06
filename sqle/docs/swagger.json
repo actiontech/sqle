@@ -3159,6 +3159,9 @@
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
                 "exec_end_time": {
                     "type": "string"
                 },
@@ -3171,9 +3174,6 @@
                 "instance_schema": {
                     "type": "string",
                     "example": "db1"
-                },
-                "max_error_level": {
-                    "type": "string"
                 },
                 "pass_rate": {
                     "type": "number"
@@ -3477,7 +3477,7 @@
                         "type": "string"
                     }
                 },
-                "prohibit_submit_audit_failure_workflow": {
+                "prohibited_audit_level": {
                     "type": "boolean"
                 },
                 "workflow_step_template_list": {
@@ -4802,7 +4802,7 @@
                         "type": "string"
                     }
                 },
-                "prohibit_submit_audit_failure_workflow": {
+                "prohibited_audit_level": {
                     "type": "boolean"
                 },
                 "workflow_step_template_list": {
@@ -5124,7 +5124,7 @@
                         "type": "string"
                     }
                 },
-                "prohibit_submit_audit_failure_workflow": {
+                "prohibited_audit_level": {
                     "type": "boolean"
                 },
                 "workflow_step_template_list": {
