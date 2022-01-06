@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -53,6 +54,10 @@ func (s *Storage) GetWorkflowTemplateByName(name string) (*WorkflowTemplate, boo
 	if err == gorm.ErrRecordNotFound {
 		return workflowTemplate, false, nil
 	}
+	// because the early review process template did not allow the level configuration to be submitted, it needs to be compatible
+	if workflowTemplate.AllowSubmitWhenLessAuditLevel == "" {
+		workflowTemplate.AllowSubmitWhenLessAuditLevel = string(driver.RuleLevelError)
+	}
 	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -61,6 +66,10 @@ func (s *Storage) GetWorkflowTemplateById(id uint) (*WorkflowTemplate, bool, err
 	err := s.db.Where("id = ?", id).First(workflowTemplate).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflowTemplate, false, nil
+	}
+	// because the early review process template did not allow the level configuration to be submitted, it needs to be compatible
+	if workflowTemplate.AllowSubmitWhenLessAuditLevel == "" {
+		workflowTemplate.AllowSubmitWhenLessAuditLevel = string(driver.RuleLevelError)
 	}
 	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
 }

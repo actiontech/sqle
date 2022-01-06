@@ -61,9 +61,21 @@ func GetWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("workflow template is not exist")))
 	}
-	steps, err := s.GetWorkflowStepsDetailByTemplateId(template.ID)
+	res, err := getWorkflowTemplateDetailByTemplate(template)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    res,
+	})
+}
+
+func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*WorkflowTemplateDetailResV1, error) {
+	s := model.GetStorage()
+	steps, err := s.GetWorkflowStepsDetailByTemplateId(template.ID)
+	if err != nil {
+		return nil, err
 	}
 	template.Steps = steps
 	res := &WorkflowTemplateDetailResV1{
@@ -91,14 +103,10 @@ func GetWorkflowTemplate(c echo.Context) error {
 
 	instanceNames, err := s.GetInstanceNamesByWorkflowTemplateId(template.ID)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return nil, err
 	}
 	res.Instances = instanceNames
-
-	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    res,
-	})
+	return res, nil
 }
 
 type CreateWorkflowTemplateReqV1 struct {
@@ -523,10 +531,6 @@ func CreateWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("the task instance is not bound workflow template")))
-	}
-	// because the early review process template did not allow the level configuration to be submitted, it needs to be compatible
-	if template.AllowSubmitWhenLessAuditLevel == "" {
-		template.AllowSubmitWhenLessAuditLevel = string(driver.RuleLevelError)
 	}
 	if driver.RuleLevel(task.AuditLevel).More(driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
