@@ -256,7 +256,7 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 }
 
 func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show tables from %s", schema))
+	result, err := c.Db.Query(fmt.Sprintf("show tables from `%s`", schema))
 	if err != nil {
 		return nil, err
 	}
