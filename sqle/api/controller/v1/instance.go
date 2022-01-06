@@ -732,3 +732,21 @@ func CheckInstanceAndRuleTemplateDbType(ruleTemplates []*model.RuleTemplate, ins
 	}
 	return nil
 }
+
+type GetInstanceWorkflowTemplateResV1 struct {
+	controller.BaseRes
+	Data *WorkflowTemplateDetailResV1 `json:"data"`
+}
+
+// GetInstanceWorkflowTemplate get instance workflow template
+// @Summary 获取实例应用的工作流程模板
+// @Description get instance workflow template
+// @Id getInstanceWorkflowTemplateV1
+// @Tags instance
+// @Security ApiKeyAuth
+// @Param instance_name path string true "instance name"
+// @Success 200 {object} v1.GetInstanceWorkflowTemplateResV1
+// @router /v1/instances/{instance_name}/workflow_template [get]
+func GetInstanceWorkflowTemplate(c *echo.Context) error {
+	return nil
+}
