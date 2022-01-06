@@ -2730,7 +2730,7 @@ paths:
         - warn
         - error
         in: query
-        name: filter_audit_status
+        name: filter_audit_level
         type: string
       - description: select unique (fingerprint and audit result) for task sql
         in: query
