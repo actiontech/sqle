@@ -37,7 +37,7 @@ type AuditTaskResV1 struct {
 	Id             uint       `json:"task_id"`
 	InstanceName   string     `json:"instance_name"`
 	InstanceSchema string     `json:"instance_schema" example:"db1"`
-	MaxErrorLevel  string     `json:"max_error_level"`
+	AuditLevel     string     `json:"audit_level"`
 	PassRate       float64    `json:"pass_rate"`
 	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
 	SQLSource      string     `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
@@ -251,6 +251,7 @@ func GetTask(c echo.Context) error {
 type GetAuditTaskSQLsReqV1 struct {
 	FilterExecStatus  string `json:"filter_exec_status" query:"filter_exec_status"`
 	FilterAuditStatus string `json:"filter_audit_status" query:"filter_audit_status"`
+	FilterAuditLevel  string `json:"filter_audit_level"`
 	NoDuplicate       bool   `json:"no_duplicate" query:"no_duplicate"`
 	PageIndex         uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize          uint32 `json:"page_size" query:"page_size" valid:"required"`

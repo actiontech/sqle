@@ -27,11 +27,11 @@ type GetWorkflowTemplateResV1 struct {
 }
 
 type WorkflowTemplateDetailResV1 struct {
-	Name                               string                       `json:"workflow_template_name"`
-	Desc                               string                       `json:"desc,omitempty"`
-	ProhibitSubmitAuditFailureWorkflow bool                         `json:"prohibit_submit_audit_failure_workflow"`
-	Steps                              []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
-	Instances                          []string                     `json:"instance_name_list,omitempty"`
+	Name                 string                       `json:"workflow_template_name"`
+	Desc                 string                       `json:"desc,omitempty"`
+	ProhibitedAuditLevel bool                         `json:"prohibited_audit_level"`
+	Steps                []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
+	Instances            []string                     `json:"instance_name_list,omitempty"`
 }
 
 type WorkFlowStepTemplateResV1 struct {
@@ -100,11 +100,11 @@ func GetWorkflowTemplate(c echo.Context) error {
 }
 
 type CreateWorkflowTemplateReqV1 struct {
-	Name                               string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required,name"`
-	Desc                               string                       `json:"desc" form:"desc"`
-	ProhibitSubmitAuditFailureWorkflow bool                         `json:"prohibit_submit_audit_failure_workflow"`
-	Steps                              []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required,dive,required"`
-	Instances                          []string                     `json:"instance_name_list" form:"instance_name_list"`
+	Name                 string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required,name"`
+	Desc                 string                       `json:"desc" form:"desc"`
+	ProhibitedAuditLevel bool                         `json:"prohibited_audit_level"`
+	Steps                []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required,dive,required"`
+	Instances            []string                     `json:"instance_name_list" form:"instance_name_list"`
 }
 
 type WorkFlowStepTemplateReqV1 struct {
@@ -219,10 +219,10 @@ func CreateWorkflowTemplate(c echo.Context) error {
 }
 
 type UpdateWorkflowTemplateReqV1 struct {
-	Desc                               *string                      `json:"desc" form:"desc"`
-	ProhibitSubmitAuditFailureWorkflow bool                         `json:"prohibit_submit_audit_failure_workflow"`
-	Steps                              []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list"`
-	Instances                          []string                     `json:"instance_name_list" form:"instance_name_list"`
+	Desc                 *string                      `json:"desc" form:"desc"`
+	ProhibitedAuditLevel bool                         `json:"prohibited_audit_level"`
+	Steps                []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list"`
+	Instances            []string                     `json:"instance_name_list" form:"instance_name_list"`
 }
 
 // @Summary 更新Sql审批流程模板
