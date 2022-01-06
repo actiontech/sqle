@@ -1211,6 +1211,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/instances/{instance_name}/workflow_template": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance workflow template",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例应用的工作流程模板",
+                "operationId": "getInstanceWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceWorkflowTemplateResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/login": {
             "post": {
                 "description": "user login",
@@ -3156,6 +3188,9 @@ var doc = `{
                     "type": "string",
                     "example": "db1"
                 },
+                "max_error_level": {
+                    "type": "string"
+                },
                 "pass_rate": {
                     "type": "number"
                 },
@@ -3457,6 +3492,9 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "prohibit_submit_audit_failure_workflow": {
+                    "type": "boolean"
                 },
                 "workflow_step_template_list": {
                     "type": "array",
@@ -3805,6 +3843,23 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.InstanceTipResV1"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceWorkflowTemplateResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowTemplateDetailResV1"
                 },
                 "message": {
                     "type": "string",
@@ -4763,6 +4818,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "prohibit_submit_audit_failure_workflow": {
+                    "type": "boolean"
+                },
                 "workflow_step_template_list": {
                     "type": "array",
                     "items": {
@@ -5081,6 +5139,9 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "prohibit_submit_audit_failure_workflow": {
+                    "type": "boolean"
                 },
                 "workflow_step_template_list": {
                     "type": "array",

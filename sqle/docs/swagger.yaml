@@ -95,6 +95,8 @@ definitions:
       instance_schema:
         example: db1
         type: string
+      max_error_level:
+        type: string
       pass_rate:
         type: number
       sql_source:
@@ -301,6 +303,8 @@ definitions:
         items:
           type: string
         type: array
+      prohibit_submit_audit_failure_workflow:
+        type: boolean
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
@@ -541,6 +545,18 @@ definitions:
         items:
           $ref: '#/definitions/v1.InstanceTipResV1'
         type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceWorkflowTemplateResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowTemplateDetailResV1'
+        type: object
       message:
         example: ok
         type: string
@@ -1189,6 +1205,8 @@ definitions:
         items:
           type: string
         type: array
+      prohibit_submit_audit_failure_workflow:
+        type: boolean
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
@@ -1405,6 +1423,8 @@ definitions:
         items:
           type: string
         type: array
+      prohibit_submit_audit_failure_workflow:
+        type: boolean
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateResV1'
@@ -2177,6 +2197,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 实例 Schema 列表
+      tags:
+      - instance
+  /v1/instances/{instance_name}/workflow_template:
+    get:
+      description: get instance workflow template
+      operationId: getInstanceWorkflowTemplateV1
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceWorkflowTemplateResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例应用的工作流程模板
       tags:
       - instance
   /v1/login:

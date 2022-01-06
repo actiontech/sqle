@@ -746,7 +746,7 @@ type GetInstanceWorkflowTemplateResV1 struct {
 // @Security ApiKeyAuth
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceWorkflowTemplateResV1
-// @router /v1/instances/{instance_name}/workflow_template
+// @router /v1/instances/{instance_name}/workflow_template [get]
 func GetInstanceWorkflowTemplate(c *echo.Context) error {
 	return nil
 }
