@@ -50,6 +50,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		Id:             task.ID,
 		InstanceName:   task.InstanceName(),
 		InstanceSchema: task.Schema,
+		AuditLevel:     task.AuditLevel,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
 		SQLSource:      task.SQLSource,
