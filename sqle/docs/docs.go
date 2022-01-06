@@ -3490,6 +3490,15 @@ var doc = `{
         "v1.CreateWorkflowTemplateReqV1": {
             "type": "object",
             "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -3498,14 +3507,6 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "prohibited_submit_when_audit_level_exceeds": {
-                    "type": "string",
-                    "enum": [
-                        "notice",
-                        "warn",
-                        "error"
-                    ]
                 },
                 "workflow_step_template_list": {
                     "type": "array",
@@ -4820,6 +4821,15 @@ var doc = `{
         "v1.UpdateWorkflowTemplateReqV1": {
             "type": "object",
             "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -4828,14 +4838,6 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "prohibited_submit_when_audit_level_exceeds": {
-                    "type": "string",
-                    "enum": [
-                        "notice",
-                        "warn",
-                        "error"
-                    ]
                 },
                 "workflow_step_template_list": {
                     "type": "array",
@@ -5147,6 +5149,15 @@ var doc = `{
         "v1.WorkflowTemplateDetailResV1": {
             "type": "object",
             "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -5155,14 +5166,6 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "prohibited_submit_when_audit_level_exceeds": {
-                    "type": "string",
-                    "enum": [
-                        "notice",
-                        "warn",
-                        "error"
-                    ]
                 },
                 "workflow_step_template_list": {
                     "type": "array",

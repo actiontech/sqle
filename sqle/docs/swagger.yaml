@@ -302,18 +302,19 @@ definitions:
     type: object
   v1.CreateWorkflowTemplateReqV1:
     properties:
+      allow_submit_when_less_audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
       desc:
         type: string
       instance_name_list:
         items:
           type: string
         type: array
-      prohibited_submit_when_audit_level_exceeds:
-        enum:
-        - notice
-        - warn
-        - error
-        type: string
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
@@ -1208,18 +1209,19 @@ definitions:
     type: object
   v1.UpdateWorkflowTemplateReqV1:
     properties:
+      allow_submit_when_less_audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
       desc:
         type: string
       instance_name_list:
         items:
           type: string
         type: array
-      prohibited_submit_when_audit_level_exceeds:
-        enum:
-        - notice
-        - warn
-        - error
-        type: string
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
@@ -1430,18 +1432,19 @@ definitions:
     type: object
   v1.WorkflowTemplateDetailResV1:
     properties:
+      allow_submit_when_less_audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
       desc:
         type: string
       instance_name_list:
         items:
           type: string
         type: array
-      prohibited_submit_when_audit_level_exceeds:
-        enum:
-        - notice
-        - warn
-        - error
-        type: string
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateResV1'
