@@ -87,6 +87,11 @@ definitions:
   v1.AuditTaskResV1:
     properties:
       audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         type: string
       exec_end_time:
         type: string
@@ -303,7 +308,12 @@ definitions:
         items:
           type: string
         type: array
-      prohibited_audit_level:
+      prohibited_submit_when_audit_level_exceeds:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         type: string
       workflow_step_template_list:
         items:
@@ -1205,7 +1215,12 @@ definitions:
         items:
           type: string
         type: array
-      prohibited_audit_level:
+      prohibited_submit_when_audit_level_exceeds:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         type: string
       workflow_step_template_list:
         items:
@@ -1423,7 +1438,12 @@ definitions:
         items:
           type: string
         type: array
-      prohibited_audit_level:
+      prohibited_submit_when_audit_level_exceeds:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         type: string
       workflow_step_template_list:
         items:
