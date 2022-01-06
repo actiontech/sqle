@@ -3176,7 +3176,13 @@ var doc = `{
             "type": "object",
             "properties": {
                 "audit_level": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
                 },
                 "exec_end_time": {
                     "type": "string"
@@ -3493,8 +3499,14 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "prohibited_audit_level": {
-                    "type": "string"
+                "prohibited_submit_when_audit_level_exceeds": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
                 },
                 "workflow_step_template_list": {
                     "type": "array",
@@ -4818,8 +4830,14 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "prohibited_audit_level": {
-                    "type": "string"
+                "prohibited_submit_when_audit_level_exceeds": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
                 },
                 "workflow_step_template_list": {
                     "type": "array",
@@ -5140,8 +5158,14 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "prohibited_audit_level": {
-                    "type": "string"
+                "prohibited_submit_when_audit_level_exceeds": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
                 },
                 "workflow_step_template_list": {
                     "type": "array",
