@@ -1211,6 +1211,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/instances/{instance_name}/workflow_template": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance workflow template",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例应用的工作流程模板",
+                "operationId": "getInstanceWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceWorkflowTemplateResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/login": {
             "post": {
                 "description": "user login",
@@ -3143,6 +3175,15 @@ var doc = `{
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
+                "audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "exec_end_time": {
                     "type": "string"
                 },
@@ -3449,6 +3490,15 @@ var doc = `{
         "v1.CreateWorkflowTemplateReqV1": {
             "type": "object",
             "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -3805,6 +3855,23 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.InstanceTipResV1"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceWorkflowTemplateResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowTemplateDetailResV1"
                 },
                 "message": {
                     "type": "string",
@@ -4754,6 +4821,15 @@ var doc = `{
         "v1.UpdateWorkflowTemplateReqV1": {
             "type": "object",
             "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -5073,6 +5149,15 @@ var doc = `{
         "v1.WorkflowTemplateDetailResV1": {
             "type": "object",
             "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "desc": {
                     "type": "string"
                 },

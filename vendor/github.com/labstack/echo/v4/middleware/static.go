@@ -36,16 +36,6 @@ type (
 		// Enable directory browsing.
 		// Optional. Default value false.
 		Browse bool `yaml:"browse"`
-
-		// Enable ignoring of the base of the URL path.
-		// Example: when assigning a static middleware to a non root path group,
-		// the filesystem path is not doubled
-		// Optional. Default value false.
-		IgnoreBase bool `yaml:"ignoreBase"`
-
-		// Filesystem provides access to the static content.
-		// Optional. Defaults to http.Dir(config.Root)
-		Filesystem http.FileSystem `yaml:"-"`
 	}
 )
 
@@ -150,10 +140,6 @@ func StaticWithConfig(config StaticConfig) echo.MiddlewareFunc {
 	if config.Index == "" {
 		config.Index = DefaultStaticConfig.Index
 	}
-	if config.Filesystem == nil {
-		config.Filesystem = http.Dir(config.Root)
-		config.Root = "."
-	}
 
 	// Index template
 	t, err := template.New("index").Parse(html)
@@ -175,84 +161,51 @@ func StaticWithConfig(config StaticConfig) echo.MiddlewareFunc {
 			if err != nil {
 				return
 			}
-			name := filepath.Join(config.Root, filepath.Clean("/"+p)) // "/"+ for security
+			name := filepath.Join(config.Root, path.Clean("/"+p)) // "/"+ for security
 
-			if config.IgnoreBase {
-				routePath := path.Base(strings.TrimRight(c.Path(), "/*"))
-				baseURLPath := path.Base(p)
-				if baseURLPath == routePath {
-					i := strings.LastIndex(name, routePath)
-					name = name[:i] + strings.Replace(name[i:], routePath, "", 1)
-				}
-			}
-
-			file, err := openFile(config.Filesystem, name)
+			fi, err := os.Stat(name)
 			if err != nil {
-				if !os.IsNotExist(err) {
-					return err
+				if os.IsNotExist(err) {
+					if err = next(c); err != nil {
+						if he, ok := err.(*echo.HTTPError); ok {
+							if config.HTML5 && he.Code == http.StatusNotFound {
+								return c.File(filepath.Join(config.Root, config.Index))
+							}
+						}
+						return
+					}
 				}
-
-				if err = next(c); err == nil {
-					return err
-				}
-
-				he, ok := err.(*echo.HTTPError)
-				if !(ok && config.HTML5 && he.Code == http.StatusNotFound) {
-					return err
-				}
-
-				file, err = openFile(config.Filesystem, filepath.Join(config.Root, config.Index))
-				if err != nil {
-					return err
-				}
+				return
 			}
 
-			defer file.Close()
+			if fi.IsDir() {
+				index := filepath.Join(name, config.Index)
+				fi, err = os.Stat(index)
 
-			info, err := file.Stat()
-			if err != nil {
-				return err
-			}
-
-			if info.IsDir() {
-				index, err := openFile(config.Filesystem, filepath.Join(name, config.Index))
 				if err != nil {
 					if config.Browse {
-						return listDir(t, name, file, c.Response())
+						return listDir(t, name, c.Response())
 					}
-
 					if os.IsNotExist(err) {
 						return next(c)
 					}
+					return
 				}
 
-				defer index.Close()
-
-				info, err = index.Stat()
-				if err != nil {
-					return err
-				}
-
-				return serveFile(c, index, info)
+				return c.File(index)
 			}
 
-			return serveFile(c, file, info)
+			return c.File(name)
 		}
 	}
 }
 
-func openFile(fs http.FileSystem, name string) (http.File, error) {
-	pathWithSlashes := filepath.ToSlash(name)
-	return fs.Open(pathWithSlashes)
-}
-
-func serveFile(c echo.Context, file http.File, info os.FileInfo) error {
-	http.ServeContent(c.Response(), c.Request(), info.Name(), info.ModTime(), file)
-	return nil
-}
-
-func listDir(t *template.Template, name string, dir http.File, res *echo.Response) (err error) {
-	files, err := dir.Readdir(-1)
+func listDir(t *template.Template, name string, res *echo.Response) (err error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return
+	}
+	files, err := file.Readdir(-1)
 	if err != nil {
 		return
 	}

@@ -1,13 +1,11 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"math/rand"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
@@ -39,13 +37,6 @@ type (
 		// "/users/*/orders/*": "/user/$1/order/$2",
 		Rewrite map[string]string
 
-		// RegexRewrite defines rewrite rules using regexp.Rexexp with captures
-		// Every capture group in the values can be retrieved by index e.g. $1, $2 and so on.
-		// Example:
-		// "^/old/[0.9]+/":     "/new",
-		// "^/api/.+?/(.*)":    "/v2/$1",
-		RegexRewrite map[*regexp.Regexp]string
-
 		// Context key to store selected ProxyTarget into context.
 		// Optional. Default value "target".
 		ContextKey string
@@ -54,8 +45,7 @@ type (
 		// Examples: If custom TLS certificates are required.
 		Transport http.RoundTripper
 
-		// ModifyResponse defines function to modify response from ProxyTarget.
-		ModifyResponse func(*http.Response) error
+		rewriteRegex map[*regexp.Regexp]string
 	}
 
 	// ProxyTarget defines the upstream target.
@@ -102,14 +92,15 @@ func proxyRaw(t *ProxyTarget, c echo.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		in, _, err := c.Response().Hijack()
 		if err != nil {
-			c.Set("_error", fmt.Sprintf("proxy raw, hijack error=%v, url=%s", t.URL, err))
+			c.Error(fmt.Errorf("proxy raw, hijack error=%v, url=%s", t.URL, err))
 			return
 		}
 		defer in.Close()
 
 		out, err := net.Dial("tcp", t.URL.Host)
 		if err != nil {
-			c.Set("_error", echo.NewHTTPError(http.StatusBadGateway, fmt.Sprintf("proxy raw, dial error=%v, url=%s", t.URL, err)))
+			he := echo.NewHTTPError(http.StatusBadGateway, fmt.Sprintf("proxy raw, dial error=%v, url=%s", t.URL, err))
+			c.Error(he)
 			return
 		}
 		defer out.Close()
@@ -117,7 +108,8 @@ func proxyRaw(t *ProxyTarget, c echo.Context) http.Handler {
 		// Write header
 		err = r.Write(out)
 		if err != nil {
-			c.Set("_error", echo.NewHTTPError(http.StatusBadGateway, fmt.Sprintf("proxy raw, request header copy error=%v, url=%s", t.URL, err)))
+			he := echo.NewHTTPError(http.StatusBadGateway, fmt.Sprintf("proxy raw, request header copy error=%v, url=%s", t.URL, err))
+			c.Error(he)
 			return
 		}
 
@@ -131,7 +123,7 @@ func proxyRaw(t *ProxyTarget, c echo.Context) http.Handler {
 		go cp(in, out)
 		err = <-errCh
 		if err != nil && err != io.EOF {
-			c.Set("_error", fmt.Errorf("proxy raw, copy body error=%v, url=%s", t.URL, err))
+			c.Logger().Errorf("proxy raw, copy body error=%v, url=%s", t.URL, err)
 		}
 	})
 }
@@ -208,19 +200,17 @@ func Proxy(balancer ProxyBalancer) echo.MiddlewareFunc {
 func ProxyWithConfig(config ProxyConfig) echo.MiddlewareFunc {
 	// Defaults
 	if config.Skipper == nil {
-		config.Skipper = DefaultProxyConfig.Skipper
+		config.Skipper = DefaultLoggerConfig.Skipper
 	}
 	if config.Balancer == nil {
 		panic("echo: proxy middleware requires balancer")
 	}
+	config.rewriteRegex = map[*regexp.Regexp]string{}
 
-	if config.Rewrite != nil {
-		if config.RegexRewrite == nil {
-			config.RegexRewrite = make(map[*regexp.Regexp]string)
-		}
-		for k, v := range rewriteRulesRegex(config.Rewrite) {
-			config.RegexRewrite[k] = v
-		}
+	// Initialize
+	for k, v := range config.Rewrite {
+		k = strings.Replace(k, "*", "(\\S*)", -1)
+		config.rewriteRegex[regexp.MustCompile(k)] = v
 	}
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -234,14 +224,16 @@ func ProxyWithConfig(config ProxyConfig) echo.MiddlewareFunc {
 			tgt := config.Balancer.Next(c)
 			c.Set(config.ContextKey, tgt)
 
-			if err := rewriteURL(config.RegexRewrite, req); err != nil {
-				return err
+			// Rewrite
+			for k, v := range config.rewriteRegex {
+				replacer := captureTokens(k, req.URL.Path)
+				if replacer != nil {
+					req.URL.Path = replacer.Replace(v)
+				}
 			}
 
 			// Fix header
-			// Basically it's not good practice to unconditionally pass incoming x-real-ip header to upstream.
-			// However, for backward compatibility, legacy behavior is preserved unless you configure Echo#IPExtractor.
-			if req.Header.Get(echo.HeaderXRealIP) == "" || c.Echo().IPExtractor != nil {
+			if req.Header.Get(echo.HeaderXRealIP) == "" {
 				req.Header.Set(echo.HeaderXRealIP, c.RealIP())
 			}
 			if req.Header.Get(echo.HeaderXForwardedProto) == "" {
@@ -259,45 +251,8 @@ func ProxyWithConfig(config ProxyConfig) echo.MiddlewareFunc {
 			default:
 				proxyHTTP(tgt, c, config).ServeHTTP(res, req)
 			}
-			if e, ok := c.Get("_error").(error); ok {
-				err = e
-			}
 
 			return
 		}
 	}
-}
-
-// StatusCodeContextCanceled is a custom HTTP status code for situations
-// where a client unexpectedly closed the connection to the server.
-// As there is no standard error code for "client closed connection", but
-// various well-known HTTP clients and server implement this HTTP code we use
-// 499 too instead of the more problematic 5xx, which does not allow to detect this situation
-const StatusCodeContextCanceled = 499
-
-func proxyHTTP(tgt *ProxyTarget, c echo.Context, config ProxyConfig) http.Handler {
-	proxy := httputil.NewSingleHostReverseProxy(tgt.URL)
-	proxy.ErrorHandler = func(resp http.ResponseWriter, req *http.Request, err error) {
-		desc := tgt.URL.String()
-		if tgt.Name != "" {
-			desc = fmt.Sprintf("%s(%s)", tgt.Name, tgt.URL.String())
-		}
-		// If the client canceled the request (usually by closing the connection), we can report a
-		// client error (4xx) instead of a server error (5xx) to correctly identify the situation.
-		// The Go standard library (at of late 2020) wraps the exported, standard
-		// context.Canceled error with unexported garbage value requiring a substring check, see
-		// https://github.com/golang/go/blob/6965b01ea248cabb70c3749fd218b36089a21efb/src/net/net.go#L416-L430
-		if err == context.Canceled || strings.Contains(err.Error(), "operation was canceled") {
-			httpError := echo.NewHTTPError(StatusCodeContextCanceled, fmt.Sprintf("client closed connection: %v", err))
-			httpError.Internal = err
-			c.Set("_error", httpError)
-		} else {
-			httpError := echo.NewHTTPError(http.StatusBadGateway, fmt.Sprintf("remote %s unreachable, could not forward: %v", desc, err))
-			httpError.Internal = err
-			c.Set("_error", httpError)
-		}
-	}
-	proxy.Transport = config.Transport
-	proxy.ModifyResponse = config.ModifyResponse
-	return proxy
 }

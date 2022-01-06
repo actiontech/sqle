@@ -2,6 +2,7 @@ package echo
 
 import (
 	"net/http"
+	"path"
 )
 
 type (
@@ -9,8 +10,6 @@ type (
 	// routes that share a common middleware or functionality that should be separate
 	// from the parent echo instance while still inheriting from it.
 	Group struct {
-		common
-		host       string
 		prefix     string
 		middleware []MiddlewareFunc
 		echo       *Echo
@@ -20,13 +19,13 @@ type (
 // Use implements `Echo#Use()` for sub-routes within the Group.
 func (g *Group) Use(middleware ...MiddlewareFunc) {
 	g.middleware = append(g.middleware, middleware...)
-	if len(g.middleware) == 0 {
-		return
-	}
 	// Allow all requests to reach the group as they might get dropped if router
 	// doesn't find a match, making none of the group middleware process.
-	g.Any("", NotFoundHandler)
-	g.Any("/*", NotFoundHandler)
+	for _, p := range []string{"", "/*"} {
+		g.echo.Any(path.Clean(g.prefix+p), func(c Context) error {
+			return NotFoundHandler(c)
+		}, g.middleware...)
+	}
 }
 
 // CONNECT implements `Echo#CONNECT()` for sub-routes within the Group.
@@ -93,23 +92,21 @@ func (g *Group) Match(methods []string, path string, handler HandlerFunc, middle
 }
 
 // Group creates a new sub-group with prefix and optional sub-group-level middleware.
-func (g *Group) Group(prefix string, middleware ...MiddlewareFunc) (sg *Group) {
+func (g *Group) Group(prefix string, middleware ...MiddlewareFunc) *Group {
 	m := make([]MiddlewareFunc, 0, len(g.middleware)+len(middleware))
 	m = append(m, g.middleware...)
 	m = append(m, middleware...)
-	sg = g.echo.Group(g.prefix+prefix, m...)
-	sg.host = g.host
-	return
+	return g.echo.Group(g.prefix+prefix, m...)
 }
 
 // Static implements `Echo#Static()` for sub-routes within the Group.
 func (g *Group) Static(prefix, root string) {
-	g.static(prefix, root, g.GET)
+	static(g, prefix, root)
 }
 
 // File implements `Echo#File()` for sub-routes within the Group.
 func (g *Group) File(path, file string) {
-	g.file(path, file, g.GET)
+	g.echo.File(g.prefix+path, file)
 }
 
 // Add implements `Echo#Add()` for sub-routes within the Group.
@@ -120,5 +117,5 @@ func (g *Group) Add(method, path string, handler HandlerFunc, middleware ...Midd
 	m := make([]MiddlewareFunc, 0, len(g.middleware)+len(middleware))
 	m = append(m, g.middleware...)
 	m = append(m, middleware...)
-	return g.echo.add(g.host, method, g.prefix+path, handler, m...)
+	return g.echo.Add(method, g.prefix+path, handler, m...)
 }
