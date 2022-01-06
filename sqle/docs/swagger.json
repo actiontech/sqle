@@ -3478,7 +3478,7 @@
                     }
                 },
                 "prohibited_audit_level": {
-                    "type": "boolean"
+                    "type": "string"
                 },
                 "workflow_step_template_list": {
                     "type": "array",
@@ -4803,7 +4803,7 @@
                     }
                 },
                 "prohibited_audit_level": {
-                    "type": "boolean"
+                    "type": "string"
                 },
                 "workflow_step_template_list": {
                     "type": "array",
@@ -5125,7 +5125,7 @@
                     }
                 },
                 "prohibited_audit_level": {
-                    "type": "boolean"
+                    "type": "string"
                 },
                 "workflow_step_template_list": {
                     "type": "array",
