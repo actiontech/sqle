@@ -29,7 +29,7 @@ type GetWorkflowTemplateResV1 struct {
 type WorkflowTemplateDetailResV1 struct {
 	Name                                  string                       `json:"workflow_template_name"`
 	Desc                                  string                       `json:"desc,omitempty"`
-	ProhibitedSubmitWhenAuditLevelExceeds *string                      `json:"prohibited_submit_when_audit_level_exceeds" enums:"normal,notice,warn,error"`
+	ProhibitedSubmitWhenAuditLevelExceeds *string                      `json:"prohibited_submit_when_audit_level_exceeds" enums:"notice,warn,error"`
 	Steps                                 []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
 	Instances                             []string                     `json:"instance_name_list,omitempty"`
 }
@@ -102,7 +102,7 @@ func GetWorkflowTemplate(c echo.Context) error {
 type CreateWorkflowTemplateReqV1 struct {
 	Name                                  string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required,name"`
 	Desc                                  string                       `json:"desc" form:"desc"`
-	ProhibitedSubmitWhenAuditLevelExceeds *string                      `json:"prohibited_submit_when_audit_level_exceeds" enums:"normal,notice,warn,error"`
+	ProhibitedSubmitWhenAuditLevelExceeds *string                      `json:"prohibited_submit_when_audit_level_exceeds" enums:"notice,warn,error"`
 	Steps                                 []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required,dive,required"`
 	Instances                             []string                     `json:"instance_name_list" form:"instance_name_list"`
 }
@@ -220,7 +220,7 @@ func CreateWorkflowTemplate(c echo.Context) error {
 
 type UpdateWorkflowTemplateReqV1 struct {
 	Desc                                  *string                      `json:"desc" form:"desc"`
-	ProhibitedSubmitWhenAuditLevelExceeds *string                      `json:"prohibited_submit_when_audit_level_exceeds" enums:"normal,notice,warn,error"`
+	ProhibitedSubmitWhenAuditLevelExceeds *string                      `json:"prohibited_submit_when_audit_level_exceeds" enums:"notice,warn,error"`
 	Steps                                 []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list"`
 	Instances                             []string                     `json:"instance_name_list" form:"instance_name_list"`
 }

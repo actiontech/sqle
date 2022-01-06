@@ -3502,7 +3502,6 @@ var doc = `{
                 "prohibited_submit_when_audit_level_exceeds": {
                     "type": "string",
                     "enum": [
-                        "normal",
                         "notice",
                         "warn",
                         "error"
@@ -4833,7 +4832,6 @@ var doc = `{
                 "prohibited_submit_when_audit_level_exceeds": {
                     "type": "string",
                     "enum": [
-                        "normal",
                         "notice",
                         "warn",
                         "error"
@@ -5161,7 +5159,6 @@ var doc = `{
                 "prohibited_submit_when_audit_level_exceeds": {
                     "type": "string",
                     "enum": [
-                        "normal",
                         "notice",
                         "warn",
                         "error"

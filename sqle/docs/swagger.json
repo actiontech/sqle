@@ -3486,7 +3486,6 @@
                 "prohibited_submit_when_audit_level_exceeds": {
                     "type": "string",
                     "enum": [
-                        "normal",
                         "notice",
                         "warn",
                         "error"
@@ -4817,7 +4816,6 @@
                 "prohibited_submit_when_audit_level_exceeds": {
                     "type": "string",
                     "enum": [
-                        "normal",
                         "notice",
                         "warn",
                         "error"
@@ -5145,7 +5143,6 @@
                 "prohibited_submit_when_audit_level_exceeds": {
                     "type": "string",
                     "enum": [
-                        "normal",
                         "notice",
                         "warn",
                         "error"

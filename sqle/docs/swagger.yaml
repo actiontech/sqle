@@ -310,7 +310,6 @@ definitions:
         type: array
       prohibited_submit_when_audit_level_exceeds:
         enum:
-        - normal
         - notice
         - warn
         - error
@@ -1217,7 +1216,6 @@ definitions:
         type: array
       prohibited_submit_when_audit_level_exceeds:
         enum:
-        - normal
         - notice
         - warn
         - error
@@ -1440,7 +1438,6 @@ definitions:
         type: array
       prohibited_submit_when_audit_level_exceeds:
         enum:
-        - normal
         - notice
         - warn
         - error
