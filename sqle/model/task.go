@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/jinzhu/gorm"
@@ -189,19 +188,6 @@ func (t *Task) HasDoingRollback() bool {
 		}
 	}
 	return false
-}
-
-func (t *Task) GetMaxAuditLevel() string {
-	if t.AuditLevel == "" {
-		auditLevel := driver.RuleLevelNormal
-		for _, e := range t.ExecuteSQLs {
-			if driver.RuleLevel(e.AuditLevel).More(auditLevel) {
-				auditLevel = driver.RuleLevel(e.AuditLevel)
-			}
-		}
-		t.AuditLevel = string(auditLevel)
-	}
-	return t.AuditLevel
 }
 
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {

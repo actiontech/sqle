@@ -533,13 +533,9 @@ func CreateWorkflow(c echo.Context) error {
 			fmt.Errorf("the task instance is not bound workflow template")))
 	}
 
-	allowLevel := driver.RuleLevelError
-	if template.AllowSubmitWhenLessAuditLevel != "" {
-		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
-	}
-	if driver.RuleLevel(task.GetMaxAuditLevel()).More(allowLevel) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting", allowLevel)))
+	err = checkWorkflowCanCommit(template, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
@@ -563,6 +559,18 @@ func CreateWorkflow(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func checkWorkflowCanCommit(template *model.WorkflowTemplate, task *model.Task) error {
+	allowLevel := driver.RuleLevelError
+	if template.AllowSubmitWhenLessAuditLevel != "" {
+		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
+	}
+	if driver.RuleLevel(task.AuditLevel).More(allowLevel) {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting", allowLevel))
+	}
+	return nil
 }
 
 type GetWorkflowResV1 struct {
@@ -1282,20 +1290,16 @@ func UpdateWorkflow(c echo.Context) error {
 
 	template, exist, err := s.GetWorkflowTemplateById(task.Instance.WorkflowTemplateId)
 	if err != nil {
-		controller.JSONBaseErrorReq(c, err)
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 			fmt.Errorf("failed to find the corresponding workflow template based on the task id")))
 	}
 
-	allowLevel := driver.RuleLevelError
-	if template.AllowSubmitWhenLessAuditLevel != "" {
-		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
-	}
-	if driver.RuleLevel(task.GetMaxAuditLevel()).More(allowLevel) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting", allowLevel)))
+	err = checkWorkflowCanCommit(template, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	err = s.UpdateWorkflowRecord(workflow, task)
