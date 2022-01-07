@@ -532,10 +532,16 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("the task instance is not bound workflow template")))
 	}
-	if driver.RuleLevel(task.AuditLevel).More(driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("there is an error level(%v) that is not allowed to be submitted in the audit result, please modify and create a ticket", template.AllowSubmitWhenLessAuditLevel)))
+
+	allowLevel := driver.RuleLevelError
+	if template.AllowSubmitWhenLessAuditLevel != "" {
+		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
 	}
+	if driver.RuleLevel(task.GetMaxAuditLevel()).More(allowLevel) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting", allowLevel)))
+	}
+
 	stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
 	if err != nil {
 		return err
@@ -1272,6 +1278,24 @@ func UpdateWorkflow(c echo.Context) error {
 	if user.ID != workflow.CreateUserId {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
+	}
+
+	template, exist, err := s.GetWorkflowTemplateById(task.Instance.WorkflowTemplateId)
+	if err != nil {
+		controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("failed to find the corresponding workflow template based on the task id")))
+	}
+
+	allowLevel := driver.RuleLevelError
+	if template.AllowSubmitWhenLessAuditLevel != "" {
+		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
+	}
+	if driver.RuleLevel(task.GetMaxAuditLevel()).More(allowLevel) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting", allowLevel)))
 	}
 
 	err = s.UpdateWorkflowRecord(workflow, task)
