@@ -60,6 +60,14 @@ var ruleLevelMap = map[RuleLevel]int{
 	RuleLevelError:  3,
 }
 
+func (r RuleLevel) LessOrEqual(l RuleLevel) bool {
+	return ruleLevelMap[r] <= ruleLevelMap[l]
+}
+
+func (r RuleLevel) More(l RuleLevel) bool {
+	return ruleLevelMap[r] > ruleLevelMap[l]
+}
+
 type RuleParamType string
 
 const (

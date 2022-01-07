@@ -20,7 +20,7 @@ type WorkflowListDetail struct {
 	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
 	Status                  string         `json:"status"`
-	ScheduleTime	*time.Time	`json:"schedule_time"`
+	ScheduleTime            *time.Time     `json:"schedule_time"`
 }
 
 var workflowsQueryTpl = `SELECT w.id AS workflow_id, w.subject, w.desc, wr.status,

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,7 +30,7 @@ type GetWorkflowTemplateResV1 struct {
 type WorkflowTemplateDetailResV1 struct {
 	Name                          string                       `json:"workflow_template_name"`
 	Desc                          string                       `json:"desc,omitempty"`
-	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
 	Instances                     []string                     `json:"instance_name_list,omitempty"`
 }
@@ -60,14 +61,27 @@ func GetWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("workflow template is not exist")))
 	}
-	steps, err := s.GetWorkflowStepsDetailByTemplateId(template.ID)
+	res, err := getWorkflowTemplateDetailByTemplate(template)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    res,
+	})
+}
+
+func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*WorkflowTemplateDetailResV1, error) {
+	s := model.GetStorage()
+	steps, err := s.GetWorkflowStepsDetailByTemplateId(template.ID)
+	if err != nil {
+		return nil, err
+	}
 	template.Steps = steps
 	res := &WorkflowTemplateDetailResV1{
-		Name: template.Name,
-		Desc: template.Desc,
+		Name:                          template.Name,
+		Desc:                          template.Desc,
+		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
 	}
 	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(steps))
 	for _, step := range steps {
@@ -89,20 +103,16 @@ func GetWorkflowTemplate(c echo.Context) error {
 
 	instanceNames, err := s.GetInstanceNamesByWorkflowTemplateId(template.ID)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return nil, err
 	}
 	res.Instances = instanceNames
-
-	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    res,
-	})
+	return res, nil
 }
 
 type CreateWorkflowTemplateReqV1 struct {
 	Name                          string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required,name"`
 	Desc                          string                       `json:"desc" form:"desc"`
-	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required,dive,required"`
 	Instances                     []string                     `json:"instance_name_list" form:"instance_name_list"`
 }
@@ -185,10 +195,14 @@ func CreateWorkflowTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	allowSubmitWhenLessAuditLevel := string(driver.RuleLevelWarn)
+	if req.AllowSubmitWhenLessAuditLevel != "" {
+		allowSubmitWhenLessAuditLevel = req.AllowSubmitWhenLessAuditLevel
+	}
 	workflowTemplate := &model.WorkflowTemplate{
-		Name: req.Name,
-		Desc: req.Desc,
+		Name:                          req.Name,
+		Desc:                          req.Desc,
+		AllowSubmitWhenLessAuditLevel: allowSubmitWhenLessAuditLevel,
 	}
 	steps := make([]*model.WorkflowStepTemplate, 0, len(req.Steps))
 	for i, step := range req.Steps {
@@ -297,12 +311,18 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
 	if req.Desc != nil {
 		workflowTemplate.Desc = *req.Desc
-		err = s.Save(workflowTemplate)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	}
+
+	if req.AllowSubmitWhenLessAuditLevel != nil {
+		workflowTemplate.AllowSubmitWhenLessAuditLevel = *req.AllowSubmitWhenLessAuditLevel
+	}
+
+	err = s.Save(workflowTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if req.Instances != nil {
@@ -512,6 +532,12 @@ func CreateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("the task instance is not bound workflow template")))
 	}
+
+	err = checkWorkflowCanCommit(template, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
 	if err != nil {
 		return err
@@ -533,6 +559,18 @@ func CreateWorkflow(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func checkWorkflowCanCommit(template *model.WorkflowTemplate, task *model.Task) error {
+	allowLevel := driver.RuleLevelError
+	if template.AllowSubmitWhenLessAuditLevel != "" {
+		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
+	}
+	if driver.RuleLevel(task.AuditLevel).More(allowLevel) {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting", allowLevel))
+	}
+	return nil
 }
 
 type GetWorkflowResV1 struct {
@@ -1248,6 +1286,20 @@ func UpdateWorkflow(c echo.Context) error {
 	if user.ID != workflow.CreateUserId {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
+	}
+
+	template, exist, err := s.GetWorkflowTemplateById(task.Instance.WorkflowTemplateId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("failed to find the corresponding workflow template based on the task id")))
+	}
+
+	err = checkWorkflowCanCommit(template, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	err = s.UpdateWorkflowRecord(workflow, task)

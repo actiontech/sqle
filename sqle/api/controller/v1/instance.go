@@ -747,6 +747,33 @@ type GetInstanceWorkflowTemplateResV1 struct {
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceWorkflowTemplateResV1
 // @router /v1/instances/{instance_name}/workflow_template [get]
-func GetInstanceWorkflowTemplate(c *echo.Context) error {
-	return nil
+func GetInstanceWorkflowTemplate(c echo.Context) error {
+	s := model.GetStorage()
+	instanceName := c.Param("instance_name")
+	instance, exist, err := s.GetInstanceByName(instanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+	}
+
+	template, exist, err := s.GetWorkflowTemplateById(instance.WorkflowTemplateId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("the instance is not bound workflow template")))
+	}
+
+	res, err := getWorkflowTemplateDetailByTemplate(template)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetInstanceWorkflowTemplateResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    res,
+	})
 }
