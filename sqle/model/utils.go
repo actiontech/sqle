@@ -255,8 +255,9 @@ func (s *Storage) CreateDefaultWorkflowTemplate() error {
 	}
 	if !exist {
 		wt := &WorkflowTemplate{
-			Name: DefaultWorkflowTemplate,
-			Desc: "默认模板",
+			Name:                          DefaultWorkflowTemplate,
+			Desc:                          "默认模板",
+			AllowSubmitWhenLessAuditLevel: string(driver.RuleLevelWarn),
 			Steps: []*WorkflowStepTemplate{
 				{
 					Number: 1,
