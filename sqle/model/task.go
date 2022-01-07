@@ -34,6 +34,7 @@ type Task struct {
 	InstanceId   uint    `json:"instance_id"`
 	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
 	PassRate     float64 `json:"pass_rate"`
+	AuditLevel   string  `json:"audit_level"`
 	SQLSource    string  `json:"sql_source" gorm:"column:sql_source"`
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
@@ -372,6 +373,10 @@ AND e_sql.exec_status = :filter_exec_status
 {{- if .filter_audit_status }}
 AND e_sql.audit_status = :filter_audit_status
 {{- end }}
+
+{{- if .filter_audit_level}}
+AND e_sql.audit_level = :filter_audit_level
+{{- end}}
 
 {{- if .no_duplicate }}
 AND e_sql.id IN (

@@ -11,8 +11,9 @@ import (
 
 type WorkflowTemplate struct {
 	Model
-	Name string
-	Desc string
+	Name                          string
+	Desc                          string
+	AllowSubmitWhenLessAuditLevel string
 
 	Steps     []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:workflowTemplateId"`
 	Instances []*Instance             `gorm:"foreignkey:WorkflowTemplateId"`
@@ -78,8 +79,8 @@ func (s *Storage) GetWorkflowStepsDetailByTemplateId(id uint) ([]*WorkflowStepTe
 
 func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 	return s.TxExec(func(tx *sql.Tx) error {
-		result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`) values (?, ?)",
-			template.Name, template.Desc)
+		result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`) values (?, ?, ?)",
+			template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel)
 		if err != nil {
 			return err
 		}

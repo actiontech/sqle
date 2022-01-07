@@ -154,7 +154,7 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE `tasks`")).
-		WithArgs(float64(1), model.TaskStatusAudited, act.task.ID).
+		WithArgs(driver.RuleLevelNormal, float64(1), model.TaskStatusAudited, act.task.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
