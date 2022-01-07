@@ -332,17 +332,23 @@ func (a *action) audit() (err error) {
 	}
 
 	var normalCount float64
+	maxAuditLevel := driver.RuleLevelNormal
 	for _, executeSQL := range task.ExecuteSQLs {
 		if executeSQL.AuditLevel == string(driver.RuleLevelNormal) {
 			normalCount += 1
 		}
+		if driver.RuleLevel(executeSQL.AuditLevel).More(maxAuditLevel) {
+			maxAuditLevel = driver.RuleLevel(executeSQL.AuditLevel)
+		}
 	}
 	task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
+	task.AuditLevel = string(maxAuditLevel)
 
 	task.Status = model.TaskStatusAudited
 	if err = st.UpdateTask(task, map[string]interface{}{
-		"pass_rate": task.PassRate,
-		"status":    task.Status,
+		"pass_rate":   task.PassRate,
+		"audit_level": task.AuditLevel,
+		"status":      task.Status,
 	}); err != nil {
 		a.entry.Errorf("update task error:%v", err)
 		return err
