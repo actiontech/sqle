@@ -2,10 +2,10 @@ package v1
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/config"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 
