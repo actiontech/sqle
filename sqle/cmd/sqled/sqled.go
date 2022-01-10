@@ -33,6 +33,10 @@ var certFilePath string
 var keyFilePath string
 var pluginPath string
 
+func init() {
+	config.Version = version
+}
+
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "sqle",
