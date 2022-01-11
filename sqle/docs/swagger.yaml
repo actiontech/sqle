@@ -691,6 +691,17 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSQLEInfoResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+      version:
+        type: string
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -1837,6 +1848,18 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
+  /v1/basic_info:
+    get:
+      description: get sqle basic info
+      operationId: getSQLEInfo
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLEInfoResV1'
+      summary: 获取 sqle 基本信息
+      tags:
+      - global
   /v1/configurations/drivers:
     get:
       description: get drivers
