@@ -587,6 +587,24 @@
                 }
             }
         },
+        "/v1/basic_info": {
+            "get": {
+                "description": "get sqle basic info",
+                "tags": [
+                    "global"
+                ],
+                "summary": "获取 sqle 基本信息",
+                "operationId": "getSQLEInfo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLEInfoResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/drivers": {
             "get": {
                 "security": [
@@ -4046,6 +4064,22 @@
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetSQLEInfoResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },
