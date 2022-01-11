@@ -71,7 +71,7 @@ func TestScannerVerifier(t *testing.T) {
 
 		ctx, _ := newContextFunc(token, apName)
 		err = mw(h)(ctx)
-		assert.Contains(t, err.Error(), errAuditPlanTokenIncorrect.Error())
+		assert.Contains(t, err.Error(), errAuditPlanMisMatch.Error())
 
 		mockDB.Close()
 		err = mock.ExpectationsWereMet()
@@ -92,7 +92,7 @@ func TestScannerVerifier(t *testing.T) {
 
 		ctx, _ := newContextFunc(token, apName)
 		err = mw(h)(ctx)
-		assert.Contains(t, err.Error(), errAuditPlanNotFound.Error())
+		assert.Contains(t, err.Error(), errAuditPlanMisMatch.Error())
 
 		mockDB.Close()
 		err = mock.ExpectationsWereMet()
