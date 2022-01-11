@@ -1848,7 +1848,7 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
-  /v1/configurations/basic_info:
+  /v1/basic_info:
     get:
       description: get sqle basic info
       operationId: getSQLEInfo
