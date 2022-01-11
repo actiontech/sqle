@@ -1859,7 +1859,7 @@ paths:
             $ref: '#/definitions/v1.GetSQLEInfoResV1'
       summary: 获取 sqle 基本信息
       tags:
-      - configuration
+      - global
   /v1/configurations/drivers:
     get:
       description: get drivers

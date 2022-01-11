@@ -607,7 +607,7 @@ var doc = `{
             "get": {
                 "description": "get sqle basic info",
                 "tags": [
-                    "configuration"
+                    "global"
                 ],
                 "summary": "获取 sqle 基本信息",
                 "operationId": "getSQLEInfo",
