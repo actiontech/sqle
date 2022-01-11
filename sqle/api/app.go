@@ -57,7 +57,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	e.POST("/v1/login", v1.Login)
 
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
-	e.GET("/v1/configurations/basic_info", v1.GetSQLEInfo)
+	e.GET("/v1/basic_info", v1.GetSQLEInfo)
 
 	v1Router := e.Group("/v1")
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))

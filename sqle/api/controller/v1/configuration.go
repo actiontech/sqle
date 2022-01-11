@@ -301,7 +301,7 @@ type GetSQLEInfoResV1 struct {
 // @Summary 获取 sqle 基本信息
 // @Description get sqle basic info
 // @Id getSQLEInfo
-// @Tags configuration
+// @Tags global
 // @Success 200 {object} v1.GetSQLEInfoResV1
 // @router /v1/configurations/basic_info [get]
 func GetSQLEInfo(c echo.Context) error {
