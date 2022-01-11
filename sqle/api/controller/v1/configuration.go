@@ -303,7 +303,7 @@ type GetSQLEInfoResV1 struct {
 // @Id getSQLEInfo
 // @Tags global
 // @Success 200 {object} v1.GetSQLEInfoResV1
-// @router /v1/configurations/basic_info [get]
+// @router /v1/basic_info [get]
 func GetSQLEInfo(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
 		BaseRes: controller.NewBaseReq(nil),

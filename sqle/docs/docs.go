@@ -603,7 +603,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/basic_info": {
+        "/v1/basic_info": {
             "get": {
                 "description": "get sqle basic info",
                 "tags": [
