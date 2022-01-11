@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -27,7 +28,7 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 	}
 }
 
-var errAuditPlanMisMatch = errors.New("audit plan name don't match the token")
+var errAuditPlanMisMatch = errors.New("audit plan name don't match the token or audit plan not found")
 
 // ScannerVerifier is a `echo` middleware. Every audit plan should be
 // scanner-scoped which means that scanner-A should not push SQL to scanner-B.
@@ -52,6 +53,15 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			if apnInToken != apnInParam {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
+
+			apn, apnExist, err := model.GetStorage().GetAuditPlanByName(apnInParam)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			if !apnExist || apn.Token != token {
+				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
+			}
+
 			return next(c)
 		}
 	}
