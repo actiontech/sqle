@@ -28,9 +28,7 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 	}
 }
 
-var errAuditPlanMisMatch = errors.New("audit plan name don't match the token")
-var errAuditPlanNotFound = errors.New("audit plan not found")
-var errAuditPlanTokenIncorrect = errors.New("audit plan token incorrect")
+var errAuditPlanMisMatch = errors.New("audit plan name don't match the token or audit plan not found")
 
 // ScannerVerifier is a `echo` middleware. Every audit plan should be
 // scanner-scoped which means that scanner-A should not push SQL to scanner-B.
@@ -60,11 +58,8 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			if !apnExist {
-				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanNotFound.Error())
-			}
-			if apn.Token != token {
-				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanTokenIncorrect.Error())
+			if !apnExist || apn.Token != token {
+				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
 			return next(c)
