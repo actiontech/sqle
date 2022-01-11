@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -288,5 +289,24 @@ func GetDrivers(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetDriversResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    DriversResV1{Drivers: driver.AllDrivers()},
+	})
+}
+
+type GetSQLEInfoResV1 struct {
+	controller.BaseRes
+	Version string `json:"version"`
+}
+
+// GetSQLEInfo get sqle basic info
+// @Summary 获取 sqle 基本信息
+// @Description get sqle basic info
+// @Id getSQLEInfo
+// @Tags global
+// @Success 200 {object} v1.GetSQLEInfoResV1
+// @router /v1/basic_info [get]
+func GetSQLEInfo(c echo.Context) error {
+	return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Version: config.Version,
 	})
 }
