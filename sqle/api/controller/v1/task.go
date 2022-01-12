@@ -273,6 +273,7 @@ type AuditTaskSQLResV1 struct {
 	ExecResult  string `json:"exec_result"`
 	ExecStatus  string `json:"exec_status"`
 	RollbackSQL string `json:"rollback_sql,omitempty"`
+	Description string `json:"description"`
 }
 
 // @Summary 获取指定审核任务的SQLs信息
@@ -498,4 +499,23 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 			Sql: string(content),
 		},
 	})
+}
+
+type UpdateAuditTaskSQLsReqV1 struct {
+	Description string `json:"description"`
+}
+
+// @Summary 修改审核任务中某条SQL的相关信息
+// @Description modify the relevant information of a certain SQL in the audit task
+// @Tags task
+// @Id updateAuditTaskSQLsV1
+// @Accept json
+// @Param task_id path string true "task id"
+// @Param number path string true "sql number"
+// @Param audit_plan body v1.UpdateAuditTaskSQLsReqV1 true "modify the relevant information of a certain SQL in the audit task"
+// @Security ApiKeyAuth
+// @Success 200 {object} controller.BaseRes
+// @router /v1/tasks/audits/{task_id}/sqls/{number} [patch]
+func UpdateAuditTaskSQLs(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, nil)
 }
