@@ -501,27 +501,21 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 	})
 }
 
-type BatchUpdateAuditTaskSQLDescReqV1 struct {
-	UpdateAuditTaskSQLDescItems []*UpdateAuditTaskSQLDescItem `json:"update_audit_task_sql_desc_items"`
-}
-type UpdateAuditTaskSQLDescItem struct {
-	TaskID          string            `json:"task_id"`
-	SQLDescriptions []*SQLDescription `json:"sql_descriptions"`
-}
-type SQLDescription struct {
-	SQLNumber   uint   `json:"sql_number"`
+type UpdateAuditTaskSQLsReqV1 struct {
 	Description string `json:"description"`
 }
 
-// @Summary 批量修改审核任务的SQL描述
-// @Description batch modify the SQL description of audit tasks
+// @Summary 修改审核任务中某条SQL的相关信息
+// @Description modify the relevant information of a certain SQL in the audit task
 // @Tags task
-// @Id batchUpdateAuditTaskSQLDescV1
+// @Id updateAuditTaskSQLsV1
 // @Accept json
-// @Param audit_plan body v1.BatchUpdateAuditTaskSQLDescReqV1 true "batch modify the SQL description of audit tasks"
+// @Param task_id path string true "task id"
+// @Param number path string true "sql number"
+// @Param audit_plan body v1.UpdateAuditTaskSQLsReqV1 true "modify the relevant information of a certain SQL in the audit task"
 // @Security ApiKeyAuth
 // @Success 200 {object} controller.BaseRes
-// @router /v1/tasks/audits/description/batch_update [post]
-func BatchUpdateAuditTaskSQLDesc(c echo.Context) error {
+// @router /v1/tasks/audits/{task_id}/sqls/{number} [patch]
+func UpdateAuditTaskSQLs(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
