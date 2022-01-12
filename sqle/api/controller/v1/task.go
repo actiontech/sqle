@@ -519,5 +519,44 @@ type UpdateAuditTaskSQLsReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/tasks/audits/{task_id}/sqls/{number} [patch]
 func UpdateAuditTaskSQLs(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, nil)
+	req := new(UpdateAuditTaskSQLsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	taskId := c.Param("task_id")
+	number := c.Param("number")
+
+	s := model.GetStorage()
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+	}
+	err = checkCurrentUserCanAccessTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	data := map[string]interface{}{
+		"task_id":                      taskId,
+		"limit":                        1,
+		"offset":                       1,
+		"filter_audit_task_sql_number": number,
+	}
+	_, count, err := s.GetTaskSQLsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if count != 1 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("sql number not found")))
+	}
+
+	updateParams := map[string]interface{}{
+		"task_id":     taskId,
+		"number":      number,
+		"description": req.Description,
+	}
+	err = s.UpdateTaskSQLByReq(updateParams)
+	return controller.JSONBaseErrorReq(c, err)
 }

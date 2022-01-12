@@ -335,6 +335,7 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint) ([]Task, error) {
 
 type TaskSQLDetail struct {
 	Number      uint           `json:"number"`
+	Description string         `json:"description"`
 	ExecSQL     string         `json:"exec_sql"`
 	AuditResult string         `json:"audit_result"`
 	AuditLevel  string         `json:"audit_level"`
@@ -344,7 +345,7 @@ type TaskSQLDetail struct {
 	RollbackSQL sql.NullString `json:"rollback_sql"`
 }
 
-var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
+var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
 e_sql.audit_result, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}
@@ -375,9 +376,13 @@ AND e_sql.exec_status = :filter_exec_status
 AND e_sql.audit_status = :filter_audit_status
 {{- end }}
 
-{{- if .filter_audit_level}}
+{{- if .filter_audit_level }}
 AND e_sql.audit_level = :filter_audit_level
-{{- end}}
+{{- end }}
+
+{{- if .filter_audit_task_sql_number }}
+AND e_sql.number = :filter_audit_task_sql_number
+{{- end }}
 
 {{- if .no_duplicate }}
 AND e_sql.id IN (
@@ -398,6 +403,42 @@ func (s *Storage) GetTaskSQLsByReq(data map[string]interface{}) (
 	}
 	count, err = s.getCountResult(taskSQLsQueryBodyTpl, taskSQLsCountTpl, data)
 	return result, count, err
+}
+
+var taskSQLsUpdateTpl = `
+UPDATE 
+execute_sql_detail
+AS
+e_sql
+
+{{ template "body" . }}
+
+WHERE
+1 = 1
+
+{{ if .task_id }}
+AND e_sql.task_id = :task_id
+{{ end }}
+
+{{ if .number }}
+AND e_sql.number = :number
+{{ end }}
+`
+
+var taskSQLsUpdateBodyTpl = `
+{{ define "body" }}
+
+SET
+
+{{ if  .description }}
+e_sql.description = :description
+{{ end }}
+
+{{ end }}
+`
+
+func (s *Storage) UpdateTaskSQLByReq(data map[string]interface{}) error {
+	return s.executeUpdateSQL(taskSQLsUpdateBodyTpl, taskSQLsUpdateTpl, data)
 }
 
 func (s *Storage) DeleteTask(task *Task) error {
