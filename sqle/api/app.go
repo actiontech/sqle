@@ -158,6 +158,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 	v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
 	v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
+	v1Router.POST("/tasks/audits/description/batch_update", v1.BatchUpdateAuditTaskSQLDesc)
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)

@@ -136,6 +136,8 @@ definitions:
         type: string
       audit_status:
         type: string
+      description:
+        type: string
       exec_result:
         type: string
       exec_sql:
@@ -163,6 +165,13 @@ definitions:
       workflow_ids:
         items:
           type: string
+        type: array
+    type: object
+  v1.BatchUpdateAuditTaskSQLDescReqV1:
+    properties:
+      update_audit_task_sql_desc_items:
+        items:
+          $ref: '#/definitions/v1.UpdateAuditTaskSQLDescItem'
         type: array
     type: object
   v1.CloneRuleTemplateReqV1:
@@ -1058,6 +1067,13 @@ definitions:
       smtp_username:
         type: string
     type: object
+  v1.SQLDescription:
+    properties:
+      description:
+        type: string
+      sql_number:
+        type: integer
+    type: object
   v1.SystemVariablesResV1:
     properties:
       workflow_expired_hours:
@@ -1085,6 +1101,15 @@ definitions:
         type: string
       audit_plan_instance_name:
         example: test_mysql
+        type: string
+    type: object
+  v1.UpdateAuditTaskSQLDescItem:
+    properties:
+      sql_descriptions:
+        items:
+          $ref: '#/definitions/v1.SQLDescription'
+        type: array
+      task_id:
         type: string
     type: object
   v1.UpdateAuditWhitelistReqV1:
@@ -2775,6 +2800,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取指定审核任务的SQLs信息
+      tags:
+      - task
+  /v1/tasks/audits/description/batch_update:
+    post:
+      consumes:
+      - application/json
+      description: batch modify the SQL description of audit tasks
+      operationId: batchUpdateAuditTaskSQLDescV1
+      parameters:
+      - description: batch modify the SQL description of audit tasks
+        in: body
+        name: audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchUpdateAuditTaskSQLDescReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量修改审核任务的SQL描述
       tags:
       - task
   /v1/user:
