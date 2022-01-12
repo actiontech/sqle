@@ -136,6 +136,8 @@ definitions:
         type: string
       audit_status:
         type: string
+      description:
+        type: string
       exec_result:
         type: string
       exec_sql:
@@ -1085,6 +1087,11 @@ definitions:
         type: string
       audit_plan_instance_name:
         example: test_mysql
+        type: string
+    type: object
+  v1.UpdateAuditTaskSQLsReqV1:
+    properties:
+      description:
         type: string
     type: object
   v1.UpdateAuditWhitelistReqV1:
@@ -2775,6 +2782,40 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取指定审核任务的SQLs信息
+      tags:
+      - task
+  /v1/tasks/audits/{task_id}/sqls/{number}:
+    patch:
+      consumes:
+      - application/json
+      description: modify the relevant information of a certain SQL in the audit task
+      operationId: updateAuditTaskSQLsV1
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: string
+      - description: modify the relevant information of a certain SQL in the audit
+          task
+        in: body
+        name: audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateAuditTaskSQLsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 修改审核任务中某条SQL的相关信息
       tags:
       - task
   /v1/user:
