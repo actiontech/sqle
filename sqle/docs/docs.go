@@ -2061,6 +2061,57 @@ var doc = `{
                 }
             }
         },
+        "/v1/tasks/audits/{task_id}/sqls/{number}": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "modify the relevant information of a certain SQL in the audit task",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "修改审核任务中某条SQL的相关信息",
+                "operationId": "updateAuditTaskSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "modify the relevant information of a certain SQL in the audit task",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditTaskSQLsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user": {
             "get": {
                 "security": [
@@ -3273,6 +3324,9 @@ var doc = `{
                     "type": "string"
                 },
                 "audit_status": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "exec_result": {
@@ -4666,6 +4720,14 @@ var doc = `{
                 "audit_plan_instance_name": {
                     "type": "string",
                     "example": "test_mysql"
+                }
+            }
+        },
+        "v1.UpdateAuditTaskSQLsReqV1": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
                 }
             }
         },
