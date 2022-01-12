@@ -332,6 +332,7 @@ func GetTaskSQLs(c echo.Context) error {
 	for _, taskSQL := range taskSQLs {
 		taskSQLRes := &AuditTaskSQLResV1{
 			Number:      taskSQL.Number,
+			Description: taskSQL.Description,
 			ExecSQL:     taskSQL.ExecSQL,
 			AuditResult: taskSQL.AuditResult,
 			AuditLevel:  taskSQL.AuditLevel,
@@ -393,7 +394,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	buff := &bytes.Buffer{}
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	cw := csv.NewWriter(buff)
-	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句"})
+	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 	}
@@ -411,6 +412,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			taskSql.GetExecStatusDesc(),
 			td.ExecResult,
 			td.RollbackSQL.String,
+			td.Description,
 		})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
