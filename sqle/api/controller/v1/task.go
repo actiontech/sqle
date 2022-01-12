@@ -273,6 +273,7 @@ type AuditTaskSQLResV1 struct {
 	ExecResult  string `json:"exec_result"`
 	ExecStatus  string `json:"exec_status"`
 	RollbackSQL string `json:"rollback_sql,omitempty"`
+	Description string `json:"description"`
 }
 
 // @Summary 获取指定审核任务的SQLs信息
@@ -498,4 +499,29 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 			Sql: string(content),
 		},
 	})
+}
+
+type BatchUpdateAuditTaskSQLDescReqV1 struct {
+	UpdateAuditTaskSQLDescItems []*UpdateAuditTaskSQLDescItem `json:"update_audit_task_sql_desc_items"`
+}
+type UpdateAuditTaskSQLDescItem struct {
+	TaskID          string            `json:"task_id"`
+	SQLDescriptions []*SQLDescription `json:"sql_descriptions"`
+}
+type SQLDescription struct {
+	SQLNumber   uint   `json:"sql_number"`
+	Description string `json:"description"`
+}
+
+// @Summary 批量修改审核任务的SQL描述
+// @Description batch modify the SQL description of audit tasks
+// @Tags task
+// @Id batchUpdateAuditTaskSQLDescV1
+// @Accept json
+// @Param audit_plan body v1.BatchUpdateAuditTaskSQLDescReqV1 true "batch modify the SQL description of audit tasks"
+// @Security ApiKeyAuth
+// @Success 200 {object} controller.BaseRes
+// @router /v1/tasks/audits/description/batch_update [post]
+func BatchUpdateAuditTaskSQLDesc(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, nil)
 }

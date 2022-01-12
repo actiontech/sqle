@@ -1826,6 +1826,43 @@
                 }
             }
         },
+        "/v1/tasks/audits/description/batch_update": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch modify the SQL description of audit tasks",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "批量修改审核任务的SQL描述",
+                "operationId": "batchUpdateAuditTaskSQLDescV1",
+                "parameters": [
+                    {
+                        "description": "batch modify the SQL description of audit tasks",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchUpdateAuditTaskSQLDescReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tasks/audits/{task_id}/": {
             "get": {
                 "security": [
@@ -3259,6 +3296,9 @@
                 "audit_status": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "exec_result": {
                     "type": "string"
                 },
@@ -3300,6 +3340,17 @@
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.BatchUpdateAuditTaskSQLDescReqV1": {
+            "type": "object",
+            "properties": {
+                "update_audit_task_sql_desc_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UpdateAuditTaskSQLDescItem"
                     }
                 }
             }
@@ -4611,6 +4662,17 @@
                 }
             }
         },
+        "v1.SQLDescription": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "sql_number": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -4650,6 +4712,20 @@
                 "audit_plan_instance_name": {
                     "type": "string",
                     "example": "test_mysql"
+                }
+            }
+        },
+        "v1.UpdateAuditTaskSQLDescItem": {
+            "type": "object",
+            "properties": {
+                "sql_descriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLDescription"
+                    }
+                },
+                "task_id": {
+                    "type": "string"
                 }
             }
         },
