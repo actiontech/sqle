@@ -538,25 +538,15 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	data := map[string]interface{}{
-		"task_id":                      taskId,
-		"limit":                        1,
-		"offset":                       1,
-		"filter_audit_task_sql_number": number,
-	}
-	_, count, err := s.GetTaskSQLsByReq(data)
+	taskSql, exist, err := s.GetTaskSQLByNumber(taskId, number)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return err
 	}
-	if count != 1 {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("sql number not found")))
+	if !exist {
+		return errors.New(errors.DataNotExist, fmt.Errorf("sql number not found"))
 	}
-
-	updateParams := map[string]interface{}{
-		"task_id":     taskId,
-		"number":      number,
-		"description": req.Description,
-	}
-	err = s.UpdateTaskSQLByReq(updateParams)
+	// the user may leave the description blank to clear the description, so no processing is performed
+	taskSql.Description = req.Description
+	err = s.Save(taskSql)
 	return controller.JSONBaseErrorReq(c, err)
 }
