@@ -78,6 +78,7 @@ type BaseSQL struct {
 	// Content may store batch SQLs When BaseSQL embed to RollbackSQL.
 	// Split Content to single SQL before execute RollbackSQL.
 	Content         string `json:"sql" gorm:"type:text"`
+	Description     string `json:"description" gorm:"type:text"`
 	StartBinlogFile string `json:"start_binlog_file"`
 	StartBinlogPos  int64  `json:"start_binlog_pos"`
 	EndBinlogFile   string `json:"end_binlog_file"`
@@ -334,6 +335,7 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint) ([]Task, error) {
 
 type TaskSQLDetail struct {
 	Number      uint           `json:"number"`
+	Description string         `json:"description"`
 	ExecSQL     string         `json:"exec_sql"`
 	AuditResult string         `json:"audit_result"`
 	AuditLevel  string         `json:"audit_level"`
@@ -343,7 +345,7 @@ type TaskSQLDetail struct {
 	RollbackSQL sql.NullString `json:"rollback_sql"`
 }
 
-var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
+var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
 e_sql.audit_result, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}
@@ -374,9 +376,9 @@ AND e_sql.exec_status = :filter_exec_status
 AND e_sql.audit_status = :filter_audit_status
 {{- end }}
 
-{{- if .filter_audit_level}}
+{{- if .filter_audit_level }}
 AND e_sql.audit_level = :filter_audit_level
-{{- end}}
+{{- end }}
 
 {{- if .no_duplicate }}
 AND e_sql.id IN (
@@ -426,4 +428,13 @@ func (s *Storage) GetExpiredTasks(start time.Time) ([]*Task, error) {
 		Scan(&tasks).Error
 
 	return tasks, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetTaskSQLByNumber(taskId, number string) (*ExecuteSQL, bool, error) {
+	e := &ExecuteSQL{}
+	err := s.db.Where("task_id = ?", taskId).Where("number = ?", number).First(e).Error
+	if err == gorm.ErrRecordNotFound {
+		return e, false, nil
+	}
+	return e, true, errors.New(errors.ConnectStorageError, err)
 }
