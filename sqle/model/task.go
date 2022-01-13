@@ -380,10 +380,6 @@ AND e_sql.audit_status = :filter_audit_status
 AND e_sql.audit_level = :filter_audit_level
 {{- end }}
 
-{{- if .filter_audit_task_sql_number }}
-AND e_sql.number = :filter_audit_task_sql_number
-{{- end }}
-
 {{- if .no_duplicate }}
 AND e_sql.id IN (
 SELECT SQL_BIG_RESULT MIN(id) AS id FROM execute_sql_detail WHERE task_id = :task_id 
@@ -403,42 +399,6 @@ func (s *Storage) GetTaskSQLsByReq(data map[string]interface{}) (
 	}
 	count, err = s.getCountResult(taskSQLsQueryBodyTpl, taskSQLsCountTpl, data)
 	return result, count, err
-}
-
-var taskSQLsUpdateTpl = `
-UPDATE 
-execute_sql_detail
-AS
-e_sql
-
-{{ template "body" . }}
-
-WHERE
-1 = 1
-
-{{ if .task_id }}
-AND e_sql.task_id = :task_id
-{{ end }}
-
-{{ if .number }}
-AND e_sql.number = :number
-{{ end }}
-`
-
-var taskSQLsUpdateBodyTpl = `
-{{ define "body" }}
-
-SET
-
-{{ if  .description }}
-e_sql.description = :description
-{{ end }}
-
-{{ end }}
-`
-
-func (s *Storage) UpdateTaskSQLByReq(data map[string]interface{}) error {
-	return s.executeUpdateSQL(taskSQLsUpdateBodyTpl, taskSQLsUpdateTpl, data)
 }
 
 func (s *Storage) DeleteTask(task *Task) error {
@@ -468,4 +428,13 @@ func (s *Storage) GetExpiredTasks(start time.Time) ([]*Task, error) {
 		Scan(&tasks).Error
 
 	return tasks, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetTaskSQLByNumber(taskId, number string) (*ExecuteSQL, bool, error) {
+	e := &ExecuteSQL{}
+	err := s.db.Where("task_id = ?", taskId).Where("number = ?", number).First(e).Error
+	if err == gorm.ErrRecordNotFound {
+		return e, false, nil
+	}
+	return e, true, errors.New(errors.ConnectStorageError, err)
 }
