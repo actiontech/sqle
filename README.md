@@ -14,7 +14,7 @@ SQLE is a SQL audit platform, which is extendable for most popular databases, wi
 These [SQL audit plugins](https://actiontech.github.io/sqle-docs-cn/3.modules/3.7_auditplugin/overview.html) are designed to support other databases.
 * [PostgreSQL](https://github.com/actiontech/sqle-pg-plugin)
 * [Oracle](https://github.com/actiontech/sqle-oracle-plugin)
-
+* [SQL Server](https://github.com/actiontech/sqle-ms-plugin)
 ## Official website
 For more information, please visit our [official website](https://opensource.actionsky.com).
 
