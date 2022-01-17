@@ -87,6 +87,7 @@ innodb
 inout
 intn
 ioutil
+itoa
 jackc
 jinzhu
 jmoiron

@@ -540,10 +540,10 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 	}
 	taskSql, exist, err := s.GetTaskSQLByNumber(taskId, number)
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return errors.New(errors.DataNotExist, fmt.Errorf("sql number not found"))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("sql number not found")))
 	}
 	// the user may leave the description blank to clear the description, so no processing is performed
 	taskSql.Description = req.Description
