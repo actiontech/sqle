@@ -125,20 +125,6 @@ func (s *Storage) getListResult(bodyTpl, queryTpl string, data map[string]interf
 	return nil
 }
 
-func (s *Storage) executeUpdateSQL(bodyTpl, updateTpl string, data map[string]interface{}) error {
-	updateQuery, err := getSelectQuery(bodyTpl, updateTpl, data)
-	if err != nil {
-		return err
-	}
-	sqlxDb := GetSqlxDb()
-	nameStmtTasksUpdate, err := sqlxDb.PrepareNamed(updateQuery)
-	if err != nil {
-		return err
-	}
-	_, err = nameStmtTasksUpdate.Exec(data)
-	return err
-}
-
 func (s *Storage) getCountResult(bodyTpl, countTpl string, data map[string]interface{}) (uint64, error) {
 	sqlxDb := GetSqlxDb()
 	countQuery, err := getCountQuery(bodyTpl, countTpl, data)
