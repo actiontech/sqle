@@ -202,9 +202,8 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name: DDLCheckTableSize,
-			Desc: "检查DDL操作的表是否超过指定数据量",
-			//Value:    "16",
+			Name:     DDLCheckTableSize,
+			Desc:     "检查DDL操作的表是否超过指定数据量",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 			Params: driver.RuleParams{
