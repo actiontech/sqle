@@ -25,6 +25,37 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/audit_plan_metas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan metas",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取审核任务元信息",
+                "operationId": "getAuditPlanMetasV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter instance type",
+                        "name": "filter_instance_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanMetasResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plans": {
             "get": {
                 "security": [
@@ -3132,6 +3163,101 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/v2/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定审核计划的SQL审核详情",
+                "operationId": "getAuditPlanReportSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlanReportSQLsResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/audit_plans/{audit_plan_name}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定审核计划的SQLs信息(不包括审核结果)",
+                "operationId": "getAuditPlanSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlanSQLsResV2"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -3145,6 +3271,59 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.AuditPlanMetaV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanParamResV1"
+                    }
+                },
+                "audit_plan_type": {
+                    "type": "string"
+                },
+                "audit_plan_type_desc": {
+                    "type": "string"
+                },
+                "instance_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.AuditPlanParamReqV1": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.AuditPlanParamResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "string",
+                        "int",
+                        "bool"
+                    ]
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -3200,6 +3379,10 @@ var doc = `{
                 "audit_plan_instance_name": {
                     "type": "string",
                     "example": "test_mysql"
+                },
+                "audit_plan_meta": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanMetaV1"
                 },
                 "audit_plan_name": {
                     "type": "string",
@@ -3413,6 +3596,16 @@ var doc = `{
                 "audit_plan_name": {
                     "type": "string",
                     "example": "audit_plan_for_java_repo_1"
+                },
+                "audit_plan_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanParamReqV1"
+                    }
+                },
+                "audit_plan_type": {
+                    "type": "string",
+                    "example": "slow log"
                 }
             }
         },
@@ -3631,6 +3824,25 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.AuditPlanSQLReqV1"
                     }
+                }
+            }
+        },
+        "v1.GetAuditPlanMetasResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanMetaV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -4720,6 +4932,12 @@ var doc = `{
                 "audit_plan_instance_name": {
                     "type": "string",
                     "example": "test_mysql"
+                },
+                "audit_plan_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanParamReqV1"
+                    }
                 }
             }
         },
@@ -5302,6 +5520,94 @@ var doc = `{
             "properties": {
                 "workflow_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.AuditPlanReportSQLResV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_report_sql": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_report_sql_audit_result": {
+                    "type": "string",
+                    "example": "same format as task audit result"
+                }
+            }
+        },
+        "v2.AuditPlanSQLHeadV2": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.AuditPlanSQLResV2": {
+            "type": "object",
+            "properties": {
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanSQLHeadV2"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "v2.GetAuditPlanReportSQLsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanReportSQLResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.GetAuditPlanSQLsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanSQLResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         }

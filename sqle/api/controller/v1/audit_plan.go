@@ -25,12 +25,57 @@ var (
 	errAuditPlanCannotAccess     = errors.New(errors.DataInvalid, fmt.Errorf("you can not access this audit plan"))
 )
 
+type GetAuditPlanMetasReqV1 struct {
+	FilterInstanceType string `json:"filter_instance_type" query:"filter_instance_type"`
+}
+
+type GetAuditPlanMetasResV1 struct {
+	controller.BaseRes
+	Data []AuditPlanMetaV1 `json:"data"`
+}
+
+type AuditPlanMetaV1 struct {
+	Type         string                `json:"audit_plan_type"`
+	Desc         string                `json:"audit_plan_type_desc"`
+	InstanceType string                `json:"instance_type"`
+	Params       []AuditPlanParamResV1 `json:"audit_plan_params,omitempty"`
+}
+
+type AuditPlanParamResV1 struct {
+	Key   string `json:"key"`
+	Desc  string `json:"desc"`
+	Value string `json:"value"`
+	Type  string `json:"type" enums:"string,int,bool"`
+}
+
+// @Summary 获取审核任务元信息
+// @Description get audit plan metas
+// @Id getAuditPlanMetasV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param filter_instance_type query string false "filter instance type"
+// @Success 200 {object} v1.GetAuditPlanMetasResV1
+// @router /v1/audit_plan_metas [get]
+func GetAuditPlanMetas(c echo.Context) error {
+	return c.JSON(http.StatusOK, &GetAuditPlanMetasResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []AuditPlanMetaV1{},
+	})
+}
+
 type CreateAuditPlanReqV1 struct {
-	Name             string `json:"audit_plan_name" form:"audit_plan_name" example:"audit_plan_for_java_repo_1" valid:"required,name"`
-	Cron             string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"required,cron"`
-	InstanceType     string `json:"audit_plan_instance_type" form:"audit_plan_instance_type" example:"mysql" valid:"required"`
-	InstanceName     string `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
-	InstanceDatabase string `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
+	Name             string                `json:"audit_plan_name" form:"audit_plan_name" example:"audit_plan_for_java_repo_1" valid:"required,name"`
+	Cron             string                `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"required,cron"`
+	InstanceType     string                `json:"audit_plan_instance_type" form:"audit_plan_instance_type" example:"mysql" valid:"required"`
+	InstanceName     string                `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
+	InstanceDatabase string                `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
+	Type             string                `json:"audit_plan_type" form:"audit_plan_type" example:"slow log"`
+	Params           []AuditPlanParamReqV1 `json:"audit_plan_params" valid:"dive,required"`
+}
+
+type AuditPlanParamReqV1 struct {
+	Key   string `json:"key" form:"key" valid:"required"`
+	Value string `json:"value" form:"value" valid:"required"`
 }
 
 // @Summary 添加审核计划
@@ -121,9 +166,10 @@ func DeleteAuditPlan(c echo.Context) error {
 }
 
 type UpdateAuditPlanReqV1 struct {
-	Cron             *string `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"omitempty,cron"`
-	InstanceName     *string `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
-	InstanceDatabase *string `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
+	Cron             *string               `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"omitempty,cron"`
+	InstanceName     *string               `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
+	InstanceDatabase *string               `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
+	Params           []AuditPlanParamReqV1 `json:"audit_plan_params" valid:"dive,required"`
 }
 
 // @Summary 更新审核计划
@@ -175,12 +221,13 @@ type GetAuditPlansResV1 struct {
 }
 
 type AuditPlanResV1 struct {
-	Name             string `json:"audit_plan_name" example:"audit_for_java_app1"`
-	Cron             string `json:"audit_plan_cron" example:"0 */2 * * *"`
-	DBType           string `json:"audit_plan_db_type" example:"mysql"`
-	Token            string `json:"audit_plan_token" example:"it's a JWT Token for scanner"`
-	InstanceName     string `json:"audit_plan_instance_name" example:"test_mysql"`
-	InstanceDatabase string `json:"audit_plan_instance_database" example:"app1"`
+	Name             string           `json:"audit_plan_name" example:"audit_for_java_app1"`
+	Cron             string           `json:"audit_plan_cron" example:"0 */2 * * *"`
+	DBType           string           `json:"audit_plan_db_type" example:"mysql"`
+	Token            string           `json:"audit_plan_token" example:"it's a JWT Token for scanner"`
+	InstanceName     string           `json:"audit_plan_instance_name" example:"test_mysql"`
+	InstanceDatabase string           `json:"audit_plan_instance_database" example:"app1"`
+	Meta             *AuditPlanMetaV1 `json:"audit_plan_meta"`
 }
 
 // @Summary 获取审核计划信息列表
