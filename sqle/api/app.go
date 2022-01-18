@@ -7,6 +7,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	"github.com/actiontech/sqle/sqle/config"
 	_ "github.com/actiontech/sqle/sqle/docs"
@@ -178,6 +179,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	v1Router.POST("/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	v1Router.POST("/audit_plans/:audit_plan_name/trigger", v1.TriggerAuditPlan)
+	v1Router.POST("/audit_plan_metas", v1.GetAuditPlanMetas)
+
+	v2Router := e.Group("/v2")
+	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
+	v2Router.GET("/audit_plans/:audit_plan_name/sqls", v2.GetAuditPlanSQLs)
+	v2Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", v2.GetAuditPlanReportSQLs)
 
 	// UI
 	e.File("/", "ui/index.html")
@@ -227,6 +234,14 @@ func AdminUserAllowed() echo.MiddlewareFunc {
 			if controller.GetUserName(c) == model.DefaultAdminUser {
 				return next(c)
 			}
+			return echo.NewHTTPError(http.StatusForbidden)
+		}
+	}
+}
+
+func Deprecated() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusForbidden)
 		}
 	}
