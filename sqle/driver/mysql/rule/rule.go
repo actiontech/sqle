@@ -76,6 +76,7 @@ const (
 	DDLCheckCreateTrigger                       = "ddl_check_create_trigger"
 	DDLCheckCreateFunction                      = "ddl_check_create_function"
 	DDLCheckCreateProcedure                     = "ddl_check_create_procedure"
+	DDLCheckTableSize                           = "ddl_check_table_size"
 )
 
 // inspector DML rules
@@ -198,6 +199,25 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		Func: nil,
+	},
+	{
+		Rule: driver.Rule{
+			Name: DDLCheckTableSize,
+			Desc: "检查DDL操作的表是否超过指定数据量",
+			//Value:    "16",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "16",
+					Desc:  "表空间大小（MB）",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
+		},
+		Message: "执行DDL的表 %v 空间超过 %vMB",
+		Func:    checkDDLTableSize,
 	},
 
 	{
@@ -1748,6 +1768,33 @@ func checkIfNotExist(ctx *session.Context, rule driver.Rule, res *driver.AuditRe
 		if !stmt.IfNotExists {
 			addResult(res, rule, DDLCheckPKWithoutIfNotExists)
 		}
+	}
+	return nil
+}
+
+func checkDDLTableSize(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	min := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	tables := []*ast.TableName{}
+	switch stmt := node.(type) {
+	case *ast.AlterTableStmt:
+		tables = append(tables, stmt.Table)
+	case *ast.DropTableStmt:
+		tables = append(tables, stmt.Tables...)
+	}
+
+	beyond := []string{}
+	for _, table := range tables {
+		size, err := ctx.GetTableSize(table)
+		if err != nil {
+			return err
+		}
+		if float64(min) < size {
+			beyond = append(beyond, table.Name.String())
+		}
+	}
+
+	if len(beyond) > 0 {
+		addResult(res, rule, rule.Name, strings.Join(beyond, " , "), min)
 	}
 	return nil
 }
