@@ -24,6 +24,7 @@ const (
 	DataConflict  ErrorCode = 4012
 	DataInvalid   ErrorCode = 4013
 	DataParseFail ErrorCode = 4014
+	DataDisabled  ErrorCode = 4015
 
 	DriverNotExist ErrorCode = 5001
 	LoadDriverFail ErrorCode = 5008

@@ -60,7 +60,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
 
 	v1Router := e.Group("/v1")
-	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
+	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)), sqleMiddleware.VerifyUserIsDisabled())
 
 	// v1 admin api, just admin user can access.
 	{
