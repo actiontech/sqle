@@ -1747,6 +1747,7 @@ paths:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/:
     get:
+      deprecated: true
       description: get audit plan report SQLs
       operationId: getAuditPlanReportSQLsV1
       parameters:
@@ -1808,6 +1809,7 @@ paths:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls:
     get:
+      deprecated: true
       description: get audit plan SQLs
       operationId: getAuditPlanSQLsV1
       parameters:
