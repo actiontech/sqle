@@ -9,7 +9,7 @@
     },
     "basePath": "/",
     "paths": {
-        "/v1/audit_plan_metas/": {
+        "/v1/audit_plan_metas": {
             "get": {
                 "security": [
                     {

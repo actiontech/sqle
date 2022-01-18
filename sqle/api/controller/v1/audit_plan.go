@@ -51,7 +51,7 @@ type AuditPlanParamResV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Success 200 {object} v1.GetAuditPlanMetasResV1
-// @router /v1/audit_plan_metas/ [get]
+// @router /v1/audit_plan_metas [get]
 func GetAuditPlanMetas(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetAuditPlanMetasResV1{
 		BaseRes: controller.NewBaseReq(nil),
