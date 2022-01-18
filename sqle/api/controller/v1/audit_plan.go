@@ -417,6 +417,7 @@ type AuditPlanReportSQLResV1 struct {
 
 // @Summary 获取指定审核计划的SQL审核详情
 // @Description get audit plan report SQLs
+// @Deprecated
 // @Id getAuditPlanReportSQLsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
@@ -591,6 +592,7 @@ type AuditPlanSQLResV1 struct {
 
 // @Summary 获取指定审核计划的SQLs信息(不包括审核结果)
 // @Description get audit plan SQLs
+// @Deprecated
 // @Id getAuditPlanSQLsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
