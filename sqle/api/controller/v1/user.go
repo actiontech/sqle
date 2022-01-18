@@ -216,11 +216,12 @@ type GetUserDetailResV1 struct {
 }
 
 type UserDetailResV1 struct {
-	Name      string   `json:"user_name"`
-	Email     string   `json:"email"`
-	IsAdmin   bool     `json:"is_admin"`
-	LoginType string   `json:"login_type"`
-	Roles     []string `json:"role_name_list,omitempty"`
+	Name       string   `json:"user_name"`
+	Email      string   `json:"email"`
+	IsAdmin    bool     `json:"is_admin"`
+	LoginType  string   `json:"login_type"`
+	Roles      []string `json:"role_name_list,omitempty"`
+	IsDisabled bool     `json:"is_disabled"`
 }
 
 func convertUserToRes(user *model.User) UserDetailResV1 {
@@ -228,10 +229,11 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
 	userReq := UserDetailResV1{
-		Name:      user.Name,
-		Email:     user.Email,
-		LoginType: string(user.UserAuthenticationType),
-		IsAdmin:   user.Name == model.DefaultAdminUser,
+		Name:       user.Name,
+		Email:      user.Email,
+		LoginType:  string(user.UserAuthenticationType),
+		IsAdmin:    user.Name == model.DefaultAdminUser,
+		IsDisabled: user.IsDisabled,
 	}
 	roleNames := make([]string, 0, len(user.Roles))
 	for _, role := range user.Roles {
