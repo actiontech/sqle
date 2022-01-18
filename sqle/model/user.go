@@ -12,6 +12,10 @@ import (
 
 const DefaultAdminUser = "admin"
 
+func IsDefaultAdminUser(user string) bool {
+	return user == DefaultAdminUser
+}
+
 type UserAuthenticationType string
 
 const (

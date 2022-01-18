@@ -67,8 +67,9 @@ func CreateUser(c echo.Context) error {
 }
 
 type UpdateUserReqV1 struct {
-	Email *string  `json:"email" valid:"omitempty,email"`
-	Roles []string `json:"role_name_list" form:"role_name_list"`
+	Email      *string  `json:"email" valid:"omitempty,email"`
+	Roles      []string `json:"role_name_list" form:"role_name_list"`
+	IsDisabled *bool    `json:"is_disabled" valid:"omitempty"`
 }
 
 // @Summary 更新用户信息
@@ -97,24 +98,41 @@ func UpdateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
-	if req.Roles != nil || len(req.Roles) > 0 {
-		roles, err := s.GetAndCheckRoleExist(req.Roles)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		err = s.UpdateUserRoles(user, roles...)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	// roles
+	{
+		if req.Roles != nil || len(req.Roles) > 0 {
+			roles, err := s.GetAndCheckRoleExist(req.Roles)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			err = s.UpdateUserRoles(user, roles...)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 		}
 	}
 
+	// Email
 	if req.Email != nil {
 		user.Email = *req.Email
-		err = s.Save(user)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
 	}
+
+	// IsDisabled
+	if req.IsDisabled != nil {
+		if model.IsDefaultAdminUser(userName) {
+			return controller.JSONBaseErrorReq(c,
+				errors.New(errors.DataInvalid, fmt.Errorf("You can not disabled admin user!")))
+		}
+
+		// not admin user
+		user.IsDisabled = *req.IsDisabled
+	}
+
+	err = s.Save(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
