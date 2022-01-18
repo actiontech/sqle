@@ -33,14 +33,19 @@ var doc = `{
                     }
                 ],
                 "description": "get audit plan metas",
-                "consumes": [
-                    "application/json"
-                ],
                 "tags": [
                     "audit_plan"
                 ],
                 "summary": "获取审核任务元信息",
                 "operationId": "getAuditPlanMetasV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter instance type",
+                        "name": "filter_instance_type",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3310,7 +3315,12 @@ var doc = `{
                     "type": "string"
                 },
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "string",
+                        "int",
+                        "bool"
+                    ]
                 },
                 "value": {
                     "type": "string"
