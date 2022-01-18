@@ -1,14 +1,15 @@
 package model
 
 type UserDetail struct {
-	Id        int
-	Name      string `json:"login_name"`
-	Email     string
-	LoginType string  `json:"user_authentication_type"`
-	RoleNames RowList `json:"role_names"`
+	Id         int
+	Name       string `json:"login_name"`
+	Email      string
+	LoginType  string  `json:"user_authentication_type"`
+	RoleNames  RowList `json:"role_names"`
+	IsDisabled bool    `json:"is_disabled"`
 }
 
-var usersQueryTpl = `SELECT users.id, users.login_name, users.email, users.user_authentication_type,GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
+var usersQueryTpl = `SELECT users.id, users.login_name, users.email, users.user_authentication_type, user.is_disabled, GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
 FROM users 
 LEFT JOIN user_role ON users.id = user_role.user_id
 LEFT JOIN roles ON user_role.role_id = roles.id AND roles.deleted_at IS NULL
