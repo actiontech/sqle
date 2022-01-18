@@ -40,7 +40,7 @@ var doc = `{
                     "audit_plan"
                 ],
                 "summary": "获取审核任务元信息",
-                "operationId": "getAuditPlanMetaV1",
+                "operationId": "getAuditPlanMetasV1",
                 "responses": {
                     "200": {
                         "description": "OK",
