@@ -1780,6 +1780,8 @@ func checkDDLTableSize(ctx *session.Context, rule driver.Rule, res *driver.Audit
 		tables = append(tables, stmt.Table)
 	case *ast.DropTableStmt:
 		tables = append(tables, stmt.Tables...)
+	default:
+		return nil
 	}
 
 	beyond := []string{}
