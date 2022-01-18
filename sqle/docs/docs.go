@@ -25,7 +25,7 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/audit_plan_metas/": {
+        "/v1/audit_plan_metas": {
             "get": {
                 "security": [
                     {
