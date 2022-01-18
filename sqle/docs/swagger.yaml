@@ -36,6 +36,10 @@ definitions:
       key:
         type: string
       type:
+        enum:
+        - string
+        - int
+        - bool
         type: string
       value:
         type: string
@@ -1608,10 +1612,13 @@ info:
 paths:
   /v1/audit_plan_metas:
     get:
-      consumes:
-      - application/json
       description: get audit plan metas
       operationId: getAuditPlanMetasV1
+      parameters:
+      - description: filter instance type
+        in: query
+        name: filter_instance_type
+        type: string
       responses:
         "200":
           description: OK

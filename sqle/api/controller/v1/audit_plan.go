@@ -25,6 +25,10 @@ var (
 	errAuditPlanCannotAccess     = errors.New(errors.DataInvalid, fmt.Errorf("you can not access this audit plan"))
 )
 
+type GetAuditPlanMetasReqV1 struct {
+	FilterInstanceType string `json:"filter_instance_type" query:"filter_instance_type"`
+}
+
 type GetAuditPlanMetasResV1 struct {
 	controller.BaseRes
 	Data []AuditPlanMetaV1 `json:"data"`
@@ -34,14 +38,14 @@ type AuditPlanMetaV1 struct {
 	Type         string                `json:"audit_plan_type"`
 	Desc         string                `json:"audit_plan_type_desc"`
 	InstanceType string                `json:"instance_type"`
-	Params       []AuditPlanParamResV1 `json:"audit_plan_params"`
+	Params       []AuditPlanParamResV1 `json:"audit_plan_params,omitempty"`
 }
 
 type AuditPlanParamResV1 struct {
 	Key   string `json:"key"`
 	Desc  string `json:"desc"`
 	Value string `json:"value"`
-	Type  string `json:"type"`
+	Type  string `json:"type" enums:"string,int,bool"`
 }
 
 // @Summary 获取审核任务元信息
@@ -49,7 +53,7 @@ type AuditPlanParamResV1 struct {
 // @Id getAuditPlanMetasV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Accept json
+// @Param filter_instance_type query string false "filter instance type"
 // @Success 200 {object} v1.GetAuditPlanMetasResV1
 // @router /v1/audit_plan_metas [get]
 func GetAuditPlanMetas(c echo.Context) error {
