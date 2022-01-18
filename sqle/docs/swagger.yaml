@@ -9,6 +9,41 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AuditPlanMetaV1:
+    properties:
+      audit_plan_params:
+        items:
+          $ref: '#/definitions/v1.AuditPlanParamResV1'
+        type: array
+      audit_plan_type:
+        type: string
+      audit_plan_type_desc:
+        type: string
+      instance_type:
+        type: string
+    type: object
+  v1.AuditPlanParamReqV1:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
+  v1.AuditPlanParamResV1:
+    properties:
+      desc:
+        type: string
+      key:
+        type: string
+      type:
+        enum:
+        - string
+        - int
+        - bool
+        type: string
+      value:
+        type: string
+    type: object
   v1.AuditPlanReportResV1:
     properties:
       audit_plan_report_id:
@@ -47,6 +82,9 @@ definitions:
       audit_plan_instance_name:
         example: test_mysql
         type: string
+      audit_plan_meta:
+        $ref: '#/definitions/v1.AuditPlanMetaV1'
+        type: object
       audit_plan_name:
         example: audit_for_java_app1
         type: string
@@ -194,6 +232,13 @@ definitions:
         type: string
       audit_plan_name:
         example: audit_plan_for_java_repo_1
+        type: string
+      audit_plan_params:
+        items:
+          $ref: '#/definitions/v1.AuditPlanParamReqV1'
+        type: array
+      audit_plan_type:
+        example: slow log
         type: string
     type: object
   v1.CreateAuditWhitelistReqV1:
@@ -343,6 +388,19 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
+    type: object
+  v1.GetAuditPlanMetasResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanMetaV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetAuditPlanReportSQLsResV1:
     properties:
@@ -1088,6 +1146,10 @@ definitions:
       audit_plan_instance_name:
         example: test_mysql
         type: string
+      audit_plan_params:
+        items:
+          $ref: '#/definitions/v1.AuditPlanParamReqV1'
+        type: array
     type: object
   v1.UpdateAuditTaskSQLsReqV1:
     properties:
@@ -1482,6 +1544,65 @@ definitions:
       workflow_template_name:
         type: string
     type: object
+  v2.AuditPlanReportSQLResV2:
+    properties:
+      audit_plan_report_sql:
+        example: select * from t1 where id = 1
+        type: string
+      audit_plan_report_sql_audit_result:
+        example: same format as task audit result
+        type: string
+    type: object
+  v2.AuditPlanSQLHeadV2:
+    properties:
+      desc:
+        type: string
+      name:
+        type: string
+    type: object
+  v2.AuditPlanSQLResV2:
+    properties:
+      head:
+        items:
+          $ref: '#/definitions/v2.AuditPlanSQLHeadV2'
+        type: array
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
+  v2.GetAuditPlanReportSQLsResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.AuditPlanReportSQLResV2'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v2.GetAuditPlanSQLsResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.AuditPlanSQLResV2'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
 info:
   contact: {}
   description: This is a sample server for dev.
@@ -1489,6 +1610,25 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /v1/audit_plan_metas:
+    get:
+      description: get audit plan metas
+      operationId: getAuditPlanMetasV1
+      parameters:
+      - description: filter instance type
+        in: query
+        name: filter_instance_type
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanMetasResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核任务元信息
+      tags:
+      - audit_plan
   /v1/audit_plans:
     get:
       description: get audit plan info list
@@ -3467,6 +3607,67 @@ paths:
       summary: 批量取消工单
       tags:
       - workflow
+  /v2/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/:
+    get:
+      description: get audit plan report SQLs
+      operationId: getAuditPlanReportSQLsV2
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditPlanReportSQLsResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核计划的SQL审核详情
+      tags:
+      - audit_plan
+  /v2/audit_plans/{audit_plan_name}/sqls:
+    get:
+      description: get audit plan SQLs
+      operationId: getAuditPlanSQLsV2
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditPlanSQLsResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核计划的SQLs信息(不包括审核结果)
+      tags:
+      - audit_plan
 securityDefinitions:
   ApiKeyAuth:
     in: header
