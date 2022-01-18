@@ -22,6 +22,11 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
+const (
+	apiV1 = "v1"
+	apiV2 = "v2"
+)
+
 // @title Sqle API Docs
 // @version 1.0
 // @description This is a sample server for dev.
@@ -60,8 +65,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
 
-	v1Router := e.Group("/v1")
+	v1Router := e.Group(apiV1)
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
+	v2Router := e.Group(apiV2)
+	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
 
 	// v1 admin api, just admin user can access.
 	{
@@ -174,17 +181,17 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/audit_plans/:audit_plan_name/", v1.GetAuditPlan)
 	v1Router.GET("/audit_plans", v1.GetAuditPlans)
 	v1Router.GET("/audit_plans/:audit_plan_name/reports", v1.GetAuditPlanReports)
-	v1Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", v1.GetAuditPlanReportSQLs)
-	v1Router.GET("/audit_plans/:audit_plan_name/sqls", v1.GetAuditPlanSQLs)
+	// deprecated
+	v1Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", DeprecatedBy(apiV2))
+	v2Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", v2.GetAuditPlanReportSQLs)
+	// deprecated
+	v1Router.GET("/audit_plans/:audit_plan_name/sqls", DeprecatedBy(apiV2))
+	v2Router.GET("/audit_plans/:audit_plan_name/sqls", v2.GetAuditPlanSQLs)
+
 	v1Router.POST("/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	v1Router.POST("/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	v1Router.POST("/audit_plans/:audit_plan_name/trigger", v1.TriggerAuditPlan)
 	v1Router.POST("/audit_plan_metas", v1.GetAuditPlanMetas)
-
-	v2Router := e.Group("/v2")
-	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)))
-	v2Router.GET("/audit_plans/:audit_plan_name/sqls", v2.GetAuditPlanSQLs)
-	v2Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", v2.GetAuditPlanReportSQLs)
 
 	// UI
 	e.File("/", "ui/index.html")
@@ -236,5 +243,13 @@ func AdminUserAllowed() echo.MiddlewareFunc {
 			}
 			return echo.NewHTTPError(http.StatusForbidden)
 		}
+	}
+}
+
+// DeprecatedBy is a controller used to mark deprecated and used to replace the original controller.
+func DeprecatedBy(version string) func(echo.Context) error {
+	return func(ctx echo.Context) error {
+		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf(
+			"the API has been deprecated, please using the %s version", version))
 	}
 }
