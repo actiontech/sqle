@@ -203,7 +203,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     ConfigOptimizeIndexEnabled,
-			Desc:     "开启索引优化",
+			Desc:     "索引创建建议",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeIndexOptimization,
 			Params: driver.RuleParams{
