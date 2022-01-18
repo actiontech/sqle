@@ -1611,7 +1611,7 @@ paths:
       consumes:
       - application/json
       description: get audit plan metas
-      operationId: getAuditPlanMetaV1
+      operationId: getAuditPlanMetasV1
       responses:
         "200":
           description: OK

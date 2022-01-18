@@ -46,7 +46,7 @@ type AuditPlanParamResV1 struct {
 
 // @Summary 获取审核任务元信息
 // @Description get audit plan metas
-// @Id getAuditPlanMetaV1
+// @Id getAuditPlanMetasV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Accept json
