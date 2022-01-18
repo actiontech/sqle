@@ -203,7 +203,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     ConfigOptimizeIndexEnabled,
-			Desc:     "开启索引优化",
+			Desc:     "索引创建建议",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeIndexOptimization,
 			Params: driver.RuleParams{
@@ -923,7 +923,7 @@ var RuleHandlers = []RuleHandler{
 			Desc:  "建议选择可选性超过阈值字段作为索引",
 			Level: driver.RuleLevelNotice,
 			//Value:    "0.7",
-			Category: RuleTypeDMLConvention,
+			Category: RuleTypeIndexOptimization,
 			Params: driver.RuleParams{
 				&driver.RuleParam{
 					Key:   DefaultSingleParamKeyName,
@@ -933,7 +933,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "创建索引的字段可选性未超过阈值:%v",
+		Message:      "索引 %v 未超过可选性阈值 百分之%v, 不建议选为索引",
 		AllowOffline: false,
 		Func:         checkIndexOption,
 	},
@@ -2669,7 +2669,7 @@ func checkIndexOption(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 	// todo: using number compare, don't use string compare
 	max := rule.Params.GetParam(DefaultSingleParamKeyName).String()
 	if maxIndexOption != "" && strings.Compare(max, maxIndexOption) > 0 {
-		addResult(res, rule, rule.Name, max)
+		addResult(res, rule, rule.Name, strings.Join(indexColumns, ", "), max)
 	}
 	return nil
 }
