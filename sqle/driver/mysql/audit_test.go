@@ -180,6 +180,21 @@ select id from exist_db.EXIST_TB_1 where id = 1;
 		newTestResult())
 }
 
+func TestDDLCheckTableSize(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableSize].Rule
+
+	runSingleRuleInspectCase(rule, t, "drop_table: table1 oversized", DefaultMysqlInspect(),
+		`drop table exist_db.exist_tb_1;`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "alter_table: table1 oversized", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "drop_table: table4 oversized", DefaultMysqlInspect(),
+		`drop table exist_db.exist_tb_4;`, newTestResult().addResult(rulepkg.DDLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "alter_table: table4 oversized", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_4;`, newTestResult().addResult(rulepkg.DDLCheckTableSize, "exist_tb_4", 16).addResult(rulepkg.ConfigDDLOSCMinSize, PTOSCNoUniqueIndexOrPrimaryKey))
+
+}
+
 func TestCheckInvalidCreateTable(t *testing.T) {
 	runDefaultRulesInspectCase(t, "create_table: schema not exist", DefaultMysqlInspect(),
 		`
