@@ -107,7 +107,7 @@ func ReadFileContent(c echo.Context, name string) (content string, fileExist boo
 
 func IsUserCanBeDisabled(editorUserName, editedUserName string) (err error) {
 
-	if editedUserName == editedUserName {
+	if editorUserName == editedUserName {
 		return errors.DataInvalidErr("user<%v> can not disable or enable self", editorUserName)
 	}
 
