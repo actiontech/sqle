@@ -84,13 +84,13 @@ func (cp *CapitalizeProcessor) Leave(in ast.Node) (node ast.Node, skipChildren b
 
 // TableNameExtractor implements ast.Visitor interface.
 type TableNameExtractor struct {
-	TableNames map[string] /*lower case table name without database name*/ *ast.TableName
+	TableNames map[string] /*origin table name without database name*/ *ast.TableName
 }
 
 func (te *TableNameExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	switch stmt := in.(type) {
 	case *ast.TableName:
-		te.TableNames[stmt.Name.L] = stmt
+		te.TableNames[stmt.Name.O] = stmt
 	}
 	return in, false
 }
