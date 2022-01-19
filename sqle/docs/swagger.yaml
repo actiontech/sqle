@@ -1559,6 +1559,10 @@ definitions:
         type: string
       name:
         type: string
+      type:
+        enum:
+        - sql
+        type: string
     type: object
   v2.AuditPlanSQLResV2:
     properties:
