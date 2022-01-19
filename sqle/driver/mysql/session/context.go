@@ -699,7 +699,7 @@ func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (in
 			return 0, nil
 		}
 
-		record, err := c.e.Db.Query(fmt.Sprintf("select count(distinct `%s`) as cardinality from `%s`.`%s`", columnName, c.GetSchemaName(tn), tn.Name.L))
+		record, err := c.e.Db.Query(fmt.Sprintf("select count(distinct `%s`) as cardinality from `%s`.`%s`", columnName, c.GetSchemaName(tn), tn.Name.O))
 		if err != nil {
 			return 0, errors.Wrap(err, "get column cardinality error")
 		}
