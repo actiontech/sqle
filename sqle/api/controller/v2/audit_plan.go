@@ -9,8 +9,8 @@ import (
 
 type GetAuditPlanSQLsResV2 struct {
 	controller.BaseRes
-	Data      []AuditPlanSQLResV2 `json:"data"`
-	TotalNums uint64              `json:"total_nums"`
+	Data      AuditPlanSQLResV2 `json:"data"`
+	TotalNums uint64            `json:"total_nums"`
 }
 
 type AuditPlanSQLResV2 struct {
@@ -36,7 +36,7 @@ type AuditPlanSQLHeadV2 struct {
 func GetAuditPlanSQLs(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetAuditPlanSQLsResV2{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      []AuditPlanSQLResV2{},
+		Data:      AuditPlanSQLResV2{},
 		TotalNums: 0,
 	})
 }
