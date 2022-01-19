@@ -5597,10 +5597,8 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditPlanSQLResV2"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditPlanSQLResV2"
                 },
                 "message": {
                     "type": "string",
