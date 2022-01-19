@@ -5544,6 +5544,12 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "sql"
+                    ]
                 }
             }
         },
