@@ -1,13 +1,12 @@
 package model
 
 import (
-	sql_driver "database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/jinzhu/gorm"
 )
 
@@ -20,41 +19,6 @@ type RuleTemplate struct {
 	RuleList  []RuleTemplateRule `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
 
-type RuleParams struct {
-	Params driver.RuleParams
-}
-
-// Scan impl sql.Scanner interface
-func (r *RuleParams) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to unmarshal json value: %v", value)
-	}
-	if len(bytes) == 0 {
-		r.Params = nil
-		return nil
-	}
-	result := driver.RuleParams{}
-	err := json.Unmarshal(bytes, &result)
-	r.Params = result
-	return err
-}
-
-// Value impl driver.Valuer interface
-func (r *RuleParams) Value() (sql_driver.Value, error) {
-	if r == nil {
-		return []byte{}, nil
-	}
-	if r.Params == nil {
-		return []byte{}, nil
-	}
-	v, err := json.Marshal(r.Params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal json value: %v", v)
-	}
-	return v, err
-}
-
 func GenerateRuleByDriverRule(dr *driver.Rule, dbType string) *Rule {
 	return &Rule{
 		Name:   dr.Name,
@@ -62,31 +26,27 @@ func GenerateRuleByDriverRule(dr *driver.Rule, dbType string) *Rule {
 		Level:  string(dr.Level),
 		Typ:    dr.Category,
 		DBType: dbType,
-		Params: &RuleParams{Params: dr.Params},
+		Params: dr.Params,
 	}
 }
 
 func ConvertRuleToDriverRule(r *Rule) *driver.Rule {
-	var params driver.RuleParams
-	if r.Params != nil {
-		params = r.Params.Params
-	}
 	return &driver.Rule{
 		Name:     r.Name,
 		Desc:     r.Desc,
 		Category: r.Typ,
 		Level:    driver.RuleLevel(r.Level),
-		Params:   params,
+		Params:   r.Params,
 	}
 }
 
 type Rule struct {
-	Name   string      `json:"name" gorm:"primary_key; not null"`
-	DBType string      `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc   string      `json:"desc"`
-	Level  string      `json:"level" example:"error"` // notice, warn, error
-	Typ    string      `json:"type" gorm:"column:type; not null"`
-	Params *RuleParams `json:"params" gorm:"type:varchar(1000)"`
+	Name   string        `json:"name" gorm:"primary_key; not null"`
+	DBType string        `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
+	Desc   string        `json:"desc"`
+	Level  string        `json:"level" example:"error"` // notice, warn, error
+	Typ    string        `json:"type" gorm:"column:type; not null"`
+	Params params.Params `json:"params" gorm:"type:varchar(1000)"`
 }
 
 func (r Rule) TableName() string {
@@ -94,10 +54,10 @@ func (r Rule) TableName() string {
 }
 
 type RuleTemplateRule struct {
-	RuleTemplateId uint        `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
-	RuleName       string      `json:"name" gorm:"primary_key;"`
-	RuleLevel      string      `json:"level" gorm:"column:level;"`
-	RuleParams     *RuleParams `json:"value" gorm:"column:rule_params;type:varchar(1000)"`
+	RuleTemplateId uint          `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
+	RuleName       string        `json:"name" gorm:"primary_key;"`
+	RuleLevel      string        `json:"level" gorm:"column:level;"`
+	RuleParams     params.Params `json:"value" gorm:"column:rule_params;type:varchar(1000)"`
 
 	Rule *Rule `json:"-" gorm:"foreignkey:Name,DBType;association_foreignkey:RuleName,RuleDBType"`
 }
@@ -120,7 +80,7 @@ func (rtr *RuleTemplateRule) GetRule() *Rule {
 	if rtr.RuleLevel != "" {
 		rule.Level = rtr.RuleLevel
 	}
-	if rtr.RuleParams != nil && len(rtr.RuleParams.Params) > 0 {
+	if rtr.RuleParams != nil && len(rtr.RuleParams) > 0 {
 		rule.Params = rtr.RuleParams
 	}
 	return rule
