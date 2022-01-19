@@ -95,7 +95,7 @@ func UpdateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
+		return controller.JSONBaseErrorReq(c, errors.DataNotExistErr("user is not exist"))
 	}
 
 	// roles

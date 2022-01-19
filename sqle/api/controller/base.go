@@ -108,12 +108,12 @@ func ReadFileContent(c echo.Context, name string) (content string, fileExist boo
 func IsUserCanBeDisabled(editorUserName, editedUserName string) (err error) {
 
 	if editedUserName == editedUserName {
-		return errors.New(errors.DataInvalid, fmt.Errorf("user<%v> can not disable himself", editorUserName))
+		return errors.DataInvalidErr("user<%v> can not disable self", editorUserName)
 	}
 
 	// admin user can not be disabled.
 	if model.IsDefaultAdminUser(editedUserName) {
-		return errors.New(errors.DataInvalid, fmt.Errorf("You can not disabled admin user!"))
+		return errors.DataInvalidErr("admin user can not be disabled.")
 	}
 
 	return nil

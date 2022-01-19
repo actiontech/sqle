@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"fmt"
-
 	"github.com/labstack/echo/v4"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -19,10 +17,10 @@ func VerifyUserIsDisabled() echo.MiddlewareFunc {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 			if !isExist {
-				return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
+				return controller.JSONBaseErrorReq(c, errors.DataNotExistErr("user is not exist"))
 			}
 			if user.IsDisabled {
-				return controller.JSONBaseErrorReq(c, errors.New(errors.DataDisabled, fmt.Errorf("current user is disabled.")))
+				return controller.JSONBaseErrorReq(c, errors.UserDisabledErr("current user is disabled."))
 			}
 			return next(c)
 		}

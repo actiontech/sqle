@@ -24,7 +24,7 @@ const (
 	DataConflict  ErrorCode = 4012
 	DataInvalid   ErrorCode = 4013
 	DataParseFail ErrorCode = 4014
-	DataDisabled  ErrorCode = 4015
+	UserDisabled  ErrorCode = 4015
 
 	DriverNotExist ErrorCode = 5001
 	LoadDriverFail ErrorCode = 5008
@@ -67,4 +67,16 @@ func New(code ErrorCode, err error) error {
 
 func NewNotImplemented(feature string) *CodeError {
 	return &CodeError{code: FeatureNotImplemented, err: fmt.Errorf("Not available feature: %v, it is only supported for enterprise edition", feature)}
+}
+
+func DataNotExistErr(format string, a ...interface{}) error {
+	return New(DataNotExist, fmt.Errorf(format, a...))
+}
+
+func DataInvalidErr(format string, a ...interface{}) error {
+	return New(DataInvalid, fmt.Errorf(format, a...))
+}
+
+func UserDisabledErr(format string, a ...interface{}) error {
+	return New(UserDisabled, fmt.Errorf(format, a...))
 }
