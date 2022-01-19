@@ -119,7 +119,8 @@ func UpdateUser(c echo.Context) error {
 
 	// IsDisabled
 	if req.IsDisabled != nil {
-		if err := controller.IsUserCanBeDisabled(userName); err != nil {
+		if err := controller.IsUserCanBeDisabled(
+			controller.GetUserName(c), userName); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		user.IsDisabled = *req.IsDisabled
