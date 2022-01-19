@@ -260,6 +260,24 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 			nil,
 		},
+
+		{
+			"select v1, v2 from EXIST_TB_5 where v1 = '1'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "10000000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "v2"}, ""}},
+		},
+		{
+			"select * from EXIST_TB_5 join exist_tb_3 on EXIST_TB_5.v1 = exist_tb_3.v1",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1"}, ""}},
+		},
 	}
 	for i, tt := range optimizerTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
