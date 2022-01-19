@@ -101,6 +101,7 @@ const (
 	DMLCheckExplainAccessTypeAll         = "dml_check_explain_access_type_all"
 	DMLCheckExplainExtraUsingFilesort    = "dml_check_explain_extra_using_filesort"
 	DMLCheckExplainExtraUsingTemporary   = "dml_check_explain_extra_using_temporary"
+	DMLCheckTableSize                    = "dml_check_table_size"
 )
 
 // inspector config code
@@ -217,6 +218,25 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "执行DDL的表 %v 空间超过 %vMB",
 		Func:    checkDDLTableSize,
+	},
+
+	{
+		Rule: driver.Rule{
+			Name:     DMLCheckTableSize,
+			Desc:     "检查DML操作的表是否超过指定数据量",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+			Params: driver.RuleParams{
+				&driver.RuleParam{
+					Key:   DefaultSingleParamKeyName,
+					Value: "16",
+					Desc:  "表空间大小（MB）",
+					Type:  driver.RuleParamTypeInt,
+				},
+			},
+		},
+		Message: "执行DML的表 %v 空间超过 %vMB",
+		Func:    checkDMLTableSize,
 	},
 
 	{
@@ -1779,6 +1799,49 @@ func checkDDLTableSize(ctx *session.Context, rule driver.Rule, res *driver.Audit
 		tables = append(tables, stmt.Table)
 	case *ast.DropTableStmt:
 		tables = append(tables, stmt.Tables...)
+	default:
+		return nil
+	}
+
+	beyond := []string{}
+	for _, table := range tables {
+		size, err := ctx.GetTableSize(table)
+		if err != nil {
+			return err
+		}
+		if float64(min) < size {
+			beyond = append(beyond, table.Name.String())
+		}
+	}
+
+	if len(beyond) > 0 {
+		addResult(res, rule, rule.Name, strings.Join(beyond, " , "), min)
+	}
+	return nil
+}
+
+func checkDMLTableSize(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	min := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	tables := []*ast.TableName{}
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		tables = append(tables, util.GetTables(stmt.From.TableRefs)...)
+	case *ast.InsertStmt:
+		tables = append(tables, util.GetTables(stmt.Table.TableRefs)...)
+	case *ast.UpdateStmt:
+		tables = append(tables, util.GetTables(stmt.TableRefs.TableRefs)...)
+	case *ast.DeleteStmt:
+		tables = append(tables, util.GetTables(stmt.TableRefs.TableRefs)...)
+		if stmt.Tables != nil {
+			tables = append(tables, stmt.Tables.Tables...)
+		}
+	case *ast.LockTablesStmt:
+		for _, lock := range stmt.TableLocks {
+			tables = append(tables, lock.Table)
+		}
 	default:
 		return nil
 	}
