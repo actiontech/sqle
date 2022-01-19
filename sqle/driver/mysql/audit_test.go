@@ -195,6 +195,46 @@ func TestDDLCheckTableSize(t *testing.T) {
 
 }
 
+func TestDMLCheckTableSize(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckTableSize].Rule
+
+	// TODO 'select from table1 , table2 ;' There is currently no single test, because this sql sqle cannot be supported as of the time of writing the comment
+	runSingleRuleInspectCase(rule, t, "select: table1 oversized", DefaultMysqlInspect(),
+		`select 1 from exist_db.exist_tb_1 where id = 1;`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "update: table1 oversized", DefaultMysqlInspect(),
+		`UPDATE exist_db.exist_tb_1 SET id = 0.8;`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "insert: table1 oversized", DefaultMysqlInspect(),
+		`INSERT INTO exist_db.exist_tb_1 VALUES(7500, 'A', 'SALESMAN');`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "delete: table1 oversized", DefaultMysqlInspect(),
+		`DELETE id FROM exist_db.exist_tb_1;`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "lock: table1 oversized", DefaultMysqlInspect(),
+		`lock tables exist_db.exist_tb_1 read;`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "selects: table1 oversized", DefaultMysqlInspect(),
+		`select 1 from exist_db.exist_tb_1 join exist_db.exist_tb_2 where id = 1;`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "updates: table1 oversized", DefaultMysqlInspect(),
+		`UPDATE exist_db.exist_tb_1, exist_db.exist_tb_2 SET exist_db.exist_tb_2.id = exist_db.exist_tb_1.id * 0.8 WHERE exist_db.exist_tb_1.id= exist_db.exist_tb_2.id;`, newTestResult())
+	runSingleRuleInspectCase(rule, t, "deletes: table1 oversized", DefaultMysqlInspect(),
+		`DELETE id FROM exist_db.exist_tb_1 INNER JOIN exist_db.exist_tb_2 INNER JOIN exist_db.exist_tb_3;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "select: table1 oversized", DefaultMysqlInspect(),
+		`select 1 from exist_db.exist_tb_4 where id = 1;`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "update: table1 oversized", DefaultMysqlInspect(),
+		`UPDATE exist_db.exist_tb_4 SET id = 0.8;`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "insert: table1 oversized", DefaultMysqlInspect(),
+		`INSERT INTO exist_db.exist_tb_4 VALUES(7500, 'A', 'SALESMAN', 10);`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "delete: table1 oversized", DefaultMysqlInspect(),
+		`DELETE id FROM exist_db.exist_tb_4;`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "lock: table1 oversized", DefaultMysqlInspect(),
+		`lock tables exist_db.exist_tb_4 read;`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "selects: table1 oversized", DefaultMysqlInspect(),
+		`select 1 from exist_db.exist_tb_4 join exist_db.exist_tb_2 where id = 1;`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "updates: table1 oversized", DefaultMysqlInspect(),
+		`UPDATE exist_db.exist_tb_4, exist_db.exist_tb_2 SET exist_db.exist_tb_2.id = exist_db.exist_tb_4.id * 0.8 WHERE exist_db.exist_tb_4.id= exist_db.exist_tb_2.id;`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+	runSingleRuleInspectCase(rule, t, "deletes: table1 oversized", DefaultMysqlInspect(),
+		`DELETE id FROM exist_db.exist_tb_4 INNER JOIN exist_db.exist_tb_2 INNER JOIN exist_db.exist_tb_3;`, newTestResult().addResult(rulepkg.DMLCheckTableSize, "exist_tb_4", 16))
+
+}
+
 func TestCheckInvalidCreateTable(t *testing.T) {
 	runDefaultRulesInspectCase(t, "create_table: schema not exist", DefaultMysqlInspect(),
 		`
