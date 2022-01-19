@@ -155,16 +155,16 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 		left := ss.From.TableRefs.Left
 		right := ss.From.TableRefs.Right
 
-		if right == nil {
+		if right == nil { // means single table select
 			leftTable, ok := left.(*ast.TableSource)
 			if !ok {
 				continue
 			}
 
 			if leftTable.AsName.L != "" {
-				o.tables[leftTable.AsName.L] = &tableInSelect{singleTableSel: ss}
+				o.tables[leftTable.AsName.O] = &tableInSelect{singleTableSel: ss}
 			} else {
-				o.tables[leftTable.Source.(*ast.TableName).Name.L] = &tableInSelect{singleTableSel: ss}
+				o.tables[leftTable.Source.(*ast.TableName).Name.O] = &tableInSelect{singleTableSel: ss}
 			}
 		} else {
 			if ss.From.TableRefs.On != nil {
@@ -181,11 +181,13 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 				if !ok {
 					continue
 				}
-				o.tables[leftCNE.Name.Table.L] = &tableInSelect{joinOnColumn: leftCNE.Name.Name.L}
-				o.tables[rightCNE.Name.Table.L] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
+				o.tables[leftCNE.Name.Table.O] = &tableInSelect{joinOnColumn: leftCNE.Name.Name.L}
+				o.tables[rightCNE.Name.Table.O] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
+
 			} else if ss.From.TableRefs.Using != nil {
-				leftTableName := left.(*ast.TableSource).Source.(*ast.TableName).Name.L
-				rightTableName := right.(*ast.TableSource).Source.(*ast.TableName).Name.L
+
+				leftTableName := left.(*ast.TableSource).Source.(*ast.TableName).Name.O
+				rightTableName := right.(*ast.TableSource).Source.(*ast.TableName).Name.O
 				for _, col := range ss.From.TableRefs.Using {
 					o.tables[leftTableName] = &tableInSelect{joinOnColumn: col.Name.L}
 					o.tables[rightTableName] = &tableInSelect{joinOnColumn: col.Name.L}
@@ -551,7 +553,7 @@ func extractTableNameFromAST(ss *ast.SelectStmt, tbl string) *ast.TableName {
 	ss.Accept(&v)
 
 	for _, t := range v.TableNames {
-		if t.Name.L == tbl {
+		if t.Name.O == tbl {
 			return t
 		}
 	}
@@ -562,7 +564,7 @@ func getTableNameFromSingleSelect(ss *ast.SelectStmt) string {
 	if ss.From.TableRefs.Left == nil {
 		return ""
 	}
-	return ss.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name.L
+	return ss.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name.O
 }
 
 // removeDrivingTable remove driving table from execution plan.
