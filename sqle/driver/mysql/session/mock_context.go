@@ -47,6 +47,14 @@ func NewMockContext(e *executor.Executor) *Context {
 						Size:          100,
 						OriginalTable: getTestCreateTableStmt4(),
 					},
+
+					// used for test case problem
+					"EXIST_TB_5": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt5(),
+					},
 				},
 			},
 		},
@@ -126,6 +134,22 @@ PARTITION p1 VALUES IN(1, 2, 3),
 PARTITION p2 VALUES IN(4, 5, 6),
 PARTITION p3 VALUES IN(7, 8, 9)
 );
+`
+	node, err := util.ParseOneSql(baseCreateQuery)
+	if err != nil {
+		panic(err)
+	}
+	stmt, _ := node.(*ast.CreateTableStmt)
+	return stmt
+}
+
+func getTestCreateTableStmt5() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.EXIST_TB_5 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL COMMENT "unit test",
+v2 varchar(255) NOT NULL COMMENT "unit test"
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT="uint test";
 `
 	node, err := util.ParseOneSql(baseCreateQuery)
 	if err != nil {
