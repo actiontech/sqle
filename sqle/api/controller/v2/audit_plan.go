@@ -21,6 +21,7 @@ type AuditPlanSQLResV2 struct {
 type AuditPlanSQLHeadV2 struct {
 	Name string `json:"name"`
 	Desc string `json:"desc"`
+	Type string `json:"type" enums:"sql"`
 }
 
 // @Summary 获取指定审核计划的SQLs信息(不包括审核结果)
