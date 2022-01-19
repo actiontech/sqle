@@ -119,12 +119,9 @@ func UpdateUser(c echo.Context) error {
 
 	// IsDisabled
 	if req.IsDisabled != nil {
-		if model.IsDefaultAdminUser(userName) {
-			return controller.JSONBaseErrorReq(c,
-				errors.New(errors.DataInvalid, fmt.Errorf("You can not disabled admin user!")))
+		if err := controller.IsUserCanBeDisabled(userName); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
 		}
-
-		// not admin user
 		user.IsDisabled = *req.IsDisabled
 	}
 
