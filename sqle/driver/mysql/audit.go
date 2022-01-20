@@ -84,7 +84,7 @@ func (i *Inspect) CheckInvalid(ctx context.Context, node ast.Node) error {
 	}
 	{
 		// Only SQL that meets certain conditions should be pre-checked by explain, In order to reduce the probability of explain error and the performance loss caused by explain
-		if !canExplain || !i.cnf.configDMLExplainPreCheckEnable {
+		if !canExplain || !i.cnf.dmlExplainPreCheckEnable {
 			return nil
 		}
 		historyInfo := ctx.Value(CONTEXT_GET_HISTORY_SQL_INFO_KEY)
