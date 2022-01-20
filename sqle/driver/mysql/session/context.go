@@ -50,6 +50,11 @@ type SchemaInfo struct {
 	Tables           map[string]*TableInfo
 }
 
+type HistorySQLInfo struct {
+	HasDML bool
+	HasDDL bool
+}
+
 // Context is a database information cache.
 //
 // Is provides many methods to get database information.
@@ -71,6 +76,9 @@ type Context struct {
 
 	// sysVars keep some MySQL global system variables during one inspect context.
 	sysVars map[string]string
+
+	// historySqlInfo historical sql information record
+	historySqlInfo *HistorySQLInfo
 }
 
 type contextOption func(*Context)
@@ -82,9 +90,10 @@ func (o contextOption) apply(c *Context) {
 // NewContext creates a new context.
 func NewContext(parent *Context, opts ...contextOption) *Context {
 	ctx := &Context{
-		schemas:       map[string]*SchemaInfo{},
-		executionPlan: map[string][]*executor.ExplainRecord{},
-		sysVars:       map[string]string{},
+		schemas:        map[string]*SchemaInfo{},
+		executionPlan:  map[string][]*executor.ExplainRecord{},
+		sysVars:        map[string]string{},
+		historySqlInfo: &HistorySQLInfo{},
 	}
 
 	for _, opt := range opts {
@@ -257,6 +266,15 @@ func (c *Context) CurrentSchema() string {
 }
 
 func (c *Context) UpdateContext(node ast.Node) {
+	// from a language type perspective
+	switch node.(type) {
+	case ast.DMLNode:
+		c.historySqlInfo.HasDML = true
+	case ast.DDLNode:
+		c.historySqlInfo.HasDDL = true
+	default:
+	}
+	// from the point of view of specific sql types
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
