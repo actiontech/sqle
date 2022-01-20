@@ -33,8 +33,11 @@ const (
 	DuplicateIndexedColumnMessage      = "索引 %s 字段 %s重复"
 )
 
+// Should not use built-in type string as key for value; define your own type to avoid collisions -- from golangci.staticcheck
+type ContextKeyType string
+
 const (
-	CONTEXT_GET_HISTORY_SQL_INFO_KEY = "history_sql_info_key"
+	CONTEXT_GET_HISTORY_SQL_INFO_KEY ContextKeyType = "history_sql_info_key"
 )
 
 type HistorySQLInfo struct {

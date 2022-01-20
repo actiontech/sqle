@@ -62,6 +62,7 @@ getpid
 getwd
 github
 golang
+golangci
 golib
 gomail
 gomonkey
@@ -176,6 +177,7 @@ sqlstate
 sqlwarning
 sqlx
 sqrt
+staticcheck
 stderr
 stdlib
 stmt
