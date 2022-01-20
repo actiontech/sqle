@@ -33,6 +33,7 @@ const (
 
 func (i *Inspect) CheckInvalid(node ast.Node) error {
 	var err error
+	var canExplain bool
 	switch stmt := node.(type) {
 	case *ast.UseStmt:
 		err = i.checkInvalidUse(stmt)
@@ -51,15 +52,23 @@ func (i *Inspect) CheckInvalid(node ast.Node) error {
 	case *ast.DropIndexStmt:
 		err = i.checkInvalidDropIndex(stmt)
 	case *ast.InsertStmt:
+		canExplain = true
 		err = i.checkInvalidInsert(stmt)
 	case *ast.UpdateStmt:
+		canExplain = true
 		err = i.checkInvalidUpdate(stmt)
 	case *ast.DeleteStmt:
+		canExplain = true
 		err = i.checkInvalidDelete(stmt)
 	case *ast.SelectStmt:
+		canExplain = true
 		err = i.checkInvalidSelect(stmt)
 	case *ast.UnparsedStmt:
 		err = i.checkUnparsedStmt(stmt)
+	}
+
+	if err == nil && canExplain {
+		_, err = i.Ctx.GetExecutionPlan(node.Text())
 	}
 	return err
 }
