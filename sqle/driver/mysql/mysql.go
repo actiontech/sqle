@@ -108,6 +108,9 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 			inspect.cnf.calculateCardinalityMaxRow = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Int()
 			inspect.cnf.compositeIndexMaxColumn = rule.Params.GetParam(rulepkg.DefaultMultiParamsSecondKeyName).Int()
 		}
+		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
+			inspect.cnf.dmlExplainPreCheckEnable = true
+		}
 	}
 
 	return inspect, nil
@@ -378,6 +381,7 @@ type Config struct {
 	DDLGhostMinSize    int64
 
 	optimizeIndexEnabled       bool
+	dmlExplainPreCheckEnable   bool
 	calculateCardinalityMaxRow int
 	compositeIndexMaxColumn    int
 }
