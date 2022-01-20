@@ -3,7 +3,6 @@ aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcd
 aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcde
 abcdefghijklmnopqrstuvwxyz
 actiontech
-oversized
 adaptor
 agiledragon
 alecthomas
@@ -130,6 +129,7 @@ onlineddl
 opcode
 openark
 outfile
+oversized
 parserdriver
 percona
 pidfile
