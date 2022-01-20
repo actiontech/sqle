@@ -17,5 +17,10 @@ def get_all_folders_containing_go_files(path):
 
 
 get_all_folders_containing_go_files(sys.argv[1])
-d = os.system("scspell --use-builtin-base-dict --override-dictionary ./spelling_dict.txt --report-only " + "/*.go ".join(scspell_dir) + "/*.go")
-print(d)
+d = os.system(
+    "scspell --use-builtin-base-dict --override-dictionary ./spelling_dict.txt --report-only " + "/*.go ".join(
+        scspell_dir) + "/*.go")
+if d != 0:
+    raise ValueError(d)
+else:
+    print(d)
