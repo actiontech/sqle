@@ -119,3 +119,16 @@ func (r Params) Value() (driver.Value, error) {
 	}
 	return v, err
 }
+
+func (r *Params) Copy() Params {
+	ps := make(Params, 0, len(*r))
+	for _, p := range *r {
+		ps = append(ps, &Param{
+			Key:   p.Key,
+			Value: p.Value,
+			Desc:  p.Desc,
+			Type:  p.Type,
+		})
+	}
+	return ps
+}
