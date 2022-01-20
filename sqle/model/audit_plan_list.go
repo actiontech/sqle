@@ -1,17 +1,25 @@
 package model
 
+import (
+	"database/sql"
+
+	"github.com/actiontech/sqle/sqle/pkg/params"
+)
+
 type AuditPlanListDetail struct {
-	Name             string `json:"name"`
-	Cron             string `json:"cron_expression"`
-	DBType           string `json:"db_type"`
-	Token            string `json:"token"`
-	InstanceName     string `json:"instance_name"`
-	InstanceDatabase string `json:"instance_database"`
+	Name             string         `json:"name"`
+	Cron             string         `json:"cron_expression"`
+	DBType           string         `json:"db_type"`
+	Token            string         `json:"token"`
+	InstanceName     string         `json:"instance_name"`
+	InstanceDatabase string         `json:"instance_database"`
+	Type             sql.NullString `json:"type"`
+	Params           params.Params  `json:"params"`
 }
 
 var auditPlanQueryTpl = `
 SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token,
-audit_plans.instance_name, audit_plans.instance_database
+audit_plans.instance_name, audit_plans.instance_database, audit_plans.type, audit_plans.params
 
 {{- template "body" . -}} 
 
