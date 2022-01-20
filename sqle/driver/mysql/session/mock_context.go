@@ -58,6 +58,7 @@ func NewMockContext(e *executor.Executor) *Context {
 				},
 			},
 		},
+		historySqlInfo: &HistorySQLInfo{},
 	}
 }
 
