@@ -92,6 +92,9 @@ func (r *Param) Bool() bool {
 
 // Scan impl sql.Scanner interface
 func (r *Params) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
 	bytes, ok := value.([]byte)
 	if !ok {
 		return fmt.Errorf("failed to unmarshal json value: %v", value)
