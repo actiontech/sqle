@@ -276,9 +276,9 @@ func (c *Context) UpdateContext(node ast.Node) {
 	// from a language type perspective
 	switch node.(type) {
 	case ast.DMLNode:
-		c.historySqlInfo.HasDML = true
+		c.GetHistorySQLInfo().HasDML = true
 	case ast.DDLNode:
-		c.historySqlInfo.HasDDL = true
+		c.GetHistorySQLInfo().HasDDL = true
 	default:
 	}
 	// from the point of view of specific sql types
