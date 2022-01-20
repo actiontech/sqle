@@ -129,6 +129,7 @@ onlineddl
 opcode
 openark
 outfile
+oversized
 parserdriver
 percona
 pidfile
