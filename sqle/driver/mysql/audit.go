@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"context"
+	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -31,7 +33,18 @@ const (
 	DuplicateIndexedColumnMessage      = "索引 %s 字段 %s重复"
 )
 
-func (i *Inspect) CheckInvalid(node ast.Node) error {
+const (
+	CONTEXT_GET_HISTORY_SQL_INFO_KEY = "history_sql_info_key"
+)
+
+type HistorySQLInfo struct {
+	HasDDL bool
+	HasDML bool
+}
+
+const CheckInvalidErrorFormat = "预检查失败: %v"
+
+func (i *Inspect) CheckInvalid(ctx context.Context, node ast.Node) error {
 	var err error
 	var canExplain bool
 	switch stmt := node.(type) {
@@ -66,11 +79,24 @@ func (i *Inspect) CheckInvalid(node ast.Node) error {
 	case *ast.UnparsedStmt:
 		err = i.checkUnparsedStmt(stmt)
 	}
-
-	if err == nil && canExplain {
+	if err != nil {
+		return fmt.Errorf(CheckInvalidErrorFormat, err)
+	}
+	{
+		// Only SQL that meets certain conditions should be pre-checked by explain, In order to reduce the probability of explain error and the performance loss caused by explain
+		if !canExplain || !i.cnf.configDMLExplainPreCheckEnable {
+			return nil
+		}
+		historyInfo := ctx.Value(CONTEXT_GET_HISTORY_SQL_INFO_KEY)
+		if historyInfo != nil && historyInfo.(*HistorySQLInfo).HasDDL {
+			return nil
+		}
 		_, err = i.Ctx.GetExecutionPlan(node.Text())
 	}
-	return err
+	if err != nil {
+		return fmt.Errorf(CheckInvalidErrorFormat, err)
+	}
+	return nil
 }
 
 func (i *Inspect) CheckInvalidOffline(node ast.Node) error {

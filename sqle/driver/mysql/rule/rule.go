@@ -106,10 +106,11 @@ const (
 
 // inspector config code
 const (
-	ConfigDMLRollbackMaxRows   = "dml_rollback_max_rows"
-	ConfigDDLOSCMinSize        = "ddl_osc_min_size"
-	ConfigDDLGhostMinSize      = "ddl_ghost_min_size"
-	ConfigOptimizeIndexEnabled = "optimize_index_enabled"
+	ConfigDMLRollbackMaxRows       = "dml_rollback_max_rows"
+	ConfigDDLOSCMinSize            = "ddl_osc_min_size"
+	ConfigDDLGhostMinSize          = "ddl_ghost_min_size"
+	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
+	ConfigDMLExplainPreCheckEnable = "config_dml_enable_explain_pre_check"
 )
 
 type RuleHandler struct {
@@ -198,6 +199,15 @@ var RuleHandlers = []RuleHandler{
 					Type:  driver.RuleParamTypeInt,
 				},
 			},
+		},
+		Func: nil,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     ConfigDMLExplainPreCheckEnable,
+			Desc:     "使用explain加强预检查能力",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeGlobalConfig,
 		},
 		Func: nil,
 	},

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	_ "github.com/actiontech/sqle/sqle/driver/mysql"
+	"github.com/actiontech/sqle/sqle/driver/mysql"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -237,8 +237,10 @@ func (a *action) audit() (err error) {
 	if err != nil {
 		return err
 	}
+	historyInfo := &mysql.HistorySQLInfo{}
+	ctx := context.WithValue(context.TODO(), mysql.CONTEXT_GET_HISTORY_SQL_INFO_KEY, historyInfo)
 	for _, executeSQL := range task.ExecuteSQLs {
-		nodes, err := a.driver.Parse(context.TODO(), executeSQL.Content)
+		nodes, err := a.driver.Parse(ctx, executeSQL.Content)
 		if err != nil {
 			return err
 		}
@@ -247,10 +249,17 @@ func (a *action) audit() (err error) {
 			return driver.ErrNodesCountExceedOne
 		}
 
+		switch nodes[0].Type {
+		case driver.SQLTypeDDL:
+			historyInfo.HasDDL = true
+		case driver.SQLTypeDML:
+			historyInfo.HasDML = true
+		}
+
 		var whitelistMatch bool
 		for _, wl := range whitelist {
 			if wl.MatchType == model.SQLWhitelistFPMatch {
-				wlNodes, err := a.driver.Parse(context.TODO(), wl.Value)
+				wlNodes, err := a.driver.Parse(ctx, wl.Value)
 				if err != nil {
 					return err
 				}
@@ -272,7 +281,7 @@ func (a *action) audit() (err error) {
 		if whitelistMatch {
 			result.Add(driver.RuleLevelNormal, "白名单")
 		} else {
-			result, err = a.driver.Audit(context.TODO(), executeSQL.Content)
+			result, err = a.driver.Audit(ctx, executeSQL.Content)
 			if err != nil {
 				return err
 			}
@@ -297,11 +306,11 @@ func (a *action) audit() (err error) {
 		if err != nil {
 			return xerrors.Wrap(err, "new driver for generate rollback SQL")
 		}
-		defer d.Close(context.TODO())
+		defer d.Close(ctx)
 
 		var rollbackSQLs []*model.RollbackSQL
 		for _, executeSQL := range task.ExecuteSQLs {
-			rollbackSQL, reason, err := d.GenRollbackSQL(context.TODO(), executeSQL.Content)
+			rollbackSQL, reason, err := d.GenRollbackSQL(ctx, executeSQL.Content)
 			if err != nil {
 				return err
 			}
