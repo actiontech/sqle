@@ -256,22 +256,21 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
 	i.result = driver.NewInspectResults()
 
+	if sql == "" {
+		return nil, errors.New("sql is empty")
+	}
+
 	nodes, err := i.ParseSql(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(nodes) == 0 {
-		return nil, errors.New("nothing parsed")
-	}
-
 	if i.IsOfflineAudit() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
-		if err = i.CheckInvalid(nodes[0]); err != nil {
-			return nil, err
-		}
-		if i.cnf.dmlExplainPreCheckEnable {
+		err = i.CheckInvalid(nodes[0])
+
+		if err == nil && i.cnf.dmlExplainPreCheckEnable {
 			err = i.CheckExplain(nodes[0])
 		}
 	}
