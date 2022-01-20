@@ -110,7 +110,7 @@ const (
 	ConfigDDLOSCMinSize            = "ddl_osc_min_size"
 	ConfigDDLGhostMinSize          = "ddl_ghost_min_size"
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
-	ConfigDMLExplainPreCheckEnable = "config_dml_enable_explain_pre_check"
+	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 )
 
 type RuleHandler struct {
