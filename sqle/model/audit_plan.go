@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/jinzhu/gorm"
 )
 
@@ -15,7 +16,9 @@ type AuditPlan struct {
 	Token            string `json:"token" gorm:"not null"`
 	InstanceName     string `json:"instance_name"`
 	CreateUserID     uint
-	InstanceDatabase string `json:"instance_database"`
+	InstanceDatabase string        `json:"instance_database"`
+	Type             string        `json:"type"`
+	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
 	CreateUser       *User              `gorm:"foreignkey:CreateUserId"`
 	Instance         *Instance          `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
