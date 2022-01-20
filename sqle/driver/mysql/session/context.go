@@ -142,6 +142,13 @@ func (c *Context) GetSysVar(name string) (string, bool) {
 	return v, exist
 }
 
+func (c *Context) GetHistorySQLInfo() *HistorySQLInfo {
+	if c.historySqlInfo == nil {
+		c.historySqlInfo = &HistorySQLInfo{}
+	}
+	return c.historySqlInfo
+}
+
 func (c *Context) AddSysVar(name, value string) {
 	c.sysVars[name] = value
 }

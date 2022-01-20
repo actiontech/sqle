@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -30,6 +31,8 @@ const (
 	DuplicatePrimaryKeyedColumnMessage = "主键字段 %s 重复"
 	DuplicateIndexedColumnMessage      = "索引 %s 字段 %s重复"
 )
+
+const CheckInvalidErrorFormat = "预检查失败: %v"
 
 func (i *Inspect) CheckInvalid(node ast.Node) error {
 	var err error
@@ -61,7 +64,27 @@ func (i *Inspect) CheckInvalid(node ast.Node) error {
 	case *ast.UnparsedStmt:
 		err = i.checkUnparsedStmt(stmt)
 	}
-	return err
+	if err != nil {
+		return fmt.Errorf(CheckInvalidErrorFormat, err)
+	}
+	return nil
+
+}
+
+func (i *Inspect) CheckExplain(node ast.Node) error {
+	var err error
+	switch node.(type) {
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.SelectStmt:
+		if i.Ctx.GetHistorySQLInfo().HasDDL {
+			return nil
+		}
+		_, err = i.Ctx.GetExecutionPlan(node.Text())
+	}
+	if err != nil {
+		return fmt.Errorf(CheckInvalidErrorFormat, err)
+	}
+	return nil
+
 }
 
 func (i *Inspect) CheckInvalidOffline(node ast.Node) error {

@@ -268,7 +268,12 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 	if i.IsOfflineAudit() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
-		err = i.CheckInvalid(nodes[0])
+		if err = i.CheckInvalid(nodes[0]); err != nil {
+			return nil, err
+		}
+		if i.cnf.dmlExplainPreCheckEnable {
+			err = i.CheckExplain(nodes[0])
+		}
 	}
 	if err != nil {
 		return nil, err
