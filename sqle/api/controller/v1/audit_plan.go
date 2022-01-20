@@ -231,7 +231,7 @@ func CreateAuditPlan(c echo.Context) error {
 // @router /v1/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -264,7 +264,7 @@ func UpdateAuditPlan(c echo.Context) error {
 
 	apName := c.Param("audit_plan_name")
 
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -396,7 +396,7 @@ type GetAuditPlanResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/ [get]
 func GetAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -465,7 +465,7 @@ func GetAuditPlanReports(c echo.Context) error {
 	}
 
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -530,49 +530,7 @@ type AuditPlanReportSQLResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
 // @router /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/ [get]
 func GetAuditPlanReportSQLs(c echo.Context) error {
-	s := model.GetStorage()
-
-	req := new(GetAuditPlanReportSQLsReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-
-	data := map[string]interface{}{
-		"audit_plan_name":      apName,
-		"audit_plan_report_id": c.Param("audit_plan_report_id"),
-		"limit":                req.PageSize,
-		"offset":               offset,
-	}
-	auditPlanReportSQLs, count, err := s.GetAuditPlanReportSQLsByReq(data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	auditPlanReportSQLsResV1 := make([]AuditPlanReportSQLResV1, len(auditPlanReportSQLs))
-	for i, auditPlanReportSQL := range auditPlanReportSQLs {
-		auditPlanReportSQLsResV1[i] = AuditPlanReportSQLResV1{
-			Fingerprint:          auditPlanReportSQL.Fingerprint,
-			LastReceiveText:      auditPlanReportSQL.LastReceiveText,
-			LastReceiveTimestamp: auditPlanReportSQL.LastReceiveTimestamp,
-			AuditResult:          auditPlanReportSQL.AuditResult,
-		}
-	}
-	return c.JSON(http.StatusOK, &GetAuditPlanReportSQLsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      auditPlanReportSQLsResV1,
-		TotalNums: count,
-	})
+	return nil
 }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
@@ -645,7 +603,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*model.AuditPlanSQL, error) {
 	s := model.GetStorage()
 
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return nil, err
 	}
@@ -704,48 +662,7 @@ type AuditPlanSQLResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanSQLsResV1
 // @router /v1/audit_plans/{audit_plan_name}/sqls [get]
 func GetAuditPlanSQLs(c echo.Context) error {
-	s := model.GetStorage()
-
-	req := new(GetAuditPlanSQLsReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-
-	data := map[string]interface{}{
-		"audit_plan_name": apName,
-		"limit":           req.PageSize,
-		"offset":          offset,
-	}
-	auditPlanSQLs, count, err := s.GetAuditPlanSQLsByReq(data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	auditPlanSQLsResV1 := make([]AuditPlanSQLResV1, len(auditPlanSQLs))
-	for i, auditPlanSQL := range auditPlanSQLs {
-		auditPlanSQLsResV1[i] = AuditPlanSQLResV1{
-			Fingerprint:          auditPlanSQL.Fingerprint,
-			LastReceiveText:      auditPlanSQL.LastReceiveText,
-			LastReceiveTimestamp: auditPlanSQL.LastReceiveTimestamp,
-			Counter:              auditPlanSQL.Counter,
-		}
-	}
-	return c.JSON(http.StatusOK, &GetAuditPlanSQLsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      auditPlanSQLsResV1,
-		TotalNums: count,
-	})
+	return nil
 }
 
 type TriggerAuditPlanResV1 struct {
@@ -763,7 +680,7 @@ type TriggerAuditPlanResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -783,7 +700,7 @@ func TriggerAuditPlan(c echo.Context) error {
 	})
 }
 
-func checkCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {
+func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
