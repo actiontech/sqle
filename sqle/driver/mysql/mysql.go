@@ -260,6 +260,11 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 	if err != nil {
 		return nil, err
 	}
+
+	if len(nodes) == 0 {
+		return nil, errors.New("nothing parsed")
+	}
+
 	if i.IsOfflineAudit() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
