@@ -67,16 +67,16 @@ func TestManager_AddStaticAuditPlan(t *testing.T) {
 		WithArgs(adminUser.Name).
 		WillReturnRows(mockHandle.NewRows([]string{"id", "login_name"}).AddRow(adminUser.ID, adminUser.Name))
 	mockHandle.ExpectBegin()
-	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
-		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "").
+	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`,`type`,`params`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").
+		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "", "", nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mockHandle.ExpectCommit()
-	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name)
+	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name, "", nil)
 	assert.NoError(t, err)
 	assert.Len(t, manager.scheduler.cron.Entries(), 1)
 	assert.Len(t, manager.scheduler.entryIDs, 1)
 
-	err = manager.AddStaticAuditPlan(ap.Name, "", "", "")
+	err = manager.AddStaticAuditPlan(ap.Name, "", "", "", "", nil)
 	assert.Equal(t, ErrAuditPlanExisted.Error(), err.Error())
 	assertManager(t, manager, 1)
 
@@ -111,11 +111,11 @@ func TestManager_AddDynamicAuditPlan(t *testing.T) {
 		WithArgs(inst.Name).
 		WillReturnRows(sqlmock.NewRows([]string{"db_type"}).AddRow(inst.DbType))
 	mockHandle.ExpectBegin()
-	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
-		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, inst.DbType, token, inst.Name, ap.CreateUserID, database).
+	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`,`type`,`params`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").
+		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, inst.DbType, token, inst.Name, ap.CreateUserID, database, "", nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mockHandle.ExpectCommit()
-	err = manager.AddDynamicAuditPlan(ap.Name, ap.CronExpression, inst.Name, database, adminUser.Name)
+	err = manager.AddDynamicAuditPlan(ap.Name, ap.CronExpression, inst.Name, database, adminUser.Name, "", nil)
 	assert.NoError(t, err)
 	assertManager(t, manager, 1)
 }
@@ -144,11 +144,11 @@ func TestManager_UpdateAuditPlan(t *testing.T) {
 		WithArgs(adminUser.Name).
 		WillReturnRows(mockHandle.NewRows([]string{"id", "login_name"}).AddRow(adminUser.ID, adminUser.Name))
 	mockHandle.ExpectBegin()
-	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
-		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "").
+	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`,`type`,`params`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").
+		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "", "", nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mockHandle.ExpectCommit()
-	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name)
+	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name, "", nil)
 	assert.NoError(t, err)
 	assertManager(t, manager, 1)
 
@@ -199,11 +199,11 @@ func TestManager_DeleteAuditPlan(t *testing.T) {
 		WithArgs(adminUser.Name).
 		WillReturnRows(mockHandle.NewRows([]string{"id", "login_name"}).AddRow(adminUser.ID, adminUser.Name))
 	mockHandle.ExpectBegin()
-	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`) VALUES (?,?,?,?,?,?,?,?,?,?)").
-		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "").
+	mockHandle.ExpectExec("INSERT INTO `audit_plans` (`created_at`,`updated_at`,`deleted_at`,`name`,`cron_expression`,`db_type`,`token`,`instance_name`,`create_user_id`,`instance_database`,`type`,`params`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").
+		WithArgs(model.MockTime, model.MockTime, nil, ap.Name, ap.CronExpression, ap.DBType, token, "", ap.CreateUserID, "", "", nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mockHandle.ExpectCommit()
-	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name)
+	err = manager.AddStaticAuditPlan(ap.Name, ap.CronExpression, ap.DBType, adminUser.Name, "", nil)
 	assert.NoError(t, err)
 	assertManager(t, manager, 1)
 
