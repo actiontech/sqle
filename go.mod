@@ -15,7 +15,6 @@ require (
 	github.com/cznic/strutil v0.0.0-20181122101858-275e90344537
 	github.com/cznic/y v0.0.0-20181122101901-b05e8c2e8d7b
 	github.com/denisenkom/go-mssqldb v0.9.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
 	github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
@@ -40,7 +39,8 @@ require (
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/kr/text v0.2.0 // indirect
-	github.com/labstack/echo/v4 v4.0.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/labstack/echo/v4 v4.6.1
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
