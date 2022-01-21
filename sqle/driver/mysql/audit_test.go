@@ -1349,7 +1349,7 @@ id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX idx_1 (id)
+INDEX idx_1 (v1,id),
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
@@ -1362,7 +1362,7 @@ id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
-INDEX idx_1 (id),
+INDEX idx_1 (v1,id),
 INDEX idx_2 (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
