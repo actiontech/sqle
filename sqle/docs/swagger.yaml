@@ -322,6 +322,21 @@ definitions:
       rule_template_name:
         type: string
     type: object
+  v1.CreateUserGroupReqV1:
+    properties:
+      is_disabled:
+        type: boolean
+      user_group_desc:
+        example: this is a group
+        type: string
+      user_group_name:
+        example: test
+        type: string
+      user_name_list:
+        items:
+          type: string
+        type: array
+    type: object
   v1.CreateUserReqV1:
     properties:
       email:
@@ -785,6 +800,21 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetUserGroupsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.UserGroupListItemResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetUserLoginResV1:
     properties:
@@ -1321,6 +1351,17 @@ definitions:
         type: array
       user_name:
         type: string
+    type: object
+  v1.UserGroupListItemResV1:
+    properties:
+      group_desc:
+        type: string
+      group_name:
+        type: string
+      id:
+        type: integer
+      is_disabled:
+        type: boolean
     type: object
   v1.UserLoginReqV1:
     properties:
@@ -3026,6 +3067,85 @@ paths:
       summary: 用户修改密码
       tags:
       - user
+  /v1/user_groups:
+    get:
+      description: get user group info list
+      operationId: getUserGroupListV1
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetUserGroupsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户组列表
+      tags:
+      - user_group
+    post:
+      consumes:
+      - application/json
+      description: create user group
+      operationId: CreateUserGroupV1
+      parameters:
+      - description: create user group
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateUserGroupReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建用户组
+      tags:
+      - user_group
+  /v1/user_groups/{user_group_name}/:
+    delete:
+      description: delete user group
+      operationId: deleteUserGroupV1
+      parameters:
+      - description: user_group_name
+        in: path
+        name: user_group_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除用户组
+      tags:
+      - user_group
+    patch:
+      description: update user group
+      operationId: updateUserGroupV1
+      parameters:
+      - description: user_group_name
+        in: path
+        name: user_group_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新用户组
+      tags:
+      - user_group
   /v1/user_tips:
     get:
       description: get user tip list
