@@ -227,12 +227,12 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "检查DDL创建的新索引对应字段是否已存在过多索引",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeIndexingConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "2",
 					Desc:  "单字段的索引数最大值",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
