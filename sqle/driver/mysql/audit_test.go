@@ -1340,6 +1340,36 @@ INDEX idx_6 (id)
 	)
 }
 
+func TestCheckDDLIndexTooMany(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexTooMany].Rule
+	runSingleRuleInspectCase(rule, t, "create_table: index <= 2", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: index > 2", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (id),
+INDEX idx_2 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckIndexTooMany, "id", 2),
+	)
+}
+
 func TestCheckCompositeIndexMax(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckCompositeIndexMax].Rule
 	runSingleRuleInspectCase(rule, t, "create_table: composite index columns <= 3", DefaultMysqlInspect(),
