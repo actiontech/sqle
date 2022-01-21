@@ -78,6 +78,7 @@ const (
 	DDLCheckCreateFunction                      = "ddl_check_create_function"
 	DDLCheckCreateProcedure                     = "ddl_check_create_procedure"
 	DDLCheckTableSize                           = "ddl_check_table_size"
+	DDLCheckIndexTooMany                        = "ddl_check_index_too_many"
 )
 
 // inspector DML rules
@@ -220,6 +221,23 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "执行DDL的表 %v 空间超过 %vMB",
 		Func:    checkDDLTableSize,
+	}, {
+		Rule: driver.Rule{
+			Name:     DDLCheckIndexTooMany,
+			Desc:     "检查DDL创建的新索引对应字段是否已存在过多索引",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeIndexingConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2",
+					Desc:  "单字段的索引数最大值",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "字段 %v 上的索引数量超过%v个",
+		Func:    checkIndex,
 	},
 	{
 		Rule: driver.Rule{
@@ -1695,6 +1713,7 @@ func checkForeignKey(ctx *session.Context, rule driver.Rule, res *driver.AuditRe
 func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
+	singleIndexCounter := map[string] /*index*/ int /*count*/ {}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check index
@@ -1705,6 +1724,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				if compositeIndexMax < len(constraint.Keys) {
 					compositeIndexMax = len(constraint.Keys)
 				}
+			}
+			for _, key := range constraint.Keys {
+				singleIndexCounter[key.Column.Name.String()]++
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -1719,6 +1741,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 					compositeIndexMax = len(spec.Constraint.Keys)
 				}
 			}
+			for _, key := range spec.Constraint.Keys {
+				singleIndexCounter[key.Column.Name.String()]++
+			}
 		}
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
@@ -1730,6 +1755,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 					indexCounter++
 				}
+				for _, key := range constraint.Keys {
+					singleIndexCounter[key.Column.Name.String()]++
+				}
 			}
 		}
 
@@ -1737,6 +1765,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 		indexCounter++
 		if compositeIndexMax < len(stmt.IndexColNames) {
 			compositeIndexMax = len(stmt.IndexColNames)
+		}
+		for _, key := range stmt.IndexColNames {
+			singleIndexCounter[key.Column.Name.String()]++
 		}
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
@@ -1747,6 +1778,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 					indexCounter++
+				}
+				for _, key := range constraint.Keys {
+					singleIndexCounter[key.Column.Name.String()]++
 				}
 			}
 		}
@@ -1763,6 +1797,17 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 	if rule.Name == DDLCheckCompositeIndexMax && compositeIndexMax > expectCounter {
 		addResult(res, rule, DDLCheckCompositeIndexMax, expectCounter)
+	}
+	if rule.Name == DDLCheckIndexTooMany {
+		manyKeys := []string{}
+		for s, i := range singleIndexCounter {
+			if i > expectCounter {
+				manyKeys = append(manyKeys, s)
+			}
+		}
+		if len(manyKeys) > 0 {
+			addResult(res, rule, DDLCheckIndexTooMany, strings.Join(manyKeys, " , "), expectCounter)
+		}
 	}
 	return nil
 }
