@@ -3,7 +3,6 @@ package rule
 import (
 	"bytes"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -14,6 +13,8 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
@@ -77,6 +78,7 @@ const (
 	DDLCheckCreateFunction                      = "ddl_check_create_function"
 	DDLCheckCreateProcedure                     = "ddl_check_create_procedure"
 	DDLCheckTableSize                           = "ddl_check_table_size"
+	DDLCheckIndexTooMany                        = "ddl_check_index_too_many"
 )
 
 // inspector DML rules
@@ -106,10 +108,11 @@ const (
 
 // inspector config code
 const (
-	ConfigDMLRollbackMaxRows   = "dml_rollback_max_rows"
-	ConfigDDLOSCMinSize        = "ddl_osc_min_size"
-	ConfigDDLGhostMinSize      = "ddl_ghost_min_size"
-	ConfigOptimizeIndexEnabled = "optimize_index_enabled"
+	ConfigDMLRollbackMaxRows       = "dml_rollback_max_rows"
+	ConfigDDLOSCMinSize            = "ddl_osc_min_size"
+	ConfigDDLGhostMinSize          = "ddl_ghost_min_size"
+	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
+	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 )
 
 type RuleHandler struct {
@@ -172,12 +175,12 @@ var RuleHandlers = []RuleHandler{
 			//Value:    "1000",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeGlobalConfig,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1000",
 					Desc:  "最大影响行数",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -190,12 +193,12 @@ var RuleHandlers = []RuleHandler{
 			//Value:    "16",
 			Level:    driver.RuleLevelNormal,
 			Category: RuleTypeGlobalConfig,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "16",
 					Desc:  "表空间大小（MB）",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -207,31 +210,56 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "检查DDL操作的表是否超过指定数据量",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "16",
 					Desc:  "表空间大小（MB）",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		Message: "执行DDL的表 %v 空间超过 %vMB",
 		Func:    checkDDLTableSize,
+	}, {
+		Rule: driver.Rule{
+			Name:     DDLCheckIndexTooMany,
+			Desc:     "检查DDL创建的新索引对应字段是否已存在过多索引",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeIndexingConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2",
+					Desc:  "单字段的索引数最大值",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "字段 %v 上的索引数量超过%v个",
+		Func:    checkIndex,
 	},
-
+	{
+		Rule: driver.Rule{
+			Name:     ConfigDMLExplainPreCheckEnable,
+			Desc:     "使用explain加强预检查能力",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeGlobalConfig,
+		},
+		Func: nil,
+	},
 	{
 		Rule: driver.Rule{
 			Name:     DMLCheckTableSize,
 			Desc:     "检查DML操作的表是否超过指定数据量",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "16",
 					Desc:  "表空间大小（MB）",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -245,18 +273,18 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "索引创建建议",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeIndexOptimization,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultMultiParamsFirstKeyName,
 					Value: "1000000",
 					Desc:  "计算列基数阈值",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
-				&driver.RuleParam{
+				&params.Param{
 					Key:   DefaultMultiParamsSecondKeyName,
 					Value: "3",
 					Desc:  "联合索引最大列数",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -269,12 +297,12 @@ var RuleHandlers = []RuleHandler{
 			//Value:    "16",
 			Level:    driver.RuleLevelNormal,
 			Category: RuleTypeGlobalConfig,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "16",
 					Desc:  "表空间大小（MB）",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -300,12 +328,12 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
 			//Value:    "64",
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "64",
 					Desc:  "最大长度（字节）",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -378,12 +406,12 @@ var RuleHandlers = []RuleHandler{
 			Level: driver.RuleLevelNotice,
 			//Value:    "5",
 			Category: RuleTypeIndexingConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "5",
 					Desc:  "最大索引个数",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -399,12 +427,12 @@ var RuleHandlers = []RuleHandler{
 			Level: driver.RuleLevelNotice,
 			//Value:    "3",
 			Category: RuleTypeIndexingConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "3",
 					Desc:  "最大索引列数量",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -442,12 +470,12 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
 			//Value:    "Innodb",
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "Innodb",
 					Desc:  "数据库引擎",
-					Type:  driver.RuleParamTypeString,
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
@@ -462,12 +490,12 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
 			//Value:    "utf8mb4",
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "utf8mb4",
 					Desc:  "数据库字符集",
-					Type:  driver.RuleParamTypeString,
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
@@ -560,12 +588,12 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
 			//Value:    "idx_",
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "idx_",
 					Desc:  "索引前缀",
-					Type:  driver.RuleParamTypeString,
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
@@ -580,12 +608,12 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeNamingConvention,
 			//Value:    "uniq_",
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "uniq_",
 					Desc:  "索引前缀",
-					Type:  driver.RuleParamTypeString,
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
@@ -689,12 +717,12 @@ var RuleHandlers = []RuleHandler{
 			Level: driver.RuleLevelNotice,
 			//Value:    "5000",
 			Category: RuleTypeDMLConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "5000",
 					Desc:  "最大插入行数",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -807,12 +835,12 @@ var RuleHandlers = []RuleHandler{
 			Level: driver.RuleLevelNotice,
 			//Value:    "utf8mb4_0900_ai_ci",
 			Category: RuleTypeDDLConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "utf8mb4_0900_ai_ci",
 					Desc:  "数据库排序规则",
-					Type:  driver.RuleParamTypeString,
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
@@ -837,12 +865,12 @@ var RuleHandlers = []RuleHandler{
 			Level: driver.RuleLevelNotice,
 			//Value:    "sha(),sqrt(),md5()",
 			Category: RuleTypeDMLConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "sha(),sqrt(),md5()",
 					Desc:  "指定的函数集合（逗号分割）",
-					Type:  driver.RuleParamTypeString,
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
@@ -857,12 +885,12 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeNamingConvention,
 			//Value:    "_DB",
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "_DB",
 					Desc:  "数据库名称后缀",
-					Type:  driver.RuleParamTypeString,
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
@@ -921,12 +949,12 @@ var RuleHandlers = []RuleHandler{
 			Level: driver.RuleLevelNotice,
 			//Value:    "3",
 			Category: RuleTypeDMLConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "3",
 					Desc:  "最大连接表个数",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -963,12 +991,12 @@ var RuleHandlers = []RuleHandler{
 			Level: driver.RuleLevelNotice,
 			//Value:    "0.7",
 			Category: RuleTypeIndexOptimization,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "70",
 					Desc:  "可选择性（百分比）",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -1016,12 +1044,12 @@ var RuleHandlers = []RuleHandler{
 			Desc:     "查询的扫描不建议超过指定行数（默认值：10000）",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
-			Params: driver.RuleParams{
-				&driver.RuleParam{
+			Params: params.Params{
+				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "10000",
 					Desc:  "最大扫描行数",
-					Type:  driver.RuleParamTypeInt,
+					Type:  params.ParamTypeInt,
 				},
 			},
 		},
@@ -1685,6 +1713,7 @@ func checkForeignKey(ctx *session.Context, rule driver.Rule, res *driver.AuditRe
 func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	indexCounter := 0
 	compositeIndexMax := 0
+	singleIndexCounter := map[string] /*index*/ int /*count*/ {}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check index
@@ -1695,6 +1724,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				if compositeIndexMax < len(constraint.Keys) {
 					compositeIndexMax = len(constraint.Keys)
 				}
+			}
+			for _, key := range constraint.Keys {
+				singleIndexCounter[key.Column.Name.String()]++
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -1709,6 +1741,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 					compositeIndexMax = len(spec.Constraint.Keys)
 				}
 			}
+			for _, key := range spec.Constraint.Keys {
+				singleIndexCounter[key.Column.Name.String()]++
+			}
 		}
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
@@ -1720,6 +1755,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 					indexCounter++
 				}
+				for _, key := range constraint.Keys {
+					singleIndexCounter[key.Column.Name.String()]++
+				}
 			}
 		}
 
@@ -1727,6 +1765,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 		indexCounter++
 		if compositeIndexMax < len(stmt.IndexColNames) {
 			compositeIndexMax = len(stmt.IndexColNames)
+		}
+		for _, key := range stmt.IndexColNames {
+			singleIndexCounter[key.Column.Name.String()]++
 		}
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
@@ -1737,6 +1778,9 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 					indexCounter++
+				}
+				for _, key := range constraint.Keys {
+					singleIndexCounter[key.Column.Name.String()]++
 				}
 			}
 		}
@@ -1753,6 +1797,17 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 	if rule.Name == DDLCheckCompositeIndexMax && compositeIndexMax > expectCounter {
 		addResult(res, rule, DDLCheckCompositeIndexMax, expectCounter)
+	}
+	if rule.Name == DDLCheckIndexTooMany {
+		manyKeys := []string{}
+		for s, i := range singleIndexCounter {
+			if i > expectCounter {
+				manyKeys = append(manyKeys, s)
+			}
+		}
+		if len(manyKeys) > 0 {
+			addResult(res, rule, DDLCheckIndexTooMany, strings.Join(manyKeys, " , "), expectCounter)
+		}
 	}
 	return nil
 }

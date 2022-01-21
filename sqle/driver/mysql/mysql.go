@@ -108,6 +108,9 @@ func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 			inspect.cnf.calculateCardinalityMaxRow = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Int()
 			inspect.cnf.compositeIndexMaxColumn = rule.Params.GetParam(rulepkg.DefaultMultiParamsSecondKeyName).Int()
 		}
+		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
+			inspect.cnf.dmlExplainPreCheckEnable = true
+		}
 	}
 
 	return inspect, nil
@@ -253,14 +256,23 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
 	i.result = driver.NewInspectResults()
 
+	if sql == "" {
+		return nil, errors.New("sql is empty")
+	}
+
 	nodes, err := i.ParseSql(sql)
 	if err != nil {
 		return nil, err
 	}
+
 	if i.IsOfflineAudit() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
 		err = i.CheckInvalid(nodes[0])
+
+		if err == nil && i.cnf.dmlExplainPreCheckEnable {
+			err = i.CheckExplain(nodes[0])
+		}
 	}
 	if err != nil {
 		return nil, err
@@ -378,6 +390,7 @@ type Config struct {
 	DDLGhostMinSize    int64
 
 	optimizeIndexEnabled       bool
+	dmlExplainPreCheckEnable   bool
 	calculateCardinalityMaxRow int
 	compositeIndexMaxColumn    int
 }

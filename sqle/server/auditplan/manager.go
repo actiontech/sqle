@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/jinzhu/gorm"
@@ -87,7 +88,8 @@ func (mgr *Manager) stop() {
 	mgr.logger.Infoln("audit plan manager stopped")
 }
 
-func (mgr *Manager) AddStaticAuditPlan(name, cronExp, dbType, currentUserName string) error {
+func (mgr *Manager) AddStaticAuditPlan(name, cronExp, dbType, currentUserName,
+	auditPlanType string, ps params.Params) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
@@ -95,12 +97,15 @@ func (mgr *Manager) AddStaticAuditPlan(name, cronExp, dbType, currentUserName st
 		Name:           name,
 		CronExpression: cronExp,
 		DBType:         dbType,
+		Type:           auditPlanType,
+		Params:         ps,
 	}
 
 	return mgr.addAuditPlan(ap, currentUserName)
 }
 
-func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDatabase, currentUserName string) error {
+func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDatabase, currentUserName,
+	auditPlanType string, ps params.Params) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
@@ -109,6 +114,8 @@ func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDat
 		CronExpression:   cronExp,
 		InstanceName:     instanceName,
 		InstanceDatabase: instanceDatabase,
+		Type:             auditPlanType,
+		Params:           ps,
 	}
 
 	return mgr.addAuditPlan(ap, currentUserName)

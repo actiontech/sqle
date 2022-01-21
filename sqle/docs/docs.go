@@ -248,6 +248,7 @@ var doc = `{
                 ],
                 "summary": "获取指定审核计划的SQL审核详情",
                 "operationId": "getAuditPlanReportSQLsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -343,6 +344,7 @@ var doc = `{
                 ],
                 "summary": "获取指定审核计划的SQLs信息(不包括审核结果)",
                 "operationId": "getAuditPlanSQLsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",

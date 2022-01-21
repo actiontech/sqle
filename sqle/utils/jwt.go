@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 )
 
 // TODO: Using configuration to set jwt secret

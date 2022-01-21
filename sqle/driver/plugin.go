@@ -10,21 +10,21 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver/proto"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/pingcap/errors"
-
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	goPlugin "github.com/hashicorp/go-plugin"
+	"github.com/pingcap/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 func convertRuleFromProtoToDriver(rule *proto.Rule) *Rule {
-	var params = make(RuleParams, 0, len(rule.Params))
+	var ps = make(params.Params, 0, len(rule.Params))
 	for _, p := range rule.Params {
-		params = append(params, &RuleParam{
+		ps = append(ps, &params.Param{
 			Key:   p.Key,
 			Value: p.Value,
 			Desc:  p.Desc,
-			Type:  RuleParamType(p.Type),
+			Type:  params.ParamType(p.Type),
 		})
 	}
 	return &Rule{
@@ -32,7 +32,7 @@ func convertRuleFromProtoToDriver(rule *proto.Rule) *Rule {
 		Category: rule.Category,
 		Desc:     rule.Desc,
 		Level:    RuleLevel(rule.Level),
-		Params:   params,
+		Params:   ps,
 	}
 }
 

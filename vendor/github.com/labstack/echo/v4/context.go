@@ -2,7 +2,6 @@ package echo
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -13,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 type (
@@ -24,6 +24,9 @@ type (
 
 		// SetRequest sets `*http.Request`.
 		SetRequest(r *http.Request)
+
+		// SetResponse sets `*Response`.
+		SetResponse(r *Response)
 
 		// Response returns `*Response`.
 		Response() *Response
@@ -39,6 +42,7 @@ type (
 
 		// RealIP returns the client's network address based on `X-Forwarded-For`
 		// or `X-Real-IP` request header.
+		// The behavior can be configured using `Echo#IPExtractor`.
 		RealIP() string
 
 		// Path returns the registered path for the handler.
@@ -179,6 +183,9 @@ type (
 		// Logger returns the `Logger` instance.
 		Logger() Logger
 
+		// Set the logger
+		SetLogger(l Logger)
+
 		// Echo returns the `Echo` instance.
 		Echo() *Echo
 
@@ -198,6 +205,8 @@ type (
 		handler  HandlerFunc
 		store    Map
 		echo     *Echo
+		logger   Logger
+		lock     sync.RWMutex
 	}
 )
 
@@ -226,13 +235,17 @@ func (c *context) Response() *Response {
 	return c.response
 }
 
+func (c *context) SetResponse(r *Response) {
+	c.response = r
+}
+
 func (c *context) IsTLS() bool {
 	return c.request.TLS != nil
 }
 
 func (c *context) IsWebSocket() bool {
 	upgrade := c.request.Header.Get(HeaderUpgrade)
-	return upgrade == "websocket" || upgrade == "Websocket"
+	return strings.EqualFold(upgrade, "websocket")
 }
 
 func (c *context) Scheme() string {
@@ -257,8 +270,16 @@ func (c *context) Scheme() string {
 }
 
 func (c *context) RealIP() string {
+	if c.echo != nil && c.echo.IPExtractor != nil {
+		return c.echo.IPExtractor(c.request)
+	}
+	// Fall back to legacy behavior
 	if ip := c.request.Header.Get(HeaderXForwardedFor); ip != "" {
-		return strings.Split(ip, ", ")[0]
+		i := strings.IndexAny(ip, ",")
+		if i > 0 {
+			return strings.TrimSpace(ip[:i])
+		}
+		return ip
 	}
 	if ip := c.request.Header.Get(HeaderXRealIP); ip != "" {
 		return ip
@@ -292,6 +313,19 @@ func (c *context) ParamNames() []string {
 
 func (c *context) SetParamNames(names ...string) {
 	c.pnames = names
+
+	l := len(names)
+	if *c.echo.maxParam < l {
+		*c.echo.maxParam = l
+	}
+
+	if len(c.pvalues) < l {
+		// Keeping the old pvalues just for backward compatibility, but it sounds that doesn't make sense to keep them,
+		// probably those values will be overriden in a Context#SetParamValues
+		newPvalues := make([]string, l)
+		copy(newPvalues, c.pvalues)
+		c.pvalues = newPvalues
+	}
 }
 
 func (c *context) ParamValues() []string {
@@ -299,7 +333,15 @@ func (c *context) ParamValues() []string {
 }
 
 func (c *context) SetParamValues(values ...string) {
-	c.pvalues = values
+	// NOTE: Don't just set c.pvalues = values, because it has to have length c.echo.maxParam at all times
+	// It will brake the Router#Find code
+	limit := len(values)
+	if limit > *c.echo.maxParam {
+		limit = *c.echo.maxParam
+	}
+	for i := 0; i < limit; i++ {
+		c.pvalues[i] = values[i]
+	}
 }
 
 func (c *context) QueryParam(name string) string {
@@ -338,8 +380,12 @@ func (c *context) FormParams() (url.Values, error) {
 }
 
 func (c *context) FormFile(name string) (*multipart.FileHeader, error) {
-	_, fh, err := c.request.FormFile(name)
-	return fh, err
+	f, fh, err := c.request.FormFile(name)
+	if err != nil {
+		return nil, err
+	}
+	f.Close()
+	return fh, nil
 }
 
 func (c *context) MultipartForm() (*multipart.Form, error) {
@@ -360,10 +406,15 @@ func (c *context) Cookies() []*http.Cookie {
 }
 
 func (c *context) Get(key string) interface{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.store[key]
 }
 
 func (c *context) Set(key string, val interface{}) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.store == nil {
 		c.store = make(Map)
 	}
@@ -405,17 +456,16 @@ func (c *context) String(code int, s string) (err error) {
 }
 
 func (c *context) jsonPBlob(code int, callback string, i interface{}) (err error) {
-	enc := json.NewEncoder(c.response)
-	_, pretty := c.QueryParams()["pretty"]
-	if c.echo.Debug || pretty {
-		enc.SetIndent("", "  ")
+	indent := ""
+	if _, pretty := c.QueryParams()["pretty"]; c.echo.Debug || pretty {
+		indent = defaultIndent
 	}
 	c.writeContentType(MIMEApplicationJavaScriptCharsetUTF8)
 	c.response.WriteHeader(code)
 	if _, err = c.response.Write([]byte(callback + "(")); err != nil {
 		return
 	}
-	if err = enc.Encode(i); err != nil {
+	if err = c.echo.JSONSerializer.Serialize(c, i, indent); err != nil {
 		return
 	}
 	if _, err = c.response.Write([]byte(");")); err != nil {
@@ -425,13 +475,9 @@ func (c *context) jsonPBlob(code int, callback string, i interface{}) (err error
 }
 
 func (c *context) json(code int, i interface{}, indent string) error {
-	enc := json.NewEncoder(c.response)
-	if indent != "" {
-		enc.SetIndent("", indent)
-	}
 	c.writeContentType(MIMEApplicationJSONCharsetUTF8)
-	c.response.WriteHeader(code)
-	return enc.Encode(i)
+	c.response.Status = code
+	return c.echo.JSONSerializer.Serialize(c, i, indent)
 }
 
 func (c *context) JSON(code int, i interface{}) (err error) {
@@ -583,7 +629,15 @@ func (c *context) SetHandler(h HandlerFunc) {
 }
 
 func (c *context) Logger() Logger {
+	res := c.logger
+	if res != nil {
+		return res
+	}
 	return c.echo.Logger
+}
+
+func (c *context) SetLogger(l Logger) {
+	c.logger = l
 }
 
 func (c *context) Reset(r *http.Request, w http.ResponseWriter) {
@@ -594,7 +648,9 @@ func (c *context) Reset(r *http.Request, w http.ResponseWriter) {
 	c.store = nil
 	c.path = ""
 	c.pnames = nil
+	c.logger = nil
 	// NOTE: Don't reset because it has to have length c.echo.maxParam at all times
-	// c.pvalues = nil
+	for i := 0; i < *c.echo.maxParam; i++ {
+		c.pvalues[i] = ""
+	}
 }
-
