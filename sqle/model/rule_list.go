@@ -15,7 +15,7 @@ FROM rule_templates
 LEFT JOIN rule_template_rule ON rule_templates.id = rule_template_rule.rule_template_id
 LEFT JOIN rules ON rule_template_rule.rule_name = rules.name
 LEFT JOIN instance_rule_template ON rule_templates.id = instance_rule_template.rule_template_id
-LEFT JOIN instances ON instance_rule_template.instance_id = instances.id
+LEFT JOIN instances ON instance_rule_template.instance_id = instances.id AND instances.deleted_at IS NULL
 WHERE
 rule_templates.id in (SELECT DISTINCT(rule_templates.id)
 
@@ -38,7 +38,7 @@ FROM rule_templates
 LEFT JOIN rule_template_rule ON rule_templates.id = rule_template_rule.rule_template_id
 LEFT JOIN rules ON rule_template_rule.rule_name = rules.name
 LEFT JOIN instance_rule_template ON rule_templates.id = instance_rule_template.rule_template_id
-LEFT JOIN instances ON instance_rule_template.instance_id = instances.id
+LEFT JOIN instances ON instance_rule_template.instance_id = instances.id AND instances.deleted_at IS NULL
 WHERE
 rule_templates.deleted_at IS NULL
 
