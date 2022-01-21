@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -12,8 +13,8 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
-
 	"github.com/labstack/echo/v4"
 	"github.com/ungerik/go-dry"
 )
@@ -26,7 +27,7 @@ var (
 )
 
 type GetAuditPlanMetasReqV1 struct {
-	FilterInstanceType string `json:"filter_instance_type" query:"filter_instance_type"`
+	FilterInstanceType *string `json:"filter_instance_type" query:"filter_instance_type"`
 }
 
 type GetAuditPlanMetasResV1 struct {
@@ -48,6 +49,28 @@ type AuditPlanParamResV1 struct {
 	Type  string `json:"type" enums:"string,int,bool"`
 }
 
+func convertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
+	res := AuditPlanMetaV1{
+		Type:         meta.Type,
+		Desc:         meta.Desc,
+		InstanceType: meta.InstanceType,
+	}
+	if meta.Params != nil && len(meta.Params) > 0 {
+		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
+		for _, p := range meta.Params {
+			paramRes := AuditPlanParamResV1{
+				Key:   p.Key,
+				Desc:  p.Desc,
+				Type:  string(p.Type),
+				Value: p.Value,
+			}
+			paramsRes = append(paramsRes, paramRes)
+		}
+		res.Params = paramsRes
+	}
+	return res
+}
+
 // @Summary 获取审核任务元信息
 // @Description get audit plan metas
 // @Id getAuditPlanMetasV1
@@ -57,9 +80,22 @@ type AuditPlanParamResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanMetasResV1
 // @router /v1/audit_plan_metas [get]
 func GetAuditPlanMetas(c echo.Context) error {
+	req := new(GetAuditPlanMetasReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	var metas []AuditPlanMetaV1
+	for _, meta := range auditplan.Metas {
+		// filter instance type
+		if req.FilterInstanceType == nil ||
+			meta.InstanceType == auditplan.InstanceTypeAll ||
+			meta.InstanceType == *req.FilterInstanceType {
+			metas = append(metas, convertAuditPlanMetaToRes(meta))
+		}
+	}
 	return c.JSON(http.StatusOK, &GetAuditPlanMetasResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []AuditPlanMetaV1{},
+		Data:    metas,
 	})
 }
 
@@ -76,6 +112,37 @@ type CreateAuditPlanReqV1 struct {
 type AuditPlanParamReqV1 struct {
 	Key   string `json:"key" form:"key" valid:"required"`
 	Value string `json:"value" form:"value" valid:"required"`
+}
+
+func checkAndGenerateAuditPlanParams(auditPlanType, instanceType string, paramsReq []AuditPlanParamReqV1) (params.Params, error) {
+	meta, err := auditplan.GetMeta(auditPlanType)
+	if err != nil {
+		return nil, err
+	}
+	if meta.InstanceType != auditplan.InstanceTypeAll && meta.InstanceType != instanceType {
+		return nil, fmt.Errorf("audit plan type %s not found", auditPlanType)
+	}
+	// check request params is equal params.
+	if len(paramsReq) != len(meta.Params) {
+		reqParamsKey := make([]string, 0, len(paramsReq))
+		for _, p := range paramsReq {
+			reqParamsKey = append(reqParamsKey, p.Key)
+		}
+		paramsKey := make([]string, 0, len(meta.Params))
+		for _, p := range meta.Params {
+			paramsKey = append(paramsKey, p.Key)
+		}
+		return nil, fmt.Errorf("request params key is [%s], but need [%s]",
+			strings.Join(reqParamsKey, ", "), strings.Join(paramsKey, ", "))
+	}
+	for _, p := range paramsReq {
+		// set and valid param.
+		err := meta.Params.SetParamValue(p.Key, p.Value)
+		if err != nil {
+			return nil, fmt.Errorf("set param error: %s", err)
+		}
+	}
+	return meta.Params, nil
 }
 
 // @Summary 添加审核计划
@@ -112,10 +179,18 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanExisted)
 	}
 
+	if req.Type == "" {
+		req.Type = auditplan.TypeDefault
+	}
+	ps, err := checkAndGenerateAuditPlanParams(req.Type, req.InstanceType, req.Params)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
+
 	currentUserName := controller.GetUserName(c)
 
 	if req.InstanceName == "" {
-		err := manager.AddStaticAuditPlan(req.Name, req.Cron, req.InstanceType, currentUserName)
+		err := manager.AddStaticAuditPlan(req.Name, req.Cron, req.InstanceType, currentUserName, req.Type, ps)
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -142,7 +217,7 @@ func CreateAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist in instance", req.InstanceDatabase)))
 		}
 	}
-	err = manager.AddDynamicAuditPlan(req.Name, req.Cron, req.InstanceName, req.InstanceDatabase, currentUserName)
+	err = manager.AddDynamicAuditPlan(req.Name, req.Cron, req.InstanceName, req.InstanceDatabase, currentUserName, req.Type, ps)
 	return controller.JSONBaseErrorReq(c, err)
 }
 
@@ -156,7 +231,7 @@ func CreateAuditPlan(c echo.Context) error {
 // @router /v1/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -189,9 +264,18 @@ func UpdateAuditPlan(c echo.Context) error {
 
 	apName := c.Param("audit_plan_name")
 
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	storage := model.GetStorage()
+	ap, exist, err := storage.GetAuditPlanByName(apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	updateAttr := make(map[string]interface{})
@@ -203,6 +287,13 @@ func UpdateAuditPlan(c echo.Context) error {
 	}
 	if req.InstanceDatabase != nil {
 		updateAttr["instance_database"] = *req.InstanceDatabase
+	}
+	if req.Params != nil {
+		ps, err := checkAndGenerateAuditPlanParams(ap.Type, ap.DBType, req.Params)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		updateAttr["params"] = ps
 	}
 	manager := auditplan.GetManager()
 	return controller.JSONBaseErrorReq(c, manager.UpdateAuditPlan(apName, updateAttr))
@@ -221,13 +312,13 @@ type GetAuditPlansResV1 struct {
 }
 
 type AuditPlanResV1 struct {
-	Name             string           `json:"audit_plan_name" example:"audit_for_java_app1"`
-	Cron             string           `json:"audit_plan_cron" example:"0 */2 * * *"`
-	DBType           string           `json:"audit_plan_db_type" example:"mysql"`
-	Token            string           `json:"audit_plan_token" example:"it's a JWT Token for scanner"`
-	InstanceName     string           `json:"audit_plan_instance_name" example:"test_mysql"`
-	InstanceDatabase string           `json:"audit_plan_instance_database" example:"app1"`
-	Meta             *AuditPlanMetaV1 `json:"audit_plan_meta"`
+	Name             string          `json:"audit_plan_name" example:"audit_for_java_app1"`
+	Cron             string          `json:"audit_plan_cron" example:"0 */2 * * *"`
+	DBType           string          `json:"audit_plan_db_type" example:"mysql"`
+	Token            string          `json:"audit_plan_token" example:"it's a JWT Token for scanner"`
+	InstanceName     string          `json:"audit_plan_instance_name" example:"test_mysql"`
+	InstanceDatabase string          `json:"audit_plan_instance_database" example:"app1"`
+	Meta             AuditPlanMetaV1 `json:"audit_plan_meta"`
 }
 
 // @Summary 获取审核计划信息列表
@@ -267,15 +358,20 @@ func GetAuditPlans(c echo.Context) error {
 	}
 
 	auditPlansResV1 := make([]AuditPlanResV1, len(auditPlans))
-	for i, auditPlan := range auditPlans {
+	for i, ap := range auditPlans {
+		meta, err := auditplan.GetMeta(ap.Type.String)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		meta.Params = ap.Params
 		auditPlansResV1[i] = AuditPlanResV1{
-			Name:             auditPlan.Name,
-			Cron:             auditPlan.Cron,
-			DBType:           auditPlan.DBType,
-			InstanceName:     auditPlan.InstanceName,
-			InstanceDatabase: auditPlan.InstanceDatabase,
-
-			Token: auditPlan.Token,
+			Name:             ap.Name,
+			Cron:             ap.Cron,
+			DBType:           ap.DBType,
+			InstanceName:     ap.InstanceName,
+			InstanceDatabase: ap.InstanceDatabase,
+			Token:            ap.Token,
+			Meta:             convertAuditPlanMetaToRes(meta),
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlansResV1{
@@ -300,7 +396,7 @@ type GetAuditPlanResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/ [get]
 func GetAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -314,6 +410,11 @@ func GetAuditPlan(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
+	meta, err := auditplan.GetMeta(ap.Type)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	meta.Params = ap.Params
 
 	return c.JSON(http.StatusOK, &GetAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -324,6 +425,7 @@ func GetAuditPlan(c echo.Context) error {
 			InstanceName:     ap.InstanceName,
 			InstanceDatabase: ap.InstanceDatabase,
 			Token:            ap.Token,
+			Meta:             convertAuditPlanMetaToRes(meta),
 		},
 	})
 }
@@ -363,7 +465,7 @@ func GetAuditPlanReports(c echo.Context) error {
 	}
 
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -417,6 +519,7 @@ type AuditPlanReportSQLResV1 struct {
 
 // @Summary 获取指定审核计划的SQL审核详情
 // @Description get audit plan report SQLs
+// @Deprecated
 // @Id getAuditPlanReportSQLsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
@@ -427,49 +530,7 @@ type AuditPlanReportSQLResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
 // @router /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/ [get]
 func GetAuditPlanReportSQLs(c echo.Context) error {
-	s := model.GetStorage()
-
-	req := new(GetAuditPlanReportSQLsReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-
-	data := map[string]interface{}{
-		"audit_plan_name":      apName,
-		"audit_plan_report_id": c.Param("audit_plan_report_id"),
-		"limit":                req.PageSize,
-		"offset":               offset,
-	}
-	auditPlanReportSQLs, count, err := s.GetAuditPlanReportSQLsByReq(data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	auditPlanReportSQLsResV1 := make([]AuditPlanReportSQLResV1, len(auditPlanReportSQLs))
-	for i, auditPlanReportSQL := range auditPlanReportSQLs {
-		auditPlanReportSQLsResV1[i] = AuditPlanReportSQLResV1{
-			Fingerprint:          auditPlanReportSQL.Fingerprint,
-			LastReceiveText:      auditPlanReportSQL.LastReceiveText,
-			LastReceiveTimestamp: auditPlanReportSQL.LastReceiveTimestamp,
-			AuditResult:          auditPlanReportSQL.AuditResult,
-		}
-	}
-	return c.JSON(http.StatusOK, &GetAuditPlanReportSQLsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      auditPlanReportSQLsResV1,
-		TotalNums: count,
-	})
+	return nil
 }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
@@ -542,7 +603,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*model.AuditPlanSQL, error) {
 	s := model.GetStorage()
 
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return nil, err
 	}
@@ -591,6 +652,7 @@ type AuditPlanSQLResV1 struct {
 
 // @Summary 获取指定审核计划的SQLs信息(不包括审核结果)
 // @Description get audit plan SQLs
+// @Deprecated
 // @Id getAuditPlanSQLsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
@@ -600,48 +662,7 @@ type AuditPlanSQLResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanSQLsResV1
 // @router /v1/audit_plans/{audit_plan_name}/sqls [get]
 func GetAuditPlanSQLs(c echo.Context) error {
-	s := model.GetStorage()
-
-	req := new(GetAuditPlanSQLsReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-
-	data := map[string]interface{}{
-		"audit_plan_name": apName,
-		"limit":           req.PageSize,
-		"offset":          offset,
-	}
-	auditPlanSQLs, count, err := s.GetAuditPlanSQLsByReq(data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	auditPlanSQLsResV1 := make([]AuditPlanSQLResV1, len(auditPlanSQLs))
-	for i, auditPlanSQL := range auditPlanSQLs {
-		auditPlanSQLsResV1[i] = AuditPlanSQLResV1{
-			Fingerprint:          auditPlanSQL.Fingerprint,
-			LastReceiveText:      auditPlanSQL.LastReceiveText,
-			LastReceiveTimestamp: auditPlanSQL.LastReceiveTimestamp,
-			Counter:              auditPlanSQL.Counter,
-		}
-	}
-	return c.JSON(http.StatusOK, &GetAuditPlanSQLsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      auditPlanSQLsResV1,
-		TotalNums: count,
-	})
+	return nil
 }
 
 type TriggerAuditPlanResV1 struct {
@@ -659,7 +680,7 @@ type TriggerAuditPlanResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := checkCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -679,7 +700,7 @@ func TriggerAuditPlan(c echo.Context) error {
 	})
 }
 
-func checkCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {
+func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}

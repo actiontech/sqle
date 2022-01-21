@@ -50,13 +50,13 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 		params := rule.Params
 
 		// check request params is equal rule params.
-		if len(r.Params) != len(params.Params) {
+		if len(r.Params) != len(params) {
 			reqParamsKey := make([]string, 0, len(r.Params))
 			for _, p := range r.Params {
 				reqParamsKey = append(reqParamsKey, p.Key)
 			}
-			paramsKey := make([]string, 0, len(params.Params))
-			for _, p := range params.Params {
+			paramsKey := make([]string, 0, len(params))
+			for _, p := range params {
 				paramsKey = append(paramsKey, p.Key)
 			}
 			return nil, fmt.Errorf("request rule \"%s'| params key is [%s], but need [%s]",
@@ -64,7 +64,7 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 		}
 		for _, p := range r.Params {
 			// set and valid param.
-			err := params.Params.SetParamValue(p.Key, p.Value)
+			err := params.SetParamValue(p.Key, p.Value)
 			if err != nil {
 				return nil, fmt.Errorf("set rule %s param error: %s", r.Name, err)
 			}
@@ -411,9 +411,9 @@ func convertRuleToRes(rule *model.Rule) RuleResV1 {
 		Typ:    rule.Typ,
 		DBType: rule.DBType,
 	}
-	if rule.Params != nil && len(rule.Params.Params) > 0 {
-		paramsRes := make([]RuleParamResV1, 0, len(rule.Params.Params))
-		for _, p := range rule.Params.Params {
+	if rule.Params != nil && len(rule.Params) > 0 {
+		paramsRes := make([]RuleParamResV1, 0, len(rule.Params))
+		for _, p := range rule.Params {
 			paramRes := RuleParamResV1{
 				Key:   p.Key,
 				Desc:  p.Desc,
