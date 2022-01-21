@@ -53,6 +53,24 @@ type (
 		// trusted web page context.
 		// Optional. Default value "".
 		ContentSecurityPolicy string `yaml:"content_security_policy"`
+
+		// CSPReportOnly would use the `Content-Security-Policy-Report-Only` header instead
+		// of the `Content-Security-Policy` header. This allows iterative updates of the
+		// content security policy by only reporting the violations that would
+		// have occurred instead of blocking the resource.
+		// Optional. Default value false.
+		CSPReportOnly bool `yaml:"csp_report_only"`
+
+		// HSTSPreloadEnabled will add the preload tag in the `Strict Transport Security`
+		// header, which enables the domain to be included in the HSTS preload list
+		// maintained by Chrome (and used by Firefox and Safari): https://hstspreload.org/
+		// Optional.  Default value false.
+		HSTSPreloadEnabled bool `yaml:"hsts_preload_enabled"`
+
+		// ReferrerPolicy sets the `Referrer-Policy` header providing security against
+		// leaking potentially sensitive request paths to third parties.
+		// Optional. Default value "".
+		ReferrerPolicy string `yaml:"referrer_policy"`
 	}
 )
 
@@ -63,6 +81,7 @@ var (
 		XSSProtection:      "1; mode=block",
 		ContentTypeNosniff: "nosniff",
 		XFrameOptions:      "SAMEORIGIN",
+		HSTSPreloadEnabled: false,
 	}
 )
 
@@ -105,10 +124,20 @@ func SecureWithConfig(config SecureConfig) echo.MiddlewareFunc {
 				if !config.HSTSExcludeSubdomains {
 					subdomains = "; includeSubdomains"
 				}
+				if config.HSTSPreloadEnabled {
+					subdomains = fmt.Sprintf("%s; preload", subdomains)
+				}
 				res.Header().Set(echo.HeaderStrictTransportSecurity, fmt.Sprintf("max-age=%d%s", config.HSTSMaxAge, subdomains))
 			}
 			if config.ContentSecurityPolicy != "" {
-				res.Header().Set(echo.HeaderContentSecurityPolicy, config.ContentSecurityPolicy)
+				if config.CSPReportOnly {
+					res.Header().Set(echo.HeaderContentSecurityPolicyReportOnly, config.ContentSecurityPolicy)
+				} else {
+					res.Header().Set(echo.HeaderContentSecurityPolicy, config.ContentSecurityPolicy)
+				}
+			}
+			if config.ReferrerPolicy != "" {
+				res.Header().Set(echo.HeaderReferrerPolicy, config.ReferrerPolicy)
 			}
 			return next(c)
 		}
