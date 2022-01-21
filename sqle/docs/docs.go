@@ -2246,6 +2246,132 @@ var doc = `{
                 }
             }
         },
+        "/v1/user_groups": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get user group info list",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "获取用户组列表",
+                "operationId": "getUserGroupListV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetUserGroupsResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create user group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "创建用户组",
+                "operationId": "CreateUserGroupV1",
+                "parameters": [
+                    {
+                        "description": "create user group",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateUserGroupReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_groups/{user_group_name}/": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete user group",
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "删除用户组",
+                "operationId": "deleteUserGroupV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user_group_name",
+                        "name": "user_group_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update user group",
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "更新用户组",
+                "operationId": "updateUserGroupV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user_group_name",
+                        "name": "user_group_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user_tips": {
             "get": {
                 "security": [
@@ -3729,6 +3855,28 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateUserGroupReqV1": {
+            "type": "object",
+            "properties": {
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "user_group_desc": {
+                    "type": "string",
+                    "example": "this is a group"
+                },
+                "user_group_name": {
+                    "type": "string",
+                    "example": "test"
+                },
+                "user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "v1.CreateUserReqV1": {
             "type": "object",
             "properties": {
@@ -4398,6 +4546,28 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetUserGroupsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UserGroupListItemResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -5195,6 +5365,23 @@ var doc = `{
                 },
                 "user_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.UserGroupListItemResV1": {
+            "type": "object",
+            "properties": {
+                "group_desc": {
+                    "type": "string"
+                },
+                "group_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_disabled": {
+                    "type": "boolean"
                 }
             }
         },
