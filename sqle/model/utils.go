@@ -166,7 +166,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
 				}
 			} else {
 				// 2. rule no params in db, and has params in code.
-				existedRuleHasParams := existedRule.Params != nil && len(existedRule.Params.Params) > 0
+				existedRuleHasParams := existedRule.Params != nil && len(existedRule.Params) > 0
 				ruleHasParams := len(rule.Params) > 0
 				if !existedRuleHasParams && ruleHasParams {
 					err := s.Save(GenerateRuleByDriverRule(rule, dbType))

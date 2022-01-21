@@ -5,10 +5,10 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -68,89 +68,6 @@ func (r RuleLevel) More(l RuleLevel) bool {
 	return ruleLevelMap[r] > ruleLevelMap[l]
 }
 
-type RuleParamType string
-
-const (
-	RuleParamTypeString RuleParamType = "string"
-	RuleParamTypeInt    RuleParamType = "int"
-	RuleParamTypeBool   RuleParamType = "bool"
-)
-
-type RuleParam struct {
-	Key   string        `json:"key"`
-	Value string        `json:"value"`
-	Desc  string        `json:"desc"`
-	Type  RuleParamType `json:"type"`
-}
-
-type RuleParams []*RuleParam
-
-func (r *RuleParams) SetParamValue(key, value string) error {
-	paramNotFoundErrMsg := "param %s not found"
-	if r == nil {
-		return fmt.Errorf(paramNotFoundErrMsg, key)
-	}
-	for _, p := range *r {
-		var err error
-		if p.Key == key {
-			switch p.Type {
-			case RuleParamTypeBool:
-				_, err = strconv.ParseBool(value)
-			case RuleParamTypeInt:
-				_, err = strconv.Atoi(value)
-			default:
-			}
-			if err != nil {
-				return fmt.Errorf("param %s value don't match \"%s\"", key, p.Type)
-			}
-			p.Value = value
-			return nil
-		}
-	}
-	return fmt.Errorf(paramNotFoundErrMsg, key)
-}
-
-func (r *RuleParams) GetParam(key string) *RuleParam {
-	if r == nil {
-		return nil
-	}
-	for _, p := range *r {
-		if p.Key == key {
-			return p
-		}
-	}
-	return nil
-}
-
-func (r *RuleParam) String() string {
-	if r == nil {
-		return ""
-	}
-	return r.Value
-}
-
-func (r *RuleParam) Int() int {
-	if r == nil {
-		return 0
-	}
-	i, err := strconv.Atoi(r.Value)
-	if err != nil {
-		return 0
-	}
-	return i
-}
-
-func (r *RuleParam) Bool() bool {
-	if r == nil {
-		return false
-	}
-	b, err := strconv.ParseBool(r.Value)
-	if err != nil {
-		return false
-	}
-	return b
-}
-
 type Rule struct {
 	Name string
 	Desc string
@@ -159,7 +76,7 @@ type Rule struct {
 	// Rules will be displayed on the SQLE rule list page by category.
 	Category string
 	Level    RuleLevel
-	Params   RuleParams
+	Params   params.Params
 }
 
 //func (r *Rule) GetValueInt(defaultRule *Rule) int64 {
