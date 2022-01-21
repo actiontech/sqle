@@ -67,8 +67,9 @@ func CreateUser(c echo.Context) error {
 }
 
 type UpdateUserReqV1 struct {
-	Email *string  `json:"email" valid:"omitempty,email"`
-	Roles []string `json:"role_name_list" form:"role_name_list"`
+	Email      *string  `json:"email" valid:"omitempty,email"`
+	Roles      []string `json:"role_name_list" form:"role_name_list"`
+	IsDisabled *bool    `json:"is_disabled" valid:"omitempty"`
 }
 
 // @Summary 更新用户信息
@@ -216,11 +217,12 @@ type GetUserDetailResV1 struct {
 }
 
 type UserDetailResV1 struct {
-	Name      string   `json:"user_name"`
-	Email     string   `json:"email"`
-	IsAdmin   bool     `json:"is_admin"`
-	LoginType string   `json:"login_type"`
-	Roles     []string `json:"role_name_list,omitempty"`
+	Name       string   `json:"user_name"`
+	Email      string   `json:"email"`
+	IsAdmin    bool     `json:"is_admin"`
+	LoginType  string   `json:"login_type"`
+	Roles      []string `json:"role_name_list,omitempty"`
+	IsDisabled bool     `json:"is_disabled,omitempty"`
 }
 
 func convertUserToRes(user *model.User) UserDetailResV1 {
@@ -378,10 +380,11 @@ type GetUsersResV1 struct {
 }
 
 type UserResV1 struct {
-	Name      string   `json:"user_name"`
-	Email     string   `json:"email"`
-	LoginType string   `json:"login_type"`
-	Roles     []string `json:"role_name_list,omitempty"`
+	Name       string   `json:"user_name"`
+	Email      string   `json:"email"`
+	LoginType  string   `json:"login_type"`
+	Roles      []string `json:"role_name_list,omitempty"`
+	IsDisabled bool     `json:"is_disabled,omitempty"`
 }
 
 // @Summary 获取用户信息列表
