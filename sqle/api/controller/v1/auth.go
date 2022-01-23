@@ -3,6 +3,7 @@ package v1
 import (
 	_errors "errors"
 	"fmt"
+	"crypto/tls"
 	"net/http"
 	"time"
 
@@ -190,8 +191,8 @@ func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	if err != nil {
 		return err
 	}
-	url := fmt.Sprintf("ldap://%s:%s", ldapC.Host, ldapC.Port)
-	conn, err := ldap.DialURL(url)
+	url := fmt.Sprintf("%s:%s", ldapC.Host, ldapC.Port)
+	conn, err := ldap.DialURL(url, ldap.DialWithTLSConfig(&tls.Config{InsecureSkipVerify: true}))
 	if err != nil {
 		return fmt.Errorf("get ldap server connect failed: %v", err)
 	}
