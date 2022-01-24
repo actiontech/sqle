@@ -40,7 +40,7 @@ type UserGroupListItemResV1 struct {
 	Desc       string   `json:"user_group_desc"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
 	Users      []string `json:"user_name_list,omitempty"`
-	Roles      []string `json:"role_name_list" form:"role_name_list"`
+	Roles      []string `json:"role_name_list,omitempty"`
 }
 
 // @Summary 获取用户组列表
