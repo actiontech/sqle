@@ -1,8 +1,10 @@
 package v1
 
 import (
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -27,4 +29,8 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 	}
 
 	return driver.NewDriver(l, inst.DbType, cfg)
+}
+
+func JSONNewNotImplementedErr(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errors.New("not implemented yet"))
 }
