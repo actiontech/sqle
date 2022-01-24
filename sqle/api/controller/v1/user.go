@@ -233,10 +233,11 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
 	userReq := UserDetailResV1{
-		Name:      user.Name,
-		Email:     user.Email,
-		LoginType: string(user.UserAuthenticationType),
-		IsAdmin:   user.Name == model.DefaultAdminUser,
+		Name:       user.Name,
+		Email:      user.Email,
+		LoginType:  string(user.UserAuthenticationType),
+		IsAdmin:    user.Name == model.DefaultAdminUser,
+		IsDisabled: user.IsDisabled,
 	}
 	roleNames := make([]string, 0, len(user.Roles))
 	for _, role := range user.Roles {
