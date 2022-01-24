@@ -19,6 +19,7 @@ const (
 	TaskActionDone ErrorCode = 1002
 
 	LoginAuthFail ErrorCode = 4001
+	UserDisabled  ErrorCode = 4005
 	DataExist     ErrorCode = 4010
 	DataNotExist  ErrorCode = 4011
 	DataConflict  ErrorCode = 4012
@@ -74,4 +75,8 @@ func NewNotImplementedError(format string, a ...interface{}) error {
 
 func NewDataInvalidErr(format string, a ...interface{}) error {
 	return New(DataInvalid, fmt.Errorf(format, a...))
+}
+
+func NewUserDisabledErr(format string, a ...interface{}) error {
+	return New(UserDisabled, fmt.Errorf(format, a...))
 }
