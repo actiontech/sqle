@@ -72,3 +72,25 @@ type RoleResV2 struct {
 func GetRoles(c echo.Context) error {
 	return controller.JSONNewNotImplementedErr(c)
 }
+
+type UpdateRoleReqV2 struct {
+	Desc           *string  `json:"role_desc" form:"role_desc"`
+	Users          []string `json:"user_name_list" form:"user_name_list"`
+	Instances      []string `json:"instance_name_list" form:"instance_name_list"`
+	OperationCodes []string `json:"operation_code_list" form:"operation_code_list"`
+}
+
+// @Summary 更新角色信息
+// @Description update role
+// @Id updateRoleV2
+// @Tags role
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param role_name path string true "role name"
+// @Param instance body v2.UpdateRoleReqV2 true "update role request"
+// @Success 200 {object} controller.BaseRes
+// @router /v2/roles/{role_name}/ [patch]
+func UpdateRole(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
