@@ -605,6 +605,77 @@ ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL DEFAUL
 	)
 }
 
+func TestCheckDDLRedundantIndexOffline(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckRedundantIndex].Rule
+	runSingleRuleInspectCase(rule, t, "create_table: not redundant index", DefaultMysqlInspectOffline(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v1,id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has repeat index", DefaultMysqlInspectOffline(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v1,id),
+INDEX idx_2 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id) 为重复索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has redundant index", DefaultMysqlInspectOffline(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id,v1),
+INDEX idx_1 (id,v1,v2)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "已存在索引 (idx_1) , 索引 (id,v1) 为冗余索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has repeat index 2", DefaultMysqlInspectOffline(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id,v1),
+INDEX idx_1 (id,v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id,v1) 为重复索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has repeat and redundant index", DefaultMysqlInspectOffline(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (id,v1),
+INDEX idx_2 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id) 为重复索引;已存在索引 (idx_1) , 索引 (idx_2) 为冗余索引;"),
+	)
+
+}
+
 func TestCheckIndexPrefixOffline(t *testing.T) {
 	runDefaultRulesInspectCase(t, "create_table: index prefix not idx_", DefaultMysqlInspectOffline(),
 		`
