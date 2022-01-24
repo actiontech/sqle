@@ -12,6 +12,7 @@ type CreateRoleReqV2 struct {
 	Instances      []string `json:"instance_name_list" form:"instance_name_list"`
 	OperationCodes []string `json:"operation_code_list" form:"operation_code_list"`
 	Users          []string `json:"user_name_list" form:"user_name_list"`
+	UserGroups     []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
 // @Summary 创建角色
@@ -53,6 +54,7 @@ type RoleResV2 struct {
 	Users      []string     `json:"user_name_list,omitempty"`
 	Instances  []string     `json:"instance_name_list,omitempty"`
 	Operations []*Operation `json:"operation_list,omitempty"`
+	UserGroups []string     `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
 // @Summary 获取角色列表
@@ -78,6 +80,7 @@ type UpdateRoleReqV2 struct {
 	Users          []string `json:"user_name_list" form:"user_name_list"`
 	Instances      []string `json:"instance_name_list" form:"instance_name_list"`
 	OperationCodes []string `json:"operation_code_list" form:"operation_code_list"`
+	UserGroups     []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
 // @Summary 更新角色信息
