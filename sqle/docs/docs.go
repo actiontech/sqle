@@ -5391,14 +5391,14 @@ var doc = `{
         "v1.UserGroupListItemResV1": {
             "type": "object",
             "properties": {
-                "group_desc": {
-                    "type": "string"
-                },
-                "group_name": {
-                    "type": "string"
-                },
                 "is_disabled": {
                     "type": "boolean"
+                },
+                "user_group_desc": {
+                    "type": "string"
+                },
+                "user_group_name": {
+                    "type": "string"
                 },
                 "user_name_list": {
                     "type": "array",
