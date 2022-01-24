@@ -125,7 +125,11 @@ func UpdateUser(c echo.Context) error {
 			controller.GetUserName(c), userName); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		user.IsDisabled = *req.IsDisabled
+		if *req.IsDisabled {
+			user.Disable()
+		} else {
+			user.Enable()
+		}
 	}
 
 	err = s.Save(user)
@@ -252,7 +256,7 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 		Email:      user.Email,
 		LoginType:  string(user.UserAuthenticationType),
 		IsAdmin:    user.Name == model.DefaultAdminUser,
-		IsDisabled: user.IsDisabled,
+		IsDisabled: user.IsDisabled(),
 	}
 	roleNames := make([]string, 0, len(user.Roles))
 	for _, role := range user.Roles {
@@ -451,7 +455,7 @@ func GetUsers(c echo.Context) error {
 			Email:      user.Email,
 			LoginType:  user.LoginType,
 			Roles:      user.RoleNames,
-			IsDisabled: user.IsDisabled,
+			IsDisabled: user.IsDisabled(),
 		}
 		usersReq = append(usersReq, userReq)
 	}
