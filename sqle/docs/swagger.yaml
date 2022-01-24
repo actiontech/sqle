@@ -326,6 +326,10 @@ definitions:
     properties:
       is_disabled:
         type: boolean
+      role_name_list:
+        items:
+          type: string
+        type: array
       user_group_desc:
         example: this is a group
         type: string
@@ -343,6 +347,10 @@ definitions:
         example: test@email.com
         type: string
       role_name_list:
+        items:
+          type: string
+        type: array
+      user_group_name_list:
         items:
           type: string
         type: array
@@ -1308,6 +1316,10 @@ definitions:
         items:
           type: string
         type: array
+      user_group_name_list:
+        items:
+          type: string
+        type: array
     type: object
   v1.UpdateWorkflowReqV1:
     properties:
@@ -1353,6 +1365,10 @@ definitions:
         items:
           type: string
         type: array
+      user_group_name_list:
+        items:
+          type: string
+        type: array
       user_name:
         type: string
     type: object
@@ -1360,6 +1376,10 @@ definitions:
     properties:
       is_disabled:
         type: boolean
+      role_name_list:
+        items:
+          type: string
+        type: array
       user_group_desc:
         type: string
       user_group_name:
@@ -1393,6 +1413,10 @@ definitions:
       login_type:
         type: string
       role_name_list:
+        items:
+          type: string
+        type: array
+      user_group_name_list:
         items:
           type: string
         type: array
@@ -1640,6 +1664,10 @@ definitions:
         type: string
       role_name:
         type: string
+      user_group_name_list:
+        items:
+          type: string
+        type: array
       user_name_list:
         items:
           type: string
@@ -1710,6 +1738,10 @@ definitions:
         type: string
       role_name:
         type: string
+      user_group_name_list:
+        items:
+          type: string
+        type: array
       user_name_list:
         items:
           type: string
@@ -1727,6 +1759,10 @@ definitions:
         type: array
       role_desc:
         type: string
+      user_group_name_list:
+        items:
+          type: string
+        type: array
       user_name_list:
         items:
           type: string

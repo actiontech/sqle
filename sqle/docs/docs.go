@@ -4027,6 +4027,12 @@ var doc = `{
                 "is_disabled": {
                     "type": "boolean"
                 },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_group_desc": {
                     "type": "string",
                     "example": "this is a group"
@@ -4051,6 +4057,12 @@ var doc = `{
                     "example": "test@email.com"
                 },
                 "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_group_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -5466,6 +5478,12 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -5535,6 +5553,12 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_name": {
                     "type": "string"
                 }
@@ -5545,6 +5569,12 @@ var doc = `{
             "properties": {
                 "is_disabled": {
                     "type": "boolean"
+                },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "user_group_desc": {
                     "type": "string"
@@ -5595,6 +5625,12 @@ var doc = `{
                     "type": "string"
                 },
                 "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_group_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -5961,6 +5997,12 @@ var doc = `{
                 "role_name": {
                     "type": "string"
                 },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_name_list": {
                     "type": "array",
                     "items": {
@@ -6065,6 +6107,12 @@ var doc = `{
                 "role_name": {
                     "type": "string"
                 },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_name_list": {
                     "type": "array",
                     "items": {
@@ -6090,6 +6138,12 @@ var doc = `{
                 },
                 "role_desc": {
                     "type": "string"
+                },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "user_name_list": {
                     "type": "array",

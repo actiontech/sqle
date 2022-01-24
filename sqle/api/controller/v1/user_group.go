@@ -10,6 +10,7 @@ type CreateUserGroupReqV1 struct {
 	Name       string   `json:"user_group_name" form:"user_group_name" example:"test" valid:"required,name"`
 	Desc       string   `json:"user_group_desc" form:"user_group_desc" example:"this is a group"`
 	Users      []string `json:"user_name_list" form:"user_name_list"`
+	Roles      []string `json:"role_name_list" form:"role_name_list"`
 	IsDisabled bool     `json:"is_disabled,omitempty" form:"is_disabled"`
 }
 
@@ -39,8 +40,7 @@ type UserGroupListItemResV1 struct {
 	Desc       string   `json:"user_group_desc"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
 	Users      []string `json:"user_name_list,omitempty"`
-
-	// TODO: roles
+	Roles      []string `json:"role_name_list,omitempty"`
 }
 
 // @Summary 获取用户组列表
@@ -77,6 +77,7 @@ type PatchUserGroupReqV1 struct {
 	Desc       string   `json:"user_group_desc" form:"user_group_desc" example:"this is a group"`
 	Users      []string `json:"user_name_list" form:"user_name_list"`
 	IsDisabled bool     `json:"is_disabled,omitempty" form:"is_disabled"`
+	Roles      []string `json:"role_name_list" form:"role_name_list"`
 }
 
 // @Summary 更新用户组
