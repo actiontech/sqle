@@ -432,10 +432,11 @@ func GetUsers(c echo.Context) error {
 			user.LoginType = string(model.UserAuthenticationTypeSQLE)
 		}
 		userReq := UserResV1{
-			Name:      user.Name,
-			Email:     user.Email,
-			LoginType: user.LoginType,
-			Roles:     user.RoleNames,
+			Name:       user.Name,
+			Email:      user.Email,
+			LoginType:  user.LoginType,
+			Roles:      user.RoleNames,
+			IsDisabled: user.IsDisabled,
 		}
 		usersReq = append(usersReq, userReq)
 	}
