@@ -1846,6 +1846,8 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 		}
 	}
 	if rule.Name == DDLCheckRedundantIndex {
+		// here's a false positive
+		//nolint:staticcheck
 		repeat, redundancy := []string{}, map[string]string{}
 		if len(tableIndexs) == 0 {
 			repeat, redundancy = checkRedundantIndex(newIndexs)
