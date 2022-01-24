@@ -70,7 +70,7 @@ func CreateUser(c echo.Context) error {
 type UpdateUserReqV1 struct {
 	Email      *string  `json:"email" valid:"omitempty,email" form:"email"`
 	Roles      []string `json:"role_name_list" form:"role_name_list"`
-	IsDisabled *bool    `json:"is_disabled,omitempty"`
+	IsDisabled *bool    `json:"is_disabled,omitempty" form:"is_disabled"`
 	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
