@@ -108,6 +108,10 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 		if rulepkg.DefaultTemplateRules[i].Name == rulepkg.DDLCheckObjectNameUseCN {
 			continue
 		}
+		// remove DDLCheckRedundantIndex in default rules for init test.
+		if rulepkg.DefaultTemplateRules[i].Name == rulepkg.DDLCheckRedundantIndex {
+			continue
+		}
 
 		ptrRules = append(ptrRules, &rulepkg.DefaultTemplateRules[i])
 	}
@@ -1368,6 +1372,91 @@ INDEX idx_2 (id)
 `,
 		newTestResult().addResult(rulepkg.DDLCheckIndexTooMany, "id", 2),
 	)
+}
+
+func TestCheckDDLRedundantIndex(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckRedundantIndex].Rule
+	runSingleRuleInspectCase(rule, t, "create_table: not redundant index", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v1,id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has repeat index", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (v1,id),
+INDEX idx_2 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id) 为重复索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has redundant index", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id,v1),
+INDEX idx_1 (id,v1,v2)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "已存在索引 (idx_1) , 索引 (id,v1) 为冗余索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has repeat index 2", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id,v1),
+INDEX idx_1 (id,v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id,v1) 为重复索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "create_table: has repeat and redundant index", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (id,v1),
+INDEX idx_2 (id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id) 为重复索引;已存在索引 (idx_1) , 索引 (idx_2) 为冗余索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "alter_table: has repeat and redundant index", DefaultMysqlInspect(),
+		`
+alter table exist_db.exist_tb_1 add index idx_t (v1);
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (idx_t) 为重复索引;"),
+	)
+
+	runSingleRuleInspectCase(rule, t, "alter_table: has repeat and redundant index", DefaultMysqlInspect(),
+		`
+alter table exist_db.exist_tb_6 add index idx_t (v2);
+`,
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "已存在索引 (idx_100) , 索引 (idx_t) 为冗余索引;"),
+	)
+
 }
 
 func TestCheckCompositeIndexMax(t *testing.T) {
