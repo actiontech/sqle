@@ -5122,6 +5122,9 @@ var doc = `{
                 "email": {
                     "type": "string"
                 },
+                "is_disabled": {
+                    "type": "boolean"
+                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
@@ -5184,6 +5187,9 @@ var doc = `{
                 "is_admin": {
                     "type": "boolean"
                 },
+                "is_disabled": {
+                    "type": "boolean"
+                },
                 "login_type": {
                     "type": "string"
                 },
@@ -5225,6 +5231,9 @@ var doc = `{
             "properties": {
                 "email": {
                     "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
                 },
                 "login_type": {
                     "type": "string"
