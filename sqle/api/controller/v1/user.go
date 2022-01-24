@@ -12,10 +12,11 @@ import (
 )
 
 type CreateUserReqV1 struct {
-	Name     string   `json:"user_name" form:"user_name" example:"test" valid:"required,name"`
-	Password string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
-	Email    string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
-	Roles    []string `json:"role_name_list" form:"role_name_list"`
+	Name       string   `json:"user_name" form:"user_name" example:"test" valid:"required,name"`
+	Password   string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
+	Email      string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
+	Roles      []string `json:"role_name_list" form:"role_name_list"`
+	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
 // @Summary 创建用户
@@ -67,9 +68,10 @@ func CreateUser(c echo.Context) error {
 }
 
 type UpdateUserReqV1 struct {
-	Email      *string  `json:"email" valid:"omitempty,email"`
+	Email      *string  `json:"email" valid:"omitempty,email" form:"email"`
 	Roles      []string `json:"role_name_list" form:"role_name_list"`
 	IsDisabled *bool    `json:"is_disabled,omitempty"`
+	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
 // @Summary 更新用户信息
@@ -223,6 +225,7 @@ type UserDetailResV1 struct {
 	LoginType  string   `json:"login_type"`
 	Roles      []string `json:"role_name_list,omitempty"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
+	UserGroups []string `json:"user_group_name_list,omitempty"`
 }
 
 func convertUserToRes(user *model.User) UserDetailResV1 {
@@ -383,8 +386,9 @@ type UserResV1 struct {
 	Name       string   `json:"user_name"`
 	Email      string   `json:"email"`
 	LoginType  string   `json:"login_type"`
-	Roles      []string `json:"role_name_list,omitempty"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
+	Roles      []string `json:"role_name_list,omitempty"`
+	UserGroups []string `json:"user_group_name_list,omitempty"`
 }
 
 // @Summary 获取用户信息列表
