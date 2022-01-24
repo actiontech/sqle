@@ -71,3 +71,7 @@ func NewNotImplemented(feature string) *CodeError {
 func NewNotImplementedError(format string, a ...interface{}) error {
 	return New(FeatureNotImplemented, fmt.Errorf(format, a...))
 }
+
+func NewDataInvalidErr(format string, a ...interface{}) error {
+	return New(DataInvalid, fmt.Errorf(format, a...))
+}

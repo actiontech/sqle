@@ -100,24 +100,39 @@ func UpdateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
-	if req.Roles != nil || len(req.Roles) > 0 {
-		roles, err := s.GetAndCheckRoleExist(req.Roles)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		err = s.UpdateUserRoles(user, roles...)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	// roles
+	{
+		if req.Roles != nil || len(req.Roles) > 0 {
+			roles, err := s.GetAndCheckRoleExist(req.Roles)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			err = s.UpdateUserRoles(user, roles...)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 		}
 	}
 
+	// Email
 	if req.Email != nil {
 		user.Email = *req.Email
-		err = s.Save(user)
-		if err != nil {
+	}
+
+	// IsDisabled
+	if req.IsDisabled != nil {
+		if err := controller.IsUserCanBeDisabled(
+			controller.GetUserName(c), userName); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		user.IsDisabled = *req.IsDisabled
 	}
+
+	err = s.Save(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
