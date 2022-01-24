@@ -34,9 +34,10 @@ type GetUserGroupsResV1 struct {
 }
 
 type UserGroupListItemResV1 struct {
-	Name       string `json:"group_name"`
-	Desc       string `json:"group_desc"`
-	IsDisabled bool   `json:"is_disabled,omitempty"`
+	Name       string   `json:"group_name"`
+	Desc       string   `json:"group_desc"`
+	IsDisabled bool     `json:"is_disabled,omitempty"`
+	Users      []string `json:"user_name_list,omitempty"`
 
 	// TODO: roles
 }

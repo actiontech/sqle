@@ -1360,6 +1360,10 @@ definitions:
         type: string
       is_disabled:
         type: boolean
+      user_name_list:
+        items:
+          type: string
+        type: array
     type: object
   v1.UserLoginReqV1:
     properties:
