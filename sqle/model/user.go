@@ -28,6 +28,7 @@ type User struct {
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
 	Roles                  []*Role                `gorm:"many2many:user_role;"`
+	IsDisabled             bool                   `json:"is_disabled" gorm:"not null; default: false"`
 
 	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
 }
