@@ -1,12 +1,16 @@
 package model
 
 type UserDetail struct {
-	Id         int
-	Name       string `json:"login_name"`
-	Email      string
-	LoginType  string  `json:"user_authentication_type"`
-	RoleNames  RowList `json:"role_names"`
-	IsDisabled bool    `json:"is_disabled"`
+	Id        int
+	Name      string `json:"login_name"`
+	Email     string
+	LoginType string  `json:"user_authentication_type"`
+	RoleNames RowList `json:"role_names"`
+	Stat      int     `json:"stat"`
+}
+
+func (u *UserDetail) IsDisabled() bool {
+	return u.Stat == Disabled
 }
 
 var usersQueryTpl = `SELECT users.id, users.login_name, users.email, users.user_authentication_type, users.stat, GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
