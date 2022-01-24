@@ -24,7 +24,8 @@ type CreateUserGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups [post]
 func CreateUserGroup(c echo.Context) (err error) {
-	return JSONNewNotImplementedErr(c)
+	// TODO: implementation
+	return controller.JSONNewNotImplementedErr(c)
 }
 
 type GetUserGroupsResV1 struct {
@@ -55,7 +56,8 @@ type UserGroupListItemResV1 struct {
 // @Success 200 {object} v1.GetUserGroupsResV1
 // @router /v1/user_groups [get]
 func GetUserGroups(c echo.Context) (err error) {
-	return JSONNewNotImplementedErr(c)
+	// TODO: implementation
+	return controller.JSONNewNotImplementedErr(c)
 }
 
 // @Summary 删除用户组
@@ -67,7 +69,8 @@ func GetUserGroups(c echo.Context) (err error) {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups/{user_group_name}/ [delete]
 func DeleteUserGroup(c echo.Context) error {
-	return JSONNewNotImplementedErr(c)
+	// TODO: implementation
+	return controller.JSONNewNotImplementedErr(c)
 }
 
 type PatchUserGroupReqV1 struct {
@@ -85,5 +88,6 @@ type PatchUserGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups/{user_group_name}/ [patch]
 func UpdateUserGroup(c echo.Context) error {
-	return JSONNewNotImplementedErr(c)
+	// TODO: implementation
+	return controller.JSONNewNotImplementedErr(c)
 }
