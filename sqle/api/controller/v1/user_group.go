@@ -37,6 +37,8 @@ type UserGroupListItemResV1 struct {
 	Name       string `json:"group_name"`
 	Desc       string `json:"group_desc"`
 	IsDisabled bool   `json:"is_disabled,omitempty"`
+
+	// TODO: roles
 }
 
 // @Summary 获取用户组列表
