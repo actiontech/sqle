@@ -45,6 +45,9 @@ type UserGroupListItemResV1 struct {
 // @Tags user_group
 // @Id getUserGroupListV1
 // @Security ApiKeyAuth
+// @Param filter_user_group_name query string false "filter user group name"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
 // @Produce json
 // @Success 200 {object} v1.GetUserGroupsResV1
 // @router /v1/user_groups [get]

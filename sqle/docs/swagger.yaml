@@ -1358,8 +1358,6 @@ definitions:
         type: string
       group_name:
         type: string
-      id:
-        type: integer
       is_disabled:
         type: boolean
     type: object
@@ -3071,6 +3069,19 @@ paths:
     get:
       description: get user group info list
       operationId: getUserGroupListV1
+      parameters:
+      - description: filter user group name
+        in: query
+        name: filter_user_group_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
