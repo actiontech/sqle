@@ -3489,6 +3489,53 @@
                     }
                 }
             }
+        },
+        "/v2/roles/{role_name}/": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "role"
+                ],
+                "summary": "更新角色信息",
+                "operationId": "updateRoleV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "role name",
+                        "name": "role_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update role request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.UpdateRoleReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -6000,6 +6047,32 @@
                     "type": "string"
                 },
                 "role_name": {
+                    "type": "string"
+                },
+                "user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v2.UpdateRoleReqV2": {
+            "type": "object",
+            "properties": {
+                "instance_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "operation_code_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "role_desc": {
                     "type": "string"
                 },
                 "user_name_list": {

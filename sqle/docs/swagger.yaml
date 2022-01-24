@@ -1715,6 +1715,23 @@ definitions:
           type: string
         type: array
     type: object
+  v2.UpdateRoleReqV2:
+    properties:
+      instance_name_list:
+        items:
+          type: string
+        type: array
+      operation_code_list:
+        items:
+          type: string
+        type: array
+      role_desc:
+        type: string
+      user_name_list:
+        items:
+          type: string
+        type: array
+    type: object
 info:
   contact: {}
   description: This is a sample server for dev.
@@ -3935,6 +3952,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 创建角色
+      tags:
+      - role
+  /v2/roles/{role_name}/:
+    patch:
+      consumes:
+      - application/json
+      description: update role
+      operationId: updateRoleV2
+      parameters:
+      - description: role name
+        in: path
+        name: role_name
+        required: true
+        type: string
+      - description: update role request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.UpdateRoleReqV2'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新角色信息
       tags:
       - role
 securityDefinitions:
