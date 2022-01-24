@@ -2262,6 +2262,26 @@ var doc = `{
                 ],
                 "summary": "获取用户组列表",
                 "operationId": "getUserGroupListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter user group name",
+                        "name": "filter_user_group_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -5376,9 +5396,6 @@ var doc = `{
                 },
                 "group_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "is_disabled": {
                     "type": "boolean"
