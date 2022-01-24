@@ -34,7 +34,6 @@ type GetUserGroupsResV1 struct {
 }
 
 type UserGroupListItemResV1 struct {
-	ID         uint   `json:"id"`
 	Name       string `json:"group_name"`
 	Desc       string `json:"group_desc"`
 	IsDisabled bool   `json:"is_disabled,omitempty"`
