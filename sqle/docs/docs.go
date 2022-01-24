@@ -5399,6 +5399,12 @@ var doc = `{
                 },
                 "is_disabled": {
                     "type": "boolean"
+                },
+                "user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
