@@ -4011,6 +4011,12 @@
                 "is_disabled": {
                     "type": "boolean"
                 },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_group_desc": {
                     "type": "string",
                     "example": "this is a group"
@@ -4035,6 +4041,12 @@
                     "example": "test@email.com"
                 },
                 "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_group_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -5450,6 +5462,12 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -5519,6 +5537,12 @@
                         "type": "string"
                     }
                 },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_name": {
                     "type": "string"
                 }
@@ -5529,6 +5553,12 @@
             "properties": {
                 "is_disabled": {
                     "type": "boolean"
+                },
+                "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "user_group_desc": {
                     "type": "string"
@@ -5579,6 +5609,12 @@
                     "type": "string"
                 },
                 "role_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_group_name_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -5945,6 +5981,12 @@
                 "role_name": {
                     "type": "string"
                 },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_name_list": {
                     "type": "array",
                     "items": {
@@ -6049,6 +6091,12 @@
                 "role_name": {
                     "type": "string"
                 },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_name_list": {
                     "type": "array",
                     "items": {
@@ -6074,6 +6122,12 @@
                 },
                 "role_desc": {
                     "type": "string"
+                },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "user_name_list": {
                     "type": "array",
