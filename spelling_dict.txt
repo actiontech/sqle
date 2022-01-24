@@ -98,6 +98,7 @@ lname
 localhost
 localtime
 localtimestamp
+logf
 login
 logrus
 longblob
@@ -123,6 +124,7 @@ natefinch
 nolint
 noop
 nullable
+nxadm
 omitempty
 oneof
 onlineddl
@@ -193,6 +195,7 @@ tinyblob
 tinyint
 tinytext
 todo
+tracef
 unary
 ungerik
 unittest
