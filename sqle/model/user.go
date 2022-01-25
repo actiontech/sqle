@@ -54,12 +54,8 @@ func (u *User) IsDisabled() bool {
 	return u.Stat == Disabled
 }
 
-func (u *User) Enable() {
-	u.Stat = Enabled
-}
-
-func (u *User) Disable() {
-	u.Stat = Disabled
+func (u *User) SetStat(stat uint) {
+	u.Stat = stat
 }
 
 // BeforeSave is a hook implement gorm model before exec create

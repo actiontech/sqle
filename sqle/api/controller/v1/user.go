@@ -126,9 +126,9 @@ func UpdateUser(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if *req.IsDisabled {
-			user.Disable()
+			user.SetStat(model.Disabled)
 		} else {
-			user.Enable()
+			user.SetStat(model.Enabled)
 		}
 	}
 
