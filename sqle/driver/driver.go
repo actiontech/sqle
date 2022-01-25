@@ -322,3 +322,7 @@ func (rs *AuditResult) Add(level RuleLevel, message string, args ...interface{})
 		message: fmt.Sprintf(message, args...),
 	})
 }
+
+func (rs *AuditResult) HasResult() bool {
+	return len(rs.results) != 0
+}
