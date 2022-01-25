@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -79,6 +80,7 @@ const (
 	DDLCheckCreateProcedure                     = "ddl_check_create_procedure"
 	DDLCheckTableSize                           = "ddl_check_table_size"
 	DDLCheckIndexTooMany                        = "ddl_check_index_too_many"
+	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
 )
 
 // inspector DML rules
@@ -247,6 +249,17 @@ var RuleHandlers = []RuleHandler{
 			Category: RuleTypeGlobalConfig,
 		},
 		Func: nil,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckRedundantIndex,
+			Desc:     "检查DDL是否创建冗余的索引",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeIndexOptimization,
+		},
+		Message:      "%v",
+		AllowOffline: true,
+		Func:         checkIndex,
 	},
 	{
 		Rule: driver.Rule{
@@ -1714,6 +1727,7 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	indexCounter := 0
 	compositeIndexMax := 0
 	singleIndexCounter := map[string] /*index*/ int /*count*/ {}
+	tableIndexs, newIndexs := []index{}, []index{}
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		// check index
@@ -1725,11 +1739,15 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 					compositeIndexMax = len(constraint.Keys)
 				}
 			}
+			singleConstraint := index{Name: constraint.Name, Column: []string{}}
 			for _, key := range constraint.Keys {
-				singleIndexCounter[key.Column.Name.String()]++
+				singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
+				singleIndexCounter[key.Column.Name.L]++
 			}
+			newIndexs = append(newIndexs, singleConstraint)
 		}
 	case *ast.AlterTableStmt:
+		hasAddConstraint := false
 		for _, spec := range stmt.Specs {
 			if spec.Constraint == nil {
 				continue
@@ -1741,8 +1759,15 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 					compositeIndexMax = len(spec.Constraint.Keys)
 				}
 			}
-			for _, key := range spec.Constraint.Keys {
-				singleIndexCounter[key.Column.Name.String()]++
+			switch spec.Tp {
+			case ast.AlterTableAddConstraint:
+				hasAddConstraint = true
+				singleConstraint := index{Name: spec.Constraint.Name, Column: []string{}}
+				for _, key := range spec.Constraint.Keys {
+					singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
+					singleIndexCounter[key.Column.Name.L]++
+				}
+				newIndexs = append(newIndexs, singleConstraint)
 			}
 		}
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
@@ -1755,9 +1780,14 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 					indexCounter++
 				}
+				singleConstraint := index{Name: constraint.Name, Column: []string{}}
 				for _, key := range constraint.Keys {
-					singleIndexCounter[key.Column.Name.String()]++
+					singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
+					if hasAddConstraint {
+						singleIndexCounter[key.Column.Name.L]++
+					}
 				}
+				tableIndexs = append(tableIndexs, singleConstraint)
 			}
 		}
 
@@ -1766,9 +1796,12 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 		if compositeIndexMax < len(stmt.IndexColNames) {
 			compositeIndexMax = len(stmt.IndexColNames)
 		}
+		singleConstraint := index{Name: stmt.IndexName, Column: []string{}}
 		for _, key := range stmt.IndexColNames {
-			singleIndexCounter[key.Column.Name.String()]++
+			singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
+			singleIndexCounter[key.Column.Name.L]++
 		}
+		newIndexs = append(newIndexs, singleConstraint)
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
 			return err
@@ -1779,9 +1812,12 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 					indexCounter++
 				}
+				singleConstraint := index{Name: constraint.Name, Column: []string{}}
 				for _, key := range constraint.Keys {
-					singleIndexCounter[key.Column.Name.String()]++
+					singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
+					singleIndexCounter[key.Column.Name.L]++
 				}
+				tableIndexs = append(tableIndexs, singleConstraint)
 			}
 		}
 	default:
@@ -1809,7 +1845,101 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 			addResult(res, rule, DDLCheckIndexTooMany, strings.Join(manyKeys, " , "), expectCounter)
 		}
 	}
+	if rule.Name == DDLCheckRedundantIndex {
+		// here's a false positive
+		//nolint:staticcheck
+		repeat, redundancy := []string{}, map[string]string{}
+		if len(tableIndexs) == 0 {
+			repeat, redundancy = checkRedundantIndex(newIndexs)
+		} else {
+			repeat, redundancy = checkAlterTableRedundantIndex(newIndexs, tableIndexs)
+		}
+
+		errStr := ""
+		if len(repeat) > 0 {
+			errStr = fmt.Sprintf("存在重复索引:%v; ", strings.Join(repeat, " , "))
+		}
+		for red, source := range redundancy {
+			errStr += fmt.Sprintf("已存在索引 %v , 索引 %v 为冗余索引; ", source, red)
+		}
+		if errStr != "" {
+			addResult(res, rule, DDLCheckRedundantIndex, errStr)
+		}
+	}
 	return nil
+}
+
+// MySQL column index
+type index struct {
+	Name   string
+	Column []string
+}
+
+func (i index) ColumnString() string {
+	return strings.Join(i.Column, ",")
+}
+
+func (i index) String() string {
+	return fmt.Sprintf("%v(%v)", i.Name, i.ColumnString())
+}
+
+func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redundancy map[string] /* redundancy index's column name or index name*/ string /*source column name or index name*/) {
+	redundancy = map[string]string{}
+	repeat = []string{}
+	if len(indexs) == 0 {
+		return
+	}
+	sort.SliceStable(indexs, func(i, j int) bool {
+		return indexs[i].ColumnString() < indexs[j].ColumnString()
+	})
+	lastIndex, lastNormalIndex := indexs[len(indexs)-1], indexs[len(indexs)-1]
+
+	for i := len(indexs) - 2; i >= 0; i-- {
+		ind := indexs[i]
+		if ind.ColumnString() == lastIndex.ColumnString() &&
+			(len(repeat) == 0 || repeat[len(repeat)-1] != ind.String()) {
+			repeat = append(repeat, ind.String())
+		} else if strings.HasPrefix(lastNormalIndex.ColumnString(), ind.ColumnString()) {
+			redundancy[ind.String()] = lastNormalIndex.String()
+		} else {
+			lastNormalIndex = ind
+		}
+		lastIndex = ind
+	}
+
+	return
+}
+
+func checkAlterTableRedundantIndex(newIndexs, tableIndexs []index) (repeat []string /*column name*/, redundancy map[string] /* redundancy index's column name or index name*/ string /*source column name or index name*/) {
+	repeat, redundancy = checkRedundantIndex(append(newIndexs, tableIndexs...))
+
+	for i := len(repeat) - 1; i >= 0; i-- {
+		hasIndex := false
+		for _, newIndex := range newIndexs {
+			if newIndex.String() == repeat[i] {
+				hasIndex = true
+				break
+			}
+		}
+		if !hasIndex {
+			repeat = append(repeat[:i], repeat[i+1:]...)
+		}
+	}
+
+	for r, s := range redundancy {
+		hasIndex := false
+		for _, newIndex := range newIndexs {
+			if r == newIndex.String() || s == newIndex.String() {
+				hasIndex = true
+				break
+			}
+		}
+		if !hasIndex {
+			delete(redundancy, r)
+		}
+	}
+
+	return
 }
 
 func checkStringType(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
