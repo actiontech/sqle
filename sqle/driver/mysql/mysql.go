@@ -269,20 +269,21 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
 		err = i.CheckInvalid(nodes[0])
-
-		if err == nil && i.cnf.dmlExplainPreCheckEnable {
-			err = i.CheckExplain(nodes[0])
-		}
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	if i.result.Level() == driver.RuleLevelError {
+	if !i.result.HasResult() {
+		if err = i.CheckExplain(nodes[0]); err != nil {
+			return nil, err
+		}
+	}
+
+	if i.result.HasResult() {
 		i.HasInvalidSql = true
 		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), i.result.Message())
 	}
-
 	for _, rule := range i.rules {
 		handler, ok := rulepkg.RuleHandlerMap[rule.Name]
 		if !ok || handler.Func == nil {
