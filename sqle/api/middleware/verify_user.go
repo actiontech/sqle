@@ -12,7 +12,7 @@ func VerifyUserIsDisabled() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			userName := controller.GetUserName(c)
-			user, isExist, err := model.GetStorage().GetUserDetailByName(userName)
+			user, isExist, err := model.GetStorage().GetUserByName(userName)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
