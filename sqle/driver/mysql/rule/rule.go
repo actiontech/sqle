@@ -1856,11 +1856,11 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 		}
 
 		errStr := ""
-		for _, r := range repeat {
-			errStr += fmt.Sprintf("重复索引(%v);", r)
+		if len(repeat) > 0 {
+			errStr = fmt.Sprintf("存在重复索引:%v;", strings.Join(repeat, ","))
 		}
 		for red, source := range redundancy {
-			errStr += fmt.Sprintf("已存在索引 (%v) , 索引 (%v) 为冗余索引;", source, red)
+			errStr += fmt.Sprintf("已存在索引 %v , 索引 %v 为冗余索引;", source, red)
 		}
 		if errStr != "" {
 			addResult(res, rule, DDLCheckRedundantIndex, errStr)
@@ -1879,12 +1879,8 @@ func (i index) ColumnString() string {
 	return strings.Join(i.Column, ",")
 }
 
-// If there is a name, return the name, if there is no name, return all the column names involved
-func (i index) GetIndexName() string {
-	if i.Name != "" {
-		return i.Name
-	}
-	return strings.Join(i.Column, ",")
+func (i index) String() string {
+	return fmt.Sprintf("%v(%v)", i.Name, i.ColumnString())
 }
 
 func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redundancy map[string] /* redundancy index's column name or index name*/ string /*source column name or index name*/) {
@@ -1901,10 +1897,10 @@ func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redun
 	for i := len(indexs) - 2; i >= 0; i-- {
 		ind := indexs[i]
 		if ind.ColumnString() == lastIndex.ColumnString() &&
-			(len(repeat) == 0 || repeat[len(repeat)-1] != ind.GetIndexName()) {
-			repeat = append(repeat, ind.GetIndexName())
+			(len(repeat) == 0 || repeat[len(repeat)-1] != ind.String()) {
+			repeat = append(repeat, ind.String())
 		} else if strings.HasPrefix(lastNormalIndex.ColumnString(), ind.ColumnString()) {
-			redundancy[ind.GetIndexName()] = lastNormalIndex.GetIndexName()
+			redundancy[ind.String()] = lastNormalIndex.String()
 		} else {
 			lastNormalIndex = ind
 		}
@@ -1920,7 +1916,7 @@ func checkAlterTableRedundantIndex(newIndexs, tableIndexs []index) (repeat []str
 	for i := len(repeat) - 1; i >= 0; i-- {
 		hasIndex := false
 		for _, newIndex := range newIndexs {
-			if newIndex.GetIndexName() == repeat[i] {
+			if newIndex.String() == repeat[i] {
 				hasIndex = true
 				break
 			}
@@ -1933,7 +1929,7 @@ func checkAlterTableRedundantIndex(newIndexs, tableIndexs []index) (repeat []str
 	for r, s := range redundancy {
 		hasIndex := false
 		for _, newIndex := range newIndexs {
-			if r == newIndex.GetIndexName() || s == newIndex.GetIndexName() {
+			if r == newIndex.String() || s == newIndex.String() {
 				hasIndex = true
 				break
 			}
