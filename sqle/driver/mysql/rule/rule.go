@@ -1890,28 +1890,27 @@ func (i index) GetIndexName() string {
 func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redundancy map[string] /* redundancy index's column name or index name*/ string /*source column name or index name*/) {
 	redundancy = map[string]string{}
 	repeat = []string{}
+	if len(indexs) == 0 {
+		return
+	}
 	sort.SliceStable(indexs, func(i, j int) bool {
 		return indexs[i].ColumnString() < indexs[j].ColumnString()
 	})
-	for i := range indexs {
-		isRedundancy := false
-		for j := i + 1; j < len(indexs); j++ {
-			if indexs[i].ColumnString() == indexs[j].ColumnString() {
-				repeat = append(repeat, indexs[i].GetIndexName())
-				break
-			}
-			if strings.HasPrefix(indexs[j].ColumnString(), indexs[i].ColumnString()) {
-				if j == len(indexs)-1 {
-					redundancy[indexs[i].GetIndexName()] = indexs[j].GetIndexName()
-				} else {
-					isRedundancy = true
-				}
-			} else if isRedundancy {
-				redundancy[indexs[i].GetIndexName()] = indexs[j-1].GetIndexName()
-				isRedundancy = false
-			}
+	lastIndex, lastNormalIndex := indexs[len(indexs)-1], indexs[len(indexs)-1]
+
+	for i := len(indexs) - 2; i >= 0; i-- {
+		ind := indexs[i]
+		if ind.ColumnString() == lastIndex.ColumnString() &&
+			(len(repeat) == 0 || repeat[len(repeat)-1] != ind.GetIndexName()) {
+			repeat = append(repeat, ind.GetIndexName())
+		} else if strings.HasPrefix(lastNormalIndex.ColumnString(), ind.ColumnString()) {
+			redundancy[ind.GetIndexName()] = lastNormalIndex.GetIndexName()
+		} else {
+			lastNormalIndex = ind
 		}
+		lastIndex = ind
 	}
+
 	return
 }
 
