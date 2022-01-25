@@ -20,7 +20,7 @@ func VerifyUserIsDisabled() echo.MiddlewareFunc {
 				return controller.JSONBaseErrorReq(c, errors.NewDataInvalidErr("user is not exist"))
 			}
 			if user.IsDisabled() {
-				return controller.JSONBaseErrorReq(c, errors.NewUserDisabledErr("current user is disabled."))
+				return controller.JSONBaseErrorReq(c, errors.NewUserDisabledErr("current user is disabled"))
 			}
 			return next(c)
 		}
