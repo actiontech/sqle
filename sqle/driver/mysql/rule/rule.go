@@ -1857,10 +1857,10 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 
 		errStr := ""
 		if len(repeat) > 0 {
-			errStr = fmt.Sprintf("存在重复索引:%v;", strings.Join(repeat, ","))
+			errStr = fmt.Sprintf("存在重复索引:%v; ", strings.Join(repeat, " , "))
 		}
 		for red, source := range redundancy {
-			errStr += fmt.Sprintf("已存在索引 %v , 索引 %v 为冗余索引;", source, red)
+			errStr += fmt.Sprintf("已存在索引 %v , 索引 %v 为冗余索引; ", source, red)
 		}
 		if errStr != "" {
 			addResult(res, rule, DDLCheckRedundantIndex, errStr)
