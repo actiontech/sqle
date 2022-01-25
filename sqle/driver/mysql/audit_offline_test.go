@@ -631,7 +631,7 @@ INDEX idx_1 (v1,id),
 INDEX idx_2 (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id) 为重复索引;"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "重复索引(id);"),
 	)
 
 	runSingleRuleInspectCase(rule, t, "create_table: has redundant index", DefaultMysqlInspectOffline(),
@@ -657,7 +657,7 @@ PRIMARY KEY (id,v1),
 INDEX idx_1 (id,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id,v1) 为重复索引;"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "重复索引(id,v1);"),
 	)
 
 	runSingleRuleInspectCase(rule, t, "create_table: has repeat and redundant index", DefaultMysqlInspectOffline(),
@@ -671,7 +671,7 @@ INDEX idx_1 (id,v1),
 INDEX idx_2 (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "发现 (id) 为重复索引;已存在索引 (idx_1) , 索引 (idx_2) 为冗余索引;"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "重复索引(id);已存在索引 (idx_1) , 索引 (idx_2) 为冗余索引;"),
 	)
 
 }
