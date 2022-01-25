@@ -1856,8 +1856,8 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 		}
 
 		errStr := ""
-		if len(repeat) > 0 {
-			errStr = fmt.Sprintf("发现 (%v) 为重复索引;", strings.Join(repeat, " , "))
+		for _, r := range repeat {
+			errStr += fmt.Sprintf("重复索引(%v);", r)
 		}
 		for red, source := range redundancy {
 			errStr += fmt.Sprintf("已存在索引 (%v) , 索引 (%v) 为冗余索引;", source, red)
