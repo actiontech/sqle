@@ -111,6 +111,7 @@ func (s *Storage) AutoMigrate() error {
 		&RollbackSQL{},
 		&SqlWhitelist{},
 		&User{},
+		&UserGroup{},
 		&Role{},
 		&WorkflowTemplate{},
 		&WorkflowStepTemplate{},
