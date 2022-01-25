@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
@@ -24,8 +25,53 @@ type CreateUserGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups [post]
 func CreateUserGroup(c echo.Context) (err error) {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(CreateUserGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+	// check if user group already exists.
+	{
+		isExist, err := s.CheckIfUserGroupExistByName(req.Name)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if isExist {
+			return controller.JSONNewDataExistErr(c, "user group %s already exists", req.Name)
+		}
+	}
+
+	// check users
+	var users []*model.User
+	{
+
+		userNames := req.Users
+		users, err = s.GetAndCheckUserExist(userNames)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// check roles
+	var roles []*model.Role
+	{
+		roleNames := req.Roles
+		roles, err = s.GetAndCheckRoleExist(roleNames)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// UserGroup Model
+	ug := &model.UserGroup{
+		Name:  req.Name,
+		Desc:  req.Desc,
+		Users: users,
+		Roles: roles,
+	}
+
+	return controller.JSONBaseErrorReq(c, s.Save(ug))
 }
 
 type GetUserGroupsResV1 struct {
