@@ -100,24 +100,43 @@ func UpdateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
-	if req.Roles != nil || len(req.Roles) > 0 {
-		roles, err := s.GetAndCheckRoleExist(req.Roles)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		err = s.UpdateUserRoles(user, roles...)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	// roles
+	{
+		if req.Roles != nil || len(req.Roles) > 0 {
+			roles, err := s.GetAndCheckRoleExist(req.Roles)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			err = s.UpdateUserRoles(user, roles...)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 		}
 	}
 
+	// Email
 	if req.Email != nil {
 		user.Email = *req.Email
-		err = s.Save(user)
-		if err != nil {
+	}
+
+	// IsDisabled
+	if req.IsDisabled != nil {
+		if err := controller.CanThisUserBeDisabled(
+			controller.GetUserName(c), userName); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		if *req.IsDisabled {
+			user.SetStat(model.Disabled)
+		} else {
+			user.SetStat(model.Enabled)
+		}
 	}
+
+	err = s.Save(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
@@ -233,10 +252,11 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
 	userReq := UserDetailResV1{
-		Name:      user.Name,
-		Email:     user.Email,
-		LoginType: string(user.UserAuthenticationType),
-		IsAdmin:   user.Name == model.DefaultAdminUser,
+		Name:       user.Name,
+		Email:      user.Email,
+		LoginType:  string(user.UserAuthenticationType),
+		IsAdmin:    user.Name == model.DefaultAdminUser,
+		IsDisabled: user.IsDisabled(),
 	}
 	roleNames := make([]string, 0, len(user.Roles))
 	for _, role := range user.Roles {
@@ -431,10 +451,11 @@ func GetUsers(c echo.Context) error {
 			user.LoginType = string(model.UserAuthenticationTypeSQLE)
 		}
 		userReq := UserResV1{
-			Name:      user.Name,
-			Email:     user.Email,
-			LoginType: user.LoginType,
-			Roles:     user.RoleNames,
+			Name:       user.Name,
+			Email:      user.Email,
+			LoginType:  user.LoginType,
+			Roles:      user.RoleNames,
+			IsDisabled: user.IsDisabled(),
 		}
 		usersReq = append(usersReq, userReq)
 	}

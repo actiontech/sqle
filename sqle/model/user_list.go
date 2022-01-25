@@ -6,9 +6,14 @@ type UserDetail struct {
 	Email     string
 	LoginType string  `json:"user_authentication_type"`
 	RoleNames RowList `json:"role_names"`
+	Stat      int     `json:"stat"`
 }
 
-var usersQueryTpl = `SELECT users.id, users.login_name, users.email, users.user_authentication_type,GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
+func (u *UserDetail) IsDisabled() bool {
+	return u.Stat == Disabled
+}
+
+var usersQueryTpl = `SELECT users.id, users.login_name, users.email, users.user_authentication_type, users.stat, GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
 FROM users 
 LEFT JOIN user_role ON users.id = user_role.user_id
 LEFT JOIN roles ON user_role.role_id = roles.id AND roles.deleted_at IS NULL
