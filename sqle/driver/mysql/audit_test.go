@@ -1400,7 +1400,7 @@ INDEX idx_1 (v1,id),
 INDEX idx_2 (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "重复索引(id);"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "存在重复索引:(id); "),
 	)
 
 	runSingleRuleInspectCase(rule, t, "create_table: has redundant index", DefaultMysqlInspect(),
@@ -1413,7 +1413,7 @@ PRIMARY KEY (id,v1),
 INDEX idx_1 (id,v1,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "已存在索引 (idx_1) , 索引 (id,v1) 为冗余索引;"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "已存在索引 idx_1(id,v1,v2) , 索引 (id,v1) 为冗余索引; "),
 	)
 
 	runSingleRuleInspectCase(rule, t, "create_table: has repeat index 2", DefaultMysqlInspect(),
@@ -1426,7 +1426,7 @@ PRIMARY KEY (id,v1),
 INDEX idx_1 (id,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "重复索引(id,v1);"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "存在重复索引:(id,v1); "),
 	)
 
 	runSingleRuleInspectCase(rule, t, "create_table: has repeat and redundant index", DefaultMysqlInspect(),
@@ -1440,21 +1440,21 @@ INDEX idx_1 (id,v1),
 INDEX idx_2 (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "重复索引(id);已存在索引 (idx_1) , 索引 (idx_2) 为冗余索引;"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "存在重复索引:(id); 已存在索引 idx_1(id,v1) , 索引 idx_2(id) 为冗余索引; "),
 	)
 
 	runSingleRuleInspectCase(rule, t, "alter_table: has repeat and redundant index", DefaultMysqlInspect(),
 		`
 alter table exist_db.exist_tb_1 add index idx_t (v1);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "重复索引(idx_t);"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "存在重复索引:idx_t(v1); "),
 	)
 
 	runSingleRuleInspectCase(rule, t, "alter_table: has repeat and redundant index", DefaultMysqlInspect(),
 		`
 alter table exist_db.exist_tb_6 add index idx_t (v2);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "已存在索引 (idx_100) , 索引 (idx_t) 为冗余索引;"),
+		newTestResult().addResult(rulepkg.DDLCheckRedundantIndex, "已存在索引 idx_100(v2,v1) , 索引 idx_t(v2) 为冗余索引; "),
 	)
 
 }
