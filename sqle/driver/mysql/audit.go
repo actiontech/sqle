@@ -81,7 +81,7 @@ func (i *Inspect) CheckExplain(node ast.Node) error {
 		_, err = i.Ctx.GetExecutionPlan(node.Text())
 	}
 	if err != nil {
-		return fmt.Errorf(CheckInvalidErrorFormat, err)
+		i.result.Add(driver.RuleLevelWarn, fmt.Sprintf(CheckInvalidErrorFormat, err))
 	}
 	return nil
 
