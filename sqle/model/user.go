@@ -10,7 +10,16 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-const DefaultAdminUser = "admin"
+const (
+	DefaultAdminUser = "admin"
+
+	Disabled = 1
+	Enabled  = 0
+)
+
+func IsDefaultAdminUser(user string) bool {
+	return user == DefaultAdminUser
+}
 
 type UserAuthenticationType string
 
@@ -28,6 +37,7 @@ type User struct {
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
 	Roles                  []*Role                `gorm:"many2many:user_role;"`
+	Stat                   uint                   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
 
 	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
 }
@@ -38,6 +48,14 @@ type Role struct {
 	Desc      string
 	Users     []*User     `gorm:"many2many:user_role;"`
 	Instances []*Instance `gorm:"many2many:instance_role;"`
+}
+
+func (u *User) IsDisabled() bool {
+	return u.Stat == Disabled
+}
+
+func (u *User) SetStat(stat uint) {
+	u.Stat = stat
 }
 
 // BeforeSave is a hook implement gorm model before exec create

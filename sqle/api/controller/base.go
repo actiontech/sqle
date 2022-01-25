@@ -109,3 +109,18 @@ func ReadFileContent(c echo.Context, name string) (content string, fileExist boo
 	}
 	return string(data), true, nil
 }
+
+// subjectUser should be admin user.
+func CanThisUserBeDisabled(subjectUser, objectUser string) (err error) {
+
+	if subjectUser == objectUser {
+		return errors.NewDataInvalidErr("user<%v> can not disable or enable self", subjectUser)
+	}
+
+	// admin user can not be disabled.
+	if model.IsDefaultAdminUser(objectUser) {
+		return errors.NewDataInvalidErr("admin user can not be disabled or enabled")
+	}
+
+	return nil
+}
