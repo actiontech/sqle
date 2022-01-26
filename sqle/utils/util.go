@@ -91,13 +91,3 @@ func AddDelTag(delTime *time.Time, target string) string {
 	}
 	return target
 }
-
-func IsErrorEqual(subjectErr, objectErr error) bool {
-	if subjectErr == nil && objectErr == nil {
-		return true
-	}
-	if subjectErr == nil || objectErr == nil {
-		return false
-	}
-	return subjectErr.Error() == objectErr.Error()
-}
