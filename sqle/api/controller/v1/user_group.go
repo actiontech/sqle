@@ -33,7 +33,7 @@ func CreateUserGroup(c echo.Context) (err error) {
 	s := model.GetStorage()
 	// check if user group already exists.
 	{
-		isExist, err := s.CheckIfUserGroupExistByName(req.Name)
+		_, isExist, err := s.CheckIfUserGroupExistByName(req.Name)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

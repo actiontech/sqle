@@ -1,10 +1,9 @@
 package model
 
 import (
-	"fmt"
+	"github.com/actiontech/sqle/sqle/errors"
 
-	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/jackc/pgx/v4"
+	"github.com/jinzhu/gorm"
 )
 
 type UserGroup struct {
@@ -28,16 +27,14 @@ func (ug *UserGroup) IsDisabled() bool {
 	return ug.Stat == Disabled
 }
 
-func (s *Storage) CheckIfUserGroupExistByName(userGroupName string) (isExist bool, err error) {
-	query := `SELECT 1 FROM %v WHERE name = ? LIMIT 1`
-	query = fmt.Sprintf(query, (&UserGroup{}).TableName())
-
-	cnt := 0
-	if err = s.db.Raw(query, userGroupName).Count(&cnt).Error; err != nil &&
-		// if err is ErrNoRows, it means the user group does not exist
-		utils.IsErrorEqual(err, pgx.ErrNoRows) {
-		return false, err
+func (s *Storage) CheckIfUserGroupExistByName(userGroupName string) (
+	ug *UserGroup, isExist bool, err error) {
+	ug = &UserGroup{
+		Name: userGroupName,
 	}
-
-	return cnt == 1, nil
+	err = s.db.First(ug).Error
+	if gorm.IsRecordNotFoundError(err) {
+		return nil, false, nil
+	}
+	return ug, true, errors.NewConnectStorageErrWrapper(err)
 }

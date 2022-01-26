@@ -84,3 +84,7 @@ func NewUserDisabledErr(format string, a ...interface{}) error {
 func NewConnectStorageError(format string, a ...interface{}) error {
 	return New(ConnectStorageError, fmt.Errorf(format, a...))
 }
+
+func NewConnectStorageErrWrapper(err error) error {
+	return New(ConnectStorageError, err)
+}
