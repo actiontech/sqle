@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
 )
 
 // %s = audit plan name
@@ -29,12 +30,12 @@ const (
 	// Post
 	PartialUpload = "/v1/audit_plans/%s/sqls/partial"
 	// Get										%v=report_id
-	GetAuditReport = "/v1/audit_plans/%s/report/%v/?page_index=%d&page_size=%d"
+	GetAuditReport = "/v2/audit_plans/%s/report/%v/?page_index=%d&page_size=%d"
 )
 
 type (
 	BaseRes                     = controller.BaseRes
-	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1
+	GetAuditPlanReportSQLsRes   = v2.GetAuditPlanReportSQLsResV2
 	AuditPlanSQLReq             = v1.AuditPlanSQLReqV1
 	FullSyncAuditPlanSQLsReq    = v1.FullSyncAuditPlanSQLsReqV1
 	PartialSyncAuditPlanSQLsReq = v1.PartialSyncAuditPlanSQLsReqV1
@@ -135,7 +136,7 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 			return fmt.Errorf("failed to request %s", url)
 		}
 		for _, res := range auditRes.Data {
-			fmt.Println(res.LastReceiveText)
+			fmt.Println(res.SQL)
 			fmt.Println(res.AuditResult)
 			if strings.Contains(res.AuditResult, "[error]") {
 				return fmt.Errorf("audit result error, stopped")
