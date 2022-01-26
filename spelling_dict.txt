@@ -178,6 +178,7 @@ sqlstate
 sqlwarning
 sqlx
 sqrt
+staticcheck
 stderr
 stdlib
 stmt

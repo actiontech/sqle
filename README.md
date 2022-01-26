@@ -1,5 +1,5 @@
-![logo](./SQLE_logo.png)
-
+![logo](./SQLE_logo.png)  
+SQLE由上海爱可生信息技术股份有限公司（以下简称爱可生公司）出品和维护，是爱可生公司“云树SQL审核软件”（简称：CTREE SQLE）软件产品的开源版本。
 ## What is SQLE
 SQLE is a SQL audit platform, which is extendable for most popular databases, with a native audition plugin for MySQL. SQLE 是一个支持多场景，原生支持 MySQL 审核且数据库类型可扩展的 SQL 审核工具。
 

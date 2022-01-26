@@ -4024,9 +4024,6 @@ var doc = `{
         "v1.CreateUserGroupReqV1": {
             "type": "object",
             "properties": {
-                "is_disabled": {
-                    "type": "boolean"
-                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
