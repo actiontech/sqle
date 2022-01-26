@@ -34,6 +34,7 @@ func (s *Storage) CheckIfUserGroupExistByName(userGroupName string) (isExist boo
 
 	cnt := 0
 	if err = s.db.Raw(query, userGroupName).Count(&cnt).Error; err != nil &&
+		// if err is ErrNoRows, it means the user group does not exist
 		utils.IsErrorEqual(err, pgx.ErrNoRows) {
 		return false, err
 	}
