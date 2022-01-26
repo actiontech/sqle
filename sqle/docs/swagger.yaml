@@ -324,8 +324,6 @@ definitions:
     type: object
   v1.CreateUserGroupReqV1:
     properties:
-      is_disabled:
-        type: boolean
       user_group_desc:
         example: this is a group
         type: string

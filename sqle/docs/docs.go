@@ -3878,9 +3878,6 @@ var doc = `{
         "v1.CreateUserGroupReqV1": {
             "type": "object",
             "properties": {
-                "is_disabled": {
-                    "type": "boolean"
-                },
                 "user_group_desc": {
                     "type": "string",
                     "example": "this is a group"
