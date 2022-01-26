@@ -87,6 +87,8 @@ github.com/StackExchange/wmi v0.0.0-20180725035823-b12b22c5341f/go.mod h1:3eOhrU
 github.com/VividCortex/mysqlerr v0.0.0-20201215173831-4c396ae82aac/go.mod h1:f3HiCrHjHBdcm6E83vGaXh1KomZMA2P6aeo3hKx/wg0=
 github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20211116051932-8d94d78be18a h1:Lqz7taGjQSPQI9jLAIz4UYcTk3j5eDtDJeH5MevLVPM=
 github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20211116051932-8d94d78be18a/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
+github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20220126024519-1c4141e2df0e h1:6nF7rL8Uuth86uZtaybg/tKoiCITnVXUp9JGtRy90/s=
+github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20220126024519-1c4141e2df0e/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
 github.com/agiledragon/gomonkey v2.0.2+incompatible h1:eXKi9/piiC3cjJD1658mEE2o3NjkJ5vDLgYjCQu0Xlw=
 github.com/agiledragon/gomonkey v2.0.2+incompatible/go.mod h1:2NGfXu1a80LLr2cmWXGBDaHEjb1idR6+FVlX5T3D9hw=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
