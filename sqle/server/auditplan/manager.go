@@ -3,7 +3,6 @@ package auditplan
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -278,13 +277,7 @@ func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
 
 	task.InstanceId = instance.ID
 
-	err = mgr.persist.Save(task)
-	if err != nil {
-		mgr.logger.WithField("name", ap.Name).Errorf("save audit plan task error:%v\n", err)
-		return nil
-	}
-
-	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%v", task.ID), server.ActionTypeAudit)
+	err = server.Audit(mgr.logger, task)
 	if err != nil {
 		mgr.logger.WithField("name", ap.Name).Errorf("audit task error:%v\n", err)
 		return nil
