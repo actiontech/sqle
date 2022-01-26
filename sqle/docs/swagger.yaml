@@ -324,8 +324,6 @@ definitions:
     type: object
   v1.CreateUserGroupReqV1:
     properties:
-      is_disabled:
-        type: boolean
       role_name_list:
         items:
           type: string
