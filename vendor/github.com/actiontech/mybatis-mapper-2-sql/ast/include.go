@@ -69,8 +69,8 @@ func (i *IncludeNode) GetStmt(ctx *Context) (string, error) {
 		refId = variable
 	}
 	sql, ok := ctx.GetSql(refId)
-	if ok {
-		fmt.Errorf("sql %s is not exist", refId)
+	if !ok {
+		return "", fmt.Errorf("sql %s is not exist", refId)
 	}
 	data, err := sql.GetStmt(ctx)
 	if err != nil {
