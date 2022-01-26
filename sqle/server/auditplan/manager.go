@@ -4,19 +4,13 @@ import (
 	"context"
 	"errors"
 	"sync"
-	"time"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
-	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/jinzhu/gorm"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
-
-var tokenExpire = 365 * 24 * time.Hour
 
 var ErrAuditPlanNotExist = errors.New("audit plan not exist")
 
@@ -87,82 +81,17 @@ func (mgr *Manager) stop() {
 	mgr.logger.Infoln("audit plan manager stopped")
 }
 
-func (mgr *Manager) AddStaticAuditPlan(name, cronExp, dbType, currentUserName,
-	auditPlanType string, ps params.Params) error {
+func (mgr *Manager) StartAuditPlan(ap *model.AuditPlan) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	ap := &model.AuditPlan{
-		Name:           name,
-		CronExpression: cronExp,
-		DBType:         dbType,
-		Type:           auditPlanType,
-		Params:         ps,
-	}
-
-	return mgr.addAuditPlan(ap, currentUserName)
-}
-
-func (mgr *Manager) AddDynamicAuditPlan(name, cronExp, instanceName, instanceDatabase, currentUserName,
-	auditPlanType string, ps params.Params) error {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
-	ap := &model.AuditPlan{
-		Name:             name,
-		CronExpression:   cronExp,
-		InstanceName:     instanceName,
-		InstanceDatabase: instanceDatabase,
-		Type:             auditPlanType,
-		Params:           ps,
-	}
-
-	return mgr.addAuditPlan(ap, currentUserName)
-}
-
-func (mgr *Manager) addAuditPlan(ap *model.AuditPlan, currentUserName string) error {
 	if mgr.scheduler.hasJob(ap.Name) {
 		return ErrAuditPlanExisted
 	}
-
-	user, exist, err := mgr.persist.GetUserByName(currentUserName)
-	if !exist {
-		return gorm.ErrRecordNotFound
-	} else if err != nil {
-		return err
-	}
-
-	j := utils.NewJWT([]byte(utils.JWTSecret))
-
-	t, err := j.CreateToken(currentUserName, time.Now().Add(tokenExpire).Unix(),
-		utils.WithAuditPlanName(ap.Name))
-	if err != nil {
-		return err
-	}
-
-	if ap.InstanceName != "" {
-		instance, exist, err := mgr.persist.GetInstanceByName(ap.InstanceName)
-		if !exist {
-			return gorm.ErrRecordNotFound
-		} else if err != nil {
-			return err
-		}
-
-		ap.DBType = instance.DbType
-	}
-
-	ap.Token = t
-	ap.CreateUserID = user.ID
-
-	err = mgr.persist.Save(ap)
-	if err != nil {
-		return err
-	}
-
 	return mgr.addAuditPlansToScheduler([]*model.AuditPlan{ap})
 }
 
-func (mgr *Manager) UpdateAuditPlan(name string, attrs map[string]interface{}) error {
+func (mgr *Manager) UpdateAuditPlan(name string) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
@@ -170,12 +99,7 @@ func (mgr *Manager) UpdateAuditPlan(name string, attrs map[string]interface{}) e
 		return ErrAuditPlanNotExist
 	}
 
-	err := mgr.persist.UpdateAuditPlanByName(name, attrs)
-	if err != nil {
-		return err
-	}
-
-	err = mgr.scheduler.removeJob(name)
+	err := mgr.scheduler.removeJob(name)
 	if err != nil {
 		return err
 	}
@@ -184,7 +108,6 @@ func (mgr *Manager) UpdateAuditPlan(name string, attrs map[string]interface{}) e
 	if err != nil {
 		return err
 	}
-
 	return mgr.scheduler.addJob(ap, func() {
 		mgr.runJob(ap)
 	})
@@ -196,16 +119,6 @@ func (mgr *Manager) DeleteAuditPlan(name string) error {
 
 	if !mgr.scheduler.hasJob(name) {
 		return ErrAuditPlanNotExist
-	}
-
-	ap, _, err := mgr.persist.GetAuditPlanByName(name)
-	if err != nil {
-		return err
-	}
-
-	err = mgr.persist.Delete(ap)
-	if err != nil {
-		return err
 	}
 
 	return mgr.scheduler.removeJob(name)
