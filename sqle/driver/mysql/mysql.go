@@ -274,7 +274,7 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		return nil, err
 	}
 
-	if !i.result.HasResult() {
+	if !i.result.HasResult() && i.cnf.dmlExplainPreCheckEnable {
 		if err = i.CheckExplain(nodes[0]); err != nil {
 			return nil, err
 		}
