@@ -14,7 +14,7 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/StackExchange/wmi v0.0.0-20180725035823-b12b22c5341f
 github.com/StackExchange/wmi
-# github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20211116051932-8d94d78be18a
+# github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20220126024519-1c4141e2df0e
 ## explicit
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast
