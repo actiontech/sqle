@@ -280,7 +280,7 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		}
 	}
 
-	if i.result.HasResult() {
+	if i.result.HasResult() && i.cnf.dmlExplainPreCheckEnable {
 		i.HasInvalidSql = true
 		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), i.result.Message())
 	}
