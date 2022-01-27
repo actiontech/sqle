@@ -254,7 +254,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.StartAuditPlan(ap))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.Name))
 }
 
 // @Summary 删除审核计划
@@ -273,16 +273,19 @@ func DeleteAuditPlan(c echo.Context) error {
 	}
 	s := model.GetStorage()
 
-	ap, _, err := s.GetAuditPlanByName(apName)
+	ap, exist, err := s.GetAuditPlanByName(apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 	err = s.Delete(ap)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.DeleteAuditPlan(apName))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
 }
 
 type UpdateAuditPlanReqV1 struct {
@@ -346,7 +349,7 @@ func UpdateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UpdateAuditPlan(apName))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
 }
 
 type GetAuditPlansReqV1 struct {
@@ -736,7 +739,7 @@ func TriggerAuditPlan(c echo.Context) error {
 	}
 
 	manager := auditplan.GetManager()
-	report, err := manager.TriggerAuditPlan(apName)
+	report, err := manager.Audit(apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
