@@ -5,26 +5,26 @@ import "fmt"
 type ErrorCode int
 
 const (
-	StatusOK                   ErrorCode = 0
+	StatusOK ErrorCode = 0
+
+	TaskRunning    ErrorCode = 1001
+	TaskActionDone ErrorCode = 1002
+
+	LoginAuthFail     ErrorCode = 4001
+	UserDisabled      ErrorCode = 4005
+	TaskNotExist      ErrorCode = 4006
+	TaskActionInvalid ErrorCode = 4009
+	DataExist         ErrorCode = 4010
+	DataNotExist      ErrorCode = 4011
+	DataConflict      ErrorCode = 4012
+	DataInvalid       ErrorCode = 4013
+	DataParseFail     ErrorCode = 4014
+
 	ConnectStorageError        ErrorCode = 5001
 	ConnectRemoteDatabaseError ErrorCode = 5002
 	ReadUploadFileError        ErrorCode = 5003
 	ParseMyBatisXMLFileError   ErrorCode = 5006
 	WriteDataToTheFileError    ErrorCode = 5007
-
-	TaskNotExist      ErrorCode = 4006
-	TaskActionInvalid ErrorCode = 4009
-
-	TaskRunning    ErrorCode = 1001
-	TaskActionDone ErrorCode = 1002
-
-	LoginAuthFail ErrorCode = 4001
-	UserDisabled  ErrorCode = 4005
-	DataExist     ErrorCode = 4010
-	DataNotExist  ErrorCode = 4011
-	DataConflict  ErrorCode = 4012
-	DataInvalid   ErrorCode = 4013
-	DataParseFail ErrorCode = 4014
 
 	DriverNotExist ErrorCode = 5001
 	LoadDriverFail ErrorCode = 5008
