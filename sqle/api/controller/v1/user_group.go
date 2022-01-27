@@ -24,7 +24,12 @@ type CreateUserGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups [post]
 func CreateUserGroup(c echo.Context) (err error) {
-	// TODO: implementation
+
+	req := new(CreateUserGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
 	return controller.JSONNewNotImplementedErr(c)
 }
 
