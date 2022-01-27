@@ -43,6 +43,29 @@ func CreateUserGroup(c echo.Context) (err error) {
 		}
 	}
 
+	// check users
+	var users []*model.User
+	{
+		userNames := req.Users
+		users, err = s.GetUsersByNames(userNames)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// check roles
+	var roles []*model.Role
+	{
+		roleNames := req.Roles
+		roles, err = s.GetAndCheckRoleExist(roleNames)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	_ = users
+	_ = roles
+
 	return controller.JSONNewNotImplementedErr(c)
 }
 
