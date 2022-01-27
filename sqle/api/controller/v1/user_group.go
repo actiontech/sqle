@@ -91,3 +91,24 @@ func UpdateUserGroup(c echo.Context) error {
 	// TODO: implementation
 	return controller.JSONNewNotImplementedErr(c)
 }
+
+type UserGroupTipListItem struct {
+	Name string `json:"user_group_name"`
+}
+
+type GetUserGroupTipsResV1 struct {
+	controller.BaseRes
+	Data []*UserGroupTipListItem `json:"data"`
+}
+
+// @Summary 获取用户组提示列表
+// @Description get user group tip list
+// @Tags user_group
+// @Id getUserGroupTipListV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetUserGroupTipsResV1
+// @router /v1/user_group_tips [get]
+func GetUserGroupTips(c echo.Context) error {
+	// TODO: implementation
+	return controller.JSONNewNotImplementedErr(c)
+}
