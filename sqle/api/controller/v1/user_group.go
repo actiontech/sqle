@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
@@ -28,6 +29,18 @@ func CreateUserGroup(c echo.Context) (err error) {
 	req := new(CreateUserGroupReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
+	}
+
+	s := model.GetStorage()
+	// check if user group already exist
+	{
+		_, isExist, err := s.GetUserGroupByName(req.Name)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if isExist {
+			return controller.JSONNewDataExistErr(c, "user<%v> already exist", req.Name)
+		}
 	}
 
 	return controller.JSONNewNotImplementedErr(c)

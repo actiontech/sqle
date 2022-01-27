@@ -1,5 +1,7 @@
 package model
 
+import "github.com/jinzhu/gorm"
+
 type UserGroup struct {
 	Model
 	Name  string  `json:"name" gorm:"index"`
@@ -19,4 +21,16 @@ func (ug *UserGroup) SetStat(stat int) {
 
 func (ug *UserGroup) IsDisabled() bool {
 	return ug.Stat == Disabled
+}
+
+func (s *Storage) GetUserGroupByName(name string) (
+	userGroup *UserGroup, isExist bool, err error) {
+	userGroup = &UserGroup{}
+
+	err = s.db.Where("name = ?", name).First(userGroup).Error
+	if gorm.IsRecordNotFoundError(err) {
+		return nil, false, nil
+	}
+
+	return userGroup, true, err
 }
