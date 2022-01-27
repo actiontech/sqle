@@ -327,6 +327,22 @@ func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
 	return nil
 }
 
+func (s *Storage) Tx(fn func(txDB *gorm.DB) error) (err error) {
+	txDB := s.db.Begin()
+	err = fn(txDB)
+	if err != nil {
+		txDB.Rollback()
+		return errors.ConnectStorageErrWrapper(err)
+	}
+
+	err = txDB.Commit().Error
+	if err != nil {
+		txDB.Rollback()
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	return nil
+}
+
 type RowList []string
 
 func (r *RowList) Scan(src interface{}) error {
