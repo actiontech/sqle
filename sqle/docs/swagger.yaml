@@ -807,6 +807,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetUserGroupTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.UserGroupTipListItem'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetUserGroupsResV1:
     properties:
       code:
@@ -1386,6 +1399,11 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.UserGroupTipListItem:
+    properties:
+      user_group_name:
+        type: string
     type: object
   v1.UserLoginReqV1:
     properties:
@@ -3186,6 +3204,20 @@ paths:
       summary: 用户修改密码
       tags:
       - user
+  /v1/user_group_tips:
+    get:
+      description: get user group tip list
+      operationId: getUserGroupTipListV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetUserGroupTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户组提示列表
+      tags:
+      - user_group
   /v1/user_groups:
     get:
       description: get user group info list
