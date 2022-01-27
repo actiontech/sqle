@@ -89,6 +89,11 @@ func JSONNewNotImplementedErr(c echo.Context) error {
 		NewBaseReq(errors.NewNotImplementedError("not implemented yet")))
 }
 
+func JSONNewDataExistErr(c echo.Context, format string, a ...interface{}) error {
+	return c.JSON(http.StatusOK,
+		NewBaseReq(errors.New(errors.DataExist, fmt.Errorf(format, a...))))
+}
+
 // ReadFileContent read content from http body by name if file exist,
 // the name is a http form data key, not file name.
 func ReadFileContent(c echo.Context, name string) (content string, fileExist bool, err error) {
