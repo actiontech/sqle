@@ -86,3 +86,7 @@ func NewUserDisabledErr(format string, a ...interface{}) error {
 func HttpRequestFormatErrWrapper(err error) error {
 	return New(HttpRequestFormatError, err)
 }
+
+func ConnectStorageErrWrapper(err error) error {
+	return New(ConnectStorageError, err)
+}
