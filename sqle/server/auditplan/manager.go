@@ -3,11 +3,11 @@ package auditplan
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/server"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
@@ -25,7 +25,8 @@ func InitManager(s *model.Storage) chan struct{} {
 			entryIDs: make(map[string]cron.EntryID),
 		},
 		persist: s,
-		logger:  log.NewEntry(),
+		logger:  log.NewEntry().WithField("type", "audit_plan"),
+		tasks:   map[string]Task{},
 	}
 
 	err := manager.start()
@@ -60,6 +61,8 @@ type Manager struct {
 	persist *model.Storage
 
 	logger *logrus.Entry
+
+	tasks map[string]Task
 }
 
 func (mgr *Manager) start() error {
@@ -69,168 +72,98 @@ func (mgr *Manager) start() error {
 	mgr.scheduler.start()
 	mgr.logger.Infoln("audit plan manager started")
 
-	return mgr.loadAuditPlans()
+	aps, err := mgr.persist.GetAuditPlans()
+	if err != nil {
+		return err
+	}
+	for _, v := range aps {
+		ap := v
+		mgr.startAuditPlan(ap)
+	}
+	return nil
 }
 
 func (mgr *Manager) stop() {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
+	for name := range mgr.tasks {
+		mgr.deleteAuditPlan(name)
+	}
 	ctx := mgr.scheduler.stop()
 	<-ctx.Done()
 	mgr.logger.Infoln("audit plan manager stopped")
 }
 
-func (mgr *Manager) StartAuditPlan(ap *model.AuditPlan) error {
+func (mgr *Manager) SyncTask(apName string) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
+	ap, exist, err := mgr.persist.GetAuditPlanByName(apName)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		mgr.deleteAuditPlan(apName)
+	} else {
+		mgr.startAuditPlan(ap)
+	}
+	return nil
+}
+
+func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
 	if mgr.scheduler.hasJob(ap.Name) {
-		return ErrAuditPlanExisted
-	}
-	return mgr.addAuditPlansToScheduler([]*model.AuditPlan{ap})
-}
-
-func (mgr *Manager) UpdateAuditPlan(name string) error {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
-	if !mgr.scheduler.hasJob(name) {
-		return ErrAuditPlanNotExist
-	}
-
-	err := mgr.scheduler.removeJob(name)
-	if err != nil {
-		return err
-	}
-
-	ap, _, err := mgr.persist.GetAuditPlanByName(name)
-	if err != nil {
-		return err
-	}
-	return mgr.scheduler.addJob(ap, func() {
-		mgr.runJob(ap)
-	})
-}
-
-func (mgr *Manager) DeleteAuditPlan(name string) error {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
-	if !mgr.scheduler.hasJob(name) {
-		return ErrAuditPlanNotExist
-	}
-
-	return mgr.scheduler.removeJob(name)
-}
-
-var errNoSQLInAuditPlan = errors.New("there is no SQLs in audit plan")
-
-func (mgr *Manager) TriggerAuditPlan(name string) (*model.AuditPlanReport, error) {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
-	ap, _, err := mgr.persist.GetAuditPlanByName(name)
-	if err != nil {
-		return nil, err
-	}
-
-	report := mgr.runJob(ap)
-	if report == nil {
-		return nil, errNoSQLInAuditPlan
-	}
-
-	return report, nil
-}
-
-func (mgr *Manager) loadAuditPlans() error {
-	aps, err := mgr.persist.GetAuditPlans()
-	if err != nil {
-		return err
-	}
-
-	return mgr.addAuditPlansToScheduler(aps)
-}
-
-// TODO: runJob is a async task, it's report should send by channel.
-func (mgr *Manager) runJob(ap *model.AuditPlan) *model.AuditPlanReport {
-	task := &model.Task{
-		Schema:       ap.InstanceDatabase,
-		CreateUserId: ap.CreateUserID,
-		SQLSource:    model.TaskSQLSourceFromAuditPlan,
-		DBType:       ap.DBType,
-	}
-
-	// todo: extract common logic in CreateAndAuditTask
-	auditPlanSQLs, err := mgr.persist.GetAuditPlanSQLs(ap.Name)
-	if err != nil {
-		mgr.logger.WithField("name", ap.Name).Errorf("get audit plan SQLs error:%v\n", err)
-		return nil
-	}
-
-	if len(auditPlanSQLs) == 0 {
-		mgr.logger.WithField("name", ap.Name).Warnf("skip audit, %v", errNoSQLInAuditPlan)
-		return nil
-	}
-
-	for i, sql := range auditPlanSQLs {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(i),
-				Content: sql.LastSQL,
-			},
-		})
-	}
-
-	instance, _, err := mgr.persist.GetInstanceByName(ap.InstanceName)
-	if err != nil {
-		mgr.logger.WithField("name", ap.Name).Errorf("get instance error:%v\n", err)
-		return nil
-	}
-
-	task.InstanceId = instance.ID
-
-	err = server.Audit(mgr.logger, task)
-	if err != nil {
-		mgr.logger.WithField("name", ap.Name).Errorf("audit task error:%v\n", err)
-		return nil
-	}
-
-	auditPlanReport := &model.AuditPlanReport{AuditPlanID: ap.ID}
-	for i, executeSQL := range task.ExecuteSQLs {
-		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQL{
-			AuditPlanSQLID: auditPlanSQLs[i].ID,
-			AuditResult:    executeSQL.AuditResult,
-		})
-	}
-
-	err = mgr.persist.Save(auditPlanReport)
-	if err != nil {
-		mgr.logger.WithField("name", ap.Name).Errorf("save audit plan report error:%v\n", err)
-		return nil
-	}
-
-	return auditPlanReport
-}
-
-func (mgr *Manager) addAuditPlansToScheduler(aps []*model.AuditPlan) error {
-	for _, v := range aps {
-		ap := v
-
-		err := mgr.scheduler.addJob(ap, func() {
-			mgr.runJob(ap)
-		})
+		err := mgr.scheduler.removeJob(mgr.logger, ap.Name)
 		if err != nil {
 			return err
 		}
-
-		mgr.logger.WithFields(logrus.Fields{
-			"name":            ap.Name,
-			"cron_expression": ap.CronExpression,
-		}).Infoln("audit plan added")
 	}
+	task, ok := mgr.tasks[ap.Name]
+	if ok {
+		err := task.Stop()
+		if err != nil {
+			return err
+		}
+	}
+	task = NewTask(mgr.logger, ap)
+	err := task.Start()
+	if err != nil {
+		return err
+	}
+	mgr.tasks[ap.Name] = task
 
+	return mgr.scheduler.addJob(mgr.logger, ap, func() {
+		mgr.Audit(ap.Name)
+	})
+}
+
+func (mgr *Manager) deleteAuditPlan(name string) error {
+	if mgr.scheduler.hasJob(name) {
+		err :=  mgr.scheduler.removeJob(mgr.logger, name)
+		if err != nil {
+			return err
+		}
+	}
+	task ,ok := mgr.tasks[name]
+	if ok {
+		err := task.Stop()
+		if err != nil {
+			return err
+		}
+		delete(mgr.tasks, name)
+	}
 	return nil
+}
+
+func (mgr *Manager) Audit(apName string) (*model.AuditPlanReport, error) {
+	mgr.mu.Lock()
+	defer mgr.mu.Unlock()
+
+	task, ok := mgr.tasks[apName]
+	if !ok {
+		return nil, fmt.Errorf("task not found")
+	}
+	return task.Audit()
 }
 
 // scheduler is not goroutine safe.
@@ -242,7 +175,7 @@ type scheduler struct {
 	entryIDs map[string]cron.EntryID
 }
 
-func (s *scheduler) removeJob(auditPlanName string) error {
+func (s *scheduler) removeJob(entry *logrus.Entry, auditPlanName string) error {
 	entryID, ok := s.entryIDs[auditPlanName]
 	if !ok {
 		return ErrAuditPlanNotExist
@@ -251,10 +184,13 @@ func (s *scheduler) removeJob(auditPlanName string) error {
 	s.cron.Remove(entryID)
 	delete(s.entryIDs, auditPlanName)
 
+	entry.WithFields(logrus.Fields{
+		"name":            auditPlanName,
+	}).Infoln("stop audit scheduler")
 	return nil
 }
 
-func (s *scheduler) addJob(ap *model.AuditPlan, do func()) error {
+func (s *scheduler) addJob(entry *logrus.Entry, ap *model.AuditPlan, do func()) error {
 	_, ok := s.entryIDs[ap.Name]
 	if ok {
 		return ErrAuditPlanExisted
@@ -267,6 +203,10 @@ func (s *scheduler) addJob(ap *model.AuditPlan, do func()) error {
 
 	s.entryIDs[ap.Name] = entryID
 
+	entry.WithFields(logrus.Fields{
+		"name":            ap.Name,
+		"cron_expression": ap.CronExpression,
+	}).Infoln("start audit scheduler")
 	return nil
 }
 

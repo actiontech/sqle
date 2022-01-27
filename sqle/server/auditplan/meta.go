@@ -14,9 +14,10 @@ type Meta struct {
 }
 
 const (
-	TypeMySQLSlowLog = "mysql_slow_log"
-	TypeMySQLMybatis = "mysql_mybatis"
-	TypeDefault      = "default"
+	TypeDefault         = "default"
+	TypeMySQLSlowLog    = "mysql_slow_log"
+	TypeMySQLMybatis    = "mysql_mybatis"
+	TypeMySQLSchemaMeta = "mysql_schema_meta"
 )
 
 const (
@@ -39,6 +40,25 @@ var Metas = []Meta{
 		Type:         TypeMySQLMybatis,
 		Desc:         "Mybatis 扫描",
 		InstanceType: InstanceTypeMySQL,
+	},
+	{
+		Type:         TypeMySQLSchemaMeta,
+		Desc:         "库表元数据",
+		InstanceType: InstanceTypeMySQL,
+		Params: []*params.Param{
+			&params.Param{
+				Key:   "collect_interval_minute",
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			&params.Param{
+				Key:   "collect_view",
+				Desc:  "是否采集视图信息",
+				Value: "0",
+				Type:  params.ParamTypeBool,
+			},
+		},
 	},
 }
 
