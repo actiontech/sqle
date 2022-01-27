@@ -1,6 +1,9 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/jinzhu/gorm"
+)
 
 type UserGroup struct {
 	Model
@@ -33,4 +36,38 @@ func (s *Storage) GetUserGroupByName(name string) (
 	}
 
 	return userGroup, true, err
+}
+
+func (s *Storage) SaveUserGroupAndAssociations(
+	ug *UserGroup, us []*User, rs []*Role) (err error) {
+
+	// save user group
+	tx := s.db.Begin()
+	if err := tx.Save(ug).Error; err != nil {
+		tx.Rollback()
+		return errors.ConnectStorageErrWrapper(err)
+	}
+
+	// save user group users
+	if len(us) > 0 {
+		if err := tx.Model(ug).Association("Users").Replace(us).Error; err != nil {
+			tx.Rollback()
+			return errors.ConnectStorageErrWrapper(err)
+		}
+	}
+
+	// save user group roles
+	if len(rs) > 0 {
+		if err := tx.Model(ug).Association("Roles").Replace(rs).Error; err != nil {
+			tx.Rollback()
+			return errors.ConnectStorageErrWrapper(err)
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return errors.ConnectStorageErrWrapper(err)
+	}
+
+	return nil
 }

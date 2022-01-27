@@ -63,10 +63,17 @@ func CreateUserGroup(c echo.Context) (err error) {
 		}
 	}
 
-	_ = users
-	_ = roles
+	// user group
+	ug := &model.UserGroup{
+		Name: req.Name,
+		Desc: req.Desc,
+	}
 
-	return controller.JSONNewNotImplementedErr(c)
+	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type GetUserGroupsResV1 struct {
