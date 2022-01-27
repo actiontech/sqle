@@ -10,6 +10,8 @@ const (
 	TaskRunning    ErrorCode = 1001
 	TaskActionDone ErrorCode = 1002
 
+	HttpRequestFormatError ErrorCode = 2001
+
 	LoginAuthFail     ErrorCode = 4001
 	UserDisabled      ErrorCode = 4005
 	TaskNotExist      ErrorCode = 4006
@@ -79,4 +81,8 @@ func NewDataInvalidErr(format string, a ...interface{}) error {
 
 func NewUserDisabledErr(format string, a ...interface{}) error {
 	return New(UserDisabled, fmt.Errorf(format, a...))
+}
+
+func HttpRequestFormatErrWrapper(err error) error {
+	return New(HttpRequestFormatError, err)
 }

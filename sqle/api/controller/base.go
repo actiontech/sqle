@@ -37,7 +37,8 @@ func NewBaseReq(err error) BaseRes {
 
 func BindAndValidateReq(c echo.Context, i interface{}) error {
 	if err := c.Bind(i); err != nil {
-		return err
+		err := fmt.Errorf("bind request error: %v, please check request body", err)
+		return errors.HttpRequestFormatErrWrapper(err)
 	}
 
 	if err := Validate(i); err != nil {
