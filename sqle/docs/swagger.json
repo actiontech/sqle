@@ -2230,6 +2230,29 @@
                 }
             }
         },
+        "/v1/user_group_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get user group tip list",
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "获取用户组提示列表",
+                "operationId": "getUserGroupTipListV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetUserGroupTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user_groups": {
             "get": {
                 "security": [
@@ -4708,6 +4731,25 @@
                 }
             }
         },
+        "v1.GetUserGroupTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UserGroupTipListItem"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetUserGroupsResV1": {
             "type": "object",
             "properties": {
@@ -5568,6 +5610,14 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.UserGroupTipListItem": {
+            "type": "object",
+            "properties": {
+                "user_group_name": {
+                    "type": "string"
                 }
             }
         },
