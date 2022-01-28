@@ -139,12 +139,12 @@ func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
 
 func (mgr *Manager) deleteAuditPlan(name string) error {
 	if mgr.scheduler.hasJob(name) {
-		err :=  mgr.scheduler.removeJob(mgr.logger, name)
+		err := mgr.scheduler.removeJob(mgr.logger, name)
 		if err != nil {
 			return err
 		}
 	}
-	task ,ok := mgr.tasks[name]
+	task, ok := mgr.tasks[name]
 	if ok {
 		err := task.Stop()
 		if err != nil {
@@ -155,7 +155,7 @@ func (mgr *Manager) deleteAuditPlan(name string) error {
 	return nil
 }
 
-func (mgr *Manager) Audit(apName string) (*model.AuditPlanReport, error) {
+func (mgr *Manager) Audit(apName string) (*model.AuditPlanReportV2, error) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
@@ -185,7 +185,7 @@ func (s *scheduler) removeJob(entry *logrus.Entry, auditPlanName string) error {
 	delete(s.entryIDs, auditPlanName)
 
 	entry.WithFields(logrus.Fields{
-		"name":            auditPlanName,
+		"name": auditPlanName,
 	}).Infoln("stop audit scheduler")
 	return nil
 }
