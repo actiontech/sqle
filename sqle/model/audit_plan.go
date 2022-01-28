@@ -20,10 +20,9 @@ type AuditPlan struct {
 	Type             string        `json:"type"`
 	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
-	CreateUser       *User              `gorm:"foreignkey:CreateUserId"`
-	Instance         *Instance          `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
-	AuditPlanSQLs    []*AuditPlanSQL    `gorm:"foreignkey:AuditPlanID"`
-	AuditPlanReports []*AuditPlanReport `gorm:"foreignkey:AuditPlanID"`
+	CreateUser    *User           `gorm:"foreignkey:CreateUserId"`
+	Instance      *Instance       `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
+	AuditPlanSQLs []*AuditPlanSQL `gorm:"foreignkey:AuditPlanID"`
 }
 
 type AuditPlanSQL struct {
@@ -40,25 +39,6 @@ type AuditPlanSQL struct {
 
 func (a AuditPlanSQL) TableName() string {
 	return "audit_plan_sqls"
-}
-
-type AuditPlanReport struct {
-	Model
-	AuditPlanID uint `json:"audit_plan_id" gorm:"index"`
-
-	AuditPlan           *AuditPlan            `gorm:"foreignkey:AuditPlanID"`
-	AuditPlanReportSQLs []*AuditPlanReportSQL `gorm:"foreignkey:AuditPlanReportID"`
-}
-
-type AuditPlanReportSQL struct {
-	Model
-	AuditResult string `json:"audit_result" gorm:"type:text"`
-
-	AuditPlanSQLID    uint `json:"audit_plan_sql_id" gorm:"index"`
-	AuditPlanReportID uint `json:"audit_plan_report_id" gorm:"index"`
-
-	AuditPlanSQL    *AuditPlanSQL    `gorm:"foreignkey:AuditPlanSQLID"`
-	AuditPlanReport *AuditPlanReport `gorm:"foreignkey:AuditPlanReportID"`
 }
 
 func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
