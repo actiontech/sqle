@@ -10,7 +10,6 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -102,8 +101,8 @@ type Storage struct {
 
 func (s *Storage) AutoMigrate() error {
 	err := s.db.AutoMigrate(
-		&AuditPlanReportSQL{},
-		&AuditPlanReport{},
+		&AuditPlanReportSQLV2{},
+		&AuditPlanReportV2{},
 		&AuditPlanSQL{},
 		&AuditPlan{},
 		&ExecuteSQL{},

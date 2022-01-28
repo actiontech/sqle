@@ -20,7 +20,7 @@ var errNoSQLInAuditPlan = errors.New(errors.DataConflict, fmt.Errorf("there is n
 type Task interface {
 	Start() error
 	Stop() error
-	Audit() (*model.AuditPlanReport, error)
+	Audit() (*model.AuditPlanReportV2, error)
 }
 
 func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
@@ -57,7 +57,7 @@ func (at *baseTask) Stop() error {
 	return nil
 }
 
-func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReport, error) {
+func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.Name)
 	if err != nil {
 		return nil, err
@@ -81,11 +81,11 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReport, error) {
 		return nil, err
 	}
 
-	auditPlanReport := &model.AuditPlanReport{AuditPlanID: at.ap.ID}
-	for i, executeSQL := range task.ExecuteSQLs {
-		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQL{
-			AuditPlanSQLID: auditPlanSQLs[i].ID,
-			AuditResult:    executeSQL.AuditResult,
+	auditPlanReport := &model.AuditPlanReportV2{AuditPlanID: at.ap.ID}
+	for _, executeSQL := range task.ExecuteSQLs {
+		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
+			SQL:         executeSQL.Content,
+			AuditResult: executeSQL.AuditResult,
 		})
 	}
 
@@ -149,7 +149,7 @@ func NewDefaultTask(entry *logrus.Entry, ap *model.AuditPlan) *DefaultTask {
 	return &DefaultTask{newBaseTask(entry, ap)}
 }
 
-func (at *DefaultTask) Audit() (*model.AuditPlanReport, error) {
+func (at *DefaultTask) Audit() (*model.AuditPlanReportV2, error) {
 	var task *model.Task
 	if at.ap.InstanceName == "" {
 		task = &model.Task{
@@ -273,7 +273,7 @@ func (at *SchemaMetaTask) do(CollectView bool) {
 	}
 }
 
-func (at *SchemaMetaTask) Audit() (*model.AuditPlanReport, error) {
+func (at *SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{
 		DBType: at.ap.DBType,
 	}

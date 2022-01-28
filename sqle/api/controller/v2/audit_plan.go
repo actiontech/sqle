@@ -169,7 +169,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	auditPlanReportSQLsResV2 := make([]AuditPlanReportSQLResV2, len(auditPlanReportSQLs))
 	for i, auditPlanReportSQL := range auditPlanReportSQLs {
 		auditPlanReportSQLsResV2[i] = AuditPlanReportSQLResV2{
-			SQL:         auditPlanReportSQL.LastReceiveText,
+			SQL:         auditPlanReportSQL.SQL,
 			AuditResult: auditPlanReportSQL.AuditResult,
 		}
 	}
