@@ -207,7 +207,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 					return controller.JSONBaseErrorReq(c, err)
 				}
 			} else {
-				roles = make([]*model.Role, 0, 0)
+				roles = make([]*model.Role, 0)
 			}
 		}
 	}
@@ -222,7 +222,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 					return controller.JSONBaseErrorReq(c, err)
 				}
 			} else {
-				users = make([]*model.User, 0, 0)
+				users = make([]*model.User, 0)
 			}
 		}
 	}
