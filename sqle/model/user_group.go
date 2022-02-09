@@ -71,10 +71,54 @@ func (s *Storage) GetAllUserGroupTip() ([]*UserGroup, error) {
 	return userGroups, errors.New(errors.ConnectStorageError, err)
 }
 
+var userGroupsQueryTpl = `SELECT 
+user_groups.id, 
+user_groups.name, 
+user_groups.description,
+user_groups.stat,
+GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
+GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
+FROM user_groups
+LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+LEFT JOIN users ON user_group_users.user_id = users.id
+LEFT JOIN user_group_roles ON user_groups.id = user_group_roles.user_group_id
+LEFT JOIN roles ON user_group_roles.role_id = roles.id
+WHERE 
+user_groups.id IN (SELECT DISTINCT(user_groups.id)
+
+{{- template "body" . -}}
+)
+GROUP BY user_groups.id
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var userGroupCountTpl = `SELECT COUNT(DISTINCT user_groups.id)
+
+{{- template "body" . -}}
+`
+var userGroupsQueryBodyTpl = `
+{{ define "body" }}
+FROM user_groups
+LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+LEFT JOIN users ON user_group_users.user_id = users.id
+LEFT JOIN user_group_roles ON user_groups.id = user_group_roles.user_group_id
+LEFT JOIN roles ON user_group_roles.role_id = roles.id
+WHERE
+user_groups.deleted_at IS NULL
+
+{{- if .filter_user_group_name }}
+AND user_groups.name :filter_user_group_name
+{{- end -}}
+
+{{- end }}
+`
+
 type UserGroupDetail struct {
 	Id        int
-	Name      string `json:"user_group_name"`
-	Desc      string
+	Name      string  `json:"name"`
+	Desc      string  `json:"description"`
 	Stat      uint    `json:"stat"`
 	UserNames RowList `json:"user_names"`
 	RoleNames RowList `json:"role_names"`
@@ -84,8 +128,14 @@ func (ugd *UserGroupDetail) IsDisabled() bool {
 	return ugd.Stat == Disabled
 }
 
-// TODO: implementation
 func (s *Storage) GetUserGroupsByReq(data map[string]interface{}) (
-	userGroups []*UserGroupDetail, count uint64, err error) {
-	return
+	results []*UserGroupDetail, count uint64, err error) {
+
+	err = s.getListResult(userGroupsQueryBodyTpl, userGroupsQueryTpl, data, &results)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	count, err = s.getCountResult(userGroupsQueryBodyTpl, userGroupCountTpl, data)
+	return results, count, err
 }
