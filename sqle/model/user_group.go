@@ -62,27 +62,3 @@ func (s *Storage) SaveUserGroupAndAssociations(
 		return nil
 	})
 }
-
-// WARN: diffs from CreateUserGroupAndAssociations:
-// if us or rs is empty, it will be save as UserGroup Association.
-func (s *Storage) UpdateUserGroupAndAssociations(
-	ug *UserGroup, us []*User, rs []*Role) (err error) {
-
-	return s.Tx(func(txDB *gorm.DB) error {
-		if err := txDB.Save(ug).Error; err != nil {
-			return err
-		}
-
-		// save user group users
-		if err := txDB.Model(ug).Association("Users").Replace(us).Error; err != nil {
-			return err
-		}
-
-		// save user group roles
-		if err := txDB.Model(ug).Association("Roles").Replace(rs).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
-}
