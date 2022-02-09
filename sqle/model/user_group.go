@@ -37,7 +37,7 @@ func (s *Storage) GetUserGroupByName(name string) (
 	return userGroup, true, err
 }
 
-func (s *Storage) CreateUserGroupAndAssociations(
+func (s *Storage) SaveUserGroupAndAssociations(
 	ug *UserGroup, us []*User, rs []*Role) (err error) {
 
 	return s.Tx(func(txDB *gorm.DB) error {
@@ -46,14 +46,14 @@ func (s *Storage) CreateUserGroupAndAssociations(
 		}
 
 		// save user group users
-		if len(us) > 0 {
+		if us != nil {
 			if err := txDB.Model(ug).Association("Users").Replace(us).Error; err != nil {
 				return err
 			}
 		}
 
 		// save user group roles
-		if len(rs) > 0 {
+		if rs != nil {
 			if err := txDB.Model(ug).Association("Roles").Replace(rs).Error; err != nil {
 				return err
 			}
