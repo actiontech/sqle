@@ -1323,6 +1323,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/operations": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get permission operations",
+                "tags": [
+                    "operation"
+                ],
+                "summary": "获取权限动作列表",
+                "operationId": "GetOperationsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOperationsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/role_tips": {
             "get": {
                 "security": [
@@ -4562,6 +4585,28 @@ var doc = `{
                 }
             }
         },
+        "v1.GetOperationsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.OperationResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetRoleTipsResV1": {
             "type": "object",
             "properties": {
@@ -5070,6 +5115,17 @@ var doc = `{
                     "type": "string"
                 },
                 "ldap_user_name_rdn_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.OperationResV1": {
+            "type": "object",
+            "properties": {
+                "op_code": {
+                    "type": "integer"
+                },
+                "op_desc": {
                     "type": "string"
                 }
             }
