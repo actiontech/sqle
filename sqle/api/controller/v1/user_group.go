@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -115,9 +116,32 @@ func GetUserGroups(c echo.Context) (err error) {
 // @Param user_group_name path string true "user_group_name"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups/{user_group_name}/ [delete]
-func DeleteUserGroup(c echo.Context) error {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+func DeleteUserGroup(c echo.Context) (err error) {
+
+	userGroupName := c.Param("user_group_name")
+
+	s := model.GetStorage()
+
+	// check if user group exist
+	var ug *model.UserGroup
+	{
+		var exist bool
+		ug, exist, err = s.GetUserGroupByName(userGroupName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(
+				c, errors.NewDataNotExistErr("user group<%v> not exist", userGroupName))
+		}
+	}
+
+	err = s.Delete(ug)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type PatchUserGroupReqV1 struct {
