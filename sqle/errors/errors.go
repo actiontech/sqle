@@ -5,26 +5,28 @@ import "fmt"
 type ErrorCode int
 
 const (
-	StatusOK                   ErrorCode = 0
+	StatusOK ErrorCode = 0
+
+	TaskRunning    ErrorCode = 1001
+	TaskActionDone ErrorCode = 1002
+
+	HttpRequestFormatError ErrorCode = 2001
+
+	LoginAuthFail     ErrorCode = 4001
+	UserDisabled      ErrorCode = 4005
+	TaskNotExist      ErrorCode = 4006
+	TaskActionInvalid ErrorCode = 4009
+	DataExist         ErrorCode = 4010
+	DataNotExist      ErrorCode = 4011
+	DataConflict      ErrorCode = 4012
+	DataInvalid       ErrorCode = 4013
+	DataParseFail     ErrorCode = 4014
+
 	ConnectStorageError        ErrorCode = 5001
 	ConnectRemoteDatabaseError ErrorCode = 5002
 	ReadUploadFileError        ErrorCode = 5003
 	ParseMyBatisXMLFileError   ErrorCode = 5006
 	WriteDataToTheFileError    ErrorCode = 5007
-
-	TaskNotExist      ErrorCode = 4006
-	TaskActionInvalid ErrorCode = 4009
-
-	TaskRunning    ErrorCode = 1001
-	TaskActionDone ErrorCode = 1002
-
-	LoginAuthFail ErrorCode = 4001
-	UserDisabled  ErrorCode = 4005
-	DataExist     ErrorCode = 4010
-	DataNotExist  ErrorCode = 4011
-	DataConflict  ErrorCode = 4012
-	DataInvalid   ErrorCode = 4013
-	DataParseFail ErrorCode = 4014
 
 	DriverNotExist ErrorCode = 5001
 	LoadDriverFail ErrorCode = 5008
@@ -79,4 +81,16 @@ func NewDataInvalidErr(format string, a ...interface{}) error {
 
 func NewUserDisabledErr(format string, a ...interface{}) error {
 	return New(UserDisabled, fmt.Errorf(format, a...))
+}
+
+func NewDataNotExistErr(format string, a ...interface{}) error {
+	return New(DataNotExist, fmt.Errorf(format, a...))
+}
+
+func HttpRequestFormatErrWrapper(err error) error {
+	return New(HttpRequestFormatError, err)
+}
+
+func ConnectStorageErrWrapper(err error) error {
+	return New(ConnectStorageError, err)
 }

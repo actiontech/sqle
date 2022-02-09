@@ -37,7 +37,8 @@ func NewBaseReq(err error) BaseRes {
 
 func BindAndValidateReq(c echo.Context, i interface{}) error {
 	if err := c.Bind(i); err != nil {
-		return err
+		err := fmt.Errorf("bind request error: %v, please check request body", err)
+		return errors.HttpRequestFormatErrWrapper(err)
 	}
 
 	if err := Validate(i); err != nil {
@@ -86,6 +87,11 @@ func JSONBaseErrorReq(c echo.Context, err error) error {
 func JSONNewNotImplementedErr(c echo.Context) error {
 	return c.JSON(http.StatusOK,
 		NewBaseReq(errors.NewNotImplementedError("not implemented yet")))
+}
+
+func JSONNewDataExistErr(c echo.Context, format string, a ...interface{}) error {
+	return c.JSON(http.StatusOK,
+		NewBaseReq(errors.New(errors.DataExist, fmt.Errorf(format, a...))))
 }
 
 // ReadFileContent read content from http body by name if file exist,
