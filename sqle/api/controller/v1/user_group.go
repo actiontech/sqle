@@ -70,7 +70,7 @@ func CreateUserGroup(c echo.Context) (err error) {
 		Desc: req.Desc,
 	}
 
-	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
+	if err := s.CreateUserGroupAndAssociations(ug, users, roles); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -208,7 +208,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 		}
 	}
 
-	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
+	if err := s.CreateUserGroupAndAssociations(ug, users, roles); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
