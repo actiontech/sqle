@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
@@ -251,6 +253,21 @@ type GetUserGroupTipsResV1 struct {
 // @Success 200 {object} v1.GetUserGroupTipsResV1
 // @router /v1/user_group_tips [get]
 func GetUserGroupTips(c echo.Context) error {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+	s := model.GetStorage()
+	userGroupNames, err := s.GetAllUserGroupTip()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	userGroupTipsRes := make([]*UserGroupTipListItem, len(userGroupNames))
+	for i := range userGroupNames {
+		userGroupTipsRes[i] = &UserGroupTipListItem{
+			Name: userGroupNames[i].Name,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetUserGroupTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    userGroupTipsRes,
+	})
 }
