@@ -145,9 +145,9 @@ func DeleteUserGroup(c echo.Context) (err error) {
 }
 
 type PatchUserGroupReqV1 struct {
-	Desc       string   `json:"user_group_desc" form:"user_group_desc" example:"this is a group"`
+	Desc       *string  `json:"user_group_desc,omitempty" form:"user_group_desc" example:"this is a group"`
 	Users      []string `json:"user_name_list" form:"user_name_list"`
-	IsDisabled bool     `json:"is_disabled,omitempty" form:"is_disabled"`
+	IsDisabled *bool    `json:"is_disabled,omitempty" form:"is_disabled"`
 	Roles      []string `json:"role_name_list" form:"role_name_list"`
 }
 
@@ -184,14 +184,18 @@ func UpdateUserGroup(c echo.Context) (err error) {
 	}
 
 	// update stat
-	if req.IsDisabled {
-		ug.SetStat(model.Disabled)
-	} else {
-		ug.SetStat(model.Enabled)
+	if req.IsDisabled != nil {
+		if *req.IsDisabled {
+			ug.SetStat(model.Disabled)
+		} else {
+			ug.SetStat(model.Enabled)
+		}
 	}
 
 	// update desc
-	ug.Desc = req.Desc
+	if req.Desc != nil {
+		ug.Desc = *req.Desc
+	}
 
 	// roles
 	var roles []*model.Role
