@@ -145,10 +145,10 @@ func DeleteUserGroup(c echo.Context) (err error) {
 }
 
 type PatchUserGroupReqV1 struct {
-	Desc       *string  `json:"user_group_desc,omitempty" form:"user_group_desc" example:"this is a group"`
-	Users      []string `json:"user_name_list" form:"user_name_list"`
-	IsDisabled *bool    `json:"is_disabled,omitempty" form:"is_disabled"`
-	Roles      []string `json:"role_name_list" form:"role_name_list"`
+	Desc       *string   `json:"user_group_desc,omitempty" form:"user_group_desc" example:"this is a group"`
+	Users      *[]string `json:"user_name_list,omitempty" form:"user_name_list"`
+	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
+	Roles      *[]string `json:"role_name_list,omitempty" form:"role_name_list"`
 }
 
 // @Summary 更新用户组
@@ -200,10 +200,14 @@ func UpdateUserGroup(c echo.Context) (err error) {
 	// roles
 	var roles []*model.Role
 	{
-		if len(req.Roles) > 0 {
-			roles, err = s.GetAndCheckRoleExist(req.Roles)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
+		if req.Roles != nil {
+			if len(*req.Roles) > 0 {
+				roles, err = s.GetAndCheckRoleExist(*req.Roles)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				roles = make([]*model.Role, 0, 0)
 			}
 		}
 	}
@@ -211,15 +215,19 @@ func UpdateUserGroup(c echo.Context) (err error) {
 	// users
 	var users []*model.User
 	{
-		if len(req.Users) > 0 {
-			users, err = s.GetAndCheckUserExist(req.Users)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
+		if req.Users != nil {
+			if len(*req.Users) > 0 {
+				users, err = s.GetAndCheckUserExist(*req.Users)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				users = make([]*model.User, 0, 0)
 			}
 		}
 	}
 
-	if err := s.UpdateUserGroupAndAssociations(ug, users, roles); err != nil {
+	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
