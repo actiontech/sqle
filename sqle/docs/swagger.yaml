@@ -679,6 +679,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetOperationsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.OperationResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRoleTipsResV1:
     properties:
       code:
@@ -1027,6 +1040,13 @@ definitions:
       ldap_user_email_rdn_key:
         type: string
       ldap_user_name_rdn_key:
+        type: string
+    type: object
+  v1.OperationResV1:
+    properties:
+      op_code:
+        type: integer
+      op_desc:
         type: string
     type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
@@ -2611,6 +2631,20 @@ paths:
       summary: 用户登录
       tags:
       - user
+  /v1/operations:
+    get:
+      description: get permission operations
+      operationId: GetOperationsV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOperationsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取权限动作列表
+      tags:
+      - operation
   /v1/role_tips:
     get:
       description: get role tip list
