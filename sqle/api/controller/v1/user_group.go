@@ -179,7 +179,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if !isExist {
-			return controller.JSONNewDataNotExistErr(c, "user<%v> not exist", userGroupName)
+			return controller.JSONNewDataNotExistErr(c, "user_group<%v> not exist", userGroupName)
 		}
 	}
 
