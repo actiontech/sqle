@@ -4601,9 +4601,6 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
                 }
             }
         },

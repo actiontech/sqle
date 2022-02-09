@@ -8,8 +8,7 @@ import (
 
 type GetOperationsResV1 struct {
 	controller.BaseRes
-	Data      []*OperationResV1 `json:"data"`
-	TotalNums uint              `json:"total_nums"`
+	Data []*OperationResV1 `json:"data"`
 }
 
 type OperationResV1 struct {
