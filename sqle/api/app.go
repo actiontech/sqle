@@ -139,6 +139,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/user_tips", v1.GetUserTips)
 	v1Router.PUT("/user/password", v1.UpdateCurrentUserPassword)
 
+	// operations
+	v1Router.GET("/operations", v1.GetOperations)
+
 	// instance
 	v1Router.GET("/instances", v1.GetInstances)
 	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
