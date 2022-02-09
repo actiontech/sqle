@@ -37,6 +37,7 @@ func (s *Storage) GetUserGroupByName(name string) (
 	return userGroup, true, err
 }
 
+// NOTE: parameter: us([]*Users) and rs([]*Role) need to be distinguished as nil or zero length slice.
 func (s *Storage) SaveUserGroupAndAssociations(
 	ug *UserGroup, us []*User, rs []*Role) (err error) {
 
@@ -46,14 +47,14 @@ func (s *Storage) SaveUserGroupAndAssociations(
 		}
 
 		// save user group users
-		if len(us) > 0 {
+		if us != nil {
 			if err := txDB.Model(ug).Association("Users").Replace(us).Error; err != nil {
 				return err
 			}
 		}
 
 		// save user group roles
-		if len(rs) > 0 {
+		if rs != nil {
 			if err := txDB.Model(ug).Association("Roles").Replace(rs).Error; err != nil {
 				return err
 			}

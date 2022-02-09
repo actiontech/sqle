@@ -145,10 +145,10 @@ func DeleteUserGroup(c echo.Context) (err error) {
 }
 
 type PatchUserGroupReqV1 struct {
-	Desc       string   `json:"user_group_desc" form:"user_group_desc" example:"this is a group"`
-	Users      []string `json:"user_name_list" form:"user_name_list"`
-	IsDisabled bool     `json:"is_disabled,omitempty" form:"is_disabled"`
-	Roles      []string `json:"role_name_list" form:"role_name_list"`
+	Desc       *string   `json:"user_group_desc,omitempty" form:"user_group_desc" example:"this is a group"`
+	Users      *[]string `json:"user_name_list,omitempty" form:"user_name_list"`
+	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
+	Roles      *[]string `json:"role_name_list,omitempty" form:"role_name_list"`
 }
 
 // @Summary 更新用户组
@@ -159,9 +159,79 @@ type PatchUserGroupReqV1 struct {
 // @Param user_group_name path string true "user_group_name"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups/{user_group_name}/ [patch]
-func UpdateUserGroup(c echo.Context) error {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+func UpdateUserGroup(c echo.Context) (err error) {
+
+	userGroupName := c.Param("user_group_name")
+
+	req := new(PatchUserGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+
+	// check if user group already exist
+	var ug *model.UserGroup
+	{
+		var isExist bool
+		ug, isExist, err = s.GetUserGroupByName(userGroupName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !isExist {
+			return controller.JSONNewDataNotExistErr(c, "user_group<%v> not exist", userGroupName)
+		}
+	}
+
+	// update stat
+	if req.IsDisabled != nil {
+		if *req.IsDisabled {
+			ug.SetStat(model.Disabled)
+		} else {
+			ug.SetStat(model.Enabled)
+		}
+	}
+
+	// update desc
+	if req.Desc != nil {
+		ug.Desc = *req.Desc
+	}
+
+	// roles
+	var roles []*model.Role
+	{
+		if req.Roles != nil {
+			if len(*req.Roles) > 0 {
+				roles, err = s.GetAndCheckRoleExist(*req.Roles)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				roles = make([]*model.Role, 0)
+			}
+		}
+	}
+
+	// users
+	var users []*model.User
+	{
+		if req.Users != nil {
+			if len(*req.Users) > 0 {
+				users, err = s.GetAndCheckUserExist(*req.Users)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				users = make([]*model.User, 0)
+			}
+		}
+	}
+
+	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type UserGroupTipListItem struct {
