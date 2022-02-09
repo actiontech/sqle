@@ -12,9 +12,6 @@ import (
 
 const (
 	DefaultAdminUser = "admin"
-
-	Disabled = 1
-	Enabled  = 0
 )
 
 func IsDefaultAdminUser(user string) bool {

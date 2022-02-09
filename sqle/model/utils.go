@@ -111,6 +111,7 @@ func (s *Storage) AutoMigrate() error {
 		&RollbackSQL{},
 		&SqlWhitelist{},
 		&User{},
+		&UserGroup{},
 		&Role{},
 		&WorkflowTemplate{},
 		&WorkflowStepTemplate{},
@@ -322,6 +323,22 @@ func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
 			log.NewEntry().Error("rollback sql transact failed, err:", err)
 		}
 		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
+func (s *Storage) Tx(fn func(txDB *gorm.DB) error) (err error) {
+	txDB := s.db.Begin()
+	err = fn(txDB)
+	if err != nil {
+		txDB.Rollback()
+		return errors.ConnectStorageErrWrapper(err)
+	}
+
+	err = txDB.Commit().Error
+	if err != nil {
+		txDB.Rollback()
+		return errors.ConnectStorageErrWrapper(err)
 	}
 	return nil
 }
