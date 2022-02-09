@@ -208,7 +208,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 		}
 	}
 
-	if err := s.CreateUserGroupAndAssociations(ug, users, roles); err != nil {
+	if err := s.UpdateUserGroupAndAssociations(ug, users, roles); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
