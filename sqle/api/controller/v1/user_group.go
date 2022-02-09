@@ -183,6 +183,13 @@ func UpdateUserGroup(c echo.Context) (err error) {
 		}
 	}
 
+	// update stat
+	if req.IsDisabled {
+		ug.SetStat(model.Disabled)
+	} else {
+		ug.SetStat(model.Enabled)
+	}
+
 	// update desc
 	ug.Desc = req.Desc
 
