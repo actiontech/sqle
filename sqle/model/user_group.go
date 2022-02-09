@@ -70,3 +70,22 @@ func (s *Storage) GetAllUserGroupTip() ([]*UserGroup, error) {
 	err := s.db.Select("name").Find(&userGroups).Error
 	return userGroups, errors.New(errors.ConnectStorageError, err)
 }
+
+type UserGroupDetail struct {
+	Id        int
+	Name      string `json:"user_group_name"`
+	Desc      string
+	Stat      uint    `json:"stat"`
+	UserNames RowList `json:"user_names"`
+	RoleNames RowList `json:"role_names"`
+}
+
+func (ugd *UserGroupDetail) IsDisabled() bool {
+	return ugd.Stat == Disabled
+}
+
+// TODO: implementation
+func (s *Storage) GetUserGroupsByReq(data map[string]interface{}) (
+	userGroups []*UserGroupDetail, count uint64, err error) {
+	return
+}
