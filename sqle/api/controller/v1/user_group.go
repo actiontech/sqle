@@ -47,7 +47,7 @@ func CreateUserGroup(c echo.Context) (err error) {
 	var users []*model.User
 	{
 		userNames := req.Users
-		users, err = s.GetUsersByNames(userNames)
+		users, err = s.GetAndCheckUserExist(userNames)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
