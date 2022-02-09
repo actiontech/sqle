@@ -37,7 +37,7 @@ func (s *Storage) GetUserGroupByName(name string) (
 	return userGroup, true, err
 }
 
-func (s *Storage) SaveUserGroupAndAssociations(
+func (s *Storage) CreateUserGroupAndAssociations(
 	ug *UserGroup, us []*User, rs []*Role) (err error) {
 
 	return s.Tx(func(txDB *gorm.DB) error {
