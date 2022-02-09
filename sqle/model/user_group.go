@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
 
@@ -62,4 +63,10 @@ func (s *Storage) SaveUserGroupAndAssociations(
 
 		return nil
 	})
+}
+
+func (s *Storage) GetAllUserGroupTip() ([]*UserGroup, error) {
+	userGroups := []*UserGroup{}
+	err := s.db.Select("name").Find(&userGroups).Error
+	return userGroups, errors.New(errors.ConnectStorageError, err)
 }
