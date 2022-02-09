@@ -83,6 +83,10 @@ func NewUserDisabledErr(format string, a ...interface{}) error {
 	return New(UserDisabled, fmt.Errorf(format, a...))
 }
 
+func NewDataNotExistErr(format string, a ...interface{}) error {
+	return New(DataNotExist, fmt.Errorf(format, a...))
+}
+
 func HttpRequestFormatErrWrapper(err error) error {
 	return New(HttpRequestFormatError, err)
 }
