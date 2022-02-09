@@ -691,8 +691,6 @@ definitions:
       message:
         example: ok
         type: string
-      total_nums:
-        type: integer
     type: object
   v1.GetRoleTipsResV1:
     properties:
