@@ -44,8 +44,8 @@ type GetRolesResV2 struct {
 }
 
 type Operation struct {
-	Code uint   `json:"operation_code"`
-	Desc string `json:"operation_desc"`
+	Code uint   `json:"op_code"`
+	Desc string `json:"op_desc"`
 }
 
 type RoleResV2 struct {
