@@ -1,17 +1,20 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
 
 type GetOperationsResV1 struct {
 	controller.BaseRes
-	Data []*OperationResV1 `json:"data"`
+	Data []*OperationListItemResV1 `json:"data"`
 }
 
-type OperationResV1 struct {
+type OperationListItemResV1 struct {
 	Code uint   `json:"op_code"`
 	Desc string `json:"op_desc"`
 }
@@ -24,6 +27,20 @@ type OperationResV1 struct {
 // @Success 200 {object} v1.GetOperationsResV1
 // @Router /v1/operations [get]
 func GetOperations(c echo.Context) error {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+
+	opCodes := model.GetOperationCodeList()
+
+	respData := make([]*OperationListItemResV1, len(opCodes))
+
+	for i := range opCodes {
+		respData[i] = &OperationListItemResV1{
+			Code: uint(opCodes[i]),
+			Desc: model.GetOperationCodeDesc(opCodes[i]),
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetOperationsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    respData,
+	})
 }
