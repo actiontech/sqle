@@ -10,7 +10,7 @@ type CreateRoleReqV2 struct {
 	Name           string   `json:"role_name" form:"role_name" valid:"required,name"`
 	Desc           string   `json:"role_desc" form:"role_desc"`
 	Instances      []string `json:"instance_name_list" form:"instance_name_list"`
-	OperationCodes []string `json:"operation_code_list" form:"operation_code_list"`
+	OperationCodes []uint   `json:"operation_code_list" form:"operation_code_list"`
 	Users          []string `json:"user_name_list" form:"user_name_list"`
 	UserGroups     []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
@@ -44,8 +44,8 @@ type GetRolesResV2 struct {
 }
 
 type Operation struct {
-	Code string `json:"operation_code"`
-	Desc string `json:"operation_desc"`
+	Code uint   `json:"op_code"`
+	Desc string `json:"op_desc"`
 }
 
 type RoleResV2 struct {
@@ -76,11 +76,11 @@ func GetRoles(c echo.Context) error {
 }
 
 type UpdateRoleReqV2 struct {
-	Desc           *string  `json:"role_desc" form:"role_desc"`
-	Users          []string `json:"user_name_list" form:"user_name_list"`
-	Instances      []string `json:"instance_name_list" form:"instance_name_list"`
-	OperationCodes []string `json:"operation_code_list" form:"operation_code_list"`
-	UserGroups     []string `json:"user_group_name_list" form:"user_group_name_list"`
+	Desc           *string   `json:"role_desc" form:"role_desc"`
+	Users          *[]string `json:"user_name_list,omitempty" form:"user_name_list"`
+	Instances      []string  `json:"instance_name_list,omitempty" form:"instance_name_list"`
+	OperationCodes []uint    `json:"operation_code_list" form:"operation_code_list"`
+	UserGroups     *[]string `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
 }
 
 // @Summary 更新角色信息
