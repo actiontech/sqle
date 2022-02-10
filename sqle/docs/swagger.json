@@ -6072,7 +6072,7 @@
                 "operation_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "role_desc": {
@@ -6163,7 +6163,7 @@
             "type": "object",
             "properties": {
                 "operation_code": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "operation_desc": {
                     "type": "string"
@@ -6217,7 +6217,7 @@
                 "operation_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "role_desc": {

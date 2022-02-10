@@ -1694,7 +1694,7 @@ definitions:
         type: array
       operation_code_list:
         items:
-          type: string
+          type: integer
         type: array
       role_desc:
         type: string
@@ -1756,7 +1756,7 @@ definitions:
   v2.Operation:
     properties:
       operation_code:
-        type: string
+        type: integer
       operation_desc:
         type: string
     type: object
@@ -1791,7 +1791,7 @@ definitions:
         type: array
       operation_code_list:
         items:
-          type: string
+          type: integer
         type: array
       role_desc:
         type: string

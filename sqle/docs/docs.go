@@ -6088,7 +6088,7 @@ var doc = `{
                 "operation_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "role_desc": {
@@ -6179,7 +6179,7 @@ var doc = `{
             "type": "object",
             "properties": {
                 "operation_code": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "operation_desc": {
                     "type": "string"
@@ -6233,7 +6233,7 @@ var doc = `{
                 "operation_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "role_desc": {
