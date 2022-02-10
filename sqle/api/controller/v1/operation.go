@@ -1,7 +1,10 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
@@ -24,6 +27,20 @@ type OperationResV1 struct {
 // @Success 200 {object} v1.GetOperationsResV1
 // @Router /v1/operations [get]
 func GetOperations(c echo.Context) error {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+
+	opCodes := model.GetConfigurableOperationCodeList()
+
+	respData := make([]*OperationResV1, len(opCodes))
+
+	for i := range opCodes {
+		respData[i] = &OperationResV1{
+			Code: uint(opCodes[i]),
+			Desc: model.GetOperationCodeDesc(opCodes[i]),
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetOperationsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    respData,
+	})
 }
