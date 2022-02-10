@@ -6178,10 +6178,10 @@ var doc = `{
         "v2.Operation": {
             "type": "object",
             "properties": {
-                "operation_code": {
+                "op_code": {
                     "type": "integer"
                 },
-                "operation_desc": {
+                "op_desc": {
                     "type": "string"
                 }
             }

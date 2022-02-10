@@ -1755,9 +1755,9 @@ definitions:
     type: object
   v2.Operation:
     properties:
-      operation_code:
+      op_code:
         type: integer
-      operation_desc:
+      op_desc:
         type: string
     type: object
   v2.RoleResV2:
