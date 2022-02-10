@@ -28,7 +28,7 @@ type OperationListItemResV1 struct {
 // @Router /v1/operations [get]
 func GetOperations(c echo.Context) error {
 
-	opCodes := model.GetOperationCodeList()
+	opCodes := model.GetConfigurableOperationCodeList()
 
 	respData := make([]*OperationListItemResV1, len(opCodes))
 
