@@ -79,6 +79,12 @@ func CreateUserGroup(c echo.Context) (err error) {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
+type GetUserGroupsReqV1 struct {
+	FilterUserGroupName string `json:"filter_user_group_name" query:"filter_user_group_name"`
+	PageIndex           uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize            uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
 type GetUserGroupsResV1 struct {
 	controller.BaseRes
 	Data      []*UserGroupListItemResV1 `json:"data"`
@@ -106,8 +112,45 @@ type UserGroupListItemResV1 struct {
 // @Success 200 {object} v1.GetUserGroupsResV1
 // @router /v1/user_groups [get]
 func GetUserGroups(c echo.Context) (err error) {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(GetUserGroupsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+
+	data := map[string]interface{}{
+		"filter_user_group_name": req.FilterUserGroupName,
+		"limit":                  req.PageSize,
+		"offset":                 offset,
+	}
+
+	userGroups, count, err := s.GetUserGroupsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resData := make([]*UserGroupListItemResV1, len(userGroups))
+	for i := range userGroups {
+		userGroupItem := &UserGroupListItemResV1{
+			Name:       userGroups[i].Name,
+			Desc:       userGroups[i].Desc,
+			IsDisabled: userGroups[i].IsDisabled(),
+			Users:      userGroups[i].UserNames,
+			Roles:      userGroups[i].RoleNames,
+		}
+		resData[i] = userGroupItem
+	}
+
+	return c.JSON(http.StatusOK, &GetUserGroupsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      resData,
+		TotalNums: count,
+	})
 }
 
 // @Summary 删除用户组
