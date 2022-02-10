@@ -11,10 +11,10 @@ import (
 
 type GetOperationsResV1 struct {
 	controller.BaseRes
-	Data []*OperationListItemResV1 `json:"data"`
+	Data []*OperationResV1 `json:"data"`
 }
 
-type OperationListItemResV1 struct {
+type OperationResV1 struct {
 	Code uint   `json:"op_code"`
 	Desc string `json:"op_desc"`
 }
@@ -30,10 +30,10 @@ func GetOperations(c echo.Context) error {
 
 	opCodes := model.GetConfigurableOperationCodeList()
 
-	respData := make([]*OperationListItemResV1, len(opCodes))
+	respData := make([]*OperationResV1, len(opCodes))
 
 	for i := range opCodes {
-		respData[i] = &OperationListItemResV1{
+		respData[i] = &OperationResV1{
 			Code: uint(opCodes[i]),
 			Desc: model.GetOperationCodeDesc(opCodes[i]),
 		}
