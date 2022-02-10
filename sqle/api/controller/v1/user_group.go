@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
@@ -77,6 +79,12 @@ func CreateUserGroup(c echo.Context) (err error) {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
+type GetUserGroupsReqV1 struct {
+	FilterUserGroupName string `json:"filter_user_group_name" query:"filter_user_group_name"`
+	PageIndex           uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize            uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
 type GetUserGroupsResV1 struct {
 	controller.BaseRes
 	Data      []*UserGroupListItemResV1 `json:"data"`
@@ -104,8 +112,45 @@ type UserGroupListItemResV1 struct {
 // @Success 200 {object} v1.GetUserGroupsResV1
 // @router /v1/user_groups [get]
 func GetUserGroups(c echo.Context) (err error) {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(GetUserGroupsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+
+	data := map[string]interface{}{
+		"filter_user_group_name": req.FilterUserGroupName,
+		"limit":                  req.PageSize,
+		"offset":                 offset,
+	}
+
+	userGroups, count, err := s.GetUserGroupsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resData := make([]*UserGroupListItemResV1, len(userGroups))
+	for i := range userGroups {
+		userGroupItem := &UserGroupListItemResV1{
+			Name:       userGroups[i].Name,
+			Desc:       userGroups[i].Desc,
+			IsDisabled: userGroups[i].IsDisabled(),
+			Users:      userGroups[i].UserNames,
+			Roles:      userGroups[i].RoleNames,
+		}
+		resData[i] = userGroupItem
+	}
+
+	return c.JSON(http.StatusOK, &GetUserGroupsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      resData,
+		TotalNums: count,
+	})
 }
 
 // @Summary 删除用户组
@@ -145,10 +190,10 @@ func DeleteUserGroup(c echo.Context) (err error) {
 }
 
 type PatchUserGroupReqV1 struct {
-	Desc       string   `json:"user_group_desc" form:"user_group_desc" example:"this is a group"`
-	Users      []string `json:"user_name_list" form:"user_name_list"`
-	IsDisabled bool     `json:"is_disabled,omitempty" form:"is_disabled"`
-	Roles      []string `json:"role_name_list" form:"role_name_list"`
+	Desc       *string   `json:"user_group_desc,omitempty" form:"user_group_desc" example:"this is a group"`
+	Users      *[]string `json:"user_name_list,omitempty" form:"user_name_list"`
+	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
+	Roles      *[]string `json:"role_name_list,omitempty" form:"role_name_list"`
 }
 
 // @Summary 更新用户组
@@ -159,9 +204,79 @@ type PatchUserGroupReqV1 struct {
 // @Param user_group_name path string true "user_group_name"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups/{user_group_name}/ [patch]
-func UpdateUserGroup(c echo.Context) error {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+func UpdateUserGroup(c echo.Context) (err error) {
+
+	userGroupName := c.Param("user_group_name")
+
+	req := new(PatchUserGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+
+	// check if user group already exist
+	var ug *model.UserGroup
+	{
+		var isExist bool
+		ug, isExist, err = s.GetUserGroupByName(userGroupName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !isExist {
+			return controller.JSONNewDataNotExistErr(c, "user_group<%v> not exist", userGroupName)
+		}
+	}
+
+	// update stat
+	if req.IsDisabled != nil {
+		if *req.IsDisabled {
+			ug.SetStat(model.Disabled)
+		} else {
+			ug.SetStat(model.Enabled)
+		}
+	}
+
+	// update desc
+	if req.Desc != nil {
+		ug.Desc = *req.Desc
+	}
+
+	// roles
+	var roles []*model.Role
+	{
+		if req.Roles != nil {
+			if len(*req.Roles) > 0 {
+				roles, err = s.GetAndCheckRoleExist(*req.Roles)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				roles = make([]*model.Role, 0)
+			}
+		}
+	}
+
+	// users
+	var users []*model.User
+	{
+		if req.Users != nil {
+			if len(*req.Users) > 0 {
+				users, err = s.GetAndCheckUserExist(*req.Users)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				users = make([]*model.User, 0)
+			}
+		}
+	}
+
+	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type UserGroupTipListItem struct {
@@ -181,6 +296,21 @@ type GetUserGroupTipsResV1 struct {
 // @Success 200 {object} v1.GetUserGroupTipsResV1
 // @router /v1/user_group_tips [get]
 func GetUserGroupTips(c echo.Context) error {
-	// TODO: implementation
-	return controller.JSONNewNotImplementedErr(c)
+	s := model.GetStorage()
+	userGroupNames, err := s.GetAllUserGroupTip()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	userGroupTipsRes := make([]*UserGroupTipListItem, len(userGroupNames))
+	for i := range userGroupNames {
+		userGroupTipsRes[i] = &UserGroupTipListItem{
+			Name: userGroupNames[i].Name,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetUserGroupTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    userGroupTipsRes,
+	})
 }

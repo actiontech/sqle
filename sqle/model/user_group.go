@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
 
@@ -37,6 +38,7 @@ func (s *Storage) GetUserGroupByName(name string) (
 	return userGroup, true, err
 }
 
+// NOTE: parameter: us([]*Users) and rs([]*Role) need to be distinguished as nil or zero length slice.
 func (s *Storage) SaveUserGroupAndAssociations(
 	ug *UserGroup, us []*User, rs []*Role) (err error) {
 
@@ -46,14 +48,14 @@ func (s *Storage) SaveUserGroupAndAssociations(
 		}
 
 		// save user group users
-		if len(us) > 0 {
+		if us != nil {
 			if err := txDB.Model(ug).Association("Users").Replace(us).Error; err != nil {
 				return err
 			}
 		}
 
 		// save user group roles
-		if len(rs) > 0 {
+		if rs != nil {
 			if err := txDB.Model(ug).Association("Roles").Replace(rs).Error; err != nil {
 				return err
 			}
@@ -61,4 +63,79 @@ func (s *Storage) SaveUserGroupAndAssociations(
 
 		return nil
 	})
+}
+
+func (s *Storage) GetAllUserGroupTip() ([]*UserGroup, error) {
+	userGroups := []*UserGroup{}
+	err := s.db.Select("name").Find(&userGroups).Error
+	return userGroups, errors.New(errors.ConnectStorageError, err)
+}
+
+var userGroupsQueryTpl = `SELECT 
+user_groups.id, 
+user_groups.name, 
+user_groups.description,
+user_groups.stat,
+GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
+GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
+FROM user_groups
+LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+LEFT JOIN users ON user_group_users.user_id = users.id AND users.deleted_at IS NULL
+LEFT JOIN user_group_roles ON user_groups.id = user_group_roles.user_group_id
+LEFT JOIN roles ON user_group_roles.role_id = roles.id AND roles.deleted_at IS NULL
+WHERE 
+user_groups.id IN (SELECT DISTINCT(user_groups.id)
+
+{{- template "body" . -}}
+)
+GROUP BY user_groups.id
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var userGroupCountTpl = `SELECT COUNT(DISTINCT user_groups.id)
+
+{{- template "body" . -}}
+`
+var userGroupsQueryBodyTpl = `
+{{ define "body" }}
+FROM user_groups
+LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+LEFT JOIN users ON user_group_users.user_id = users.id AND users.deleted_at IS NULL
+LEFT JOIN user_group_roles ON user_groups.id = user_group_roles.user_group_id
+LEFT JOIN roles ON user_group_roles.role_id = roles.id AND roles.deleted_at IS NULL
+WHERE
+user_groups.deleted_at IS NULL
+
+{{- if .filter_user_group_name }}
+AND user_groups.name :filter_user_group_name
+{{- end -}}
+
+{{- end }}
+`
+
+type UserGroupDetail struct {
+	Id        int
+	Name      string  `json:"name"`
+	Desc      string  `json:"description"`
+	Stat      uint    `json:"stat"`
+	UserNames RowList `json:"user_names"`
+	RoleNames RowList `json:"role_names"`
+}
+
+func (ugd *UserGroupDetail) IsDisabled() bool {
+	return ugd.Stat == Disabled
+}
+
+func (s *Storage) GetUserGroupsByReq(data map[string]interface{}) (
+	results []*UserGroupDetail, count uint64, err error) {
+
+	err = s.getListResult(userGroupsQueryBodyTpl, userGroupsQueryTpl, data, &results)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	count, err = s.getCountResult(userGroupsQueryBodyTpl, userGroupCountTpl, data)
+	return results, count, err
 }
