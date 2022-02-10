@@ -6,6 +6,7 @@ const (
 	// System(系统)/Users(用户)/Roles(角色) reserved 0-19999
 
 	// Workflow：工单 20000-29999
+	// NOTE: 用户默认可以查看自己创建的工单，无需定义此项动作权限
 	OP_WORKFLOW_VIEW_OTHERS = 20100
 	OP_WORKFLOW_SAVE        = 20200 // including "CREATE" and "UPDATE"
 	OP_WORKFLOW_DELETE      = 20300
