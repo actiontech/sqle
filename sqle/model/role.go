@@ -73,3 +73,9 @@ func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err e
 	}
 	return roles, nil
 }
+
+// TODO: implementation
+func (s *Storage) SaveRoleAndAssociations(role *Role,
+	insts []*Instance, opCodes []uint, us []*User, ugs []*UserGroup) (err error) {
+	return errors.NewNotImplementedError("function SaveRoleAndAssociations has not been implemented yet")
+}
