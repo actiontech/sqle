@@ -12,8 +12,8 @@ type CreateRoleReqV2 struct {
 	Desc           string   `json:"role_desc" form:"role_desc"`
 	Instances      []string `json:"instance_name_list" form:"instance_name_list"`
 	OperationCodes []uint   `json:"operation_code_list" form:"operation_code_list"`
-	Users          []string `json:"user_name_list" form:"user_name_list"`
-	UserGroups     []string `json:"user_group_name_list" form:"user_group_name_list"`
+	Users          []string `json:"user_name_list,omitempty" form:"user_name_list"`
+	UserGroups     []string `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
 }
 
 // @Summary 创建角色
