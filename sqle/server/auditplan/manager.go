@@ -2,19 +2,18 @@ package auditplan
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
-var ErrAuditPlanNotExist = errors.New("audit plan not exist")
-
-var ErrAuditPlanExisted = errors.New("audit plan existed")
+var ErrAuditPlanNotExist = errors.New(errors.DataNotExist, fmt.Errorf("audit plan not exist"))
+var ErrAuditPlanExisted = errors.New(errors.DataExist, fmt.Errorf("audit plan existed"))
 
 var manager *Manager
 
@@ -155,15 +154,49 @@ func (mgr *Manager) deleteAuditPlan(name string) error {
 	return nil
 }
 
+func (mgr *Manager) getTask(apName string) (Task, error) {
+	task, ok := mgr.tasks[apName]
+	if !ok {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("task not found"))
+	}
+	return task, nil
+}
+
 func (mgr *Manager) Audit(apName string) (*model.AuditPlanReportV2, error) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	task, ok := mgr.tasks[apName]
-	if !ok {
-		return nil, fmt.Errorf("task not found")
+	task, err := mgr.getTask(apName)
+	if err != nil {
+		return nil, err
 	}
 	return task.Audit()
+}
+
+func (mgr *Manager) UploadSQLs(apName string, sqls []*SQL, isPartialSync bool) error {
+	mgr.mu.Lock()
+	defer mgr.mu.Unlock()
+
+	task, err := mgr.getTask(apName)
+	if err != nil {
+		return err
+	}
+	if isPartialSync {
+		return task.PartialSyncSQLs(sqls)
+	} else {
+		return task.FullSyncSQLs(sqls)
+	}
+}
+
+func (mgr *Manager) GetSQLs(apName string, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	mgr.mu.Lock()
+	defer mgr.mu.Unlock()
+
+	task, err := mgr.getTask(apName)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	return task.GetSQLs(args)
 }
 
 // scheduler is not goroutine safe.
