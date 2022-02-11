@@ -56,7 +56,7 @@ func CheckIfOperationCodeValid(opCodes []uint) (err error) {
 	}
 
 	if len(invalidOpCodes) > 0 {
-		return errors.NewDataInvalidErr("operation code <%v> not valid", invalidOpCodes)
+		return errors.NewDataInvalidErr("unknown operation code <%v>", invalidOpCodes)
 	}
 
 	return nil
