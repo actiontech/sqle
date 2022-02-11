@@ -12,7 +12,7 @@ import (
 
 func Audit(l *logrus.Entry, task *model.Task) (err error) {
 	d, err := newDriverWithAudit(l, task.Instance, task.Schema, task.DBType)
-	if err !=nil {
+	if err != nil {
 		return err
 	}
 	defer d.Close(context.TODO())
@@ -78,7 +78,7 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 }
 
 func genRollbackSQL(l *logrus.Entry, task *model.Task, d driver.Driver) ([]*model.RollbackSQL, error) {
-	var rollbackSQLs []*model.RollbackSQL
+	rollbackSQLs := make([]*model.RollbackSQL, 0, len(task.ExecuteSQLs))
 	for _, executeSQL := range task.ExecuteSQLs {
 		rollbackSQL, reason, err := d.GenRollbackSQL(context.TODO(), executeSQL.Content)
 		if err != nil {

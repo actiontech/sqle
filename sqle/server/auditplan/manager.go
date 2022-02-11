@@ -77,7 +77,10 @@ func (mgr *Manager) start() error {
 	}
 	for _, v := range aps {
 		ap := v
-		mgr.startAuditPlan(ap)
+		err := mgr.startAuditPlan(ap)
+		if err != nil {
+			mgr.logger.WithField("name", ap.Name).Errorf("start audit task failed, error: %v", err)
+		}
 	}
 	return nil
 }
@@ -87,7 +90,10 @@ func (mgr *Manager) stop() {
 	defer mgr.mu.Unlock()
 
 	for name := range mgr.tasks {
-		mgr.deleteAuditPlan(name)
+		err := mgr.deleteAuditPlan(name)
+		if err != nil {
+			mgr.logger.WithField("name", name).Errorf("stop audit task failed, error: %v", err)
+		}
 	}
 	ctx := mgr.scheduler.stop()
 	<-ctx.Done()
@@ -103,11 +109,10 @@ func (mgr *Manager) SyncTask(apName string) error {
 		return err
 	}
 	if !exist {
-		mgr.deleteAuditPlan(apName)
+		return mgr.deleteAuditPlan(apName)
 	} else {
-		mgr.startAuditPlan(ap)
+		return mgr.startAuditPlan(ap)
 	}
-	return nil
 }
 
 func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
@@ -132,7 +137,10 @@ func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
 	mgr.tasks[ap.Name] = task
 
 	return mgr.scheduler.addJob(mgr.logger, ap, func() {
-		mgr.Audit(ap.Name)
+		_, err := mgr.Audit(ap.Name)
+		if err != nil {
+			mgr.logger.WithField("name", ap.Name).Errorf("schedule to audit task failed, error: %v", err)
+		}
 	})
 }
 

@@ -396,7 +396,7 @@ func (j *JSON) Scan(value interface{}) error {
 	case string:
 		bytes = []byte(v)
 	default:
-		return fmt.Errorf("failed to unmarshal JSONB value: %s", value)
+		return fmt.Errorf("failed to unmarshal JSON value: %s", value)
 	}
 
 	result := json.RawMessage{}
