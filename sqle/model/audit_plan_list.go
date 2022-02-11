@@ -66,14 +66,16 @@ func (s *Storage) GetAuditPlansByReq(data map[string]interface{}) (
 }
 
 type AuditPlanSQLListDetail struct {
-	Fingerprint          string `json:"fingerprint"`
-	Counter              string `json:"counter"`
-	LastReceiveText      string `json:"last_sql"`
-	LastReceiveTimestamp string `json:"last_receive_timestamp"`
+	Fingerprint string `json:"fingerprint"`
+	SQLContent  string `json:"sql_content"`
+	Info        JSON   `json:"info"`
 }
 
 var auditPlanSQLQueryTpl = `
-SELECT audit_plan_sqls.fingerprint, audit_plan_sqls.counter, audit_plan_sqls.last_sql, audit_plan_sqls.last_receive_timestamp
+SELECT
+audit_plan_sqls.fingerprint,
+audit_plan_sqls.sql_content,
+audit_plan_sqls.info
 
 {{- template "body" . -}} 
 
@@ -91,7 +93,7 @@ SELECT COUNT(*)
 var auditPlanSQLBodyTpl = `
 {{ define "body" }}
 
-FROM audit_plan_sqls
+FROM audit_plan_sqls_v2 AS audit_plan_sqls
 JOIN audit_plans ON audit_plans.id = audit_plan_sqls.audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
