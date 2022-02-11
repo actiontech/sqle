@@ -1709,10 +1709,12 @@ definitions:
   v2.CreateRoleReqV2:
     properties:
       instance_name_list:
+        description: can not be empty
         items:
           type: string
         type: array
       operation_code_list:
+        description: can not be empty
         items:
           type: integer
         type: array
@@ -1721,10 +1723,12 @@ definitions:
       role_name:
         type: string
       user_group_name_list:
+        description: optional param
         items:
           type: string
         type: array
       user_name_list:
+        description: optional param
         items:
           type: string
         type: array

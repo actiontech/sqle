@@ -6120,12 +6120,14 @@ var doc = `{
             "type": "object",
             "properties": {
                 "instance_name_list": {
+                    "description": "can not be empty",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "operation_code_list": {
+                    "description": "can not be empty",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -6138,12 +6140,14 @@ var doc = `{
                     "type": "string"
                 },
                 "user_group_name_list": {
+                    "description": "optional param",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "user_name_list": {
+                    "description": "optional param",
                     "type": "array",
                     "items": {
                         "type": "string"
