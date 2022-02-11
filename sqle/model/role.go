@@ -74,8 +74,64 @@ func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err e
 	return roles, nil
 }
 
-// TODO: implementation
 func (s *Storage) SaveRoleAndAssociations(role *Role,
 	insts []*Instance, opCodes []uint, us []*User, ugs []*UserGroup) (err error) {
-	return errors.NewNotImplementedError("function SaveRoleAndAssociations has not been implemented yet")
+	return s.Tx(func(txDB *gorm.DB) (err error) {
+
+		// save role
+		if err = txDB.Save(role).Error; err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+
+		// save instances
+		{
+			if insts != nil {
+				if err = txDB.Model(role).Association("Instances").Replace(insts).Error; err != nil {
+					return errors.ConnectStorageErrWrapper(err)
+				}
+			}
+		}
+
+		// save users
+		{
+			if us != nil {
+				if err = txDB.Model(role).Association("Users").Replace(us).Error; err != nil {
+					return errors.ConnectStorageErrWrapper(err)
+				}
+			}
+		}
+
+		// save user groups
+		{
+			if ugs != nil {
+				if err = txDB.Model(role).Association("UserGroups").Replace(ugs).Error; err != nil {
+					return errors.ConnectStorageErrWrapper(err)
+				}
+			}
+		}
+
+		// save operations
+		{
+			if err := s.SaveRoleOperationsByOpCodes(role.ID, opCodes); err != nil {
+				return err
+			}
+		}
+
+		return
+	})
+}
+
+func (s *Storage) SaveRoleOperationsByOpCodes(roleID uint, opCodes []uint) (err error) {
+	roleOps := make([]*RoleOperation, len(opCodes))
+	for i := range opCodes {
+		roleOps[i] = &RoleOperation{
+			RoleID: roleID,
+			Code:   opCodes[i],
+		}
+		err = s.Save(&RoleOperation{RoleID: roleID, Code: opCodes[i]})
+		if err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+	}
+	return nil
 }
