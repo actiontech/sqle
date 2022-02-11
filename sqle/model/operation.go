@@ -71,3 +71,72 @@ func IsValidOperationCode(opCode uint) bool {
 	}
 	return false
 }
+
+func (s *Storage) ReplaceRoleOperationsByOpCodes(roleID uint, opCodes []uint) (err error) {
+
+	// query exist role_operation
+	roleOps, err := s.GetRoleOperationsByRoleID(roleID)
+	if err != nil {
+		return err
+	}
+
+	// collect RoleOperations which need to be deleted
+	opCodesToBeDeleted := []uint{}
+	{
+		for i := range roleOps {
+			var found bool
+			for j := range opCodes {
+				if roleOps[i].Code == opCodes[j] {
+					found = true
+				}
+			}
+			if !found {
+				opCodesToBeDeleted = append(opCodesToBeDeleted, roleOps[i].Code)
+			}
+		}
+	}
+
+	// delete
+	if len(opCodesToBeDeleted) > 0 {
+		err = s.db.Where("role_id = ? and op_code in (?)", roleID, opCodesToBeDeleted).
+			Unscoped(). // Hard delete
+			Delete(RoleOperation{}).Error
+		if err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+	}
+
+	// collect RoleOperations which need to be created
+	opCodesToBeCreated := []uint{}
+	for i := range opCodes {
+		var found bool
+		for j := range roleOps {
+			if opCodes[i] == roleOps[j].Code {
+				found = true
+			}
+		}
+		if !found {
+			opCodesToBeCreated = append(opCodesToBeCreated, opCodes[i])
+		}
+	}
+
+	// insert
+	if len(opCodesToBeCreated) > 0 {
+		for i := range opCodesToBeCreated {
+			roleOp := &RoleOperation{
+				RoleID: roleID,
+				Code:   opCodesToBeCreated[i],
+			}
+			if err = s.db.Create(roleOp).Error; err != nil {
+				return errors.ConnectStorageErrWrapper(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Storage) GetRoleOperationsByRoleID(roleID uint) (roleOps []*RoleOperation, err error) {
+	err = s.db.Where("role_id = ?", roleID).Find(&roleOps).Error
+	return roleOps, errors.ConnectStorageErrWrapper(err)
+}
