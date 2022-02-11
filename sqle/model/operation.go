@@ -120,7 +120,7 @@ func (s *Storage) ReplaceRoleOperationsByOpCodes(roleID uint, opCodes []uint) (e
 		}
 	}
 
-	// insert
+	// create
 	if len(opCodesToBeCreated) > 0 {
 		for i := range opCodesToBeCreated {
 			roleOp := &RoleOperation{
