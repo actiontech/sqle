@@ -618,9 +618,8 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	err = s.OverrideAuditPlanSQLs(apName, sqls)
-	return controller.JSONBaseErrorReq(c, err)
+	manager := auditplan.GetManager()
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -648,12 +647,11 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	err = s.UpdateAuditPlanSQLs(apName, sqls)
-	return controller.JSONBaseErrorReq(c, err)
+	manager := auditplan.GetManager()
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, true))
 }
 
-func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*model.AuditPlanSQL, error) {
+func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
 	s := model.GetStorage()
 
 	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
@@ -669,17 +667,20 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil, errAuditPlanNotExist
 	}
 
-	sqls := make([]*model.AuditPlanSQL, len(reqSQLs))
+	sqls := make([]*auditplan.SQL, len(reqSQLs))
 	for i, reqSQL := range reqSQLs {
-		counter, err := strconv.ParseInt(reqSQL.Counter, 10, 64)
+		counter, err := strconv.ParseUint(reqSQL.Counter, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		sqls[i] = &model.AuditPlanSQL{
-			Fingerprint:          reqSQL.Fingerprint,
-			Counter:              int(counter),
-			LastSQL:              reqSQL.LastReceiveText,
-			LastReceiveTimestamp: reqSQL.LastReceiveTimestamp,
+		info := map[string]interface{}{
+			"counter":                counter,
+			"last_receive_timestamp": reqSQL.LastReceiveTimestamp,
+		}
+		sqls[i] = &auditplan.SQL{
+			Fingerprint: reqSQL.Fingerprint,
+			SQLContent:  reqSQL.LastReceiveText,
+			Info:        info,
 		}
 	}
 	return sqls, nil
