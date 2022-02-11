@@ -202,6 +202,7 @@ type PatchUserGroupReqV1 struct {
 // @Tags user_group
 // @Security ApiKeyAuth
 // @Param user_group_name path string true "user_group_name"
+// @Param instance body v1.PatchUserGroupReqV1 true "update user group"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user_groups/{user_group_name}/ [patch]
 func UpdateUserGroup(c echo.Context) (err error) {
