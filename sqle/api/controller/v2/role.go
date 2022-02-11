@@ -165,6 +165,91 @@ type UpdateRoleReqV2 struct {
 // @Param instance body v2.UpdateRoleReqV2 true "update role request"
 // @Success 200 {object} controller.BaseRes
 // @router /v2/roles/{role_name}/ [patch]
-func UpdateRole(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+func UpdateRole(c echo.Context) (err error) {
+
+	req := new(UpdateRoleReqV2)
+	{
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return err
+		}
+	}
+
+	s := model.GetStorage()
+	roleName := c.Param("role_name")
+
+	// check if role name exists
+	var role *model.Role
+	{
+		var isExist bool
+		role, isExist, err = s.GetRoleByName(roleName)
+		if err != nil {
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+		if !isExist {
+			return controller.JSONNewDataNotExistErr(c,
+				`role <%s> not exists`, roleName)
+		}
+	}
+
+	// update desc
+	if req.Desc != nil {
+		role.Desc = *req.Desc
+	}
+
+	// check instances
+	var instances []*model.Instance
+	{
+		if len(req.Instances) > 0 {
+			instances, err = s.GetAndCheckInstanceExist(req.Instances)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check operation codes
+	{
+		if len(req.OperationCodes) > 0 {
+			if err := model.CheckIfOperationCodeValid(req.OperationCodes); err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check users
+	var users []*model.User
+	{
+		if req.Users != nil {
+			if len(*req.Users) > 0 {
+				users, err = s.GetAndCheckUserExist(*req.Users)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				users = make([]*model.User, 0)
+			}
+		}
+	}
+
+	// check user groups
+	var userGroups []*model.UserGroup
+	{
+		if req.UserGroups != nil {
+			if len(*req.UserGroups) > 0 {
+				userGroups, err = s.GetAndCheckUserGroupExist(*req.UserGroups)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				userGroups = make([]*model.UserGroup, 0)
+			}
+		}
+	}
+
+	return controller.JSONBaseErrorReq(c,
+		s.SaveRoleAndAssociations(role, instances, req.OperationCodes, users, userGroups),
+	)
+
 }
