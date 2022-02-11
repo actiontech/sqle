@@ -104,3 +104,8 @@ func (s *Storage) GetRoleOperationsByRoleID(roleID uint) (roleOps []*RoleOperati
 	err = s.db.Where("role_id = ?", roleID).Find(&roleOps).Error
 	return roleOps, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) DeleteRoleOperationByRoleID(roleID uint) (err error) {
+	return errors.ConnectStorageErrWrapper(
+		s.db.Where("role_id = ?", roleID).Delete(RoleOperation{}).Error)
+}
