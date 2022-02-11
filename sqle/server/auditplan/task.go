@@ -137,8 +137,8 @@ func (at *runnerTask) Start() error {
 	if at.isStarted {
 		return nil
 	}
+	at.WaitGroup.Add(1)
 	go func() {
-		at.WaitGroup.Add(1)
 		at.isStarted = true
 		at.logger.Infof("start task")
 		at.runnerFn(at.cancel)
@@ -272,11 +272,12 @@ func (at *SchemaMetaTask) runner(cancel chan struct{}) {
 	}
 	collectView := at.ap.Params.GetParam("collect_view").Bool()
 	at.do(collectView)
-	tk := time.Tick(time.Duration(interval) * time.Minute)
+
+	tk := time.NewTicker(time.Duration(interval) * time.Minute)
 	select {
 	case <-cancel:
 		return
-	case <-tk:
+	case <-tk.C:
 		at.logger.Infof("tick %s", at.ap.Name)
 		at.do(collectView)
 	}
