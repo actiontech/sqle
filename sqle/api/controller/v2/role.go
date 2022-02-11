@@ -2,6 +2,7 @@ package v2
 
 import (
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
@@ -25,8 +26,78 @@ type CreateRoleReqV2 struct {
 // @Param instance body v2.CreateRoleReqV2 true "create role"
 // @Success 200 {object} controller.BaseRes
 // @router /v2/roles [post]
-func CreateRole(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+func CreateRole(c echo.Context) (err error) {
+
+	req := new(CreateRoleReqV2)
+	{
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return err
+		}
+	}
+
+	s := model.GetStorage()
+
+	// check if role name already exists
+	{
+		_, exist, err := s.GetRoleByName(req.Name)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			return controller.JSONNewDataExistErr(c, "role<%s> is exist", req.Name)
+		}
+	}
+
+	// check instances
+	var instances []*model.Instance
+	{
+		if len(req.Instances) > 0 {
+			instances, err = s.GetAndCheckInstanceExist(req.Instances)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check operation codes
+	{
+		if len(req.OperationCodes) > 0 {
+			if err := model.CheckIfOperationCodeValid(req.OperationCodes); err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check users
+	var users []*model.User
+	{
+		if len(req.Users) > 0 {
+			users, err = s.GetAndCheckUserExist(req.Users)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check user groups
+	var userGroups []*model.UserGroup
+	{
+		if len(req.UserGroups) > 0 {
+			userGroups, err = s.GetAndCheckUserGroupExist(req.UserGroups)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	newRole := &model.Role{
+		Name: req.Name,
+		Desc: req.Desc,
+	}
+
+	return controller.JSONBaseErrorReq(c,
+		s.SaveRoleAndAssociations(newRole, instances, req.OperationCodes, users, userGroups),
+	)
 }
 
 type GetRolesReqV2 struct {
