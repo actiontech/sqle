@@ -1,8 +1,11 @@
 package model
 
-type Operation struct {
+// NOTE: related model:
+// - model.Role
+type RoleOperation struct {
 	Model
-	Code uint `json:"op_code" gorm:"column:op_code; comment:'动作权限'"`
+	RoleID uint `json:"role_id" gorm:"index"`
+	Code   uint `json:"op_code" gorm:"column:op_code; comment:'动作权限'"`
 }
 
 const (
