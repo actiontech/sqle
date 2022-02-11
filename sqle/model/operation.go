@@ -1,5 +1,10 @@
 package model
 
+type Operation struct {
+	Model
+	Code uint `json:"op_code" gorm:"column:op_code; comment:'动作权限'"`
+}
+
 const (
 	// operation code list
 
