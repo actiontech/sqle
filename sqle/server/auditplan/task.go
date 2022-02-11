@@ -1,7 +1,9 @@
 package auditplan
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -21,6 +23,21 @@ type Task interface {
 	Start() error
 	Stop() error
 	Audit() (*model.AuditPlanReportV2, error)
+	FullSyncSQLs([]*SQL) error
+	PartialSyncSQLs([]*SQL) error
+	GetSQLs(map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error)
+}
+
+type Head struct {
+	Name string
+	Desc string
+	Type string
+}
+
+type SQL struct {
+	SQLContent  string
+	Fingerprint string
+	Info        map[string]interface{}
 }
 
 func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
@@ -71,7 +88,7 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(i),
-				Content: sql.LastSQL,
+				Content: sql.SQLContent,
 			},
 		})
 	}
@@ -169,6 +186,72 @@ func (at *DefaultTask) Audit() (*model.AuditPlanReportV2, error) {
 	return at.baseTask.audit(task)
 }
 
+func convertSQLsToModelSQLs(sqls []*SQL) []*model.AuditPlanSQLV2 {
+	as := make([]*model.AuditPlanSQLV2, len(sqls))
+	for i, sql := range sqls {
+		data, _ := json.Marshal(sql.Info)
+		as[i] = &model.AuditPlanSQLV2{
+			Fingerprint: sql.Fingerprint,
+			SQLContent:  sql.SQLContent,
+			Info:        data,
+		}
+	}
+	return as
+}
+
+func (at *baseTask) FullSyncSQLs(sqls []*SQL) error {
+	return at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
+}
+
+func (at *baseTask) PartialSyncSQLs(sqls []*SQL) error {
+	return at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
+}
+
+func (at *baseTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	head := []Head{
+		{
+			Name: "fingerprint",
+			Desc: "SQL指纹",
+			Type: "sql",
+		},
+		{
+			Name: "sql",
+			Desc: "最后一次匹配到该指纹的语句",
+			Type: "sql",
+		},
+		{
+			Name: "counter",
+			Desc: "匹配到该指纹的语句数量",
+		},
+		{
+			Name: "last_receive_timestamp",
+			Desc: "最后一次匹配到该指纹的时间",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		var info = struct {
+			Counter              uint64 `json:"counter"`
+			LastReceiveTimestamp string `json:"last_receive_timestamp"`
+		}{}
+		err := json.Unmarshal(sql.Info, &info)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql":                    sql.SQLContent,
+			"fingerprint":            sql.Fingerprint,
+			"counter":                strconv.FormatUint(info.Counter, 10),
+			"last_receive_timestamp": info.LastReceiveTimestamp,
+		})
+	}
+	return head, rows, count, nil
+}
+
 type SchemaMetaTask struct {
 	*runnerTask
 }
@@ -238,18 +321,16 @@ func (at *SchemaMetaTask) do(CollectView bool) {
 			return
 		}
 	}
-	sqls := make([]*model.AuditPlanSQL, 0, len(tables)+len(views))
+	sqls := make([]*model.AuditPlanSQLV2, 0, len(tables)+len(views))
 	for _, table := range tables {
 		sql, err := db.ShowCreateTable(table)
 		if err != nil {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
 		}
-		sqls = append(sqls, &model.AuditPlanSQL{
-			LastSQL:              sql,
-			Fingerprint:          sql,
-			Counter:              1,
-			LastReceiveTimestamp: time.Now().String(),
+		sqls = append(sqls, &model.AuditPlanSQLV2{
+			SQLContent:  sql,
+			Fingerprint: sql,
 		})
 	}
 	for _, view := range views {
@@ -258,11 +339,9 @@ func (at *SchemaMetaTask) do(CollectView bool) {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
 		}
-		sqls = append(sqls, &model.AuditPlanSQL{
-			LastSQL:              sql,
-			Fingerprint:          sql,
-			Counter:              1,
-			LastReceiveTimestamp: time.Now().String(),
+		sqls = append(sqls, &model.AuditPlanSQLV2{
+			SQLContent:  sql,
+			Fingerprint: sql,
 		})
 	}
 	if len(sqls) > 0 {
@@ -278,4 +357,33 @@ func (at *SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
 		DBType: at.ap.DBType,
 	}
 	return at.baseTask.audit(task)
+}
+
+func (at *SchemaMetaTask) FullSyncSQLs([]*SQL) error {
+	return nil
+}
+
+func (at *SchemaMetaTask) PartialSyncSQLs([]*SQL) error {
+	return nil
+}
+
+func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	head := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+		})
+	}
+	return head, rows, count, nil
 }
