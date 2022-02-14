@@ -13,8 +13,8 @@ import (
 // - RoleOperation
 type Role struct {
 	Model
-	Name       string `gorm:"index"`
-	Desc       string
+	Name       string       `gorm:"index"`
+	Desc       string       `gorm:"column:description"`
 	Stat       uint         `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
 	Users      []*User      `gorm:"many2many:user_role;"`
 	Instances  []*Instance  `gorm:"many2many:instance_role; comment:'关联实例'"`
