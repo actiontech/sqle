@@ -221,6 +221,7 @@ func UpdateRole(c echo.Context) (err error) {
 				if err := model.CheckIfOperationCodeValid(*req.OperationCodes); err != nil {
 					return controller.JSONBaseErrorReq(c, err)
 				}
+				opCodes = *req.OperationCodes
 			} else {
 				opCodes = make([]uint, 0)
 			}
