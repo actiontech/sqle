@@ -93,7 +93,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/role_tips", v1.GetRoleTips, AdminUserAllowed())
 		v1Router.POST("/roles", DeprecatedBy(apiV2), AdminUserAllowed())
 		v2Router.POST("/roles", v2.CreateRole, AdminUserAllowed())
-		v1Router.PATCH("/roles/:role_name/", v1.UpdateRole, AdminUserAllowed())
+		v1Router.PATCH("/roles/:role_name/", DeprecatedBy(apiV2), AdminUserAllowed())
 		v2Router.PATCH("/roles/:role_name/", v2.UpdateRole, AdminUserAllowed())
 		v1Router.DELETE("/roles/:role_name/", v1.DeleteRole, AdminUserAllowed())
 
