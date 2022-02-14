@@ -818,6 +818,7 @@ type WorkflowDetailResV1 struct {
 	Subject                 string     `json:"subject"`
 	Desc                    string     `json:"desc"`
 	TaskPassRate            float64    `json:"task_pass_rate"`
+	TaskScore               int32      `json:"task_score"`
 	TaskInstance            string     `json:"task_instance_name"`
 	TaskInstanceSchema      string     `json:"task_instance_schema"`
 	CreateUser              string     `json:"create_user_name"`
@@ -915,6 +916,7 @@ func GetWorkflows(c echo.Context) error {
 			Subject:                 workflow.Subject,
 			Desc:                    workflow.Desc,
 			TaskPassRate:            workflow.TaskPassRate,
+			TaskScore:               workflow.TaskScore.Int32,
 			TaskInstance:            utils.AddDelTag(workflow.TaskInstanceDeletedAt, workflow.TaskInstance.String),
 			TaskInstanceSchema:      workflow.TaskInstanceSchema,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
