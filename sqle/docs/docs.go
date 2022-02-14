@@ -6235,6 +6235,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "is_disabled": {
+                    "type": "boolean"
+                },
                 "operation_list": {
                     "type": "array",
                     "items": {
@@ -6269,6 +6272,9 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "is_disabled": {
+                    "type": "boolean"
                 },
                 "operation_code_list": {
                     "type": "array",
