@@ -114,6 +114,7 @@ type UpdateRoleReqV1 struct {
 
 // @Summary 更新角色信息
 // @Description update role
+// @Deprecated
 // @Id updateRoleV1
 // @Tags role
 // @Security ApiKeyAuth
@@ -195,6 +196,7 @@ type RoleResV1 struct {
 
 // @Summary 获取角色列表
 // @Description get role list
+// @Deprecated
 // @Id getRoleListV1
 // @Tags role
 // @Security ApiKeyAuth
