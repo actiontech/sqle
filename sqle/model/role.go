@@ -122,3 +122,22 @@ func (s *Storage) SaveRoleAndAssociations(role *Role,
 		return
 	})
 }
+
+func (s *Storage) DeleteRoleAndAssociations(role *Role) error {
+	return s.Tx(func(txDB *gorm.DB) (err error) {
+
+		// delete role
+		if err = txDB.Delete(role).Error; err != nil {
+			txDB.Rollback()
+			return errors.ConnectStorageErrWrapper(err)
+		}
+
+		// delete role operations
+		if err = s.DeleteRoleOperationByRoleID(role.ID); err != nil {
+			txDB.Rollback()
+			return err
+		}
+
+		return nil
+	})
+}
