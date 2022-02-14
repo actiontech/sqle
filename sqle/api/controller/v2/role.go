@@ -1,7 +1,7 @@
 package v2
 
 import (
-    "net/http"
+	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
@@ -194,10 +194,10 @@ func GetRoles(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &GetRolesResV2{
-        BaseRes: controller.NewBaseReq(nil),
-        Data:      roleRes,
-        TotalNums: count,
-    })
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      roleRes,
+		TotalNums: count,
+	})
 }
 
 type UpdateRoleReqV2 struct {
