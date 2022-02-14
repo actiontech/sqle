@@ -277,6 +277,7 @@ func (at *SchemaMetaTask) runner(cancel chan struct{}) {
 	for {
 		select {
 		case <-cancel:
+			tk.Stop()
 			return
 		case <-tk.C:
 			at.logger.Infof("tick %s", at.ap.Name)
