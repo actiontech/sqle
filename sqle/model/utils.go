@@ -2,6 +2,8 @@ package model
 
 import (
 	"database/sql"
+	sqlDriver "database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -10,7 +12,6 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -102,9 +103,9 @@ type Storage struct {
 
 func (s *Storage) AutoMigrate() error {
 	err := s.db.AutoMigrate(
-		&AuditPlanReportSQL{},
-		&AuditPlanReport{},
-		&AuditPlanSQL{},
+		&AuditPlanReportSQLV2{},
+		&AuditPlanReportV2{},
+		&AuditPlanSQLV2{},
 		&AuditPlan{},
 		&ExecuteSQL{},
 		&Instance{},
@@ -138,7 +139,8 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	err = s.db.Model(AuditPlanSQL{}).AddIndex("idx_audit_plan_sqls_audit_plan_id_fingerprint", "audit_plan_id", "fingerprint(255)").Error
+	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint",
+		"audit_plan_id", "fingerprint(255)").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
@@ -368,4 +370,37 @@ func (r *RowList) Scan(src interface{}) error {
 		}
 	}
 	return nil
+}
+
+type JSON json.RawMessage
+
+// Value impl sql.driver.Valuer interface
+func (j JSON) Value() (sqlDriver.Value, error) {
+	if len(j) == 0 {
+		return nil, nil
+	}
+	bytes, err := json.RawMessage(j).MarshalJSON()
+	return string(bytes), err
+}
+
+// Scan impl sql.Scanner interface
+func (j *JSON) Scan(value interface{}) error {
+	if value == nil {
+		*j = JSON("null")
+		return nil
+	}
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("failed to unmarshal JSON value: %s", value)
+	}
+
+	result := json.RawMessage{}
+	err := json.Unmarshal(bytes, &result)
+	*j = JSON(result)
+	return err
 }

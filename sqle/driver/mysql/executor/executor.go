@@ -256,7 +256,8 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 }
 
 func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show tables from `%s`", schema))
+	result, err := c.Db.Query(fmt.Sprintf(
+		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE=\"BASE TABLE\"", schema))
 	if err != nil {
 		return nil, err
 	}
@@ -273,6 +274,46 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 		}
 	}
 	return tables, nil
+}
+
+func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
+	result, err := c.Db.Query(fmt.Sprintf(
+		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE=\"VIEW\"", schema))
+	if err != nil {
+		return nil, err
+	}
+	tables := make([]string, len(result))
+	for n, v := range result {
+		if len(v) != 1 {
+			err := fmt.Errorf("show views error, result not match")
+			c.Db.Logger().Error(err)
+			return tables, errors.New(errors.ConnectRemoteDatabaseError, err)
+		}
+		for _, table := range v {
+			tables[n] = table.String
+			break
+		}
+	}
+	return tables, nil
+}
+
+func (c *Executor) ShowCreateView(tableName string) (string, error) {
+	result, err := c.Db.Query(fmt.Sprintf("show create view %s", tableName))
+	if err != nil {
+		return "", err
+	}
+	if len(result) != 1 {
+		err := fmt.Errorf("show create view error, result is %v", result)
+		c.Db.Logger().Error(err)
+		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
+	}
+	if query, ok := result[0]["Create View"]; !ok {
+		err := fmt.Errorf("show create view error, column \"Create View\" not found")
+		c.Db.Logger().Error(err)
+		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
+	} else {
+		return query.String, nil
+	}
 }
 
 type ExplainRecord struct {

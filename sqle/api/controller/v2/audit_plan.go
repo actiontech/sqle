@@ -5,6 +5,8 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/server/auditplan"
+
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -42,8 +44,6 @@ type AuditPlanSQLHeadV2 struct {
 // @Success 200 {object} v2.GetAuditPlanSQLsResV2
 // @router /v2/audit_plans/{audit_plan_name}/sqls [get]
 func GetAuditPlanSQLs(c echo.Context) error {
-	s := model.GetStorage()
-
 	req := new(GetAuditPlanSQLsReqV2)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
@@ -65,46 +65,25 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		"limit":           req.PageSize,
 		"offset":          offset,
 	}
-	auditPlanSQLs, count, err := s.GetAuditPlanSQLsByReq(data)
+	manager := auditplan.GetManager()
+	head, rows, count, err := manager.GetSQLs(apName, data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	auditPlanSQLResV2 := AuditPlanSQLResV2{
-		Head: []AuditPlanSQLHeadV2{
-			{
-				Name: "fingerprint",
-				Desc: "SQL指纹",
-				Type: "sql",
-			},
-			{
-				Name: "last_receive_sql_text",
-				Desc: "最后一次匹配到该指纹的语句",
-				Type: "sql",
-			},
-			{
-				Name: "counter",
-				Desc: "匹配到该指纹的语句数量",
-			},
-			{
-				Name: "last_receive_timestamp",
-				Desc: "最后一次匹配到该指纹的时间",
-			},
-		},
+	// convert head and rows to audit planSQL response
+	res := AuditPlanSQLResV2{
+		Rows: rows,
 	}
-	auditPlanSQLResV2.Rows = make([]map[string]string, 0, len(auditPlanSQLs))
-
-	for _, auditPlanSQL := range auditPlanSQLs {
-		auditPlanSQLResV2.Rows = append(auditPlanSQLResV2.Rows, map[string]string{
-			"fingerprint":            auditPlanSQL.Fingerprint,
-			"last_receive_sql_text":  auditPlanSQL.LastReceiveText,
-			"counter":                auditPlanSQL.Counter,
-			"last_receive_timestamp": auditPlanSQL.LastReceiveTimestamp,
+	for _, v := range head {
+		res.Head = append(res.Head, AuditPlanSQLHeadV2{
+			Name: v.Name,
+			Desc: v.Desc,
+			Type: v.Type,
 		})
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanSQLsResV2{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      auditPlanSQLResV2,
+		Data:      res,
 		TotalNums: count,
 	})
 }
@@ -169,7 +148,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	auditPlanReportSQLsResV2 := make([]AuditPlanReportSQLResV2, len(auditPlanReportSQLs))
 	for i, auditPlanReportSQL := range auditPlanReportSQLs {
 		auditPlanReportSQLsResV2[i] = AuditPlanReportSQLResV2{
-			SQL:         auditPlanReportSQL.LastReceiveText,
+			SQL:         auditPlanReportSQL.SQL,
 			AuditResult: auditPlanReportSQL.AuditResult,
 		}
 	}
