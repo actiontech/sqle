@@ -28,16 +28,13 @@ func DeleteRole(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("role is not exist")))
 	}
-	err = s.Delete(role)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	return controller.JSONBaseErrorReq(c,
-		s.DeleteRoleOperationByRoleID(role.ID))
+		s.DeleteRoleAndAssociations(role))
 }
 
 type CreateRoleReqV1 struct {
