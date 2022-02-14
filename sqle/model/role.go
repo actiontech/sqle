@@ -110,28 +110,15 @@ func (s *Storage) SaveRoleAndAssociations(role *Role,
 			}
 		}
 
-		// save operations
+		// sync operations
 		{
-			if err := s.SaveRoleOperationsByOpCodes(role.ID, opCodes); err != nil {
-				return err
+			if opCodes != nil {
+				if err := s.ReplaceRoleOperationsByOpCodes(role.ID, opCodes); err != nil {
+					return err
+				}
 			}
 		}
 
 		return
 	})
-}
-
-func (s *Storage) SaveRoleOperationsByOpCodes(roleID uint, opCodes []uint) (err error) {
-	roleOps := make([]*RoleOperation, len(opCodes))
-	for i := range opCodes {
-		roleOps[i] = &RoleOperation{
-			RoleID: roleID,
-			Code:   opCodes[i],
-		}
-		err = s.Save(&RoleOperation{RoleID: roleID, Code: opCodes[i]})
-		if err != nil {
-			return errors.ConnectStorageErrWrapper(err)
-		}
-	}
-	return nil
 }
