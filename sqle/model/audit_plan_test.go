@@ -67,7 +67,7 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(mockAuditPlanRow.ID, mockAuditPlanRow.Name))
-	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls_v2`  WHERE `audit_plan_sqls_v2`.`deleted_at` IS NULL AND ((audit_plan_id = ?))").
+	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls`  WHERE `audit_plan_sqls`.`deleted_at` IS NULL AND ((audit_plan_id = ?))").
 		WithArgs(mockAuditPlanRow.ID).
 		WillReturnRows(sqlmock.NewRows([]string{"fingerprint"}).AddRow("select * from t1 where id = ?").AddRow("select * from t2 where id = ?"))
 	mock.ExpectClose()
@@ -105,12 +105,9 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 		Name: "test_ap_name",
 	}
 
-	sqls := []*AuditPlanSQLV2{
-		{
-			Fingerprint: "select * from t1 where id = ?",
-			SQLContent:  "select * from t1 where id = 1",
-			Info:        []byte(`{"counter": 1, "last_receive_timestamp": "mock time"}`),
-		},
+	mockTime := "mock time"
+	sqls := []*AuditPlanSQL{
+		{Fingerprint: "select * from t1 where id = ?", LastSQL: "select * from t1 where id = 1", Counter: 1, LastReceiveTimestamp: mockTime},
 	}
 
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
@@ -119,13 +116,13 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 
 	mock.ExpectBegin()
 	// expect hard delete
-	mock.ExpectExec("DELETE FROM `audit_plan_sqls_v2` WHERE (audit_plan_id = ?)").
+	mock.ExpectExec("DELETE FROM `audit_plan_sqls` WHERE (audit_plan_id = ?)").
 		WithArgs(ap.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	mock.ExpectExec("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`, `fingerprint`, `sql_content`, `info`) VALUES (?, ?, ?, ?);").
-		WithArgs(ap.ID, sqls[0].Fingerprint, sqls[0].SQLContent, sqls[0].Info).
+	mock.ExpectExec("INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES (?, ?, ?, ?, ?) ;").
+		WithArgs(ap.ID, sqls[0].Fingerprint, sqls[0].Counter, sqls[0].LastSQL, sqls[0].LastReceiveTimestamp).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err = GetStorage().OverrideAuditPlanSQLs(ap.Name, sqls)

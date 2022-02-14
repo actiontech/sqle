@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -21,24 +20,45 @@ type AuditPlan struct {
 	Type             string        `json:"type"`
 	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
-	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
-	Instance      *Instance         `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
-	AuditPlanSQLs []*AuditPlanSQLV2 `gorm:"foreignkey:AuditPlanID"`
+	CreateUser       *User              `gorm:"foreignkey:CreateUserId"`
+	Instance         *Instance          `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
+	AuditPlanSQLs    []*AuditPlanSQL    `gorm:"foreignkey:AuditPlanID"`
+	AuditPlanReports []*AuditPlanReport `gorm:"foreignkey:AuditPlanID"`
 }
 
-type AuditPlanSQLV2 struct {
+type AuditPlanSQL struct {
 	Model
 
 	// add unique index on fingerprint and audit_plan_id
 	// it's done by AutoMigrate() because gorm can't create index on TEXT column directly by tag.
-	AuditPlanID uint   `json:"audit_plan_id" gorm:"not null"`
-	Fingerprint string `json:"fingerprint" gorm:"type:text;not null"`
-	SQLContent  string `json:"sql" gorm:"type:text;not null"`
-	Info        JSON   `gorm:"type:json"`
+	AuditPlanID          uint   `json:"audit_plan_id" gorm:"not null"`
+	Fingerprint          string `json:"fingerprint" gorm:"type:text;not null"`
+	Counter              int    `json:"counter" gorm:"not null"`
+	LastSQL              string `json:"last_sql" gorm:"type:text;not null"`
+	LastReceiveTimestamp string `json:"last_receive_timestamp" gorm:"not null"`
 }
 
-func (a AuditPlanSQLV2) TableName() string {
-	return "audit_plan_sqls_v2"
+func (a AuditPlanSQL) TableName() string {
+	return "audit_plan_sqls"
+}
+
+type AuditPlanReport struct {
+	Model
+	AuditPlanID uint `json:"audit_plan_id" gorm:"index"`
+
+	AuditPlan           *AuditPlan            `gorm:"foreignkey:AuditPlanID"`
+	AuditPlanReportSQLs []*AuditPlanReportSQL `gorm:"foreignkey:AuditPlanReportID"`
+}
+
+type AuditPlanReportSQL struct {
+	Model
+	AuditResult string `json:"audit_result" gorm:"type:text"`
+
+	AuditPlanSQLID    uint `json:"audit_plan_sql_id" gorm:"index"`
+	AuditPlanReportID uint `json:"audit_plan_report_id" gorm:"index"`
+
+	AuditPlanSQL    *AuditPlanSQL    `gorm:"foreignkey:AuditPlanSQLID"`
+	AuditPlanReport *AuditPlanReport `gorm:"foreignkey:AuditPlanReportID"`
 }
 
 func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
@@ -56,7 +76,7 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQLV2, error) {
+func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQL, error) {
 	ap, exist, err := s.GetAuditPlanByName(name)
 	if err != nil {
 		return nil, err
@@ -65,29 +85,30 @@ func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQLV2, error) {
 		return nil, gorm.ErrRecordNotFound
 	}
 
-	var sqls []*AuditPlanSQLV2
-	err = s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", ap.ID).Find(&sqls).Error
+	var sqls []*AuditPlanSQL
+	err = s.db.Model(AuditPlanSQL{}).Where("audit_plan_id = ?", ap.ID).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) OverrideAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
+func (s *Storage) OverrideAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error {
 	ap, _, err := s.GetAuditPlanByName(apName)
 	if err != nil {
 		return err
 	}
 
 	err = s.db.Unscoped().
-		Model(AuditPlanSQLV2{}).
+		Model(AuditPlanSQL{}).
 		Where("audit_plan_id = ?", ap.ID).
-		Delete(&AuditPlanSQLV2{}).Error
+		Delete(&AuditPlanSQL{}).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
+
 	raw, args := getBatchInsertRawSQL(ap, sqls)
 	return errors.New(errors.ConnectStorageError, s.db.Exec(fmt.Sprintf("%v;", raw), args...).Error)
 }
 
-func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
+func (s *Storage) UpdateAuditPlanSQLs(apName string, sqls []*AuditPlanSQL) error {
 	ap, _, err := s.GetAuditPlanByName(apName)
 	if err != nil {
 		return err
@@ -95,20 +116,20 @@ func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQL
 
 	raw, args := getBatchInsertRawSQL(ap, sqls)
 	// counter column is a accumulate value when update.
-	raw += `ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content), info = JSON_SET(COALESCE(info, '{}'), 
-'$.counter', COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0)+COALESCE(JSON_EXTRACT(info, '$.counter'), 0),
-'$.last_receive_timestamp', JSON_EXTRACT(values(info), '$.last_receive_timestamp'));`
+	raw += " ON DUPLICATE KEY UPDATE `counter` = VALUES(`counter`) + `counter`, `last_sql` = VALUES(`last_sql`), `last_receive_timestamp` = VALUES(`last_receive_timestamp`);"
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
-func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
-	pattern := make([]string, 0, len(sqls))
-	for _, sql := range sqls {
-		pattern = append(pattern, "(?, ?, ?, ?)")
-		args = append(args, ap.ID, sql.Fingerprint, sql.SQLContent, sql.Info)
+func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQL) (raw string, args []interface{}) {
+	raw = "INSERT INTO `audit_plan_sqls` (`audit_plan_id`, `fingerprint`, `counter`, `last_sql`, `last_receive_timestamp`) VALUES "
+	for i, sql := range sqls {
+		if i == len(sqls)-1 {
+			raw += "(?, ?, ?, ?, ?) "
+		} else {
+			raw += "(?, ?, ?, ?, ?), "
+		}
+		args = append(args, ap.ID, sql.Fingerprint, sql.Counter, sql.LastSQL, sql.LastReceiveTimestamp)
 	}
-	raw = fmt.Sprintf("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`, `fingerprint`, `sql_content`, `info`) VALUES %s",
-		strings.Join(pattern, ", "))
 	return
 }
 

@@ -2426,15 +2426,6 @@ var doc = `{
                         "name": "user_group_name",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "update user group",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.PatchUserGroupReqV1"
-                        }
                     }
                 ],
                 "responses": {
@@ -3834,6 +3825,9 @@ var doc = `{
                 },
                 "task_id": {
                     "type": "integer"
+                },
+                "task_score": {
+                    "type": "integer"
                 }
             }
         },
@@ -5143,30 +5137,6 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.AuditPlanSQLReqV1"
-                    }
-                }
-            }
-        },
-        "v1.PatchUserGroupReqV1": {
-            "type": "object",
-            "properties": {
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_group_desc": {
-                    "type": "string",
-                    "example": "this is a group"
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
                     }
                 }
             }

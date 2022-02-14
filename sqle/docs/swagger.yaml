@@ -159,6 +159,8 @@ definitions:
         type: string
       task_id:
         type: integer
+      task_score:
+        type: integer
     type: object
   v1.AuditTaskSQLContentResV1:
     properties:
@@ -1054,22 +1056,6 @@ definitions:
       audit_plan_sql_list:
         items:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
-        type: array
-    type: object
-  v1.PatchUserGroupReqV1:
-    properties:
-      is_disabled:
-        type: boolean
-      role_name_list:
-        items:
-          type: string
-        type: array
-      user_group_desc:
-        example: this is a group
-        type: string
-      user_name_list:
-        items:
-          type: string
         type: array
     type: object
   v1.RejectWorkflowReqV1:
@@ -3350,12 +3336,6 @@ paths:
         name: user_group_name
         required: true
         type: string
-      - description: update user group
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.PatchUserGroupReqV1'
       responses:
         "200":
           description: OK

@@ -66,16 +66,14 @@ func (s *Storage) GetAuditPlansByReq(data map[string]interface{}) (
 }
 
 type AuditPlanSQLListDetail struct {
-	Fingerprint string `json:"fingerprint"`
-	SQLContent  string `json:"sql_content"`
-	Info        JSON   `json:"info"`
+	Fingerprint          string `json:"fingerprint"`
+	Counter              string `json:"counter"`
+	LastReceiveText      string `json:"last_sql"`
+	LastReceiveTimestamp string `json:"last_receive_timestamp"`
 }
 
 var auditPlanSQLQueryTpl = `
-SELECT
-audit_plan_sqls.fingerprint,
-audit_plan_sqls.sql_content,
-audit_plan_sqls.info
+SELECT audit_plan_sqls.fingerprint, audit_plan_sqls.counter, audit_plan_sqls.last_sql, audit_plan_sqls.last_receive_timestamp
 
 {{- template "body" . -}} 
 
@@ -93,7 +91,7 @@ SELECT COUNT(*)
 var auditPlanSQLBodyTpl = `
 {{ define "body" }}
 
-FROM audit_plan_sqls_v2 AS audit_plan_sqls
+FROM audit_plan_sqls
 JOIN audit_plans ON audit_plans.id = audit_plan_sqls.audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
@@ -111,6 +109,108 @@ func (s *Storage) GetAuditPlanSQLsByReq(data map[string]interface{}) (
 		return nil, 0, err
 	}
 	count, err = s.getCountResult(auditPlanSQLBodyTpl, auditPlanSQLCountTpl, data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return
+}
+
+type AuditPlanReportListDetail struct {
+	ID       string `json:"id"`
+	CreateAt string `json:"created_at"`
+}
+
+var auditPlanReportQueryTpl = `
+SELECT audit_plan_reports.id, audit_plan_reports.created_at
+
+{{- template "body" . -}} 
+
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var auditPlanReportCountTpl = `
+SELECT COUNT(*)
+
+{{- template "body" . -}}
+`
+
+var auditPlanReportBodyTpl = `
+{{ define "body" }}
+
+FROM audit_plan_reports
+JOIN audit_plans ON audit_plans.id = audit_plan_reports.audit_plan_id
+
+WHERE audit_plan_reports.deleted_at IS NULL
+AND audit_plans.deleted_at IS NULL
+AND audit_plans.name = :audit_plan_name
+
+{{ end }}
+`
+
+func (s *Storage) GetAuditPlanReportsByReq(data map[string]interface{}) (
+	list []*AuditPlanReportListDetail, count uint64, err error) {
+
+	err = s.getListResult(auditPlanReportBodyTpl, auditPlanReportQueryTpl, data, &list)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err = s.getCountResult(auditPlanReportBodyTpl, auditPlanReportCountTpl, data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return
+}
+
+type AuditPlanReportSQLListDetail struct {
+	AuditResult string `json:"audit_result"`
+
+	Fingerprint          string `json:"fingerprint"`
+	LastReceiveText      string `json:"last_sql"`
+	LastReceiveTimestamp string `json:"last_receive_timestamp"`
+}
+
+var auditPlanReportSQLQueryTpl = `
+SELECT audit_plan_report_sqls.audit_result, 
+audit_plan_sqls.fingerprint, audit_plan_sqls.last_sql, audit_plan_sqls.last_receive_timestamp
+
+{{- template "body" . -}} 
+
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var auditPlanReportSQLCountTpl = `
+SELECT COUNT(*)
+
+{{- template "body" . -}}
+`
+
+var auditPlanReportSQLBodyTpl = `
+{{ define "body" }}
+
+FROM audit_plan_report_sqls
+JOIN audit_plan_reports ON audit_plan_report_sqls.audit_plan_report_id = audit_plan_reports.id
+JOIN audit_plans ON audit_plan_reports.audit_plan_id = audit_plans.id
+JOIN audit_plan_sqls ON audit_plan_sqls.id = audit_plan_report_sqls.audit_plan_sql_id
+
+WHERE audit_plan_report_sqls.deleted_at IS NULL
+AND audit_plans.name = :audit_plan_name
+AND audit_plan_reports.id = :audit_plan_report_id
+
+{{ end }}
+`
+
+func (s *Storage) GetAuditPlanReportSQLsByReq(data map[string]interface{}) (
+	list []*AuditPlanReportSQLListDetail, count uint64, err error) {
+
+	err = s.getListResult(auditPlanReportSQLBodyTpl, auditPlanReportSQLQueryTpl, data, &list)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err = s.getCountResult(auditPlanReportSQLBodyTpl, auditPlanReportSQLCountTpl, data)
 	if err != nil {
 		return nil, 0, err
 	}
