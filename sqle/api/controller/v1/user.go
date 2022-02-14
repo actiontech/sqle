@@ -511,6 +511,7 @@ type CreateRoleReqV1 struct {
 
 // @Summary 创建角色
 // @Description create role
+// @Deprecated
 // @Id createRoleV1
 // @Tags role
 // @Security ApiKeyAuth
