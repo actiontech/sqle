@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -18,6 +20,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/ungerik/go-dry"
 )
+
+var tokenExpire = 365 * 24 * time.Hour
 
 var (
 	errAuditPlanNotExist         = errors.New(errors.DataNotExist, fmt.Errorf("audit plan is not exist"))
@@ -156,7 +160,6 @@ func checkAndGenerateAuditPlanParams(auditPlanType, instanceType string, paramsR
 // @router /v1/audit_plans [post]
 func CreateAuditPlan(c echo.Context) error {
 	s := model.GetStorage()
-	manager := auditplan.GetManager()
 
 	req := new(CreateAuditPlanReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -179,46 +182,79 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanExisted)
 	}
 
+	// check instance
+	var instanceType string
+	if req.InstanceName != "" {
+		inst, exist, err := s.GetInstanceByName(req.InstanceName)
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+		} else if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+		}
+		// check instance database
+		if req.InstanceDatabase != "" {
+			d, err := newDriverWithoutAudit(log.NewEntry(), inst, "")
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			defer d.Close(context.TODO())
+
+			schemas, err := d.Schemas(context.TODO())
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			if !dry.StringInSlice(req.InstanceDatabase, schemas) {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist in instance", req.InstanceDatabase)))
+			}
+		}
+		instanceType = inst.DbType
+	} else {
+		instanceType = req.InstanceType
+	}
+
+	// check params
 	if req.Type == "" {
 		req.Type = auditplan.TypeDefault
 	}
-	ps, err := checkAndGenerateAuditPlanParams(req.Type, req.InstanceType, req.Params)
+	ps, err := checkAndGenerateAuditPlanParams(req.Type, instanceType, req.Params)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
 
+	// check user and generate token
 	currentUserName := controller.GetUserName(c)
-
-	if req.InstanceName == "" {
-		err := manager.AddStaticAuditPlan(req.Name, req.Cron, req.InstanceType, currentUserName, req.Type, ps)
-		return controller.JSONBaseErrorReq(c, err)
+	user, exist, err := s.GetUserByName(currentUserName)
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
+	} else if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
 
-	instance, exist, err := s.GetInstanceByName(req.InstanceName)
+	j := utils.NewJWT([]byte(utils.JWTSecret))
+	t, err := j.CreateToken(currentUserName, time.Now().Add(tokenExpire).Unix(),
+		utils.WithAuditPlanName(req.Name))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
+
+	ap := &model.AuditPlan{
+		Name:             req.Name,
+		CronExpression:   req.Cron,
+		Type:             req.Type,
+		Params:           ps,
+		CreateUserID:     user.ID,
+		Token:            t,
+		DBType:           instanceType,
+		InstanceName:     req.InstanceName,
+		InstanceDatabase: req.InstanceDatabase,
+	}
+	err = s.Save(ap)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, errInstanceNotExist))
-	}
 
-	if req.InstanceDatabase != "" {
-		d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		defer d.Close(context.TODO())
-
-		schemas, err := d.Schemas(context.TODO())
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !dry.StringInSlice(req.InstanceDatabase, schemas) {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("database %v is not exist in instance", req.InstanceDatabase)))
-		}
-	}
-	err = manager.AddDynamicAuditPlan(req.Name, req.Cron, req.InstanceName, req.InstanceDatabase, currentUserName, req.Type, ps)
-	return controller.JSONBaseErrorReq(c, err)
+	manager := auditplan.GetManager()
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.Name))
 }
 
 // @Summary 删除审核计划
@@ -235,9 +271,21 @@ func DeleteAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	s := model.GetStorage()
 
+	ap, exist, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+	err = s.Delete(ap)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.DeleteAuditPlan(apName))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
 }
 
 type UpdateAuditPlanReqV1 struct {
@@ -295,8 +343,13 @@ func UpdateAuditPlan(c echo.Context) error {
 		}
 		updateAttr["params"] = ps
 	}
+
+	err = storage.UpdateAuditPlanByName(apName, updateAttr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UpdateAuditPlan(apName, updateAttr))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
 }
 
 type GetAuditPlansReqV1 struct {
@@ -565,9 +618,8 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	err = s.OverrideAuditPlanSQLs(apName, sqls)
-	return controller.JSONBaseErrorReq(c, err)
+	manager := auditplan.GetManager()
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -595,12 +647,11 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	err = s.UpdateAuditPlanSQLs(apName, sqls)
-	return controller.JSONBaseErrorReq(c, err)
+	manager := auditplan.GetManager()
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, true))
 }
 
-func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*model.AuditPlanSQL, error) {
+func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
 	s := model.GetStorage()
 
 	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
@@ -616,17 +667,20 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil, errAuditPlanNotExist
 	}
 
-	sqls := make([]*model.AuditPlanSQL, len(reqSQLs))
+	sqls := make([]*auditplan.SQL, len(reqSQLs))
 	for i, reqSQL := range reqSQLs {
-		counter, err := strconv.ParseInt(reqSQL.Counter, 10, 64)
+		counter, err := strconv.ParseUint(reqSQL.Counter, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		sqls[i] = &model.AuditPlanSQL{
-			Fingerprint:          reqSQL.Fingerprint,
-			Counter:              int(counter),
-			LastSQL:              reqSQL.LastReceiveText,
-			LastReceiveTimestamp: reqSQL.LastReceiveTimestamp,
+		info := map[string]interface{}{
+			"counter":                counter,
+			"last_receive_timestamp": reqSQL.LastReceiveTimestamp,
+		}
+		sqls[i] = &auditplan.SQL{
+			Fingerprint: reqSQL.Fingerprint,
+			SQLContent:  reqSQL.LastReceiveText,
+			Info:        info,
 		}
 	}
 	return sqls, nil
@@ -686,7 +740,7 @@ func TriggerAuditPlan(c echo.Context) error {
 	}
 
 	manager := auditplan.GetManager()
-	report, err := manager.TriggerAuditPlan(apName)
+	report, err := manager.Audit(apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
