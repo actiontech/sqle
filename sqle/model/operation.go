@@ -75,7 +75,7 @@ func IsValidOperationCode(opCode uint) bool {
 func (s *Storage) ReplaceRoleOperationsByOpCodes(roleID uint, opCodes []uint) (err error) {
 
 	// query exist role_operation
-	roleOps, err := s.GetRoleOperationsByRoleID(roleID)
+	currentRoleOps, err := s.GetRoleOperationsByRoleID(roleID)
 	if err != nil {
 		return err
 	}
@@ -83,15 +83,15 @@ func (s *Storage) ReplaceRoleOperationsByOpCodes(roleID uint, opCodes []uint) (e
 	// collect RoleOperations which need to be deleted
 	opCodesToBeDeleted := []uint{}
 	{
-		for i := range roleOps {
+		for i := range currentRoleOps {
 			var found bool
 			for j := range opCodes {
-				if roleOps[i].Code == opCodes[j] {
+				if currentRoleOps[i].Code == opCodes[j] {
 					found = true
 				}
 			}
 			if !found {
-				opCodesToBeDeleted = append(opCodesToBeDeleted, roleOps[i].Code)
+				opCodesToBeDeleted = append(opCodesToBeDeleted, currentRoleOps[i].Code)
 			}
 		}
 	}
@@ -110,8 +110,8 @@ func (s *Storage) ReplaceRoleOperationsByOpCodes(roleID uint, opCodes []uint) (e
 	opCodesToBeCreated := []uint{}
 	for i := range opCodes {
 		var found bool
-		for j := range roleOps {
-			if opCodes[i] == roleOps[j].Code {
+		for j := range currentRoleOps {
+			if opCodes[i] == currentRoleOps[j].Code {
 				found = true
 			}
 		}
