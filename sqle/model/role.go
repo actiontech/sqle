@@ -112,8 +112,10 @@ func (s *Storage) SaveRoleAndAssociations(role *Role,
 
 		// sync operations
 		{
-			if err := s.ReplaceRoleOperationsByOpCodes(role.ID, opCodes); err != nil {
-				return err
+			if opCodes != nil {
+				if err := s.ReplaceRoleOperationsByOpCodes(role.ID, opCodes); err != nil {
+					return err
+				}
 			}
 		}
 
