@@ -10,7 +10,7 @@ type WorkflowListDetail struct {
 	Subject                 string         `json:"subject"`
 	Desc                    string         `json:"desc"`
 	TaskPassRate            float64        `json:"task_pass_rate"`
-	TaskScore               int            `json:"task_score"`
+	TaskScore               sql.NullInt32  `json:"task_score"`
 	TaskInstance            sql.NullString `json:"task_instance_name"`
 	TaskInstanceDeletedAt   *time.Time     `json:"task_instance_deleted_at"`
 	TaskInstanceSchema      string         `json:"task_instance_schema"`

@@ -360,7 +360,7 @@ func (a *action) audit() (err error) {
 }
 
 // Scoring rules from https://github.com/actiontech/sqle/issues/284
-func scoreTask(task *model.Task) int {
+func scoreTask(task *model.Task) int32 {
 	var (
 		numberOfTask           float64
 		numberOfLessThanError  float64
@@ -427,7 +427,7 @@ func scoreTask(task *model.Task) int {
 		}
 	}
 
-	return int(math.Floor(totalScore))
+	return int32(math.Floor(totalScore))
 }
 
 func (a *action) execute() (err error) {

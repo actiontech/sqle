@@ -300,5 +300,5 @@ func TestScoreTask(t *testing.T) {
 	}
 	score := scoreTask(task)
 
-	assert.Equal(t, 45, score)
+	assert.Equal(t, int32(45), score)
 }
