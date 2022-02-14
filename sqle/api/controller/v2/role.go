@@ -1,6 +1,8 @@
 package v2
 
 import (
+    "net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -144,7 +146,58 @@ type RoleResV2 struct {
 // @Success 200 {object} v2.GetRolesResV2
 // @router /v2/roles [get]
 func GetRoles(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(GetRolesReqV2)
+	{
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return err
+		}
+	}
+
+	s := model.GetStorage()
+
+	var queryCondition map[string]interface{}
+	{
+		limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+		queryCondition = map[string]interface{}{
+			"filter_role_name":     req.FilterRoleName,
+			"filter_user_name":     req.FilterUserName,
+			"filter_instance_name": req.FilterInstanceName,
+			"limit":                limit,
+			"offset":               offset,
+		}
+	}
+
+	roles, count, err := s.GetRolesByReq(queryCondition)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	roleRes := make([]*RoleResV2, len(roles))
+	for i := range roles {
+		ops := make([]*Operation, len(roles[i].OperationsCodes))
+		opCodes := roles[i].OperationsCodes.ForceConvertIntSlice()
+		for i := range opCodes {
+			ops[i] = &Operation{
+				Code: opCodes[i],
+				Desc: model.GetOperationCodeDesc(opCodes[i]),
+			}
+		}
+		roleRes[i] = &RoleResV2{
+			Name:       roles[i].Name,
+			Desc:       roles[i].Desc,
+			Instances:  roles[i].InstanceNames,
+			UserGroups: roles[i].UserGroupNames,
+			Users:      roles[i].UserNames,
+			Operations: ops,
+		}
+
+	}
+
+	return c.JSON(http.StatusOK, &GetRolesResV2{
+        BaseRes: controller.NewBaseReq(nil),
+        Data:      roleRes,
+        TotalNums: count,
+    })
 }
 
 type UpdateRoleReqV2 struct {
