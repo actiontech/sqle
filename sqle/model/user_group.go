@@ -1,6 +1,8 @@
 package model
 
 import (
+	"strings"
+
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
@@ -138,4 +140,40 @@ func (s *Storage) GetUserGroupsByReq(data map[string]interface{}) (
 
 	count, err = s.getCountResult(userGroupsQueryBodyTpl, userGroupCountTpl, data)
 	return results, count, err
+}
+
+func (s *Storage) GetUserGroupsByNames(names []string) (ugs []*UserGroup, err error) {
+	ugs = []*UserGroup{}
+	err = s.db.Where("name IN (?)", names).Find(&ugs).Error
+	return ugs, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetAndCheckUserGroupExist(userGroupNames []string) (ugs []*UserGroup, err error) {
+	ugs, err = s.GetUserGroupsByNames(userGroupNames)
+	if err != nil {
+		return nil, err
+	}
+
+	existUserGroupNames := map[string]struct{}{}
+	{
+		for i := range ugs {
+			existUserGroupNames[ugs[i].Name] = struct{}{}
+		}
+	}
+
+	notExistUserGroupNames := []string{}
+	{
+		for i := range userGroupNames {
+			if _, ok := existUserGroupNames[userGroupNames[i]]; !ok {
+				notExistUserGroupNames = append(notExistUserGroupNames, userGroupNames[i])
+			}
+		}
+	}
+
+	if len(notExistUserGroupNames) > 0 {
+		return ugs, errors.NewDataNotExistErr("user group <%v> not exist",
+			strings.Join(notExistUserGroupNames, ", "))
+	}
+
+	return ugs, nil
 }

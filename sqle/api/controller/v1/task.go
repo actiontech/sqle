@@ -38,6 +38,7 @@ type AuditTaskResV1 struct {
 	InstanceName   string     `json:"instance_name"`
 	InstanceSchema string     `json:"instance_schema" example:"db1"`
 	AuditLevel     string     `json:"audit_level" enums:"normal,notice,warn,error"`
+	Score          int32      `json:"score"`
 	PassRate       float64    `json:"pass_rate"`
 	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
 	SQLSource      string     `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
@@ -51,6 +52,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		InstanceName:   task.InstanceName(),
 		InstanceSchema: task.Schema,
 		AuditLevel:     task.AuditLevel,
+		Score:          task.Score,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
 		SQLSource:      task.SQLSource,
