@@ -135,3 +135,10 @@ func CanThisUserBeDisabled(subjectUser, objectUser string) (err error) {
 
 	return nil
 }
+
+func GetLimitAndOffset(pageIndex, pageSize uint32) (limit, offset uint32) {
+	if pageIndex >= 1 {
+		offset = (pageIndex - 1) * pageSize
+	}
+	return pageSize, offset
+}
