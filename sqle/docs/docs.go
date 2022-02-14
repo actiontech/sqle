@@ -3813,6 +3813,9 @@ var doc = `{
                 "pass_rate": {
                     "type": "number"
                 },
+                "score": {
+                    "type": "integer"
+                },
                 "sql_source": {
                     "type": "string",
                     "enum": [
@@ -5874,6 +5877,9 @@ var doc = `{
                 },
                 "task_pass_rate": {
                     "type": "number"
+                },
+                "task_score": {
+                    "type": "integer"
                 },
                 "workflow_id": {
                     "type": "integer"
