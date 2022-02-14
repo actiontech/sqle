@@ -149,8 +149,8 @@ func GetRoles(c echo.Context) error {
 type UpdateRoleReqV2 struct {
 	Desc           *string   `json:"role_desc" form:"role_desc"`
 	Users          *[]string `json:"user_name_list,omitempty" form:"user_name_list"`
-	Instances      []string  `json:"instance_name_list,omitempty" form:"instance_name_list"`
-	OperationCodes []uint    `json:"operation_code_list" form:"operation_code_list"`
+	Instances      *[]string `json:"instance_name_list,omitempty" form:"instance_name_list"`
+	OperationCodes *[]uint   `json:"operation_code_list,omitempty" form:"operation_code_list"`
 	UserGroups     *[]string `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
 }
 
@@ -201,19 +201,28 @@ func UpdateRole(c echo.Context) (err error) {
 	// check instances
 	var instances []*model.Instance
 	{
-		if len(req.Instances) > 0 {
-			instances, err = s.GetAndCheckInstanceExist(req.Instances)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
+		if req.Instances != nil {
+			if len(*req.Instances) > 0 {
+				instances, err = s.GetAndCheckInstanceExist(*req.Instances)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				instances = []*model.Instance{}
 			}
 		}
 	}
 
 	// check operation codes
+	var opCodes []uint
 	{
-		if len(req.OperationCodes) > 0 {
-			if err := model.CheckIfOperationCodeValid(req.OperationCodes); err != nil {
-				return controller.JSONBaseErrorReq(c, err)
+		if req.OperationCodes != nil {
+			if len(*req.OperationCodes) > 0 {
+				if err := model.CheckIfOperationCodeValid(*req.OperationCodes); err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				opCodes = make([]uint, 0)
 			}
 		}
 	}
@@ -249,7 +258,7 @@ func UpdateRole(c echo.Context) (err error) {
 	}
 
 	return controller.JSONBaseErrorReq(c,
-		s.SaveRoleAndAssociations(role, instances, req.OperationCodes, users, userGroups),
+		s.SaveRoleAndAssociations(role, instances, opCodes, users, userGroups),
 	)
 
 }
