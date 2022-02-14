@@ -127,7 +127,7 @@ type RoleResV2 struct {
 	Users      []string     `json:"user_name_list,omitempty"`
 	Instances  []string     `json:"instance_name_list,omitempty"`
 	Operations []*Operation `json:"operation_list,omitempty"`
-	UserGroups []string     `json:"user_group_name_list" form:"user_group_name_list"`
+	UserGroups []string     `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
 	IsDisabled bool         `json:"is_disabled,omitempty"`
 }
 
