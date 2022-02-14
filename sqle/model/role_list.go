@@ -24,7 +24,7 @@ func (rd *RoleDetail) IsDisabled() bool {
 	return rd.Stat == Disabled
 }
 
-var rolesQueryTpl = `SELECT roles.id, roles.name, roles.description, roles.stat,
+var rolesQueryTpl = `SELECT roles.id, roles.name, roles.desc, roles.stat,
 GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
 GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names
 FROM roles
