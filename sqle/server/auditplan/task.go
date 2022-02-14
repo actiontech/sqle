@@ -274,12 +274,14 @@ func (at *SchemaMetaTask) runner(cancel chan struct{}) {
 	at.do(collectView)
 
 	tk := time.NewTicker(time.Duration(interval) * time.Minute)
-	select {
-	case <-cancel:
-		return
-	case <-tk.C:
-		at.logger.Infof("tick %s", at.ap.Name)
-		at.do(collectView)
+	for {
+		select {
+		case <-cancel:
+			return
+		case <-tk.C:
+			at.logger.Infof("tick %s", at.ap.Name)
+			at.do(collectView)
+		}
 	}
 }
 
