@@ -20,7 +20,7 @@ type RoleDetail struct {
 	OperationsCodes RowList `json:"operations_codes"`
 }
 
-func (rd *RoleDetail) IsDisable() bool {
+func (rd *RoleDetail) IsDisabled() bool {
 	return rd.Stat == Disabled
 }
 

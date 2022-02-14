@@ -188,6 +188,7 @@ func GetRoles(c echo.Context) error {
 			Instances:  roles[i].InstanceNames,
 			UserGroups: roles[i].UserGroupNames,
 			Users:      roles[i].UserNames,
+			IsDisabled: roles[i].IsDisabled(),
 			Operations: ops,
 		}
 
