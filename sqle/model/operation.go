@@ -71,3 +71,36 @@ func IsValidOperationCode(opCode uint) bool {
 	}
 	return false
 }
+
+func (s *Storage) ReplaceRoleOperationsByOpCodes(roleID uint, opCodes []uint) (err error) {
+
+	// Delete all current role operation records
+	{
+		err = s.db.Where("role_id = ?", roleID).
+			Unscoped(). // Hard delete
+			Delete(RoleOperation{}).Error
+		if err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+	}
+
+	// Insert new role operation record
+	if len(opCodes) > 0 {
+		for i := range opCodes {
+			roleOp := &RoleOperation{
+				RoleID: roleID,
+				Code:   opCodes[i],
+			}
+			if err = s.db.Create(roleOp).Error; err != nil {
+				return errors.ConnectStorageErrWrapper(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Storage) GetRoleOperationsByRoleID(roleID uint) (roleOps []*RoleOperation, err error) {
+	err = s.db.Where("role_id = ?", roleID).Find(&roleOps).Error
+	return roleOps, errors.ConnectStorageErrWrapper(err)
+}
