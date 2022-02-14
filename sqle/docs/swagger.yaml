@@ -2717,6 +2717,7 @@ paths:
     post:
       consumes:
       - application/json
+      deprecated: true
       description: create role
       operationId: createRoleV1
       parameters:

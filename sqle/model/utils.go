@@ -109,7 +109,7 @@ func (s *Storage) AutoMigrate() error {
 		&ExecuteSQL{},
 		&Instance{},
 		&LDAPConfiguration{},
-		&Operation{},
+		&RoleOperation{},
 		&Role{},
 		&RollbackSQL{},
 		&RuleTemplateRule{},

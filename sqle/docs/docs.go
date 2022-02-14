@@ -1447,6 +1447,7 @@ var doc = `{
                 ],
                 "summary": "创建角色",
                 "operationId": "createRoleV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create role",
