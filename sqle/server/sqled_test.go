@@ -154,7 +154,7 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE `tasks`")).
-		WithArgs(driver.RuleLevelNormal, float64(1), model.TaskStatusAudited, act.task.ID).
+		WithArgs(driver.RuleLevelNormal, float64(1), 100, model.TaskStatusAudited, act.task.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -263,4 +263,42 @@ func Test_action_execute(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScoreTask(t *testing.T) {
+	task := &model.Task{
+		PassRate: 0.5,
+		ExecuteSQLs: []*model.ExecuteSQL{
+			{
+				AuditLevel: "warn",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "warn",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "notice",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "error",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			},
+		},
+	}
+	score := scoreTask(task)
+
+	assert.Equal(t, 45, score)
 }
