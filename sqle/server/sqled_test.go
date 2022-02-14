@@ -264,3 +264,41 @@ func Test_action_execute(t *testing.T) {
 		})
 	}
 }
+
+func TestScoreTask(t *testing.T) {
+	task := &model.Task{
+		PassRate: 0.5,
+		ExecuteSQLs: []*model.ExecuteSQL{
+			{
+				AuditLevel: "warn",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "warn",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "notice",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "error",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			}, {
+				AuditLevel: "normal",
+			},
+		},
+	}
+	score := scoreTask(task)
+
+	assert.Equal(t, 45, score)
+}
