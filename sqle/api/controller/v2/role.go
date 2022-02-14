@@ -207,7 +207,7 @@ type UpdateRoleReqV2 struct {
 	Instances      *[]string `json:"instance_name_list,omitempty" form:"instance_name_list"`
 	OperationCodes *[]uint   `json:"operation_code_list,omitempty" form:"operation_code_list"`
 	UserGroups     *[]string `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
-	IsDisabled     bool      `json:"is_disabled,omitempty"`
+	IsDisabled     *bool     `json:"is_disabled,omitempty"`
 }
 
 // @Summary 更新角色信息
@@ -246,6 +246,18 @@ func UpdateRole(c echo.Context) (err error) {
 		if !isExist {
 			return controller.JSONNewDataNotExistErr(c,
 				`role <%s> not exists`, roleName)
+		}
+	}
+
+	// update stat
+	{
+		if req.IsDisabled != nil {
+			if *req.IsDisabled {
+				role.Stat = model.Disabled
+			} else {
+				role.Stat = model.Enabled
+			}
+
 		}
 	}
 
