@@ -126,6 +126,7 @@ type RoleResV2 struct {
 	Instances  []string     `json:"instance_name_list,omitempty"`
 	Operations []*Operation `json:"operation_list,omitempty"`
 	UserGroups []string     `json:"user_group_name_list" form:"user_group_name_list"`
+	IsDisabled bool         `json:"is_disabled,omitempty"`
 }
 
 // @Summary 获取角色列表
@@ -152,6 +153,7 @@ type UpdateRoleReqV2 struct {
 	Instances      *[]string `json:"instance_name_list,omitempty" form:"instance_name_list"`
 	OperationCodes *[]uint   `json:"operation_code_list,omitempty" form:"operation_code_list"`
 	UserGroups     *[]string `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
+	IsDisabled     bool      `json:"is_disabled,omitempty"`
 }
 
 // @Summary 更新角色信息
