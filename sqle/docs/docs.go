@@ -1388,6 +1388,7 @@ var doc = `{
                 ],
                 "summary": "获取角色列表",
                 "operationId": "getRoleListV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -1524,6 +1525,7 @@ var doc = `{
                 ],
                 "summary": "更新角色信息",
                 "operationId": "updateRoleV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
