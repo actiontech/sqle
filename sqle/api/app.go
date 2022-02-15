@@ -144,14 +144,14 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/operations", v1.GetOperations)
 
 	// instance
-	v1Router.GET("/instances", v1.GetInstances)
-	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
-	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
+	v1Router.GET("/instances", v1.GetInstances)                                               // TODO: permission check
+	v1Router.GET("/instances/:instance_name/", v1.GetInstance)                                // TODO: permission check
+	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName) // TODO: permission check
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
-	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)
-	v1Router.GET("/instance_tips", v1.GetInstanceTips)
-	v1Router.GET("/instances/:instance_name/rules", v1.GetInstanceRules)
-	v1Router.GET("/instances/:instance_name/workflow_template", v1.GetInstanceWorkflowTemplate)
+	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)                    // TODO: permission check
+	v1Router.GET("/instance_tips", v1.GetInstanceTips)                                          // TODO: permission check
+	v1Router.GET("/instances/:instance_name/rules", v1.GetInstanceRules)                        // TODO: permission check
+	v1Router.GET("/instances/:instance_name/workflow_template", v1.GetInstanceWorkflowTemplate) // TODO: permission check
 
 	// rule template
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
@@ -163,14 +163,14 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// workflow
 	v1Router.POST("/workflows", v1.CreateWorkflow)
-	v1Router.GET("/workflows/:workflow_id/", v1.GetWorkflow)
-	v1Router.GET("/workflows", v1.GetWorkflows)
-	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
-	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)
-	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
-	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)
-	v1Router.PUT("/workflows/:workflow_id/schedule", v1.UpdateWorkflowSchedule)
-	v1Router.POST("/workflows/:workflow_id/task/execute", v1.ExecuteTaskOnWorkflow)
+	v1Router.GET("/workflows/:workflow_id/", v1.GetWorkflow)                                     // TODO: permission check
+	v1Router.GET("/workflows", v1.GetWorkflows)                                                  // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow) // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)   // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)                           // TODO: permission check
+	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)                                // TODO: permission check
+	v1Router.PUT("/workflows/:workflow_id/schedule", v1.UpdateWorkflowSchedule)                  // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/task/execute", v1.ExecuteTaskOnWorkflow)              // TODO: permission check
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
