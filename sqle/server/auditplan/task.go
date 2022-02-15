@@ -118,7 +118,7 @@ type runnerTask struct {
 	sync.WaitGroup
 	isStarted bool
 	cancel    chan struct{}
-	runnerFn  func(chan struct{})
+	runnerDo  func()
 }
 
 func newRunnerTask(entry *logrus.Entry, ap *model.AuditPlan) *runnerTask {
@@ -127,8 +127,8 @@ func newRunnerTask(entry *logrus.Entry, ap *model.AuditPlan) *runnerTask {
 		sync.WaitGroup{},
 		false,
 		make(chan struct{}),
-		func(cancel chan struct{}) { // default runner
-			<-cancel
+		func() { // default runnerDo
+			entry.Warn("runner task do nothing")
 		},
 	}
 }
@@ -141,7 +141,7 @@ func (at *runnerTask) Start() error {
 	go func() {
 		at.isStarted = true
 		at.logger.Infof("start task")
-		at.runnerFn(at.cancel)
+		at.runner(at.cancel)
 		at.WaitGroup.Done()
 	}()
 	return nil
@@ -156,6 +156,26 @@ func (at *runnerTask) Stop() error {
 	at.WaitGroup.Wait()
 	at.logger.Infof("stop task")
 	return nil
+}
+
+func (at *runnerTask) runner(cancel chan struct{}) {
+	interval := at.ap.Params.GetParam("collect_interval_minute").Int()
+	if interval == 0 {
+		interval = 60
+	}
+	at.runnerDo()
+
+	tk := time.NewTicker(time.Duration(interval) * time.Minute)
+	for {
+		select {
+		case <-cancel:
+			tk.Stop()
+			return
+		case <-tk.C:
+			at.logger.Infof("tick %s", at.ap.Name)
+			at.runnerDo()
+		}
+	}
 }
 
 type DefaultTask struct {
@@ -261,32 +281,11 @@ func NewSchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) *SchemaMetaTask
 	task := &SchemaMetaTask{
 		runnerTask,
 	}
-	task.runnerFn = task.runner
+	runnerTask.runnerDo = task.runnerDo
 	return task
 }
 
-func (at *SchemaMetaTask) runner(cancel chan struct{}) {
-	interval := at.ap.Params.GetParam("collect_interval_minute").Int()
-	if interval == 0 {
-		interval = 60
-	}
-	collectView := at.ap.Params.GetParam("collect_view").Bool()
-	at.do(collectView)
-
-	tk := time.NewTicker(time.Duration(interval) * time.Minute)
-	for {
-		select {
-		case <-cancel:
-			tk.Stop()
-			return
-		case <-tk.C:
-			at.logger.Infof("tick %s", at.ap.Name)
-			at.do(collectView)
-		}
-	}
-}
-
-func (at *SchemaMetaTask) do(CollectView bool) {
+func (at *SchemaMetaTask) runnerDo() {
 	if at.ap.InstanceName == "" {
 		at.logger.Warnf("instance is not configured")
 		return
@@ -318,7 +317,7 @@ func (at *SchemaMetaTask) do(CollectView bool) {
 		return
 	}
 	var views []string
-	if CollectView {
+	if at.ap.Params.GetParam("collect_view").Bool() {
 		views, err = db.ShowSchemaViews(at.ap.InstanceDatabase)
 		if err != nil {
 			at.logger.Errorf("get schema view fail, error: %v", err)
