@@ -18,11 +18,13 @@ const (
 	TypeMySQLSlowLog    = "mysql_slow_log"
 	TypeMySQLMybatis    = "mysql_mybatis"
 	TypeMySQLSchemaMeta = "mysql_schema_meta"
+	TypeOracleTopSQL    = "oracle_top_sql"
 )
 
 const (
-	InstanceTypeAll   = ""
-	InstanceTypeMySQL = "mysql"
+	InstanceTypeAll    = ""
+	InstanceTypeMySQL  = "mysql"
+	InstanceTypeOracle = "oracle"
 )
 
 var Metas = []Meta{
@@ -59,6 +61,18 @@ var Metas = []Meta{
 				Type:  params.ParamTypeBool,
 			},
 		},
+	},
+	{
+		Type:         TypeOracleTopSQL,
+		Desc:         "Oracle TOP SQL",
+		InstanceType: InstanceTypeOracle,
+		Params: []*params.Param{
+			{
+				Key:   "collect_interval_minute",
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			}},
 	},
 }
 
