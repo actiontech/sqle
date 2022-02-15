@@ -159,7 +159,7 @@ func (at *runnerTask) Stop() error {
 }
 
 func (at *runnerTask) runner(cancel chan struct{}) {
-	interval := at.ap.Params.GetParam("collect_interval_minute").Int()
+	interval := at.ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
 	if interval == 0 {
 		interval = 60
 	}

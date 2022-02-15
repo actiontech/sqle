@@ -27,6 +27,10 @@ const (
 	InstanceTypeOracle = "oracle"
 )
 
+const (
+	paramKeyCollectIntervalMinute = "collect_interval_minute"
+)
+
 var Metas = []Meta{
 	{
 		Type:         TypeDefault,
@@ -49,7 +53,7 @@ var Metas = []Meta{
 		InstanceType: InstanceTypeMySQL,
 		Params: []*params.Param{
 			&params.Param{
-				Key:   "collect_interval_minute",
+				Key:   paramKeyCollectIntervalMinute,
 				Desc:  "采集周期（分钟）",
 				Value: "60",
 				Type:  params.ParamTypeInt,
@@ -68,11 +72,12 @@ var Metas = []Meta{
 		InstanceType: InstanceTypeOracle,
 		Params: []*params.Param{
 			{
-				Key:   "collect_interval_minute",
+				Key:   paramKeyCollectIntervalMinute,
 				Desc:  "采集周期（分钟）",
 				Value: "60",
 				Type:  params.ParamTypeInt,
-			}},
+			},
+		},
 	},
 }
 
