@@ -44,8 +44,10 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
+	github.com/nxadm/tail v1.4.8
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
+	github.com/percona/pmm-agent v2.15.1+incompatible
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340
@@ -57,6 +59,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7
+	github.com/traefik/yaegi v0.11.2 // indirect
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 	github.com/urfave/cli/v2 v2.1.1
 	golang.org/x/net v0.0.0-20210913180222-943fd674d43e
