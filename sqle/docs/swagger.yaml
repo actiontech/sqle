@@ -2687,6 +2687,7 @@ paths:
     get:
       consumes:
       - application/json
+      deprecated: true
       description: get role list
       operationId: getRoleListV1
       parameters:
@@ -2774,6 +2775,7 @@ paths:
     patch:
       consumes:
       - application/json
+      deprecated: true
       description: update role
       operationId: updateRoleV1
       parameters:
