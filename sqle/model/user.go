@@ -159,8 +159,7 @@ func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, e
 	if len(roles) == 0 {
 		return false, nil
 	}
-	roleIDs := []uint{}
-	roleIDs = GetRoleIDsFromRoles(roles)
+	roleIDs := GetRoleIDsFromRoles(roles)
 
 	// 2. check user access instance
 
