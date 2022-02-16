@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -90,4 +91,17 @@ func AddDelTag(delTime *time.Time, target string) string {
 		return target + "[x]"
 	}
 	return target
+}
+
+// sep example: ", "
+func JoinUintSliceToString(s []uint, sep string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	strSlice := make([]string, len(s))
+	for i := range s {
+		strSlice[i] = strconv.Itoa(int(s[i]))
+	}
+
+	return strings.Join(strSlice, sep)
 }

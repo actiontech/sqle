@@ -144,9 +144,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/operations", v1.GetOperations)
 
 	// instance
-	v1Router.GET("/instances", v1.GetInstances)                                               // TODO: permission check
-	v1Router.GET("/instances/:instance_name/", v1.GetInstance)                                // TODO: permission check
-	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName) // TODO: permission check
+	v1Router.GET("/instances", v1.GetInstances)
+	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
+	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
 	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)                    // TODO: permission check
 	v1Router.GET("/instance_tips", v1.GetInstanceTips)                                          // TODO: permission check

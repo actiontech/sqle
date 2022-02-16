@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/api/request"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -443,8 +444,8 @@ func GetInstances(c echo.Context) error {
 		"filter_rule_template_name":     req.FilterRuleTemplateName,
 		"filter_role_name":              req.FilterRoleName,
 		"filter_db_type":                req.FilterDBType,
-		"current_user_id":               user.ID,
-		"check_user_can_access":         user.Name != model.DefaultAdminUser,
+		request.KeyCurrentUserID:        user.ID,
+		request.KeyCheckUserCanAccess:   user.Name != model.DefaultAdminUser,
 		"limit":                         req.PageSize,
 		"offset":                        offset,
 	}
