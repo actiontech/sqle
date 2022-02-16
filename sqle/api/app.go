@@ -88,7 +88,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/user_group_tips", v1.GetUserGroupTips, AdminUserAllowed())
 
 		// role
-		v1Router.GET("/roles", v1.GetRoles, AdminUserAllowed())
+		v1Router.GET("/roles", DeprecatedBy(apiV2), AdminUserAllowed())
 		v2Router.GET("/roles", v2.GetRoles, AdminUserAllowed())
 		v1Router.GET("/role_tips", v1.GetRoleTips, AdminUserAllowed())
 		v1Router.POST("/roles", DeprecatedBy(apiV2), AdminUserAllowed())

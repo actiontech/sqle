@@ -7,20 +7,36 @@ import (
 
 type RoleDetail struct {
 	Id            int
-	Name          string `json:"name"`
-	Desc          string
+	Name          string  `json:"name"`
+	Desc          string  `json:"desc"`
 	UserNames     RowList `json:"user_names"`
 	InstanceNames RowList `json:"instance_names"`
+
+	// New fields: Stat, UserGroupNames, OperationsCodes
+	// Issue: https://github.com/actiontech/sqle/issues/228
+	// Version: >= sqle-v1.2202.0
+	Stat            int     `json:"stat"`
+	UserGroupNames  RowList `json:"user_group_names"`
+	OperationsCodes RowList `json:"operations_codes"`
 }
 
-var rolesQueryTpl = `SELECT roles.id, roles.name, roles.desc,
+func (rd *RoleDetail) IsDisabled() bool {
+	return rd.Stat == Disabled
+}
+
+var rolesQueryTpl = `SELECT roles.id, roles.name, roles.desc, roles.stat,
 GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
-GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names
+GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names,
+GROUP_CONCAT(DISTINCT COALESCE(user_groups.name,'')) AS user_group_names,
+GROUP_CONCAT(DISTINCT COALESCE(role_operations.op_code,'')) AS operations_codes
 FROM roles
 LEFT JOIN user_role ON roles.id = user_role.role_id
 LEFT JOIN users ON user_role.user_id = users.id AND users.deleted_at IS NULL
 LEFT JOIN instance_role ON roles.id = instance_role.role_id
 LEFT JOIN instances ON instance_role.instance_id = instances.id AND instances.deleted_at IS NULL
+LEFT JOIN user_group_roles ON roles.id = user_group_roles.role_id
+LEFT JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+LEFT JOIN role_operations ON role_operations.role_id = roles.id AND role_operations.deleted_at IS NULL
 WHERE
 roles.id in (SELECT DISTINCT(roles.id)
 
@@ -44,6 +60,9 @@ LEFT JOIN user_role ON roles.id = user_role.role_id
 LEFT JOIN users ON user_role.user_id = users.id AND users.deleted_at IS NULL
 LEFT JOIN instance_role ON roles.id = instance_role.role_id
 LEFT JOIN instances ON instance_role.instance_id = instances.id AND instances.deleted_at IS NULL
+LEFT JOIN user_group_roles ON roles.id = user_group_roles.role_id
+LEFT JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+LEFT JOIN role_operations ON role_operations.role_id = roles.id AND role_operations.deleted_at IS NULL
 WHERE
 roles.deleted_at IS NULL
 

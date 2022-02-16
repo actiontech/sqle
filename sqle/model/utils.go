@@ -5,6 +5,7 @@ import (
 	sqlDriver "database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -403,4 +404,13 @@ func (j *JSON) Scan(value interface{}) error {
 	err := json.Unmarshal(bytes, &result)
 	*j = JSON(result)
 	return err
+}
+
+func (rl *RowList) ForceConvertIntSlice() []uint {
+	res := make([]uint, len(*rl))
+	for i := range *rl {
+		n, _ := strconv.Atoi((*rl)[i])
+		res[i] = uint(n)
+	}
+	return res
 }
