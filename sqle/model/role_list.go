@@ -8,7 +8,7 @@ import (
 type RoleDetail struct {
 	Id            int
 	Name          string  `json:"name"`
-	Desc          string  `json:"description"`
+	Desc          string  `json:"desc"`
 	UserNames     RowList `json:"user_names"`
 	InstanceNames RowList `json:"instance_names"`
 
@@ -26,7 +26,9 @@ func (rd *RoleDetail) IsDisabled() bool {
 
 var rolesQueryTpl = `SELECT roles.id, roles.name, roles.desc, roles.stat,
 GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
-GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names
+GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names,
+GROUP_CONCAT(DISTINCT COALESCE(user_groups.name,'')) AS user_group_names,
+GROUP_CONCAT(DISTINCT COALESCE(role_operations.op_code,'')) AS operations_codes
 FROM roles
 LEFT JOIN user_role ON roles.id = user_role.role_id
 LEFT JOIN users ON user_role.user_id = users.id AND users.deleted_at IS NULL
