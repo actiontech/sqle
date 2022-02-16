@@ -122,19 +122,30 @@ func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetUserInstanceTip(user *User, dbType string) ([]*Instance, error) {
-	instances := []*Instance{}
+func (s *Storage) GetUserInstanceTip(user *User, dbType string) (
+	instances []*Instance, err error) {
+
+	// 1. get roles
+	roles, err := s.GetRolesByUserID(int(user.ID))
+	if err != nil {
+		return nil, err
+	}
+	if len(roles) == 0 {
+		return instances, nil
+	}
+	roleIDs := GetRoleIDsFromRoles(roles)
+
+	// 1. get instances by roleIDs
 	db := s.db.Model(&Instance{}).Select("instances.name, instances.db_type")
 	if user.Name != DefaultAdminUser {
 		db = db.Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
 			Joins("JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL").
-			Joins("JOIN user_role AS ur ON ir.role_id = ur.role_id").
-			Joins("JOIN users ON ur.user_id = users.id AND users.id = ?", user.ID)
+			Where("roles.id IN (?)", roleIDs)
 	}
 	if dbType != "" {
 		db = db.Where("instances.db_type = ?", dbType)
 	}
-	err := db.Scan(&instances).Error
+	err = db.Scan(&instances).Error
 	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
