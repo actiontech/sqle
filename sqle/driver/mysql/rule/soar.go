@@ -372,6 +372,15 @@ var SoarRuleHandlers = []RuleHandler{
 		Message: "请谨慎使用TRUNCATE操作",
 		Func:    SEC001,
 	}, {
+		Rule: driver.Rule{ //delete from t where col = 'condition'
+			Name:     "SEC003",
+			Desc:     "使用DELETE/DROP/TRUNCATE等操作时注意备份",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "使用DELETE/DROP/TRUNCATE等操作时注意备份",
+		Func:    SEC003,
+	}, {
 		Rule: driver.Rule{ //SELECT BENCHMARK(10, RAND())
 			Name:     "SEC004",
 			Desc:     "发现常见 SQL 注入函数",
@@ -380,6 +389,33 @@ var SoarRuleHandlers = []RuleHandler{
 		},
 		Message: "发现常见 SQL 注入函数",
 		Func:    SEC004,
+	}, {
+		Rule: driver.Rule{ //select col1,col2 from tbl where type!=0
+			Name:     "STA001",
+			Desc:     "请使用'<>'代替'!='",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "请使用'<>'代替'!='",
+		Func:    STA001,
+	}, {
+		Rule: driver.Rule{ //select col1,col2,col3 from table1 where col2 in(select col from table2)
+			Name:     "SUB001",
+			Desc:     "不推荐使用子查询",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不推荐使用子查询",
+		Func:    SUB001,
+	}, {
+		Rule: driver.Rule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
+			Name:     "SUB005",
+			Desc:     "子查询不支持LIMIT",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "子查询不支持LIMIT",
+		Func:    SUB005,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
 			Name:     "TBL004",
@@ -1026,6 +1062,16 @@ func SEC001(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, nod
 	}
 }
 
+func SEC003(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	switch node.(type) {
+	case *ast.TruncateTableStmt, *ast.DeleteStmt, *ast.DropTableStmt:
+		addResult(res, rule, rule.Name)
+		return nil
+	default:
+		return nil
+	}
+}
+
 func SEC004(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	funcs := []string{"sleep", "benchmark", "get_lock", "release_lock"}
 	switch stmt := node.(type) {
@@ -1065,16 +1111,61 @@ func inSlice(ss []string, s string) bool {
 	return false
 }
 
+func SUB001(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	if where := getWhereExpr(node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch expr.(type) {
+			case *ast.SubqueryExpr:
+				trigger = true
+				return true
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(res, rule, rule.Name)
+		}
+	}
+	return nil
+}
+
+func STA001(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	if strings.Index(node.Text(), "!=") != -1 {
+		addResult(res, rule, rule.Name)
+	}
+	return nil
+}
+
+func SUB005(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	if where := getWhereExpr(node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch pattern := expr.(type) {
+			case *ast.SubqueryExpr:
+				if pattern.Query.(*ast.SelectStmt).Limit != nil {
+					trigger = true
+					return true
+				}
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(res, rule, rule.Name)
+		}
+	}
+	return nil
+}
+
 func TBL004(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
+	default:
+		return nil
 	case *ast.CreateTableStmt:
 		for _, option := range stmt.Options {
 			if option.Tp == ast.TableOptionAutoIncrement && option.UintValue != 0 {
 				addResult(res, rule, rule.Name)
 			}
 		}
-		return nil
-	default:
 		return nil
 	}
 }
