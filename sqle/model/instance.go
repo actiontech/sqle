@@ -125,19 +125,19 @@ func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 func (s *Storage) GetUserInstanceTip(user *User, dbType string) (
 	instances []*Instance, err error) {
 
-	// 1. get roles
-	roles, err := s.GetRolesByUserID(int(user.ID))
-	if err != nil {
-		return nil, err
-	}
-	if len(roles) == 0 {
-		return instances, nil
-	}
-	roleIDs := GetRoleIDsFromRoles(roles)
-
-	// 1. get instances by roleIDs
 	db := s.db.Model(&Instance{}).Select("instances.name, instances.db_type")
 	if user.Name != DefaultAdminUser {
+		// 1. get roles
+		roles, err := s.GetRolesByUserID(int(user.ID))
+		if err != nil {
+			return nil, err
+		}
+		if len(roles) == 0 {
+			return instances, nil
+		}
+		roleIDs := GetRoleIDsFromRoles(roles)
+
+		// 2. get instances by roleIDs
 		db = db.Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
 			Joins("JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL").
 			Where("roles.id IN (?)", roleIDs)
