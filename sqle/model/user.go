@@ -148,16 +148,31 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 }
 
 func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, error) {
-	query := `SELECT count(instances.id) FROM users
-JOIN user_role AS ur ON users.id = ur.user_id
-JOIN roles ON ur.role_id = roles.id AND roles.deleted_at IS NULL
-JOIN instance_role AS ir ON roles.id = ir.role_id
-JOIN instances ON ir.instance_id = instances.id
-WHERE users.id = ? AND instances.id = ?
-LIMIT 1
+
+	// 1. find role ids
+
+	roles, err := s.GetRolesByUserID(int(user.ID))
+	if err != nil {
+		return false, err
+	}
+
+	if len(roles) == 0 {
+		return false, nil
+	}
+	roleIDs := []uint{}
+	roleIDs = GetRoleIDsFromRoles(roles)
+
+	// 2. check user access instance
+
+	query := `
+SELECT count(1) FROM instances
+LEFT JOIN instance_role ON instances.id = instance_role.instance_id
+LEFT JOIN roles ON instance_role.role_id = roles.id
+WHERE roles.id IN (?) AND instances.id = ?
 `
+
 	var count uint
-	err := s.db.Raw(query, user.ID, instance.ID).Count(&count).Error
+	err = s.db.Raw(query, roleIDs, instance.ID).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
 	}
