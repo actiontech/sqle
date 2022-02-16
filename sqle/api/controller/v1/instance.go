@@ -698,9 +698,16 @@ func GetInstanceRules(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
+
+	err = checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	rules, err := s.GetRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -757,6 +764,11 @@ func GetInstanceWorkflowTemplate(c echo.Context) error {
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+	}
+
+	err = checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	template, exist, err := s.GetWorkflowTemplateById(instance.WorkflowTemplateId)
