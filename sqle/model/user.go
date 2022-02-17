@@ -150,7 +150,6 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, error) {
 
 	// 1. find role ids
-
 	roles, err := s.GetRolesByUserID(int(user.ID))
 	if err != nil {
 		return false, err
@@ -162,7 +161,6 @@ func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, e
 	roleIDs := GetRoleIDsFromRoles(roles)
 
 	// 2. check user access instance
-
 	query := `
 SELECT count(1) FROM instances
 LEFT JOIN instance_role ON instances.id = instance_role.instance_id

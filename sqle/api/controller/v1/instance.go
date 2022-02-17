@@ -125,6 +125,8 @@ func CreateInstance(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+// 1. admin user have all access to all instance
+// 2. non-admin user have access to instance which is binded to one of his roles
 func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
