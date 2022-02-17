@@ -14,7 +14,6 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
-	pkgerrors "github.com/actiontech/sqle/sqle/pkg/errors"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
@@ -43,15 +42,15 @@ type SQL struct {
 	Info        map[string]interface{}
 }
 
-func NewTask(entry *logrus.Entry, ap *model.AuditPlan) (Task, error) {
+func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	entry = entry.WithField("name", ap.Name)
 	switch ap.Type {
 	case TypeMySQLSchemaMeta:
-		return NewSchemaMetaTask(entry, ap), nil
+		return NewSchemaMetaTask(entry, ap)
 	case TypeOracleTopSQL:
 		return NewOracleTopSQLTask(entry, ap)
 	default:
-		return NewDefaultTask(entry, ap), nil
+		return NewDefaultTask(entry, ap)
 	}
 }
 
@@ -408,34 +407,14 @@ func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[st
 // OracleTopSQLTask is a loop task which collect Top SQL from oracle instance.
 type OracleTopSQLTask struct {
 	*sqlCollector
-
-	db *oracle.DB
 }
 
-func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) (*OracleTopSQLTask, error) {
-	inst := ap.Instance
-	if inst == nil {
-		return nil, fmt.Errorf("instance is not configured")
-	}
-
-	dsn := &oracle.DSN{
-		Host:        inst.Host,
-		Port:        inst.Port,
-		User:        inst.User,
-		Password:    inst.Password,
-		ServiceName: ap.InstanceDatabase,
-	}
-	db, err := oracle.NewDB(dsn)
-	if err != nil {
-		return nil, fmt.Errorf("connect to instance fail, error: %v", err)
-	}
-
+func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQLTask {
 	task := &OracleTopSQLTask{
 		sqlCollector: newSQLCollector(entry, ap),
-		db:           db,
 	}
 	task.sqlCollector.do = task.collectorDo
-	return task, nil
+	return task
 }
 
 func (at *OracleTopSQLTask) collectorDo() {
@@ -452,10 +431,24 @@ func (at *OracleTopSQLTask) collectorDo() {
 	default:
 	}
 
+	dsn := &oracle.DSN{
+		Host:        inst.Host,
+		Port:        inst.Port,
+		User:        inst.User,
+		Password:    inst.Password,
+		ServiceName: at.ap.InstanceDatabase,
+	}
+	db, err := oracle.NewDB(dsn)
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
+	defer db.Close()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sqls, err := at.db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int())
+	sqls, err := db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		at.logger.Errorf("query top sql fail, error: %v", err)
 		return
@@ -494,15 +487,4 @@ func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[
 		})
 	}
 	return heads, rows, count, nil
-}
-
-func (at *OracleTopSQLTask) Stop() error {
-	var errs []error
-	if err := at.sqlCollector.Stop(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := at.db.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	return pkgerrors.Combine(errs...)
 }
