@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/api/request"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 )
 
@@ -91,44 +89,27 @@ AND wt.name = :filter_workflow_template_name
 
 {{- if .check_user_can_access }}
 
-AND inst.id IN ( {{ .available_instance_id_list_str }} )
+AND roles.id IN  ( {{ .role_id_list }} )
 
 {{- end }}
 
 {{- end }}
 `
 
-func (s *Storage) GetInstancesByReq(data map[string]interface{}) (
+func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 	result []*InstanceDetail, count uint64, err error) {
 
-	if request.IsNeedToCheckAccessByData(data) {
-
-		// get user id
-		var userID int
-		{
-			var exist bool
-			userID, exist = request.GetUserIDFromRequest(data)
-			if !exist {
-				err = errors.NewDataInvalidErr("user id not exist")
-				return result, 0, err
-			}
+	if !IsDefaultAdminUser(user.Name) {
+		roles, err := s.GetRolesByUserID(int(user.ID))
+		if err != nil {
+			return result, count, err
 		}
-
-		// get available instance id list
-		var availableInstanceIDs []uint
-		{
-			insts, err := s.GetUserAvailableInstancesByUserID(userID)
-			if err != nil {
-				return nil, 0, err
-			}
-			if len(insts) == 0 { // user has no access to any instance
-				return result, 0, nil
-			}
-			availableInstanceIDs = GetInstanceIDsFromInstances(insts)
+		if len(roles) == 0 {
+			return result, count, nil
 		}
-		data = request.UpdateDataWithAvailableInstanceIDList(data, availableInstanceIDs)
+		roleIDs := GetRoleIDsFromRoles(roles)
+		data["role_id_list"] = utils.JoinUintSliceToString(roleIDs, ", ")
 	}
-
 	err = s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, data, &result)
 	if err != nil {
 		return result, 0, err
