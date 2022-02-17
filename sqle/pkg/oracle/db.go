@@ -47,46 +47,27 @@ func (o *DB) Close() error {
 	return o.db.Close()
 }
 
-func (o *DB) QueryTopSQLs(ctx context.Context, topN int) (map[string]DynPerformanceSQLArea, error) {
-	sqls := make(map[string]DynPerformanceSQLArea)
-	queryFunc := func(query string) error {
-		rows, err := o.db.QueryContext(ctx, query)
+func (o *DB) QueryTopSQLs(ctx context.Context, topN int, orderBy string) ([]*DynPerformanceSQLArea, error) {
+	query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, orderBy, topN)
+	rows, err := o.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query %s", query)
+	}
+	defer rows.Close()
+
+	var ret []*DynPerformanceSQLArea
+	for rows.Next() {
+		res := DynPerformanceSQLArea{}
+		err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets)
 		if err != nil {
-			return errors.Wrapf(err, "failed to query %s", query)
+			return nil, errors.Wrapf(err, "failed to scan %s", query)
 		}
-		defer rows.Close()
-
-		for rows.Next() {
-			res := DynPerformanceSQLArea{}
-			err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets, &res.Avg)
-			if err != nil {
-				return errors.Wrapf(err, "failed to scan %s", query)
-			}
-			sqls[res.SQLFullText] = res
-		}
-
-		if err := rows.Err(); err != nil {
-			return errors.Wrapf(err, "failed to iterate %s", query)
-		}
-
-		return nil
+		ret = append(ret, &res)
 	}
 
-	if err := queryFunc(fmt.Sprintf(DynPerformanceViewSQLAreaTpl, DynPerformanceViewSQLAreaColumnElapsedTime, topN)); err != nil {
-		return nil, err
-	}
-	if err := queryFunc(fmt.Sprintf(DynPerformanceViewSQLAreaTpl, DynPerformanceViewSQLAreaColumnCPUTime, topN)); err != nil {
-		return nil, err
-	}
-	if err := queryFunc(fmt.Sprintf(DynPerformanceViewSQLAreaTpl, DynPerformanceViewSQLAreaColumnBufferGets, topN)); err != nil {
-		return nil, err
-	}
-	if err := queryFunc(fmt.Sprintf(DynPerformanceViewSQLAreaTpl, DynPerformanceViewSQLAreaColumnDiskReads, topN)); err != nil {
-		return nil, err
-	}
-	if err := queryFunc(fmt.Sprintf(DynPerformanceViewSQLAreaTpl, DynPerformanceViewSQLAreaColumnUserIOWaitTime, topN)); err != nil {
-		return nil, err
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate %s", query)
 	}
 
-	return sqls, nil
+	return ret, nil
 }

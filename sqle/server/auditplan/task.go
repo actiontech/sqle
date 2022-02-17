@@ -452,7 +452,7 @@ func (at *OracleTopSQLTask) collectorDo() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sqls, err := db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int())
+	sqls, err := db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int(), at.ap.Params.GetParam("order_by_column").String())
 	if err != nil {
 		at.logger.Errorf("query top sql fail, error: %v", err)
 		return
