@@ -3,6 +3,7 @@ package auditplan
 import (
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
@@ -82,6 +83,12 @@ var Metas = []Meta{
 				Desc:  "Top N",
 				Value: "3",
 				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "V$SQLAREA中的排序字段",
+				Value: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
+				Type:  params.ParamTypeString,
 			},
 		},
 	},

@@ -9,7 +9,6 @@ type DynPerformanceSQLArea struct {
 	CPUTime        string `json:"cpu_time"`
 	DiskReads      string `json:"disk_reads"`
 	BufferGets     string `json:"buffer_gets"`
-	Avg            string `json:"avg"`
 }
 
 const (
@@ -22,8 +21,7 @@ const (
 			, cpu_time
 			, disk_reads
 			, buffer_gets
-			, %v / EXECUTIONS AS avg
-		FROM V$SQLAREA  WHERE EXECUTIONS > 0 ORDER BY avg DESC 
+		FROM V$SQLAREA  WHERE EXECUTIONS > 0 ORDER BY %v DESC 
 	) WHERE rownum <= %v
 	`
 	DynPerformanceViewSQLAreaColumnExecutions     = "executions"
