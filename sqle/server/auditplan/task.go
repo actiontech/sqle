@@ -1,6 +1,7 @@
 package auditplan
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -13,6 +14,8 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	pkgerrors "github.com/actiontech/sqle/sqle/pkg/errors"
+	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
 )
@@ -45,6 +48,8 @@ func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	switch ap.Type {
 	case TypeMySQLSchemaMeta:
 		return NewSchemaMetaTask(entry, ap)
+	case TypeOracleTopSQL:
+		return NewOracleTopSQLTask(entry, ap)
 	default:
 		return NewDefaultTask(entry, ap)
 	}
@@ -389,4 +394,131 @@ func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[st
 		})
 	}
 	return head, rows, count, nil
+}
+
+// OracleTopSQLTask implement the Task interface.
+//
+// OracleTopSQLTask is a loop task which collect Top SQL from oracle instance.
+type OracleTopSQLTask struct {
+	*runnerTask
+
+	db *oracle.DB
+}
+
+func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQLTask {
+	inst := ap.Instance
+	if inst == nil {
+		// todo
+		panic("TODO: return err")
+	}
+
+	dsn := &oracle.DSN{
+		Host:        inst.Host,
+		Port:        inst.Port,
+		User:        inst.User,
+		Password:    inst.Password,
+		ServiceName: ap.InstanceDatabase,
+	}
+	db, err := oracle.NewDB(dsn)
+	if err != nil {
+		// todo
+		panic("TODO: return err")
+	}
+
+	task := &OracleTopSQLTask{
+		runnerTask: newRunnerTask(entry, ap),
+		db:         db,
+	}
+	task.runnerTask.runnerDo = task.runnerDo
+	return task
+}
+
+func (at *OracleTopSQLTask) runnerDo() {
+	inst := at.ap.Instance
+	if inst == nil {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sqls, err := at.db.QueryTopSQLs(ctx, 3)
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+
+	// todo: extract common logic
+	var modelSQLs []*model.AuditPlanSQLV2
+	for _, sql := range sqls {
+		modelSQLs = append(modelSQLs, &model.AuditPlanSQLV2{
+			SQLContent:  sql,
+			Fingerprint: sql,
+		})
+	}
+	if len(sqls) > 0 {
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, modelSQLs)
+		if err != nil {
+			at.logger.Errorf("save top sql to storage fail, error: %v", err)
+		}
+	}
+}
+
+func (at *OracleTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+// todo: extract to runnerTask
+func (at *OracleTopSQLTask) FullSyncSQLs([]*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but oracle top sql collected by task itself", at.ap.Name)
+	return nil
+}
+
+// todo: extract to runnerTask
+func (at *OracleTopSQLTask) PartialSyncSQLs([]*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but oracle top sql collected by task itself", at.ap.Name)
+	return nil
+}
+
+func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+		})
+	}
+	return heads, rows, count, nil
+}
+
+func (at *OracleTopSQLTask) Stop() error {
+	var errs []error
+	if err := at.runnerTask.Stop(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := at.db.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	return pkgerrors.Combine(errs...)
 }
