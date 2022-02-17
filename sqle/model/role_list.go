@@ -174,20 +174,18 @@ LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL
 WHERE users.id = %s
 AND users.deleted_at IS NULL 
 AND users.stat=0
+GROUP BY roles.id
 `
 
 var rolesQueryFromUserGroupFormat = `
 SELECT roles.id, roles.name, roles.desc, roles.stat
 FROM roles
-LEFT JOIN user_group_roles ON roles.id = user_group_roles.role_id
-WHERE user_group_roles.user_group_id IN (
-SELECT DISTINCT(user_groups.id) 
-FROM user_groups
-LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
-LEFT JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
+JOIN user_group_roles ON roles.id = user_group_roles.role_id
+JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
+JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
 WHERE users.id = %s
-AND user_groups.deleted_at IS NULL AND user_groups.stat=0
-)
+GROUP BY roles.id
 `
 
 func (s *Storage) GetRolesByUserID(userID int) (roles []*Role, err error) {
