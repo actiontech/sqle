@@ -47,8 +47,8 @@ func (o *DB) Close() error {
 	return o.db.Close()
 }
 
-func (o *DB) QueryTopSQLs(ctx context.Context, topN int) ([]string, error) {
-	deDupSQLs := make(map[string]struct{})
+func (o *DB) QueryTopSQLs(ctx context.Context, topN int) (map[string]DynPerformanceSQLArea, error) {
+	sqls := make(map[string]DynPerformanceSQLArea)
 	queryFunc := func(query string) error {
 		rows, err := o.db.QueryContext(ctx, query)
 		if err != nil {
@@ -58,11 +58,11 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int) ([]string, error) {
 
 		for rows.Next() {
 			res := DynPerformanceSQLArea{}
-			err = rows.Scan(&res.SQLFullText, &res.Avg)
+			err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets, &res.Avg)
 			if err != nil {
 				return errors.Wrapf(err, "failed to scan %s", query)
 			}
-			deDupSQLs[res.SQLFullText] = struct{}{}
+			sqls[res.SQLFullText] = res
 		}
 
 		if err := rows.Err(); err != nil {
@@ -88,9 +88,5 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int) ([]string, error) {
 		return nil, err
 	}
 
-	sqls := make([]string, 0, len(deDupSQLs))
-	for sql := range deDupSQLs {
-		sqls = append(sqls, sql)
-	}
 	return sqls, nil
 }

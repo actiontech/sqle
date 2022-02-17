@@ -454,7 +454,23 @@ func (at *OracleTopSQLTask) collectorDo() {
 		return
 	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertRawSQLToModelSQLs(sqls))
+		apSQLs := make([]*SQL, 0, len(sqls))
+		for _, sql := range sqls {
+			apSQLs = append(apSQLs, &SQL{
+				SQLContent:  sql.SQLFullText,
+				Fingerprint: sql.SQLFullText,
+				Info: map[string]interface{}{
+					oracle.DynPerformanceViewSQLAreaColumnExecutions:     sql.Executions,
+					oracle.DynPerformanceViewSQLAreaColumnElapsedTime:    sql.ElapsedTime,
+					oracle.DynPerformanceViewSQLAreaColumnCPUTime:        sql.CPUTime,
+					oracle.DynPerformanceViewSQLAreaColumnDiskReads:      sql.DiskReads,
+					oracle.DynPerformanceViewSQLAreaColumnBufferGets:     sql.BufferGets,
+					oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime: sql.UserIOWaitTime,
+				},
+			})
+		}
+
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(apSQLs))
 		if err != nil {
 			at.logger.Errorf("save top sql to storage fail, error: %v", err)
 		}
@@ -479,11 +495,45 @@ func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[
 			Desc: "SQL语句",
 			Type: "sql",
 		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
+			Desc: "执行时间(ms)",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnCPUTime,
+			Desc: "CPU时间(ms)",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnDiskReads,
+			Desc: "物理读",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnBufferGets,
+			Desc: "逻辑读",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime,
+			Desc: "I/O等待时间(ms)",
+		},
 	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
 	for _, sql := range auditPlanSQLs {
+		info := &oracle.DynPerformanceSQLArea{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
 		rows = append(rows, map[string]string{
 			"sql": sql.SQLContent,
+			oracle.DynPerformanceViewSQLAreaColumnExecutions:     info.Executions,
+			oracle.DynPerformanceViewSQLAreaColumnElapsedTime:    info.ElapsedTime,
+			oracle.DynPerformanceViewSQLAreaColumnCPUTime:        info.CPUTime,
+			oracle.DynPerformanceViewSQLAreaColumnDiskReads:      info.DiskReads,
+			oracle.DynPerformanceViewSQLAreaColumnBufferGets:     info.BufferGets,
+			oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime: info.UserIOWaitTime,
 		})
 	}
 	return heads, rows, count, nil
