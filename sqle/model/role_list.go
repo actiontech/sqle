@@ -170,10 +170,10 @@ var rolesQueryFromUserFormat = `
 SELECT roles.id, roles.name, roles.desc, roles.stat
 FROM roles
 LEFT JOIN user_role ON roles.id = user_role.role_id 
-LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL
+LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND users.stat=0
 WHERE users.id = %s
-AND users.deleted_at IS NULL 
-AND users.stat=0
+AND roles.deleted_at IS NULL
+ADN roles.stat=0
 GROUP BY roles.id
 `
 
@@ -185,6 +185,8 @@ JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_gro
 JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
 JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
 WHERE users.id = %s
+AND roles.deleted_at IS NULL
+ADN roles.stat=0
 GROUP BY roles.id
 `
 
