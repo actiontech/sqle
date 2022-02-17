@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/jinzhu/gorm"
 )
@@ -140,4 +141,34 @@ func (s *Storage) DeleteRoleAndAssociations(role *Role) error {
 
 		return nil
 	})
+}
+
+func (s *Storage) CheckRoleInstanceAccessByOpCodes(roleIDs, instIDs, opCodes []uint) (
+	missingInstIDs []uint, missingOpCodes []uint, ok bool, err error) {
+
+	if len(roleIDs) == 0 {
+		return
+	}
+
+	// Check instances
+	{
+		availableInsts, err := s.GetInstancesByRoleIDs(roleIDs)
+		if err != nil {
+			return missingInstIDs, missingOpCodes, false, err
+		}
+		availableInstIDs := GetInstanceIDsFromInst(availableInsts)
+		missingInstIDs = utils.GetMissingItemFromUintSlice(availableInstIDs, instIDs)
+	}
+
+	// Check operations
+	{
+		availableOpcodes, err := s.GetOperationCodesByRoleIDs(roleIDs)
+		if err != nil {
+			return missingInstIDs, missingOpCodes, false, err
+		}
+		missingOpCodes = utils.GetMissingItemFromUintSlice(availableOpcodes, opCodes)
+	}
+
+	return missingInstIDs, missingOpCodes,
+		(len(missingInstIDs) == 0 && len(missingOpCodes) == 0), nil
 }

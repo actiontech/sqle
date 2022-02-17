@@ -515,13 +515,6 @@ func CreateWorkflow(c echo.Context) (err error) {
 		}
 	}
 
-	// check instance if exist
-	{
-		if task.Instance == nil {
-			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
-		}
-	}
-
 	// check if user is task creator
 	var user *model.User
 	{
@@ -532,6 +525,22 @@ func CreateWorkflow(c echo.Context) (err error) {
 		if task.CreateUserId != user.ID {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 				fmt.Errorf("the task is not created by yourself")))
+		}
+	}
+
+	// check instance if exist and access
+	{
+		if task.Instance == nil {
+			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+
+		}
+		access, err := canUserCreateWorkflowForInstance(user.ID, []uint{task.InstanceId})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !access {
+			return controller.JSONBaseErrorReq(c, errors.NewAccessDeniedErr(
+				"can not access instance <%v>", task.InstanceId))
 		}
 	}
 
@@ -674,7 +683,9 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 	if !access {
 		return ErrWorkflowNoAccess
 	}
-	return nil
+
+	return s.CheckUserWorkflowAccessByOpCodes(
+		user.ID, workflow.ID, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 }
 
 func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowResV1 {
@@ -833,6 +844,14 @@ func GetWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	if task.Instance != nil {
+		err := checkCurrentUserCanAccessInstance(c, task.Instance)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
@@ -1037,10 +1056,12 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
@@ -1507,4 +1528,12 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func canUserCreateWorkflowForInstance(
+	userID uint, instIDs []uint) (ok bool, err error) {
+	s := model.GetStorage()
+	_, _, ok, err = s.CheckUserInstanceAccessByOpcodes(
+		userID, instIDs, []uint{model.OP_WORKFLOW_SAVE})
+	return ok, err
 }

@@ -109,3 +109,38 @@ func (s *Storage) DeleteRoleOperationByRoleID(roleID uint) (err error) {
 	return errors.ConnectStorageErrWrapper(
 		s.db.Where("role_id = ?", roleID).Delete(RoleOperation{}).Error)
 }
+
+func (s *Storage) GetOperationCodesByRoleIDs(roleIDs []uint) (
+	opCodes []uint, err error) {
+
+	if len(roleIDs) == 0 {
+		return opCodes, nil
+	}
+
+	err = s.db.Model(&RoleOperation{}).
+		Where("role_id IN (?)", roleIDs).
+		Group("op_code, role_id").
+		Pluck("op_code", &opCodes).Error
+	if err != nil {
+		return opCodes, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return opCodes, nil
+}
+
+func (s *Storage) CheckUserInstanceAccessByOpcodes(userID uint, instIDs, opCodes []uint) (
+	missingInstIDs []uint, missingOpCodes []uint, ok bool, err error) {
+
+	roles, err := s.GetRolesByUserID(int(userID))
+	if err != nil {
+		return missingInstIDs, missingOpCodes, false, err
+	}
+
+	if len(roles) == 0 {
+		return instIDs, opCodes, false, nil
+	}
+
+	roleIDs := GetRoleIDsFromRoles(roles)
+
+	return s.CheckRoleInstanceAccessByOpCodes(roleIDs, instIDs, opCodes)
+}

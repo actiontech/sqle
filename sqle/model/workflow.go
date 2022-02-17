@@ -3,9 +3,11 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/jinzhu/gorm"
 )
 
@@ -600,4 +602,68 @@ func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 	var workflowRecords []*WorkflowRecord
 	err := s.db.Where("status = ? AND task_id IN (?)", WorkflowStatusRunning, taskIds).Find(&workflowRecords).Error
 	return len(workflowRecords) > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetInstancesByWorkflowID(workflowID uint) (
+	insts []*Instance, err error) {
+
+	query := `
+SELECT inst.id
+FROM instances
+JOIN tasks ON tasks.id = instances.task_id AND tasks.deleted_at is NULL
+JOIN workflow_records AS wr ON wr.task_id = tasks.id AND workflow_records.deleted_at IS NULL
+JOIN workflows ON workflows.workflow_record_id = wr.id AND workflows.deleted_at IS NULL
+JOIN workflow_record_history AS wrh ON wrh.workflow_record_id = wr.id
+WHERE workflows.id = ? OR wrh.workflow_id = ?
+AND inst.deleted_at IS NULL
+GROUP BY inst.id
+`
+	err = s.db.Raw(query, workflowID, workflowID).Scan(&insts).Error
+	if err != nil {
+		return insts, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return insts, nil
+}
+
+func (s *Storage) CheckUserWorkflowAccessByOpCodes(
+	userID, workflowID uint, opCodes []uint) (err error) {
+
+	insts, err := s.GetInstancesByWorkflowID(workflowID)
+	if err != nil {
+		return
+	}
+	instIDs := GetInstanceIDsFromInst(insts)
+
+	roles, err := s.GetRolesByUserID(int(userID))
+	if err != nil {
+		return err
+	}
+	if len(roles) == 0 {
+		return errors.NewAccessDeniedErr("current user has no roles")
+	}
+
+	roleIDs := GetRoleIDsFromRoles(roles)
+	missingInstIDs, missingOpCodes_, ok, err :=
+		s.CheckRoleInstanceAccessByOpCodes(roleIDs, instIDs, opCodes)
+	if err != nil {
+		return err
+	}
+
+	if ok {
+		return nil
+	}
+
+	errs := []string{}
+	if len(missingInstIDs) > 0 {
+		errs = append(errs, fmt.Sprintf("has no access instances: <%v>",
+			utils.JoinUintSliceToString(missingInstIDs, ", ")))
+	}
+
+	if len(missingOpCodes_) > 0 {
+		errs = append(errs, fmt.Sprintf("has no access opCodes: <%v>",
+			utils.JoinUintSliceToString(missingOpCodes_, ", ")))
+	}
+
+	return errors.NewAccessDeniedErr(strings.Join(errs, "; "))
 }
