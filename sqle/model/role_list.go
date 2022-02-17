@@ -2,7 +2,11 @@ package model
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
 	"text/template"
+
+	"github.com/actiontech/sqle/sqle/errors"
 )
 
 type RoleDetail struct {
@@ -160,4 +164,53 @@ func (s *Storage) getCountResult(bodyTpl, countTpl string, data map[string]inter
 		return 0, err
 	}
 	return count, nil
+}
+
+var rolesQueryFromUserFormat = `
+SELECT roles.id, roles.name, roles.desc, roles.stat
+FROM roles
+LEFT JOIN user_role ON roles.id = user_role.role_id 
+LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND users.stat=0
+WHERE users.id = %s
+AND roles.deleted_at IS NULL
+AND roles.stat=0
+GROUP BY roles.id
+`
+
+var rolesQueryFromUserGroupFormat = `
+SELECT roles.id, roles.name, roles.desc, roles.stat
+FROM roles
+JOIN user_group_roles ON roles.id = user_group_roles.role_id
+JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
+JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
+WHERE users.id = %s
+AND roles.deleted_at IS NULL
+AND roles.stat=0
+GROUP BY roles.id
+`
+
+func (s *Storage) GetRolesByUserID(userID int) (roles []*Role, err error) {
+	rolesQueryFromUser := fmt.Sprintf(rolesQueryFromUserFormat, strconv.Itoa(userID))
+	rolesQueryFromUserGroup := fmt.Sprintf(rolesQueryFromUserGroupFormat, strconv.Itoa(userID))
+
+	query := fmt.Sprintf(`%s UNION %s`, rolesQueryFromUser, rolesQueryFromUserGroup)
+
+	err = s.db.Unscoped().Raw(query).Find(&roles).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return roles, nil
+}
+
+func GetRoleIDsFromRoles(roles []*Role) (roleIDs []uint) {
+
+	roleIDs = make([]uint, len(roles))
+
+	for i := range roles {
+		roleIDs[i] = roles[i].ID
+	}
+
+	return roleIDs
 }

@@ -124,6 +124,8 @@ func CreateInstance(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+// 1. admin user have all access to all instance
+// 2. non-admin user have access to instance which is binded to one of his roles
 func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
@@ -449,7 +451,7 @@ func GetInstances(c echo.Context) error {
 		"offset":                        offset,
 	}
 
-	instances, count, err := s.GetInstancesByReq(data)
+	instances, count, err := s.GetInstancesByReq(data, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -697,9 +699,16 @@ func GetInstanceRules(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
+
+	err = checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	rules, err := s.GetRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -756,6 +765,11 @@ func GetInstanceWorkflowTemplate(c echo.Context) error {
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+	}
+
+	err = checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	template, exist, err := s.GetWorkflowTemplateById(instance.WorkflowTemplateId)
