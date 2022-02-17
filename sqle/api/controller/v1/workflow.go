@@ -2,10 +2,11 @@ package v1
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/driver"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"

@@ -194,9 +194,13 @@ func CreateAndAuditTask(c echo.Context) error {
 }
 
 func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
+
+	// check if admin user
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
+
+	// check if user is task creator
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return err
@@ -204,7 +208,10 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 	if user.ID == task.CreateUserId {
 		return nil
 	}
+
 	s := model.GetStorage()
+
+	// check workflow
 	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
 	if err != nil {
 		return err
@@ -212,6 +219,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 	if !exist {
 		return ErrTaskNoAccess
 	}
+
 	access, err := s.UserCanAccessWorkflow(user, workflow)
 	if err != nil {
 		return err
@@ -219,6 +227,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 	if !access {
 		return ErrTaskNoAccess
 	}
+
 	return nil
 }
 
