@@ -164,64 +164,50 @@ WHERE roles.id IN (?) AND instances.id = ?
 	return count > 0, nil
 }
 
-func (s Storage) CheckUserAccessByID(userID uint, instIDs, opCodes []uint) (err error) {
+func (s Storage) CheckUserAccessByIDs(userID uint, instIDs, opCodes []uint) (
+	missingInstIDs, missingOpCodes []uint, ok bool, err error) {
 
 	roles, err := s.GetRolesByUserID(int(userID))
 	if err != nil {
 		return
 	}
 	if len(roles) == 0 {
-		return errors.NewAccessDeniedErr("user <%v> has no role", userID)
+		return missingInstIDs, missingOpCodes, false, nil
 	}
 	roleIDs := GetRoleIDsFromRoles(roles)
 
 	return s.CheckRolesAccessByIDs(roleIDs, instIDs, opCodes)
+
 }
 
-func (s *Storage) CheckRolesAccessByIDs(roleIDs, instIDs, opCodes []uint) (err error) {
+func (s *Storage) CheckRolesAccessByIDs(roleIDs, instIDs, opCodes []uint) (
+	missingInstIDs []uint, missingOpCodes []uint, ok bool, err error) {
 
 	if len(roleIDs) == 0 {
-		return errors.NewDataNotExistErr("has no roles")
+		return
 	}
-
-	errList := make([]string, 0)
 
 	// Check instances
 	{
 		availableInsts, err := s.GetInstancesByRoleIDs(roleIDs)
 		if err != nil {
-			return err
+			return missingInstIDs, missingOpCodes, false, err
 		}
 		availableInstIDs := GetInstanceIDsFromInst(availableInsts)
-		missingInstIDs := utils.GetMissingItemFromUintSlice(availableInstIDs, instIDs)
-		if len(missingInstIDs) > 0 {
-			err := fmt.Errorf("user have no access to instances <%v>",
-				utils.JoinUintSliceToString(missingInstIDs, ", "))
-			errList = append(errList, err.Error())
-		}
-
+		missingInstIDs = utils.GetMissingItemFromUintSlice(availableInstIDs, instIDs)
 	}
 
 	// Check operations
 	{
 		availableOpcodes, err := s.GetOperationCodesByRoleIDs(roleIDs)
 		if err != nil {
-			return err
+			return missingInstIDs, missingOpCodes, false, err
 		}
-		missingOpcodes := utils.GetMissingItemFromUintSlice(availableOpcodes, opCodes)
-		if len(missingOpcodes) > 0 {
-			err := fmt.Errorf("user have no access to operations <%v>",
-				utils.JoinUintSliceToString(missingOpcodes, ", "))
-			errList = append(errList, err.Error())
-		}
+		missingOpCodes = utils.GetMissingItemFromUintSlice(availableOpcodes, opCodes)
 	}
 
-	if len(errList) > 0 {
-		err = fmt.Errorf("%v", strings.Join(errList, "; "))
-		return err
-	}
-
-	return nil
+	return missingInstIDs, missingOpCodes,
+		(len(missingInstIDs) == 0 && len(missingOpCodes) == 0), nil
 }
 
 func GetInstanceIDsFromInst(insts []*Instance) (instIDs []uint) {

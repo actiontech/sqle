@@ -474,6 +474,8 @@ type CreateWorkflowReqV1 struct {
 // @router /v1/workflows [post]
 func CreateWorkflow(c echo.Context) (err error) {
 
+	requiredOpCodes := []uint{model.OP_WORKFLOW_SAVE}
+
 	req := new(CreateWorkflowReqV1)
 	{ // bind request
 		if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -509,7 +511,7 @@ func CreateWorkflow(c echo.Context) (err error) {
 
 	// check if user can access task
 	{
-		err = checkCurrentUserCanAccessTask(c, task)
+		err = checkCurrentUserCanAccessTask(c, task, requiredOpCodes)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -658,7 +660,10 @@ type WorkflowStepResV1 struct {
 	Reason        string     `json:"reason,omitempty"`
 }
 
-func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow) error {
+// NOTE: accessFromRole can be nil or empty
+func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow,
+	accessFromRole []uint) error {
+
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
@@ -673,9 +678,20 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 		return err
 	}
 
-	if !doesUserOwn {
+	var hasAccessFromRole bool
+	{
+		_, _, hasAccessFromRole, err = s.CheckUserAccessWorkflowViaRole(
+			user.ID, workflow.ID, accessFromRole)
+		if err != nil {
+			return err
+		}
+		hasAccessFromRole = false
+	}
+
+	if !doesUserOwn && !hasAccessFromRole {
 		return ErrWorkflowNoAccess
 	}
+
 	return nil
 }
 
@@ -814,10 +830,12 @@ func GetWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1021,7 +1039,7 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1103,7 +1121,7 @@ func RejectWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1167,7 +1185,7 @@ func CancelWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1267,6 +1285,9 @@ type UpdateWorkflowReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows/{workflow_id}/ [patch]
 func UpdateWorkflow(c echo.Context) error {
+
+	requiredOpCodes := []uint{model.OP_WORKFLOW_SAVE}
+
 	req := new(UpdateWorkflowReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
@@ -1278,7 +1299,7 @@ func UpdateWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1291,7 +1312,7 @@ func UpdateWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanAccessTask(c, task, requiredOpCodes)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1405,7 +1426,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1466,7 +1487,7 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

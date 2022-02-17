@@ -298,9 +298,13 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 	stepTemplates []*WorkflowStepTemplate) error {
 
 	// Check if user can create workflow.
-	err := s.CheckUserAccessByID(user.ID, []uint{task.InstanceId}, []uint{OP_WORKFLOW_SAVE})
+	_, _, ok, err := s.CheckUserAccessByIDs(user.ID, []uint{task.InstanceId}, []uint{OP_WORKFLOW_SAVE})
 	if err != nil {
 		return err
+	}
+	if !ok {
+		return errors.NewAccessDeniedErr(
+			"user <%v> has no access to instace <%v>", task.InstanceId)
 	}
 
 	workflow := &Workflow{
@@ -606,4 +610,33 @@ func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 	var workflowRecords []*WorkflowRecord
 	err := s.db.Where("status = ? AND task_id IN (?)", WorkflowStatusRunning, taskIds).Find(&workflowRecords).Error
 	return len(workflowRecords) > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) CheckUserAccessWorkflowViaRole(
+	userID, workflowID uint, opCodes []uint) (
+	missingInstIDs, missingOpCodes []uint, ok bool, err error) {
+
+	// find workflow related instances
+	var instIDs []uint
+	{
+		query := `
+SELECT inst.id
+FROM instances AS inst
+JOIN task ON task.instance_id = inst.id AND task.deleted_at IS NULL
+JOIN workflow_records AS wr ON wr.task_id = task.id AND wr.deleted_at IS NULL
+JOIN workflows ON workflows.workflow_record_id = wr.id AND workflows.deleted_at IS NULL
+JOIN workflow_record_history AS wrh ON wrh.workflow_record_id = wr.id
+WHERE workflows = ? OR wrh.workflow_id = ?
+AND inst.deleted_at IS NULL
+GROUP BY inst.id
+`
+		var insts []*Instance
+		err = s.db.Unscoped().Raw(query, workflowID, workflowID).Scan(&insts).Error
+		if err != nil {
+			return missingInstIDs, missingOpCodes, false, errors.ConnectStorageErrWrapper(err)
+		}
+		instIDs = GetInstanceIDsFromInst(insts)
+	}
+
+	return s.CheckUserAccessByIDs(userID, instIDs, opCodes)
 }

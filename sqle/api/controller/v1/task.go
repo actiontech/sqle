@@ -8,6 +8,7 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -15,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/labstack/echo/v4"
@@ -193,14 +195,13 @@ func CreateAndAuditTask(c echo.Context) error {
 	})
 }
 
-func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
+func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, opCodes []uint) error {
 
 	// check if admin user
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
 
-	// check if user is task creator
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return err
@@ -211,21 +212,23 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 
 	s := model.GetStorage()
 
-	// check workflow
-	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
+	missingInstID, missingOpCodes, ok, err :=
+		s.CheckUserAccessByID(user.ID, []uint{task.InstanceId}, opCodes)
 	if err != nil {
 		return err
-	}
-	if !exist {
-		return ErrTaskNoAccess
 	}
 
-	access, err := s.DoesUserOperationWorkflow(user, workflow)
-	if err != nil {
-		return err
-	}
-	if !access {
-		return ErrTaskNoAccess
+	if !ok {
+		errs := []string{}
+		if len(missingInstID) > 0 {
+			errs = append(errs, fmt.Sprintf("current user has no access to instances <%v>",
+				utils.JoinUintSliceToString(missingInstID, ", ")))
+		}
+		if len(missingOpCodes) > 0 {
+			errs = append(errs, fmt.Sprintf("current user has no access to opCodes <%v>",
+				utils.JoinUintSliceToString(missingOpCodes, ", ")))
+		}
+		return fmt.Errorf(strings.Join(errs, "; "))
 	}
 
 	return nil
@@ -249,7 +252,7 @@ func GetTask(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -315,7 +318,7 @@ func GetTaskSQLs(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -388,7 +391,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -454,7 +457,7 @@ func DownloadTaskSQLFile(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -497,7 +500,7 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -545,7 +548,7 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
