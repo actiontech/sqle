@@ -118,27 +118,27 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 	return auditPlanReport, nil
 }
 
-type runnerTask struct {
+type sqlCollector struct {
 	*baseTask
 	sync.WaitGroup
 	isStarted bool
 	cancel    chan struct{}
-	runnerDo  func()
+	do        func()
 }
 
-func newRunnerTask(entry *logrus.Entry, ap *model.AuditPlan) *runnerTask {
-	return &runnerTask{
+func newSQLCollector(entry *logrus.Entry, ap *model.AuditPlan) *sqlCollector {
+	return &sqlCollector{
 		newBaseTask(entry, ap),
 		sync.WaitGroup{},
 		false,
 		make(chan struct{}),
-		func() { // default runnerDo
-			entry.Warn("runner task do nothing")
+		func() { // default
+			entry.Warn("sql collector do nothing")
 		},
 	}
 }
 
-func (at *runnerTask) Start() error {
+func (at *sqlCollector) Start() error {
 	if at.isStarted {
 		return nil
 	}
@@ -146,13 +146,13 @@ func (at *runnerTask) Start() error {
 	go func() {
 		at.isStarted = true
 		at.logger.Infof("start task")
-		at.runner(at.cancel)
+		at.looper(at.cancel)
 		at.WaitGroup.Done()
 	}()
 	return nil
 }
 
-func (at *runnerTask) Stop() error {
+func (at *sqlCollector) Stop() error {
 	if !at.isStarted {
 		return nil
 	}
@@ -163,22 +163,22 @@ func (at *runnerTask) Stop() error {
 	return nil
 }
 
-func (at *runnerTask) FullSyncSQLs(sqls []*SQL) error {
-	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by runner task itself", at.ap.Name)
+func (at *sqlCollector) FullSyncSQLs(sqls []*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by task itself", at.ap.Name)
 	return nil
 }
 
-func (at *runnerTask) PartialSyncSQLs(sqls []*SQL) error {
-	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by runner task itself", at.ap.Name)
+func (at *sqlCollector) PartialSyncSQLs(sqls []*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by task itself", at.ap.Name)
 	return nil
 }
 
-func (at *runnerTask) runner(cancel chan struct{}) {
+func (at *sqlCollector) looper(cancel chan struct{}) {
 	interval := at.ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
 	if interval == 0 {
 		interval = 60
 	}
-	at.runnerDo()
+	at.do()
 
 	tk := time.NewTicker(time.Duration(interval) * time.Minute)
 	for {
@@ -188,7 +188,7 @@ func (at *runnerTask) runner(cancel chan struct{}) {
 			return
 		case <-tk.C:
 			at.logger.Infof("tick %s", at.ap.Name)
-			at.runnerDo()
+			at.do()
 		}
 	}
 }
@@ -299,19 +299,19 @@ func (at *baseTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] 
 }
 
 type SchemaMetaTask struct {
-	*runnerTask
+	*sqlCollector
 }
 
 func NewSchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) *SchemaMetaTask {
-	runnerTask := newRunnerTask(entry, ap)
+	sqlCollector := newSQLCollector(entry, ap)
 	task := &SchemaMetaTask{
-		runnerTask,
+		sqlCollector,
 	}
-	runnerTask.runnerDo = task.runnerDo
+	sqlCollector.do = task.collectorDo
 	return task
 }
 
-func (at *SchemaMetaTask) runnerDo() {
+func (at *SchemaMetaTask) collectorDo() {
 	if at.ap.InstanceName == "" {
 		at.logger.Warnf("instance is not configured")
 		return
@@ -407,7 +407,7 @@ func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[st
 //
 // OracleTopSQLTask is a loop task which collect Top SQL from oracle instance.
 type OracleTopSQLTask struct {
-	*runnerTask
+	*sqlCollector
 
 	db *oracle.DB
 }
@@ -431,14 +431,14 @@ func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) (*OracleTopSQ
 	}
 
 	task := &OracleTopSQLTask{
-		runnerTask: newRunnerTask(entry, ap),
-		db:         db,
+		sqlCollector: newSQLCollector(entry, ap),
+		db:           db,
 	}
-	task.runnerTask.runnerDo = task.runnerDo
+	task.sqlCollector.do = task.collectorDo
 	return task, nil
 }
 
-func (at *OracleTopSQLTask) runnerDo() {
+func (at *OracleTopSQLTask) collectorDo() {
 	inst := at.ap.Instance
 	if inst == nil {
 		at.logger.Warnf("instance is not configured")
@@ -498,7 +498,7 @@ func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[
 
 func (at *OracleTopSQLTask) Stop() error {
 	var errs []error
-	if err := at.runnerTask.Stop(); err != nil {
+	if err := at.sqlCollector.Stop(); err != nil {
 		errs = append(errs, err)
 	}
 	if err := at.db.Close(); err != nil {
