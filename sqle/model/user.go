@@ -147,33 +147,28 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 	return users, nil
 }
 
-func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, error) {
+func (s *Storage) UserCanAccessInstanceByID(userID, instID uint) (ok bool, err error) {
 
 	// 1. find role ids
-	roles, err := s.GetRolesByUserID(int(user.ID))
-	if err != nil {
-		return false, err
+	var rolesIDs []uint
+	{
+		var roles []*Role
+		roles, err = s.GetRolesByUserID(int(userID))
+		if err != nil {
+			return false, err
+		}
+
+		if len(roles) == 0 {
+			return false, nil
+		}
+		rolesIDs = GetRoleIDsFromRoles(roles)
 	}
 
-	if len(roles) == 0 {
-		return false, nil
-	}
-	roleIDs := GetRoleIDsFromRoles(roles)
+	return s.CheckRolesCanAccessToInstanceByID(rolesIDs, instID)
+}
 
-	// 2. check user access instance
-	query := `
-SELECT count(1) FROM instances
-LEFT JOIN instance_role ON instances.id = instance_role.instance_id
-LEFT JOIN roles ON instance_role.role_id = roles.id
-WHERE roles.id IN (?) AND instances.id = ?
-`
-
-	var count uint
-	err = s.db.Raw(query, roleIDs, instance.ID).Count(&count).Error
-	if err != nil {
-		return false, errors.New(errors.ConnectStorageError, err)
-	}
-	return count > 0, nil
+func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, error) {
+	return s.UserCanAccessInstanceByID(user.ID, instance.ID)
 }
 
 func (s *Storage) UserCanAccessWorkflow(user *User, workflow *Workflow) (bool, error) {

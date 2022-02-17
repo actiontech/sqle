@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/jinzhu/gorm"
 )
@@ -140,4 +141,79 @@ func (s *Storage) DeleteRoleAndAssociations(role *Role) error {
 
 		return nil
 	})
+}
+
+func (s *Storage) CheckRolesCanAccessToInstanceByID(roleIDs []uint, instID uint) (ok bool, err error) {
+
+	if len(roleIDs) == 0 {
+		return false, nil
+	}
+
+	query := `
+SELECT count(1) FROM instances
+LEFT JOIN instance_role ON instances.id = instance_role.instance_id
+LEFT JOIN roles ON instance_role.role_id = roles.id
+WHERE roles.id IN (?) AND instances.id = ?
+`
+	var count int
+	err = s.db.Raw(query, roleIDs, instID).Count(&count).Error
+	if err != nil {
+		return false, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return count > 0, nil
+}
+
+func (s *Storage) CheckRolesAccess(roleIDs, instIDs, opCodes []uint) (err error) {
+
+	if len(roleIDs) == 0 {
+		return errors.NewDataNotExistErr("has no roles")
+	}
+
+	errList := make([]string, 0)
+
+	// Check instances
+	{
+		availableInsts, err := s.GetInstancesByRoleIDs(roleIDs)
+		if err != nil {
+			return err
+		}
+		availableInstIDs := GetInstanceIDsFromInst(availableInsts)
+		missingInstIDs := utils.GetMissingItemFromUintSlice(availableInstIDs, instIDs)
+		if len(missingInstIDs) > 0 {
+			err := fmt.Errorf("user have no access to instances <%v>",
+				utils.JoinUintSliceToString(missingInstIDs, ", "))
+			errList = append(errList, err.Error())
+		}
+
+	}
+
+	// Check operations
+	{
+		availableOpcodes, err := s.GetOperationCodesByRoleIDs(roleIDs)
+		if err != nil {
+			return err
+		}
+		missingOpcodes := utils.GetMissingItemFromUintSlice(availableOpcodes, opCodes)
+		if len(missingOpcodes) > 0 {
+			err := fmt.Errorf("user have no access to operations <%v>",
+				utils.JoinUintSliceToString(missingOpcodes, ", "))
+			errList = append(errList, err.Error())
+		}
+	}
+
+	if len(errList) > 0 {
+		err = fmt.Errorf("%v", strings.Join(errList, "; "))
+		return err
+	}
+
+	return nil
+}
+
+func GetInstanceIDsFromInst(insts []*Instance) (instIDs []uint) {
+	instIDs = make([]uint, len(insts))
+	for _, inst := range insts {
+		instIDs = append(instIDs, inst.ID)
+	}
+	return
 }

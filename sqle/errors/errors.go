@@ -12,6 +12,9 @@ const (
 
 	HttpRequestFormatError ErrorCode = 2001
 
+	// Access
+	ErrAccessDenied ErrorCode = 3001
+
 	LoginAuthFail     ErrorCode = 4001
 	UserDisabled      ErrorCode = 4005
 	TaskNotExist      ErrorCode = 4006
@@ -86,6 +89,12 @@ func NewUserDisabledErr(format string, a ...interface{}) error {
 func NewDataNotExistErr(format string, a ...interface{}) error {
 	return New(DataNotExist, fmt.Errorf(format, a...))
 }
+
+func NewAccessDeniedErr(format string, a ...interface{}) error {
+	return New(ErrAccessDenied, fmt.Errorf(format, a...))
+}
+
+// errors wrapper
 
 func HttpRequestFormatErrWrapper(err error) error {
 	return New(HttpRequestFormatError, err)

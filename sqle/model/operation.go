@@ -17,9 +17,9 @@ const (
 
 	// Workflow：工单 20000-29999
 	// NOTE: 用户默认可以查看自己创建的工单，无需定义此项动作权限
-	OP_WORKFLOW_VIEW_OTHERS = 20100
-	OP_WORKFLOW_SAVE        = 20200 // including "CREATE" and "UPDATE"
-	OP_WORKFLOW_DELETE      = 20300
+	OP_WORKFLOW_VIEW_OTHERS uint = 20100
+	OP_WORKFLOW_SAVE        uint = 20200 // including "CREATE" and "UPDATE"
+	OP_WORKFLOW_DELETE      uint = 20300
 
 	// AuditPlan: 审核计划 reserved 30000-39999
 )
@@ -108,4 +108,22 @@ func (s *Storage) GetRoleOperationsByRoleID(roleID uint) (roleOps []*RoleOperati
 func (s *Storage) DeleteRoleOperationByRoleID(roleID uint) (err error) {
 	return errors.ConnectStorageErrWrapper(
 		s.db.Where("role_id = ?", roleID).Delete(RoleOperation{}).Error)
+}
+
+func (s *Storage) GetOperationCodesByRoleIDs(roleIDs []uint) (
+	opCodes []uint, err error) {
+
+	if len(roleIDs) == 0 {
+		return opCodes, nil
+	}
+
+	err = s.db.Model(&RoleOperation{}).
+		Where("role_id IN (?)", roleIDs).
+		Group("op_code, role_id").
+		Pluck("op_code", &opCodes).Error
+	if err != nil {
+		return opCodes, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return opCodes, nil
 }

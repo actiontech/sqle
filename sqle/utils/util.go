@@ -105,3 +105,24 @@ func JoinUintSliceToString(s []uint, sep string) string {
 
 	return strings.Join(strSlice, sep)
 }
+
+func GetMissingItemFromUintSlice(target []uint, reference []uint) (missing []uint) {
+
+	missing = make([]uint, 0)
+
+	for i := range reference {
+		item := reference[i]
+		found := false
+		for j := range target {
+			if item == target[j] {
+				found = true
+				break
+			}
+		}
+		if !found {
+			missing = append(missing, item)
+		}
+	}
+
+	return missing
+}
