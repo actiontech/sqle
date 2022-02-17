@@ -129,9 +129,11 @@ func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
 			return err
 		}
 	}
-	task = NewTask(mgr.logger, ap)
-	err := task.Start()
+	task, err := NewTask(mgr.logger, ap)
 	if err != nil {
+		return err
+	}
+	if err = task.Start(); err != nil {
 		return err
 	}
 	mgr.tasks[ap.Name] = task

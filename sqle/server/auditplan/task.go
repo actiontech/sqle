@@ -43,15 +43,15 @@ type SQL struct {
 	Info        map[string]interface{}
 }
 
-func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+func NewTask(entry *logrus.Entry, ap *model.AuditPlan) (Task, error) {
 	entry = entry.WithField("name", ap.Name)
 	switch ap.Type {
 	case TypeMySQLSchemaMeta:
-		return NewSchemaMetaTask(entry, ap)
+		return NewSchemaMetaTask(entry, ap), nil
 	case TypeOracleTopSQL:
 		return NewOracleTopSQLTask(entry, ap)
 	default:
-		return NewDefaultTask(entry, ap)
+		return NewDefaultTask(entry, ap), nil
 	}
 }
 
@@ -407,11 +407,10 @@ type OracleTopSQLTask struct {
 	db *oracle.DB
 }
 
-func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQLTask {
+func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) (*OracleTopSQLTask, error) {
 	inst := ap.Instance
 	if inst == nil {
-		// todo
-		panic("TODO: return err")
+		return nil, fmt.Errorf("instance is not configured")
 	}
 
 	dsn := &oracle.DSN{
@@ -423,8 +422,7 @@ func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQL
 	}
 	db, err := oracle.NewDB(dsn)
 	if err != nil {
-		// todo
-		panic("TODO: return err")
+		return nil, fmt.Errorf("connect to instance fail, error: %v", err)
 	}
 
 	task := &OracleTopSQLTask{
@@ -432,7 +430,7 @@ func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQL
 		db:         db,
 	}
 	task.runnerTask.runnerDo = task.runnerDo
-	return task
+	return task, nil
 }
 
 func (at *OracleTopSQLTask) runnerDo() {
