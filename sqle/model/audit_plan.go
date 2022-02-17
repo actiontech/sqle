@@ -43,13 +43,13 @@ func (a AuditPlanSQLV2) TableName() string {
 
 func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
 	var aps []*AuditPlan
-	err := s.db.Model(AuditPlan{}).Find(&aps).Error
+	err := s.db.Model(AuditPlan{}).Preload("Instance").Find(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Preload("Instance").Where("name = ?", name).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
