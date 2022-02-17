@@ -24,7 +24,7 @@ const (
 const (
 	InstanceTypeAll    = ""
 	InstanceTypeMySQL  = "mysql"
-	InstanceTypeOracle = "oracle"
+	InstanceTypeOracle = "Oracle"
 )
 
 const (
@@ -75,6 +75,12 @@ var Metas = []Meta{
 				Key:   paramKeyCollectIntervalMinute,
 				Desc:  "采集周期（分钟）",
 				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
 				Type:  params.ParamTypeInt,
 			},
 		},
