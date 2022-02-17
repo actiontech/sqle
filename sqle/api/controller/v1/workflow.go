@@ -472,91 +472,139 @@ type CreateWorkflowReqV1 struct {
 // @Param instance body v1.CreateWorkflowReqV1 true "create workflow request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows [post]
-func CreateWorkflow(c echo.Context) error {
+func CreateWorkflow(c echo.Context) (err error) {
+
 	req := new(CreateWorkflowReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
+	{ // bind request
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return err
+		}
 	}
+
 	s := model.GetStorage()
 
-	_, exist, err := s.GetWorkflowBySubject(req.Subject)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow is exist")))
-	}
-
-	task, exist, err := s.GetTaskById(req.TaskId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
-	}
-	err = checkCurrentUserCanAccessTask(c, task)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	// check if workflow is exist
+	{
+		_, exist, err := s.GetWorkflowBySubject(req.Subject)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow is exist")))
+		}
 	}
 
-	if task.Instance == nil {
-		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+	// check if task is exist
+	var task *model.Task
+	{
+		var exist bool
+		task, exist, err = s.GetTaskById(req.TaskId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		}
 	}
 
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if task.CreateUserId != user.ID {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-			fmt.Errorf("the task is not created by yourself")))
+	// check if user can access task
+	{
+		err = checkCurrentUserCanAccessTask(c, task)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
+	// check instance if exist
+	{
+		if task.Instance == nil {
+			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+		}
+	}
+
+	// check if user is task creator
+	var user *model.User
+	{
+		user, err = controller.GetCurrentUser(c)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if task.CreateUserId != user.ID {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+				fmt.Errorf("the task is not created by yourself")))
+		}
+	}
+
+	// check sql src
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
 		return controller.JSONBaseErrorReq(c, ErrForbidMyBatisXMLTask)
 	}
 
-	_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-			fmt.Errorf("task has been used in other workflow")))
-	}
-
-	template, exist, err := s.GetWorkflowTemplateById(task.Instance.WorkflowTemplateId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("the task instance is not bound workflow template")))
+	// check if task already has other workflow
+	{
+		var exist bool
+		_, exist, err = s.GetWorkflowRecordByTaskId(req.TaskId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+				fmt.Errorf("task has been used in other workflow")))
+		}
 	}
 
-	err = checkWorkflowCanCommit(template, task)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	// check if workflow template exist
+	var template *model.WorkflowTemplate
+	{
+		var exist bool
+		template, exist, err = s.GetWorkflowTemplateById(task.Instance.WorkflowTemplateId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+				fmt.Errorf("the task instance is not bound workflow template")))
+		}
 	}
 
-	stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
-	if err != nil {
-		return err
-	}
-	err = s.CreateWorkflow(req.Subject, req.Desc, user, task, stepTemplates)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	// check if workflow can commit
+	{
+		err = checkWorkflowCanCommit(template, task)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
-	workflow, exist, err := s.GetLastWorkflow()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	// create workflow
+	{
+		stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
+		if err != nil {
+			return err
+		}
+		err = s.CreateWorkflow(req.Subject, req.Desc, user, task, stepTemplates)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
+
+	// check last workflow
+	var workflow *model.Workflow
+	{
+		var exist bool
+		workflow, exist, err = s.GetLastWorkflow()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
+		}
 	}
-	if err := misc.SendEmailIfConfigureSMTP(fmt.Sprintf("%v", workflow.ID)); err != nil {
-		log.Logger().Errorf("after create workflow, send email error: %v", err)
+
+	// send email
+	{
+		if err := misc.SendEmailIfConfigureSMTP(fmt.Sprintf("%v", workflow.ID)); err != nil {
+			log.Logger().Errorf("after create workflow, send email error: %v", err)
+		}
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
