@@ -418,12 +418,6 @@ func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQL
 }
 
 func (at *OracleTopSQLTask) collectorDo() {
-	inst := at.ap.Instance
-	if inst == nil {
-		at.logger.Warnf("instance is not configured")
-		return
-	}
-
 	select {
 	case <-at.cancel:
 		at.logger.Info("cancel task")
@@ -431,6 +425,16 @@ func (at *OracleTopSQLTask) collectorDo() {
 	default:
 	}
 
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	inst, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+	if err != nil {
+		at.logger.Warnf("get instance fail, error: %v", err)
+		return
+	}
 	dsn := &oracle.DSN{
 		Host:        inst.Host,
 		Port:        inst.Port,
