@@ -1,6 +1,10 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/actiontech/sqle/sqle/utils"
+)
 
 type InstanceDetail struct {
 	Name                 string         `json:"name"`
@@ -48,12 +52,7 @@ LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
 
-{{- if .check_user_can_access }}
-JOIN user_role AS ur ON roles.id = ur.role_id
-JOIN users ON ur.user_id = users.id AND users.id = :current_user_id
-{{- end }}
-WHERE
-inst.deleted_at IS NULL
+WHERE inst.deleted_at IS NULL
 
 {{- if .filter_instance_name }}
 AND inst.name = :filter_instance_name
@@ -86,16 +85,36 @@ AND rt.name = :filter_rule_template_name
 {{- if .filter_workflow_template_name }}
 AND wt.name = :filter_workflow_template_name
 {{- end }}
+
+{{- if .check_user_can_access }}
+
+AND roles.id IN  ( {{ .role_id_list }} )
+
+{{- end }}
+
 {{- end }}
 `
 
-func (s *Storage) GetInstancesByReq(data map[string]interface{}) (
+func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 	result []*InstanceDetail, count uint64, err error) {
 
+	if !IsDefaultAdminUser(user.Name) {
+		roles, err := s.GetRolesByUserID(int(user.ID))
+		if err != nil {
+			return result, count, err
+		}
+		if len(roles) == 0 {
+			return result, count, nil
+		}
+		roleIDs := GetRoleIDsFromRoles(roles)
+		data["role_id_list"] = utils.JoinUintSliceToString(roleIDs, ", ")
+	}
 	err = s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, data, &result)
 	if err != nil {
 		return result, 0, err
 	}
+
 	count, err = s.getCountResult(instancesQueryBodyTpl, instancesCountTpl, data)
 	return result, count, err
+
 }
