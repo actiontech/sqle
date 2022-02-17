@@ -667,11 +667,13 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 		return err
 	}
 	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(user, workflow)
+
+	doesUserOwn, err := s.DoesUserOperationWorkflow(user, workflow)
 	if err != nil {
 		return err
 	}
-	if !access {
+
+	if !doesUserOwn {
 		return ErrWorkflowNoAccess
 	}
 	return nil

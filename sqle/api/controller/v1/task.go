@@ -220,7 +220,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 		return ErrTaskNoAccess
 	}
 
-	access, err := s.UserCanAccessWorkflow(user, workflow)
+	access, err := s.DoesUserOperationWorkflow(user, workflow)
 	if err != nil {
 		return err
 	}

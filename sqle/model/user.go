@@ -171,7 +171,7 @@ func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, e
 	return s.UserCanAccessInstanceByID(user.ID, instance.ID)
 }
 
-func (s *Storage) UserCanAccessWorkflow(user *User, workflow *Workflow) (bool, error) {
+func (s *Storage) DoesUserOperationWorkflow(user *User, workflow *Workflow) (bool, error) {
 	query := `SELECT count(w.id) FROM workflows AS w
 JOIN workflow_records AS wr ON w.workflow_record_id = wr.id AND w.id = ?
 LEFT JOIN workflow_steps AS cur_ws ON wr.current_workflow_step_id = cur_ws.id
