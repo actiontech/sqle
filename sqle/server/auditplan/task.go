@@ -234,6 +234,17 @@ func convertSQLsToModelSQLs(sqls []*SQL) []*model.AuditPlanSQLV2 {
 	return as
 }
 
+func convertRawSQLToModelSQLs(sqls []string) []*model.AuditPlanSQLV2 {
+	as := make([]*model.AuditPlanSQLV2, len(sqls))
+	for i, sql := range sqls {
+		as[i] = &model.AuditPlanSQLV2{
+			Fingerprint: sql,
+			SQLContent:  sql,
+		}
+	}
+	return as
+}
+
 func (at *baseTask) FullSyncSQLs(sqls []*SQL) error {
 	return at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
 }
@@ -339,17 +350,14 @@ func (at *SchemaMetaTask) runnerDo() {
 			return
 		}
 	}
-	sqls := make([]*model.AuditPlanSQLV2, 0, len(tables)+len(views))
+	sqls := make([]string, 0, len(tables)+len(views))
 	for _, table := range tables {
 		sql, err := db.ShowCreateTable(table)
 		if err != nil {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
 		}
-		sqls = append(sqls, &model.AuditPlanSQLV2{
-			SQLContent:  sql,
-			Fingerprint: sql,
-		})
+		sqls = append(sqls, sql)
 	}
 	for _, view := range views {
 		sql, err := db.ShowCreateView(view)
@@ -357,13 +365,10 @@ func (at *SchemaMetaTask) runnerDo() {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
 		}
-		sqls = append(sqls, &model.AuditPlanSQLV2{
-			SQLContent:  sql,
-			Fingerprint: sql,
-		})
+		sqls = append(sqls, sql)
 	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, sqls)
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertRawSQLToModelSQLs(sqls))
 		if err != nil {
 			at.logger.Errorf("save schema meta to storage fail, error: %v", err)
 		}
@@ -455,17 +460,8 @@ func (at *OracleTopSQLTask) runnerDo() {
 		at.logger.Errorf("query top sql fail, error: %v", err)
 		return
 	}
-
-	// todo: extract common logic
-	var modelSQLs []*model.AuditPlanSQLV2
-	for _, sql := range sqls {
-		modelSQLs = append(modelSQLs, &model.AuditPlanSQLV2{
-			SQLContent:  sql,
-			Fingerprint: sql,
-		})
-	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, modelSQLs)
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertRawSQLToModelSQLs(sqls))
 		if err != nil {
 			at.logger.Errorf("save top sql to storage fail, error: %v", err)
 		}
