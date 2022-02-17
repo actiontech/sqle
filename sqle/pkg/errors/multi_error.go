@@ -2,9 +2,9 @@ package errors
 
 import "strings"
 
-type multiError []error
+type multiErrors []error
 
-func (e multiError) Error() string {
+func (e multiErrors) Error() string {
 	var r strings.Builder
 	r.WriteString("multi err: ")
 	for _, err := range e {
@@ -15,7 +15,7 @@ func (e multiError) Error() string {
 }
 
 func Combine(maybeError ...error) error {
-	var errs multiError
+	var errs multiErrors
 	for _, err := range maybeError {
 		if err != nil {
 			errs = append(errs, err)
