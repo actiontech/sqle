@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/actiontech/sqle/sqle/utils"
 )
@@ -118,52 +117,4 @@ func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 	count, err = s.getCountResult(instancesQueryBodyTpl, instancesCountTpl, data)
 	return result, count, err
 
-}
-
-func (s *Storage) GetUserAvailableInstancesByUserID(userID int) (
-	availabeInsts []*Instance, err error) {
-
-	roles, err := s.GetRolesByUserID(userID)
-	if err != nil {
-		return availabeInsts, err
-	}
-
-	if len(roles) == 0 { // user has no roles
-		return availabeInsts, nil
-	}
-
-	roleIDs := GetRoleIDsFromRoles(roles)
-
-	return s.GetInstancesByRoleIDs(roleIDs)
-
-}
-
-var instancesQueryByRoleIDs = `
-SELECT inst.id, inst.name, inst.db_type, inst.db_host, inst.db_port, inst.db_user, inst.desc 
-FROM instances AS inst
-LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
-LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL
-WHERE roles.id in (%s)
-`
-
-func (s *Storage) GetInstancesByRoleIDs(roleIds []uint) (insts []*Instance, err error) {
-
-	if len(roleIds) == 0 {
-		return insts, nil
-	}
-
-	query := fmt.Sprintf(instancesQueryByRoleIDs, utils.JoinUintSliceToString(roleIds, ", "))
-	if err := s.db.Unscoped().Raw(query).Find(&insts).Error; err != nil {
-		return insts, err
-	}
-
-	return insts, err
-}
-
-func GetInstanceIDsFromInstances(insts []*Instance) (ids []uint) {
-	ids = make([]uint, len(insts))
-	for i := range insts {
-		ids[i] = insts[i].ID
-	}
-	return ids
 }
