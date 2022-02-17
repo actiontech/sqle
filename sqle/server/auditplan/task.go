@@ -163,6 +163,16 @@ func (at *runnerTask) Stop() error {
 	return nil
 }
 
+func (at *runnerTask) FullSyncSQLs(sqls []*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by runner task itself", at.ap.Name)
+	return nil
+}
+
+func (at *runnerTask) PartialSyncSQLs(sqls []*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by runner task itself", at.ap.Name)
+	return nil
+}
+
 func (at *runnerTask) runner(cancel chan struct{}) {
 	interval := at.ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
 	if interval == 0 {
@@ -367,14 +377,6 @@ func (at *SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
 	return at.baseTask.audit(task)
 }
 
-func (at *SchemaMetaTask) FullSyncSQLs([]*SQL) error {
-	return nil
-}
-
-func (at *SchemaMetaTask) PartialSyncSQLs([]*SQL) error {
-	return nil
-}
-
 func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
 	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
 	if err != nil {
@@ -477,18 +479,6 @@ func (at *OracleTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 		DBType: at.ap.DBType,
 	}
 	return at.baseTask.audit(task)
-}
-
-// todo: extract to runnerTask
-func (at *OracleTopSQLTask) FullSyncSQLs([]*SQL) error {
-	at.logger.Warnf("someone try to sync sql to audit plan(%v), but oracle top sql collected by task itself", at.ap.Name)
-	return nil
-}
-
-// todo: extract to runnerTask
-func (at *OracleTopSQLTask) PartialSyncSQLs([]*SQL) error {
-	at.logger.Warnf("someone try to sync sql to audit plan(%v), but oracle top sql collected by task itself", at.ap.Name)
-	return nil
 }
 
 func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
