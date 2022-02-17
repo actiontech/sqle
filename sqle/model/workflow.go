@@ -298,21 +298,9 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 	stepTemplates []*WorkflowStepTemplate) error {
 
 	// Check if user can create workflow.
-	{
-		roles, err := s.GetRolesByUserID(int(user.ID))
-		if err != nil {
-			return err
-		}
-		if len(roles) == 0 {
-			return errors.NewAccessDeniedErr("user <%v> has no role", user.Name)
-		}
-		roleIDs := GetRoleIDsFromRoles(roles)
-
-		err = s.CheckRolesAccess(roleIDs,
-			[]uint{task.InstanceId}, []uint{OP_WORKFLOW_SAVE})
-		if err != nil {
-			return err
-		}
+	err := s.CheckUserAccessByID(user.ID, []uint{task.InstanceId}, []uint{OP_WORKFLOW_SAVE})
+	if err != nil {
+		return err
 	}
 
 	workflow := &Workflow{
@@ -327,7 +315,7 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 
 	tx := s.db.Begin()
 
-	err := tx.Save(record).Error
+	err = tx.Save(record).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)

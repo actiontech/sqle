@@ -164,7 +164,21 @@ WHERE roles.id IN (?) AND instances.id = ?
 	return count > 0, nil
 }
 
-func (s *Storage) CheckRolesAccess(roleIDs, instIDs, opCodes []uint) (err error) {
+func (s Storage) CheckUserAccessByID(userID uint, instIDs, opCodes []uint) (err error) {
+
+	roles, err := s.GetRolesByUserID(int(userID))
+	if err != nil {
+		return
+	}
+	if len(roles) == 0 {
+		return errors.NewAccessDeniedErr("user <%v> has no role", userID)
+	}
+	roleIDs := GetRoleIDsFromRoles(roles)
+
+	return s.CheckRolesAccessByIDs(roleIDs, instIDs, opCodes)
+}
+
+func (s *Storage) CheckRolesAccessByIDs(roleIDs, instIDs, opCodes []uint) (err error) {
 
 	if len(roleIDs) == 0 {
 		return errors.NewDataNotExistErr("has no roles")
