@@ -64,6 +64,11 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int) ([]string, error) {
 			}
 			deDupSQLs[res.SQLFullText] = struct{}{}
 		}
+
+		if err := rows.Err(); err != nil {
+			return errors.Wrapf(err, "failed to iterate %s", query)
+		}
+
 		return nil
 	}
 
@@ -83,7 +88,7 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int) ([]string, error) {
 		return nil, err
 	}
 
-	var sqls []string
+	sqls := make([]string, 0, len(deDupSQLs))
 	for sql := range deDupSQLs {
 		sqls = append(sqls, sql)
 	}
