@@ -450,7 +450,7 @@ func (at *OracleTopSQLTask) runnerDo() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sqls, err := at.db.QueryTopSQLs(ctx, 3)
+	sqls, err := at.db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		at.logger.Errorf("query top sql fail, error: %v", err)
 		return
