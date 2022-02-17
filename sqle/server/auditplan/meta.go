@@ -3,6 +3,7 @@ package auditplan
 import (
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
@@ -18,11 +19,17 @@ const (
 	TypeMySQLSlowLog    = "mysql_slow_log"
 	TypeMySQLMybatis    = "mysql_mybatis"
 	TypeMySQLSchemaMeta = "mysql_schema_meta"
+	TypeOracleTopSQL    = "oracle_top_sql"
 )
 
 const (
-	InstanceTypeAll   = ""
-	InstanceTypeMySQL = "mysql"
+	InstanceTypeAll    = ""
+	InstanceTypeMySQL  = "mysql"
+	InstanceTypeOracle = "Oracle"
+)
+
+const (
+	paramKeyCollectIntervalMinute = "collect_interval_minute"
 )
 
 var Metas = []Meta{
@@ -47,7 +54,7 @@ var Metas = []Meta{
 		InstanceType: InstanceTypeMySQL,
 		Params: []*params.Param{
 			&params.Param{
-				Key:   "collect_interval_minute",
+				Key:   paramKeyCollectIntervalMinute,
 				Desc:  "采集周期（分钟）",
 				Value: "60",
 				Type:  params.ParamTypeInt,
@@ -57,6 +64,31 @@ var Metas = []Meta{
 				Desc:  "是否采集视图信息",
 				Value: "0",
 				Type:  params.ParamTypeBool,
+			},
+		},
+	},
+	{
+		Type:         TypeOracleTopSQL,
+		Desc:         "Oracle TOP SQL",
+		InstanceType: InstanceTypeOracle,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "V$SQLAREA中的排序字段",
+				Value: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
+				Type:  params.ParamTypeString,
 			},
 		},
 	},

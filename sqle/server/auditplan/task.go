@@ -1,6 +1,7 @@
 package auditplan
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
 )
@@ -45,6 +47,8 @@ func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	switch ap.Type {
 	case TypeMySQLSchemaMeta:
 		return NewSchemaMetaTask(entry, ap)
+	case TypeOracleTopSQL:
+		return NewOracleTopSQLTask(entry, ap)
 	default:
 		return NewDefaultTask(entry, ap)
 	}
@@ -113,27 +117,27 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 	return auditPlanReport, nil
 }
 
-type runnerTask struct {
+type sqlCollector struct {
 	*baseTask
 	sync.WaitGroup
 	isStarted bool
 	cancel    chan struct{}
-	runnerFn  func(chan struct{})
+	do        func()
 }
 
-func newRunnerTask(entry *logrus.Entry, ap *model.AuditPlan) *runnerTask {
-	return &runnerTask{
+func newSQLCollector(entry *logrus.Entry, ap *model.AuditPlan) *sqlCollector {
+	return &sqlCollector{
 		newBaseTask(entry, ap),
 		sync.WaitGroup{},
 		false,
 		make(chan struct{}),
-		func(cancel chan struct{}) { // default runner
-			<-cancel
+		func() { // default
+			entry.Warn("sql collector do nothing")
 		},
 	}
 }
 
-func (at *runnerTask) Start() error {
+func (at *sqlCollector) Start() error {
 	if at.isStarted {
 		return nil
 	}
@@ -141,13 +145,13 @@ func (at *runnerTask) Start() error {
 	go func() {
 		at.isStarted = true
 		at.logger.Infof("start task")
-		at.runnerFn(at.cancel)
+		at.looper(at.cancel)
 		at.WaitGroup.Done()
 	}()
 	return nil
 }
 
-func (at *runnerTask) Stop() error {
+func (at *sqlCollector) Stop() error {
 	if !at.isStarted {
 		return nil
 	}
@@ -156,6 +160,36 @@ func (at *runnerTask) Stop() error {
 	at.WaitGroup.Wait()
 	at.logger.Infof("stop task")
 	return nil
+}
+
+func (at *sqlCollector) FullSyncSQLs(sqls []*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by task itself", at.ap.Name)
+	return nil
+}
+
+func (at *sqlCollector) PartialSyncSQLs(sqls []*SQL) error {
+	at.logger.Warnf("someone try to sync sql to audit plan(%v), but sql should collected by task itself", at.ap.Name)
+	return nil
+}
+
+func (at *sqlCollector) looper(cancel chan struct{}) {
+	interval := at.ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
+	if interval == 0 {
+		interval = 60
+	}
+	at.do()
+
+	tk := time.NewTicker(time.Duration(interval) * time.Minute)
+	for {
+		select {
+		case <-cancel:
+			tk.Stop()
+			return
+		case <-tk.C:
+			at.logger.Infof("tick %s", at.ap.Name)
+			at.do()
+		}
+	}
 }
 
 type DefaultTask struct {
@@ -194,6 +228,17 @@ func convertSQLsToModelSQLs(sqls []*SQL) []*model.AuditPlanSQLV2 {
 			Fingerprint: sql.Fingerprint,
 			SQLContent:  sql.SQLContent,
 			Info:        data,
+		}
+	}
+	return as
+}
+
+func convertRawSQLToModelSQLs(sqls []string) []*model.AuditPlanSQLV2 {
+	as := make([]*model.AuditPlanSQLV2, len(sqls))
+	for i, sql := range sqls {
+		as[i] = &model.AuditPlanSQLV2{
+			Fingerprint: sql,
+			SQLContent:  sql,
 		}
 	}
 	return as
@@ -253,40 +298,19 @@ func (at *baseTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] 
 }
 
 type SchemaMetaTask struct {
-	*runnerTask
+	*sqlCollector
 }
 
 func NewSchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) *SchemaMetaTask {
-	runnerTask := newRunnerTask(entry, ap)
+	sqlCollector := newSQLCollector(entry, ap)
 	task := &SchemaMetaTask{
-		runnerTask,
+		sqlCollector,
 	}
-	task.runnerFn = task.runner
+	sqlCollector.do = task.collectorDo
 	return task
 }
 
-func (at *SchemaMetaTask) runner(cancel chan struct{}) {
-	interval := at.ap.Params.GetParam("collect_interval_minute").Int()
-	if interval == 0 {
-		interval = 60
-	}
-	collectView := at.ap.Params.GetParam("collect_view").Bool()
-	at.do(collectView)
-
-	tk := time.NewTicker(time.Duration(interval) * time.Minute)
-	for {
-		select {
-		case <-cancel:
-			tk.Stop()
-			return
-		case <-tk.C:
-			at.logger.Infof("tick %s", at.ap.Name)
-			at.do(collectView)
-		}
-	}
-}
-
-func (at *SchemaMetaTask) do(CollectView bool) {
+func (at *SchemaMetaTask) collectorDo() {
 	if at.ap.InstanceName == "" {
 		at.logger.Warnf("instance is not configured")
 		return
@@ -318,24 +342,21 @@ func (at *SchemaMetaTask) do(CollectView bool) {
 		return
 	}
 	var views []string
-	if CollectView {
+	if at.ap.Params.GetParam("collect_view").Bool() {
 		views, err = db.ShowSchemaViews(at.ap.InstanceDatabase)
 		if err != nil {
 			at.logger.Errorf("get schema view fail, error: %v", err)
 			return
 		}
 	}
-	sqls := make([]*model.AuditPlanSQLV2, 0, len(tables)+len(views))
+	sqls := make([]string, 0, len(tables)+len(views))
 	for _, table := range tables {
 		sql, err := db.ShowCreateTable(table)
 		if err != nil {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
 		}
-		sqls = append(sqls, &model.AuditPlanSQLV2{
-			SQLContent:  sql,
-			Fingerprint: sql,
-		})
+		sqls = append(sqls, sql)
 	}
 	for _, view := range views {
 		sql, err := db.ShowCreateView(view)
@@ -343,13 +364,10 @@ func (at *SchemaMetaTask) do(CollectView bool) {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
 		}
-		sqls = append(sqls, &model.AuditPlanSQLV2{
-			SQLContent:  sql,
-			Fingerprint: sql,
-		})
+		sqls = append(sqls, sql)
 	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, sqls)
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertRawSQLToModelSQLs(sqls))
 		if err != nil {
 			at.logger.Errorf("save schema meta to storage fail, error: %v", err)
 		}
@@ -361,14 +379,6 @@ func (at *SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
 		DBType: at.ap.DBType,
 	}
 	return at.baseTask.audit(task)
-}
-
-func (at *SchemaMetaTask) FullSyncSQLs([]*SQL) error {
-	return nil
-}
-
-func (at *SchemaMetaTask) PartialSyncSQLs([]*SQL) error {
-	return nil
 }
 
 func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
@@ -390,4 +400,145 @@ func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[st
 		})
 	}
 	return head, rows, count, nil
+}
+
+// OracleTopSQLTask implement the Task interface.
+//
+// OracleTopSQLTask is a loop task which collect Top SQL from oracle instance.
+type OracleTopSQLTask struct {
+	*sqlCollector
+}
+
+func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQLTask {
+	task := &OracleTopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *OracleTopSQLTask) collectorDo() {
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	inst, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+	if err != nil {
+		at.logger.Warnf("get instance fail, error: %v", err)
+		return
+	}
+	dsn := &oracle.DSN{
+		Host:        inst.Host,
+		Port:        inst.Port,
+		User:        inst.User,
+		Password:    inst.Password,
+		ServiceName: at.ap.InstanceDatabase,
+	}
+	db, err := oracle.NewDB(dsn)
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sqls, err := db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int(), at.ap.Params.GetParam("order_by_column").String())
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+	if len(sqls) > 0 {
+		apSQLs := make([]*SQL, 0, len(sqls))
+		for _, sql := range sqls {
+			apSQLs = append(apSQLs, &SQL{
+				SQLContent:  sql.SQLFullText,
+				Fingerprint: sql.SQLFullText,
+				Info: map[string]interface{}{
+					oracle.DynPerformanceViewSQLAreaColumnExecutions:     sql.Executions,
+					oracle.DynPerformanceViewSQLAreaColumnElapsedTime:    sql.ElapsedTime,
+					oracle.DynPerformanceViewSQLAreaColumnCPUTime:        sql.CPUTime,
+					oracle.DynPerformanceViewSQLAreaColumnDiskReads:      sql.DiskReads,
+					oracle.DynPerformanceViewSQLAreaColumnBufferGets:     sql.BufferGets,
+					oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime: sql.UserIOWaitTime,
+				},
+			})
+		}
+
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(apSQLs))
+		if err != nil {
+			at.logger.Errorf("save top sql to storage fail, error: %v", err)
+		}
+	}
+}
+
+func (at *OracleTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
+			Desc: "执行时间(ms)",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnCPUTime,
+			Desc: "CPU时间(ms)",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnDiskReads,
+			Desc: "物理读",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnBufferGets,
+			Desc: "逻辑读",
+		},
+		{
+			Name: oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime,
+			Desc: "I/O等待时间(ms)",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		info := &oracle.DynPerformanceSQLArea{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+			oracle.DynPerformanceViewSQLAreaColumnExecutions:     info.Executions,
+			oracle.DynPerformanceViewSQLAreaColumnElapsedTime:    info.ElapsedTime,
+			oracle.DynPerformanceViewSQLAreaColumnCPUTime:        info.CPUTime,
+			oracle.DynPerformanceViewSQLAreaColumnDiskReads:      info.DiskReads,
+			oracle.DynPerformanceViewSQLAreaColumnBufferGets:     info.BufferGets,
+			oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime: info.UserIOWaitTime,
+		})
+	}
+	return heads, rows, count, nil
 }
