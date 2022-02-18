@@ -1534,7 +1534,7 @@ func canUserCreateWorkflowForInstance(
 	missingInstaceIDs, missindOpCodes, ok, err := s.CheckUserInstanceAccessByOpcodes(user.ID,
 		instIDs, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	if ok {
