@@ -190,7 +190,7 @@ func (s *Storage) GetInstancesByRoleIDs(roleIDs []uint) (insts []*Instance, err 
 		return insts, nil
 	}
 
-	err = s.db.Model(&Instance{}).
+	err = s.db.Unscoped().Model(&Instance{}).
 		Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
 		Joins("JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.stat = 0").
 		Where("roles.id IN (?)", roleIDs).Group("instances.id").

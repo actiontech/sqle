@@ -117,9 +117,10 @@ func (s *Storage) GetOperationCodesByRoleIDs(roleIDs []uint) (
 		return opCodes, nil
 	}
 
-	err = s.db.Model(&RoleOperation{}).
+	err = s.db.Unscoped().Model(&RoleOperation{}).
+		Joins("LEFT JOIN roles ON roles.id = role_operations AND roles.deleted_at IS NULL AND roles.stat = 0").
 		Where("role_id IN (?)", roleIDs).
-		Group("op_code, role_id").
+		Group("op_code").
 		Pluck("op_code", &opCodes).Error
 	if err != nil {
 		return opCodes, errors.ConnectStorageErrWrapper(err)
