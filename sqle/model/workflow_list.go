@@ -132,7 +132,7 @@ AND inst.name = :filter_task_instance_name
 func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 	result []*WorkflowListDetail, count uint64, err error) {
 
-	// get workflow id which user can access by OP_WORKFLOW_VIEW_OTHERS
+	// get workflow ids only for user can access by OP_WORKFLOW_VIEW_OTHERS
 	var viewableWorkflowIDs []uint
 	{
 		wfs, err := s.GetAllViewableWorkflow(user.ID)

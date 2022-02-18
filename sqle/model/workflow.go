@@ -690,7 +690,7 @@ LEFT JOIN workflow_records AS wr ON wr.id = wrh.workflow_record_id AND wr.delete
 LEFT JOIN tasks ON tasks.id = wr.task_id AND tasks.deleted_at IS NULL
 LEFT JOIN instances ON instances.id = tasks.instance_id AND instances.deleted_at IS NULL
 LEFT JOIN instance_role AS ir ON ir.instance_id = instances.id 
-LEFT JOIN roles AS r ON r.id = ir.role_id AND r.deleted_at IS NULL
+LEFT JOIN roles AS r ON r.id = ir.role_id AND r.deleted_at IS NULL AND role.stat = 0
 LEFT JOIN role_operations AS ro ON ro.role_id = r.id AND ro.deleted_at IS NULL
 WHERE
 r.id IN ( ? )
