@@ -1426,7 +1426,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	ok, err := canUserSaveWorkflow(user, workflow)
+	ok, err := canUserExecuteTaskOnWorkflow(user, workflow)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
