@@ -1030,16 +1030,6 @@ func checkUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId 
 // @router /v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	//TODO: try to using struct tag valid.
 	stepIdStr := c.Param("workflow_step_id")
@@ -1061,6 +1051,14 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 
 	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
+	ok, err := canUserSaveWorkflow(user, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !ok {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
@@ -1114,16 +1112,6 @@ func RejectWorkflow(c echo.Context) error {
 		return err
 	}
 	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	//TODO: try to using struct tag valid.
 	stepIdStr := c.Param("workflow_step_id")
@@ -1143,6 +1131,14 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
+	ok, err := canUserSaveWorkflow(user, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !ok {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
@@ -1198,6 +1194,7 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	if !(user.ID == workflow.CreateUserId || user.Name == model.DefaultAdminUser) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
@@ -1289,16 +1286,16 @@ func UpdateWorkflow(c echo.Context) error {
 		return err
 	}
 	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// id, err := FormatStringToInt(workflowId)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
+	// err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+	// 	Model: model.Model{ID: uint(id)},
+	// })
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
 	s := model.GetStorage()
 	task, exist, err := s.GetTaskById(req.TaskId)
@@ -1345,6 +1342,14 @@ func UpdateWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
+	ok, err := canUserSaveWorkflow(user, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !ok {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
@@ -1416,16 +1421,6 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 		return err
 	}
 	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
@@ -1440,6 +1435,15 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
+
+	ok, err := canUserSaveWorkflow(user, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !ok {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
 	currentStep := workflow.CurrentStep()
 	if currentStep == nil {
 		return fmt.Errorf("workflow current step not found")
@@ -1477,16 +1481,16 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 // @router /v1/workflows/{workflow_id}/task/execute [post]
 func ExecuteTaskOnWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// id, err := FormatStringToInt(workflowId)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
+	// err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+	// 	Model: model.Model{ID: uint(id)},
+	// })
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
@@ -1501,6 +1505,14 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
+	ok, err := canUserSaveWorkflow(user, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !ok {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
 	currentStep := workflow.CurrentStep()
 	if currentStep == nil {
 		return fmt.Errorf("workflow current step not found")
@@ -1616,6 +1628,117 @@ func canUserReadWorkflow(
 	// 4. check if user has access to operation
 	_, _, ok, err = s.CheckRoleInstanceAccessByOpCodes(
 		roleIDs, workflowInstIDs, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	if err != nil || !ok {
+		return false, errors.NewAccessDeniedErr("user has no access to workflow")
+	}
+
+	return true, nil
+}
+
+func canUserSaveWorkflow(user *model.User, workflow *model.Workflow) (ok bool, err error) {
+
+	// 1. check admin
+	if model.IsDefaultAdminUser(user.Name) {
+		return true, nil
+	}
+
+	s := model.GetStorage()
+	// 2. check if user has access to instance
+	insts, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return false, err
+	}
+	if len(insts) == 0 {
+		return true, errInstanceNoAccess
+	}
+	workflowInstIDs := model.GetInstanceIDsFromInst(insts)
+
+	roles, err := s.GetRolesByUserID(int(user.ID))
+	if err != nil {
+		return false, err
+	}
+	if len(roles) == 0 {
+		return false, errors.NewAccessDeniedErr("user has no role")
+	}
+	roleIDs := model.GetRoleIDsFromRoles(roles)
+
+	availableInsts, err := s.GetInstancesByRoleIDs(roleIDs)
+	if err != nil {
+		return
+	}
+	availableInstIDs := model.GetInstanceIDsFromInst(availableInsts)
+	missingInstIDs := utils.GetMissingItemFromUintSlice(availableInstIDs, workflowInstIDs)
+	if len(missingInstIDs) > 0 {
+		return false, errors.NewAccessDeniedErr("user has no access to instance")
+	}
+
+	// 3. check if user create workflow
+	accessFromWorkflow, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return false, err
+	}
+	if !accessFromWorkflow {
+		return false, errors.NewAccessDeniedErr("user has no access to workflow")
+	}
+
+	// 4. check if user has access to operation
+	_, _, ok, err = s.CheckRoleInstanceAccessByOpCodes(
+		roleIDs, workflowInstIDs, []uint{model.OP_WORKFLOW_SAVE})
+	if err != nil || !ok {
+		return false, errors.NewAccessDeniedErr("user has no access to workflow")
+	}
+
+	return
+}
+
+func canUserCancelWorkflow(user *model.User, workflow *model.Workflow) (ok bool, err error) {
+	// 1. check admin
+	if model.IsDefaultAdminUser(user.Name) {
+		return true, nil
+	}
+
+	s := model.GetStorage()
+	// 2. check if user has access to instance
+	insts, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return false, err
+	}
+	if len(insts) == 0 {
+		return true, errInstanceNoAccess
+	}
+	workflowInstIDs := model.GetInstanceIDsFromInst(insts)
+
+	roles, err := s.GetRolesByUserID(int(user.ID))
+	if err != nil {
+		return false, err
+	}
+	if len(roles) == 0 {
+		return false, errors.NewAccessDeniedErr("user has no role")
+	}
+	roleIDs := model.GetRoleIDsFromRoles(roles)
+
+	availableInsts, err := s.GetInstancesByRoleIDs(roleIDs)
+	if err != nil {
+		return
+	}
+	availableInstIDs := model.GetInstanceIDsFromInst(availableInsts)
+	missingInstIDs := utils.GetMissingItemFromUintSlice(availableInstIDs, workflowInstIDs)
+	if len(missingInstIDs) > 0 {
+		return false, errors.NewAccessDeniedErr("user has no access to instance")
+	}
+
+	// 3. check if user create workflow
+	accessFromWorkflow, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return false, err
+	}
+	if !accessFromWorkflow {
+		return false, errors.NewAccessDeniedErr("user has no access to workflow")
+	}
+
+	// 4. check if user has access to operation
+	_, _, ok, err = s.CheckRoleInstanceAccessByOpCodes(
+		roleIDs, workflowInstIDs, []uint{model.OP_WORKFLOW_DELETE})
 	if err != nil || !ok {
 		return false, errors.NewAccessDeniedErr("user has no access to workflow")
 	}
