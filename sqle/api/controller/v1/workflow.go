@@ -1194,6 +1194,13 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	ok, err := canUserCancelWorkflow(user, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !ok {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
 
 	if !(user.ID == workflow.CreateUserId || user.Name == model.DefaultAdminUser) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
