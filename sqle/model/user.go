@@ -150,7 +150,7 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, error) {
 
 	// 1. find role ids
-	roles, err := s.GetRolesByUserID(int(user.ID))
+	roles, err := s.GetActiveRolesByUserID(user.ID)
 	if err != nil {
 		return false, err
 	}

@@ -128,7 +128,7 @@ func (s *Storage) GetUserInstanceTip(user *User, dbType string) (
 	db := s.db.Model(&Instance{}).Select("instances.name, instances.db_type")
 	if user.Name != DefaultAdminUser {
 		// 1. get roles
-		roles, err := s.GetRolesByUserID(int(user.ID))
+		roles, err := s.GetActiveRolesByUserID(user.ID)
 		if err != nil {
 			return nil, err
 		}

@@ -99,7 +99,7 @@ func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 	result []*InstanceDetail, count uint64, err error) {
 
 	if !IsDefaultAdminUser(user.Name) {
-		roles, err := s.GetRolesByUserID(int(user.ID))
+		roles, err := s.GetActiveRolesByUserID(user.ID)
 		if err != nil {
 			return result, count, err
 		}

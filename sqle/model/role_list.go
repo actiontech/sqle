@@ -3,7 +3,6 @@ package model
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"text/template"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -171,9 +170,13 @@ SELECT roles.id, roles.name, roles.desc, roles.stat
 FROM roles
 LEFT JOIN user_role ON roles.id = user_role.role_id 
 LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND users.stat=0
-WHERE users.id = %s
-AND roles.deleted_at IS NULL
-AND roles.stat=0
+WHERE roles.deleted_at IS NULL
+
+AND users.id = {{ .user_id }}
+{{- if .roles_stat_filter }}
+ :roles_stat_filter
+{{- end }}
+
 GROUP BY roles.id
 `
 
@@ -181,26 +184,73 @@ var rolesQueryFromUserGroupFormat = `
 SELECT roles.id, roles.name, roles.desc, roles.stat
 FROM roles
 JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL AND user_groups.stat=0
 JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
-JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
-WHERE users.id = %s
-AND roles.deleted_at IS NULL
-AND roles.stat=0
+JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL %s AND users.stat=0
+WHERE roles.deleted_at IS NULL
+
+AND users.id = {{ .user_id }}
+{{- if .roles_stat_filter }}
+ :roles_stat_filter 
+{{- end }}
+
 GROUP BY roles.id
 `
 
-func (s *Storage) GetRolesByUserID(userID int) (roles []*Role, err error) {
-	rolesQueryFromUser := fmt.Sprintf(rolesQueryFromUserFormat, strconv.Itoa(userID))
-	rolesQueryFromUserGroup := fmt.Sprintf(rolesQueryFromUserGroupFormat, strconv.Itoa(userID))
+func (s *Storage) GetActiveRolesByUserID(userID uint) (roles []*Role, err error) {
 
-	query := fmt.Sprintf(`%s UNION %s`, rolesQueryFromUser, rolesQueryFromUserGroup)
+	data := map[string]interface{}{
+		"user_id":           userID,
+		"roles_stat_filter": "AND roles.stat=0",
+	}
 
+	return s.GetRolesByUserID(userID, data)
+}
+
+func (s *Storage) GetFullRolesByUserID(userID uint) (roles []*Role, err error) {
+
+	data := map[string]interface{}{
+		"user_id": userID,
+	}
+
+	return s.GetRolesByUserID(userID, data)
+}
+
+func (s *Storage) GetRolesByUserID(
+	userID uint, data map[string]interface{}) (roles []*Role, err error) {
+
+	var rolesFromUserBuffer bytes.Buffer
+	{
+		rolesFromUserTpl, err := template.
+			New("queryRolesFromUser").Parse(rolesQueryFromUserFormat)
+		if err != nil {
+			return roles, err
+		}
+		err = rolesFromUserTpl.Execute(&rolesFromUserBuffer, data)
+		if err != nil {
+			return roles, err
+		}
+	}
+
+	var rolesFromUserGroupBuffer bytes.Buffer
+	{
+		rolesFromUserGroupTpl, err := template.
+			New("queryRolesFromUserGroup").Parse(rolesQueryFromUserGroupFormat)
+		if err != nil {
+			return roles, err
+		}
+		err = rolesFromUserGroupTpl.Execute(&rolesFromUserGroupBuffer, data)
+		if err != nil {
+			return roles, err
+		}
+	}
+
+	query := fmt.Sprintf(`%s UNION %s`,
+		rolesFromUserBuffer.String(), rolesFromUserGroupBuffer.String())
 	err = s.db.Unscoped().Raw(query).Find(&roles).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
-
 	return roles, nil
 }
 
