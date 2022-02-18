@@ -20,6 +20,38 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// CanOptimize do some pre check on node.
+func CanOptimize(l *logrus.Entry, ctx *session.Context, node ast.Node) bool {
+	canNotOptimizeWarnf := "can not optimize node: %v, reason: %v"
+
+	ss, ok := node.(*ast.SelectStmt)
+	if !ok {
+		l.Warnf(canNotOptimizeWarnf, node, "not select statement")
+		return false
+	}
+
+	if ss.From == nil {
+		l.Warnf(canNotOptimizeWarnf, node, "no from clause")
+		return false
+	}
+
+	tne := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
+	ss.Accept(&tne)
+	for name, ast := range tne.TableNames {
+		exist, err := ctx.IsTableExistInDatabase(ast)
+		if err != nil {
+			l.Warnf(canNotOptimizeWarnf, node, err)
+			return false
+		}
+		if !exist {
+			l.Warnf(canNotOptimizeWarnf, node, fmt.Sprintf("table %s not exist", name))
+			return false
+		}
+	}
+
+	return true
+}
+
 const (
 	defaultCalculateCardinalityMaxRow = 1000000
 	defaultCompositeIndexMaxColumn    = 3
