@@ -601,3 +601,21 @@ func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 	err := s.db.Where("status = ? AND task_id IN (?)", WorkflowStatusRunning, taskIds).Find(&workflowRecords).Error
 	return len(workflowRecords) > 0, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetInstanceByWorkflowID(workflowID uint) (*Instance, error) {
+	query := `
+SELECT instances.id 
+FROM workflows AS w
+LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
+LEFT JOIN tasks ON tasks.id = wr.task_id
+LEFT JOIN instances ON instances.id = tasks.instance_id
+WHERE 
+w.id = ?
+LIMIT 1`
+	instance := &Instance{}
+	err := s.db.Raw(query, workflowID).Scan(instance).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+	return instance, err
+}
