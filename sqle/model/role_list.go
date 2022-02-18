@@ -204,6 +204,18 @@ func (s *Storage) GetRolesByUserID(userID int) (roles []*Role, err error) {
 	return roles, nil
 }
 
+func (s *Storage) GetRoleIDsByUserID(userID uint) (roleIDs []uint, err error) {
+	roles, err := s.GetRolesByUserID(int(userID))
+	if err != nil {
+		return roleIDs, err
+	}
+	roleIDs = make([]uint, len(roles))
+	for i := range roles {
+		roleIDs[i] = roles[i].ID
+	}
+	return roleIDs, nil
+}
+
 func GetRoleIDsFromRoles(roles []*Role) (roleIDs []uint) {
 
 	roleIDs = make([]uint, len(roles))

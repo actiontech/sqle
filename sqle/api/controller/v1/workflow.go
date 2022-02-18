@@ -970,7 +970,7 @@ func GetWorkflows(c echo.Context) error {
 		"offset":                                 offset,
 	}
 	s := model.GetStorage()
-	workflows, count, err := s.GetWorkflowsByReq(data)
+	workflows, count, err := s.GetWorkflowsByReq(data, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

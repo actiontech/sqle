@@ -667,3 +667,51 @@ func (s *Storage) CheckUserWorkflowAccessByOpCodes(
 
 	return errors.NewAccessDeniedErr(strings.Join(errs, "; "))
 }
+
+// NOTE:  workflows only contains which role is userID and op_code is OP_WORKFLOW_VIEW_OTHERS
+func (s *Storage) GetAllViewableWorkflow(userID uint) (workflows []*Workflow, err error) {
+
+	var roleIDs []uint
+	{
+		roleIDs, err := s.GetRoleIDsByUserID(userID)
+		if err != nil {
+			return workflows, err
+		}
+		if len(roleIDs) == 0 {
+			return workflows, nil
+		}
+	}
+
+	query := `
+SELECT w.subject, w.desc, w.id, w.create_user_id, w.workflow_record_id
+FROM workflows AS w
+LEFT JOIN workflow_record_history AS wrh ON wrh.workflow_id = w.id
+LEFT JOIN workflow_records AS wr ON wr.id = wrh.workflow_record_id AND wr.deleted_at IS NULL
+LEFT JOIN tasks ON tasks.id = wr.task_id AND tasks.deleted_at IS NULL
+LEFT JOIN instances ON instances.id = tasks.instance_id AND instances.deleted_at IS NULL
+LEFT JOIN instance_role AS ir ON ir.instance_id = instances.id 
+LEFT JOIN roles AS r ON r.id = ir.role_id AND r.deleted_at IS NULL
+LEFT JOIN role_operations AS ro ON ro.role_id = r.id AND ro.deleted_at IS NULL
+WHERE
+r.id IN ( ? )
+AND ro.op_code =  ? 
+AND w.deleted_at IS NULL
+GROUP BY w.id
+`
+	err = s.db.Unscoped().Model(&Workflow{}).
+		Raw(query, roleIDs, OP_WORKFLOW_VIEW_OTHERS).
+		Find(&workflows).Error
+	if err != nil {
+		return workflows, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return workflows, nil
+}
+
+func GetWorkflowIDsFromWorkflows(wfs []*Workflow) (ids []uint) {
+	ids = make([]uint, len(wfs))
+	for i := range wfs {
+		ids[i] = wfs[i].ID
+	}
+	return ids
+}
