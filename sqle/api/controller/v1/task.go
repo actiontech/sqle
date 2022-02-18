@@ -216,10 +216,18 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task) error {
 	if err != nil {
 		return err
 	}
-	if !access {
-		return ErrTaskNoAccess
+	if access {
+		return nil
 	}
-	return nil
+
+	ok, err := s.CheckUserHasOpToInstance(user, task.Instance, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+	return ErrTaskNoAccess
 }
 
 // @Summary 获取Sql审核任务信息

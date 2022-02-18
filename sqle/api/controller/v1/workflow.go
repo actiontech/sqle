@@ -2,10 +2,11 @@ package v1
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/driver"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -609,7 +610,7 @@ type WorkflowStepResV1 struct {
 	Reason        string     `json:"reason,omitempty"`
 }
 
-func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow) error {
+func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow, ops []uint) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
@@ -622,10 +623,23 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 	if err != nil {
 		return err
 	}
-	if !access {
-		return ErrWorkflowNoAccess
+	if access {
+		return nil
 	}
-	return nil
+	if len(ops) > 0 {
+		instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+		if err != nil {
+			return err
+		}
+		ok, err := s.CheckUserHasOpToInstance(user, instance, ops)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+	}
+	return ErrWorkflowNoAccess
 }
 
 func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowResV1 {
@@ -763,7 +777,7 @@ func GetWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -904,7 +918,7 @@ func GetWorkflows(c echo.Context) error {
 		"offset":                                 offset,
 	}
 	s := model.GetStorage()
-	workflows, count, err := s.GetWorkflowsByReq(data)
+	workflows, count, err := s.GetWorkflowsByReq(data, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -970,7 +984,7 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1052,7 +1066,7 @@ func RejectWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1116,7 +1130,7 @@ func CancelWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1227,7 +1241,7 @@ func UpdateWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1354,7 +1368,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1415,7 +1429,7 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	}
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
-	})
+	}, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

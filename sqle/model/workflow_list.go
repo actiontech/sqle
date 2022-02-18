@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 type WorkflowListDetail struct {
@@ -68,9 +70,15 @@ WHERE
 w.deleted_at IS NULL 
 
 {{- if .check_user_can_access }}
-AND (w.create_user_id = :current_user_id 
+AND (
+w.create_user_id = :current_user_id 
 OR curr_ass_user.id = :current_user_id
 OR all_ass_user.id = :current_user_id
+
+{{- if .viewable_instance_ids }} 
+OR inst.id IN (:viewable_instance_ids)
+{{- end }}
+
 )
 {{- end }}
 
@@ -121,8 +129,21 @@ AND inst.name = :filter_task_instance_name
 
 `
 
-func (s *Storage) GetWorkflowsByReq(data map[string]interface{}) (
+func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 	result []*WorkflowListDetail, count uint64, err error) {
+
+	// get workflow ids only for user can access by OP_WORKFLOW_VIEW_OTHERS
+	var ids []uint
+	{
+		instances, err := s.GetUserCanOpInstances(user, []uint{OP_WORKFLOW_VIEW_OTHERS})
+		if err != nil {
+			return result, 0, err
+		}
+		ids = getInstanceIDsFromInstances(instances)
+	}
+	if len(ids) > 0 {
+		data["viewable_instance_ids"] = utils.JoinUintSliceToString(ids, ", ")
+	}
 
 	err = s.getListResult(workflowsQueryBodyTpl, workflowsQueryTpl, data, &result)
 	if err != nil {

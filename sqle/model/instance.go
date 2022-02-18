@@ -183,3 +183,146 @@ func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error
 	}
 	return names, nil
 }
+
+func (s *Storage) CheckUserHasOpToInstance(user *User, instance *Instance, ops []uint) (bool, error) {
+	query := `
+SELECT instances.id
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+LEFT JOIN role_operations ON role_operations.role_id = roles.id
+LEFT JOIN user_role ON user_role.role_id = roles.id
+LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
+WHERE
+instances.deleted_at IS NULL
+AND instances.id = ?
+AND users.id = ?
+AND role_operations.op_code IN (?)
+GROUP BY instances.id
+UNION
+SELECT instances.id
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+LEFT JOIN role_operations ON role_operations.role_id = roles.id
+JOIN user_group_roles ON roles.id = user_group_roles.role_id
+JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
+JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
+WHERE 
+instances.deleted_at IS NULL
+AND instances.id = ?
+AND users.id = ?
+AND role_operations.op_code IN (?)
+GROUP BY instances.id
+`
+	var instances []*Instance
+	err := s.db.Raw(query, instance.ID, user.ID, ops, instance.ID, user.ID, ops).Scan(&instances).Error
+	if err != nil {
+		return false, errors.ConnectStorageErrWrapper(err)
+	}
+	return len(instances) > 0, nil
+}
+
+func (s *Storage) GetUserCanOpInstances(user *User, ops []uint) (instances []*Instance, err error) {
+	query := `
+SELECT instances.id
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+LEFT JOIN role_operations ON role_operations.role_id = roles.id
+LEFT JOIN user_role ON user_role.role_id = roles.id
+LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
+WHERE
+instances.deleted_at IS NULL
+AND users.id = ?
+AND role_operations.op_code IN (?)
+GROUP BY instances.id
+UNION
+SELECT instances.id
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+LEFT JOIN role_operations ON role_operations.role_id = roles.id
+JOIN user_group_roles ON roles.id = user_group_roles.role_id
+JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
+JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
+WHERE 
+instances.deleted_at IS NULL
+AND users.id = ?
+AND role_operations.op_code IN (?)
+GROUP BY instances.id
+`
+	err = s.db.Raw(query, user.ID, ops, user.ID, ops).Scan(&instances).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+	return
+}
+
+func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {
+	ids = make([]uint, len(instances))
+	for i := range instances {
+		ids[i] = instances[i].ID
+	}
+	return ids
+}
+
+//SELECT instances.id
+//FROM instances
+//LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+//LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+//LEFT JOIN role_operations ON role_operations.role_id = roles.id
+//LEFT JOIN user_role ON user_role.role_id = roles.id
+//LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
+//WHERE
+//instances.deleted_at IS NULL
+//AND users.id = 5
+//AND role_operations.op_code IN (20200)
+//GROUP BY instances.id
+//UNION
+//SELECT instances.id
+//FROM instances
+//LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+//LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+//LEFT JOIN role_operations ON role_operations.role_id = roles.id
+//JOIN user_group_roles ON roles.id = user_group_roles.role_id
+//JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+//JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+//JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
+//WHERE
+//instances.deleted_at IS NULL
+//AND users.id = 5
+//AND role_operations.op_code IN (20200)
+//GROUP BY instances.id
+
+//SELECT instances.id
+//FROM instances
+//LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+//LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+//LEFT JOIN role_operations ON role_operations.role_id = roles.id
+//LEFT JOIN user_role ON user_role.role_id = roles.id
+//LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
+//WHERE
+//instances.deleted_at IS NULL
+//AND instances.id = 5
+//AND users.id = 4
+//AND role_operations.op_code IN (20200)
+//GROUP BY instances.id
+//UNION
+//SELECT instances.id
+//FROM instances
+//LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+//LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+//LEFT JOIN role_operations ON role_operations.role_id = roles.id
+//JOIN user_group_roles ON roles.id = user_group_roles.role_id
+//JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+//JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+//JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
+//WHERE
+//instances.deleted_at IS NULL
+//AND instances.id = 5
+//AND users.id = 4
+//AND role_operations.op_code IN (20200)
+//GROUP BY instances.id
