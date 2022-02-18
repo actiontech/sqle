@@ -121,7 +121,7 @@ func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 
 func (s *Storage) GetAllUserTip() ([]*User, error) {
 	users := []*User{}
-	err := s.db.Select("login_name").Find(&users).Error
+	err := s.db.Select("login_name").Where("stat=0").Find(&users).Error
 	return users, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -164,7 +164,7 @@ func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, e
 	query := `
 SELECT count(1) FROM instances
 LEFT JOIN instance_role ON instances.id = instance_role.instance_id
-LEFT JOIN roles ON instance_role.role_id = roles.id
+LEFT JOIN roles ON instance_role.role_id = roles.id AND roles.stat=0
 WHERE roles.id IN (?) AND instances.id = ?
 `
 
@@ -182,11 +182,11 @@ JOIN workflow_records AS wr ON w.workflow_record_id = wr.id AND w.id = ?
 LEFT JOIN workflow_steps AS cur_ws ON wr.current_workflow_step_id = cur_ws.id
 LEFT JOIN workflow_step_templates AS cur_wst ON cur_ws.workflow_step_template_id = cur_wst.id
 LEFT JOIN workflow_step_template_user AS cur_wst_re_user ON cur_wst.id = cur_wst_re_user.workflow_step_template_id
-LEFT JOIN users AS cur_ass_user ON cur_wst_re_user.user_id = cur_ass_user.id
+LEFT JOIN users AS cur_ass_user ON cur_wst_re_user.user_id = cur_ass_user.id AND users.stat=0
 LEFT JOIN workflow_steps AS op_ws ON w.id = op_ws.workflow_id AND op_ws.state != "initialized"
 LEFT JOIN workflow_step_templates AS op_wst ON op_ws.workflow_step_template_id = op_wst.id
 LEFT JOIN workflow_step_template_user AS op_wst_re_user ON op_wst.id = op_wst_re_user.workflow_step_template_id
-LEFT JOIN users AS op_ass_user ON op_wst_re_user.user_id = op_ass_user.id
+LEFT JOIN users AS op_ass_user ON op_wst_re_user.user_id = op_ass_user.id AND users.stat=0
 where w.deleted_at IS NULL
 AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
 `
