@@ -207,15 +207,6 @@ func (s *Storage) GetActiveRolesByUserID(userID uint) (roles []*Role, err error)
 	return s.GetRolesByUserID(userID, data)
 }
 
-func (s *Storage) GetFullRolesByUserID(userID uint) (roles []*Role, err error) {
-
-	data := map[string]interface{}{
-		"user_id": userID,
-	}
-
-	return s.GetRolesByUserID(userID, data)
-}
-
 func (s *Storage) GetRolesByUserID(
 	userID uint, data map[string]interface{}) (roles []*Role, err error) {
 
