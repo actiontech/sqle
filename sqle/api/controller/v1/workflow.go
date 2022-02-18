@@ -1286,16 +1286,6 @@ func UpdateWorkflow(c echo.Context) error {
 		return err
 	}
 	workflowId := c.Param("workflow_id")
-	// id, err := FormatStringToInt(workflowId)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
-	// err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-	// 	Model: model.Model{ID: uint(id)},
-	// })
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
 
 	s := model.GetStorage()
 	task, exist, err := s.GetTaskById(req.TaskId)
@@ -1481,16 +1471,6 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 // @router /v1/workflows/{workflow_id}/task/execute [post]
 func ExecuteTaskOnWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
-	// id, err := FormatStringToInt(workflowId)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
-	// err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-	// 	Model: model.Model{ID: uint(id)},
-	// })
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
 
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
@@ -1574,7 +1554,7 @@ func canUserCreateWorkflowForInstance(
 		errs = append(errs, errStr.Error())
 	}
 
-	return false, fmt.Errorf(strings.Join(errs, "; "))
+	return false, errors.NewAccessDeniedErr(strings.Join(errs, "; "))
 }
 
 func canUserReadWorkflow(
