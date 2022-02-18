@@ -681,8 +681,7 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow)
 		return ErrWorkflowNoAccess
 	}
 
-	return s.CheckUserWorkflowAccessByOpCodes(
-		user.ID, workflow.ID, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	return nil
 }
 
 func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowResV1 {
@@ -814,16 +813,6 @@ func GetWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	s := model.GetStorage()
 
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -831,6 +820,18 @@ func GetWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	ok, err := canUserReadWorkflow(user, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !ok {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
 	history, err := s.GetWorkflowHistoryById(workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1562,4 +1563,62 @@ func canUserCreateWorkflowForInstance(
 	}
 
 	return false, fmt.Errorf(strings.Join(errs, "; "))
+}
+
+func canUserReadWorkflow(
+	user *model.User, workflow *model.Workflow) (ok bool, err error) {
+
+	// 1. check admin
+	if model.IsDefaultAdminUser(user.Name) {
+		return true, nil
+	}
+
+	s := model.GetStorage()
+
+	// 2. check if user has access to instance
+	insts, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return false, err
+	}
+	if len(insts) == 0 {
+		return true, errInstanceNoAccess
+	}
+	workflowInstIDs := model.GetInstanceIDsFromInst(insts)
+
+	roles, err := s.GetRolesByUserID(int(user.ID))
+	if err != nil {
+		return false, err
+	}
+	if len(roles) == 0 {
+		return false, errors.NewAccessDeniedErr("user has no role")
+	}
+	roleIDs := model.GetRoleIDsFromRoles(roles)
+
+	availableInsts, err := s.GetInstancesByRoleIDs(roleIDs)
+	if err != nil {
+		return
+	}
+	availableInstIDs := model.GetInstanceIDsFromInst(availableInsts)
+	missingInstIDs := utils.GetMissingItemFromUintSlice(availableInstIDs, workflowInstIDs)
+	if len(missingInstIDs) > 0 {
+		return false, errors.NewAccessDeniedErr("user has no access to instance")
+	}
+
+	// 3. check if user create workflow
+	accessFromWorkflow, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return false, err
+	}
+	if accessFromWorkflow {
+		return true, nil
+	}
+
+	// 4. check if user has access to operation
+	_, _, ok, err = s.CheckRoleInstanceAccessByOpCodes(
+		roleIDs, workflowInstIDs, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	if err != nil || !ok {
+		return false, errors.NewAccessDeniedErr("user has no access to workflow")
+	}
+
+	return true, nil
 }
