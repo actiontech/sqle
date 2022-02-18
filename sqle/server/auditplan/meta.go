@@ -20,6 +20,7 @@ const (
 	TypeMySQLMybatis    = "mysql_mybatis"
 	TypeMySQLSchemaMeta = "mysql_schema_meta"
 	TypeOracleTopSQL    = "oracle_top_sql"
+	TypeAllAppExtract   = "all_app_extract"
 )
 
 const (
@@ -91,6 +92,11 @@ var Metas = []Meta{
 				Type:  params.ParamTypeString,
 			},
 		},
+	},
+	{
+		Type:         TypeAllAppExtract,
+		Desc:         "应用程序SQL抓取",
+		InstanceType: InstanceTypeAll,
 	},
 }
 
