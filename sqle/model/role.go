@@ -75,7 +75,7 @@ func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err e
 }
 
 func (s *Storage) SaveRoleAndAssociations(role *Role,
-	insts []*Instance, opCodes []uint, us []*User, ugs []*UserGroup) (err error) {
+	instances []*Instance, opCodes []uint, us []*User, ugs []*UserGroup) (err error) {
 	return s.Tx(func(txDB *gorm.DB) (err error) {
 
 		// save role
@@ -85,8 +85,8 @@ func (s *Storage) SaveRoleAndAssociations(role *Role,
 
 		// save instances
 		{
-			if insts != nil {
-				if err = txDB.Model(role).Association("Instances").Replace(insts).Error; err != nil {
+			if instances != nil {
+				if err = txDB.Model(role).Association("Instances").Replace(instances).Error; err != nil {
 					return errors.ConnectStorageErrWrapper(err)
 				}
 			}

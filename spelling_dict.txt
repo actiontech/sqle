@@ -223,3 +223,7 @@ wstu
 xerrors
 yaml
 zerofill
+sqlarea
+looper
+rownum
+dynviews_3064

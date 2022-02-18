@@ -591,7 +591,7 @@ type FullSyncAuditPlanSQLsReqV1 struct {
 }
 
 type AuditPlanSQLReqV1 struct {
-	Fingerprint          string `json:"audit_plan_sql_fingerprint" form:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?" valid:"required"`
+	Fingerprint          string `json:"audit_plan_sql_fingerprint" form:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
 	Counter              string `json:"audit_plan_sql_counter" form:"audit_plan_sql_counter" example:"6" valid:"required"`
 	LastReceiveText      string `json:"audit_plan_sql_last_receive_text" form:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
 	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" form:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
@@ -659,7 +659,7 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil, err
 	}
 
-	_, exist, err := s.GetAuditPlanByName(apName)
+	ap, exist, err := s.GetAuditPlanByName(apName)
 	if err != nil {
 		return nil, err
 	}
@@ -667,8 +667,44 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil, errAuditPlanNotExist
 	}
 
+	var driver driver.Driver
+	// lazy load driver
+	initDriver := func() error {
+		if driver == nil {
+			driver, err = newDriverWithoutCfg(log.NewEntry(), ap.DBType)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	defer func() {
+		if driver != nil {
+			driver.Close(context.TODO())
+		}
+	}()
+
 	sqls := make([]*auditplan.SQL, len(reqSQLs))
 	for i, reqSQL := range reqSQLs {
+		fp := reqSQL.Fingerprint
+		// the caller may be written in a different language, such as (Java, Bash, Python), so the fingerprint is
+		// generated in different ways. In order to maintain th same fingerprint generation logic, we provide a way to
+		// generate it by sqle, if the request fingerprint is empty.
+		if fp == "" {
+			err := initDriver()
+			if err != nil {
+				return nil, err
+			}
+			nodes, err := driver.Parse(context.TODO(), reqSQL.LastReceiveText)
+			if err != nil {
+				return nil, err
+			}
+			if len(nodes) > 0 {
+				fp = nodes[0].Fingerprint
+			} else {
+				fp = reqSQL.LastReceiveText
+			}
+		}
 		counter, err := strconv.ParseUint(reqSQL.Counter, 10, 64)
 		if err != nil {
 			return nil, err
@@ -678,7 +714,7 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 			"last_receive_timestamp": reqSQL.LastReceiveTimestamp,
 		}
 		sqls[i] = &auditplan.SQL{
-			Fingerprint: reqSQL.Fingerprint,
+			Fingerprint: fp,
 			SQLContent:  reqSQL.LastReceiveText,
 			Info:        info,
 		}
