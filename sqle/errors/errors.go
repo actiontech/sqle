@@ -12,6 +12,8 @@ const (
 
 	HttpRequestFormatError ErrorCode = 2001
 
+	ErrAccessDeniedError ErrorCode = 3001
+
 	LoginAuthFail     ErrorCode = 4001
 	UserDisabled      ErrorCode = 4005
 	TaskNotExist      ErrorCode = 4006
@@ -93,4 +95,8 @@ func HttpRequestFormatErrWrapper(err error) error {
 
 func ConnectStorageErrWrapper(err error) error {
 	return New(ConnectStorageError, err)
+}
+
+func NewAccessDeniedErr(format string, a ...interface{}) error {
+	return New(ErrAccessDeniedError, fmt.Errorf(format, a...))
 }
