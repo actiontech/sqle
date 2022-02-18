@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -483,7 +484,7 @@ func CreateWorkflow(c echo.Context) (err error) {
 
 	s := model.GetStorage()
 
-	// check if workflow is exist
+	// check workflow
 	{
 		_, exist, err := s.GetWorkflowBySubject(req.Subject)
 		if err != nil {
@@ -494,7 +495,16 @@ func CreateWorkflow(c echo.Context) (err error) {
 		}
 	}
 
-	// check if task is exist
+	var user *model.User
+	// check user
+	{
+		user, err = controller.GetCurrentUser(c)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// check task
 	var task *model.Task
 	{
 		var exist bool
@@ -505,36 +515,23 @@ func CreateWorkflow(c echo.Context) (err error) {
 		if !exist {
 			return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 		}
-	}
-
-	// check if user can access task
-	{
 		err = checkCurrentUserCanAccessTask(c, task)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	// check if user is task creator
-	var user *model.User
-	{
-		user, err = controller.GetCurrentUser(c)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+			return err
 		}
 		if task.CreateUserId != user.ID {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 				fmt.Errorf("the task is not created by yourself")))
 		}
-	}
-
-	// check instance if exist and access
-	{
 		if task.Instance == nil {
 			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 
 		}
-		access, err := canUserCreateWorkflowForInstance(user.ID, []uint{task.InstanceId})
+	}
+
+	// check operation and role
+	{
+		access, err := canUserCreateWorkflowForInstance(user, []uint{task.InstanceId})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1531,9 +1528,38 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 }
 
 func canUserCreateWorkflowForInstance(
-	userID uint, instIDs []uint) (ok bool, err error) {
+	user *model.User, instIDs []uint) (ok bool, err error) {
+
+	// 1. admin user
+	if model.IsDefaultAdminUser(user.Name) {
+		return true, nil
+	}
+
 	s := model.GetStorage()
-	_, _, ok, err = s.CheckUserInstanceAccessByOpcodes(
-		userID, instIDs, []uint{model.OP_WORKFLOW_SAVE})
-	return ok, err
+	// 2. instance access and operation code
+
+	missingInstaceIDs, missindOpCodes, ok, err := s.CheckUserInstanceAccessByOpcodes(user.ID,
+		instIDs, []uint{model.OP_WORKFLOW_SAVE})
+	if err != nil {
+		return false, nil
+	}
+
+	if ok {
+		return true, nil
+	}
+
+	errs := []string{}
+	if len(missingInstaceIDs) > 0 {
+		errStr := fmt.Errorf("has no access to instances <%v>",
+			utils.JoinUintSliceToString(missingInstaceIDs, ", "))
+		errs = append(errs, errStr.Error())
+	}
+
+	if len(missindOpCodes) > 0 {
+		errStr := fmt.Errorf("has no operation <%v>",
+			utils.JoinUintSliceToString(missindOpCodes, ", "))
+		errs = append(errs, errStr.Error())
+	}
+
+	return false, fmt.Errorf(strings.Join(errs, "; "))
 }
