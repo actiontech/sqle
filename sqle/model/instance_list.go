@@ -23,7 +23,7 @@ GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names,
 GROUP_CONCAT(DISTINCT COALESCE(rt.name,'')) AS rule_template_names
 FROM instances AS inst
 LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
-LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL
+LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.stat = 0
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
@@ -47,7 +47,7 @@ var instancesQueryBodyTpl = `
 {{ define "body" }}
 FROM instances AS inst
 LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
-LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL
+LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.stat = 0
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
