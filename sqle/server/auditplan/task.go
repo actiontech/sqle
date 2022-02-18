@@ -145,7 +145,7 @@ func (at *sqlCollector) Start() error {
 	go func() {
 		at.isStarted = true
 		at.logger.Infof("start task")
-		at.looper(at.cancel)
+		at.loop(at.cancel)
 		at.WaitGroup.Done()
 	}()
 	return nil
@@ -172,7 +172,7 @@ func (at *sqlCollector) PartialSyncSQLs(sqls []*SQL) error {
 	return nil
 }
 
-func (at *sqlCollector) looper(cancel chan struct{}) {
+func (at *sqlCollector) loop(cancel chan struct{}) {
 	interval := at.ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
 	if interval == 0 {
 		interval = 60
