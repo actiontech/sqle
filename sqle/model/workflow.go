@@ -612,8 +612,8 @@ SELECT inst.id
 FROM instances
 JOIN tasks ON tasks.id = instances.task_id AND tasks.deleted_at is NULL
 JOIN workflow_records AS wr ON wr.task_id = tasks.id AND workflow_records.deleted_at IS NULL
-JOIN workflows ON workflows.workflow_record_id = wr.id AND workflows.deleted_at IS NULL
 JOIN workflow_record_history AS wrh ON wrh.workflow_record_id = wr.id
+JOIN workflows ON workflows.id = wrh.workflow_id AND workflows.deleted_at IS NULL
 WHERE workflows.id = ? OR wrh.workflow_id = ?
 AND inst.deleted_at IS NULL
 GROUP BY inst.id
