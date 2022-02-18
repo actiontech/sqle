@@ -1485,7 +1485,7 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
-	ok, err := canUserSaveWorkflow(user, workflow)
+	ok, err := canUserExecuteTaskOnWorkflow(user, workflow)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1613,6 +1613,11 @@ func canUserReadWorkflow(
 	}
 
 	return true, nil
+}
+
+func canUserExecuteTaskOnWorkflow(
+	user *model.User, workflow *model.Workflow) (ok bool, err error) {
+	return canUserSaveWorkflow(user, workflow)
 }
 
 func canUserSaveWorkflow(user *model.User, workflow *model.Workflow) (ok bool, err error) {
