@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"text/template"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -173,8 +174,9 @@ LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND
 WHERE roles.deleted_at IS NULL
 
 AND users.id = {{ .user_id }}
+
 {{- if .roles_stat_filter }}
- :roles_stat_filter
+AND roles.stat = :roles_stat_filter
 {{- end }}
 
 GROUP BY roles.id
@@ -190,8 +192,9 @@ JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL %
 WHERE roles.deleted_at IS NULL
 
 AND users.id = {{ .user_id }}
+
 {{- if .roles_stat_filter }}
- :roles_stat_filter 
+AND roles.stat = :roles_stat_filter
 {{- end }}
 
 GROUP BY roles.id
@@ -201,7 +204,7 @@ func (s *Storage) GetActiveRolesByUserID(userID uint) (roles []*Role, err error)
 
 	data := map[string]interface{}{
 		"user_id":           userID,
-		"roles_stat_filter": "AND roles.stat=0",
+		"roles_stat_filter": strconv.Itoa(Enabled),
 	}
 
 	return s.GetRolesByUserID(userID, data)
