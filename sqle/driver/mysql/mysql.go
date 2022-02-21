@@ -298,30 +298,26 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		}
 	}
 
-	if ss, ok := nodes[0].(*ast.SelectStmt); ok && i.cnf.optimizeIndexEnabled && ss.From != nil {
-		// if table do not exist in database, we will get error message when explain select statement.
-		exist, err := i.Ctx.IsTableExistInDatabase(ss.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
-		if err != nil {
-			return nil, errors.Wrap(err, "check table exist in database or not")
-		}
-		if exist {
-			optimizer := index.NewOptimizer(i.log, i.Ctx,
-				index.WithCalculateCardinalityMaxRow(i.cnf.calculateCardinalityMaxRow),
-				index.WithCompositeIndexMaxColumn(i.cnf.compositeIndexMaxColumn))
-			advices, err := optimizer.Optimize(ctx, ss)
-			if err != nil {
-				return nil, errors.Wrap(err, "optimize sql")
-			}
+	if i.cnf.optimizeIndexEnabled && index.CanOptimize(i.log, i.Ctx, nodes[0]) {
+		optimizer := index.NewOptimizer(
+			i.log, i.Ctx,
+			index.WithCalculateCardinalityMaxRow(i.cnf.calculateCardinalityMaxRow),
+			index.WithCompositeIndexMaxColumn(i.cnf.compositeIndexMaxColumn),
+		)
 
-			var buf strings.Builder
-			for _, advice := range advices {
-				buf.WriteString(fmt.Sprintf("建议为表 %s 列 %s 添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
-				if advice.Reason != "" {
-					buf.WriteString(fmt.Sprintf(", 原因(%s)", advice.Reason))
-				}
-			}
-			i.result.Add(driver.RuleLevelNotice, buf.String())
+		advices, err := optimizer.Optimize(ctx, nodes[0].(*ast.SelectStmt))
+		if err != nil {
+			return nil, errors.Wrap(err, "optimize sql")
 		}
+
+		var buf strings.Builder
+		for _, advice := range advices {
+			buf.WriteString(fmt.Sprintf("建议为表 %s 列 %s 添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
+			if advice.Reason != "" {
+				buf.WriteString(fmt.Sprintf(", 原因(%s)", advice.Reason))
+			}
+		}
+		i.result.Add(driver.RuleLevelNotice, buf.String())
 	}
 
 	// print osc

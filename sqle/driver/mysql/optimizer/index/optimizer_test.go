@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pingcap/parser/format"
-
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -404,6 +404,36 @@ func TestOptimizer_needIndex(t *testing.T) {
 			got, err := o.needIndex(tt.tableName, tt.indexColumn...)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestCanOptimize(t *testing.T) {
+	logger := testLogger.WithField("test", "test_can_optimize")
+	tests := []struct {
+		sql    string
+		expect bool
+	}{
+		{"select 1", false},
+		{"select * from t1", false},
+		{"select * from exist_tb_1", true},
+		{"select * from t1, t2", false},
+		{"select * from t1 join t2", false},
+		{"select * from t1 cross join t2", false},
+		{"select * from t1 inner join t2", false},
+		{"select * from exist_tb_1, exist_tb_2", true},
+		{"select * from exist_tb_1 join exist_tb_2", true},
+		{"select * from exist_tb_1 cross join exist_tb_2", true},
+		{"select * from exist_tb_1 inner join exist_tb_2", true},
+		{"select * from t1, exist_tb_2", false},
+	}
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			e, _, err := executor.NewMockExecutor()
+			assert.NoError(t, err)
+			n, err := util.ParseOneSql(tt.sql)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expect, CanOptimize(logger, session.NewMockContext(e), n))
 		})
 	}
 }
