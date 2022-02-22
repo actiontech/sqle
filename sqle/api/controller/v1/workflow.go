@@ -1064,6 +1064,8 @@ func RejectWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	// RejectWorkflow no need extra operaion code for now.
 	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
 	}, []uint{})
