@@ -42,7 +42,7 @@ func CreateUserGroup(c echo.Context) (err error) {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if isExist {
-			return controller.JSONNewDataExistErr(c, "user<%v> already exist", req.Name)
+			return controller.JSONNewDataExistErr(c, "user group already exist")
 		}
 	}
 

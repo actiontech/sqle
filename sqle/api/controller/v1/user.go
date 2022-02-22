@@ -456,6 +456,7 @@ func GetUsers(c echo.Context) error {
 			LoginType:  user.LoginType,
 			Roles:      user.RoleNames,
 			IsDisabled: user.IsDisabled(),
+			UserGroups: user.UserGroupNames,
 		}
 		usersReq = append(usersReq, userReq)
 	}
