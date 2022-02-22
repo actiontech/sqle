@@ -485,7 +485,7 @@ type GetUserTipsResV1 struct {
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
 	s := model.GetStorage()
-	users, err := s.GetAllUserTip()
+	users, err := s.GetAllEnabledUsers()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

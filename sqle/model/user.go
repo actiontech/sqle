@@ -119,7 +119,7 @@ func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	return users, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAllUserTip() ([]*User, error) {
+func (s *Storage) GetAllEnabledUsers() ([]*User, error) {
 	users := []*User{}
 	err := s.db.Select("login_name").Where("stat=0").Find(&users).Error
 	return users, errors.New(errors.ConnectStorageError, err)
