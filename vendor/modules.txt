@@ -68,6 +68,8 @@ github.com/facebookgo/grace/gracenet
 # github.com/fatih/color v1.9.0
 ## explicit
 github.com/fatih/color
+# github.com/fsnotify/fsnotify v1.4.9
+github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 github.com/ghodss/yaml
 # github.com/github/gh-ost v1.1.3-0.20210727153850-e484824bbd68
@@ -181,8 +183,6 @@ github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/kr/text v0.2.0
-## explicit
 # github.com/labstack/echo/v4 v4.6.1
 ## explicit
 github.com/labstack/echo/v4
@@ -193,7 +193,6 @@ github.com/labstack/gommon/color
 github.com/labstack/gommon/log
 github.com/labstack/gommon/random
 # github.com/leodido/go-urn v1.2.1
-## explicit
 github.com/leodido/go-urn
 # github.com/mailru/easyjson v0.7.1
 ## explicit
@@ -208,6 +207,13 @@ github.com/mattn/go-isatty
 ## explicit
 # github.com/mitchellh/go-testing-interface v1.14.0
 github.com/mitchellh/go-testing-interface
+# github.com/nxadm/tail v1.4.8
+## explicit
+github.com/nxadm/tail
+github.com/nxadm/tail/ratelimiter
+github.com/nxadm/tail/util
+github.com/nxadm/tail/watch
+github.com/nxadm/tail/winfile
 # github.com/oklog/run v1.0.0
 github.com/oklog/run
 # github.com/openark/golib v0.0.0-20210531070646-355f37940af8
@@ -216,7 +222,11 @@ github.com/openark/golib/log
 github.com/openark/golib/sqlutils
 # github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 ## explicit
+github.com/percona/go-mysql/log
 github.com/percona/go-mysql/query
+# github.com/percona/pmm-agent v2.15.1+incompatible
+## explicit
+github.com/percona/pmm-agent/agents/mysql/slowlog/parser
 # github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 ## explicit
 github.com/pingcap/errors
@@ -467,6 +477,8 @@ gopkg.in/gomail.v2
 # gopkg.in/natefinch/lumberjack.v2 v2.0.0
 ## explicit
 gopkg.in/natefinch/lumberjack.v2
+# gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
