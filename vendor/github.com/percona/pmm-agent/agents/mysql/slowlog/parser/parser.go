@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-"fmt"
+
 	"github.com/percona/go-mysql/log"
 )
 
@@ -124,6 +124,7 @@ func (p *SlowLogParser) Run() {
 			p.stopErr = err
 			return
 		}
+
 		lineLen := uint64(len(line))
 		p.bytesRead += lineLen
 		p.lineOffset = p.bytesRead - lineLen
