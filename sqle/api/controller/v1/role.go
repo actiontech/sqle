@@ -268,7 +268,7 @@ type GetRoleTipsResV1 struct {
 // @router /v1/role_tips [get]
 func GetRoleTips(c echo.Context) error {
 	s := model.GetStorage()
-	roles, err := s.GetAllRoleTip()
+	roles, err := s.GetAllEnabledRoles()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

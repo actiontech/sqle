@@ -46,9 +46,9 @@ func (s *Storage) UpdateRoleInstances(role *Role, instances ...*Instance) error 
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAllRoleTip() ([]*Role, error) {
+func (s *Storage) GetAllEnabledRoles() ([]*Role, error) {
 	roles := []*Role{}
-	err := s.db.Select("name").Find(&roles).Error
+	err := s.db.Select("name").Where("stat = 0").Find(&roles).Error
 	return roles, errors.New(errors.ConnectStorageError, err)
 }
 
