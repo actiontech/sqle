@@ -111,7 +111,7 @@ WHERE
 user_groups.deleted_at IS NULL
 
 {{- if .filter_user_group_name }}
-AND user_groups.name :filter_user_group_name
+AND user_groups.name = :filter_user_group_name
 {{- end -}}
 
 {{- end }}
