@@ -67,7 +67,7 @@ func (s *Storage) SaveUserGroupAndAssociations(
 	})
 }
 
-func (s *Storage) GetAllUserGroupTip() ([]*UserGroup, error) {
+func (s *Storage) GetAllEnabledUserGroups() ([]*UserGroup, error) {
 	userGroups := []*UserGroup{}
 	err := s.db.Select("name").Where("stat = 0").Find(&userGroups).Error
 	return userGroups, errors.New(errors.ConnectStorageError, err)

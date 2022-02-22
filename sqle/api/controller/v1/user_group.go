@@ -298,7 +298,7 @@ type GetUserGroupTipsResV1 struct {
 // @router /v1/user_group_tips [get]
 func GetUserGroupTips(c echo.Context) error {
 	s := model.GetStorage()
-	userGroupNames, err := s.GetAllUserGroupTip()
+	userGroupNames, err := s.GetAllEnabledUserGroups()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
