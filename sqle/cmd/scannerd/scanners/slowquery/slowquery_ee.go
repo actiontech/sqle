@@ -1,3 +1,4 @@
+//go:build enterprise
 // +build enterprise
 
 package slowquery
@@ -42,7 +43,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SlowQuery, error)
 }
 
 func (s *SlowQuery) Run(ctx context.Context) error {
-	reader, err := NewContinuousFileReader(s.logFilePath, logrus.WithField("filename", s.logFilePath))
+	reader, err := NewContinuousFileReader(s.logFilePath, logrus.WithField("filename", s.logFilePath), true)
 	if err != nil {
 		return err
 	}
