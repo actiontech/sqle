@@ -707,7 +707,7 @@ func ARG009(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, nod
 func ARG013(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case ast.DDLNode:
-		if strings.Index(node.Text(), "“") != -1 {
+		if strings.Contains(node.Text(), "“") {
 			addResult(res, rule, rule.Name)
 		}
 	}
@@ -1130,7 +1130,7 @@ func SUB001(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, nod
 }
 
 func STA001(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if strings.Index(node.Text(), "!=") != -1 {
+	if strings.Contains(node.Text(), "!=") {
 		addResult(res, rule, rule.Name)
 	}
 	return nil
