@@ -102,7 +102,8 @@ func (s *Storage) GetUserByName(name string) (*User, bool, error) {
 
 func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
 	t := &User{}
-	err := s.db.Preload("Roles").Where("login_name = ?", name).First(t).Error
+	err := s.db.Preload("Roles").Preload("UserGroups").
+		Where("login_name = ?", name).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
