@@ -28,3 +28,7 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 
 	return driver.NewDriver(l, inst.DbType, cfg)
 }
+
+func newDriverWithoutCfg(l *logrus.Entry, dbType string) (driver.Driver, error) {
+	return driver.NewDriver(l, dbType, &driver.Config{})
+}

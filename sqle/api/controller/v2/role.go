@@ -1,7 +1,10 @@
 package v2
 
 import (
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
@@ -11,8 +14,8 @@ type CreateRoleReqV2 struct {
 	Desc           string   `json:"role_desc" form:"role_desc"`
 	Instances      []string `json:"instance_name_list" form:"instance_name_list"`
 	OperationCodes []uint   `json:"operation_code_list" form:"operation_code_list"`
-	Users          []string `json:"user_name_list" form:"user_name_list"`
-	UserGroups     []string `json:"user_group_name_list" form:"user_group_name_list"`
+	Users          []string `json:"user_name_list,omitempty" form:"user_name_list"`
+	UserGroups     []string `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
 }
 
 // @Summary 创建角色
@@ -25,8 +28,78 @@ type CreateRoleReqV2 struct {
 // @Param instance body v2.CreateRoleReqV2 true "create role"
 // @Success 200 {object} controller.BaseRes
 // @router /v2/roles [post]
-func CreateRole(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+func CreateRole(c echo.Context) (err error) {
+
+	req := new(CreateRoleReqV2)
+	{
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return err
+		}
+	}
+
+	s := model.GetStorage()
+
+	// check if role name already exists
+	{
+		_, exist, err := s.GetRoleByName(req.Name)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			return controller.JSONNewDataExistErr(c, "role<%s> is exist", req.Name)
+		}
+	}
+
+	// check instances
+	var instances []*model.Instance
+	{
+		if len(req.Instances) > 0 {
+			instances, err = s.GetAndCheckInstanceExist(req.Instances)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check operation codes
+	{
+		if len(req.OperationCodes) > 0 {
+			if err := model.CheckIfOperationCodeValid(req.OperationCodes); err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check users
+	var users []*model.User
+	{
+		if len(req.Users) > 0 {
+			users, err = s.GetAndCheckUserExist(req.Users)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	// check user groups
+	var userGroups []*model.UserGroup
+	{
+		if len(req.UserGroups) > 0 {
+			userGroups, err = s.GetAndCheckUserGroupExist(req.UserGroups)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
+	newRole := &model.Role{
+		Name: req.Name,
+		Desc: req.Desc,
+	}
+
+	return controller.JSONBaseErrorReq(c,
+		s.SaveRoleAndAssociations(newRole, instances, req.OperationCodes, users, userGroups),
+	)
 }
 
 type GetRolesReqV2 struct {
@@ -54,7 +127,8 @@ type RoleResV2 struct {
 	Users      []string     `json:"user_name_list,omitempty"`
 	Instances  []string     `json:"instance_name_list,omitempty"`
 	Operations []*Operation `json:"operation_list,omitempty"`
-	UserGroups []string     `json:"user_group_name_list" form:"user_group_name_list"`
+	UserGroups []string     `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
+	IsDisabled bool         `json:"is_disabled,omitempty"`
 }
 
 // @Summary 获取角色列表
@@ -72,15 +146,68 @@ type RoleResV2 struct {
 // @Success 200 {object} v2.GetRolesResV2
 // @router /v2/roles [get]
 func GetRoles(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(GetRolesReqV2)
+	{
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return err
+		}
+	}
+
+	s := model.GetStorage()
+
+	var queryCondition map[string]interface{}
+	{
+		limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+		queryCondition = map[string]interface{}{
+			"filter_role_name":     req.FilterRoleName,
+			"filter_user_name":     req.FilterUserName,
+			"filter_instance_name": req.FilterInstanceName,
+			"limit":                limit,
+			"offset":               offset,
+		}
+	}
+
+	roles, count, err := s.GetRolesByReq(queryCondition)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	roleRes := make([]*RoleResV2, len(roles))
+	for i := range roles {
+		ops := make([]*Operation, len(roles[i].OperationsCodes))
+		opCodes := roles[i].OperationsCodes.ForceConvertIntSlice()
+		for i := range opCodes {
+			ops[i] = &Operation{
+				Code: opCodes[i],
+				Desc: model.GetOperationCodeDesc(opCodes[i]),
+			}
+		}
+		roleRes[i] = &RoleResV2{
+			Name:       roles[i].Name,
+			Desc:       roles[i].Desc,
+			Instances:  roles[i].InstanceNames,
+			UserGroups: roles[i].UserGroupNames,
+			Users:      roles[i].UserNames,
+			IsDisabled: roles[i].IsDisabled(),
+			Operations: ops,
+		}
+
+	}
+
+	return c.JSON(http.StatusOK, &GetRolesResV2{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      roleRes,
+		TotalNums: count,
+	})
 }
 
 type UpdateRoleReqV2 struct {
 	Desc           *string   `json:"role_desc" form:"role_desc"`
 	Users          *[]string `json:"user_name_list,omitempty" form:"user_name_list"`
-	Instances      []string  `json:"instance_name_list,omitempty" form:"instance_name_list"`
-	OperationCodes []uint    `json:"operation_code_list" form:"operation_code_list"`
+	Instances      *[]string `json:"instance_name_list,omitempty" form:"instance_name_list"`
+	OperationCodes *[]uint   `json:"operation_code_list,omitempty" form:"operation_code_list"`
 	UserGroups     *[]string `json:"user_group_name_list,omitempty" form:"user_group_name_list"`
+	IsDisabled     *bool     `json:"is_disabled,omitempty"`
 }
 
 // @Summary 更新角色信息
@@ -94,6 +221,113 @@ type UpdateRoleReqV2 struct {
 // @Param instance body v2.UpdateRoleReqV2 true "update role request"
 // @Success 200 {object} controller.BaseRes
 // @router /v2/roles/{role_name}/ [patch]
-func UpdateRole(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+func UpdateRole(c echo.Context) (err error) {
+
+	req := new(UpdateRoleReqV2)
+	{
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return err
+		}
+	}
+
+	s := model.GetStorage()
+	roleName := c.Param("role_name")
+
+	// check if role name exists
+	var role *model.Role
+	{
+		var isExist bool
+		role, isExist, err = s.GetRoleByName(roleName)
+		if err != nil {
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+		if !isExist {
+			return controller.JSONNewDataNotExistErr(c,
+				`role <%s> not exists`, roleName)
+		}
+	}
+
+	// update stat
+	{
+		if req.IsDisabled != nil {
+			if *req.IsDisabled {
+				role.Stat = model.Disabled
+			} else {
+				role.Stat = model.Enabled
+			}
+
+		}
+	}
+
+	// update desc
+	if req.Desc != nil {
+		role.Desc = *req.Desc
+	}
+
+	// check instances
+	var instances []*model.Instance
+	{
+		if req.Instances != nil {
+			if len(*req.Instances) > 0 {
+				instances, err = s.GetAndCheckInstanceExist(*req.Instances)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				instances = []*model.Instance{}
+			}
+		}
+	}
+
+	// check operation codes
+	var opCodes []uint
+	{
+		if req.OperationCodes != nil {
+			if len(*req.OperationCodes) > 0 {
+				if err := model.CheckIfOperationCodeValid(*req.OperationCodes); err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+				opCodes = *req.OperationCodes
+			} else {
+				opCodes = make([]uint, 0)
+			}
+		}
+	}
+
+	// check users
+	var users []*model.User
+	{
+		if req.Users != nil {
+			if len(*req.Users) > 0 {
+				users, err = s.GetAndCheckUserExist(*req.Users)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				users = make([]*model.User, 0)
+			}
+		}
+	}
+
+	// check user groups
+	var userGroups []*model.UserGroup
+	{
+		if req.UserGroups != nil {
+			if len(*req.UserGroups) > 0 {
+				userGroups, err = s.GetAndCheckUserGroupExist(*req.UserGroups)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				userGroups = make([]*model.UserGroup, 0)
+			}
+		}
+	}
+
+	return controller.JSONBaseErrorReq(c,
+		s.SaveRoleAndAssociations(role, instances, opCodes, users, userGroups),
+	)
+
 }

@@ -34,6 +34,7 @@ type Task struct {
 	InstanceId   uint    `json:"instance_id"`
 	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
 	PassRate     float64 `json:"pass_rate"`
+	Score        int32   `json:"score"`
 	AuditLevel   string  `json:"audit_level"`
 	SQLSource    string  `json:"sql_source" gorm:"column:sql_source"`
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`

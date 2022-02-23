@@ -83,17 +83,17 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		// user_group
 		v1Router.POST("/user_groups", v1.CreateUserGroup, AdminUserAllowed())
 		v1Router.GET("/user_groups", v1.GetUserGroups, AdminUserAllowed())
-		v1Router.DELETE("/user_groups/:user_group_name", v1.DeleteUserGroup, AdminUserAllowed())
-		v1Router.PATCH("/user_groups/:user_group_name", v1.UpdateUserGroup, AdminUserAllowed())
+		v1Router.DELETE("/user_groups/:user_group_name/", v1.DeleteUserGroup, AdminUserAllowed())
+		v1Router.PATCH("/user_groups/:user_group_name/", v1.UpdateUserGroup, AdminUserAllowed())
 		v1Router.GET("/user_group_tips", v1.GetUserGroupTips, AdminUserAllowed())
 
 		// role
-		v1Router.GET("/roles", v1.GetRoles, AdminUserAllowed())
+		v1Router.GET("/roles", DeprecatedBy(apiV2), AdminUserAllowed())
 		v2Router.GET("/roles", v2.GetRoles, AdminUserAllowed())
 		v1Router.GET("/role_tips", v1.GetRoleTips, AdminUserAllowed())
-		v1Router.POST("/roles", v1.CreateRole, AdminUserAllowed())
+		v1Router.POST("/roles", DeprecatedBy(apiV2), AdminUserAllowed())
 		v2Router.POST("/roles", v2.CreateRole, AdminUserAllowed())
-		v1Router.PATCH("/roles/:role_name/", v1.UpdateRole, AdminUserAllowed())
+		v1Router.PATCH("/roles/:role_name/", DeprecatedBy(apiV2), AdminUserAllowed())
 		v2Router.PATCH("/roles/:role_name/", v2.UpdateRole, AdminUserAllowed())
 		v1Router.DELETE("/roles/:role_name/", v1.DeleteRole, AdminUserAllowed())
 
@@ -163,14 +163,14 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// workflow
 	v1Router.POST("/workflows", v1.CreateWorkflow)
-	v1Router.GET("/workflows/:workflow_id/", v1.GetWorkflow)
-	v1Router.GET("/workflows", v1.GetWorkflows)
-	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
-	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)
-	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
-	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)
-	v1Router.PUT("/workflows/:workflow_id/schedule", v1.UpdateWorkflowSchedule)
-	v1Router.POST("/workflows/:workflow_id/task/execute", v1.ExecuteTaskOnWorkflow)
+	v1Router.GET("/workflows/:workflow_id/", v1.GetWorkflow)                                     // TODO: permission check
+	v1Router.GET("/workflows", v1.GetWorkflows)                                                  // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow) // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)   // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)                           // TODO: permission check
+	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)                                // TODO: permission check
+	v1Router.PUT("/workflows/:workflow_id/schedule", v1.UpdateWorkflowSchedule)                  // TODO: permission check
+	v1Router.POST("/workflows/:workflow_id/task/execute", v1.ExecuteTaskOnWorkflow)              // TODO: permission check
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)

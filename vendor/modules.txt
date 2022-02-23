@@ -183,8 +183,6 @@ github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/kr/text v0.2.0
-## explicit
 # github.com/labstack/echo/v4 v4.6.1
 ## explicit
 github.com/labstack/echo/v4
@@ -195,7 +193,6 @@ github.com/labstack/gommon/color
 github.com/labstack/gommon/log
 github.com/labstack/gommon/random
 # github.com/leodido/go-urn v1.2.1
-## explicit
 github.com/leodido/go-urn
 # github.com/mailru/easyjson v0.7.1
 ## explicit

@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 type WorkflowListDetail struct {
@@ -10,6 +12,7 @@ type WorkflowListDetail struct {
 	Subject                 string         `json:"subject"`
 	Desc                    string         `json:"desc"`
 	TaskPassRate            float64        `json:"task_pass_rate"`
+	TaskScore               sql.NullInt32  `json:"task_score"`
 	TaskInstance            sql.NullString `json:"task_instance_name"`
 	TaskInstanceDeletedAt   *time.Time     `json:"task_instance_deleted_at"`
 	TaskInstanceSchema      string         `json:"task_instance_schema"`
@@ -24,7 +27,7 @@ type WorkflowListDetail struct {
 }
 
 var workflowsQueryTpl = `SELECT w.id AS workflow_id, w.subject, w.desc, wr.status,
-tasks.status AS task_status, tasks.pass_rate AS task_pass_rate,tasks.instance_schema AS task_instance_schema,
+tasks.status AS task_status, tasks.pass_rate AS task_pass_rate, tasks.score AS task_score, tasks.instance_schema AS task_instance_schema,
 inst.name AS task_instance_name, inst.deleted_at AS task_instance_deleted_at,
 create_user.login_name AS create_user_name, create_user.deleted_at AS create_user_deleted_at,
 w.created_at AS create_time, curr_wst.type AS current_step_type, 
@@ -67,9 +70,15 @@ WHERE
 w.deleted_at IS NULL 
 
 {{- if .check_user_can_access }}
-AND (w.create_user_id = :current_user_id 
+AND (
+w.create_user_id = :current_user_id 
 OR curr_ass_user.id = :current_user_id
 OR all_ass_user.id = :current_user_id
+
+{{- if .viewable_instance_ids }} 
+OR inst.id IN (:viewable_instance_ids)
+{{- end }}
+
 )
 {{- end }}
 
@@ -120,8 +129,21 @@ AND inst.name = :filter_task_instance_name
 
 `
 
-func (s *Storage) GetWorkflowsByReq(data map[string]interface{}) (
+func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 	result []*WorkflowListDetail, count uint64, err error) {
+
+	// get workflow ids only for user can access by OP_WORKFLOW_VIEW_OTHERS
+	var ids []uint
+	{
+		instances, err := s.GetUserCanOpInstances(user, []uint{OP_WORKFLOW_VIEW_OTHERS})
+		if err != nil {
+			return result, 0, err
+		}
+		ids = getInstanceIDsFromInstances(instances)
+	}
+	if len(ids) > 0 {
+		data["viewable_instance_ids"] = utils.JoinUintSliceToString(ids, ", ")
+	}
 
 	err = s.getListResult(workflowsQueryBodyTpl, workflowsQueryTpl, data, &result)
 	if err != nil {

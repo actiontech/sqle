@@ -39,9 +39,7 @@ require (
 	github.com/jinzhu/gorm v1.9.15
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.3
-	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/nxadm/tail v1.4.8

@@ -1388,6 +1388,7 @@ var doc = `{
                 ],
                 "summary": "获取角色列表",
                 "operationId": "getRoleListV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -1447,6 +1448,7 @@ var doc = `{
                 ],
                 "summary": "创建角色",
                 "operationId": "createRoleV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create role",
@@ -1523,6 +1525,7 @@ var doc = `{
                 ],
                 "summary": "更新角色信息",
                 "operationId": "updateRoleV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3813,6 +3816,9 @@ var doc = `{
                 "pass_rate": {
                     "type": "number"
                 },
+                "score": {
+                    "type": "integer"
+                },
                 "sql_source": {
                     "type": "string",
                     "enum": [
@@ -5875,6 +5881,9 @@ var doc = `{
                 "task_pass_rate": {
                     "type": "number"
                 },
+                "task_score": {
+                    "type": "integer"
+                },
                 "workflow_id": {
                     "type": "integer"
                 }
@@ -6228,6 +6237,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "is_disabled": {
+                    "type": "boolean"
+                },
                 "operation_list": {
                     "type": "array",
                     "items": {
@@ -6262,6 +6274,9 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "is_disabled": {
+                    "type": "boolean"
                 },
                 "operation_code_list": {
                     "type": "array",
