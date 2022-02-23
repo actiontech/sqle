@@ -494,10 +494,6 @@ func CreateWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	if task.Instance == nil {
 		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
@@ -510,6 +506,14 @@ func CreateWorkflow(c echo.Context) error {
 	if task.CreateUserId != user.ID {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
 			fmt.Errorf("the task is not created by yourself")))
+	}
+
+	// check user role operations
+	{
+		err = checkCurrentUserCanCreateWorkflow(user, task.Instance)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
@@ -1256,7 +1260,7 @@ func UpdateWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
-	err = checkCurrentUserCanAccessTask(c, task)
+	err = checkCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1474,4 +1478,22 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func checkCurrentUserCanCreateWorkflow(user *model.User, instance *model.Instance) error {
+
+	if model.IsDefaultAdminUser(user.Name) {
+		return nil
+	}
+
+	s := model.GetStorage()
+	ok, err := s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_WORKFLOW_SAVE})
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.NewAccessDeniedErr("user has no access to create workflow for instance")
+	}
+
+	return nil
 }
