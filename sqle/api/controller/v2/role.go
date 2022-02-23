@@ -245,7 +245,7 @@ func UpdateRole(c echo.Context) (err error) {
 		}
 		if !isExist {
 			return controller.JSONNewDataNotExistErr(c,
-				`role <%s> not exists`, roleName)
+				`role is not exist`)
 		}
 	}
 
