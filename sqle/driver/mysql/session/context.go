@@ -137,11 +137,6 @@ func WithExecutor(e *executor.Executor) contextOption {
 	}
 }
 
-func (c *Context) GetSysVar(name string) (string, bool) {
-	v, exist := c.sysVars[name]
-	return v, exist
-}
-
 func (c *Context) GetHistorySQLInfo() *HistorySQLInfo {
 	if c.historySqlInfo == nil {
 		c.historySqlInfo = &HistorySQLInfo{}
@@ -149,26 +144,22 @@ func (c *Context) GetHistorySQLInfo() *HistorySQLInfo {
 	return c.historySqlInfo
 }
 
-func (c *Context) AddSysVar(name, value string) {
-	c.sysVars[name] = value
-}
-
-func (c *Context) HasLoadSchemas() bool {
+func (c *Context) hasLoadSchemas() bool {
 	return c.schemaHasLoad
 }
 
-func (c *Context) SetSchemasLoad() {
+func (c *Context) setSchemasLoad() {
 	c.schemaHasLoad = true
 }
 
-func (c *Context) LoadSchemas(schemas []string) {
-	if c.HasLoadSchemas() {
+func (c *Context) loadSchemas(schemas []string) {
+	if c.hasLoadSchemas() {
 		return
 	}
 	for _, schema := range schemas {
 		c.schemas[schema] = &SchemaInfo{}
 	}
-	c.SetSchemasLoad()
+	c.setSchemasLoad()
 }
 
 // Schemas return all schemas info in current context.
@@ -176,18 +167,18 @@ func (c *Context) Schemas() map[string]*SchemaInfo {
 	return c.schemas
 }
 
-func (c *Context) GetSchema(schemaName string) (*SchemaInfo, bool) {
+func (c *Context) getSchema(schemaName string) (*SchemaInfo, bool) {
 	schema, has := c.schemas[schemaName]
 	return schema, has
 }
 
-func (c *Context) HasSchema(schemaName string) (has bool) {
-	_, has = c.GetSchema(schemaName)
+func (c *Context) hasSchema(schemaName string) (has bool) {
+	_, has = c.getSchema(schemaName)
 	return
 }
 
-func (c *Context) AddSchema(name string) {
-	if c.HasSchema(name) {
+func (c *Context) addSchema(name string) {
+	if c.hasSchema(name) {
 		return
 	}
 	c.schemas[name] = &SchemaInfo{
@@ -195,12 +186,12 @@ func (c *Context) AddSchema(name string) {
 	}
 }
 
-func (c *Context) DelSchema(name string) {
+func (c *Context) delSchema(name string) {
 	delete(c.schemas, name)
 }
 
-func (c *Context) HasLoadTables(schemaName string) (hasLoad bool) {
-	if schema, ok := c.GetSchema(schemaName); ok {
+func (c *Context) hasLoadTables(schemaName string) (hasLoad bool) {
+	if schema, ok := c.getSchema(schemaName); ok {
 		if schema.Tables == nil {
 			hasLoad = false
 		} else {
@@ -210,12 +201,12 @@ func (c *Context) HasLoadTables(schemaName string) (hasLoad bool) {
 	return
 }
 
-func (c *Context) LoadTables(schemaName string, tablesName []string) {
-	schema, ok := c.GetSchema(schemaName)
+func (c *Context) loadTables(schemaName string, tablesName []string) {
+	schema, ok := c.getSchema(schemaName)
 	if !ok {
 		return
 	}
-	if c.HasLoadTables(schemaName) {
+	if c.hasLoadTables(schemaName) {
 		return
 	}
 	schema.Tables = map[string]*TableInfo{}
@@ -227,36 +218,36 @@ func (c *Context) LoadTables(schemaName string, tablesName []string) {
 	}
 }
 
-func (c *Context) GetTable(schemaName, tableName string) (*TableInfo, bool) {
-	schema, SchemaExist := c.GetSchema(schemaName)
+func (c *Context) getTable(schemaName, tableName string) (*TableInfo, bool) {
+	schema, SchemaExist := c.getSchema(schemaName)
 	if !SchemaExist {
 		return nil, false
 	}
-	if !c.HasLoadTables(schemaName) {
+	if !c.hasLoadTables(schemaName) {
 		return nil, false
 	}
 	table, tableExist := schema.Tables[tableName]
 	return table, tableExist
 }
 
-func (c *Context) HasTable(schemaName, tableName string) (has bool) {
-	_, has = c.GetTable(schemaName, tableName)
+func (c *Context) hasTable(schemaName, tableName string) (has bool) {
+	_, has = c.getTable(schemaName, tableName)
 	return
 }
 
-func (c *Context) AddTable(schemaName, tableName string, table *TableInfo) {
-	schema, exist := c.GetSchema(schemaName)
+func (c *Context) addTable(schemaName, tableName string, table *TableInfo) {
+	schema, exist := c.getSchema(schemaName)
 	if !exist {
 		return
 	}
-	if !c.HasLoadTables(schemaName) {
+	if !c.hasLoadTables(schemaName) {
 		return
 	}
 	schema.Tables[tableName] = table
 }
 
-func (c *Context) DelTable(schemaName, tableName string) {
-	schema, exist := c.GetSchema(schemaName)
+func (c *Context) delTable(schemaName, tableName string) {
+	schema, exist := c.getSchema(schemaName)
 	if !exist {
 		return
 	}
@@ -285,20 +276,20 @@ func (c *Context) UpdateContext(node ast.Node) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
-		if c.HasSchema(s.DBName) {
+		if c.hasSchema(s.DBName) {
 			c.SetCurrentSchema(s.DBName)
 		}
 	case *ast.CreateDatabaseStmt:
-		if c.HasLoadSchemas() {
-			c.AddSchema(s.Name)
+		if c.hasLoadSchemas() {
+			c.addSchema(s.Name)
 		}
 	case *ast.CreateTableStmt:
 		schemaName := c.GetSchemaName(s.Table)
 		tableName := s.Table.Name.L
-		if c.HasTable(schemaName, tableName) {
+		if c.hasTable(schemaName, tableName) {
 			return
 		}
-		c.AddTable(schemaName, tableName,
+		c.addTable(schemaName, tableName,
 			&TableInfo{
 				Size:          0, // table is empty after create
 				sizeLoad:      true,
@@ -307,16 +298,16 @@ func (c *Context) UpdateContext(node ast.Node) {
 				AlterTables:   []*ast.AlterTableStmt{},
 			})
 	case *ast.DropDatabaseStmt:
-		if c.HasLoadSchemas() {
-			c.DelSchema(s.Name)
+		if c.hasLoadSchemas() {
+			c.delSchema(s.Name)
 		}
 	case *ast.DropTableStmt:
-		if c.HasLoadSchemas() {
+		if c.hasLoadSchemas() {
 			for _, table := range s.Tables {
 				schemaName := c.GetSchemaName(table)
 				tableName := table.Name.L
-				if c.HasTable(schemaName, tableName) {
-					c.DelTable(schemaName, tableName)
+				if c.hasTable(schemaName, tableName) {
+					c.delTable(schemaName, tableName)
 				}
 			}
 		}
@@ -339,8 +330,8 @@ func (c *Context) UpdateContext(node ast.Node) {
 			// rename table
 			if s.Table.Name.L != info.MergedTable.Table.Name.L {
 				schemaName := c.GetSchemaName(s.Table)
-				c.DelTable(schemaName, s.Table.Name.L)
-				c.AddTable(schemaName, info.MergedTable.Table.Name.L, info)
+				c.delTable(schemaName, s.Table.Name.L)
+				c.addTable(schemaName, info.MergedTable.Table.Name.L, info)
 			}
 		}
 	default:
@@ -360,12 +351,12 @@ func (c *Context) GetSchemaName(stmt *ast.TableName) string {
 func (c *Context) GetTableInfo(stmt *ast.TableName) (*TableInfo, bool) {
 	schema := c.GetSchemaName(stmt)
 	table := stmt.Name.String()
-	return c.GetTable(schema, table)
+	return c.getTable(schema, table)
 }
 
 // IsSchemaExist check schema is exist or not.
 func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
-	if !c.HasLoadSchemas() {
+	if !c.hasLoadSchemas() {
 		if c.e == nil {
 			return false, nil
 		}
@@ -374,7 +365,7 @@ func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		c.LoadSchemas(schemas)
+		c.loadSchemas(schemas)
 	}
 
 	lowerCaseTableNames, err := c.GetSystemVariable(SysVarLowerCaseTableNames)
@@ -390,7 +381,7 @@ func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
 		_, exist := capitalizedSchema[strings.ToUpper(schemaName)]
 		return exist, nil
 	}
-	return c.HasSchema(schemaName), nil
+	return c.hasSchema(schemaName), nil
 }
 
 // IsTableExist check table is exist or not.
@@ -404,7 +395,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 		return false, nil
 	}
 
-	if !c.HasLoadTables(schemaName) {
+	if !c.hasLoadTables(schemaName) {
 		if c.e == nil {
 			return false, nil
 		}
@@ -413,7 +404,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		c.LoadTables(schemaName, tables)
+		c.loadTables(schemaName, tables)
 	}
 
 	lowerCaseTableNames, err := c.GetSystemVariable(SysVarLowerCaseTableNames)
@@ -423,7 +414,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 
 	if lowerCaseTableNames != "0" {
 		capitalizedTable := make(map[string]struct{})
-		schemaInfo, ok := c.GetSchema(schemaName)
+		schemaInfo, ok := c.getSchema(schemaName)
 		if !ok {
 			return false, fmt.Errorf("schema %s not exist", schemaName)
 		}
@@ -434,7 +425,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 		_, exist := capitalizedTable[strings.ToUpper(stmt.Name.String())]
 		return exist, nil
 	}
-	return c.HasTable(schemaName, stmt.Name.String()), nil
+	return c.hasTable(schemaName, stmt.Name.String()), nil
 }
 
 const (
@@ -443,7 +434,7 @@ const (
 
 // GetSystemVariable get system variable.
 func (c *Context) GetSystemVariable(name string) (string, error) {
-	v, exist := c.GetSysVar(name)
+	v, exist := c.sysVars[name]
 	if exist {
 		return v, nil
 	}
@@ -461,8 +452,12 @@ func (c *Context) GetSystemVariable(name string) (string, error) {
 	}
 
 	value := results[0]["Value"]
-	c.AddSysVar(name, value.String)
+	c.AddSystemVariable(name, value.String)
 	return value.String, nil
+}
+
+func (c *Context) AddSystemVariable(name, value string) {
+	c.sysVars[name] = value
 }
 
 // GetCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
@@ -504,7 +499,7 @@ func (c *Context) GetCollationDatabase(stmt *ast.TableName, schemaName string) (
 	if schemaName == "" {
 		schemaName = c.GetSchemaName(stmt)
 	}
-	schema, schemaExist := c.GetSchema(schemaName)
+	schema, schemaExist := c.getSchema(schemaName)
 	if schemaExist && schema.collationLoad {
 		return schema.DefaultCollation, nil
 	}
@@ -570,7 +565,7 @@ func (c *Context) GetSchemaCharacter(stmt *ast.TableName, schemaName string) (st
 	if schemaName == "" {
 		schemaName = c.GetSchemaName(stmt)
 	}
-	schema, schemaExist := c.GetSchema(schemaName)
+	schema, schemaExist := c.getSchema(schemaName)
 	if schemaExist {
 		if schema.characterLoad {
 			return schema.DefaultCharacter, nil
@@ -597,7 +592,7 @@ func (c *Context) GetSchemaEngine(stmt *ast.TableName, schemaName string) (strin
 	if schemaName == "" {
 		schemaName = c.GetSchemaName(stmt)
 	}
-	schema, schemaExist := c.GetSchema(schemaName)
+	schema, schemaExist := c.getSchema(schemaName)
 	if schemaExist {
 		if schema.engineLoad {
 			return schema.DefaultEngine, nil
