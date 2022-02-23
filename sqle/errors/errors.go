@@ -94,6 +94,9 @@ func HttpRequestFormatErrWrapper(err error) error {
 }
 
 func ConnectStorageErrWrapper(err error) error {
+	if err == nil {
+		return nil
+	}
 	return New(ConnectStorageError, err)
 }
 

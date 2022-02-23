@@ -122,33 +122,6 @@ func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetUserInstanceTip(user *User, dbType string) (
-	instances []*Instance, err error) {
-
-	db := s.db.Model(&Instance{}).Select("instances.name, instances.db_type")
-	if user.Name != DefaultAdminUser {
-		// 1. get roles
-		roles, err := s.GetRolesByUserID(int(user.ID))
-		if err != nil {
-			return nil, err
-		}
-		if len(roles) == 0 {
-			return instances, nil
-		}
-		roleIDs := GetRoleIDsFromRoles(roles)
-
-		// 2. get instances by roleIDs
-		db = db.Joins("JOIN instance_role AS ir ON instances.id = ir.instance_id").
-			Joins("JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL").
-			Where("roles.id IN (?)", roleIDs)
-	}
-	if dbType != "" {
-		db = db.Where("instances.db_type = ?", dbType)
-	}
-	err = db.Scan(&instances).Error
-	return instances, errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) GetAndCheckInstanceExist(instanceNames []string) (instances []*Instance, err error) {
 	instances, err = s.GetInstancesByNames(instanceNames)
 	if err != nil {
@@ -259,6 +232,45 @@ GROUP BY instances.id
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
 	return
+}
+
+func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
+	instances []*Instance, err error) {
+
+	query := `
+SELECT instances.name, instances.db_type
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
+LEFT JOIN user_role ON roles.id = user_role.role_id 
+LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND users.stat=0
+WHERE instances.deleted_at IS NULL 
+AND users.id = ?
+%s
+GROUP BY instances.id
+UNION
+SELECT instances.name, instances.db_type
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
+JOIN user_group_roles ON roles.id = user_group_roles.role_id
+JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.stat = 0 AND user_groups.deleted_at IS NULL
+JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+JOIN users ON users.id = user_group_users.user_id AND users.stat = 0 AND users.deleted_at IS NULL
+WHERE instances.deleted_at IS NULL
+%s
+AND users.id = ?
+GROUP BY instances.id
+`
+	if dbType == "" {
+		query = fmt.Sprintf(query, "", "")
+	} else {
+		dbTypeCond := fmt.Sprintf(`AND instances.db_type = '%s'`, dbType)
+		query = fmt.Sprintf(query, dbTypeCond, dbTypeCond)
+	}
+
+	err = s.db.Unscoped().Raw(query, user.ID, user.ID).Scan(&instances).Error
+	return instances, errors.ConnectStorageErrWrapper(err)
 }
 
 func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {

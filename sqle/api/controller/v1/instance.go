@@ -664,7 +664,7 @@ func GetInstanceTips(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	instances, err := s.GetUserInstanceTip(user, req.FilterDBType)
+	instances, err := s.GetInstanceTipsByUser(user, req.FilterDBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
