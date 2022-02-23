@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/log"
 	"strconv"
 	"strings"
 
@@ -167,7 +168,20 @@ func (c *Context) Schemas() map[string]*SchemaInfo {
 	return c.schemas
 }
 
+func (c *Context) isLowerCaseTableName() bool {
+	lowerCaseTableNames, err := c.GetSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		log.NewEntry().Errorf("fail to load system variable lower_case_table_names, error: %v", err)
+		// get system variable lower_case_table_names failed, default using false.
+		return false
+	}
+	return lowerCaseTableNames != "0"
+}
+
 func (c *Context) getSchema(schemaName string) (*SchemaInfo, bool) {
+	if c.isLowerCaseTableName() {
+		schemaName = strings.ToLower(schemaName)
+	}
 	schema, has := c.schemas[schemaName]
 	return schema, has
 }
@@ -181,12 +195,18 @@ func (c *Context) addSchema(name string) {
 	if c.hasSchema(name) {
 		return
 	}
+	if c.isLowerCaseTableName() {
+		name = strings.ToLower(name)
+	}
 	c.schemas[name] = &SchemaInfo{
 		Tables: map[string]*TableInfo{},
 	}
 }
 
 func (c *Context) delSchema(name string) {
+	if c.isLowerCaseTableName() {
+		name = strings.ToLower(name)
+	}
 	delete(c.schemas, name)
 }
 
@@ -226,6 +246,9 @@ func (c *Context) getTable(schemaName, tableName string) (*TableInfo, bool) {
 	if !c.hasLoadTables(schemaName) {
 		return nil, false
 	}
+	if c.isLowerCaseTableName() {
+		tableName = strings.ToLower(tableName)
+	}
 	table, tableExist := schema.Tables[tableName]
 	return table, tableExist
 }
@@ -243,6 +266,9 @@ func (c *Context) addTable(schemaName, tableName string, table *TableInfo) {
 	if !c.hasLoadTables(schemaName) {
 		return
 	}
+	if c.isLowerCaseTableName() {
+		tableName = strings.ToLower(tableName)
+	}
 	schema.Tables[tableName] = table
 }
 
@@ -251,10 +277,16 @@ func (c *Context) delTable(schemaName, tableName string) {
 	if !exist {
 		return
 	}
+	if c.isLowerCaseTableName() {
+		tableName = strings.ToLower(tableName)
+	}
 	delete(schema.Tables, tableName)
 }
 
 func (c *Context) SetCurrentSchema(schema string) {
+	if c.isLowerCaseTableName() {
+		schema = strings.ToLower(schema)
+	}
 	c.currentSchema = schema
 }
 
@@ -285,7 +317,7 @@ func (c *Context) UpdateContext(node ast.Node) {
 		}
 	case *ast.CreateTableStmt:
 		schemaName := c.GetSchemaName(s.Table)
-		tableName := s.Table.Name.L
+		tableName := s.Table.Name.String()
 		if c.hasTable(schemaName, tableName) {
 			return
 		}
@@ -305,7 +337,7 @@ func (c *Context) UpdateContext(node ast.Node) {
 		if c.hasLoadSchemas() {
 			for _, table := range s.Tables {
 				schemaName := c.GetSchemaName(table)
-				tableName := table.Name.L
+				tableName := table.Name.String()
 				if c.hasTable(schemaName, tableName) {
 					c.delTable(schemaName, tableName)
 				}
@@ -328,10 +360,10 @@ func (c *Context) UpdateContext(node ast.Node) {
 			info.MergedTable, _ = util.MergeAlterToTable(oldTable, s)
 			info.AlterTables = append(info.AlterTables, s)
 			// rename table
-			if s.Table.Name.L != info.MergedTable.Table.Name.L {
+			if s.Table.Name.String() != info.MergedTable.Table.Name.String() {
 				schemaName := c.GetSchemaName(s.Table)
-				c.delTable(schemaName, s.Table.Name.L)
-				c.addTable(schemaName, info.MergedTable.Table.Name.L, info)
+				c.delTable(schemaName, s.Table.Name.String())
+				c.addTable(schemaName, info.MergedTable.Table.Name.String(), info)
 			}
 		}
 	default:
