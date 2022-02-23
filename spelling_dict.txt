@@ -188,8 +188,10 @@ stretchr
 subqueries
 subquery
 subtree
+substring
 swaggo
 syscall
+sysdate
 tablespace
 testdata
 tinyblob
