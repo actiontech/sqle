@@ -34,6 +34,7 @@ type User struct {
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
 	Roles                  []*Role                `gorm:"many2many:user_role;"`
+	UserGroups             []*UserGroup           `gorm:"many2many:user_group_users"`
 	Stat                   uint                   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
 
 	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
@@ -101,7 +102,8 @@ func (s *Storage) GetUserByName(name string) (*User, bool, error) {
 
 func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
 	t := &User{}
-	err := s.db.Preload("Roles").Where("login_name = ?", name).First(t).Error
+	err := s.db.Preload("Roles").Preload("UserGroups").
+		Where("login_name = ?", name).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
@@ -250,4 +252,40 @@ func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
 	// Many Users to many WorkflowStepTemplates
 	err := s.db.Model(&copyUser).Preload("WorkflowStepTemplates", "workflow_template_id IS NOT NULL").Find(&copyUser).Error
 	return len(copyUser.WorkflowStepTemplates) > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+// NOTE: parameter: roles([]*Users) and userGroups([]*Role) need to be distinguished as nil or zero length slice.
+func (s *Storage) SaveUserAndAssociations(
+	user *User, roles []*Role, userGroups []*UserGroup) (err error) {
+	return s.Tx(func(txDB *gorm.DB) error {
+
+		// User
+		if err := txDB.Save(user).Error; err != nil {
+			txDB.Rollback()
+			return errors.ConnectStorageErrWrapper(err)
+		}
+
+		// Roles
+		if roles != nil {
+			if err := txDB.Model(user).
+				Association("Roles").
+				Replace(roles).Error; err != nil {
+				txDB.Rollback()
+				return errors.ConnectStorageErrWrapper(err)
+			}
+		}
+
+		// user groups
+
+		if userGroups != nil {
+			if err := txDB.Model(user).
+				Association("UserGroups").
+				Replace(userGroups).Error; err != nil {
+				txDB.Rollback()
+				return errors.ConnectStorageErrWrapper(err)
+			}
+		}
+
+		return nil
+	})
 }

@@ -45,33 +45,40 @@ func CreateUser(c echo.Context) error {
 	}
 
 	var roles []*model.Role
-	if req.Roles != nil || len(req.Roles) > 0 {
-		roles, err = s.GetAndCheckRoleExist(req.Roles)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	{
+		if req.Roles != nil || len(req.Roles) > 0 {
+			roles, err = s.GetAndCheckRoleExist(req.Roles)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 		}
 	}
+
+	var userGroups []*model.UserGroup
+	{
+		if req.UserGroups != nil || len(req.UserGroups) > 0 {
+			userGroups, err = s.GetAndCheckUserGroupExist(req.UserGroups)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
 	user := &model.User{
 		Name:     req.Name,
 		Password: req.Password,
 		Email:    req.Email,
 	}
-	err = s.Save(user)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = s.UpdateUserRoles(user, roles...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return controller.JSONBaseErrorReq(c, nil)
+
+	return controller.JSONBaseErrorReq(c,
+		s.SaveUserAndAssociations(user, roles, userGroups))
 }
 
 type UpdateUserReqV1 struct {
-	Email      *string  `json:"email" valid:"omitempty,email" form:"email"`
-	Roles      []string `json:"role_name_list" form:"role_name_list"`
-	IsDisabled *bool    `json:"is_disabled,omitempty" form:"is_disabled"`
-	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
+	Email      *string   `json:"email" valid:"omitempty,email" form:"email"`
+	Roles      *[]string `json:"role_name_list" form:"role_name_list"`
+	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
+	UserGroups *[]string `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
 // @Summary 更新用户信息
@@ -100,20 +107,6 @@ func UpdateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
 
-	// roles
-	{
-		if req.Roles != nil || len(req.Roles) > 0 {
-			roles, err := s.GetAndCheckRoleExist(req.Roles)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-			err = s.UpdateUserRoles(user, roles...)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-		}
-	}
-
 	// Email
 	if req.Email != nil {
 		user.Email = *req.Email
@@ -132,12 +125,41 @@ func UpdateUser(c echo.Context) error {
 		}
 	}
 
-	err = s.Save(user)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	// roles
+	var roles []*model.Role
+	{
+
+		if req.Roles != nil {
+			if len(*req.Roles) > 0 {
+				roles, err = s.GetAndCheckRoleExist(*req.Roles)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			} else {
+				roles = make([]*model.Role, 0)
+			}
+		}
 	}
 
-	return controller.JSONBaseErrorReq(c, nil)
+	// user_groups
+	var userGroups []*model.UserGroup
+	{
+		if req.UserGroups != nil {
+			if len(*req.UserGroups) > 0 {
+				userGroups, err = s.GetAndCheckUserGroupExist(*req.UserGroups)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				} else {
+					roles = make([]*model.Role, 0)
+				}
+			} else {
+				userGroups = make([]*model.UserGroup, 0)
+			}
+		}
+
+	}
+
+	return controller.JSONBaseErrorReq(c, s.SaveUserAndAssociations(user, roles, userGroups))
 }
 
 // @Summary 删除用户
@@ -263,6 +285,13 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 		roleNames = append(roleNames, role.Name)
 	}
 	userReq.Roles = roleNames
+
+	userGroupNames := make([]string, len(user.UserGroups))
+	for i := range user.UserGroups {
+		userGroupNames[i] = user.UserGroups[i].Name
+	}
+	userReq.UserGroups = userGroupNames
+
 	return userReq
 }
 
