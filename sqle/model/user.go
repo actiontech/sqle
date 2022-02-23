@@ -147,33 +147,47 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 	return users, nil
 }
 
-func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (bool, error) {
+func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (
+	ok bool, err error) {
 
-	// 1. find role ids
-	roles, err := s.GetRolesByUserID(int(user.ID))
-	if err != nil {
-		return false, err
+	type countStruct struct {
+		Count int `json:"count"`
 	}
 
-	if len(roles) == 0 {
-		return false, nil
-	}
-	roleIDs := GetRoleIDsFromRoles(roles)
-
-	// 2. check user access instance
 	query := `
-SELECT count(1) FROM instances
-LEFT JOIN instance_role ON instances.id = instance_role.instance_id
-LEFT JOIN roles ON instance_role.role_id = roles.id AND roles.stat=0
-WHERE roles.id IN (?) AND instances.id = ?
+SELECT COUNT(1) AS count
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
+LEFT JOIN user_role ON user_role.role_id = roles.id
+LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0 AND users.deleted_at IS NULL
+WHERE instances.deleted_at IS NULL
+AND instances.id = ?
+AND users.id = ?
+GROUP BY instances.id
+UNION
+SELECT instances.id
+FROM instances
+LEFT JOIN instance_role ON instance_role.instance_id = instances.id
+LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
+JOIN user_group_roles ON roles.id = user_group_roles.role_id
+JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.stat = 0 AND user_groups.deleted_at IS NULL
+JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+JOIN users ON users.id = user_group_users.user_id AND users.stat = 0 AND users.deleted_at IS NULL
+WHERE instances.deleted_at IS NULL
+AND instances.id = ?
+AND users.id = ?
+GROUP BY instances.id
 `
-
-	var count uint
-	err = s.db.Raw(query, roleIDs, instance.ID).Count(&count).Error
+	var cnt countStruct
+	err = s.db.Unscoped().Raw(query, instance.ID, user.ID, instance.ID, user.ID).Scan(&cnt).Error
 	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return false, nil
+		}
 		return false, errors.New(errors.ConnectStorageError, err)
 	}
-	return count > 0, nil
+	return cnt.Count > 0, nil
 }
 
 func (s *Storage) UserCanAccessWorkflow(user *User, workflow *Workflow) (bool, error) {
