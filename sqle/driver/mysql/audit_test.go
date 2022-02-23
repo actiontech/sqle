@@ -3430,8 +3430,8 @@ func TestWhitelist(t *testing.T) {
 // }
 
 func Test_LowerCaseTableNameOpen(t *testing.T) {
-	getLowerCaseOpenInspect:= func() *Inspect {
-		inspect :=  DefaultMysqlInspect()
+	getLowerCaseOpenInspect := func() *Inspect {
+		inspect := DefaultMysqlInspect()
 		inspect.Ctx = session.NewMockContextForTestLowerCaseTableNameOpen(nil)
 		return inspect
 	}
@@ -3572,8 +3572,8 @@ alter table exist_db.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test";
 }
 
 func Test_LowerCaseTableNameClose(t *testing.T) {
-	getLowerCaseCloseInspect:= func() *Inspect {
-		inspect :=  DefaultMysqlInspect()
+	getLowerCaseCloseInspect := func() *Inspect {
+		inspect := DefaultMysqlInspect()
 		inspect.Ctx = session.NewMockContextForTestLowerCaseTableNameClose(nil)
 		return inspect
 	}
@@ -3680,4 +3680,67 @@ alter table exist_db_1.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test"
 			newTestResult().add(driver.RuleLevelError,
 				TableNotExistMessage, "exist_db_1.EXIST_TB_2"))
 	}
+}
+
+// for issue 208
+func TestInspect_CheckColumn(t *testing.T) {
+	runDefaultRulesInspectCase(t, "check column 1", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 change column v1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 2", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 drop column v1;
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 3", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 change column V1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 4", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 drop column V1;
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 5", DefaultMysqlInspect(),
+		`
+	delete from exist_db.exist_tb_1 where id in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 6", DefaultMysqlInspect(),
+		`
+	delete from exist_db.exist_tb_1 where ID in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 7", DefaultMysqlInspect(),
+		`
+	select id, v1 from exist_db.exist_tb_1 where id in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 8", DefaultMysqlInspect(),
+		`
+	select ID, V1 from exist_db.exist_tb_1 where ID in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 9", DefaultMysqlInspect(),
+		`
+	UPDATE exist_db.exist_tb_1 SET v1 = 1 WHERE id = 1;
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 10", DefaultMysqlInspect(),
+		`
+	UPDATE exist_db.exist_tb_1 SET V1 = 1 WHERE ID = 1;
+	`,
+		newTestResult())
 }
