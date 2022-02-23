@@ -68,6 +68,84 @@ func NewMockContext(e *executor.Executor) *Context {
 	}
 }
 
+func NewMockContextForTestLowerCaseTableNameOpen(e *executor.Executor) *Context {
+	return &Context{
+		e:             e,
+		currentSchema: "exist_db",
+		schemaHasLoad: true,
+		executionPlan: map[string][]*executor.ExplainRecord{},
+		sysVars: map[string]string{
+			"lower_case_table_names": "1",
+		},
+		schemas: map[string]*SchemaInfo{
+			"exist_db": {
+				DefaultEngine:    "InnoDB",
+				engineLoad:       true,
+				DefaultCharacter: "utf8mb4",
+				characterLoad:    true,
+				Tables: map[string]*TableInfo{
+					"exist_tb_1": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt1(),
+					},
+				},
+			},
+		},
+		historySqlInfo: &HistorySQLInfo{},
+	}
+}
+
+func NewMockContextForTestLowerCaseTableNameClose(e *executor.Executor) *Context {
+	return &Context{
+		e:             e,
+		currentSchema: "exist_db",
+		schemaHasLoad: true,
+		executionPlan: map[string][]*executor.ExplainRecord{},
+		sysVars: map[string]string{
+			"lower_case_table_names": "0",
+		},
+		schemas: map[string]*SchemaInfo{
+			"exist_db_1": {
+				DefaultEngine:    "InnoDB",
+				engineLoad:       true,
+				DefaultCharacter: "utf8mb4",
+				characterLoad:    true,
+				Tables: map[string]*TableInfo{
+					"exist_tb_1": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt1(),
+					},
+				},
+			},
+			"EXIST_DB_2": {
+				DefaultEngine:    "InnoDB",
+				engineLoad:       true,
+				DefaultCharacter: "utf8mb4",
+				characterLoad:    true,
+				Tables: map[string]*TableInfo{
+					"exist_tb_1": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt1(),
+					},
+					"EXIST_TB_1": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt2(),
+					},
+				},
+			},
+		},
+		historySqlInfo: &HistorySQLInfo{},
+	}
+}
+
 func getTestCreateTableStmt1() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_1 (
