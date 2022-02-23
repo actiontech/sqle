@@ -45,26 +45,33 @@ func CreateUser(c echo.Context) error {
 	}
 
 	var roles []*model.Role
-	if req.Roles != nil || len(req.Roles) > 0 {
-		roles, err = s.GetAndCheckRoleExist(req.Roles)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	{
+		if req.Roles != nil || len(req.Roles) > 0 {
+			roles, err = s.GetAndCheckRoleExist(req.Roles)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 		}
 	}
+
+	var userGroups []*model.UserGroup
+	{
+		if req.UserGroups != nil || len(req.UserGroups) > 0 {
+			userGroups, err = s.GetAndCheckUserGroupExist(req.UserGroups)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+	}
+
 	user := &model.User{
 		Name:     req.Name,
 		Password: req.Password,
 		Email:    req.Email,
 	}
-	err = s.Save(user)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = s.UpdateUserRoles(user, roles...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return controller.JSONBaseErrorReq(c, nil)
+
+	return controller.JSONBaseErrorReq(c,
+		s.SaveUserAndAssociations(user, roles, userGroups))
 }
 
 type UpdateUserReqV1 struct {
