@@ -36,7 +36,7 @@ var SoarRuleHandlers = []RuleHandler{
 	//},
 	{
 
-		Rule: driver.Rule{ //ALTER TABLE logtest CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
+		Rule: driver.Rule{ //ALTER TABLE test CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
 			Name:     "ALT001",
 			Desc:     "修改表的默认字符集不会改表各个字段的字符集",
 			Level:    driver.RuleLevelWarn,
@@ -228,7 +228,7 @@ var SoarRuleHandlers = []RuleHandler{
 		Message: "删除全表时建议使用 TRUNCATE 替代 DELETE",
 		Func:    CLA014,
 	}, {
-		Rule: driver.Rule{ //update mysql.func set name ="asdf";
+		Rule: driver.Rule{ //update mysql.func set name ="hello";
 			Name:     "CLA016",
 			Desc:     "不要 UPDATE 主键",
 			Level:    driver.RuleLevelError,
