@@ -285,6 +285,13 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 		roleNames = append(roleNames, role.Name)
 	}
 	userReq.Roles = roleNames
+
+	userGroupNames := make([]string, len(user.UserGroups))
+	for i := range user.UserGroups {
+		userGroupNames[i] = user.UserGroups[i].Name
+	}
+	userReq.UserGroups = userGroupNames
+
 	return userReq
 }
 
