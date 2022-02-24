@@ -57,7 +57,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7
-	github.com/traefik/yaegi v0.11.2 // indirect
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 	github.com/urfave/cli/v2 v2.1.1
 	golang.org/x/net v0.0.0-20210913180222-943fd674d43e

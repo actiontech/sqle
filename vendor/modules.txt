@@ -312,8 +312,6 @@ github.com/swaggo/files
 ## explicit
 github.com/swaggo/swag
 github.com/swaggo/swag/gen
-# github.com/traefik/yaegi v0.11.2
-## explicit
 # github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 ## explicit
 github.com/ungerik/go-dry
