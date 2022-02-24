@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,29 +39,22 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 		// 2. from audit plan
 		//		- the audit plan may collect SQLs which plugins can not Parse.
 		//      - In these case, we pass the raw SQL to plugins, it's ok.
-		nodes, err := d.Parse(context.TODO(), executeSQL.Content)
+		node, err := parse(l, d, executeSQL.Content)
 		if err != nil {
 			return err
-		}
-		if len(nodes) != 1 {
-			l.Warnf("before audit, the SQL is not single SQL: %s", executeSQL.Content)
 		}
 		var whitelistMatch bool
 		for _, wl := range whitelist {
 			if wl.MatchType == model.SQLWhitelistFPMatch {
-				wlNodes, err := d.Parse(context.TODO(), wl.Value)
+				wlNode, err := parse(l, d, wl.Value)
 				if err != nil {
 					return err
 				}
-				if len(wlNodes) != 1 {
-					return driver.ErrNodesCountExceedOne
-				}
-
-				if nodes[0].Fingerprint == wlNodes[0].Fingerprint {
+				if node.Fingerprint == wlNode.Fingerprint {
 					whitelistMatch = true
 				}
 			} else {
-				if wl.CapitalizedValue == strings.ToUpper(nodes[0].Text) {
+				if wl.CapitalizedValue == strings.ToUpper(node.Text) {
 					whitelistMatch = true
 				}
 			}
@@ -76,7 +71,7 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 		executeSQL.AuditStatus = model.SQLAuditStatusFinished
 		executeSQL.AuditLevel = string(result.Level())
 		executeSQL.AuditResult = result.Message()
-		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(nodes[0].Fingerprint)...)))
+		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
 
 		l.WithFields(logrus.Fields{
 			"SQL":    executeSQL.Content,
@@ -84,6 +79,20 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 			"result": executeSQL.AuditResult}).Info("audit finished")
 	}
 	return nil
+}
+
+func parse(l *logrus.Entry, d driver.Driver, sql string) (node driver.Node, err error) {
+	nodes, err := d.Parse(context.TODO(), sql)
+	if err != nil {
+		return node, errors.Wrapf(err, "parse sql: %s", sql)
+	}
+	if len(nodes) == 0 {
+		return node, fmt.Errorf("the node is empty after parse")
+	}
+	if len(nodes) > 1 {
+		l.Errorf("the SQL is not single SQL: %s", sql)
+	}
+	return nodes[0], nil
 }
 
 func genRollbackSQL(l *logrus.Entry, task *model.Task, d driver.Driver) ([]*model.RollbackSQL, error) {
