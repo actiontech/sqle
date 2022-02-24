@@ -4,8 +4,8 @@ import (
 	"context"
 	_errors "errors"
 	"fmt"
-	"sync"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -247,7 +247,7 @@ func (a *action) audit() (err error) {
 		}
 		defer d.Close(context.TODO())
 
-		rollbackSQLs ,err := genRollbackSQL(a.entry, a.task, d)
+		rollbackSQLs, err := genRollbackSQL(a.entry, a.task, d)
 		if err != nil {
 			return err
 		}
@@ -292,6 +292,10 @@ func (a *action) audit() (err error) {
 
 // Scoring rules from https://github.com/actiontech/sqle/issues/284
 func scoreTask(task *model.Task) int32 {
+	if len(task.ExecuteSQLs) == 0 {
+		return 0
+	}
+
 	var (
 		numberOfTask           float64
 		numberOfLessThanError  float64
