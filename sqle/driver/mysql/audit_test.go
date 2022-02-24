@@ -120,6 +120,11 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 	inspectCase(t, desc, i, sql, results...)
 }
 
+func runEmptyRuleInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+	i.rules = []*driver.Rule{}
+	inspectCase(t, desc, i, sql, results...)
+}
+
 func inspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
 	stmts, err := util.ParseSql(sql)
 	if err != nil {
@@ -160,7 +165,7 @@ func TestCheckInvalidUse(t *testing.T) {
 	)
 
 	inspect1 := DefaultMysqlInspect()
-	inspect1.Ctx.AddSysVar(session.SysVarLowerCaseTableNames, "1")
+	inspect1.Ctx.AddSystemVariable(session.SysVarLowerCaseTableNames, "1")
 	runDefaultRulesInspectCase(t, "", inspect1,
 		"use EXIST_DB",
 		newTestResult(),
@@ -176,7 +181,7 @@ select id from exist_db.EXIST_TB_1 where id = 1;
 			TableNotExistMessage, "exist_db.EXIST_TB_1"))
 
 	inspect1 := DefaultMysqlInspect()
-	inspect1.Ctx.AddSysVar(session.SysVarLowerCaseTableNames, "1")
+	inspect1.Ctx.AddSystemVariable(session.SysVarLowerCaseTableNames, "1")
 	runDefaultRulesInspectCase(t, "", inspect1,
 		`
 select id from exist_db.EXIST_TB_1 where id = 1;
@@ -3423,3 +3428,319 @@ func TestWhitelist(t *testing.T) {
 // 	i.rules = ptrRules
 // 	inspectCase(t, desc, i, wl, sql, results...)
 // }
+
+func Test_LowerCaseTableNameOpen(t *testing.T) {
+	getLowerCaseOpenInspect := func() *Inspect {
+		inspect := DefaultMysqlInspect()
+		inspect.Ctx = session.NewMockContextForTestLowerCaseTableNameOpen(nil)
+		return inspect
+	}
+	// check use
+	{
+		runEmptyRuleInspectCase(t, "test lower case table name open 1-1", getLowerCaseOpenInspect(),
+			`use not_exist_db;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaNotExistMessage, "not_exist_db"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 1-2", getLowerCaseOpenInspect(),
+			`use NOT_EXIST_DB;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaNotExistMessage, "NOT_EXIST_DB"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 1-3", getLowerCaseOpenInspect(),
+			`use EXIST_DB;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 1-4", getLowerCaseOpenInspect(),
+			`use EXIST_db;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 1-5", getLowerCaseOpenInspect(),
+			`use exist_db;`,
+			newTestResult())
+	}
+	// check schema
+	{
+		runEmptyRuleInspectCase(t, "test lower case table name open 2-1", getLowerCaseOpenInspect(),
+			`create database EXIST_DB;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaExistMessage, "EXIST_DB"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 2-2", getLowerCaseOpenInspect(),
+			`create database exist_db;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaExistMessage, "exist_db"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 2-3", getLowerCaseOpenInspect(),
+			`create database not_exist_db;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 2-4", getLowerCaseOpenInspect(),
+			`create database NOT_EXIST_DB;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 2-5", getLowerCaseOpenInspect(),
+			`create database NOT_EXIST_DB;
+create database NOT_EXIST_DB;`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				SchemaExistMessage, "NOT_EXIST_DB"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 2-6", getLowerCaseOpenInspect(),
+			`create database NOT_EXIST_DB;
+create database not_exist_db;`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				SchemaExistMessage, "not_exist_db"))
+	}
+	// check table
+	{
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-1", getLowerCaseOpenInspect(),
+			`create table EXIST_DB.exist_tb_1 (id int);`,
+			newTestResult().add(driver.RuleLevelError,
+				TableExistMessage, "EXIST_DB.exist_tb_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-2", getLowerCaseOpenInspect(),
+			`create table exist_db.exist_tb_1 (id int);`,
+			newTestResult().add(driver.RuleLevelError,
+				TableExistMessage, "exist_db.exist_tb_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-3", getLowerCaseOpenInspect(),
+			`create table EXIST_DB.EXIST_TB_1 (id int);`,
+			newTestResult().add(driver.RuleLevelError,
+				TableExistMessage, "EXIST_DB.EXIST_TB_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-4", getLowerCaseOpenInspect(),
+			`create table EXIST_DB.EXIST_TB_2 (id int);
+create table EXIST_DB.exist_tb_2 (id int);`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				TableExistMessage, "EXIST_DB.exist_tb_2"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-5", getLowerCaseOpenInspect(),
+			`create table EXIST_DB.exist_tb_2 (id int);
+create table EXIST_DB.EXIST_TB_2 (id int);`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				TableExistMessage, "EXIST_DB.EXIST_TB_2"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-6", getLowerCaseOpenInspect(),
+			`alter table exist_db.EXIST_TB_1 add column v3 varchar(255) COMMENT "unit test";`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-7", getLowerCaseOpenInspect(),
+			`alter table exist_db.EXIST_TB_1 rename AS exist_tb_2;
+alter table exist_db.EXIST_TB_1 add column v3 varchar(255) COMMENT "unit test";
+`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				TableNotExistMessage, "exist_db.EXIST_TB_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-8", getLowerCaseOpenInspect(),
+			`alter table exist_db.EXIST_TB_1 rename AS exist_tb_2;
+alter table exist_db.exist_tb_2 add column v3 varchar(255) COMMENT "unit test";
+`,
+			newTestResult(),
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 3-9", getLowerCaseOpenInspect(),
+			`alter table exist_db.EXIST_TB_1 rename AS exist_tb_2;
+alter table exist_db.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test";
+`,
+			newTestResult(),
+			newTestResult())
+	}
+
+	// check dml
+	{
+		runEmptyRuleInspectCase(t, "test lower case table name open 4-1", getLowerCaseOpenInspect(),
+			`select id from exist_db.EXIST_TB_2 where id = 1;`,
+			newTestResult().add(driver.RuleLevelError,
+				TableNotExistMessage, "exist_db.EXIST_TB_2"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 4-2", getLowerCaseOpenInspect(),
+			`select id from exist_db.exist_tb_2 where id = 1;`,
+			newTestResult().add(driver.RuleLevelError,
+				TableNotExistMessage, "exist_db.exist_tb_2"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 4-3", getLowerCaseOpenInspect(),
+			`select id from exist_db.EXIST_TB_1 where id = 1;`, newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name open 4-4", getLowerCaseOpenInspect(),
+			`select id from exist_db.exist_tb_1 where id = 1;`, newTestResult())
+	}
+}
+
+func Test_LowerCaseTableNameClose(t *testing.T) {
+	getLowerCaseCloseInspect := func() *Inspect {
+		inspect := DefaultMysqlInspect()
+		inspect.Ctx = session.NewMockContextForTestLowerCaseTableNameClose(nil)
+		return inspect
+	}
+	// check use
+	{
+		runEmptyRuleInspectCase(t, "test lower case table name close 1-1", getLowerCaseCloseInspect(),
+			`use not_exist_db;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaNotExistMessage, "not_exist_db"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 1-2", getLowerCaseCloseInspect(),
+			`use NOT_EXIST_DB;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaNotExistMessage, "NOT_EXIST_DB"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 1-3", getLowerCaseCloseInspect(),
+			`use exist_db_1;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 1-4", getLowerCaseCloseInspect(),
+			`use EXIST_DB_1;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaNotExistMessage, "EXIST_DB_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 1-5", getLowerCaseCloseInspect(),
+			`use exist_DB_1;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaNotExistMessage, "exist_DB_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 1-6", getLowerCaseCloseInspect(),
+			`use EXIST_DB_2;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 1-7", getLowerCaseCloseInspect(),
+			`use exist_db_2;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaNotExistMessage, "exist_db_2"))
+	}
+	// check schema
+	{
+		runEmptyRuleInspectCase(t, "test lower case table name close 2-1", getLowerCaseCloseInspect(),
+			`create database exist_db_1;`,
+			newTestResult().add(driver.RuleLevelError,
+				SchemaExistMessage, "exist_db_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 2-2", getLowerCaseCloseInspect(),
+			`create database EXIST_DB_1;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 2-3", getLowerCaseCloseInspect(),
+			`create database exist_DB_1;`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 2-4", getLowerCaseCloseInspect(),
+			`create database NOT_EXIST_DB;
+create database not_exist_db;`,
+			newTestResult(),
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 2-5", getLowerCaseCloseInspect(),
+			`create database NOT_EXIST_DB;
+create database NOT_EXIST_DB;`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				SchemaExistMessage, "NOT_EXIST_DB"))
+	}
+	// check table
+	{
+		runEmptyRuleInspectCase(t, "test lower case table name close 3-1", getLowerCaseCloseInspect(),
+			`create table exist_db_1.exist_tb_1 (id int);`,
+			newTestResult().add(driver.RuleLevelError,
+				TableExistMessage, "exist_db_1.exist_tb_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 3-2", getLowerCaseCloseInspect(),
+			`create table exist_db_1.EXIST_TB_1 (id int);`,
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 3-3", getLowerCaseCloseInspect(),
+			`alter table exist_db_1.EXIST_TB_1 rename AS exist_tb_2;
+`,
+			newTestResult().add(driver.RuleLevelError,
+				TableNotExistMessage, "exist_db_1.EXIST_TB_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 3-4", getLowerCaseCloseInspect(),
+			`alter table exist_db_1.exist_tb_1 rename AS exist_tb_2;
+alter table exist_db_1.exist_tb_1 add column v3 varchar(255) COMMENT "unit test";
+`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				TableNotExistMessage, "exist_db_1.exist_tb_1"))
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 3-5", getLowerCaseCloseInspect(),
+			`alter table exist_db_1.exist_tb_1 rename AS exist_tb_2;
+alter table exist_db_1.exist_tb_2 add column v3 varchar(255) COMMENT "unit test";
+`,
+			newTestResult(),
+			newTestResult())
+
+		runEmptyRuleInspectCase(t, "test lower case table name close 3-6", getLowerCaseCloseInspect(),
+			`alter table exist_db_1.exist_tb_1 rename AS exist_tb_2;
+alter table exist_db_1.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test";
+`,
+			newTestResult(),
+			newTestResult().add(driver.RuleLevelError,
+				TableNotExistMessage, "exist_db_1.EXIST_TB_2"))
+	}
+}
+
+// for issue 208
+func TestInspect_CheckColumn(t *testing.T) {
+	runDefaultRulesInspectCase(t, "check column 1", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 change column v1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 2", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 drop column v1;
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 3", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 change column V1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 4", DefaultMysqlInspect(),
+		`
+	alter table exist_db.exist_tb_1 drop column V1;
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 5", DefaultMysqlInspect(),
+		`
+	delete from exist_db.exist_tb_1 where id in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 6", DefaultMysqlInspect(),
+		`
+	delete from exist_db.exist_tb_1 where ID in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 7", DefaultMysqlInspect(),
+		`
+	select id, v1 from exist_db.exist_tb_1 where id in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 8", DefaultMysqlInspect(),
+		`
+	select ID, V1 from exist_db.exist_tb_1 where ID in (1, 2);
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 9", DefaultMysqlInspect(),
+		`
+	UPDATE exist_db.exist_tb_1 SET v1 = 1 WHERE id = 1;
+	`,
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "check column 10", DefaultMysqlInspect(),
+		`
+	UPDATE exist_db.exist_tb_1 SET V1 = 1 WHERE ID = 1;
+	`,
+		newTestResult())
+}
