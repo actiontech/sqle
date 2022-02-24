@@ -3,15 +3,14 @@
 
 package rule
 
-import "github.com/actiontech/sqle/sqle/driver"
-
 /*
-Some rules are inspired by https://github.com/XiaoMi/soar
+	Some rules are inspired by https://github.com/XiaoMi/soar
 */
 
 import (
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -21,7 +20,7 @@ import (
 	parserDriver "github.com/pingcap/tidb/types/parser_driver"
 )
 
-var SoarRuleHandlers = []RuleHandler{
+var eeRuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{ //select a as id, id , b as user  from mysql.user;
 			Name:     "mysql_dml_1",
@@ -30,7 +29,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "这些别名(%v)与列名或表名相同",
-		Func:    mysql_dml_1,
+		Func:    mysqlDML1,
 	},
 	{
 
@@ -41,7 +40,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "修改表的默认字符集不会改表各个字段的字符集",
-		Func:    mysql_ddl_1,
+		Func:    mysqlDDL1,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP COLUMN col;
 			Name:     "mysql_ddl_2",
@@ -50,7 +49,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "删除列为高危操作",
-		Func:    mysql_ddl_2,
+		Func:    mysqlDDL2,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
 			Name:     "mysql_ddl_3",
@@ -59,7 +58,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "删除主键为高危操作",
-		Func:    mysql_ddl_3,
+		Func:    mysqlDDL3,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
 			Name:     "mysql_ddl_4",
@@ -68,7 +67,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "删除外键为高危操作",
-		Func:    mysql_ddl_4,
+		Func:    mysqlDDL4,
 	},
 	{
 		Rule: driver.Rule{ //select * from user where id like "a";
@@ -78,7 +77,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用没有通配符的 LIKE 查询",
-		Func:    mysql_dml_2,
+		Func:    mysqlDML2,
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
 			Name:     "mysql_dml_3",
@@ -87,7 +86,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "IN (NULL)/NOT IN (NULL) 永远非真",
-		Func:    mysql_dml_3,
+		Func:    mysqlDML3,
 	}, {
 		Rule: driver.Rule{ //select * from user where id in (a);
 			Name:     "mysql_dml_4",
@@ -96,7 +95,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "尽量不要使用IN",
-		Func:    mysql_dml_4,
+		Func:    mysqlDML4,
 	},
 	{
 		Rule: driver.Rule{ //select * from user where id = ' 1';
@@ -106,7 +105,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "引号中的字符串开头或结尾包含空格",
-		Func:    mysql_dml_5,
+		Func:    mysqlDML5,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
 			Name:     "mysql_ddl_5",
@@ -115,7 +114,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "DDL 语句中使用了中文全角引号",
-		Func:    mysql_ddl_5,
+		Func:    mysqlDDL5,
 	}, {
 		Rule: driver.Rule{ //select name from tbl where id < 1000 order by rand(1)
 			Name:     "mysql_dml_6",
@@ -124,7 +123,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 ORDER BY RAND()",
-		Func:    mysql_dml_6,
+		Func:    mysqlDML6,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
 			Name:     "mysql_dml_7",
@@ -133,7 +132,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议对常量进行 GROUP BY",
-		Func:    mysql_dml_7,
+		Func:    mysqlDML7,
 	}, {
 		Rule: driver.Rule{ //select c1,c2,c3 from t1 where c1='foo' order by c2 desc, c3 asc
 			Name:     "mysql_dml_8",
@@ -142,7 +141,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
-		Func:    mysql_dml_8,
+		Func:    mysqlDML8,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
 			Name:     "mysql_dml_9",
@@ -151,7 +150,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "请为 GROUP BY 显示添加 ORDER BY 条件",
-		Func:    mysql_dml_9,
+		Func:    mysqlDML9,
 	}, {
 		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
 			Name:     "mysql_dml_10",
@@ -160,7 +159,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议ORDER BY 的条件为表达式",
-		Func:    mysql_dml_10,
+		Func:    mysqlDML10,
 	}, {
 		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
 			Name:     "mysql_dml_11",
@@ -177,7 +176,7 @@ var SoarRuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "建议将过长的SQL分解成几个简单的SQL",
-		Func:    mysql_dml_11,
+		Func:    mysqlDML11,
 	}, {
 		Rule: driver.Rule{ //SELECT s.c_id,count(s.c_id) FROM s where c = test GROUP BY s.c_id HAVING s.c_id <> '1660' AND s.c_id <> '2' order by s.c_id
 			Name:     "mysql_dml_12",
@@ -186,7 +185,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 HAVING 子句",
-		Func:    mysql_dml_12,
+		Func:    mysqlDML12,
 	}, {
 		Rule: driver.Rule{ //delete from tbl
 			Name:     "mysql_dml_13",
@@ -195,7 +194,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "删除全表时建议使用 TRUNCATE 替代 DELETE",
-		Func:    mysql_dml_13,
+		Func:    mysqlDML13,
 	}, {
 		Rule: driver.Rule{ //update mysql.func set name ="hello";
 			Name:     "mysql_dml_14",
@@ -204,7 +203,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不要 UPDATE 主键",
-		Func:    mysql_dml_14,
+		Func:    mysqlDML14,
 	}, {
 		Rule: driver.Rule{ //create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);
 			Name:     "mysql_ddl_6",
@@ -221,7 +220,7 @@ var SoarRuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "表中包含有太多的列",
-		Func:    mysql_ddl_6,
+		Func:    mysqlDDL6,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)
 			Name:     "mysql_ddl_7",
@@ -230,7 +229,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "建议列与表使用同一个字符集",
-		Func:    mysql_ddl_7,
+		Func:    mysqlDDL7,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tab (a INT(1));
 			Name:     "mysql_ddl_8",
@@ -239,7 +238,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "整型定义建议采用 INT(10) 或 BIGINT(20)",
-		Func:    mysql_ddl_8,
+		Func:    mysqlDDL8,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tab (a varchar(3500));
 			Name:     "mysql_ddl_9",
@@ -256,7 +255,7 @@ var SoarRuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "VARCHAR 定义长度过长",
-		Func:    mysql_ddl_9,
+		Func:    mysqlDDL9,
 	}, {
 		Rule: driver.Rule{ //select id from t where substring(name,1,3)='abc'
 			Name:     "mysql_dml_15",
@@ -265,7 +264,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "应避免在 WHERE 条件中使用函数或其他运算符",
-		Func:    mysql_dml_15,
+		Func:    mysqlDML15,
 	}, {
 		Rule: driver.Rule{ //SELECT SYSDATE();
 			Name:     "mysql_dml_16",
@@ -274,7 +273,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 SYSDATE() 函数",
-		Func:    mysql_dml_16,
+		Func:    mysqlDML16,
 	}, {
 		Rule: driver.Rule{ //SELECT SUM(COL) FROM tbl;
 			Name:     "mysql_dml_17",
@@ -283,7 +282,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "使用 SUM(COL) 时需注意 NPE 问题",
-		Func:    mysql_dml_17,
+		Func:    mysqlDML17,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
 			Name:     "mysql_ddl_10",
@@ -300,7 +299,7 @@ var SoarRuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "主键中的列过多",
-		Func:    mysql_ddl_10,
+		Func:    mysqlDDL10,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl where name=xx limit 10
 			Name:     "mysql_dml_18",
@@ -309,7 +308,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "未使用 ORDER BY 的 LIMIT 查询",
-		Func:    mysql_dml_18,
+		Func:    mysqlDML18,
 	},
 	{
 		Rule: driver.Rule{ //TRUNCATE TABLE tbl_name
@@ -319,7 +318,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "请谨慎使用TRUNCATE操作",
-		Func:    mysql_dml_19,
+		Func:    mysqlDML19,
 	}, {
 		Rule: driver.Rule{ //delete from t where col = 'condition'
 			Name:     "mysql_dml_20",
@@ -328,7 +327,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "使用DELETE/DROP/TRUNCATE等操作时注意备份",
-		Func:    mysql_dml_20,
+		Func:    mysqlDML20,
 	}, {
 		Rule: driver.Rule{ //SELECT BENCHMARK(10, RAND())
 			Name:     "mysql_dml_21",
@@ -337,7 +336,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "发现常见 SQL 注入函数",
-		Func:    mysql_dml_21,
+		Func:    mysqlDML21,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl where type!=0
 			Name:     "mysql_dml_22",
@@ -346,7 +345,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "请使用'<>'代替'!='",
-		Func:    mysql_dml_22,
+		Func:    mysqlDML22,
 	}, {
 		Rule: driver.Rule{ //select col1,col2,col3 from table1 where col2 in(select col from table2)
 			Name:     "mysql_dml_23",
@@ -355,7 +354,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不推荐使用子查询",
-		Func:    mysql_dml_23,
+		Func:    mysqlDML23,
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
 			Name:     "mysql_dml_24",
@@ -364,7 +363,7 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "子查询不支持LIMIT",
-		Func:    mysql_dml_24,
+		Func:    mysqlDML24,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
 			Name:     "mysql_ddl_11",
@@ -373,19 +372,19 @@ var SoarRuleHandlers = []RuleHandler{
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "表的初始AUTO_INCREMENT值不为0",
-		Func:    mysql_ddl_11,
+		Func:    mysqlDDL11,
 	},
 }
 
 func init() {
-	for _, rh := range SoarRuleHandlers {
+	for _, rh := range eeRuleHandlers {
 		RuleHandlers = append(RuleHandlers, rh)
 		RuleHandlerMap[rh.Rule.Name] = rh
 		InitRules = append(InitRules, rh.Rule)
 	}
 }
 
-func mysql_dml_1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		repeats := []string{}
@@ -417,7 +416,7 @@ func mysql_dml_1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_ddl_1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
@@ -434,7 +433,7 @@ func mysql_ddl_1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_ddl_2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		if len(stmt.Specs) > 0 {
@@ -451,7 +450,7 @@ func mysql_ddl_2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_ddl_3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.DropIndexStmt:
 		if strings.ToLower(stmt.IndexName) == "primary" {
@@ -473,7 +472,7 @@ func mysql_ddl_3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_ddl_4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		if len(stmt.Specs) > 0 {
@@ -490,7 +489,7 @@ func mysql_ddl_4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_dml_2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -514,7 +513,7 @@ func mysql_dml_2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	return nil
 }
 
-func mysql_dml_3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -540,7 +539,7 @@ func mysql_dml_3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	return nil
 }
 
-func mysql_dml_4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -558,7 +557,7 @@ func mysql_dml_4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	return nil
 }
 
-func mysql_dml_5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -579,7 +578,7 @@ func mysql_dml_5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	return nil
 }
 
-func mysql_ddl_5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case ast.DDLNode:
 		if strings.Contains(node.Text(), "“") {
@@ -589,7 +588,7 @@ func mysql_ddl_5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	return nil
 }
 
-func mysql_dml_6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
@@ -604,7 +603,7 @@ func mysql_dml_6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_dml_7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		groupBy := stmt.GroupBy
@@ -619,7 +618,7 @@ func mysql_dml_7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_dml_8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
@@ -641,7 +640,7 @@ func mysql_dml_8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_dml_9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.GroupBy != nil && stmt.OrderBy == nil {
@@ -653,7 +652,7 @@ func mysql_dml_9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_dml_10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
@@ -671,14 +670,14 @@ func mysql_dml_10(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_dml_11(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML11(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if len(node.Text()) > rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
 		addResult(res, rule, rule.Name)
 	}
 	return nil
 }
 
-func mysql_dml_12(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML12(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Having != nil {
@@ -690,7 +689,7 @@ func mysql_dml_12(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_dml_13(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML13(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.DeleteStmt:
 		if stmt.Where == nil {
@@ -702,7 +701,7 @@ func mysql_dml_13(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_dml_14(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML14(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.UpdateStmt:
 		createTable, exist, err := ctx.GetCreateTableStmt(stmt.TableRefs.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
@@ -733,7 +732,7 @@ func mysql_dml_14(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_ddl_6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if len(stmt.Cols) > rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
@@ -745,7 +744,7 @@ func mysql_ddl_6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_ddl_7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -760,7 +759,7 @@ func mysql_ddl_7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_ddl_8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -775,7 +774,7 @@ func mysql_ddl_8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_ddl_9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -790,7 +789,7 @@ func mysql_ddl_9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	}
 }
 
-func mysql_dml_15(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML15(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -808,7 +807,7 @@ func mysql_dml_15(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	return nil
 }
 
-func mysql_dml_16(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML16(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		for _, f := range stmt.Fields.Fields {
@@ -837,7 +836,7 @@ func mysql_dml_16(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	return nil
 }
 
-func mysql_dml_17(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML17(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		for _, f := range stmt.Fields.Fields {
@@ -866,7 +865,7 @@ func mysql_dml_17(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	return nil
 }
 
-func mysql_ddl_10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range stmt.Constraints {
@@ -881,7 +880,7 @@ func mysql_ddl_10(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_dml_18(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML18(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.OrderBy == nil {
@@ -893,7 +892,7 @@ func mysql_dml_18(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_dml_19(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML19(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.TruncateTableStmt:
 		addResult(res, rule, rule.Name)
@@ -903,7 +902,7 @@ func mysql_dml_19(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_dml_20(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML20(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch node.(type) {
 	case *ast.TruncateTableStmt, *ast.DeleteStmt, *ast.DropTableStmt:
 		addResult(res, rule, rule.Name)
@@ -913,7 +912,7 @@ func mysql_dml_20(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	}
 }
 
-func mysql_dml_21(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML21(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	funcs := []string{"sleep", "benchmark", "get_lock", "release_lock"}
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
@@ -952,7 +951,7 @@ func inSlice(ss []string, s string) bool {
 	return false
 }
 
-func mysql_dml_23(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML23(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -970,14 +969,14 @@ func mysql_dml_23(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	return nil
 }
 
-func mysql_dml_22(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML22(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if strings.Contains(node.Text(), "!=") {
 		addResult(res, rule, rule.Name)
 	}
 	return nil
 }
 
-func mysql_dml_24(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML24(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	if where := getWhereExpr(node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -997,7 +996,7 @@ func mysql_dml_24(ctx *session.Context, rule driver.Rule, res *driver.AuditResul
 	return nil
 }
 
-func mysql_ddl_11(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDDL11(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	default:
 		return nil
