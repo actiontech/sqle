@@ -23,7 +23,7 @@ FROM users
 LEFT JOIN user_role ON users.id = user_role.user_id
 LEFT JOIN roles ON user_role.role_id = roles.id AND roles.deleted_at IS NULL
 LEFT JOIN user_group_users ON users.id = user_group_users.user_id
-LEFT JOIN user_groups ON user_group_users.user_group_id AND user_groups.deleted_at IS NULL
+LEFT JOIN user_groups ON user_group_users.user_group_id = user_groups.id AND user_groups.deleted_at IS NULL
 WHERE
 users.id in (SELECT DISTINCT(users.id)
 
