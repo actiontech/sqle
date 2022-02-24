@@ -152,6 +152,10 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (
 	ok bool, err error) {
 
+	if IsDefaultAdminUser(user.Name) {
+		return true, nil
+	}
+
 	type countStruct struct {
 		Count int `json:"count"`
 	}
