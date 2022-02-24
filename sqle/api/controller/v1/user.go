@@ -149,8 +149,6 @@ func UpdateUser(c echo.Context) error {
 				userGroups, err = s.GetAndCheckUserGroupExist(*req.UserGroups)
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, err)
-				} else {
-					roles = make([]*model.Role, 0)
 				}
 			} else {
 				userGroups = make([]*model.UserGroup, 0)
