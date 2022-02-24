@@ -28,12 +28,21 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 		return err
 	}
 	for _, executeSQL := range task.ExecuteSQLs {
+		// We always trust the ExecuteSQL.Content is single SQL.
+		//
+		// The audit() function has two producers for now:
+		// 1. from API controller
+		//		- the API controller should call Parse before audit.
+		//      - If Parse() can not splits SQL to expected case, user can add SQL to whitelist for workaround.
+		// 2. from audit plan
+		//		- the audit plan may collect SQLs which plugins can not Parse.
+		//      - In these case, we pass the raw SQL to plugins, it's ok.
 		nodes, err := d.Parse(context.TODO(), executeSQL.Content)
 		if err != nil {
 			return err
 		}
 		if len(nodes) != 1 {
-			return driver.ErrNodesCountExceedOne
+			l.Warnf("before audit, the SQL is not single SQL: %s", executeSQL.Content)
 		}
 		var whitelistMatch bool
 		for _, wl := range whitelist {
