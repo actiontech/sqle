@@ -234,10 +234,35 @@ GROUP BY instances.id
 	return
 }
 
-func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
-	instances []*Instance, err error) {
+func getDbTypeQueryCond(dbType string) string {
+	if dbType == "" {
+		return ""
+	}
+	return `AND instances.db_type = ?`
+}
 
-	query := `
+func (s *Storage) GetAllInstanceTips(dbType string) (instances []*Instance, err error) {
+	rawQuery := `
+SELECT instances.name, instances.db_type
+FROM instances
+WHERE instances.deleted_at IS NULL
+%s
+GROUP BY instances.id
+`
+
+	query := fmt.Sprintf(rawQuery, getDbTypeQueryCond(dbType))
+	if dbType == "" {
+		err = s.db.Unscoped().Raw(query).Scan(&instances).Error
+	} else {
+		err = s.db.Unscoped().Raw(query, dbType).Scan(&instances).Error
+	}
+	return instances, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetInstanceTipsByUserViaRoles(
+	user *User, dbType string) (instances []*Instance, err error) {
+
+	rawQuery := `
 SELECT instances.name, instances.db_type
 FROM instances
 LEFT JOIN instance_role ON instance_role.instance_id = instances.id
@@ -262,15 +287,28 @@ WHERE instances.deleted_at IS NULL
 AND users.id = ?
 GROUP BY instances.id
 `
+
+	dbTypeCond := getDbTypeQueryCond(dbType)
+
+	query := fmt.Sprintf(rawQuery, dbTypeCond, dbTypeCond)
+
 	if dbType == "" {
-		query = fmt.Sprintf(query, "", "")
+		err = s.db.Unscoped().Raw(query, user.ID, user.ID).Scan(&instances).Error
 	} else {
-		dbTypeCond := fmt.Sprintf(`AND instances.db_type = '%s'`, dbType)
-		query = fmt.Sprintf(query, dbTypeCond, dbTypeCond)
+		err = s.db.Unscoped().Raw(query, user.ID, dbType, user.ID, dbType).Scan(&instances).Error
 	}
 
-	err = s.db.Unscoped().Raw(query, user.ID, user.ID).Scan(&instances).Error
 	return instances, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
+	instances []*Instance, err error) {
+
+	if IsDefaultAdminUser(user.Name) {
+		return s.GetAllInstanceTips(dbType)
+	}
+
+	return s.GetInstanceTipsByUserViaRoles(user, dbType)
 }
 
 func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {
