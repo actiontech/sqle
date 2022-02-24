@@ -292,6 +292,10 @@ func (a *action) audit() (err error) {
 
 // Scoring rules from https://github.com/actiontech/sqle/issues/284
 func scoreTask(task *model.Task) int32 {
+	if len(task.ExecuteSQLs) == 0 {
+		return 0
+	}
+
 	var (
 		numberOfTask           float64
 		numberOfLessThanError  float64
