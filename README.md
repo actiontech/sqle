@@ -15,6 +15,7 @@ These [SQL audit plugins](https://actiontech.github.io/sqle-docs-cn/3.modules/3.
 * [PostgreSQL](https://github.com/actiontech/sqle-pg-plugin)
 * [Oracle](https://github.com/actiontech/sqle-oracle-plugin)
 * [SQL Server](https://github.com/actiontech/sqle-ms-plugin)
+* [DB2](https://github.com/actiontech/sqle-db2-plugin)
 ## Official website
 For more information, please visit our [official website](https://opensource.actionsky.com).
 
