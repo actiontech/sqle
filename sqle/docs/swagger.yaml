@@ -681,6 +681,12 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetLicenseResV1:
+    properties:
+      license_content:
+        example: 'This license is for: &{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt'
+        type: string
+    type: object
   v1.GetOperationsResV1:
     properties:
       code:
@@ -2225,7 +2231,7 @@ paths:
   /v1/basic_info:
     get:
       description: get sqle basic info
-      operationId: getSQLEInfo
+      operationId: getSQLEInfoV1
       responses:
         "200":
           description: OK
@@ -2284,6 +2290,39 @@ paths:
       summary: 添加 LDAP 配置
       tags:
       - configuration
+  /v1/configurations/license:
+    get:
+      description: get sqle license
+      operationId: getSQLELicenseV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetLicenseResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 sqle license
+      tags:
+      - configuration
+    post:
+      description: set sqle license
+      operationId: setSQLELicenseV1
+      parameters:
+      - description: SQLE license file
+        in: formData
+        name: license_file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 导入 sqle license
+      tags:
+      - configuration
   /v1/configurations/smtp:
     get:
       description: get SMTP configuration
@@ -2318,6 +2357,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 添加 SMTP 配置
+      tags:
+      - configuration
+  /v1/configurations/sqle_server_info:
+    get:
+      description: get information about the machine where SQLE is located
+      operationId: GetSQLEServerInfoV1
+      responses:
+        "200":
+          description: server info
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 sqle 所在机器的信息
       tags:
       - configuration
   /v1/configurations/system_variables:
