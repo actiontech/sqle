@@ -627,7 +627,7 @@
                     "global"
                 ],
                 "summary": "获取 sqle 基本信息",
-                "operationId": "getSQLEInfo",
+                "operationId": "getSQLEInfoV1",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -719,6 +719,59 @@
                 }
             }
         },
+        "/v1/configurations/license": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sqle license",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 sqle license",
+                "operationId": "getSQLELicenseV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetLicenseResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "set sqle license",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "导入 sqle license",
+                "operationId": "setSQLELicenseV1",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "SQLE license file",
+                        "name": "license_file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -772,6 +825,29 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/sqle_server_info": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get information about the machine where SQLE is located",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 sqle 所在机器的信息",
+                "operationId": "GetSQLEServerInfoV1",
+                "responses": {
+                    "200": {
+                        "description": "server info",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -4581,6 +4657,15 @@
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetLicenseResV1": {
+            "type": "object",
+            "properties": {
+                "license_content": {
+                    "type": "string",
+                    "example": "This license is for: \u0026{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt"
                 }
             }
         },
