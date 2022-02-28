@@ -2329,8 +2329,8 @@ paths:
       summary: 导入 sqle license
       tags:
       - configuration
-  /v1/configurations/parse_license:
-    post:
+  /v1/configurations/license/parse_result:
+    get:
       description: parse and check sqle license
       operationId: parseSQLELicenseV1
       parameters:

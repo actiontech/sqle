@@ -788,8 +788,8 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/parse_license": {
-            "post": {
+        "/v1/configurations/license/parse_result": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []

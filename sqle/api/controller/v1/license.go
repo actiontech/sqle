@@ -67,7 +67,7 @@ type ParseLicenseResV1 struct {
 // @Security ApiKeyAuth
 // @Param license_file formData file true "SQLE license file"
 // @Success 200 {object} v1.ParseLicenseResV1
-// @router /v1/configurations/parse_license [post]
+// @router /v1/configurations/license/parse_result [get]
 func ParseLicense(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
 }
