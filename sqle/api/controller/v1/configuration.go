@@ -300,7 +300,7 @@ type GetSQLEInfoResV1 struct {
 // GetSQLEInfo get sqle basic info
 // @Summary 获取 sqle 基本信息
 // @Description get sqle basic info
-// @Id getSQLEInfo
+// @Id getSQLEInfoV1
 // @Tags global
 // @Success 200 {object} v1.GetSQLEInfoResV1
 // @router /v1/basic_info [get]
