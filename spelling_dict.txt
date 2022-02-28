@@ -19,6 +19,7 @@ bigint
 binlog
 btree
 cardinalities
+ccug
 charset
 conns
 createdefiner
@@ -48,6 +49,7 @@ fatalf
 fatalln
 fatih
 favicon
+fcjb
 fdbb
 filepath
 filesort
@@ -58,6 +60,7 @@ foreignkey
 fprintf
 fulltext
 funcs
+gaorcb
 getpid
 getwd
 github
@@ -91,6 +94,7 @@ itoa
 jackc
 jinzhu
 jmoiron
+kodf
 labstack
 ldap
 lifecycle

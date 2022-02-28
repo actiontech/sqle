@@ -643,7 +643,7 @@ var doc = `{
                     "global"
                 ],
                 "summary": "获取 sqle 基本信息",
-                "operationId": "getSQLEInfo",
+                "operationId": "getSQLEInfoV1",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -730,6 +730,114 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/license": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sqle license",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 sqle license",
+                "operationId": "getSQLELicenseV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetLicenseResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "set sqle license",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "导入 sqle license",
+                "operationId": "setSQLELicenseV1",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "SQLE license file",
+                        "name": "license_file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/license/check": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "parse and check sqle license",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "解析和校验 sqle license",
+                "operationId": "parseSQLELicenseV1",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "SQLE license file",
+                        "name": "license_file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.CheckLicenseResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/license/info": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get information about the machine where SQLE is located",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 sqle 所在机器的信息",
+                "operationId": "GetSQLEServerInfoV1",
+                "responses": {
+                    "200": {
+                        "description": "server info",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -3912,6 +4020,17 @@ var doc = `{
                 }
             }
         },
+        "v1.CheckLicenseResV1": {
+            "type": "object",
+            "properties": {
+                "license": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.LicenseItem"
+                    }
+                }
+            }
+        },
         "v1.CloneRuleTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -4600,6 +4719,17 @@ var doc = `{
                 }
             }
         },
+        "v1.GetLicenseResV1": {
+            "type": "object",
+            "properties": {
+                "license": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.LicenseItem"
+                    }
+                }
+            }
+        },
         "v1.GetOperationsResV1": {
             "type": "object",
             "properties": {
@@ -5127,6 +5257,20 @@ var doc = `{
                     "type": "string"
                 },
                 "ldap_user_name_rdn_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.LicenseItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
