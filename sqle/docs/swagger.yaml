@@ -207,6 +207,13 @@ definitions:
           type: string
         type: array
     type: object
+  v1.CheckLicenseResV1:
+    properties:
+      license:
+        items:
+          $ref: '#/definitions/v1.LicenseItem'
+        type: array
+    type: object
   v1.CloneRuleTemplateReqV1:
     properties:
       desc:
@@ -681,6 +688,13 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetLicenseResV1:
+    properties:
+      license:
+        items:
+          $ref: '#/definitions/v1.LicenseItem'
+        type: array
+    type: object
   v1.GetOperationsResV1:
     properties:
       code:
@@ -1042,6 +1056,15 @@ definitions:
       ldap_user_email_rdn_key:
         type: string
       ldap_user_name_rdn_key:
+        type: string
+    type: object
+  v1.LicenseItem:
+    properties:
+      description:
+        type: string
+      limit:
+        type: integer
+      name:
         type: string
     type: object
   v1.OperationResV1:
@@ -2225,7 +2248,7 @@ paths:
   /v1/basic_info:
     get:
       description: get sqle basic info
-      operationId: getSQLEInfo
+      operationId: getSQLEInfoV1
       responses:
         "200":
           description: OK
@@ -2282,6 +2305,73 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 添加 LDAP 配置
+      tags:
+      - configuration
+  /v1/configurations/license:
+    get:
+      description: get sqle license
+      operationId: getSQLELicenseV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetLicenseResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 sqle license
+      tags:
+      - configuration
+    post:
+      description: set sqle license
+      operationId: setSQLELicenseV1
+      parameters:
+      - description: SQLE license file
+        in: formData
+        name: license_file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 导入 sqle license
+      tags:
+      - configuration
+  /v1/configurations/license/check:
+    post:
+      description: parse and check sqle license
+      operationId: parseSQLELicenseV1
+      parameters:
+      - description: SQLE license file
+        in: formData
+        name: license_file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.CheckLicenseResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 解析和校验 sqle license
+      tags:
+      - configuration
+  /v1/configurations/license/info:
+    get:
+      description: get information about the machine where SQLE is located
+      operationId: GetSQLEServerInfoV1
+      responses:
+        "200":
+          description: server info
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 sqle 所在机器的信息
       tags:
       - configuration
   /v1/configurations/smtp:
