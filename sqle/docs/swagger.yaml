@@ -1057,6 +1057,12 @@ definitions:
       op_desc:
         type: string
     type: object
+  v1.ParseLicenseResV1:
+    properties:
+      license_content:
+        example: 'This license is for: &{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt'
+        type: string
+    type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -2321,6 +2327,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 导入 sqle license
+      tags:
+      - configuration
+  /v1/configurations/parse_license:
+    post:
+      description: parse and check sqle license
+      operationId: parseSQLELicenseV1
+      parameters:
+      - description: SQLE license file
+        in: formData
+        name: license_file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ParseLicenseResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 解析和校验 sqle license
       tags:
       - configuration
   /v1/configurations/smtp:

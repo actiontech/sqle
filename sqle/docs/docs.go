@@ -788,6 +788,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/parse_license": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "parse and check sqle license",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "解析和校验 sqle license",
+                "operationId": "parseSQLELicenseV1",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "SQLE license file",
+                        "name": "license_file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ParseLicenseResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -5224,6 +5256,15 @@ var doc = `{
                 },
                 "op_desc": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.ParseLicenseResV1": {
+            "type": "object",
+            "properties": {
+                "license_content": {
+                    "type": "string",
+                    "example": "This license is for: \u0026{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt"
                 }
             }
         },
