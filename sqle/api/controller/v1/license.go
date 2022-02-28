@@ -14,8 +14,15 @@ import (
 
 var ErrNoLicenseRequired = errors.New(errors.ErrAccessDeniedError, e.New("sqle-ce no license required"))
 
+type LicenseItem struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Limit       int    `json:"limit"`
+}
+
 type GetLicenseResV1 struct {
-	LicenseContent string `json:"license_content" example:"This license is for: &{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt"`
+	Content string        `json:"content"`
+	License []LicenseItem `json:"license"`
 }
 
 // GetLicense get sqle license
@@ -30,15 +37,15 @@ func GetLicense(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
 }
 
-// GetSQLEServerInfo get information about the machine where SQLE is located
-// @Summary 获取 sqle 所在机器的信息
-// @Description get information about the machine where SQLE is located
-// @Id GetSQLEServerInfoV1
+// GetSQLELicenseInfo get the information needed to generate the sqle license
+// @Summary 获取生成 sqle license需要的的信息
+// @Description get the information needed to generate the sqle license
+// @Id GetSQLELicenseInfoV1
 // @Tags configuration
 // @Security ApiKeyAuth
 // @Success 200 file 1 "server info"
-// @router /v1/configurations/sqle_server_info [get]
-func GetSQLEServerInfo(c echo.Context) error {
+// @router /v1/configurations/license/info [get]
+func GetSQLELicenseInfo(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
 }
 
@@ -55,19 +62,20 @@ func SetLicense(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
 }
 
-type ParseLicenseResV1 struct {
-	LicenseContent string `json:"license_content" example:"This license is for: &{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt"`
+type CheckLicenseResV1 struct {
+	Content string        `json:"content"`
+	License []LicenseItem `json:"license"`
 }
 
-// ParseLicense parse and check sqle license
+// CheckLicense parse and check sqle license
 // @Summary 解析和校验 sqle license
 // @Description parse and check sqle license
-// @Id parseSQLELicenseV1
+// @Id checkSQLELicenseV1
 // @Tags configuration
 // @Security ApiKeyAuth
 // @Param license_file formData file true "SQLE license file"
-// @Success 200 {object} v1.ParseLicenseResV1
-// @router /v1/configurations/license/parse_result [get]
-func ParseLicense(c echo.Context) error {
+// @Success 200 {object} v1.CheckLicenseResV1
+// @router /v1/configurations/license/check [post]
+func CheckLicense(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
 }

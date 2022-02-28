@@ -134,8 +134,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/configurations/system_variables", v1.UpdateSystemVariables, AdminUserAllowed())
 		v1Router.GET("/configurations/license", v1.GetLicense, AdminUserAllowed())
 		v1Router.POST("/configurations/license", v1.SetLicense, AdminUserAllowed())
-		v1Router.GET("/configurations/sqle_server_info", v1.GetSQLEServerInfo, AdminUserAllowed())
-		v1Router.GET("/configurations/license/parse_result", v1.ParseLicense, AdminUserAllowed())
+		v1Router.GET("/configurations/license/info", v1.GetSQLELicenseInfo, AdminUserAllowed())
+		v1Router.POST("/configurations/license/check", v1.CheckLicense, AdminUserAllowed())
 
 	}
 

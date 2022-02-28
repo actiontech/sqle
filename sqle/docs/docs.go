@@ -788,8 +788,8 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/license/parse_result": {
-            "get": {
+        "/v1/configurations/license/check": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -814,7 +814,30 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.ParseLicenseResV1"
+                            "$ref": "#/definitions/v1.CheckLicenseResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/license/info": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get information about the machine where SQLE is located",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 sqle 所在机器的信息",
+                "operationId": "GetSQLEServerInfoV1",
+                "responses": {
+                    "200": {
+                        "description": "server info",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -873,29 +896,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/configurations/sqle_server_info": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get information about the machine where SQLE is located",
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "获取 sqle 所在机器的信息",
-                "operationId": "GetSQLEServerInfoV1",
-                "responses": {
-                    "200": {
-                        "description": "server info",
-                        "schema": {
-                            "type": "file"
                         }
                     }
                 }
@@ -4020,6 +4020,17 @@ var doc = `{
                 }
             }
         },
+        "v1.CheckLicenseResV1": {
+            "type": "object",
+            "properties": {
+                "license": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.LicenseItem"
+                    }
+                }
+            }
+        },
         "v1.CloneRuleTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -4711,9 +4722,11 @@ var doc = `{
         "v1.GetLicenseResV1": {
             "type": "object",
             "properties": {
-                "license_content": {
-                    "type": "string",
-                    "example": "This license is for: \u0026{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt"
+                "license": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.LicenseItem"
+                    }
                 }
             }
         },
@@ -5248,6 +5261,20 @@ var doc = `{
                 }
             }
         },
+        "v1.LicenseItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.OperationResV1": {
             "type": "object",
             "properties": {
@@ -5256,15 +5283,6 @@ var doc = `{
                 },
                 "op_desc": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.ParseLicenseResV1": {
-            "type": "object",
-            "properties": {
-                "license_content": {
-                    "type": "string",
-                    "example": "This license is for: \u0026{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt"
                 }
             }
         },
