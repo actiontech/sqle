@@ -207,6 +207,13 @@ definitions:
           type: string
         type: array
     type: object
+  v1.CheckLicenseResV1:
+    properties:
+      license:
+        items:
+          $ref: '#/definitions/v1.LicenseItem'
+        type: array
+    type: object
   v1.CloneRuleTemplateReqV1:
     properties:
       desc:
@@ -683,9 +690,10 @@ definitions:
     type: object
   v1.GetLicenseResV1:
     properties:
-      license_content:
-        example: 'This license is for: &{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt'
-        type: string
+      license:
+        items:
+          $ref: '#/definitions/v1.LicenseItem'
+        type: array
     type: object
   v1.GetOperationsResV1:
     properties:
@@ -1050,17 +1058,20 @@ definitions:
       ldap_user_name_rdn_key:
         type: string
     type: object
+  v1.LicenseItem:
+    properties:
+      description:
+        type: string
+      limit:
+        type: integer
+      name:
+        type: string
+    type: object
   v1.OperationResV1:
     properties:
       op_code:
         type: integer
       op_desc:
-        type: string
-    type: object
-  v1.ParseLicenseResV1:
-    properties:
-      license_content:
-        example: 'This license is for: &{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt'
         type: string
     type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
@@ -2329,8 +2340,8 @@ paths:
       summary: 导入 sqle license
       tags:
       - configuration
-  /v1/configurations/license/parse_result:
-    get:
+  /v1/configurations/license/check:
+    post:
       description: parse and check sqle license
       operationId: parseSQLELicenseV1
       parameters:
@@ -2343,10 +2354,24 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.ParseLicenseResV1'
+            $ref: '#/definitions/v1.CheckLicenseResV1'
       security:
       - ApiKeyAuth: []
       summary: 解析和校验 sqle license
+      tags:
+      - configuration
+  /v1/configurations/license/info:
+    get:
+      description: get information about the machine where SQLE is located
+      operationId: GetSQLEServerInfoV1
+      responses:
+        "200":
+          description: server info
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 sqle 所在机器的信息
       tags:
       - configuration
   /v1/configurations/smtp:
@@ -2383,20 +2408,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 添加 SMTP 配置
-      tags:
-      - configuration
-  /v1/configurations/sqle_server_info:
-    get:
-      description: get information about the machine where SQLE is located
-      operationId: GetSQLEServerInfoV1
-      responses:
-        "200":
-          description: server info
-          schema:
-            type: file
-      security:
-      - ApiKeyAuth: []
-      summary: 获取 sqle 所在机器的信息
       tags:
       - configuration
   /v1/configurations/system_variables:
