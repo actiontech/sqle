@@ -54,3 +54,20 @@ func GetSQLEServerInfo(c echo.Context) error {
 func SetLicense(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
 }
+
+type ParseLicenseResV1 struct {
+	LicenseContent string `json:"license_content" example:"This license is for: &{ExpireDate:2022-02-10 Version:99.99.99 AgentCount:2};;iVWLgIfzYtIFlMEIMTxX2~S8lgXsNqT4Ccug23GybWsiP0i1SW8GaorcbRvLGdD4X1v4VbFU77zqg1_1TisP;;U7gAUCECm86~kodfMDQSUdEd3QHR5MXMKp2KFFcjb8_NliBt"`
+}
+
+// ParseLicense parse and check sqle license
+// @Summary 解析和校验 sqle license
+// @Description parse and check sqle license
+// @Id parseSQLELicenseV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param license_file formData file true "SQLE license file"
+// @Success 200 {object} v1.ParseLicenseResV1
+// @router /v1/configurations/parse_license [post]
+func ParseLicense(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
+}
