@@ -1,18 +1,8 @@
-//go:build !enterprise
-// +build !enterprise
-
 package v1
 
 import (
-	e "errors"
-
-	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/errors"
-
 	"github.com/labstack/echo/v4"
 )
-
-var ErrNoLicenseRequired = errors.New(errors.ErrAccessDeniedError, e.New("sqle-ce no license required"))
 
 type LicenseItem struct {
 	Description string `json:"description"`
@@ -34,7 +24,7 @@ type GetLicenseResV1 struct {
 // @Success 200 {object} v1.GetLicenseResV1
 // @router /v1/configurations/license [get]
 func GetLicense(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
+	return getLicense(c)
 }
 
 // GetSQLELicenseInfo get the information needed to generate the sqle license
@@ -46,7 +36,7 @@ func GetLicense(c echo.Context) error {
 // @Success 200 file 1 "server info"
 // @router /v1/configurations/license/info [get]
 func GetSQLELicenseInfo(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
+	return getSQLELicenseInfo(c)
 }
 
 // SetLicense set sqle license
@@ -59,7 +49,7 @@ func GetSQLELicenseInfo(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/license [post]
 func SetLicense(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
+	return setLicense(c)
 }
 
 type CheckLicenseResV1 struct {
@@ -77,5 +67,5 @@ type CheckLicenseResV1 struct {
 // @Success 200 {object} v1.CheckLicenseResV1
 // @router /v1/configurations/license/check [post]
 func CheckLicense(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
+	return checkLicense(c)
 }
