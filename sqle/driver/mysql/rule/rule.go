@@ -154,11 +154,6 @@ func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
 
 var (
 	RuleHandlerMap = map[string]RuleHandler{}
-
-	// DefaultTemplateRules only use for unit test now. It should be removed later,
-	// because Driver layer should not care about Rule template. TODO(@wy)
-	DefaultTemplateRules = []driver.Rule{}
-	InitRules            = []driver.Rule{}
 )
 
 const DefaultSingleParamKeyName = "first_key" // For most of the rules, it is just has one param, this is first params.
@@ -1141,10 +1136,6 @@ var RuleHandlers = []RuleHandler{
 func init() {
 	for _, rh := range RuleHandlers {
 		RuleHandlerMap[rh.Rule.Name] = rh
-		InitRules = append(InitRules, rh.Rule)
-		if rh.Rule.Level == driver.RuleLevelError {
-			DefaultTemplateRules = append(DefaultTemplateRules, rh.Rule)
-		}
 	}
 }
 
