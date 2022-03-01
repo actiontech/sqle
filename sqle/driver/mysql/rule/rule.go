@@ -1481,7 +1481,7 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 			}
 		}
 		expectEngine := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-		if strings.ToLower(engine) != expectEngine {
+		if !strings.EqualFold(engine, expectEngine) {
 			addResult(res, rule, DDLCheckTableDBEngine, expectEngine)
 			return nil
 		}
@@ -1493,7 +1493,7 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 			}
 		}
 		expectCS := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-		if strings.ToLower(characterSet) != expectCS {
+		if !strings.EqualFold(characterSet, expectCS) {
 			addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
 			return nil
 		}
