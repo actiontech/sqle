@@ -105,20 +105,20 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 	ptrRules := []*driver.Rule{}
 	// this rule will be test in single rule
 	filterRule := map[string]struct{}{
-		rulepkg.DDLCheckObjectNameUseCN: struct {}{},
-		rulepkg.DDLCheckRedundantIndex: struct {}{},
-		rulepkg.DDLCheckPKProhibitAutoIncrement: struct {}{},
-		rulepkg.DDLCheckColumnBlobNotice: struct {}{},
-		rulepkg.DDLCheckDatabaseCollation: struct {}{},
-		rulepkg.DDLCheckIndexTooMany: struct {}{},
-		rulepkg.DDLCheckIndexesExistBeforeCreateConstraints: struct {}{},
-		rulepkg.DMLCheckInsertColumnsExist: struct {}{},
-		rulepkg.DMLCheckLimitMustExist: struct {}{},
-		rulepkg.DMLCheckWhereExistImplicitConversion : struct {}{},
+		rulepkg.DDLCheckObjectNameUseCN:                     struct{}{},
+		rulepkg.DDLCheckRedundantIndex:                      struct{}{},
+		rulepkg.DDLCheckPKProhibitAutoIncrement:             struct{}{},
+		rulepkg.DDLCheckColumnBlobNotice:                    struct{}{},
+		rulepkg.DDLCheckDatabaseCollation:                   struct{}{},
+		rulepkg.DDLCheckIndexTooMany:                        struct{}{},
+		rulepkg.DDLCheckIndexesExistBeforeCreateConstraints: struct{}{},
+		rulepkg.DMLCheckInsertColumnsExist:                  struct{}{},
+		rulepkg.DMLCheckLimitMustExist:                      struct{}{},
+		rulepkg.DMLCheckWhereExistImplicitConversion:        struct{}{},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
-		if _,ok := filterRule[handler.Rule.Name];ok {
+		if _, ok := filterRule[handler.Rule.Name]; ok {
 			continue
 		}
 		ptrRules = append(ptrRules, &handler.Rule)
@@ -2360,9 +2360,9 @@ func TestCheckCollationDatabase(t *testing.T) {
 	}
 
 	for desc, sql := range map[string]string{
-		`create table`:    `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci;`,
-		`alter table`:     `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8mb4_0900_ai_ci;`,
-		`create database`: `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
+		`create table`:               `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci;`,
+		`alter table`:                `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8mb4_0900_ai_ci;`,
+		`create database`:            `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
 		`create database upper case`: `CREATE DATABASE db COLLATE UTF8MB4_0900_AI_CI;`,
 	} {
 		runSingleRuleInspectCase(
