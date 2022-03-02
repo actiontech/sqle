@@ -380,7 +380,6 @@ func init() {
 	for _, rh := range eeRuleHandlers {
 		RuleHandlers = append(RuleHandlers, rh)
 		RuleHandlerMap[rh.Rule.Name] = rh
-		InitRules = append(InitRules, rh.Rule)
 	}
 }
 
