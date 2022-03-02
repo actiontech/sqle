@@ -209,10 +209,18 @@ definitions:
     type: object
   v1.CheckLicenseResV1:
     properties:
+      code:
+        example: 0
+        type: integer
+      content:
+        type: string
       license:
         items:
           $ref: '#/definitions/v1.LicenseItem'
         type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.CloneRuleTemplateReqV1:
     properties:
@@ -690,10 +698,18 @@ definitions:
     type: object
   v1.GetLicenseResV1:
     properties:
+      code:
+        example: 0
+        type: integer
+      content:
+        type: string
       license:
         items:
           $ref: '#/definitions/v1.LicenseItem'
         type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetOperationsResV1:
     properties:
@@ -1063,7 +1079,7 @@ definitions:
       description:
         type: string
       limit:
-        type: integer
+        type: string
       name:
         type: string
     type: object
@@ -2343,7 +2359,7 @@ paths:
   /v1/configurations/license/check:
     post:
       description: parse and check sqle license
-      operationId: parseSQLELicenseV1
+      operationId: checkSQLELicenseV1
       parameters:
       - description: SQLE license file
         in: formData
@@ -2362,8 +2378,8 @@ paths:
       - configuration
   /v1/configurations/license/info:
     get:
-      description: get information about the machine where SQLE is located
-      operationId: GetSQLEServerInfoV1
+      description: get the information needed to generate the sqle license
+      operationId: GetSQLELicenseInfoV1
       responses:
         "200":
           description: server info
@@ -2371,7 +2387,7 @@ paths:
             type: file
       security:
       - ApiKeyAuth: []
-      summary: 获取 sqle 所在机器的信息
+      summary: 获取生成 sqle license需要的的信息
       tags:
       - configuration
   /v1/configurations/smtp:
