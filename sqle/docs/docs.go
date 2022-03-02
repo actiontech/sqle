@@ -800,7 +800,7 @@ var doc = `{
                     "configuration"
                 ],
                 "summary": "解析和校验 sqle license",
-                "operationId": "parseSQLELicenseV1",
+                "operationId": "checkSQLELicenseV1",
                 "parameters": [
                     {
                         "type": "file",
@@ -827,12 +827,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get information about the machine where SQLE is located",
+                "description": "get the information needed to generate the sqle license",
                 "tags": [
                     "configuration"
                 ],
-                "summary": "获取 sqle 所在机器的信息",
-                "operationId": "GetSQLEServerInfoV1",
+                "summary": "获取生成 sqle license需要的的信息",
+                "operationId": "GetSQLELicenseInfoV1",
                 "responses": {
                     "200": {
                         "description": "server info",
@@ -4023,6 +4023,9 @@ var doc = `{
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
+                "content": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "array",
                     "items": {
@@ -4722,6 +4725,9 @@ var doc = `{
         "v1.GetLicenseResV1": {
             "type": "object",
             "properties": {
+                "content": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "array",
                     "items": {
