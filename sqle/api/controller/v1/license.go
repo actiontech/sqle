@@ -1,16 +1,18 @@
 package v1
 
 import (
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
 )
 
 type LicenseItem struct {
 	Description string `json:"description"`
 	Name        string `json:"name"`
-	Limit       int    `json:"limit"`
+	Limit       string `json:"limit"`
 }
 
 type GetLicenseResV1 struct {
+	controller.BaseRes
 	Content string        `json:"content"`
 	License []LicenseItem `json:"license"`
 }
@@ -53,6 +55,7 @@ func SetLicense(c echo.Context) error {
 }
 
 type CheckLicenseResV1 struct {
+	controller.BaseRes
 	Content string        `json:"content"`
 	License []LicenseItem `json:"license"`
 }

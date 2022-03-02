@@ -800,7 +800,7 @@ var doc = `{
                     "configuration"
                 ],
                 "summary": "解析和校验 sqle license",
-                "operationId": "parseSQLELicenseV1",
+                "operationId": "checkSQLELicenseV1",
                 "parameters": [
                     {
                         "type": "file",
@@ -827,12 +827,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get information about the machine where SQLE is located",
+                "description": "get the information needed to generate the sqle license",
                 "tags": [
                     "configuration"
                 ],
-                "summary": "获取 sqle 所在机器的信息",
-                "operationId": "GetSQLEServerInfoV1",
+                "summary": "获取生成 sqle license需要的的信息",
+                "operationId": "GetSQLELicenseInfoV1",
                 "responses": {
                     "200": {
                         "description": "server info",
@@ -4023,11 +4023,22 @@ var doc = `{
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "content": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.LicenseItem"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -4722,11 +4733,22 @@ var doc = `{
         "v1.GetLicenseResV1": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "content": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.LicenseItem"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -5268,7 +5290,7 @@ var doc = `{
                     "type": "string"
                 },
                 "limit": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
