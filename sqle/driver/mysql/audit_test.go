@@ -37,9 +37,9 @@ func (t *testResult) add(level driver.RuleLevel, message string, args ...interfa
 }
 
 func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult {
-	handler, ok := t.rules[ruleName]
+	handler, ok := rulepkg.RuleHandlerMap[ruleName]
 	if !ok {
-		return t
+		panic("should not enter here, it means that the uint test result is not expect")
 	}
 	level := handler.Rule.Level
 	message := handler.Message
@@ -103,17 +103,25 @@ func runSingleRuleInspectCase(rule driver.Rule, t *testing.T, desc string, i *In
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
 	ptrRules := []*driver.Rule{}
-	for i := range rulepkg.DefaultTemplateRules {
-		// remove DDL_CHECK_OBJECT_NAME_USING_CN in default rules for init test.
-		if rulepkg.DefaultTemplateRules[i].Name == rulepkg.DDLCheckObjectNameUseCN {
+	// this rule will be test in single rule
+	filterRule := map[string]struct{}{
+		rulepkg.DDLCheckObjectNameUseCN:                     struct{}{},
+		rulepkg.DDLCheckRedundantIndex:                      struct{}{},
+		rulepkg.DDLCheckPKProhibitAutoIncrement:             struct{}{},
+		rulepkg.DDLCheckColumnBlobNotice:                    struct{}{},
+		rulepkg.DDLCheckDatabaseCollation:                   struct{}{},
+		rulepkg.DDLCheckIndexTooMany:                        struct{}{},
+		rulepkg.DDLCheckIndexesExistBeforeCreateConstraints: struct{}{},
+		rulepkg.DMLCheckInsertColumnsExist:                  struct{}{},
+		rulepkg.DMLCheckLimitMustExist:                      struct{}{},
+		rulepkg.DMLCheckWhereExistImplicitConversion:        struct{}{},
+	}
+	for i := range rulepkg.RuleHandlers {
+		handler := rulepkg.RuleHandlers[i]
+		if _, ok := filterRule[handler.Rule.Name]; ok {
 			continue
 		}
-		// remove DDLCheckRedundantIndex in default rules for init test.
-		if rulepkg.DefaultTemplateRules[i].Name == rulepkg.DDLCheckRedundantIndex {
-			continue
-		}
-
-		ptrRules = append(ptrRules, &rulepkg.DefaultTemplateRules[i])
+		ptrRules = append(ptrRules, &handler.Rule)
 	}
 
 	i.rules = ptrRules
@@ -426,8 +434,14 @@ INDEX idx_2 (v1,v2,v2)
 func TestCheckInvalidAlterTable(t *testing.T) {
 	// It's trick :),
 	// elegant method: unit test support MySQL.
+	handlerEngine := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableDBEngine]
+	handlerCharacter := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableCharacterSet]
 	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableDBEngine)
 	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableCharacterSet)
+	defer func() {
+		rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableDBEngine] = handlerEngine
+		rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableCharacterSet] = handlerCharacter
+	}()
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
@@ -1499,13 +1513,33 @@ INDEX idx_1 (id,v1,v2,v3,v4,v5)
 }
 
 func TestCheckTableWithoutInnodbUtf8mb4(t *testing.T) {
-	runDefaultRulesInspectCase(t, "create_table: ok", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "create_table: ok 1", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "create_table: ok 2", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=Innodb AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "create_table: ok 3", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=INNODB AUTO_INCREMENT=3 COMMENT="unit test";
 `,
 		newTestResult(),
 	)
@@ -1518,7 +1552,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckTableDBEngine, "InnoDB"),
+		newTestResult().addResult(rulepkg.DDLCheckTableDBEngine, "Innodb"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table charset not utf8mb4", DefaultMysqlInspect(),
@@ -2326,9 +2360,10 @@ func TestCheckCollationDatabase(t *testing.T) {
 	}
 
 	for desc, sql := range map[string]string{
-		`create table`:    `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci;`,
-		`alter table`:     `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8mb4_0900_ai_ci;`,
-		`create database`: `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
+		`create table`:               `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci;`,
+		`alter table`:                `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8mb4_0900_ai_ci;`,
+		`create database`:            `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
+		`create database upper case`: `CREATE DATABASE db COLLATE UTF8MB4_0900_AI_CI;`,
 	} {
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckDatabaseCollation].Rule,
@@ -2568,6 +2603,7 @@ func TestCheckWhereExistNull_FP(t *testing.T) {
 func TestCheckNeedlessFunc(t *testing.T) {
 	for desc, sql := range map[string]string{
 		`(1)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, MD5('aaa'), MD5('bbb'));`,
+		`(2)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, md5('aaa'), md5('bbb'));`,
 	} {
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DMLCheckNeedlessFunc].Rule,
@@ -2580,6 +2616,7 @@ func TestCheckNeedlessFunc(t *testing.T) {
 
 	for desc, sql := range map[string]string{
 		`(1)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, sha1('aaa'), sha1('bbb'));`,
+		`(2)INSERT`: `INSERT INTO exist_db.exist_tb_1 VALUES(1, SHA1('aaa'), SHA1('bbb'));`,
 	} {
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DMLCheckNeedlessFunc].Rule,
