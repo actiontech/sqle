@@ -4007,6 +4007,10 @@
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
                 "content": {
                     "type": "string"
                 },
@@ -4015,6 +4019,10 @@
                     "items": {
                         "$ref": "#/definitions/v1.LicenseItem"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -4709,6 +4717,10 @@
         "v1.GetLicenseResV1": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
                 "content": {
                     "type": "string"
                 },
@@ -4717,6 +4729,10 @@
                     "items": {
                         "$ref": "#/definitions/v1.LicenseItem"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -5258,7 +5274,7 @@
                     "type": "string"
                 },
                 "limit": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
