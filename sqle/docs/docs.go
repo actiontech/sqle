@@ -4023,6 +4023,10 @@ var doc = `{
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
                 "content": {
                     "type": "string"
                 },
@@ -4031,6 +4035,10 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.LicenseItem"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -4725,6 +4733,10 @@ var doc = `{
         "v1.GetLicenseResV1": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
                 "content": {
                     "type": "string"
                 },
@@ -4733,6 +4745,10 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.LicenseItem"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -5274,7 +5290,7 @@ var doc = `{
                     "type": "string"
                 },
                 "limit": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
