@@ -1,3 +1,4 @@
+NATURAL:
 aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcd
 aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffabcde
 abcdefghijklmnopqrstuvwxyz
@@ -38,8 +39,6 @@ dialector
 distinctrow
 dynviews_3064
 elseif
-encodeing
-encodeing
 encrypter
 enums
 errore
@@ -66,7 +65,6 @@ funcs
 gaorcb
 getpid
 getwd
-ghijklmnopq
 ghijklmnopq
 github
 golang
@@ -97,7 +95,6 @@ inout
 intn
 ioutil
 ipaddr
-ipaddrs
 ipaddrs
 itoa
 jackc
@@ -135,7 +132,6 @@ mssqldb
 mybatis
 mysql
 natefinch
-NATURAL:
 nolint
 noop
 noprofile
