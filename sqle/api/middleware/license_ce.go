@@ -1,3 +1,6 @@
+//go:build !enterprise
+// +build !enterprise
+
 package middleware
 
 import (
