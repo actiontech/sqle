@@ -111,6 +111,7 @@ func (s *Storage) AutoMigrate() error {
 		&ExecuteSQL{},
 		&Instance{},
 		&LDAPConfiguration{},
+		&License{},
 		&RoleOperation{},
 		&Role{},
 		&RollbackSQL{},

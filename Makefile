@@ -2,7 +2,7 @@
 override GIT_VERSION    		= $(shell git rev-parse --abbrev-ref HEAD)${CUSTOM} $(shell git rev-parse HEAD)
 override GIT_COMMIT     		= $(shell git rev-parse HEAD)
 override PROJECT_NAME 			= sqle
-override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
+override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"' -X 'main.isRelease=${IS_RELEASE}'"
 override DOCKER         		= $(shell which docker)
 override GOOS           		= linux
 override OS_VERSION 			= el7
@@ -11,6 +11,7 @@ override GO_BUILD_FLAGS 		= -mod=vendor
 override RPM_USER_GROUP_NAME 	= actiontech
 override RPM_USER_NAME 			= actiontech-universe
 
+IS_RELEASE			=false
 GOARCH         		= amd64
 RPMBUILD_TARGET		= x86_64
 

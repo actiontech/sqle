@@ -16,6 +16,7 @@ import (
 
 var version string
 var port int
+var isRelease string
 
 //var user string
 var mysqlUser string
@@ -35,6 +36,9 @@ var pluginPath string
 
 func init() {
 	config.Version = version
+	if isRelease == "true" {
+		config.IsRelease = true
+	}
 }
 
 func main() {
