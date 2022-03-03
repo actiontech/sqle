@@ -182,3 +182,21 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 
 	return 30 * 24, nil
 }
+
+type License struct {
+	Model
+	Content string `json:"content" gorm:"type:text;"`
+}
+
+func (l *License) TableName() string {
+	return fmt.Sprintf("%v_license", globalConfigurationTablePrefix)
+}
+
+func (s *Storage) GetLicense() (*License, bool, error) {
+	license := new(License)
+	err := s.db.Last(license).Error
+	if err == gorm.ErrRecordNotFound {
+		return license, false, nil
+	}
+	return license, true, errors.New(errors.ConnectStorageError, err)
+}
