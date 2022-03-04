@@ -12,8 +12,10 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	// 1. test for common user
 	tableAndRowOfSQL := `
 	FROM audit_plans
+	LEFT JOIN users ON audit_plans.create_user_id = users.id
 	WHERE audit_plans.deleted_at IS NULL 
-	AND audit_plans.create_user_id = ? 
+	AND users.deleted_at IS NULL
+	AND users.login_name = ? 
 	AND audit_plans.db_type = ?
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -27,7 +29,7 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 		"COUNT(*)",
 	}).AddRow("2"))
 	nameFields := map[string]interface{}{
-		"current_user_id":           1,
+		"current_user_name":         1,
 		"filter_audit_plan_db_type": "mysql",
 		"limit":                     100,
 		"offset":                    10}
@@ -42,7 +44,9 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	// 2. test for admin user
 	tableAndRowOfSQL1 := `
 	FROM audit_plans
+	LEFT JOIN users ON audit_plans.create_user_id = users.id
 	WHERE audit_plans.deleted_at IS NULL
+	AND users.deleted_at IS NULL
 	`
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
@@ -57,7 +61,7 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL1)).
 		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
 	nameFields = map[string]interface{}{
-		"current_user_id":       1,
+		"current_user_name":     1,
 		"current_user_is_admin": true,
 		"limit":                 100,
 		"offset":                10}
