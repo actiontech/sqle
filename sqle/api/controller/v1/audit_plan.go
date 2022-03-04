@@ -400,7 +400,7 @@ func GetAuditPlans(c echo.Context) error {
 	currentUserName := controller.GetUserName(c)
 	data := map[string]interface{}{
 		"filter_audit_plan_db_type": req.FilterAuditPlanDBType,
-		"current_user_id":           currentUserName,
+		"current_user_name":         currentUserName,
 		"current_user_is_admin":     model.DefaultAdminUser == currentUserName,
 		"limit":                     req.PageSize,
 		"offset":                    offset,
