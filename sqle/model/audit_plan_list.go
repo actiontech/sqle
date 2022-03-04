@@ -40,9 +40,10 @@ FROM audit_plans
 LEFT JOIN users ON audit_plans.create_user_id = users.id
 
 WHERE audit_plans.deleted_at IS NULL
+AND users.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
-AND users.login_name = :current_user_id
+AND users.login_name = :current_user_name
 {{- end }}
 
 {{- if .filter_audit_plan_db_type }}
