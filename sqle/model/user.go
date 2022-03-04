@@ -127,6 +127,11 @@ func (s *Storage) GetAllUserTip() ([]*User, error) {
 	return users, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetAllUserCount() (int64, error) {
+	var count int64
+	return count, s.db.Model(&User{}).Count(&count).Error
+}
+
 func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err error) {
 	users, err = s.GetUsersByNames(userNames)
 	if err != nil {
