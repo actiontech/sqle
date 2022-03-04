@@ -4,11 +4,12 @@
 package license
 
 import (
-	"github.com/actiontech/sqle/sqle/model"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
