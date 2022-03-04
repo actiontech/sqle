@@ -764,6 +764,9 @@ var doc = `{
                     }
                 ],
                 "description": "set sqle license",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "tags": [
                     "configuration"
                 ],
@@ -796,6 +799,9 @@ var doc = `{
                     }
                 ],
                 "description": "parse and check sqle license",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "tags": [
                     "configuration"
                 ],
