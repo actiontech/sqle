@@ -46,6 +46,7 @@ func GetSQLELicenseInfo(c echo.Context) error {
 // @Description set sqle license
 // @Id setSQLELicenseV1
 // @Tags configuration
+// @Accept mpfd
 // @Security ApiKeyAuth
 // @Param license_file formData file true "SQLE license file"
 // @Success 200 {object} controller.BaseRes
@@ -65,6 +66,7 @@ type CheckLicenseResV1 struct {
 // @Description parse and check sqle license
 // @Id checkSQLELicenseV1
 // @Tags configuration
+// @Accept mpfd
 // @Security ApiKeyAuth
 // @Param license_file formData file true "SQLE license file"
 // @Success 200 {object} v1.CheckLicenseResV1

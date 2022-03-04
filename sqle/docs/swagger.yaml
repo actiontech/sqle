@@ -2338,6 +2338,8 @@ paths:
       tags:
       - configuration
     post:
+      consumes:
+      - multipart/form-data
       description: set sqle license
       operationId: setSQLELicenseV1
       parameters:
@@ -2358,6 +2360,8 @@ paths:
       - configuration
   /v1/configurations/license/check:
     post:
+      consumes:
+      - multipart/form-data
       description: parse and check sqle license
       operationId: checkSQLELicenseV1
       parameters:
