@@ -2,7 +2,7 @@
 override GIT_VERSION    		= $(shell git rev-parse --abbrev-ref HEAD)${CUSTOM} $(shell git rev-parse HEAD)
 override GIT_COMMIT     		= $(shell git rev-parse HEAD)
 override PROJECT_NAME 			= sqle
-override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"' -X 'main.isRelease=${IS_RELEASE}'"
+override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
 override DOCKER         		= $(shell which docker)
 override GOOS           		= linux
 override OS_VERSION 			= el7
@@ -11,7 +11,6 @@ override GO_BUILD_FLAGS 		= -mod=vendor
 override RPM_USER_GROUP_NAME 	= actiontech
 override RPM_USER_NAME 			= actiontech-universe
 
-IS_RELEASE			=false
 GOARCH         		= amd64
 RPMBUILD_TARGET		= x86_64
 
@@ -20,8 +19,8 @@ ifeq ($(GOARCH), arm64)
 endif
 
 # Two cases:
-# 1. if there is tag on current commit, means that 
-# 	 we release new version on current branch just now. 
+# 1. if there is tag on current commit, means that
+# 	 we release new version on current branch just now.
 #    Set rpm name with tag name(v1.2109.0 -> 1.2109.0).
 #
 # 2. if there is no tag on current commit, means that
@@ -33,6 +32,10 @@ EDITION ?= ce
 GO_BUILD_TAGS = dummyhead
 ifeq ($(EDITION),ee)
     GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise
+endif
+IS_RELEASE ?= false
+ifeq ($(IS_RELEASE),true)
+    GO_BUILD_TAGS :=$(GO_BUILD_TAGS),release
 endif
 
 ## The docker registry to pull complier image, can be overwrite by: `make DOCKER_REGISTRY=10.0.0.1`
