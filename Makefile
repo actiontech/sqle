@@ -6,16 +6,20 @@ override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
 override DOCKER         		= $(shell which docker)
 override GOOS           		= linux
 override OS_VERSION 			= el7
-override RELEASE 				= qa
 override GO_BUILD_FLAGS 		= -mod=vendor
 override RPM_USER_GROUP_NAME 	= actiontech
 override RPM_USER_NAME 			= actiontech-universe
 
+RELEASE 			= qa
 GOARCH         		= amd64
 RPMBUILD_TARGET		= x86_64
 
 ifeq ($(GOARCH), arm64)
     RPMBUILD_TARGET = aarch64
+endif
+
+ifeq ($(IS_RELEASE),true)
+    RELEASE = rel
 endif
 
 # Two cases:
