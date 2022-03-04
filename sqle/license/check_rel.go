@@ -40,35 +40,31 @@ func Check(c echo.Context) (bool, error) {
 	s := model.GetStorage()
 
 	std.mutex.RLock()
+	defer std.mutex.RUnlock()
 	if std.expireDate.Before(time.Now()) || std.hardwareInfo != std.limitInstallLocation {
 		if method == http.MethodGet ||
 			strings.TrimSuffix(path, "/") == "/v1/login" ||
 			strings.TrimSuffix(path, "/") == "/v1/configurations/license" ||
 			strings.TrimSuffix(path, "/") == "/v1/configurations/license/check" ||
 			strings.TrimSuffix(path, "/") == "/v1/configurations/license/info" {
-			std.mutex.RUnlock()
 			return true, nil
 		}
-		std.mutex.RUnlock()
 		return false, nil
 	}
 
 	{ // add user
 		if method == http.MethodPost && strings.TrimSuffix(path, "/") == "/v1/users" {
 			count, err := s.GetAllUserCount()
-			std.mutex.RUnlock()
 			return count+1 <= std.permission[LimitTypeUser], err
 		}
 	}
 	{ // add instance
 		if method == http.MethodPost && strings.TrimSuffix(path, "/") == "/v1/instances" {
 			count, err := s.GetAllInstanceCount()
-			std.mutex.RUnlock()
 			return count+1 <= std.permission[LimitTypeInstance], err
 		}
 	}
 
-	std.mutex.RUnlock()
 	return true, nil
 }
 
