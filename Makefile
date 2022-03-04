@@ -10,16 +10,11 @@ override GO_BUILD_FLAGS 		= -mod=vendor
 override RPM_USER_GROUP_NAME 	= actiontech
 override RPM_USER_NAME 			= actiontech-universe
 
-RELEASE 			= qa
 GOARCH         		= amd64
 RPMBUILD_TARGET		= x86_64
 
 ifeq ($(GOARCH), arm64)
     RPMBUILD_TARGET = aarch64
-endif
-
-ifeq ($(IS_RELEASE),true)
-    RELEASE = rel
 endif
 
 # Two cases:
@@ -37,8 +32,8 @@ GO_BUILD_TAGS = dummyhead
 ifeq ($(EDITION),ee)
     GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise
 endif
-IS_RELEASE ?= false
-ifeq ($(IS_RELEASE),true)
+RELEASE = qa
+ifeq ($(RELEASE),rel)
     GO_BUILD_TAGS :=$(GO_BUILD_TAGS),release
 endif
 
