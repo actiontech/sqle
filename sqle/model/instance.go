@@ -259,6 +259,11 @@ GROUP BY instances.id
 	return instances, errors.ConnectStorageErrWrapper(err)
 }
 
+func (s *Storage) GetAllInstanceCount() (int64, error) {
+	var count int64
+	return count, s.db.Model(&Instance{}).Count(&count).Error
+}
+
 func (s *Storage) GetInstanceTipsByUserViaRoles(
 	user *User, dbType string) (instances []*Instance, err error) {
 

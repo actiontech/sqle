@@ -1,5 +1,5 @@
-//go:build !enterprise
-// +build !enterprise
+//go:build !release
+// +build !release
 
 package middleware
 

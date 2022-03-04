@@ -1,5 +1,5 @@
-//go:build !enterprise
-// +build !enterprise
+//go:build !release
+// +build !release
 
 package v1
 
@@ -12,7 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var ErrNoLicenseRequired = errors.New(errors.ErrAccessDeniedError, e.New("sqle-ce no license required"))
+var ErrNoLicenseRequired = errors.New(errors.ErrAccessDeniedError, e.New("sqle-qa no license required"))
 
 func getLicense(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, ErrNoLicenseRequired)
