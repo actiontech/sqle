@@ -991,6 +991,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/instance_additional_metas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get create instance additional metas",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例创建所需额外参数",
+                "operationId": "getCreateInstanceMetasV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCreateInstanceAdditionalMetasResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instance_connection": {
             "post": {
                 "security": [
@@ -1023,29 +1046,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetInstanceConnectableResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instance_create_metas": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get create instance additional metas",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例创建所需额外参数",
-                "operationId": "getCreateInstanceMetasV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetCreateInstanceAdditionalMetasResV1"
                         }
                     }
                 }
