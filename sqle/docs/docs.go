@@ -3819,6 +3819,15 @@ var doc = `{
         "v1.AuditPlanReportResV1": {
             "type": "object",
             "properties": {
+                "audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
                 "audit_plan_report_id": {
                     "type": "string",
                     "example": "1"
@@ -3826,6 +3835,12 @@ var doc = `{
                 "audit_plan_report_timestamp": {
                     "type": "string",
                     "example": "RFC3339"
+                },
+                "pass_rate": {
+                    "type": "number"
+                },
+                "score": {
+                    "type": "integer"
                 }
             }
         },
