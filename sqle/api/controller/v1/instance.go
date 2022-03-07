@@ -19,16 +19,17 @@ var errInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance i
 var errInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
 var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 
-type GetCreateInstanceAdditionalMetasReqV1 struct {
-	InstanceType string `json:"instance_type" query:"instance_type"`
-}
-
 type GetCreateInstanceAdditionalMetasResV1 struct {
 	controller.BaseRes
 	Metas []*CreateInstanceAdditionalMeta `json:"metas"`
 }
 
 type CreateInstanceAdditionalMeta struct {
+	DBType string   `json:"db_type"`
+	Params []*Param `json:"params"`
+}
+
+type Param struct {
 	Name        string `json:"name" example:"param name" form:"name"`
 	Description string `json:"description" example:"参数项中文名" form:"description"`
 	Type        string `json:"type" example:"int" form:"type"`
@@ -42,9 +43,8 @@ type CreateInstanceAdditionalMeta struct {
 // @Id getCreateInstanceMetasV1
 // @Tags instance
 // @Security ApiKeyAuth
-// @Param instance_type query string true "instance type"
 // @Success 200 {object} v1.GetCreateInstanceAdditionalMetasResV1
-// @router /v1/instances/created_metas [get]
+// @router /v1/instance_create_metas [get]
 func GetCreateInstanceAdditionalMetas(c echo.Context) error {
 	return nil
 }
@@ -182,15 +182,16 @@ func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance)
 }
 
 type InstanceResV1 struct {
-	Name                 string   `json:"instance_name"`
-	DBType               string   `json:"db_type" example:"mysql"`
-	Host                 string   `json:"db_host" example:"10.10.10.10"`
-	Port                 string   `json:"db_port" example:"3306"`
-	User                 string   `json:"db_user" example:"root"`
-	Desc                 string   `json:"desc" example:"this is a instance"`
-	WorkflowTemplateName string   `json:"workflow_template_name,omitempty"`
-	RuleTemplates        []string `json:"rule_template_name_list,omitempty"`
-	Roles                []string `json:"role_name_list,omitempty"`
+	Name                 string             `json:"instance_name"`
+	DBType               string             `json:"db_type" example:"mysql"`
+	Host                 string             `json:"db_host" example:"10.10.10.10"`
+	Port                 string             `json:"db_port" example:"3306"`
+	User                 string             `json:"db_user" example:"root"`
+	Desc                 string             `json:"desc" example:"this is a instance"`
+	WorkflowTemplateName string             `json:"workflow_template_name,omitempty"`
+	RuleTemplates        []string           `json:"rule_template_name_list,omitempty"`
+	Roles                []string           `json:"role_name_list,omitempty"`
+	AdditionalParams     []*AdditionalParam `json:"additional_params"`
 }
 
 type GetInstanceResV1 struct {
