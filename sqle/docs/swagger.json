@@ -1163,6 +1163,38 @@
                 }
             }
         },
+        "/v1/instances/created_metas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get create instance additional metas",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例创建所需额外参数",
+                "operationId": "getCreateInstanceMetasV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance type",
+                        "name": "instance_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCreateInstanceAdditionalMetasResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instances/{instance_name}/": {
             "get": {
                 "security": [
@@ -3724,6 +3756,17 @@
                 }
             }
         },
+        "v1.AdditionalParam": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditPlanMetaV1": {
             "type": "object",
             "properties": {
@@ -4105,9 +4148,39 @@
                 }
             }
         },
+        "v1.CreateInstanceAdditionalMeta": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "参数项中文名"
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "param name"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "int"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "0"
+                }
+            }
+        },
         "v1.CreateInstanceReqV1": {
             "type": "object",
             "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AdditionalParam"
+                    }
+                },
                 "db_host": {
                     "type": "string",
                     "example": "10.10.10.10"
@@ -4532,6 +4605,25 @@
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetCreateInstanceAdditionalMetasResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "metas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.CreateInstanceAdditionalMeta"
+                    }
                 }
             }
         },
@@ -5629,6 +5721,12 @@
         "v1.UpdateInstanceReqV1": {
             "type": "object",
             "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AdditionalParam"
+                    }
+                },
                 "db_host": {
                     "type": "string",
                     "example": "10.10.10.10"
