@@ -1028,6 +1028,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/instance_create_metas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get create instance additional metas",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例创建所需额外参数",
+                "operationId": "getCreateInstanceMetasV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCreateInstanceAdditionalMetasResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instance_tips": {
             "get": {
                 "security": [
@@ -1174,38 +1197,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/created_metas": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get create instance additional metas",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例创建所需额外参数",
-                "operationId": "getCreateInstanceMetasV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance type",
-                        "name": "instance_type",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetCreateInstanceAdditionalMetasResV1"
                         }
                     }
                 }
@@ -4167,24 +4158,14 @@ var doc = `{
         "v1.CreateInstanceAdditionalMeta": {
             "type": "object",
             "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "参数项中文名"
+                "db_type": {
+                    "type": "string"
                 },
-                "is_required": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "param name"
-                },
-                "type": {
-                    "type": "string",
-                    "example": "int"
-                },
-                "value": {
-                    "type": "string",
-                    "example": "0"
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Param"
+                    }
                 }
             }
         },
@@ -5264,6 +5245,12 @@ var doc = `{
         "v1.InstanceResV1": {
             "type": "object",
             "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AdditionalParam"
+                    }
+                },
                 "db_host": {
                     "type": "string",
                     "example": "10.10.10.10"
@@ -5403,6 +5390,30 @@ var doc = `{
                 },
                 "op_desc": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.Param": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "参数项中文名"
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "param name"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "int"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "0"
                 }
             }
         },

@@ -282,20 +282,12 @@ definitions:
     type: object
   v1.CreateInstanceAdditionalMeta:
     properties:
-      description:
-        example: 参数项中文名
+      db_type:
         type: string
-      is_required:
-        type: boolean
-      name:
-        example: param name
-        type: string
-      type:
-        example: int
-        type: string
-      value:
-        example: "0"
-        type: string
+      params:
+        items:
+          $ref: '#/definitions/v1.Param'
+        type: array
     type: object
   v1.CreateInstanceReqV1:
     properties:
@@ -1037,6 +1029,10 @@ definitions:
     type: object
   v1.InstanceResV1:
     properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.AdditionalParam'
+        type: array
       db_host:
         example: 10.10.10.10
         type: string
@@ -1129,6 +1125,23 @@ definitions:
       op_code:
         type: integer
       op_desc:
+        type: string
+    type: object
+  v1.Param:
+    properties:
+      description:
+        example: 参数项中文名
+        type: string
+      is_required:
+        type: boolean
+      name:
+        example: param name
+        type: string
+      type:
+        example: int
+        type: string
+      value:
+        example: "0"
         type: string
     type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
@@ -2551,6 +2564,20 @@ paths:
       summary: 实例连通性测试（实例提交前）
       tags:
       - instance
+  /v1/instance_create_metas:
+    get:
+      description: get create instance additional metas
+      operationId: getCreateInstanceMetasV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCreateInstanceAdditionalMetasResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例创建所需额外参数
+      tags:
+      - instance
   /v1/instance_tips:
     get:
       description: get instance tip list
@@ -2789,26 +2816,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取实例应用的工作流程模板
-      tags:
-      - instance
-  /v1/instances/created_metas:
-    get:
-      description: get create instance additional metas
-      operationId: getCreateInstanceMetasV1
-      parameters:
-      - description: instance type
-        in: query
-        name: instance_type
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetCreateInstanceAdditionalMetasResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例创建所需额外参数
       tags:
       - instance
   /v1/login:
