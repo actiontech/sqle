@@ -25,11 +25,11 @@ type GetInstanceAdditionalMetasResV1 struct {
 }
 
 type InstanceAdditionalMetaV1 struct {
-	DBType string     `json:"db_type"`
-	Params []*ParamV1 `json:"params"`
+	DBType string                          `json:"db_type"`
+	Params []*InstanceAdditionalParamResV1 `json:"params"`
 }
 
-type ParamV1 struct {
+type InstanceAdditionalParamResV1 struct {
 	Name        string `json:"name" example:"param name" form:"name"`
 	Description string `json:"description" example:"参数项中文名" form:"description"`
 	Type        string `json:"type" example:"int" form:"type"`
@@ -37,9 +37,9 @@ type ParamV1 struct {
 }
 
 // GetInstanceAdditionalMetas get instance additional metas
-// @Summary 获取实例类型的额外参数
+// @Summary 获取实例的额外属性列表
 // @Description get instance additional metas
-// @Id getInstanceMetasV1
+// @Id getInstanceAdditionalMetas
 // @Tags instance
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetInstanceAdditionalMetasResV1
@@ -49,20 +49,20 @@ func GetInstanceAdditionalMetas(c echo.Context) error {
 }
 
 type CreateInstanceReqV1 struct {
-	Name                 string                       `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
-	DBType               string                       `json:"db_type" form:"db_type" example:"mysql"`
-	User                 string                       `json:"db_user" form:"db_user" example:"root" valid:"required"`
-	Host                 string                       `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                 string                       `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
-	Password             string                       `json:"db_password" form:"db_password" example:"123456" valid:"required"`
-	Desc                 string                       `json:"desc" example:"this is a test instance"`
-	WorkflowTemplateName string                       `json:"workflow_template_name" form:"workflow_template_name"`
-	RuleTemplates        []string                     `json:"rule_template_name_list" form:"rule_template_name_list"`
-	Roles                []string                     `json:"role_name_list" form:"role_name_list"`
-	AdditionalParams     []*InstanceAdditionalParamV1 `json:"additional_params" from:"additional_params"`
+	Name                 string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
+	DBType               string                          `json:"db_type" form:"db_type" example:"mysql"`
+	User                 string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
+	Host                 string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port                 string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
+	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
+	Desc                 string                          `json:"desc" example:"this is a test instance"`
+	WorkflowTemplateName string                          `json:"workflow_template_name" form:"workflow_template_name"`
+	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
+	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
-type InstanceAdditionalParamV1 struct {
+type InstanceAdditionalParamReqV1 struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
@@ -181,16 +181,16 @@ func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance)
 }
 
 type InstanceResV1 struct {
-	Name                 string     `json:"instance_name"`
-	DBType               string     `json:"db_type" example:"mysql"`
-	Host                 string     `json:"db_host" example:"10.10.10.10"`
-	Port                 string     `json:"db_port" example:"3306"`
-	User                 string     `json:"db_user" example:"root"`
-	Desc                 string     `json:"desc" example:"this is a instance"`
-	WorkflowTemplateName string     `json:"workflow_template_name,omitempty"`
-	RuleTemplates        []string   `json:"rule_template_name_list,omitempty"`
-	Roles                []string   `json:"role_name_list,omitempty"`
-	AdditionalParams     []*ParamV1 `json:"additional_params"`
+	Name                 string                          `json:"instance_name"`
+	DBType               string                          `json:"db_type" example:"mysql"`
+	Host                 string                          `json:"db_host" example:"10.10.10.10"`
+	Port                 string                          `json:"db_port" example:"3306"`
+	User                 string                          `json:"db_user" example:"root"`
+	Desc                 string                          `json:"desc" example:"this is a instance"`
+	WorkflowTemplateName string                          `json:"workflow_template_name,omitempty"`
+	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
+	Roles                []string                        `json:"role_name_list,omitempty"`
+	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
 }
 
 type GetInstanceResV1 struct {
@@ -303,16 +303,16 @@ func DeleteInstance(c echo.Context) error {
 }
 
 type UpdateInstanceReqV1 struct {
-	DBType               *string                      `json:"db_type" form:"db_type" example:"mysql"`
-	User                 *string                      `json:"db_user" form:"db_user" example:"root"`
-	Host                 *string                      `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                 *string                      `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
-	Password             *string                      `json:"db_password" form:"db_password" example:"123456"`
-	Desc                 *string                      `json:"desc" example:"this is a test instance"`
-	WorkflowTemplateName *string                      `json:"workflow_template_name" form:"workflow_template_name"`
-	RuleTemplates        []string                     `json:"rule_template_name_list" form:"rule_template_name_list"`
-	Roles                []string                     `json:"role_name_list" form:"role_name_list"`
-	AdditionalParams     []*InstanceAdditionalParamV1 `json:"additional_params" from:"additional_params"`
+	DBType               *string                         `json:"db_type" form:"db_type" example:"mysql"`
+	User                 *string                         `json:"db_user" form:"db_user" example:"root"`
+	Host                 *string                         `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port                 *string                         `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
+	Password             *string                         `json:"db_password" form:"db_password" example:"123456"`
+	Desc                 *string                         `json:"desc" example:"this is a test instance"`
+	WorkflowTemplateName *string                         `json:"workflow_template_name" form:"workflow_template_name"`
+	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
+	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 // UpdateInstance update instance

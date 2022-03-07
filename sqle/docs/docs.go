@@ -1002,8 +1002,8 @@ var doc = `{
                 "tags": [
                     "instance"
                 ],
-                "summary": "获取实例类型的额外参数",
-                "operationId": "getInstanceMetasV1",
+                "summary": "获取实例的额外属性列表",
+                "operationId": "getInstanceAdditionalMetas",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4150,7 +4150,7 @@ var doc = `{
                 "additional_params": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.InstanceAdditionalParamV1"
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamReqV1"
                     }
                 },
                 "db_host": {
@@ -5215,12 +5215,12 @@ var doc = `{
                 "params": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ParamV1"
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamResV1"
                     }
                 }
             }
         },
-        "v1.InstanceAdditionalParamV1": {
+        "v1.InstanceAdditionalParamReqV1": {
             "type": "object",
             "properties": {
                 "name": {
@@ -5228,6 +5228,27 @@ var doc = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.InstanceAdditionalParamResV1": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "参数项中文名"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "param name"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "int"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "0"
                 }
             }
         },
@@ -5248,7 +5269,7 @@ var doc = `{
                 "additional_params": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ParamV1"
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamResV1"
                     }
                 },
                 "db_host": {
@@ -5390,27 +5411,6 @@ var doc = `{
                 },
                 "op_desc": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.ParamV1": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "参数项中文名"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "param name"
-                },
-                "type": {
-                    "type": "string",
-                    "example": "int"
-                },
-                "value": {
-                    "type": "string",
-                    "example": "0"
                 }
             }
         },
@@ -5748,7 +5748,7 @@ var doc = `{
                 "additional_params": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.InstanceAdditionalParamV1"
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamReqV1"
                     }
                 },
                 "db_host": {
