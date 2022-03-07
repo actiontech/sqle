@@ -36,9 +36,9 @@ type ParamV1 struct {
 	Value       string `json:"value" example:"0" form:"value"`
 }
 
-// GetInstanceAdditionalMetas get create instance additional metas
-// @Summary 获取实例创建所需额外参数
-// @Description get create instance additional metas
+// GetInstanceAdditionalMetas get instance additional metas
+// @Summary 获取实例类型的额外参数
+// @Description get instance additional metas
 // @Id getInstanceMetasV1
 // @Tags instance
 // @Security ApiKeyAuth
