@@ -975,6 +975,29 @@
                 }
             }
         },
+        "/v1/instance_additional_metas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance additional metas",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例的额外属性列表",
+                "operationId": "getInstanceAdditionalMetas",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceAdditionalMetasResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instance_connection": {
             "post": {
                 "security": [
@@ -4108,6 +4131,12 @@
         "v1.CreateInstanceReqV1": {
             "type": "object",
             "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamReqV1"
+                    }
+                },
                 "db_host": {
                     "type": "string",
                     "example": "10.10.10.10"
@@ -4562,6 +4591,25 @@
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DriversResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceAdditionalMetasResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalMetaV1"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -5142,6 +5190,52 @@
                 }
             }
         },
+        "v1.InstanceAdditionalMetaV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamResV1"
+                    }
+                }
+            }
+        },
+        "v1.InstanceAdditionalParamReqV1": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.InstanceAdditionalParamResV1": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "参数项中文名"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "param name"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "int"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "0"
+                }
+            }
+        },
         "v1.InstanceConnectableResV1": {
             "type": "object",
             "properties": {
@@ -5156,6 +5250,12 @@
         "v1.InstanceResV1": {
             "type": "object",
             "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamResV1"
+                    }
+                },
                 "db_host": {
                     "type": "string",
                     "example": "10.10.10.10"
@@ -5629,6 +5729,12 @@
         "v1.UpdateInstanceReqV1": {
             "type": "object",
             "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamReqV1"
+                    }
+                },
                 "db_host": {
                     "type": "string",
                     "example": "10.10.10.10"
