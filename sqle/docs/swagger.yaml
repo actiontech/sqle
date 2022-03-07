@@ -275,6 +275,10 @@ definitions:
     type: object
   v1.CreateInstanceReqV1:
     properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
+        type: array
       db_host:
         example: 10.10.10.10
         type: string
@@ -586,6 +590,19 @@ definitions:
       data:
         $ref: '#/definitions/v1.DriversResV1'
         type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceAdditionalMetasResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalMetaV1'
+        type: array
       message:
         example: ok
         type: string
@@ -987,6 +1004,37 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.InstanceAdditionalMetaV1:
+    properties:
+      db_type:
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
+        type: array
+    type: object
+  v1.InstanceAdditionalParamReqV1:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  v1.InstanceAdditionalParamResV1:
+    properties:
+      description:
+        example: 参数项中文名
+        type: string
+      name:
+        example: param name
+        type: string
+      type:
+        example: int
+        type: string
+      value:
+        example: "0"
+        type: string
+    type: object
   v1.InstanceConnectableResV1:
     properties:
       connect_error_message:
@@ -996,6 +1044,10 @@ definitions:
     type: object
   v1.InstanceResV1:
     properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
+        type: array
       db_host:
         example: 10.10.10.10
         type: string
@@ -1311,6 +1363,10 @@ definitions:
     type: object
   v1.UpdateInstanceReqV1:
     properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
+        type: array
       db_host:
         example: 10.10.10.10
         type: string
@@ -2482,6 +2538,20 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
+  /v1/instance_additional_metas:
+    get:
+      description: get instance additional metas
+      operationId: getInstanceAdditionalMetas
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceAdditionalMetasResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例的额外属性列表
+      tags:
+      - instance
   /v1/instance_connection:
     post:
       consumes:
