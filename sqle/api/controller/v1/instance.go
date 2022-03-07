@@ -21,7 +21,7 @@ var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can o
 
 type GetCreateInstanceAdditionalMetasResV1 struct {
 	controller.BaseRes
-	Metas []*CreateInstanceAdditionalMeta `json:"metas"`
+	Metas []*CreateInstanceAdditionalMeta `json:"data"`
 }
 
 type CreateInstanceAdditionalMeta struct {
@@ -34,7 +34,6 @@ type Param struct {
 	Description string `json:"description" example:"参数项中文名" form:"description"`
 	Type        string `json:"type" example:"int" form:"type"`
 	Value       string `json:"value" example:"0" form:"value"`
-	IsRequired  bool   `json:"is_required" form:"is_required"`
 }
 
 // GetCreateInstanceAdditionalMetas get create instance additional metas

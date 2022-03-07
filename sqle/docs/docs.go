@@ -4612,15 +4612,15 @@ var doc = `{
                     "type": "integer",
                     "example": 0
                 },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "metas": {
+                "data": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.CreateInstanceAdditionalMeta"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -5399,9 +5399,6 @@ var doc = `{
                 "description": {
                     "type": "string",
                     "example": "参数项中文名"
-                },
-                "is_required": {
-                    "type": "boolean"
                 },
                 "name": {
                     "type": "string",
