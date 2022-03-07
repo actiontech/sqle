@@ -591,13 +591,13 @@ definitions:
       code:
         example: 0
         type: integer
-      message:
-        example: ok
-        type: string
-      metas:
+      data:
         items:
           $ref: '#/definitions/v1.CreateInstanceAdditionalMeta'
         type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetDashboardResV1:
     properties:
@@ -1132,8 +1132,6 @@ definitions:
       description:
         example: 参数项中文名
         type: string
-      is_required:
-        type: boolean
       name:
         example: param name
         type: string
