@@ -2540,7 +2540,7 @@ paths:
       - dashboard
   /v1/instance_additional_metas:
     get:
-      description: get create instance additional metas
+      description: get instance additional metas
       operationId: getInstanceMetasV1
       responses:
         "200":
@@ -2549,7 +2549,7 @@ paths:
             $ref: '#/definitions/v1.GetInstanceAdditionalMetasResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取实例创建所需额外参数
+      summary: 获取实例类型的额外参数
       tags:
       - instance
   /v1/instance_connection:

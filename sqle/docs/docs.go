@@ -998,11 +998,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get create instance additional metas",
+                "description": "get instance additional metas",
                 "tags": [
                     "instance"
                 ],
-                "summary": "获取实例创建所需额外参数",
+                "summary": "获取实例类型的额外参数",
                 "operationId": "getInstanceMetasV1",
                 "responses": {
                     "200": {
