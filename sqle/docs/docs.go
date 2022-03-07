@@ -1003,12 +1003,12 @@ var doc = `{
                     "instance"
                 ],
                 "summary": "获取实例创建所需额外参数",
-                "operationId": "getCreateInstanceMetasV1",
+                "operationId": "getInstanceMetasV1",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetCreateInstanceAdditionalMetasResV1"
+                            "$ref": "#/definitions/v1.GetInstanceAdditionalMetasResV1"
                         }
                     }
                 }
@@ -3763,17 +3763,6 @@ var doc = `{
                 }
             }
         },
-        "v1.AdditionalParam": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.AuditPlanMetaV1": {
             "type": "object",
             "properties": {
@@ -4155,27 +4144,13 @@ var doc = `{
                 }
             }
         },
-        "v1.CreateInstanceAdditionalMeta": {
-            "type": "object",
-            "properties": {
-                "db_type": {
-                    "type": "string"
-                },
-                "params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.Param"
-                    }
-                }
-            }
-        },
         "v1.CreateInstanceReqV1": {
             "type": "object",
             "properties": {
                 "additional_params": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.AdditionalParam"
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamV1"
                     }
                 },
                 "db_host": {
@@ -4605,25 +4580,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetCreateInstanceAdditionalMetasResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.CreateInstanceAdditionalMeta"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetDashboardResV1": {
             "type": "object",
             "properties": {
@@ -4651,6 +4607,25 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DriversResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceAdditionalMetasResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalMetaV1"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -5231,6 +5206,31 @@ var doc = `{
                 }
             }
         },
+        "v1.InstanceAdditionalMetaV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ParamV1"
+                    }
+                }
+            }
+        },
+        "v1.InstanceAdditionalParamV1": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.InstanceConnectableResV1": {
             "type": "object",
             "properties": {
@@ -5248,7 +5248,7 @@ var doc = `{
                 "additional_params": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.AdditionalParam"
+                        "$ref": "#/definitions/v1.ParamV1"
                     }
                 },
                 "db_host": {
@@ -5393,7 +5393,7 @@ var doc = `{
                 }
             }
         },
-        "v1.Param": {
+        "v1.ParamV1": {
             "type": "object",
             "properties": {
                 "description": {
@@ -5748,7 +5748,7 @@ var doc = `{
                 "additional_params": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.AdditionalParam"
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamV1"
                     }
                 },
                 "db_host": {

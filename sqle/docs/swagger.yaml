@@ -9,13 +9,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.AdditionalParam:
-    properties:
-      name:
-        type: string
-      value:
-        type: string
-    type: object
   v1.AuditPlanMetaV1:
     properties:
       audit_plan_params:
@@ -280,20 +273,11 @@ definitions:
         example: create table
         type: string
     type: object
-  v1.CreateInstanceAdditionalMeta:
-    properties:
-      db_type:
-        type: string
-      params:
-        items:
-          $ref: '#/definitions/v1.Param'
-        type: array
-    type: object
   v1.CreateInstanceReqV1:
     properties:
       additional_params:
         items:
-          $ref: '#/definitions/v1.AdditionalParam'
+          $ref: '#/definitions/v1.InstanceAdditionalParamV1'
         type: array
       db_host:
         example: 10.10.10.10
@@ -586,19 +570,6 @@ definitions:
       total_nums:
         type: integer
     type: object
-  v1.GetCreateInstanceAdditionalMetasResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.CreateInstanceAdditionalMeta'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetDashboardResV1:
     properties:
       code:
@@ -619,6 +590,19 @@ definitions:
       data:
         $ref: '#/definitions/v1.DriversResV1'
         type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceAdditionalMetasResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalMetaV1'
+        type: array
       message:
         example: ok
         type: string
@@ -1020,6 +1004,22 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.InstanceAdditionalMetaV1:
+    properties:
+      db_type:
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/v1.ParamV1'
+        type: array
+    type: object
+  v1.InstanceAdditionalParamV1:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
   v1.InstanceConnectableResV1:
     properties:
       connect_error_message:
@@ -1031,7 +1031,7 @@ definitions:
     properties:
       additional_params:
         items:
-          $ref: '#/definitions/v1.AdditionalParam'
+          $ref: '#/definitions/v1.ParamV1'
         type: array
       db_host:
         example: 10.10.10.10
@@ -1127,7 +1127,7 @@ definitions:
       op_desc:
         type: string
     type: object
-  v1.Param:
+  v1.ParamV1:
     properties:
       description:
         example: 参数项中文名
@@ -1365,7 +1365,7 @@ definitions:
     properties:
       additional_params:
         items:
-          $ref: '#/definitions/v1.AdditionalParam'
+          $ref: '#/definitions/v1.InstanceAdditionalParamV1'
         type: array
       db_host:
         example: 10.10.10.10
@@ -2541,12 +2541,12 @@ paths:
   /v1/instance_additional_metas:
     get:
       description: get create instance additional metas
-      operationId: getCreateInstanceMetasV1
+      operationId: getInstanceMetasV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetCreateInstanceAdditionalMetasResV1'
+            $ref: '#/definitions/v1.GetInstanceAdditionalMetasResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取实例创建所需额外参数
