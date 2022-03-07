@@ -495,8 +495,11 @@ type GetAuditPlanReportsResV1 struct {
 }
 
 type AuditPlanReportResV1 struct {
-	Id        string `json:"audit_plan_report_id" example:"1"`
-	Timestamp string `json:"audit_plan_report_timestamp" example:"RFC3339"`
+	Id         string  `json:"audit_plan_report_id" example:"1"`
+	AuditLevel string  `json:"audit_level" enums:"normal,notice,warn,error"`
+	Score      int32   `json:"score"`
+	PassRate   float64 `json:"pass_rate"`
+	Timestamp  string  `json:"audit_plan_report_timestamp" example:"RFC3339"`
 }
 
 // @Summary 获取指定审核计划的报告列表
