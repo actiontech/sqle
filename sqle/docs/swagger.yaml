@@ -277,7 +277,7 @@ definitions:
     properties:
       additional_params:
         items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamV1'
+          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
         type: array
       db_host:
         example: 10.10.10.10
@@ -1010,14 +1010,29 @@ definitions:
         type: string
       params:
         items:
-          $ref: '#/definitions/v1.ParamV1'
+          $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
         type: array
     type: object
-  v1.InstanceAdditionalParamV1:
+  v1.InstanceAdditionalParamReqV1:
     properties:
       name:
         type: string
       value:
+        type: string
+    type: object
+  v1.InstanceAdditionalParamResV1:
+    properties:
+      description:
+        example: 参数项中文名
+        type: string
+      name:
+        example: param name
+        type: string
+      type:
+        example: int
+        type: string
+      value:
+        example: "0"
         type: string
     type: object
   v1.InstanceConnectableResV1:
@@ -1031,7 +1046,7 @@ definitions:
     properties:
       additional_params:
         items:
-          $ref: '#/definitions/v1.ParamV1'
+          $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
         type: array
       db_host:
         example: 10.10.10.10
@@ -1125,21 +1140,6 @@ definitions:
       op_code:
         type: integer
       op_desc:
-        type: string
-    type: object
-  v1.ParamV1:
-    properties:
-      description:
-        example: 参数项中文名
-        type: string
-      name:
-        example: param name
-        type: string
-      type:
-        example: int
-        type: string
-      value:
-        example: "0"
         type: string
     type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
@@ -1365,7 +1365,7 @@ definitions:
     properties:
       additional_params:
         items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamV1'
+          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
         type: array
       db_host:
         example: 10.10.10.10
@@ -2541,7 +2541,7 @@ paths:
   /v1/instance_additional_metas:
     get:
       description: get instance additional metas
-      operationId: getInstanceMetasV1
+      operationId: getInstanceAdditionalMetas
       responses:
         "200":
           description: OK
@@ -2549,7 +2549,7 @@ paths:
             $ref: '#/definitions/v1.GetInstanceAdditionalMetasResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取实例类型的额外参数
+      summary: 获取实例的额外属性列表
       tags:
       - instance
   /v1/instance_connection:
