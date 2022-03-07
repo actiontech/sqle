@@ -43,7 +43,7 @@ type Param struct {
 // @Tags instance
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetCreateInstanceAdditionalMetasResV1
-// @router /v1/instance_create_metas [get]
+// @router /v1/instance_additional_metas [get]
 func GetCreateInstanceAdditionalMetas(c echo.Context) error {
 	return nil
 }

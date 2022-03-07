@@ -2538,6 +2538,20 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
+  /v1/instance_additional_metas:
+    get:
+      description: get create instance additional metas
+      operationId: getCreateInstanceMetasV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCreateInstanceAdditionalMetasResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例创建所需额外参数
+      tags:
+      - instance
   /v1/instance_connection:
     post:
       consumes:
@@ -2560,20 +2574,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 实例连通性测试（实例提交前）
-      tags:
-      - instance
-  /v1/instance_create_metas:
-    get:
-      description: get create instance additional metas
-      operationId: getCreateInstanceMetasV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetCreateInstanceAdditionalMetasResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例创建所需额外参数
       tags:
       - instance
   /v1/instance_tips:
