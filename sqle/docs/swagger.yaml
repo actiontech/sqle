@@ -9,6 +9,13 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AdditionalParam:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
   v1.AuditPlanMetaV1:
     properties:
       audit_plan_params:
@@ -273,8 +280,29 @@ definitions:
         example: create table
         type: string
     type: object
+  v1.CreateInstanceAdditionalMeta:
+    properties:
+      description:
+        example: 参数项中文名
+        type: string
+      is_required:
+        type: boolean
+      name:
+        example: param name
+        type: string
+      type:
+        example: int
+        type: string
+      value:
+        example: "0"
+        type: string
+    type: object
   v1.CreateInstanceReqV1:
     properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.AdditionalParam'
+        type: array
       db_host:
         example: 10.10.10.10
         type: string
@@ -565,6 +593,19 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetCreateInstanceAdditionalMetasResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+      metas:
+        items:
+          $ref: '#/definitions/v1.CreateInstanceAdditionalMeta'
+        type: array
     type: object
   v1.GetDashboardResV1:
     properties:
@@ -1311,6 +1352,10 @@ definitions:
     type: object
   v1.UpdateInstanceReqV1:
     properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.AdditionalParam'
+        type: array
       db_host:
         example: 10.10.10.10
         type: string
@@ -2744,6 +2789,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取实例应用的工作流程模板
+      tags:
+      - instance
+  /v1/instances/created_metas:
+    get:
+      description: get create instance additional metas
+      operationId: getCreateInstanceMetasV1
+      parameters:
+      - description: instance type
+        in: query
+        name: instance_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCreateInstanceAdditionalMetasResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例创建所需额外参数
       tags:
       - instance
   /v1/login:
