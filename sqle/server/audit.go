@@ -78,7 +78,28 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 			"level":  executeSQL.AuditLevel,
 			"result": executeSQL.AuditResult}).Info("audit finished")
 	}
+
+	replenishTaskStatistics(task)
+
 	return nil
+}
+
+func replenishTaskStatistics(task *model.Task) {
+	var normalCount float64
+	maxAuditLevel := driver.RuleLevelNormal
+	for _, executeSQL := range task.ExecuteSQLs {
+		if executeSQL.AuditLevel == string(driver.RuleLevelNormal) {
+			normalCount += 1
+		}
+		if driver.RuleLevel(executeSQL.AuditLevel).More(maxAuditLevel) {
+			maxAuditLevel = driver.RuleLevel(executeSQL.AuditLevel)
+		}
+	}
+	task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
+	task.AuditLevel = string(maxAuditLevel)
+	task.Score = scoreTask(task)
+
+	task.Status = model.TaskStatusAudited
 }
 
 func parse(l *logrus.Entry, d driver.Driver, sql string) (node driver.Node, err error) {

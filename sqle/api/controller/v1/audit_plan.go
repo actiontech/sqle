@@ -544,8 +544,11 @@ func GetAuditPlanReports(c echo.Context) error {
 	auditPlanReportsResV1 := make([]AuditPlanReportResV1, len(auditPlanReports))
 	for i, auditPlanReport := range auditPlanReports {
 		auditPlanReportsResV1[i] = AuditPlanReportResV1{
-			Id:        auditPlanReport.ID,
-			Timestamp: auditPlanReport.CreateAt,
+			Id:         auditPlanReport.ID,
+			AuditLevel: auditPlanReport.AuditLevel,
+			Score:      auditPlanReport.Score,
+			PassRate:   auditPlanReport.PassRate,
+			Timestamp:  auditPlanReport.CreateAt,
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanReportsResV1{
@@ -787,8 +790,11 @@ func TriggerAuditPlan(c echo.Context) error {
 	return c.JSON(http.StatusOK, &TriggerAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: AuditPlanReportResV1{
-			Id:        fmt.Sprintf("%v", report.ID),
-			Timestamp: report.CreatedAt.Format(time.RFC3339),
+			Id:         fmt.Sprintf("%v", report.ID),
+			AuditLevel: report.Task.AuditLevel,
+			Score:      report.Task.Score,
+			PassRate:   report.Task.PassRate,
+			Timestamp:  report.CreatedAt.Format(time.RFC3339),
 		},
 	})
 }
