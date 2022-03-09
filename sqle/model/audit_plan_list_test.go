@@ -111,14 +111,16 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 	WHERE reports.deleted_at IS NULL
 	AND audit_plans.deleted_at IS NULL
 	AND audit_plans.name = ?
+	ORDER BY reports.created_at DESC , reports.id DESC
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
-	mock.ExpectPrepare(fmt.Sprintf(`SELECT reports.id, reports.created_at %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
+	mock.ExpectPrepare(fmt.Sprintf(`SELECT reports.id, reports.score , reports.pass_rate, reports.audit_level, reports.created_at %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs("audit_plan_for_jave_repo", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
-		"id", "created_at"}).AddRow("1", "2021-09-01T13:46:13+08:00"))
+		"id", "score", "pass_rate", "audit_level", "created_at"}).
+		AddRow("1", 100, 1, "normal", "2021-09-01T13:46:13+08:00"))
 
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs("audit_plan_for_jave_repo").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))

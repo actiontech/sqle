@@ -1,12 +1,17 @@
 package model
 
+import "database/sql"
+
 type AuditPlanReportListDetail struct {
-	ID       string `json:"id"`
-	CreateAt string `json:"created_at"`
+	ID         string          `json:"id"`
+	AuditLevel sql.NullString  `json:"audit_level"`
+	Score      sql.NullInt32   `json:"score"`
+	PassRate   sql.NullFloat64 `json:"pass_rate"`
+	CreateAt   string          `json:"created_at"`
 }
 
 var auditPlanReportQueryTpl = `
-SELECT reports.id, reports.created_at
+SELECT reports.id, reports.score , reports.pass_rate, reports.audit_level, reports.created_at
 
 {{- template "body" . -}} 
 
@@ -30,6 +35,8 @@ JOIN audit_plans ON audit_plans.id = reports.audit_plan_id
 WHERE reports.deleted_at IS NULL
 AND audit_plans.deleted_at IS NULL
 AND audit_plans.name = :audit_plan_name
+
+ORDER BY reports.created_at DESC , reports.id DESC 
 
 {{ end }}
 `
