@@ -37,13 +37,13 @@ func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushB
 
 		case sql, ok := <-sqlCh:
 			if !ok {
-				logrus.StandardLogger().Infoln("SQL channel closed")
 				if len(batch) != 0 {
 					err := scanner.Upload(context.TODO(), batch)
 					if err != nil {
 						return errors.Wrap(err, "failed to upload sql")
 					}
 				}
+				logrus.StandardLogger().Infoln("scanner stopped")
 				return nil
 			}
 			batch = append(batch, sql)
@@ -56,11 +56,12 @@ func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushB
 				continue
 			}
 		}
-
+		logrus.StandardLogger().Infof("start uploading %d sql\n", len(batch))
 		err := scanner.Upload(context.TODO(), batch)
 		if err != nil {
 			return errors.Wrap(err, "failed to upload sql")
 		}
+		logrus.StandardLogger().Infoln("finish uploading sql, continue...")
 		batch = make([]scanners.SQL, 0, pushBufferSize)
 	}
 }
