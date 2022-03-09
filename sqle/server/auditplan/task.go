@@ -103,14 +103,18 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 		return nil, err
 	}
 
-	auditPlanReport := &model.AuditPlanReportV2{AuditPlanID: at.ap.ID}
+	auditPlanReport := &model.AuditPlanReportV2{
+		AuditPlanID: at.ap.ID,
+		PassRate:    task.PassRate,
+		Score:       task.Score,
+		AuditLevel:  task.AuditLevel,
+	}
 	for _, executeSQL := range task.ExecuteSQLs {
 		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
 			SQL:         executeSQL.Content,
 			AuditResult: executeSQL.AuditResult,
 		})
 	}
-
 	err = at.persist.Save(auditPlanReport)
 	if err != nil {
 		return nil, err
