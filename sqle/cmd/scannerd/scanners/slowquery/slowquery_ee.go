@@ -48,7 +48,10 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 		return err
 	}
 
-	p := parser.NewSlowLogParser(reader, log.Options{})
+	p := parser.NewSlowLogParser(reader, log.Options{FilterAdminCommand: map[string]bool{
+		"Binlog Dump":      true,
+		"Binlog Dump GTID": true,
+	}})
 	go p.Run()
 
 	events := make(chan *log.Event, 1000)
