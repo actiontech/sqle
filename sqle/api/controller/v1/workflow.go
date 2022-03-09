@@ -11,8 +11,8 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/misc"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -559,7 +559,7 @@ func CreateWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
 	}
-	if err := misc.SendEmailIfConfigureSMTP(fmt.Sprintf("%v", workflow.ID)); err != nil {
+	if err := notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID)); err != nil {
 		log.Logger().Errorf("after create workflow, send email error: %v", err)
 	}
 
@@ -1038,7 +1038,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
 
-	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
+	if err := notification.NotifyWorkflow(workflowId); err != nil {
 		log.Logger().Errorf("after approve workflow, send email error: %v", err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
@@ -1329,7 +1329,7 @@ func UpdateWorkflow(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
 
-	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
+	if err := notification.NotifyWorkflow(workflowId); err != nil {
 		log.Logger().Errorf("after update workflow, send email error: %v", err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
