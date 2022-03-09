@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -505,11 +506,11 @@ func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[
 		},
 		{
 			Name: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
-			Desc: "执行时间(ms)",
+			Desc: "执行时间(s)",
 		},
 		{
 			Name: oracle.DynPerformanceViewSQLAreaColumnCPUTime,
-			Desc: "CPU时间(ms)",
+			Desc: "CPU消耗时间(s)",
 		},
 		{
 			Name: oracle.DynPerformanceViewSQLAreaColumnDiskReads,
@@ -521,7 +522,7 @@ func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[
 		},
 		{
 			Name: oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime,
-			Desc: "I/O等待时间(ms)",
+			Desc: "I/O等待时间(s)",
 		},
 	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
@@ -532,12 +533,12 @@ func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[
 		}
 		rows = append(rows, map[string]string{
 			"sql": sql.SQLContent,
-			oracle.DynPerformanceViewSQLAreaColumnExecutions:     info.Executions,
-			oracle.DynPerformanceViewSQLAreaColumnElapsedTime:    info.ElapsedTime,
-			oracle.DynPerformanceViewSQLAreaColumnCPUTime:        info.CPUTime,
-			oracle.DynPerformanceViewSQLAreaColumnDiskReads:      info.DiskReads,
-			oracle.DynPerformanceViewSQLAreaColumnBufferGets:     info.BufferGets,
-			oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime: info.UserIOWaitTime,
+			oracle.DynPerformanceViewSQLAreaColumnExecutions:     strconv.FormatInt(info.Executions, 10),
+			oracle.DynPerformanceViewSQLAreaColumnElapsedTime:    fmt.Sprintf("%v", utils.Round(float64(info.ElapsedTime)/1000/1000, 3)),
+			oracle.DynPerformanceViewSQLAreaColumnCPUTime:        fmt.Sprintf("%v", utils.Round(float64(info.CPUTime)/1000/1000, 3)),
+			oracle.DynPerformanceViewSQLAreaColumnDiskReads:      strconv.FormatInt(info.DiskReads, 10),
+			oracle.DynPerformanceViewSQLAreaColumnBufferGets:     strconv.FormatInt(info.BufferGets, 10),
+			oracle.DynPerformanceViewSQLAreaColumnUserIOWaitTime: fmt.Sprintf("%v", utils.Round(float64(info.UserIOWaitTime)/1000/1000, 3)),
 		})
 	}
 	return heads, rows, count, nil
