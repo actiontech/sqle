@@ -13,7 +13,6 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/utils"
 	xerrors "github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
@@ -263,21 +262,6 @@ func (a *action) audit() (err error) {
 		return err
 	}
 
-	var normalCount float64
-	maxAuditLevel := driver.RuleLevelNormal
-	for _, executeSQL := range a.task.ExecuteSQLs {
-		if executeSQL.AuditLevel == string(driver.RuleLevelNormal) {
-			normalCount += 1
-		}
-		if driver.RuleLevel(executeSQL.AuditLevel).More(maxAuditLevel) {
-			maxAuditLevel = driver.RuleLevel(executeSQL.AuditLevel)
-		}
-	}
-	a.task.PassRate = utils.Round(normalCount/float64(len(a.task.ExecuteSQLs)), 4)
-	a.task.AuditLevel = string(maxAuditLevel)
-	a.task.Score = scoreTask(a.task)
-
-	a.task.Status = model.TaskStatusAudited
 	if err = st.UpdateTask(a.task, map[string]interface{}{
 		"pass_rate":   a.task.PassRate,
 		"audit_level": a.task.AuditLevel,

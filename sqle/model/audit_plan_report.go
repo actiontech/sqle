@@ -3,9 +3,11 @@ package model
 type AuditPlanReportV2 struct {
 	Model
 	AuditPlanID uint `json:"audit_plan_id" gorm:"index"`
+	TaskID      uint `json:"task_id" gorm:"index"`
 
 	AuditPlan           *AuditPlan              `gorm:"foreignkey:AuditPlanID"`
 	AuditPlanReportSQLs []*AuditPlanReportSQLV2 `gorm:"foreignkey:AuditPlanReportID"`
+	Task                *Task                   `gorm:"foreignkey:TaskID"`
 }
 
 func (a AuditPlanReportV2) TableName() string {

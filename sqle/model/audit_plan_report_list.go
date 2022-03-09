@@ -1,12 +1,15 @@
 package model
 
 type AuditPlanReportListDetail struct {
-	ID       string `json:"id"`
-	CreateAt string `json:"created_at"`
+	ID         string  `json:"id"`
+	AuditLevel string  `json:"audit_level"`
+	Score      int32   `json:"score"`
+	PassRate   float64 `json:"pass_rate"`
+	CreateAt   string  `json:"created_at"`
 }
 
 var auditPlanReportQueryTpl = `
-SELECT reports.id, reports.created_at
+SELECT reports.id, tasks.score , tasks.pass_rate, tasks.audit_level, reports.created_at
 
 {{- template "body" . -}} 
 
@@ -26,9 +29,11 @@ var auditPlanReportBodyTpl = `
 
 FROM audit_plan_reports_v2 AS reports
 JOIN audit_plans ON audit_plans.id = reports.audit_plan_id
+LEFT JOIN tasks ON reports.task_id = tasks.id
 
 WHERE reports.deleted_at IS NULL
 AND audit_plans.deleted_at IS NULL
+AND tasks.deleted_at IS NULL
 AND audit_plans.name = :audit_plan_name
 
 {{ end }}
