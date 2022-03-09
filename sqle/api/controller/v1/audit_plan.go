@@ -545,9 +545,9 @@ func GetAuditPlanReports(c echo.Context) error {
 	for i, auditPlanReport := range auditPlanReports {
 		auditPlanReportsResV1[i] = AuditPlanReportResV1{
 			Id:         auditPlanReport.ID,
-			AuditLevel: auditPlanReport.AuditLevel,
-			Score:      auditPlanReport.Score,
-			PassRate:   auditPlanReport.PassRate,
+			AuditLevel: auditPlanReport.AuditLevel.String,
+			Score:      auditPlanReport.Score.Int32,
+			PassRate:   auditPlanReport.PassRate.Float64,
 			Timestamp:  auditPlanReport.CreateAt,
 		}
 	}
@@ -791,9 +791,9 @@ func TriggerAuditPlan(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: AuditPlanReportResV1{
 			Id:         fmt.Sprintf("%v", report.ID),
-			AuditLevel: report.Task.AuditLevel,
-			Score:      report.Task.Score,
-			PassRate:   report.Task.PassRate,
+			AuditLevel: report.AuditLevel,
+			Score:      report.Score,
+			PassRate:   report.PassRate,
 			Timestamp:  report.CreatedAt.Format(time.RFC3339),
 		},
 	})
