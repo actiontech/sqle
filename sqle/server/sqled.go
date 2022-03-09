@@ -4,7 +4,6 @@ import (
 	"context"
 	_errors "errors"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/utils"
 	xerrors "github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
@@ -263,21 +261,6 @@ func (a *action) audit() (err error) {
 		return err
 	}
 
-	var normalCount float64
-	maxAuditLevel := driver.RuleLevelNormal
-	for _, executeSQL := range a.task.ExecuteSQLs {
-		if executeSQL.AuditLevel == string(driver.RuleLevelNormal) {
-			normalCount += 1
-		}
-		if driver.RuleLevel(executeSQL.AuditLevel).More(maxAuditLevel) {
-			maxAuditLevel = driver.RuleLevel(executeSQL.AuditLevel)
-		}
-	}
-	a.task.PassRate = utils.Round(normalCount/float64(len(a.task.ExecuteSQLs)), 4)
-	a.task.AuditLevel = string(maxAuditLevel)
-	a.task.Score = scoreTask(a.task)
-
-	a.task.Status = model.TaskStatusAudited
 	if err = st.UpdateTask(a.task, map[string]interface{}{
 		"pass_rate":   a.task.PassRate,
 		"audit_level": a.task.AuditLevel,
@@ -288,81 +271,6 @@ func (a *action) audit() (err error) {
 		return err
 	}
 	return nil
-}
-
-// Scoring rules from https://github.com/actiontech/sqle/issues/284
-func scoreTask(task *model.Task) int32 {
-	if len(task.ExecuteSQLs) == 0 {
-		return 0
-	}
-
-	var (
-		numberOfTask           float64
-		numberOfLessThanError  float64
-		numberOfLessThanWarn   float64
-		numberOfLessThanNotice float64
-		errorRate              float64
-		warnRate               float64
-		noticeRate             float64
-		totalScore             float64
-	)
-	{ // ready to work
-		numberOfTask = float64(len(task.ExecuteSQLs))
-
-		for _, e := range task.ExecuteSQLs {
-			switch driver.RuleLevel(e.AuditLevel) {
-			case driver.RuleLevelError:
-				numberOfLessThanError++
-			case driver.RuleLevelWarn:
-				numberOfLessThanWarn++
-			case driver.RuleLevelNotice:
-				numberOfLessThanNotice++
-			}
-		}
-
-		numberOfLessThanNotice = numberOfLessThanNotice + numberOfLessThanWarn + numberOfLessThanError
-		numberOfLessThanWarn = numberOfLessThanWarn + numberOfLessThanError
-
-		errorRate = numberOfLessThanError / numberOfTask
-		warnRate = numberOfLessThanWarn / numberOfTask
-		noticeRate = numberOfLessThanNotice / numberOfTask
-	}
-	{ // calculate the total score
-		// pass rate score
-		totalScore = task.PassRate * 30
-		// SQL occurrence probability below error level
-		totalScore += (1 - errorRate) * 15
-		// SQL occurrence probability below warn level
-		totalScore += (1 - warnRate) * 10
-		// SQL occurrence probability below notice level
-		totalScore += (1 - noticeRate) * 5
-		// SQL without error level
-		if errorRate == 0 {
-			totalScore += 15
-		}
-		// SQL without warn level
-		if warnRate == 0 {
-			totalScore += 10
-		}
-		// SQL without notice level
-		if noticeRate == 0 {
-			totalScore += 5
-		}
-		// the proportion of SQL with the level below error exceeds 90%
-		if errorRate < 0.1 {
-			totalScore += 5
-		}
-		// the proportion of SQL with the level below warn exceeds 90%
-		if warnRate < 0.1 {
-			totalScore += 3
-		}
-		// the proportion of SQL with the level below warn exceeds 90%
-		if noticeRate < 0.1 {
-			totalScore += 2
-		}
-	}
-
-	return int32(math.Floor(totalScore))
 }
 
 func (a *action) execute() (err error) {
