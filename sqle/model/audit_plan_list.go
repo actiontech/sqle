@@ -81,6 +81,8 @@ audit_plan_sqls.info
 
 {{- template "body" . -}} 
 
+order by audit_plan_sqls.id
+
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
 {{- end -}}

@@ -86,7 +86,7 @@ func TestStorage_GetAuditPlanSQLsByReq(t *testing.T) {
 	assert.NoError(t, err)
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
-	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plan_sqls.fingerprint, audit_plan_sqls.sql_content, audit_plan_sqls.info %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
+	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plan_sqls.fingerprint, audit_plan_sqls.sql_content, audit_plan_sqls.info %v order by audit_plan_sqls.id LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs("audit_plan_for_jave_repo", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"fingerprint", "sql_content", "info",
 	}).AddRow("select * from t1 where id = ?", "select * from t1 where id = 1", []byte(`{"counter": 1, "last_receive_timestamp": "2021-09-01T13:46:13+08:00"}`)))
