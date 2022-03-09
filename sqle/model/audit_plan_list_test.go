@@ -111,6 +111,7 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 	WHERE reports.deleted_at IS NULL
 	AND audit_plans.deleted_at IS NULL
 	AND audit_plans.name = ?
+	ORDER BY reports.created_at DESC , reports.id DESC
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
