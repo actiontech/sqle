@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_driver "database/sql/driver"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"os"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -26,6 +27,8 @@ type Adaptor struct {
 	rules            []*driver.Rule
 	ruleToRawHandler map[string] /*rule name*/ rawSQLRuleHandler
 	ruleToASTHandler map[string] /*rule name*/ astSQLRuleHandler
+
+	additionalParams []*params.Param
 
 	ao *adaptorOptions
 }
@@ -50,12 +53,17 @@ func NewAdaptor(dt Dialector) *Adaptor {
 		}),
 		ruleToRawHandler: make(map[string]rawSQLRuleHandler),
 		ruleToASTHandler: make(map[string]astSQLRuleHandler),
+		additionalParams: []*params.Param{},
 	}
 }
 
 func (a *Adaptor) AddRule(r *driver.Rule, h rawSQLRuleHandler) {
 	a.rules = append(a.rules, r)
 	a.ruleToRawHandler[r.Name] = h
+}
+
+func (a *Adaptor) AddAdditionalParams(p *params.Param) {
+	a.additionalParams = append(a.additionalParams, p)
 }
 
 func (a *Adaptor) AddRuleWithSQLParser(r *driver.Rule, h astSQLRuleHandler) {
@@ -83,8 +91,9 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 	}
 
 	r := &registererImpl{
-		dt:    a.dt,
-		rules: a.rules,
+		dt:               a.dt,
+		rules:            a.rules,
+		additionalParams: a.additionalParams,
 	}
 
 	newDriver := func(cfg *driver.Config) driver.Driver {
@@ -151,8 +160,9 @@ var _ driver.Driver = (*driverImpl)(nil)
 var _ driver.Registerer = (*registererImpl)(nil)
 
 type registererImpl struct {
-	dt    Dialector
-	rules []*driver.Rule
+	dt               Dialector
+	rules            []*driver.Rule
+	additionalParams []*params.Param
 }
 
 func (r *registererImpl) Name() string {
@@ -161,6 +171,10 @@ func (r *registererImpl) Name() string {
 
 func (r *registererImpl) Rules() []*driver.Rule {
 	return r.rules
+}
+
+func (r *registererImpl) AdditionalParams() []*params.Param {
+	return r.additionalParams
 }
 
 type driverImpl struct {
