@@ -5,17 +5,17 @@ import (
 	"database/sql"
 	_driver "database/sql/driver"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"strings"
-
-	"github.com/actiontech/sqle/sqle/driver/mysql/optimizer/index"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
+	"github.com/actiontech/sqle/sqle/driver/mysql/optimizer/index"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/pkg/params"
+
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
