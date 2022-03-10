@@ -64,10 +64,6 @@ func GetInstanceAdditionalMetas(c echo.Context) error {
 }
 
 func ParamsSliceToInstanceAdditionalParamResV1Slice(params []*params.Param) []*InstanceAdditionalParamResV1 {
-	if len(params) != 0 {
-		m, err := json.Marshal(params[0])
-		fmt.Println("pp:", string(m), err)
-	}
 	res := make([]*InstanceAdditionalParamResV1, len(params))
 	for _, param := range params {
 		res = append(res, &InstanceAdditionalParamResV1{
@@ -652,11 +648,12 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 }
 
 type GetInstanceConnectableReqV1 struct {
-	DBType   string `json:"db_type" form:"db_type" example:"mysql"`
-	User     string `json:"user" form:"db_user" example:"root" valid:"required"`
-	Host     string `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port     string `json:"port" form:"db_port" example:"3306" valid:"required,port"`
-	Password string `json:"password" form:"db_password" example:"123456"`
+	DBType           string                          `json:"db_type" form:"db_type" example:"mysql"`
+	User             string                          `json:"user" form:"db_user" example:"root" valid:"required"`
+	Host             string                          `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             string                          `json:"port" form:"db_port" example:"3306" valid:"required,port"`
+	Password         string                          `json:"password" form:"db_password" example:"123456"`
+	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 // CheckInstanceIsConnectable test instance db connection
@@ -677,12 +674,21 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	if req.DBType == "" {
 		req.DBType = driver.DriverTypeMySQL
 	}
+	mp := map[string]interface{}{}
+	for _, param := range req.AdditionalParams {
+		mp[param.Name] = param.Value
+	}
+	paramBytes, err := json.Marshal(mp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	instance := &model.Instance{
-		DbType:   req.DBType,
-		User:     req.User,
-		Host:     req.Host,
-		Port:     req.Port,
-		Password: req.Password,
+		DbType:           req.DBType,
+		User:             req.User,
+		Host:             req.Host,
+		Port:             req.Port,
+		Password:         req.Password,
+		AdditionalParams: string(paramBytes),
 	}
 	return checkInstanceIsConnectable(c, instance)
 }

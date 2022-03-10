@@ -34,7 +34,10 @@ type Instance struct {
 
 func (i *Instance) GetAdditionalParams() map[string]interface{} {
 	mp := make(map[string]interface{})
-	_ = json.Unmarshal([]byte(i.AdditionalParams), &mp)
+	err := json.Unmarshal([]byte(i.AdditionalParams), &mp)
+	if err != nil {
+		fmt.Println("err:", err)
+	}
 	return mp
 }
 

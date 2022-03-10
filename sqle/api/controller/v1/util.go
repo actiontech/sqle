@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -22,7 +23,7 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 
 		DatabaseName: database,
 	}
-
+	fmt.Println("dsn:", inst.GetAdditionalParams())
 	cfg, err := driver.NewConfig(dsn, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "new driver without audit")
