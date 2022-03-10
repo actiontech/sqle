@@ -26,17 +26,6 @@ const (
 	WorkflowStepTypeUpdateWorkflow = "update_workflow"
 )
 
-func GetWorkflowStepTypeDesc(s string) string {
-	switch s {
-	case WorkflowStepTypeSQLReview:
-		return "审批"
-	case WorkflowStepTypeSQLExecute:
-		return "上线"
-	default:
-		return "未知"
-	}
-}
-
 type WorkflowStepTemplate struct {
 	Model
 	Number             uint   `gorm:"index; column:step_number"`
@@ -292,20 +281,6 @@ func (w *Workflow) IsFirstRecord(record *WorkflowRecord) bool {
 		return record == records[0]
 	}
 	return false
-}
-
-func (w *Workflow) NotificationSubject() string {
-	return "SQL工单审批请求"
-}
-
-func (w *Workflow) NotificationBody() string {
-	return fmt.Sprintf(`
-您有一个SQL工单待%v:
-- 工单主题: %v
-- 工单描述: %v
-- 申请人: %v
-`, GetWorkflowStepTypeDesc(w.CurrentStep().Template.Typ),
-		w.Subject, w.Desc, w.CreateUserName())
 }
 
 func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
