@@ -2,7 +2,6 @@ package driver
 
 import (
 	"fmt"
-
 	"github.com/actiontech/sqle/sqle/driver"
 
 	// DRIVER LIST:

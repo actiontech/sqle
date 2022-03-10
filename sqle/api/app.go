@@ -99,6 +99,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// instance
 		v1Router.POST("/instances", v1.CreateInstance, AdminUserAllowed())
+		v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas, AdminUserAllowed())
 		v1Router.DELETE("/instances/:instance_name/", v1.DeleteInstance, AdminUserAllowed())
 		v1Router.PATCH("/instances/:instance_name/", v1.UpdateInstance, AdminUserAllowed())
 

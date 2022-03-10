@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"strconv"
 	"sync"
 	"time"
@@ -329,11 +330,13 @@ func (at *SchemaMetaTask) collectorDo() {
 		return
 	}
 	db, err := executor.NewExecutor(at.logger, &driver.DSN{
-		Host:         instance.Host,
-		Port:         instance.Port,
-		User:         instance.User,
-		Password:     instance.Password,
-		DatabaseName: at.ap.InstanceDatabase},
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: params.NewParamSliceFromMap(instance.GetAdditionalParams()),
+		DatabaseName:     at.ap.InstanceDatabase,
+	},
 		at.ap.InstanceDatabase)
 	if err != nil {
 		at.logger.Errorf("connect to instance fail, error: %v", err)

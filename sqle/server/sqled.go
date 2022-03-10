@@ -4,6 +4,7 @@ import (
 	"context"
 	_errors "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"sync"
 	"time"
 
@@ -467,10 +468,11 @@ func newDriverWithAudit(l *logrus.Entry, inst *model.Instance, database string, 
 		modelRules, err = st.GetRulesFromRuleTemplateByName(templateName)
 	} else {
 		dsn = &driver.DSN{
-			Host:     inst.Host,
-			Port:     inst.Port,
-			User:     inst.User,
-			Password: inst.Password,
+			Host:             inst.Host,
+			Port:             inst.Port,
+			User:             inst.User,
+			Password:         inst.Password,
+			AdditionalParams: params.NewParamSliceFromMap(inst.GetAdditionalParams()),
 
 			DatabaseName: database,
 		}
