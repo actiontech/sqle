@@ -6,26 +6,26 @@ import (
 
 func ParamToProtoParam(p []*params.Param) []*Param {
 	pp := make([]*Param, len(p))
-	for _, param := range p {
-		pp = append(pp, &Param{
-			Key:   param.Key,
-			Value: param.Value,
-			Desc:  param.Desc,
-			Type:  string(param.Type),
-		})
+	for i, v := range p {
+		pp[i] = &Param{
+			Key:   v.Key,
+			Value: v.Value,
+			Desc:  v.Desc,
+			Type:  string(v.Type),
+		}
 	}
 	return pp
 }
 
 func ProtoParamToParam(p []*Param) []*params.Param {
 	pp := make([]*params.Param, len(p))
-	for _, param := range p {
-		pp = append(pp, &params.Param{
-			Key:   param.Key,
-			Value: param.Value,
-			Desc:  param.Desc,
-			Type:  params.ParamType(param.Type),
-		})
+	for i, v := range p {
+		pp[i] = &params.Param{
+			Key:   v.Key,
+			Value: v.Value,
+			Desc:  v.Desc,
+			Type:  params.ParamType(v.Type),
+		}
 	}
 	return pp
 }

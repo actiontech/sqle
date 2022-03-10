@@ -47,22 +47,27 @@ type InstanceAdditionalParamResV1 struct {
 // @Success 200 {object} v1.GetInstanceAdditionalMetasResV1
 // @router /v1/instance_additional_metas [get]
 func GetInstanceAdditionalMetas(c echo.Context) error {
-	drivers := driver.AllAdditionalParams()
-	req := &GetInstanceAdditionalMetasResV1{
-		Metas: []*InstanceAdditionalMetaV1{},
+	additionalParams := driver.AllAdditionalParams()
+	res := &GetInstanceAdditionalMetasResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Metas:   []*InstanceAdditionalMetaV1{},
 	}
-	for name, params := range drivers {
+	for name, params := range additionalParams {
 		meta := &InstanceAdditionalMetaV1{
 			DBType: name,
 			Params: ParamsSliceToInstanceAdditionalParamResV1Slice(params),
 		}
 
-		req.Metas = append(req.Metas, meta)
+		res.Metas = append(res.Metas, meta)
 	}
-	return nil
+	return c.JSON(http.StatusOK, res)
 }
 
 func ParamsSliceToInstanceAdditionalParamResV1Slice(params []*params.Param) []*InstanceAdditionalParamResV1 {
+	if len(params) != 0 {
+		m, err := json.Marshal(params[0])
+		fmt.Println("pp:", string(m), err)
+	}
 	res := make([]*InstanceAdditionalParamResV1, len(params))
 	for _, param := range params {
 		res = append(res, &InstanceAdditionalParamResV1{

@@ -455,7 +455,6 @@ func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.
 	for i, r := range d.r.Rules() {
 		protoRules[i] = convertRuleFromDriverToProto(r)
 	}
-
 	return &proto.MetasResponse{
 		Name:             d.r.Name(),
 		Rules:            protoRules,
