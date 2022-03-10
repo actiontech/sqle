@@ -8,15 +8,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -329,11 +330,13 @@ func (at *SchemaMetaTask) collectorDo() {
 		return
 	}
 	db, err := executor.NewExecutor(at.logger, &driver.DSN{
-		Host:         instance.Host,
-		Port:         instance.Port,
-		User:         instance.User,
-		Password:     instance.Password,
-		DatabaseName: at.ap.InstanceDatabase},
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: params.NewParamSliceFromMap(instance.GetAdditionalParams()),
+		DatabaseName:     at.ap.InstanceDatabase,
+	},
 		at.ap.InstanceDatabase)
 	if err != nil {
 		at.logger.Errorf("connect to instance fail, error: %v", err)

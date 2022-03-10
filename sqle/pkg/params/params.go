@@ -132,3 +132,14 @@ func (r *Params) Copy() Params {
 	}
 	return ps
 }
+
+func NewParamSliceFromMap(m map[string]interface{}) []*Param {
+	s := []*Param{}
+	for k, v := range m {
+		s = append(s, &Param{
+			Key:   k,
+			Value: fmt.Sprintf("%v", v),
+		})
+	}
+	return s
+}

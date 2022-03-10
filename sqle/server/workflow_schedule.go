@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
 )
 
@@ -84,11 +85,12 @@ func ExecuteWorkflow(workflow *model.Workflow, userId uint) error {
 	// if instance is not connectable, exec sql must be failed;
 	// commit action unable to retry, so don't to exec it.
 	dsn := &driver.DSN{
-		Host:         task.Instance.Host,
-		Port:         task.Instance.Port,
-		User:         task.Instance.User,
-		Password:     task.Instance.Password,
-		DatabaseName: task.Schema,
+		Host:             task.Instance.Host,
+		Port:             task.Instance.Port,
+		User:             task.Instance.User,
+		Password:         task.Instance.Password,
+		AdditionalParams: params.NewParamSliceFromMap(task.Instance.GetAdditionalParams()),
+		DatabaseName:     task.Schema,
 	}
 
 	cfg, err := driver.NewConfig(dsn, nil)
