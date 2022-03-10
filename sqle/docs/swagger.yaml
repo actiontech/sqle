@@ -620,6 +620,10 @@ definitions:
     type: object
   v1.GetInstanceConnectableReqV1:
     properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
+        type: array
       db_type:
         example: mysql
         type: string
