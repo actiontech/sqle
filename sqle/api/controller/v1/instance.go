@@ -582,11 +582,12 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 }
 
 type GetInstanceConnectableReqV1 struct {
-	DBType   string `json:"db_type" form:"db_type" example:"mysql"`
-	User     string `json:"user" form:"db_user" example:"root" valid:"required"`
-	Host     string `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port     string `json:"port" form:"db_port" example:"3306" valid:"required,port"`
-	Password string `json:"password" form:"db_password" example:"123456"`
+	DBType           string                          `json:"db_type" form:"db_type" example:"mysql"`
+	User             string                          `json:"user" form:"db_user" example:"root" valid:"required"`
+	Host             string                          `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             string                          `json:"port" form:"db_port" example:"3306" valid:"required,port"`
+	Password         string                          `json:"password" form:"db_password" example:"123456"`
+	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 // CheckInstanceIsConnectable test instance db connection
