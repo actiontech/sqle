@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	_driver "database/sql/driver"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/optimizer/index"
@@ -26,7 +27,7 @@ func init() {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
-	driver.Register(driver.DriverTypeMySQL, newInspect, allRules)
+	driver.Register(driver.DriverTypeMySQL, newInspect, allRules, []*params.Param{})
 
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
