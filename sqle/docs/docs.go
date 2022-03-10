@@ -4651,6 +4651,12 @@ var doc = `{
         "v1.GetInstanceConnectableReqV1": {
             "type": "object",
             "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamReqV1"
+                    }
+                },
                 "db_type": {
                     "type": "string",
                     "example": "mysql"
