@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 	_driver "database/sql/driver"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"os"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/percona/go-mysql/query"
 	"github.com/pkg/errors"
