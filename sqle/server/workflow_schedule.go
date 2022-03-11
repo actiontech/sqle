@@ -86,11 +86,12 @@ func ExecuteWorkflow(workflow *model.Workflow, userId uint) error {
 	// if instance is not connectable, exec sql must be failed;
 	// commit action unable to retry, so don't to exec it.
 	dsn := &driver.DSN{
-		Host:         task.Instance.Host,
-		Port:         task.Instance.Port,
-		User:         task.Instance.User,
-		Password:     task.Instance.Password,
-		DatabaseName: task.Schema,
+		Host:             task.Instance.Host,
+		Port:             task.Instance.Port,
+		User:             task.Instance.User,
+		Password:         task.Instance.Password,
+		AdditionalParams: task.Instance.AdditionalParams,
+		DatabaseName:     task.Schema,
 	}
 
 	cfg, err := driver.NewConfig(dsn, nil)
