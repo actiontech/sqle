@@ -26,17 +26,6 @@ const (
 	WorkflowStepTypeUpdateWorkflow = "update_workflow"
 )
 
-func GetWorkflowStepTypeDesc(s string) string {
-	switch s {
-	case WorkflowStepTypeSQLReview:
-		return "审批"
-	case WorkflowStepTypeSQLExecute:
-		return "上线"
-	default:
-		return "未知"
-	}
-}
-
 type WorkflowStepTemplate struct {
 	Model
 	Number             uint   `gorm:"index; column:step_number"`

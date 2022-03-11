@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/notification"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -121,11 +123,14 @@ func ExecuteWorkflow(workflow *model.Workflow, userId uint) error {
 	if err != nil {
 		return err
 	}
-
-	sqledServer := GetSqled()
-	err = sqledServer.AddTask(taskId, ActionTypeExecute)
-	if err != nil {
-		return err
-	}
+	go func() {
+		sqledServer := GetSqled()
+		task, err := sqledServer.AddTaskWaitResult(taskId, ActionTypeExecute)
+		if err != nil || task.Status == model.TaskStatusExecuteFailed {
+			go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteFail)
+		} else {
+			go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteSuccess)
+		}
+	}()
 	return nil
 }

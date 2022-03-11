@@ -10,9 +10,8 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/misc"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -559,9 +558,7 @@ func CreateWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
 	}
-	if err := misc.SendEmailIfConfigureSMTP(fmt.Sprintf("%v", workflow.ID)); err != nil {
-		log.Logger().Errorf("after create workflow, send email error: %v", err)
-	}
+	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeCreate)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1037,10 +1034,8 @@ func ApproveWorkflow(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
+	go notification.NotifyWorkflow(workflowId, notification.WorkflowNotifyTypeApprove)
 
-	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
-		log.Logger().Errorf("after approve workflow, send email error: %v", err)
-	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -1117,6 +1112,8 @@ func RejectWorkflow(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
+	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -1328,10 +1325,8 @@ func UpdateWorkflow(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
+	go notification.NotifyWorkflow(workflowId, notification.WorkflowNotifyTypeCreate)
 
-	if err := misc.SendEmailIfConfigureSMTP(workflowId); err != nil {
-		log.Logger().Errorf("after update workflow, send email error: %v", err)
-	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
