@@ -48,6 +48,7 @@ definitions:
     properties:
       audit_level:
         enum:
+        - success
         - normal
         - notice
         - warn
@@ -137,6 +138,7 @@ definitions:
     properties:
       audit_level:
         enum:
+        - success
         - normal
         - notice
         - warn
@@ -404,6 +406,7 @@ definitions:
     properties:
       allow_submit_when_less_audit_level:
         enum:
+        - success
         - normal
         - notice
         - warn
@@ -1249,6 +1252,7 @@ definitions:
         type: string
       level:
         enum:
+        - success
         - normal
         - notice
         - warn
@@ -1494,6 +1498,7 @@ definitions:
     properties:
       allow_submit_when_less_audit_level:
         enum:
+        - success
         - normal
         - notice
         - warn
@@ -1753,6 +1758,7 @@ definitions:
     properties:
       allow_submit_when_less_audit_level:
         enum:
+        - success
         - normal
         - notice
         - warn
@@ -3334,6 +3340,7 @@ paths:
         type: string
       - description: 'filter: audit level of task sql'
         enum:
+        - success
         - normal
         - notice
         - warn

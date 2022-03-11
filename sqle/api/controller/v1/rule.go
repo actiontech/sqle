@@ -390,7 +390,7 @@ type GetRulesResV1 struct {
 type RuleResV1 struct {
 	Name   string           `json:"rule_name"`
 	Desc   string           `json:"desc"`
-	Level  string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Level  string           `json:"level" example:"error" enums:"success,normal,notice,warn,error"`
 	Typ    string           `json:"type" example:"全局配置" `
 	DBType string           `json:"db_type" example:"mysql"`
 	Params []RuleParamResV1 `json:"params,omitempty"`
