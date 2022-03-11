@@ -54,7 +54,7 @@ func GetInstanceAdditionalMetas(c echo.Context) error {
 	for name, params := range additionalParams {
 		meta := &InstanceAdditionalMetaV1{
 			DBType: name,
-			Params: ParamsSliceToInstanceAdditionalParamResV1Slice(params),
+			Params: convertParamsToInstanceAdditionalParamRes(params),
 		}
 
 		res.Metas = append(res.Metas, meta)
@@ -62,7 +62,7 @@ func GetInstanceAdditionalMetas(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func ParamsSliceToInstanceAdditionalParamResV1Slice(params []*params.Param) []*InstanceAdditionalParamResV1 {
+func convertParamsToInstanceAdditionalParamRes(params params.Params) []*InstanceAdditionalParamResV1 {
 	res := make([]*InstanceAdditionalParamResV1, len(params))
 	for i, param := range params {
 		res[i] = &InstanceAdditionalParamResV1{
@@ -123,12 +123,10 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	additionalParams := driver.AllAdditionalParams()[req.DBType]
-	for _, param := range additionalParams {
-		for _, additionalParam := range req.AdditionalParams {
-			if param.Key == additionalParam.Name {
-				param.Value = additionalParam.Value
-				break
-			}
+	for _, additionalParam := range req.AdditionalParams {
+		err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 		}
 	}
 
@@ -237,7 +235,7 @@ type GetInstanceResV1 struct {
 	Data InstanceResV1 `json:"data"`
 }
 
-func convertInstanceToRes(instance *model.Instance, p []*params.Param) InstanceResV1 {
+func convertInstanceToRes(instance *model.Instance, allParam params.Params) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
 		Name:             instance.Name,
 		Host:             instance.Host,
@@ -264,7 +262,7 @@ func convertInstanceToRes(instance *model.Instance, p []*params.Param) InstanceR
 		}
 		instanceResV1.Roles = roleNames
 	}
-	for _, param := range p {
+	for _, param := range allParam {
 		instanceResV1.AdditionalParams = append(instanceResV1.AdditionalParams, &InstanceAdditionalParamResV1{
 			Name:        param.Key,
 			Description: param.Desc,
@@ -681,12 +679,10 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	}
 
 	additionalParams := driver.AllAdditionalParams()[req.DBType]
-	for _, param := range additionalParams {
-		for _, additionalParam := range req.AdditionalParams {
-			if param.Key == additionalParam.Name {
-				param.Value = additionalParam.Value
-				break
-			}
+	for _, additionalParam := range req.AdditionalParams {
+		err := additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 		}
 	}
 

@@ -29,7 +29,7 @@ type Adaptor struct {
 	ruleToRawHandler map[string] /*rule name*/ rawSQLRuleHandler
 	ruleToASTHandler map[string] /*rule name*/ astSQLRuleHandler
 
-	additionalParams []*params.Param
+	additionalParams params.Params
 
 	ao *adaptorOptions
 }
@@ -54,7 +54,7 @@ func NewAdaptor(dt Dialector) *Adaptor {
 		}),
 		ruleToRawHandler: make(map[string]rawSQLRuleHandler),
 		ruleToASTHandler: make(map[string]astSQLRuleHandler),
-		additionalParams: []*params.Param{},
+		additionalParams: params.Params{},
 	}
 }
 
@@ -163,7 +163,7 @@ var _ driver.Registerer = (*registererImpl)(nil)
 type registererImpl struct {
 	dt               Dialector
 	rules            []*driver.Rule
-	additionalParams []*params.Param
+	additionalParams params.Params
 }
 
 func (r *registererImpl) Name() string {
@@ -174,7 +174,7 @@ func (r *registererImpl) Rules() []*driver.Rule {
 	return r.rules
 }
 
-func (r *registererImpl) AdditionalParams() []*params.Param {
+func (r *registererImpl) AdditionalParams() params.Params {
 	return r.additionalParams
 }
 
