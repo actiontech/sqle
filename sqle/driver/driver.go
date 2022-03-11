@@ -43,7 +43,7 @@ type DSN struct {
 	Port             string
 	User             string
 	Password         string
-	AdditionalParams []*params.Param
+	AdditionalParams params.Params
 
 	// DatabaseName is the default database to connect.
 	DatabaseName string
@@ -264,7 +264,7 @@ type Registerer interface {
 	Rules() []*Rule
 
 	// AdditionalParams returns all additional params that plugin supported.
-	AdditionalParams() []*params.Param
+	AdditionalParams() params.Params
 }
 
 // Node is a interface which unify SQL ast tree. It produce by Driver.Parse.

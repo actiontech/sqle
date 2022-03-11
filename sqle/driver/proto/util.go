@@ -4,7 +4,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
-func ParamToProtoParam(p []*params.Param) []*Param {
+func ConvertParamToProtoParam(p params.Params) []*Param {
 	pp := make([]*Param, len(p))
 	for i, v := range p {
 		if v == nil {
@@ -20,8 +20,8 @@ func ParamToProtoParam(p []*params.Param) []*Param {
 	return pp
 }
 
-func ProtoParamToParam(p []*Param) []*params.Param {
-	pp := make([]*params.Param, len(p))
+func ConvertProtoParamToParam(p []*Param) params.Params {
+	pp := make(params.Params, len(p))
 	for i, v := range p {
 		if v == nil {
 			continue

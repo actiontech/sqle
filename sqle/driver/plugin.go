@@ -146,7 +146,7 @@ func InitPlugins(pluginDir string) error {
 					Port:             config.DSN.Port,
 					User:             config.DSN.User,
 					Password:         config.DSN.Password,
-					AdditionalParams: proto.ParamToProtoParam(config.DSN.AdditionalParams),
+					AdditionalParams: proto.ConvertParamToProtoParam(config.DSN.AdditionalParams),
 
 					// database is to open.
 					Database: config.DSN.DatabaseName,
@@ -161,7 +161,7 @@ func InitPlugins(pluginDir string) error {
 
 		}
 
-		Register(pluginMeta.Name, handler, driverRules, proto.ProtoParamToParam(pluginMeta.GetAdditionalParams()))
+		Register(pluginMeta.Name, handler, driverRules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()))
 
 		log.Logger().WithFields(logrus.Fields{
 			"plugin_name": pluginMeta.Name,
@@ -336,7 +336,7 @@ func (d *driverGRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*p
 			User:             req.GetDsn().GetUser(),
 			Password:         req.GetDsn().GetPassword(),
 			DatabaseName:     req.GetDsn().GetDatabase(),
-			AdditionalParams: proto.ProtoParamToParam(req.GetDsn().GetAdditionalParams()),
+			AdditionalParams: proto.ConvertProtoParamToParam(req.GetDsn().GetAdditionalParams()),
 		}
 	}
 
@@ -459,7 +459,7 @@ func (d *driverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*proto.
 	return &proto.MetasResponse{
 		Name:             d.r.Name(),
 		Rules:            protoRules,
-		AdditionalParams: proto.ParamToProtoParam(d.r.AdditionalParams()),
+		AdditionalParams: proto.ConvertParamToProtoParam(d.r.AdditionalParams()),
 	}, nil
 }
 
