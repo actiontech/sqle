@@ -87,7 +87,7 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 
 func replenishTaskStatistics(task *model.Task) {
 	var normalCount float64
-	maxAuditLevel := driver.RuleLevelSuccess
+	maxAuditLevel := driver.RuleLevelNull
 	for _, executeSQL := range task.ExecuteSQLs {
 		if driver.RuleLevelNormal.MoreOrEqual(driver.RuleLevel(executeSQL.AuditLevel)) {
 			normalCount += 1

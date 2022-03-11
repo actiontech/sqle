@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver"
 	"mime"
 	"net/http"
 	"strconv"
@@ -37,7 +38,7 @@ type AuditTaskResV1 struct {
 	Id             uint       `json:"task_id"`
 	InstanceName   string     `json:"instance_name"`
 	InstanceSchema string     `json:"instance_schema" example:"db1"`
-	AuditLevel     string     `json:"audit_level" enums:"success,normal,notice,warn,error"`
+	AuditLevel     string     `json:"audit_level" enums:"normal,notice,warn,error"`
 	Score          int32      `json:"score"`
 	PassRate       float64    `json:"pass_rate"`
 	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
@@ -47,11 +48,15 @@ type AuditTaskResV1 struct {
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
+	level := ""
+	if task.AuditLevel != string(driver.RuleLevelNull) {
+		level = task.AuditLevel
+	}
 	return &AuditTaskResV1{
 		Id:             task.ID,
 		InstanceName:   task.InstanceName(),
 		InstanceSchema: task.Schema,
-		AuditLevel:     task.AuditLevel,
+		AuditLevel:     level,
 		Score:          task.Score,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
@@ -296,7 +301,7 @@ type AuditTaskSQLResV1 struct {
 // @Param task_id path string true "task id"
 // @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed)
 // @Param filter_audit_status query string false "filter: audit status of task sql" Enums(initialized,doing,finished)
-// @Param filter_audit_level query string false "filter: audit level of task sql" Enums(success,normal,notice,warn,error)
+// @Param filter_audit_level query string false "filter: audit level of task sql" Enums(normal,notice,warn,error)
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
 // @Param page_index query string false "page index"
 // @Param page_size query string false "page size"
