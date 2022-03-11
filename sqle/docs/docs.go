@@ -2218,7 +2218,6 @@ var doc = `{
                     },
                     {
                         "enum": [
-                            "success",
                             "normal",
                             "notice",
                             "warn",
@@ -3823,7 +3822,6 @@ var doc = `{
                 "audit_level": {
                     "type": "string",
                     "enum": [
-                        "success",
                         "normal",
                         "notice",
                         "warn",
@@ -3948,7 +3946,6 @@ var doc = `{
                 "audit_level": {
                     "type": "string",
                     "enum": [
-                        "success",
                         "normal",
                         "notice",
                         "warn",
@@ -4339,7 +4336,6 @@ var doc = `{
                 "allow_submit_when_less_audit_level": {
                     "type": "string",
                     "enum": [
-                        "success",
                         "normal",
                         "notice",
                         "warn",
@@ -5578,7 +5574,6 @@ var doc = `{
                 "level": {
                     "type": "string",
                     "enum": [
-                        "success",
                         "normal",
                         "notice",
                         "warn",
@@ -5944,7 +5939,6 @@ var doc = `{
                 "allow_submit_when_less_audit_level": {
                     "type": "string",
                     "enum": [
-                        "success",
                         "normal",
                         "notice",
                         "warn",
@@ -6328,7 +6322,6 @@ var doc = `{
                 "allow_submit_when_less_audit_level": {
                     "type": "string",
                     "enum": [
-                        "success",
                         "normal",
                         "notice",
                         "warn",
