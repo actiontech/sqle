@@ -47,17 +47,19 @@ type DSN struct {
 type RuleLevel string
 
 const (
-	RuleLevelNormal RuleLevel = "normal"
-	RuleLevelNotice RuleLevel = "notice"
-	RuleLevelWarn   RuleLevel = "warn"
-	RuleLevelError  RuleLevel = "error"
+	RuleLevelSuccess RuleLevel = "success"
+	RuleLevelNormal  RuleLevel = "normal"
+	RuleLevelNotice  RuleLevel = "notice"
+	RuleLevelWarn    RuleLevel = "warn"
+	RuleLevelError   RuleLevel = "error"
 )
 
 var ruleLevelMap = map[RuleLevel]int{
-	RuleLevelNormal: 0,
-	RuleLevelNotice: 1,
-	RuleLevelWarn:   2,
-	RuleLevelError:  3,
+	RuleLevelSuccess: -1,
+	RuleLevelNormal:  0,
+	RuleLevelNotice:  1,
+	RuleLevelWarn:    2,
+	RuleLevelError:   3,
 }
 
 func (r RuleLevel) LessOrEqual(l RuleLevel) bool {
@@ -66,6 +68,10 @@ func (r RuleLevel) LessOrEqual(l RuleLevel) bool {
 
 func (r RuleLevel) More(l RuleLevel) bool {
 	return ruleLevelMap[r] > ruleLevelMap[l]
+}
+
+func (r RuleLevel) MoreOrEqual(l RuleLevel) bool {
+	return ruleLevelMap[r] >= ruleLevelMap[l]
 }
 
 type Rule struct {
@@ -286,7 +292,7 @@ func NewInspectResults() *AuditResult {
 
 // Level find highest Level in result
 func (rs *AuditResult) Level() RuleLevel {
-	level := RuleLevelNormal
+	level := RuleLevelSuccess
 	for _, curr := range rs.results {
 		if ruleLevelMap[curr.level] > ruleLevelMap[level] {
 			level = curr.level
@@ -299,8 +305,8 @@ func (rs *AuditResult) Message() string {
 	messages := make([]string, len(rs.results))
 	for n, result := range rs.results {
 		var message string
-		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
-			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, "osc"),
+		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s|%s\]`,
+			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, RuleLevelSuccess, "osc"),
 			result.message)
 		if match {
 			message = result.message
