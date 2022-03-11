@@ -27,12 +27,13 @@ message DSN {
   string user = 3;
   string password = 4;
   string database = 5;
+  repeated Param additionalParams = 6;
 }
 
 message Rule {
   string name = 1;
   string desc = 2;
-  string value = 3 [deprecated=true];
+  string value = 3 [deprecated = true];
   string level = 4;
   string category = 5;
   repeated Param params = 6;
@@ -114,6 +115,7 @@ message GenRollbackSQLResponse {
 message MetasResponse {
   string name = 1;
   repeated Rule rules = 2;
+  repeated Param additionalParams = 3;
 }
 
 

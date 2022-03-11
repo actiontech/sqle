@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -45,7 +46,33 @@ type InstanceAdditionalParamResV1 struct {
 // @Success 200 {object} v1.GetInstanceAdditionalMetasResV1
 // @router /v1/instance_additional_metas [get]
 func GetInstanceAdditionalMetas(c echo.Context) error {
-	return nil
+	additionalParams := driver.AllAdditionalParams()
+	res := &GetInstanceAdditionalMetasResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Metas:   []*InstanceAdditionalMetaV1{},
+	}
+	for name, params := range additionalParams {
+		meta := &InstanceAdditionalMetaV1{
+			DBType: name,
+			Params: convertParamsToInstanceAdditionalParamRes(params),
+		}
+
+		res.Metas = append(res.Metas, meta)
+	}
+	return c.JSON(http.StatusOK, res)
+}
+
+func convertParamsToInstanceAdditionalParamRes(params params.Params) []*InstanceAdditionalParamResV1 {
+	res := make([]*InstanceAdditionalParamResV1, len(params))
+	for i, param := range params {
+		res[i] = &InstanceAdditionalParamResV1{
+			Name:        param.Key,
+			Description: param.Desc,
+			Type:        string(param.Type),
+			Value:       param.Value,
+		}
+	}
+	return res
 }
 
 type CreateInstanceReqV1 struct {
@@ -94,14 +121,24 @@ func CreateInstance(c echo.Context) error {
 	if req.DBType == "" {
 		req.DBType = driver.DriverTypeMySQL
 	}
+
+	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	for _, additionalParam := range req.AdditionalParams {
+		err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+		}
+	}
+
 	instance := &model.Instance{
-		DbType:   req.DBType,
-		Name:     req.Name,
-		User:     req.User,
-		Host:     req.Host,
-		Port:     req.Port,
-		Password: req.Password,
-		Desc:     req.Desc,
+		DbType:           req.DBType,
+		Name:             req.Name,
+		User:             req.User,
+		Host:             req.Host,
+		Port:             req.Port,
+		Password:         req.Password,
+		Desc:             req.Desc,
+		AdditionalParams: additionalParams,
 	}
 	// set default workflow template
 	if req.WorkflowTemplateName == "" {
@@ -200,12 +237,13 @@ type GetInstanceResV1 struct {
 
 func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
-		Name:   instance.Name,
-		Host:   instance.Host,
-		Port:   instance.Port,
-		User:   instance.User,
-		Desc:   instance.Desc,
-		DBType: instance.DbType,
+		Name:             instance.Name,
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Desc:             instance.Desc,
+		DBType:           instance.DbType,
+		AdditionalParams: []*InstanceAdditionalParamResV1{},
 	}
 	if instance.WorkflowTemplate != nil {
 		instanceResV1.WorkflowTemplateName = instance.WorkflowTemplate.Name
@@ -223,6 +261,14 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 			roleNames = append(roleNames, r.Name)
 		}
 		instanceResV1.Roles = roleNames
+	}
+	for _, param := range instance.AdditionalParams {
+		instanceResV1.AdditionalParams = append(instanceResV1.AdditionalParams, &InstanceAdditionalParamResV1{
+			Name:        param.Key,
+			Description: param.Desc,
+			Type:        string(param.Type),
+			Value:       fmt.Sprintf("%v", param.Value),
+		})
 	}
 	return instanceResV1
 }
@@ -411,6 +457,17 @@ func UpdateInstance(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+	}
+
+	if req.AdditionalParams != nil {
+		additionalParams := driver.AllAdditionalParams()[instance.DbType]
+		for _, additionalParam := range req.AdditionalParams {
+			err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+			}
+		}
+		updateMap["additional_params"] = additionalParams
 	}
 
 	err = s.UpdateInstanceById(instance.ID, updateMap)
@@ -608,12 +665,22 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	if req.DBType == "" {
 		req.DBType = driver.DriverTypeMySQL
 	}
+
+	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	for _, additionalParam := range req.AdditionalParams {
+		err := additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+		}
+	}
+
 	instance := &model.Instance{
-		DbType:   req.DBType,
-		User:     req.User,
-		Host:     req.Host,
-		Port:     req.Port,
-		Password: req.Password,
+		DbType:           req.DBType,
+		User:             req.User,
+		Host:             req.Host,
+		Port:             req.Port,
+		Password:         req.Password,
+		AdditionalParams: additionalParams,
 	}
 	return checkInstanceIsConnectable(c, instance)
 }
