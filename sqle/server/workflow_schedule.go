@@ -10,7 +10,6 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
 )
 
@@ -89,7 +88,7 @@ func ExecuteWorkflow(workflow *model.Workflow, userId uint) error {
 		Port:             task.Instance.Port,
 		User:             task.Instance.User,
 		Password:         task.Instance.Password,
-		AdditionalParams: params.NewParamSliceFromMap(task.Instance.GetAdditionalParams()),
+		AdditionalParams: task.Instance.AdditionalParams,
 		DatabaseName:     task.Schema,
 	}
 

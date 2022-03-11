@@ -12,7 +12,6 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	xerrors "github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
@@ -472,7 +471,7 @@ func newDriverWithAudit(l *logrus.Entry, inst *model.Instance, database string, 
 			Port:             inst.Port,
 			User:             inst.User,
 			Password:         inst.Password,
-			AdditionalParams: params.NewParamSliceFromMap(inst.GetAdditionalParams()),
+			AdditionalParams: inst.AdditionalParams,
 
 			DatabaseName: database,
 		}

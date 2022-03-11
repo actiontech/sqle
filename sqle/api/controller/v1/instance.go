@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -123,13 +122,14 @@ func CreateInstance(c echo.Context) error {
 		req.DBType = driver.DriverTypeMySQL
 	}
 
-	additionalParams := map[string]interface{}{}
-	for _, param := range req.AdditionalParams {
-		additionalParams[param.Name] = param.Value
-	}
-	additionalParamsBytes, err := json.Marshal(additionalParams)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	for _, param := range additionalParams {
+		for _, additionalParam := range req.AdditionalParams {
+			if param.Key == additionalParam.Name {
+				param.Value = additionalParam.Value
+				break
+			}
+		}
 	}
 
 	instance := &model.Instance{
@@ -140,7 +140,7 @@ func CreateInstance(c echo.Context) error {
 		Port:             req.Port,
 		Password:         req.Password,
 		Desc:             req.Desc,
-		AdditionalParams: string(additionalParamsBytes),
+		AdditionalParams: additionalParams,
 	}
 	// set default workflow template
 	if req.WorkflowTemplateName == "" {
@@ -264,13 +264,12 @@ func convertInstanceToRes(instance *model.Instance, p []*params.Param) InstanceR
 		}
 		instanceResV1.Roles = roleNames
 	}
-	additionalParams := instance.GetAdditionalParams()
 	for _, param := range p {
 		instanceResV1.AdditionalParams = append(instanceResV1.AdditionalParams, &InstanceAdditionalParamResV1{
 			Name:        param.Key,
 			Description: param.Desc,
 			Type:        string(param.Type),
-			Value:       fmt.Sprintf("%v", additionalParams[param.Key]),
+			Value:       fmt.Sprintf("%v", instance.AdditionalParams.GetParam(param.Key)),
 		})
 	}
 	return instanceResV1
@@ -463,18 +462,26 @@ func UpdateInstance(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
 	if req.AdditionalParams != nil {
-		paramMap := instance.GetAdditionalParams()
-		for _, param := range req.AdditionalParams {
-			if param.Value != "" {
-				paramMap[param.Name] = param.Value
+		instanceParams := instance.AdditionalParams
+		additionParams := driver.AllAdditionalParams()[instance.DbType]
+
+		for _, reqParams := range req.AdditionalParams {
+			if reqParams.Value != "" && additionParams.GetParam(reqParams.Name) != nil {
+				err = instanceParams.SetParamValue(reqParams.Name, reqParams.Value)
+				if err != nil {
+					instanceParams = append(instanceParams, &params.Param{
+						Key:   reqParams.Name,
+						Value: reqParams.Value,
+						Desc:  additionParams.GetParam(reqParams.Name).Desc,
+						Type:  additionParams.GetParam(reqParams.Name).Type,
+					})
+				}
 			}
 		}
-		paramBytes, err := json.Marshal(paramMap)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		updateMap["additional_params"] = string(paramBytes)
+
+		updateMap["additional_params"] = instanceParams
 	}
 
 	err = s.UpdateInstanceById(instance.ID, updateMap)
@@ -672,21 +679,24 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	if req.DBType == "" {
 		req.DBType = driver.DriverTypeMySQL
 	}
-	mp := map[string]interface{}{}
-	for _, param := range req.AdditionalParams {
-		mp[param.Name] = param.Value
+
+	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	for _, param := range additionalParams {
+		for _, additionalParam := range req.AdditionalParams {
+			if param.Key == additionalParam.Name {
+				param.Value = additionalParam.Value
+				break
+			}
+		}
 	}
-	paramBytes, err := json.Marshal(mp)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+
 	instance := &model.Instance{
 		DbType:           req.DBType,
 		User:             req.User,
 		Host:             req.Host,
 		Port:             req.Port,
 		Password:         req.Password,
-		AdditionalParams: string(paramBytes),
+		AdditionalParams: additionalParams,
 	}
 	return checkInstanceIsConnectable(c, instance)
 }

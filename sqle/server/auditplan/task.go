@@ -14,7 +14,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -334,7 +333,7 @@ func (at *SchemaMetaTask) collectorDo() {
 		Port:             instance.Port,
 		User:             instance.User,
 		Password:         instance.Password,
-		AdditionalParams: params.NewParamSliceFromMap(instance.GetAdditionalParams()),
+		AdditionalParams: instance.AdditionalParams,
 		DatabaseName:     at.ap.InstanceDatabase,
 	},
 		at.ap.InstanceDatabase)

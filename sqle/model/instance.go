@@ -1,8 +1,8 @@
 package model
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -15,27 +15,21 @@ import (
 type Instance struct {
 	Model
 	// has created composite index: [id, name] by gorm#AddIndex
-	Name               string `json:"name" gorm:"not null;index" example:""`
-	DbType             string `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
-	Host               string `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
-	Port               string `json:"port" gorm:"column:db_port; not null" example:"3306"`
-	User               string `json:"user" gorm:"column:db_user; not null" example:"root"`
-	Password           string `json:"-" gorm:"-"`
-	SecretPassword     string `json:"secret_password" gorm:"column:db_password; not null"`
-	Desc               string `json:"desc" example:"this is a instance"`
-	WorkflowTemplateId uint   `json:"workflow_template_id"`
-	AdditionalParams   string `json:"additional_params" gorm:"type:text"`
+	Name               string        `json:"name" gorm:"not null;index" example:""`
+	DbType             string        `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
+	Host               string        `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
+	Port               string        `json:"port" gorm:"column:db_port; not null" example:"3306"`
+	User               string        `json:"user" gorm:"column:db_user; not null" example:"root"`
+	Password           string        `json:"-" gorm:"-"`
+	SecretPassword     string        `json:"secret_password" gorm:"column:db_password; not null"`
+	Desc               string        `json:"desc" example:"this is a instance"`
+	WorkflowTemplateId uint          `json:"workflow_template_id"`
+	AdditionalParams   params.Params `json:"params" gorm:"type:text"`
 
 	// relation table
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
 	RuleTemplates    []RuleTemplate    `json:"-" gorm:"many2many:instance_rule_template"`
 	WorkflowTemplate *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
-}
-
-func (i *Instance) GetAdditionalParams() map[string]interface{} {
-	mp := make(map[string]interface{})
-	_ = json.Unmarshal([]byte(i.AdditionalParams), &mp)
-	return mp
 }
 
 // BeforeSave is a hook implement gorm model before exec create
