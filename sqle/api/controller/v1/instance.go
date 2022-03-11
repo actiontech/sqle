@@ -464,9 +464,12 @@ func UpdateInstance(c echo.Context) error {
 		additionParams := driver.AllAdditionalParams()[instance.DbType]
 
 		for _, reqParams := range req.AdditionalParams {
-			if reqParams.Value != "" && additionParams.GetParam(reqParams.Name) != nil {
+			if reqParams.Value != "" {
 				err = instanceParams.SetParamValue(reqParams.Name, reqParams.Value)
-				if err != nil {
+
+				if err != nil && instanceParams.GetParam(reqParams.Name) != nil {
+					return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+				} else if additionParams.GetParam(reqParams.Name) != nil {
 					instanceParams = append(instanceParams, &params.Param{
 						Key:   reqParams.Name,
 						Value: reqParams.Value,
