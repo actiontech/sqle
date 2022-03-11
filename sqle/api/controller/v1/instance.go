@@ -235,7 +235,7 @@ type GetInstanceResV1 struct {
 	Data InstanceResV1 `json:"data"`
 }
 
-func convertInstanceToRes(instance *model.Instance, allParam params.Params) InstanceResV1 {
+func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
 		Name:             instance.Name,
 		Host:             instance.Host,
@@ -262,12 +262,12 @@ func convertInstanceToRes(instance *model.Instance, allParam params.Params) Inst
 		}
 		instanceResV1.Roles = roleNames
 	}
-	for _, param := range allParam {
+	for _, param := range instance.AdditionalParams {
 		instanceResV1.AdditionalParams = append(instanceResV1.AdditionalParams, &InstanceAdditionalParamResV1{
 			Name:        param.Key,
 			Description: param.Desc,
 			Type:        string(param.Type),
-			Value:       fmt.Sprintf("%v", instance.AdditionalParams.GetParam(param.Key)),
+			Value:       fmt.Sprintf("%v", param.Value),
 		})
 	}
 	return instanceResV1
@@ -298,11 +298,9 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	additionalParams := driver.AllAdditionalParams()[instance.DbType]
-
 	return c.JSON(http.StatusOK, &GetInstanceResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertInstanceToRes(instance, additionalParams),
+		Data:    convertInstanceToRes(instance),
 	})
 }
 
