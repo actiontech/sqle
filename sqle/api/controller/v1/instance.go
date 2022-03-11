@@ -460,27 +460,14 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	if req.AdditionalParams != nil {
-		instanceParams := instance.AdditionalParams
-		additionParams := driver.AllAdditionalParams()[instance.DbType]
-
-		for _, reqParams := range req.AdditionalParams {
-			if reqParams.Value != "" {
-				err = instanceParams.SetParamValue(reqParams.Name, reqParams.Value)
-
-				if err != nil && instanceParams.GetParam(reqParams.Name) != nil {
-					return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
-				} else if additionParams.GetParam(reqParams.Name) != nil {
-					instanceParams = append(instanceParams, &params.Param{
-						Key:   reqParams.Name,
-						Value: reqParams.Value,
-						Desc:  additionParams.GetParam(reqParams.Name).Desc,
-						Type:  additionParams.GetParam(reqParams.Name).Type,
-					})
-				}
+		additionalParams := driver.AllAdditionalParams()[instance.DbType]
+		for _, additionalParam := range req.AdditionalParams {
+			err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 			}
 		}
-
-		updateMap["additional_params"] = instanceParams
+		updateMap["additional_params"] = additionalParams
 	}
 
 	err = s.UpdateInstanceById(instance.ID, updateMap)
