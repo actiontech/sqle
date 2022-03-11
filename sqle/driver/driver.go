@@ -212,7 +212,12 @@ func AllDrivers() []string {
 func AllAdditionalParams() map[string] /*driver name*/ params.Params {
 	additionalParamsMu.RLock()
 	defer additionalParamsMu.RUnlock()
-	return additionalParams
+
+	newParams := map[string]params.Params{}
+	for k, v := range additionalParams {
+		newParams[k] = v.Copy()
+	}
+	return newParams
 }
 
 var ErrNodesCountExceedOne = errors.New("after parse, nodes count exceed one")
