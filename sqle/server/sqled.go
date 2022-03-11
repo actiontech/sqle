@@ -336,6 +336,7 @@ outerLoop:
 			}
 		}
 	}
+	task.Status = taskStatus
 
 	a.entry.WithField("task_status", taskStatus).Infof("execution is completed, err:%v", err)
 
@@ -467,10 +468,11 @@ func newDriverWithAudit(l *logrus.Entry, inst *model.Instance, database string, 
 		modelRules, err = st.GetRulesFromRuleTemplateByName(templateName)
 	} else {
 		dsn = &driver.DSN{
-			Host:     inst.Host,
-			Port:     inst.Port,
-			User:     inst.User,
-			Password: inst.Password,
+			Host:             inst.Host,
+			Port:             inst.Port,
+			User:             inst.User,
+			Password:         inst.Password,
+			AdditionalParams: inst.AdditionalParams,
 
 			DatabaseName: database,
 		}

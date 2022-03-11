@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/notification"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -84,11 +86,12 @@ func ExecuteWorkflow(workflow *model.Workflow, userId uint) error {
 	// if instance is not connectable, exec sql must be failed;
 	// commit action unable to retry, so don't to exec it.
 	dsn := &driver.DSN{
-		Host:         task.Instance.Host,
-		Port:         task.Instance.Port,
-		User:         task.Instance.User,
-		Password:     task.Instance.Password,
-		DatabaseName: task.Schema,
+		Host:             task.Instance.Host,
+		Port:             task.Instance.Port,
+		User:             task.Instance.User,
+		Password:         task.Instance.Password,
+		AdditionalParams: task.Instance.AdditionalParams,
+		DatabaseName:     task.Schema,
 	}
 
 	cfg, err := driver.NewConfig(dsn, nil)
@@ -121,11 +124,14 @@ func ExecuteWorkflow(workflow *model.Workflow, userId uint) error {
 	if err != nil {
 		return err
 	}
-
-	sqledServer := GetSqled()
-	err = sqledServer.AddTask(taskId, ActionTypeExecute)
-	if err != nil {
-		return err
-	}
+	go func() {
+		sqledServer := GetSqled()
+		task, err := sqledServer.AddTaskWaitResult(taskId, ActionTypeExecute)
+		if err != nil || task.Status == model.TaskStatusExecuteFailed {
+			go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteFail)
+		} else {
+			go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteSuccess)
+		}
+	}()
 	return nil
 }

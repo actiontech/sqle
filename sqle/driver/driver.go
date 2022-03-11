@@ -21,6 +21,10 @@ var (
 	// rules store audit rules for each driver.
 	rules   map[string][]*Rule
 	rulesMu sync.RWMutex
+
+	// additionalParams store driver additional params
+	additionalParams   map[string]params.Params
+	additionalParamsMu sync.RWMutex
 )
 
 const (
@@ -35,10 +39,11 @@ const (
 
 // DSN provide necessary information to connect to database.
 type DSN struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
+	Host             string
+	Port             string
+	User             string
+	Password         string
+	AdditionalParams params.Params
 
 	// DatabaseName is the default database to connect.
 	DatabaseName string
@@ -141,7 +146,7 @@ type handler func(log *logrus.Entry, c *Config) (Driver, error)
 //
 // Register makes a database driver available by the provided driver name.
 // Driver's initialize handler and audit rules register by Register.
-func Register(name string, h handler, rs []*Rule) {
+func Register(name string, h handler, rs []*Rule, ap params.Params) {
 	_, exist := drivers[name]
 	if exist {
 		panic("duplicated driver name")
@@ -157,6 +162,13 @@ func Register(name string, h handler, rs []*Rule) {
 	}
 	rules[name] = rs
 	rulesMu.Unlock()
+
+	additionalParamsMu.Lock()
+	if additionalParams == nil {
+		additionalParams = make(map[string]params.Params)
+	}
+	additionalParams[name] = ap
+	additionalParamsMu.Unlock()
 }
 
 type DriverNotSupportedError struct {
@@ -195,6 +207,17 @@ func AllDrivers() []string {
 		driverNames = append(driverNames, n)
 	}
 	return driverNames
+}
+
+func AllAdditionalParams() map[string] /*driver name*/ params.Params {
+	additionalParamsMu.RLock()
+	defer additionalParamsMu.RUnlock()
+
+	newParams := map[string]params.Params{}
+	for k, v := range additionalParams {
+		newParams[k] = v.Copy()
+	}
+	return newParams
 }
 
 var ErrNodesCountExceedOne = errors.New("after parse, nodes count exceed one")
@@ -244,6 +267,9 @@ type Registerer interface {
 
 	// Rules returns all rules that plugin supported.
 	Rules() []*Rule
+
+	// AdditionalParams returns all additional params that plugin supported.
+	AdditionalParams() params.Params
 }
 
 // Node is a interface which unify SQL ast tree. It produce by Driver.Parse.
