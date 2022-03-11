@@ -3,8 +3,6 @@ package v1
 import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/params"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -19,7 +17,7 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 		Port:             inst.Port,
 		User:             inst.User,
 		Password:         inst.Password,
-		AdditionalParams: params.NewParamSliceFromMap(inst.GetAdditionalParams()),
+		AdditionalParams: inst.AdditionalParams,
 
 		DatabaseName: database,
 	}

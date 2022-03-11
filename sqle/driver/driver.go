@@ -23,7 +23,7 @@ var (
 	rulesMu sync.RWMutex
 
 	// additionalParams store driver additional params
-	additionalParams   map[string][]*params.Param
+	additionalParams   map[string]params.Params
 	additionalParamsMu sync.RWMutex
 )
 
@@ -146,7 +146,7 @@ type handler func(log *logrus.Entry, c *Config) (Driver, error)
 //
 // Register makes a database driver available by the provided driver name.
 // Driver's initialize handler and audit rules register by Register.
-func Register(name string, h handler, rs []*Rule, ap []*params.Param) {
+func Register(name string, h handler, rs []*Rule, ap params.Params) {
 	_, exist := drivers[name]
 	if exist {
 		panic("duplicated driver name")
@@ -165,7 +165,7 @@ func Register(name string, h handler, rs []*Rule, ap []*params.Param) {
 
 	additionalParamsMu.Lock()
 	if additionalParams == nil {
-		additionalParams = make(map[string][]*params.Param)
+		additionalParams = make(map[string]params.Params)
 	}
 	additionalParams[name] = ap
 	additionalParamsMu.Unlock()
@@ -209,7 +209,7 @@ func AllDrivers() []string {
 	return driverNames
 }
 
-func AllAdditionalParams() map[string] /*driver name*/ []*params.Param {
+func AllAdditionalParams() map[string] /*driver name*/ params.Params {
 	additionalParamsMu.RLock()
 	defer additionalParamsMu.RUnlock()
 	return additionalParams
