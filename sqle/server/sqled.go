@@ -336,6 +336,7 @@ outerLoop:
 			}
 		}
 	}
+	task.Status = taskStatus
 
 	a.entry.WithField("task_status", taskStatus).Infof("execution is completed, err:%v", err)
 
