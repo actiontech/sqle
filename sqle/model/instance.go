@@ -24,7 +24,7 @@ type Instance struct {
 	SecretPassword     string        `json:"secret_password" gorm:"column:db_password; not null"`
 	Desc               string        `json:"desc" example:"this is a instance"`
 	WorkflowTemplateId uint          `json:"workflow_template_id"`
-	AdditionalParams   params.Params `json:"params" gorm:"type:text"`
+	AdditionalParams   params.Params `json:"additional_params" gorm:"type:text"`
 
 	// relation table
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
