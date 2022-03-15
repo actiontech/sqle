@@ -1054,7 +1054,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.TestWeChatConfigurationResV1"
                         }
                     }
                 }
@@ -5799,6 +5799,34 @@ var doc = `{
                 }
             }
         },
+        "v1.TestWeChatConfigurationResDataV1": {
+            "type": "object",
+            "properties": {
+                "is_wechat_send_normal": {
+                    "type": "boolean"
+                },
+                "send_error_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TestWeChatConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestWeChatConfigurationResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.TriggerAuditPlanResV1": {
             "type": "object",
             "properties": {
@@ -6061,13 +6089,13 @@ var doc = `{
                 "corp_secret": {
                     "type": "string"
                 },
+                "enable_wechat_notify": {
+                    "type": "boolean"
+                },
                 "proxy_ip": {
                     "type": "string"
                 },
                 "safe_enabled": {
-                    "type": "boolean"
-                },
-                "start_wechat": {
                     "type": "boolean"
                 }
             }
@@ -6257,13 +6285,13 @@ var doc = `{
                 "corp_id": {
                     "type": "string"
                 },
+                "enable_wechat_notify": {
+                    "type": "boolean"
+                },
                 "proxy_ip": {
                     "type": "string"
                 },
                 "safe_enabled": {
-                    "type": "boolean"
-                },
-                "start_wechat": {
                     "type": "boolean"
                 }
             }

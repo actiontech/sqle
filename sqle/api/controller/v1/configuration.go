@@ -97,6 +97,10 @@ type TestWeChatConfigurationReqV1 struct {
 
 type TestWeChatConfigurationResV1 struct {
 	controller.BaseRes
+	Data TestWeChatConfigurationResDataV1 `json:"data"`
+}
+
+type TestWeChatConfigurationResDataV1 struct {
 	IsWeChatSendNormal bool   `json:"is_wechat_send_normal"`
 	SendErrorMessage   string `json:"send_error_message,omitempty"`
 }
