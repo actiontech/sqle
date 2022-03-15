@@ -357,20 +357,20 @@ func DeleteInstance(c echo.Context) error {
 }
 
 type UpdateInstanceReqV1 struct {
-	DBType                 *string                         `json:"db_type" form:"db_type" example:"mysql"`
-	User                   *string                         `json:"db_user" form:"db_user" example:"root"`
-	Host                   *string                         `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                   *string                         `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
-	Password               *string                         `json:"db_password" form:"db_password" example:"123456"`
-	Desc                   *string                         `json:"desc" example:"this is a test instance"`
-	WorkflowTemplateName   *string                         `json:"workflow_template_name" form:"workflow_template_name"`
-	MaintenanceStartCron   *string                         `json:"maintenance_start_cron" from:"maintenance_start_cron" example:"this is cron expression, e.g. 0 * * *"`
-	maintain_duration_day  *int                            `json:"maintain_duration_day" from:"maintain_duration_day"`
-	maintain_duration_hour *int                            `json:"maintain_duration_hour" from:"maintain_duration_hour"`
-	maintain_duration_min  *int                            `json:"maintain_duration_min" from:"maintain_duration_min"`
-	RuleTemplates          []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	Roles                  []string                        `json:"role_name_list" form:"role_name_list"`
-	AdditionalParams       []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	DBType               *string                         `json:"db_type" form:"db_type" example:"mysql"`
+	User                 *string                         `json:"db_user" form:"db_user" example:"root"`
+	Host                 *string                         `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port                 *string                         `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
+	Password             *string                         `json:"db_password" form:"db_password" example:"123456"`
+	Desc                 *string                         `json:"desc" example:"this is a test instance"`
+	WorkflowTemplateName *string                         `json:"workflow_template_name" form:"workflow_template_name"`
+	MaintenanceStartCron *string                         `json:"maintenance_start_cron" from:"maintenance_start_cron" example:"this is cron expression, e.g. 0 * * *"`
+	MaintainDurationDay  *int                            `json:"maintain_duration_day" from:"maintain_duration_day"`
+	maintainDurationHour *int                            `json:"maintain_duration_hour" from:"maintain_duration_hour"`
+	maintainDurationMin  *int                            `json:"maintain_duration_min" from:"maintain_duration_min"`
+	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
+	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 // UpdateInstance update instance
