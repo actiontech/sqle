@@ -15,6 +15,7 @@ type CreateUserReqV1 struct {
 	Name       string   `json:"user_name" form:"user_name" example:"test" valid:"required,name"`
 	Password   string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
 	Email      string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
+	WeChatID   string   `json:"wechat_id" example:"UserID"`
 	Roles      []string `json:"role_name_list" form:"role_name_list"`
 	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
@@ -76,6 +77,7 @@ func CreateUser(c echo.Context) error {
 
 type UpdateUserReqV1 struct {
 	Email      *string   `json:"email" valid:"omitempty,email" form:"email"`
+	WeChatID   *string   `json:"wechat_id" example:"UserID"`
 	Roles      *[]string `json:"role_name_list" form:"role_name_list"`
 	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
 	UserGroups *[]string `json:"user_group_name_list" form:"user_group_name_list"`
@@ -261,6 +263,7 @@ type UserDetailResV1 struct {
 	Name       string   `json:"user_name"`
 	Email      string   `json:"email"`
 	IsAdmin    bool     `json:"is_admin"`
+	WeChatID   string   `json:"wechat_id"`
 	LoginType  string   `json:"login_type"`
 	Roles      []string `json:"role_name_list,omitempty"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
@@ -341,7 +344,8 @@ func GetCurrentUser(c echo.Context) error {
 }
 
 type UpdateCurrentUserReqV1 struct {
-	Email *string `json:"email"`
+	Email    *string `json:"email"`
+	WeChatID *string `json:"wechat_id" example:"UserID"`
 }
 
 // @Summary 更新个人信息
@@ -432,6 +436,7 @@ type GetUsersResV1 struct {
 type UserResV1 struct {
 	Name       string   `json:"user_name"`
 	Email      string   `json:"email"`
+	WeChatID   string   `json:"wechat_id"`
 	LoginType  string   `json:"login_type"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
 	Roles      []string `json:"role_name_list,omitempty"`
