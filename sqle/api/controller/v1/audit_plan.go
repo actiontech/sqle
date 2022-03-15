@@ -230,7 +230,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
 
-	j := utils.NewJWT([]byte(utils.JWTSecret))
+	j := utils.NewJWT(utils.SecretKey)
 	t, err := j.CreateToken(currentUserName, time.Now().Add(tokenExpire).Unix(),
 		utils.WithAuditPlanName(req.Name))
 	if err != nil {
