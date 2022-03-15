@@ -53,4 +53,3 @@ func (n *EmailNotifier) Notify(notification Notification, users []*model.User) e
 	}
 	return nil
 }
-
