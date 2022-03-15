@@ -4371,6 +4371,10 @@ var doc = `{
                 "user_password": {
                     "type": "string",
                     "example": "123456"
+                },
+                "wechat_id": {
+                    "type": "string",
+                    "example": "UserID"
                 }
             }
         },
@@ -5835,6 +5839,10 @@ var doc = `{
             "properties": {
                 "email": {
                     "type": "string"
+                },
+                "wechat_id": {
+                    "type": "string",
+                    "example": "UserID"
                 }
             }
         },
@@ -5989,6 +5997,10 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "wechat_id": {
+                    "type": "string",
+                    "example": "UserID"
                 }
             }
         },
@@ -6004,23 +6016,14 @@ var doc = `{
                 "corp_secret": {
                     "type": "string"
                 },
-                "party_id": {
-                    "type": "string"
-                },
                 "proxy_ip": {
                     "type": "string"
                 },
                 "safe_enabled": {
                     "type": "boolean"
                 },
-                "start_we_chat": {
+                "start_wechat": {
                     "type": "boolean"
-                },
-                "tag_id": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
                 }
             }
         },
@@ -6097,6 +6100,9 @@ var doc = `{
                     }
                 },
                 "user_name": {
+                    "type": "string"
+                },
+                "wechat_id": {
                     "type": "string"
                 }
             }
@@ -6183,6 +6189,9 @@ var doc = `{
                 },
                 "user_name": {
                     "type": "string"
+                },
+                "wechat_id": {
+                    "type": "string"
                 }
             }
         },
@@ -6203,23 +6212,14 @@ var doc = `{
                 "corp_id": {
                     "type": "string"
                 },
-                "party_id": {
-                    "type": "string"
-                },
                 "proxy_ip": {
                     "type": "string"
                 },
                 "safe_enabled": {
                     "type": "boolean"
                 },
-                "start_we_chat": {
+                "start_wechat": {
                     "type": "boolean"
-                },
-                "tag_id": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
                 }
             }
         },

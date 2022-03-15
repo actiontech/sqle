@@ -390,6 +390,9 @@ definitions:
       user_password:
         example: "123456"
         type: string
+      wechat_id:
+        example: UserID
+        type: string
     type: object
   v1.CreateWorkflowReqV1:
     properties:
@@ -1387,6 +1390,9 @@ definitions:
     properties:
       email:
         type: string
+      wechat_id:
+        example: UserID
+        type: string
     type: object
   v1.UpdateInstanceReqV1:
     properties:
@@ -1491,6 +1497,9 @@ definitions:
         items:
           type: string
         type: array
+      wechat_id:
+        example: UserID
+        type: string
     type: object
   v1.UpdateWeChatConfigurationReqV1:
     properties:
@@ -1500,18 +1509,12 @@ definitions:
         type: string
       corp_secret:
         type: string
-      party_id:
-        type: string
       proxy_ip:
         type: string
       safe_enabled:
         type: boolean
-      start_we_chat:
+      start_wechat:
         type: boolean
-      tag_id:
-        type: string
-      user_id:
-        type: string
     type: object
   v1.UpdateWorkflowReqV1:
     properties:
@@ -1562,6 +1565,8 @@ definitions:
           type: string
         type: array
       user_name:
+        type: string
+      wechat_id:
         type: string
     type: object
   v1.UserGroupListItemResV1:
@@ -1619,6 +1624,8 @@ definitions:
         type: array
       user_name:
         type: string
+      wechat_id:
+        type: string
     type: object
   v1.UserTipResV1:
     properties:
@@ -1631,18 +1638,12 @@ definitions:
         type: integer
       corp_id:
         type: string
-      party_id:
-        type: string
       proxy_ip:
         type: string
       safe_enabled:
         type: boolean
-      start_we_chat:
+      start_wechat:
         type: boolean
-      tag_id:
-        type: string
-      user_id:
-        type: string
     type: object
   v1.WorkFlowStepTemplateReqV1:
     properties:
