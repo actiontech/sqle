@@ -366,8 +366,8 @@ type UpdateInstanceReqV1 struct {
 	WorkflowTemplateName *string                         `json:"workflow_template_name" form:"workflow_template_name"`
 	MaintenanceStartCron *string                         `json:"maintenance_start_cron" from:"maintenance_start_cron" example:"this is cron expression, e.g. 0 * * *"`
 	MaintainDurationDay  *int                            `json:"maintain_duration_day" from:"maintain_duration_day"`
-	maintainDurationHour *int                            `json:"maintain_duration_hour" from:"maintain_duration_hour"`
-	maintainDurationMin  *int                            `json:"maintain_duration_min" from:"maintain_duration_min"`
+	MaintainDurationHour *int                            `json:"maintain_duration_hour" from:"maintain_duration_hour"`
+	MaintainDurationMin  *int                            `json:"maintain_duration_min" from:"maintain_duration_min"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
