@@ -92,15 +92,12 @@ func GetSMTPConfiguration(c echo.Context) error {
 }
 
 type UpdateWeChatConfigurationReqV1 struct {
-	StartWeChat *bool   `json:"start_we_chat" from:"start_we_chat" description:"是否启用微信通知"`
+	StartWeChat *bool   `json:"start_wechat" from:"start_wechat" description:"是否启用微信通知"`
 	CorpID      *string `json:"corp_id" from:"corp_id" description:"企业微信ID"`
 	CorpSecret  *string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
 	AgentID     *int    `json:"agent_id" from:"agent_id" description:"企业微信应用ID"`
 	SafeEnabled *bool   `json:"safe_enabled" from:"safe_enabled" description:"是否对传输信息加密"`
 	ProxyIP     *string `json:"proxy_ip" from:"proxy_ip" description:"企业微信代理服务器IP"`
-	UserID      *string `json:"user_id" from:"user_id" description:"接收者企业微信ID"`
-	PartyID     *string `json:"party_id" from:"party_id" description:"接收者企业微信部门ID"`
-	TagID       *string `json:"tag_id" from:"tag_id" description:"接收者企业微信标签"`
 }
 
 // UpdateWeChatConfigurationV1 used to configure WeChat notifications
@@ -123,14 +120,11 @@ type GetWeChatConfigurationResV1 struct {
 }
 
 type WeChatConfigurationResV1 struct {
-	StartWeChat bool   `json:"start_we_chat"`
+	StartWeChat bool   `json:"start_wechat"`
 	CorpID      string `json:"corp_id"`
 	AgentID     int    `json:"agent_id"`
 	SafeEnabled bool   `json:"safe_enabled"`
 	ProxyIP     string `json:"proxy_ip"`
-	UserID      string `json:"user_id"`
-	PartyID     string `json:"party_id"`
-	TagID       string `json:"tag_id"`
 }
 
 // GetWeChatConfiguration used to get wechat configure
