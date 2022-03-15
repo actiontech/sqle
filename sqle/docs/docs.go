@@ -5556,10 +5556,12 @@ var doc = `{
             "type": "object",
             "properties": {
                 "maintenance_start_time": {
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeReqV1"
                 },
                 "maintenance_stop_time": {
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeReqV1"
                 }
             }
         },
@@ -5567,10 +5569,12 @@ var doc = `{
             "type": "object",
             "properties": {
                 "maintenance_start_time": {
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeResV1"
                 },
                 "maintenance_stop_time": {
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeResV1"
                 }
             }
         },
@@ -5858,6 +5862,28 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.TimeReqV1": {
+            "type": "object",
+            "properties": {
+                "hour": {
+                    "type": "integer"
+                },
+                "minute": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TimeResV1": {
+            "type": "object",
+            "properties": {
+                "hour": {
+                    "type": "integer"
+                },
+                "minute": {
+                    "type": "integer"
                 }
             }
         },
@@ -6484,7 +6510,7 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "maintenance_times": {
+                "instance_maintenance_times": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.MaintenanceTimeResV1"

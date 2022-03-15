@@ -1176,16 +1176,20 @@ definitions:
   v1.MaintenanceTimeReqV1:
     properties:
       maintenance_start_time:
-        type: string
+        $ref: '#/definitions/v1.TimeReqV1'
+        type: object
       maintenance_stop_time:
-        type: string
+        $ref: '#/definitions/v1.TimeReqV1'
+        type: object
     type: object
   v1.MaintenanceTimeResV1:
     properties:
       maintenance_start_time:
-        type: string
+        $ref: '#/definitions/v1.TimeResV1'
+        type: object
       maintenance_stop_time:
-        type: string
+        $ref: '#/definitions/v1.TimeResV1'
+        type: object
     type: object
   v1.OperationResV1:
     properties:
@@ -1376,6 +1380,20 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.TimeReqV1:
+    properties:
+      hour:
+        type: integer
+      minute:
+        type: integer
+    type: object
+  v1.TimeResV1:
+    properties:
+      hour:
+        type: integer
+      minute:
+        type: integer
     type: object
   v1.TriggerAuditPlanResV1:
     properties:
@@ -1797,7 +1815,7 @@ definitions:
         type: string
       desc:
         type: string
-      maintenance_times:
+      instance_maintenance_times:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeResV1'
         type: array
