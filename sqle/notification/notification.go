@@ -19,13 +19,7 @@ type Notifier interface {
 	Notify(Notification, []*model.User) error
 }
 
-var Notifiers []Notifier
-
-func init() {
-	Notifiers = []Notifier{
-		&EmailNotifier{},
-	}
-}
+var Notifiers = []Notifier{}
 
 func Notify(notification Notification, users []*model.User) error {
 	for _, n := range Notifiers {
