@@ -311,15 +311,10 @@ definitions:
       instance_name:
         example: test
         type: string
-      maintain_duration_day:
-        type: integer
-      maintain_duration_hour:
-        type: integer
-      maintain_duration_min:
-        type: integer
-      maintenance_start_cron:
-        example: this is cron expression, e.g. 0 * * *
-        type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
+        type: array
       role_name_list:
         items:
           type: string
@@ -1104,14 +1099,10 @@ definitions:
         type: string
       instance_name:
         type: string
-      maintain_duration_day:
-        type: integer
-      maintain_duration_hour:
-        type: integer
-      maintain_duration_min:
-        type: integer
-      maintenance_start_cron:
-        type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeResV1'
+        type: array
       role_name_list:
         items:
           type: string
@@ -1180,6 +1171,20 @@ definitions:
       limit:
         type: string
       name:
+        type: string
+    type: object
+  v1.MaintenanceTimeReqV1:
+    properties:
+      maintenanceStartTime:
+        type: string
+      maintenanceStopTime:
+        type: string
+    type: object
+  v1.MaintenanceTimeResV1:
+    properties:
+      maintenanceStartTime:
+        type: string
+      maintenanceStopTime:
         type: string
     type: object
   v1.OperationResV1:
@@ -1459,11 +1464,10 @@ definitions:
       desc:
         example: this is a test instance
         type: string
-      maintain_duration_day:
-        type: integer
-      maintenance_start_cron:
-        example: this is cron expression, e.g. 0 * * *
-        type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
+        type: array
       role_name_list:
         items:
           type: string

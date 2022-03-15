@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -84,10 +85,7 @@ type CreateInstanceReqV1 struct {
 	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
 	Desc                 string                          `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName string                          `json:"workflow_template_name" form:"workflow_template_name"`
-	MaintenanceStartCron string                          `json:"maintenance_start_cron" from:"maintenance_start_cron" example:"this is cron expression, e.g. 0 * * *" valid:"required"`
-	MaintainDurationDay  int                             `json:"maintain_duration_day" from:"maintain_duration_day"`
-	MaintainDurationHour int                             `json:"maintain_duration_hour" from:"maintain_duration_hour"`
-	MaintainDurationMin  int                             `json:"maintain_duration_min" from:"maintain_duration_min"`
+	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
@@ -96,6 +94,11 @@ type CreateInstanceReqV1 struct {
 type InstanceAdditionalParamReqV1 struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+type MaintenanceTimeReqV1 struct {
+	MaintenanceStartTime time.Time
+	MaintenanceStopTime  time.Time
 }
 
 // CreateInstance create instance
@@ -229,13 +232,15 @@ type InstanceResV1 struct {
 	User                 string                          `json:"db_user" example:"root"`
 	Desc                 string                          `json:"desc" example:"this is a instance"`
 	WorkflowTemplateName string                          `json:"workflow_template_name,omitempty"`
-	MaintenanceStartCron string                          `json:"maintenance_start_cron"`
-	MaintainDurationDay  int                             `json:"maintain_duration_day"`
-	MaintainDurationHour int                             `json:"maintain_duration_hour"`
-	MaintainDurationMin  int                             `json:"maintain_duration_min"`
+	MaintenanceTimes     []*MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
 	Roles                []string                        `json:"role_name_list,omitempty"`
 	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
+}
+
+type MaintenanceTimeResV1 struct {
+	MaintenanceStartTime string
+	MaintenanceStopTime  string
 }
 
 type GetInstanceResV1 struct {
@@ -364,10 +369,7 @@ type UpdateInstanceReqV1 struct {
 	Password             *string                         `json:"db_password" form:"db_password" example:"123456"`
 	Desc                 *string                         `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName *string                         `json:"workflow_template_name" form:"workflow_template_name"`
-	MaintenanceStartCron *string                         `json:"maintenance_start_cron" from:"maintenance_start_cron" example:"this is cron expression, e.g. 0 * * *"`
-	MaintainDurationDay  *int                            `json:"maintain_duration_day" from:"maintain_duration_day"`
-	MaintainDurationHour *int                            `json:"maintain_duration_hour" from:"maintain_duration_hour"`
-	MaintainDurationMin  *int                            `json:"maintain_duration_min" from:"maintain_duration_min"`
+	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
