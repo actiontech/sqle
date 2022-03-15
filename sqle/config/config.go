@@ -18,6 +18,7 @@ type SqleConfig struct {
 	DebugLog         bool   `yaml:"debug_log"`
 	LogPath          string `yaml:"log_path"`
 	PluginPath       string `yaml:"plugin_path"`
+	SecretKey        string `yaml:"secret_key"`
 }
 
 type DatabaseConfig struct {

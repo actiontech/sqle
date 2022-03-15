@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/actiontech/sqle/sqle/api"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -24,12 +26,32 @@ func Run(config *config.Config) error {
 
 	log.Logger().Infoln("starting sqled server")
 
+	secretKey := config.Server.SqleCnf.SecretKey
+	if secretKey != "" {
+		if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
+			return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
+		}
+	}
+
 	if err := driver.InitPlugins(config.Server.SqleCnf.PluginPath); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
 
 	dbConfig := config.Server.DBCnf.MysqlCnf
-	s, err := model.NewStorage(dbConfig.User, dbConfig.Password,
+
+	dbPassword := dbConfig.Password
+	// Support using secret mysql password in sqled config, read secret_mysql_password first,
+	// but you can still use mysql_password to be compatible with older versions.
+	secretPassword := dbConfig.SecretPassword
+	if secretPassword != "" {
+		password, err := utils.AesDecrypt(secretPassword)
+		if err != nil {
+			return fmt.Errorf("read db info from config file error, %d", err)
+		}
+		dbPassword = password
+	}
+
+	s, err := model.NewStorage(dbConfig.User, dbPassword,
 		dbConfig.Host, dbConfig.Port, dbConfig.Schema, config.Server.SqleCnf.DebugLog)
 	if err != nil {
 		return fmt.Errorf("get new storage failed: %v", err)
