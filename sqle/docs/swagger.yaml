@@ -1336,6 +1336,25 @@ definitions:
       recipient_id:
         type: string
     type: object
+  v1.TestWeChatConfigurationResDataV1:
+    properties:
+      is_wechat_send_normal:
+        type: boolean
+      send_error_message:
+        type: string
+    type: object
+  v1.TestWeChatConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestWeChatConfigurationResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.TriggerAuditPlanResV1:
     properties:
       code:
@@ -1514,11 +1533,11 @@ definitions:
         type: string
       corp_secret:
         type: string
+      enable_wechat_notify:
+        type: boolean
       proxy_ip:
         type: string
       safe_enabled:
-        type: boolean
-      start_wechat:
         type: boolean
     type: object
   v1.UpdateWorkflowReqV1:
@@ -1643,11 +1662,11 @@ definitions:
         type: integer
       corp_id:
         type: string
+      enable_wechat_notify:
+        type: boolean
       proxy_ip:
         type: string
       safe_enabled:
-        type: boolean
-      start_wechat:
         type: boolean
     type: object
   v1.WorkFlowStepTemplateReqV1:
@@ -2648,7 +2667,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/v1.TestWeChatConfigurationResV1'
       security:
       - ApiKeyAuth: []
       summary: 测试 企业微信 配置
