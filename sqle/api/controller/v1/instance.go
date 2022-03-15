@@ -97,8 +97,8 @@ type InstanceAdditionalParamReqV1 struct {
 }
 
 type MaintenanceTimeReqV1 struct {
-	MaintenanceStartTime time.Time
-	MaintenanceStopTime  time.Time
+	MaintenanceStartTime time.Time `json:"maintenance_start_time"`
+	MaintenanceStopTime  time.Time `json:"maintenance_stop_time"`
 }
 
 // CreateInstance create instance
@@ -239,8 +239,8 @@ type InstanceResV1 struct {
 }
 
 type MaintenanceTimeResV1 struct {
-	MaintenanceStartTime string
-	MaintenanceStopTime  string
+	MaintenanceStartTime time.Time `json:"maintenance_start_time"`
+	MaintenanceStopTime  time.Time `json:"maintenance_stop_time"`
 }
 
 type GetInstanceResV1 struct {
