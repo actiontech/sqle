@@ -24,6 +24,14 @@ func genSecretPasswordCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("unmarshal config file error %v", err)
 			}
+
+			secretKey := cfg.Server.SqleCnf.SecretKey
+			if secretKey != "" {
+				if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
+					return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
+				}
+			}
+
 			password := cfg.Server.DBCnf.MysqlCnf.Password
 			if password == "" {
 				return fmt.Errorf("mysql_password is empty")
