@@ -4291,18 +4291,11 @@ var doc = `{
                     "type": "string",
                     "example": "test"
                 },
-                "maintain_duration_day": {
-                    "type": "integer"
-                },
-                "maintain_duration_hour": {
-                    "type": "integer"
-                },
-                "maintain_duration_min": {
-                    "type": "integer"
-                },
-                "maintenance_start_cron": {
-                    "type": "string",
-                    "example": "this is cron expression, e.g. 0 * * *"
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
+                    }
                 },
                 "role_name_list": {
                     "type": "array",
@@ -5445,17 +5438,11 @@ var doc = `{
                 "instance_name": {
                     "type": "string"
                 },
-                "maintain_duration_day": {
-                    "type": "integer"
-                },
-                "maintain_duration_hour": {
-                    "type": "integer"
-                },
-                "maintain_duration_min": {
-                    "type": "integer"
-                },
-                "maintenance_start_cron": {
-                    "type": "string"
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
                 },
                 "role_name_list": {
                     "type": "array",
@@ -5561,6 +5548,28 @@ var doc = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.MaintenanceTimeReqV1": {
+            "type": "object",
+            "properties": {
+                "maintenanceStartTime": {
+                    "type": "string"
+                },
+                "maintenanceStopTime": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.MaintenanceTimeResV1": {
+            "type": "object",
+            "properties": {
+                "maintenanceStartTime": {
+                    "type": "string"
+                },
+                "maintenanceStopTime": {
                     "type": "string"
                 }
             }
@@ -5977,12 +5986,11 @@ var doc = `{
                     "type": "string",
                     "example": "this is a test instance"
                 },
-                "maintain_duration_day": {
-                    "type": "integer"
-                },
-                "maintenance_start_cron": {
-                    "type": "string",
-                    "example": "this is cron expression, e.g. 0 * * *"
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
+                    }
                 },
                 "role_name_list": {
                     "type": "array",
