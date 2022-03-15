@@ -61,7 +61,7 @@ func WithAuditPlanName(name string) CustomClaimOption {
 // ParseAuditPlanName used by echo middleware which only verify api request to audit plan related.
 func ParseAuditPlanName(tokenString string) (string, error) {
 	keyFunc := func(t *jwt.Token) (interface{}, error) {
-		return []byte(JWTSecret), nil
+		return SecretKey, nil
 	}
 	token, err := jwt.Parse(tokenString, keyFunc)
 	if err != nil {

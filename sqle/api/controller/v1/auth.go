@@ -51,7 +51,7 @@ func Login(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
 	}
 
-	j := utils.NewJWT([]byte(utils.JWTSecret))
+	j := utils.NewJWT(utils.SecretKey)
 	t, err := j.CreateToken(req.UserName, time.Now().Add(time.Hour*24).Unix())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)

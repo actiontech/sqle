@@ -9,7 +9,26 @@ import (
 	"fmt"
 )
 
-var AES_KEY = []byte("471F77D078C5994BD06B65B8B5B1935B")
+var SecretKey = []byte("471F77D078C5994BD06B65B8B5B1935B")
+
+func SetSecretKey(key []byte) (err error) {
+	origKey := SecretKey
+	SecretKey = key
+	origData := "test"
+	var secretData string
+	defer func() {
+		if err != nil {
+			SecretKey = origKey
+		}
+	}()
+	if secretData, err = AesEncrypt(origData); err != nil {
+		return
+	}
+	if _, err = AesDecrypt(secretData); err != nil {
+		return
+	}
+	return
+}
 
 func pKCS7Padding(cipherText []byte, blockSize int) []byte {
 	padding := blockSize - len(cipherText)%blockSize
@@ -54,7 +73,7 @@ func aesDecrypt(crypted, key []byte) ([]byte, error) {
 }
 
 func AesEncrypt(origData string) (string, error) {
-	crypted, err := aesEncrypt([]byte(origData), AES_KEY)
+	crypted, err := aesEncrypt([]byte(origData), SecretKey)
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +85,7 @@ func AesDecrypt(encrypted string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	origByte, err := aesDecrypt(encryptedByte, AES_KEY)
+	origByte, err := aesDecrypt(encryptedByte, SecretKey)
 	return string(origByte), err
 }
 
