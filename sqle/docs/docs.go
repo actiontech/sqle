@@ -5555,10 +5555,10 @@ var doc = `{
         "v1.MaintenanceTimeReqV1": {
             "type": "object",
             "properties": {
-                "maintenanceStartTime": {
+                "maintenance_start_time": {
                     "type": "string"
                 },
-                "maintenanceStopTime": {
+                "maintenance_stop_time": {
                     "type": "string"
                 }
             }
@@ -5566,10 +5566,10 @@ var doc = `{
         "v1.MaintenanceTimeResV1": {
             "type": "object",
             "properties": {
-                "maintenanceStartTime": {
+                "maintenance_start_time": {
                     "type": "string"
                 },
-                "maintenanceStopTime": {
+                "maintenance_stop_time": {
                     "type": "string"
                 }
             }
@@ -6483,6 +6483,12 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
+                },
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
                 },
                 "record": {
                     "type": "object",
