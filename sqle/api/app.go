@@ -66,9 +66,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
 
 	v1Router := e.Group(apiV1)
-	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
+	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.SecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
 	v2Router := e.Group(apiV2)
-	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT([]byte(utils.JWTSecret)), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
+	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.SecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
 
 	// v1 admin api, just admin user can access.
 	{
@@ -131,6 +131,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/configurations/ldap", v1.UpdateLDAPConfiguration, AdminUserAllowed())
 		v1Router.GET("/configurations/smtp", v1.GetSMTPConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/smtp", v1.UpdateSMTPConfiguration, AdminUserAllowed())
+		v1Router.GET("/configurations/wechat", v1.GetWeChatConfiguration, AdminUserAllowed())
+		v1Router.PATCH("/configurations/wechat", v1.UpdateWeChatConfigurationV1, AdminUserAllowed())
+		v1Router.POST("/configurations/wechat/test", v1.TestWeChatConfigurationV1, AdminUserAllowed())
 		v1Router.GET("/configurations/system_variables", v1.GetSystemVariables, AdminUserAllowed())
 		v1Router.PATCH("/configurations/system_variables", v1.UpdateSystemVariables, AdminUserAllowed())
 		v1Router.GET("/configurations/license", v1.GetLicense, AdminUserAllowed())

@@ -86,17 +86,6 @@ func run(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("unmarshal config file error %v", err)
 		}
 
-		// Support using secret mysql password in sqled config, read secret_mysql_password first,
-		// but you can still use mysql_password to be compatible with older versions.
-		secretPassword := cfg.Server.DBCnf.MysqlCnf.SecretPassword
-		if secretPassword != "" {
-			password, err := utils.AesDecrypt(secretPassword)
-			if err != nil {
-				return fmt.Errorf("read db info from config file error, %d", err)
-			}
-			cfg.Server.DBCnf.MysqlCnf.Password = password
-		}
-
 	} else {
 		mysqlPass, err := utils.DecodeString(mysqlPass)
 		if err != nil {
