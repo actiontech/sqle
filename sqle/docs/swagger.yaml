@@ -390,6 +390,9 @@ definitions:
       user_password:
         example: "123456"
         type: string
+      wechat_id:
+        example: UserID
+        type: string
     type: object
   v1.CreateWorkflowReqV1:
     properties:
@@ -952,6 +955,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetWeChatConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WeChatConfigurationResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowResV1:
     properties:
       code:
@@ -1316,6 +1331,30 @@ definitions:
       workflow_expired_hours:
         type: integer
     type: object
+  v1.TestWeChatConfigurationReqV1:
+    properties:
+      recipient_id:
+        type: string
+    type: object
+  v1.TestWeChatConfigurationResDataV1:
+    properties:
+      is_wechat_send_normal:
+        type: boolean
+      send_error_message:
+        type: string
+    type: object
+  v1.TestWeChatConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestWeChatConfigurationResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.TriggerAuditPlanResV1:
     properties:
       code:
@@ -1374,6 +1413,9 @@ definitions:
   v1.UpdateCurrentUserReqV1:
     properties:
       email:
+        type: string
+      wechat_id:
+        example: UserID
         type: string
     type: object
   v1.UpdateInstanceReqV1:
@@ -1479,6 +1521,24 @@ definitions:
         items:
           type: string
         type: array
+      wechat_id:
+        example: UserID
+        type: string
+    type: object
+  v1.UpdateWeChatConfigurationReqV1:
+    properties:
+      agent_id:
+        type: integer
+      corp_id:
+        type: string
+      corp_secret:
+        type: string
+      enable_wechat_notify:
+        type: boolean
+      proxy_ip:
+        type: string
+      safe_enabled:
+        type: boolean
     type: object
   v1.UpdateWorkflowReqV1:
     properties:
@@ -1529,6 +1589,8 @@ definitions:
           type: string
         type: array
       user_name:
+        type: string
+      wechat_id:
         type: string
     type: object
   v1.UserGroupListItemResV1:
@@ -1586,11 +1648,26 @@ definitions:
         type: array
       user_name:
         type: string
+      wechat_id:
+        type: string
     type: object
   v1.UserTipResV1:
     properties:
       user_name:
         type: string
+    type: object
+  v1.WeChatConfigurationResV1:
+    properties:
+      agent_id:
+        type: integer
+      corp_id:
+        type: string
+      enable_wechat_notify:
+        type: boolean
+      proxy_ip:
+        type: string
+      safe_enabled:
+        type: boolean
     type: object
   v1.WorkFlowStepTemplateReqV1:
     properties:
@@ -2535,6 +2612,65 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 修改系统变量
+      tags:
+      - configuration
+  /v1/configurations/wechat:
+    get:
+      description: get WeChat configuration
+      operationId: getWeChatConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWeChatConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 企业微信 配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update WeChat configuration
+      operationId: updateWeChatConfigurationV1
+      parameters:
+      - description: update WeChat configuration req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWeChatConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加 企业微信 配置
+      tags:
+      - configuration
+  /v1/configurations/wechat/test:
+    post:
+      consumes:
+      - application/json
+      description: test WeChat configuration
+      operationId: testWeChatConfigurationV1
+      parameters:
+      - description: test WeChat configuration req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestWeChatConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestWeChatConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试 企业微信 配置
       tags:
       - configuration
   /v1/dashboard:

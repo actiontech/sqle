@@ -91,6 +91,82 @@ func GetSMTPConfiguration(c echo.Context) error {
 	})
 }
 
+type TestWeChatConfigurationReqV1 struct {
+	RecipientID string `json:"recipient_id" from:"recipient_id" description:"消息接收者企业微信ID"`
+}
+
+type TestWeChatConfigurationResV1 struct {
+	controller.BaseRes
+	Data TestWeChatConfigurationResDataV1 `json:"data"`
+}
+
+type TestWeChatConfigurationResDataV1 struct {
+	IsWeChatSendNormal bool   `json:"is_wechat_send_normal"`
+	SendErrorMessage   string `json:"send_error_message,omitempty"`
+}
+
+// TestWeChatConfigurationV1 used to test WeChat notifications
+// @Summary 测试 企业微信 配置
+// @Description test WeChat configuration
+// @Accept json
+// @Id testWeChatConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param instance body v1.TestWeChatConfigurationReqV1 true "test WeChat configuration req"
+// @Success 200 {object} v1.TestWeChatConfigurationResV1
+// @router /v1/configurations/wechat/test [post]
+func TestWeChatConfigurationV1(c echo.Context) error {
+	return testWeChatConfigurationV1(c)
+}
+
+type UpdateWeChatConfigurationReqV1 struct {
+	EnableWeChatNotify *bool   `json:"enable_wechat_notify" from:"enable_wechat_notify" description:"是否启用微信通知"`
+	CorpID             *string `json:"corp_id" from:"corp_id" description:"企业微信ID"`
+	CorpSecret         *string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
+	AgentID            *int    `json:"agent_id" from:"agent_id" description:"企业微信应用ID"`
+	SafeEnabled        *bool   `json:"safe_enabled" from:"safe_enabled" description:"是否对传输信息加密"`
+	ProxyIP            *string `json:"proxy_ip" from:"proxy_ip" description:"企业微信代理服务器IP"`
+}
+
+// UpdateWeChatConfigurationV1 used to configure WeChat notifications
+// @Summary 添加 企业微信 配置
+// @Description update WeChat configuration
+// @Accept json
+// @Id updateWeChatConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param instance body v1.UpdateWeChatConfigurationReqV1 true "update WeChat configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/wechat [patch]
+func UpdateWeChatConfigurationV1(c echo.Context) error {
+	return updateWeChatConfigurationV1(c)
+}
+
+type GetWeChatConfigurationResV1 struct {
+	controller.BaseRes
+	Data WeChatConfigurationResV1 `json:"data"`
+}
+
+type WeChatConfigurationResV1 struct {
+	EnableWeChatNotify bool   `json:"enable_wechat_notify"`
+	CorpID             string `json:"corp_id"`
+	AgentID            int    `json:"agent_id"`
+	SafeEnabled        bool   `json:"safe_enabled"`
+	ProxyIP            string `json:"proxy_ip"`
+}
+
+// GetWeChatConfiguration used to get wechat configure
+// @Summary 获取 企业微信 配置
+// @Description get WeChat configuration
+// @Id getWeChatConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetWeChatConfigurationResV1
+// @router /v1/configurations/wechat [get]
+func GetWeChatConfiguration(c echo.Context) error {
+	return getWeChatConfiguration(c)
+}
+
 type GetLDAPConfigurationResV1 struct {
 	controller.BaseRes
 	Data LDAPConfigurationResV1 `json:"data"`

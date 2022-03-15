@@ -235,6 +235,7 @@ vitess
 waddr
 warnf
 warningf
+wechat
 whitelist
 wiki
 workaround
