@@ -1175,16 +1175,16 @@ definitions:
     type: object
   v1.MaintenanceTimeReqV1:
     properties:
-      maintenanceStartTime:
+      maintenance_start_time:
         type: string
-      maintenanceStopTime:
+      maintenance_stop_time:
         type: string
     type: object
   v1.MaintenanceTimeResV1:
     properties:
-      maintenanceStartTime:
+      maintenance_start_time:
         type: string
-      maintenanceStopTime:
+      maintenance_stop_time:
         type: string
     type: object
   v1.OperationResV1:
@@ -1797,6 +1797,10 @@ definitions:
         type: string
       desc:
         type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeResV1'
+        type: array
       record:
         $ref: '#/definitions/v1.WorkflowRecordResV1'
         type: object
