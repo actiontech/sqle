@@ -76,21 +76,21 @@ func convertParamsToInstanceAdditionalParamRes(params params.Params) []*Instance
 }
 
 type CreateInstanceReqV1 struct {
-	Name                   string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
-	DBType                 string                          `json:"db_type" form:"db_type" example:"mysql"`
-	User                   string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
-	Host                   string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                   string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
-	Password               string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
-	Desc                   string                          `json:"desc" example:"this is a test instance"`
-	WorkflowTemplateName   string                          `json:"workflow_template_name" form:"workflow_template_name"`
-	MaintenanceStartCron   string                          `json:"maintenance_start_cron" from:"maintenance_start_cron" example:"this is cron expression, e.g. 0 * * *" valid:"required"`
-	maintain_duration_day  int                             `json:"maintain_duration_day" from:"maintain_duration_day"`
-	maintain_duration_hour int                             `json:"maintain_duration_hour" from:"maintain_duration_hour"`
-	maintain_duration_min  int                             `json:"maintain_duration_min" from:"maintain_duration_min"`
-	RuleTemplates          []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	Roles                  []string                        `json:"role_name_list" form:"role_name_list"`
-	AdditionalParams       []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	Name                 string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
+	DBType               string                          `json:"db_type" form:"db_type" example:"mysql"`
+	User                 string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
+	Host                 string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port                 string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
+	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
+	Desc                 string                          `json:"desc" example:"this is a test instance"`
+	WorkflowTemplateName string                          `json:"workflow_template_name" form:"workflow_template_name"`
+	MaintenanceStartCron string                          `json:"maintenance_start_cron" from:"maintenance_start_cron" example:"this is cron expression, e.g. 0 * * *" valid:"required"`
+	MaintainDurationDay  int                             `json:"maintain_duration_day" from:"maintain_duration_day"`
+	MaintainDurationHour int                             `json:"maintain_duration_hour" from:"maintain_duration_hour"`
+	MaintainDurationMin  int                             `json:"maintain_duration_min" from:"maintain_duration_min"`
+	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
+	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 type InstanceAdditionalParamReqV1 struct {
@@ -222,20 +222,20 @@ func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance)
 }
 
 type InstanceResV1 struct {
-	Name                   string                          `json:"instance_name"`
-	DBType                 string                          `json:"db_type" example:"mysql"`
-	Host                   string                          `json:"db_host" example:"10.10.10.10"`
-	Port                   string                          `json:"db_port" example:"3306"`
-	User                   string                          `json:"db_user" example:"root"`
-	Desc                   string                          `json:"desc" example:"this is a instance"`
-	WorkflowTemplateName   string                          `json:"workflow_template_name,omitempty"`
-	MaintenanceStartCron   string                          `json:"maintenance_start_cron"`
-	maintain_duration_day  int                             `json:"maintain_duration_day"`
-	maintain_duration_hour int                             `json:"maintain_duration_hour"`
-	maintain_duration_min  int                             `json:"maintain_duration_min"`
-	RuleTemplates          []string                        `json:"rule_template_name_list,omitempty"`
-	Roles                  []string                        `json:"role_name_list,omitempty"`
-	AdditionalParams       []*InstanceAdditionalParamResV1 `json:"additional_params"`
+	Name                 string                          `json:"instance_name"`
+	DBType               string                          `json:"db_type" example:"mysql"`
+	Host                 string                          `json:"db_host" example:"10.10.10.10"`
+	Port                 string                          `json:"db_port" example:"3306"`
+	User                 string                          `json:"db_user" example:"root"`
+	Desc                 string                          `json:"desc" example:"this is a instance"`
+	WorkflowTemplateName string                          `json:"workflow_template_name,omitempty"`
+	MaintenanceStartCron string                          `json:"maintenance_start_cron"`
+	MaintainDurationDay  int                             `json:"maintain_duration_day"`
+	MaintainDurationHour int                             `json:"maintain_duration_hour"`
+	MaintainDurationMin  int                             `json:"maintain_duration_min"`
+	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
+	Roles                []string                        `json:"role_name_list,omitempty"`
+	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
 }
 
 type GetInstanceResV1 struct {

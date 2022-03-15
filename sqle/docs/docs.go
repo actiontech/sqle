@@ -4291,6 +4291,15 @@ var doc = `{
                     "type": "string",
                     "example": "test"
                 },
+                "maintain_duration_day": {
+                    "type": "integer"
+                },
+                "maintain_duration_hour": {
+                    "type": "integer"
+                },
+                "maintain_duration_min": {
+                    "type": "integer"
+                },
                 "maintenance_start_cron": {
                     "type": "string",
                     "example": "this is cron expression, e.g. 0 * * *"
@@ -5435,6 +5444,15 @@ var doc = `{
                 },
                 "instance_name": {
                     "type": "string"
+                },
+                "maintain_duration_day": {
+                    "type": "integer"
+                },
+                "maintain_duration_hour": {
+                    "type": "integer"
+                },
+                "maintain_duration_min": {
+                    "type": "integer"
                 },
                 "maintenance_start_cron": {
                     "type": "string"
