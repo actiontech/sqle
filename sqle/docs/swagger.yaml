@@ -311,6 +311,9 @@ definitions:
       instance_name:
         example: test
         type: string
+      maintenance_start_cron:
+        example: this is cron expression, e.g. 0 * * *
+        type: string
       role_name_list:
         items:
           type: string
@@ -1095,6 +1098,8 @@ definitions:
         type: string
       instance_name:
         type: string
+      maintenance_start_cron:
+        type: string
       role_name_list:
         items:
           type: string
@@ -1441,6 +1446,9 @@ definitions:
         type: string
       desc:
         example: this is a test instance
+        type: string
+      maintenance_start_cron:
+        example: this is cron expression, e.g. 0 * * *
         type: string
       role_name_list:
         items:
