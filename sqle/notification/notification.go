@@ -210,3 +210,14 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 	}
 }
+
+type TestNotify struct {
+}
+
+func (t *TestNotify) NotificationSubject() string {
+	return "test notify subject"
+}
+
+func (t *TestNotify) NotificationBody() string {
+	return "test notify body line 1\ntest notify body line 2\ntest notify body line 3"
+}
