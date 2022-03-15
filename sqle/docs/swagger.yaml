@@ -311,6 +311,12 @@ definitions:
       instance_name:
         example: test
         type: string
+      maintain_duration_day:
+        type: integer
+      maintain_duration_hour:
+        type: integer
+      maintain_duration_min:
+        type: integer
       maintenance_start_cron:
         example: this is cron expression, e.g. 0 * * *
         type: string
@@ -1098,6 +1104,12 @@ definitions:
         type: string
       instance_name:
         type: string
+      maintain_duration_day:
+        type: integer
+      maintain_duration_hour:
+        type: integer
+      maintain_duration_min:
+        type: integer
       maintenance_start_cron:
         type: string
       role_name_list:
