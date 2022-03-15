@@ -4291,6 +4291,10 @@ var doc = `{
                     "type": "string",
                     "example": "test"
                 },
+                "maintenance_start_cron": {
+                    "type": "string",
+                    "example": "this is cron expression, e.g. 0 * * *"
+                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
@@ -5432,6 +5436,9 @@ var doc = `{
                 "instance_name": {
                     "type": "string"
                 },
+                "maintenance_start_cron": {
+                    "type": "string"
+                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
@@ -5951,6 +5958,10 @@ var doc = `{
                 "desc": {
                     "type": "string",
                     "example": "this is a test instance"
+                },
+                "maintenance_start_cron": {
+                    "type": "string",
+                    "example": "this is cron expression, e.g. 0 * * *"
                 },
                 "role_name_list": {
                     "type": "array",
