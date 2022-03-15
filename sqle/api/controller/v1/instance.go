@@ -3,9 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -13,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -97,8 +95,13 @@ type InstanceAdditionalParamReqV1 struct {
 }
 
 type MaintenanceTimeReqV1 struct {
-	MaintenanceStartTime time.Time `json:"maintenance_start_time"`
-	MaintenanceStopTime  time.Time `json:"maintenance_stop_time"`
+	MaintenanceStartTime *TimeReqV1 `json:"maintenance_start_time"`
+	MaintenanceStopTime  *TimeReqV1 `json:"maintenance_stop_time"`
+}
+
+type TimeReqV1 struct {
+	Hour   int `json:"hour"`
+	Minute int `json:"minute"`
 }
 
 // CreateInstance create instance
@@ -239,8 +242,13 @@ type InstanceResV1 struct {
 }
 
 type MaintenanceTimeResV1 struct {
-	MaintenanceStartTime time.Time `json:"maintenance_start_time"`
-	MaintenanceStopTime  time.Time `json:"maintenance_stop_time"`
+	MaintenanceStartTime *TimeResV1 `json:"maintenance_start_time"`
+	MaintenanceStopTime  *TimeResV1 `json:"maintenance_stop_time"`
+}
+
+type TimeResV1 struct {
+	Hour   int `json:"hour"`
+	Minute int `json:"minute"`
 }
 
 type GetInstanceResV1 struct {
