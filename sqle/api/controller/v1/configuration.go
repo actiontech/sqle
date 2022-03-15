@@ -91,6 +91,60 @@ func GetSMTPConfiguration(c echo.Context) error {
 	})
 }
 
+type UpdateWeChatConfigurationReqV1 struct {
+	StartWeChat *bool   `json:"start_we_chat" from:"start_we_chat" description:"是否启用微信通知"`
+	CorpID      *string `json:"corp_id" from:"corp_id" description:"企业微信ID"`
+	CorpSecret  *string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
+	AgentID     *int    `json:"agent_id" from:"agent_id" description:"企业微信应用ID"`
+	SafeEnabled *bool   `json:"safe_enabled" from:"safe_enabled" description:"是否对传输信息加密"`
+	ProxyIP     *string `json:"proxy_ip" from:"proxy_ip" description:"企业微信代理服务器IP"`
+	UserID      *string `json:"user_id" from:"user_id" description:"接收者企业微信ID"`
+	PartyID     *string `json:"party_id" from:"party_id" description:"接收者企业微信部门ID"`
+	TagID       *string `json:"tag_id" from:"tag_id" description:"接收者企业微信标签"`
+}
+
+// UpdateWeChatConfigurationV1 used to configure WeChat notifications
+// @Summary 添加 企业微信 配置
+// @Description update WeChat configuration
+// @Accept json
+// @Id updateWeChatConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param instance body v1.UpdateWeChatConfigurationReqV1 true "update WeChat configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/wechat [patch]
+func UpdateWeChatConfigurationV1(c echo.Context) error {
+	return updateWeChatConfigurationV1(c)
+}
+
+type GetWeChatConfigurationResV1 struct {
+	controller.BaseRes
+	Data WeChatConfigurationResV1 `json:"data"`
+}
+
+type WeChatConfigurationResV1 struct {
+	StartWeChat bool   `json:"start_we_chat"`
+	CorpID      string `json:"corp_id"`
+	AgentID     int    `json:"agent_id"`
+	SafeEnabled bool   `json:"safe_enabled"`
+	ProxyIP     string `json:"proxy_ip"`
+	UserID      string `json:"user_id"`
+	PartyID     string `json:"party_id"`
+	TagID       string `json:"tag_id"`
+}
+
+// GetWeChatConfiguration used to get wechat configure
+// @Summary 获取 企业微信 配置
+// @Description get WeChat configuration
+// @Id getWeChatConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetWeChatConfigurationResV1
+// @router /v1/configurations/wechat [get]
+func GetWeChatConfiguration(c echo.Context) error {
+	return getWeChatConfiguration(c)
+}
+
 type GetLDAPConfigurationResV1 struct {
 	controller.BaseRes
 	Data LDAPConfigurationResV1 `json:"data"`

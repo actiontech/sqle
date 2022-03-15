@@ -965,6 +965,64 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/wechat": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get WeChat configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 企业微信 配置",
+                "operationId": "getWeChatConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWeChatConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update WeChat configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加 企业微信 配置",
+                "operationId": "updateWeChatConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update WeChat configuration req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWeChatConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dashboard": {
             "get": {
                 "security": [
@@ -5130,6 +5188,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetWeChatConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WeChatConfigurationResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetWorkflowResV1": {
             "type": "object",
             "properties": {
@@ -5917,6 +5992,38 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateWeChatConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "integer"
+                },
+                "corp_id": {
+                    "type": "string"
+                },
+                "corp_secret": {
+                    "type": "string"
+                },
+                "party_id": {
+                    "type": "string"
+                },
+                "proxy_ip": {
+                    "type": "string"
+                },
+                "safe_enabled": {
+                    "type": "boolean"
+                },
+                "start_we_chat": {
+                    "type": "boolean"
+                },
+                "tag_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateWorkflowReqV1": {
             "type": "object",
             "properties": {
@@ -6083,6 +6190,35 @@ var doc = `{
             "type": "object",
             "properties": {
                 "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.WeChatConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "integer"
+                },
+                "corp_id": {
+                    "type": "string"
+                },
+                "party_id": {
+                    "type": "string"
+                },
+                "proxy_ip": {
+                    "type": "string"
+                },
+                "safe_enabled": {
+                    "type": "boolean"
+                },
+                "start_we_chat": {
+                    "type": "boolean"
+                },
+                "tag_id": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
