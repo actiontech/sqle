@@ -91,6 +91,30 @@ func GetSMTPConfiguration(c echo.Context) error {
 	})
 }
 
+type TestWeChatConfigurationReqV1 struct {
+	StartWeChat bool   `json:"start_wechat" from:"start_wechat" description:"是否启用微信通知"`
+	CorpID      string `json:"corp_id" from:"corp_id" description:"企业微信ID"`
+	CorpSecret  string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
+	AgentID     int    `json:"agent_id" from:"agent_id" description:"企业微信应用ID"`
+	SafeEnabled bool   `json:"safe_enabled" from:"safe_enabled" description:"是否对传输信息加密"`
+	ProxyIP     string `json:"proxy_ip" from:"proxy_ip" description:"企业微信代理服务器IP"`
+	RecipientID string `json:"recipient_id" from:"recipient_id" description:"消息接收者企业微信ID"`
+}
+
+// TestWeChatConfigurationV1 used to test WeChat notifications
+// @Summary 测试 企业微信 配置
+// @Description test WeChat configuration
+// @Accept json
+// @Id testWeChatConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param instance body v1.TestWeChatConfigurationReqV1 true "test WeChat configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/test_wechat [post]
+func TestWeChatConfigurationV1(c echo.Context) error {
+	return testWeChatConfigurationV1(c)
+}
+
 type UpdateWeChatConfigurationReqV1 struct {
 	StartWeChat *bool   `json:"start_wechat" from:"start_wechat" description:"是否启用微信通知"`
 	CorpID      *string `json:"corp_id" from:"corp_id" description:"企业微信ID"`

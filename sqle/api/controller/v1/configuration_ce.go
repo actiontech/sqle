@@ -14,6 +14,10 @@ import (
 
 var errCommunityEditionDoesNotSupportWeChatConfiguration = errors.New(errors.ErrAccessDeniedError, e.New("community edition does not support WeChat configuration"))
 
+func testWeChatConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWeChatConfiguration)
+}
+
 func updateWeChatConfigurationV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWeChatConfiguration)
 }
