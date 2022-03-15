@@ -1331,6 +1331,23 @@ definitions:
       workflow_expired_hours:
         type: integer
     type: object
+  v1.TestWeChatConfigurationReqV1:
+    properties:
+      agent_id:
+        type: integer
+      corp_id:
+        type: string
+      corp_secret:
+        type: string
+      proxy_ip:
+        type: string
+      recipient_id:
+        type: string
+      safe_enabled:
+        type: boolean
+      start_wechat:
+        type: boolean
+    type: object
   v1.TriggerAuditPlanResV1:
     properties:
       code:
@@ -2588,6 +2605,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 修改系统变量
+      tags:
+      - configuration
+  /v1/configurations/test_wechat:
+    post:
+      consumes:
+      - application/json
+      description: test WeChat configuration
+      operationId: testWeChatConfigurationV1
+      parameters:
+      - description: test WeChat configuration req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestWeChatConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试 企业微信 配置
       tags:
       - configuration
   /v1/configurations/wechat:

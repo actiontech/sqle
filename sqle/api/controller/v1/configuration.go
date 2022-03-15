@@ -92,7 +92,6 @@ func GetSMTPConfiguration(c echo.Context) error {
 }
 
 type TestWeChatConfigurationReqV1 struct {
-	StartWeChat bool   `json:"start_wechat" from:"start_wechat" description:"是否启用微信通知"`
 	CorpID      string `json:"corp_id" from:"corp_id" description:"企业微信ID"`
 	CorpSecret  string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
 	AgentID     int    `json:"agent_id" from:"agent_id" description:"企业微信应用ID"`
