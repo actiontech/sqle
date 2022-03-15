@@ -3,6 +3,8 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -10,7 +12,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
