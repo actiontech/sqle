@@ -4275,6 +4275,12 @@
                     "type": "string",
                     "example": "test"
                 },
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
+                    }
+                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
@@ -5416,6 +5422,12 @@
                 "instance_name": {
                     "type": "string"
                 },
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
+                },
                 "role_name_list": {
                     "type": "array",
                     "items": {
@@ -5521,6 +5533,32 @@
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.MaintenanceTimeReqV1": {
+            "type": "object",
+            "properties": {
+                "maintenance_start_time": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeReqV1"
+                },
+                "maintenance_stop_time": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeReqV1"
+                }
+            }
+        },
+        "v1.MaintenanceTimeResV1": {
+            "type": "object",
+            "properties": {
+                "maintenance_start_time": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeResV1"
+                },
+                "maintenance_stop_time": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TimeResV1"
                 }
             }
         },
@@ -5811,6 +5849,28 @@
                 }
             }
         },
+        "v1.TimeReqV1": {
+            "type": "object",
+            "properties": {
+                "hour": {
+                    "type": "integer"
+                },
+                "minute": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TimeResV1": {
+            "type": "object",
+            "properties": {
+                "hour": {
+                    "type": "integer"
+                },
+                "minute": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.TriggerAuditPlanResV1": {
             "type": "object",
             "properties": {
@@ -5935,6 +5995,12 @@
                 "desc": {
                     "type": "string",
                     "example": "this is a test instance"
+                },
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
+                    }
                 },
                 "role_name_list": {
                     "type": "array",
@@ -6427,6 +6493,12 @@
                 },
                 "desc": {
                     "type": "string"
+                },
+                "instance_maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
                 },
                 "record": {
                     "type": "object",

@@ -84,6 +84,7 @@ type CreateInstanceReqV1 struct {
 	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
 	Desc                 string                          `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName string                          `json:"workflow_template_name" form:"workflow_template_name"`
+	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
@@ -92,6 +93,16 @@ type CreateInstanceReqV1 struct {
 type InstanceAdditionalParamReqV1 struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+type MaintenanceTimeReqV1 struct {
+	MaintenanceStartTime *TimeReqV1 `json:"maintenance_start_time"`
+	MaintenanceStopTime  *TimeReqV1 `json:"maintenance_stop_time"`
+}
+
+type TimeReqV1 struct {
+	Hour   int `json:"hour"`
+	Minute int `json:"minute"`
 }
 
 // CreateInstance create instance
@@ -225,9 +236,20 @@ type InstanceResV1 struct {
 	User                 string                          `json:"db_user" example:"root"`
 	Desc                 string                          `json:"desc" example:"this is a instance"`
 	WorkflowTemplateName string                          `json:"workflow_template_name,omitempty"`
+	MaintenanceTimes     []*MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
 	Roles                []string                        `json:"role_name_list,omitempty"`
 	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
+}
+
+type MaintenanceTimeResV1 struct {
+	MaintenanceStartTime *TimeResV1 `json:"maintenance_start_time"`
+	MaintenanceStopTime  *TimeResV1 `json:"maintenance_stop_time"`
+}
+
+type TimeResV1 struct {
+	Hour   int `json:"hour"`
+	Minute int `json:"minute"`
 }
 
 type GetInstanceResV1 struct {
@@ -356,6 +378,7 @@ type UpdateInstanceReqV1 struct {
 	Password             *string                         `json:"db_password" form:"db_password" example:"123456"`
 	Desc                 *string                         `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName *string                         `json:"workflow_template_name" form:"workflow_template_name"`
+	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`

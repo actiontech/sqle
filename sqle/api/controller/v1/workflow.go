@@ -581,13 +581,14 @@ type GetWorkflowResV1 struct {
 }
 
 type WorkflowResV1 struct {
-	Id            uint                   `json:"workflow_id"`
-	Subject       string                 `json:"subject"`
-	Desc          string                 `json:"desc,omitempty"`
-	CreateUser    string                 `json:"create_user_name"`
-	CreateTime    *time.Time             `json:"create_time"`
-	Record        *WorkflowRecordResV1   `json:"record"`
-	RecordHistory []*WorkflowRecordResV1 `json:"record_history_list,omitempty"`
+	Id                       uint                    `json:"workflow_id"`
+	Subject                  string                  `json:"subject"`
+	Desc                     string                  `json:"desc,omitempty"`
+	CreateUser               string                  `json:"create_user_name"`
+	CreateTime               *time.Time              `json:"create_time"`
+	InstanceMaintenanceTimes []*MaintenanceTimeResV1 `json:"instance_maintenance_times"`
+	Record                   *WorkflowRecordResV1    `json:"record"`
+	RecordHistory            []*WorkflowRecordResV1  `json:"record_history_list,omitempty"`
 }
 
 type WorkflowRecordResV1 struct {

@@ -311,6 +311,10 @@ definitions:
       instance_name:
         example: test
         type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
+        type: array
       role_name_list:
         items:
           type: string
@@ -1095,6 +1099,10 @@ definitions:
         type: string
       instance_name:
         type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeResV1'
+        type: array
       role_name_list:
         items:
           type: string
@@ -1164,6 +1172,24 @@ definitions:
         type: string
       name:
         type: string
+    type: object
+  v1.MaintenanceTimeReqV1:
+    properties:
+      maintenance_start_time:
+        $ref: '#/definitions/v1.TimeReqV1'
+        type: object
+      maintenance_stop_time:
+        $ref: '#/definitions/v1.TimeReqV1'
+        type: object
+    type: object
+  v1.MaintenanceTimeResV1:
+    properties:
+      maintenance_start_time:
+        $ref: '#/definitions/v1.TimeResV1'
+        type: object
+      maintenance_stop_time:
+        $ref: '#/definitions/v1.TimeResV1'
+        type: object
     type: object
   v1.OperationResV1:
     properties:
@@ -1355,6 +1381,20 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.TimeReqV1:
+    properties:
+      hour:
+        type: integer
+      minute:
+        type: integer
+    type: object
+  v1.TimeResV1:
+    properties:
+      hour:
+        type: integer
+      minute:
+        type: integer
+    type: object
   v1.TriggerAuditPlanResV1:
     properties:
       code:
@@ -1442,6 +1482,10 @@ definitions:
       desc:
         example: this is a test instance
         type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
+        type: array
       role_name_list:
         items:
           type: string
@@ -1771,6 +1815,10 @@ definitions:
         type: string
       desc:
         type: string
+      instance_maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeResV1'
+        type: array
       record:
         $ref: '#/definitions/v1.WorkflowRecordResV1'
         type: object
