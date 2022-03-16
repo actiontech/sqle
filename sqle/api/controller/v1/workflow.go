@@ -21,6 +21,7 @@ import (
 var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
 var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
 	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
+var errWorkflowNotAllowedExecute = errors.New(errors.TaskActionInvalid, fmt.Errorf("workflow not allowed execute"))
 
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
@@ -646,10 +647,11 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow,
 
 func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowResV1 {
 	workflowRes := &WorkflowResV1{
-		Id:         workflow.ID,
-		Subject:    workflow.Subject,
-		Desc:       workflow.Desc,
-		CreateTime: &workflow.CreatedAt,
+		Id:                       workflow.ID,
+		Subject:                  workflow.Subject,
+		Desc:                     workflow.Desc,
+		CreateTime:               &workflow.CreatedAt,
+		InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(task.Instance.MaintenancePeriod),
 	}
 
 	workflowRes.CreateUser = utils.AddDelTag(workflow.CreateUser.DeletedAt, workflow.CreateUserName())
@@ -1343,6 +1345,27 @@ func FormatStringToInt(s string) (ret int, err error) {
 	return ret, nil
 }
 
+func checkWorkFlowCanExecute(instance *model.Instance, executeTime time.Time) bool {
+	et, err := time.Parse("15:04", executeTime.Format("15:04"))
+	if err != nil {
+		return false
+	}
+	for _, period := range instance.MaintenancePeriod {
+		periodStartTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.StartHour, period.StartMinute))
+		if err != nil {
+			return false
+		}
+		periodStopTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.EndHour, period.EndMinute))
+		if err != nil {
+			return false
+		}
+		if et.After(periodStopTime) || et.Before(periodStartTime) {
+			return false
+		}
+	}
+	return false
+}
+
 type UpdateWorkflowScheduleV1 struct {
 	ScheduleTime *time.Time `json:"schedule_time"`
 }
@@ -1403,9 +1426,22 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
-	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
-			"request schedule time is too early")))
+	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.ScheduleTime != nil {
+		if req.ScheduleTime.Before(time.Now()) {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
+				"request schedule time is too early")))
+		}
+		if checkWorkFlowCanExecute(instance, *req.ScheduleTime) {
+			return controller.JSONBaseErrorReq(c, errWorkflowNotAllowedExecute)
+		}
+	} else {
+		if checkWorkFlowCanExecute(instance, time.Now()) {
+			return controller.JSONBaseErrorReq(c, errWorkflowNotAllowedExecute)
+		}
 	}
 
 	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
@@ -1467,6 +1503,13 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	if workflow.Record.ScheduledAt != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow has been set to scheduled execution, not allowed to be executed")))
+	}
+	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if checkWorkFlowCanExecute(instance, time.Now()) {
+		return controller.JSONBaseErrorReq(c, errWorkflowNotAllowedExecute)
 	}
 
 	err = server.ExecuteWorkflow(workflow, user.ID)
