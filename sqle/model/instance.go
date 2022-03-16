@@ -11,6 +11,13 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type Period struct {
+	StartHour   int `json:"start_hour"`
+	StartMinute int `json:"start_minute"`
+	EndHour     int `json:"end_hour"`
+	EndMinute   int `json:"end_minute"`
+}
+
 // Instance is a table for database info
 type Instance struct {
 	Model
@@ -25,6 +32,7 @@ type Instance struct {
 	Desc               string        `json:"desc" example:"this is a instance"`
 	WorkflowTemplateId uint          `json:"workflow_template_id"`
 	AdditionalParams   params.Params `json:"additional_params" gorm:"type:text"`
+	MaintenancePeriod  []*Period     `json:"maintenance_period" gorm:"text"`
 
 	// relation table
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
