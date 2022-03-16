@@ -69,6 +69,7 @@ func CreateUser(c echo.Context) error {
 		Name:     req.Name,
 		Password: req.Password,
 		Email:    req.Email,
+		WeChatID: req.WeChatID,
 	}
 
 	return controller.JSONBaseErrorReq(c,
@@ -112,6 +113,11 @@ func UpdateUser(c echo.Context) error {
 	// Email
 	if req.Email != nil {
 		user.Email = *req.Email
+	}
+
+	// WeChatID
+	if req.WeChatID != nil {
+		user.WeChatID = *req.WeChatID
 	}
 
 	// IsDisabled
@@ -277,6 +283,7 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 	userReq := UserDetailResV1{
 		Name:       user.Name,
 		Email:      user.Email,
+		WeChatID:   user.WeChatID,
 		LoginType:  string(user.UserAuthenticationType),
 		IsAdmin:    user.Name == model.DefaultAdminUser,
 		IsDisabled: user.IsDisabled(),
@@ -370,10 +377,13 @@ func UpdateCurrentUser(c echo.Context) error {
 	s := model.GetStorage()
 	if req.Email != nil {
 		user.Email = *req.Email
-		err = s.Save(user)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	}
+	if req.WeChatID != nil {
+		user.WeChatID = *req.WeChatID
+	}
+	err = s.Save(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
 }
@@ -485,6 +495,7 @@ func GetUsers(c echo.Context) error {
 		userReq := UserResV1{
 			Name:       user.Name,
 			Email:      user.Email,
+			WeChatID:   user.WeChatID.String,
 			LoginType:  user.LoginType,
 			Roles:      user.RoleNames,
 			IsDisabled: user.IsDisabled(),
