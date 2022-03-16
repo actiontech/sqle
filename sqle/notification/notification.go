@@ -215,9 +215,9 @@ type TestNotify struct {
 }
 
 func (t *TestNotify) NotificationSubject() string {
-	return "test notify subject"
+	return "SQLE notification test"
 }
 
 func (t *TestNotify) NotificationBody() string {
-	return "test notify body line 1\ntest notify body line 2\ntest notify body line 3"
+	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
 }

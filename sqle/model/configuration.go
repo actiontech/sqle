@@ -79,13 +79,13 @@ func (s *Storage) GetSMTPConfiguration() (*SMTPConfiguration, bool, error) {
 // WeChatConfiguration store WeChat configuration.
 type WeChatConfiguration struct {
 	Model
-	EnableWeChatNotify bool   `json:"enable_wechat_notify" gorm:"not null"`
-	CorpID             string `json:"corp_id" gorm:"not null"`
-	CorpPassword       string `json:"-"`
-	CorpSecret         string `json:"corp_secret" gorm:"not null"`
-	AgentID            int    `json:"agent_id" gorm:"not null"`
-	SafeEnabled        bool   `json:"safe_enabled" gorm:"not null"`
-	ProxyIP            string `json:"proxy_ip"`
+	EnableWeChatNotify  bool   `json:"enable_wechat_notify" gorm:"not null"`
+	CorpID              string `json:"corp_id" gorm:"not null"`
+	CorpSecret          string `json:"-" gorm:"-"`
+	EncryptedCorpSecret string `json:"encrypted_corp_secret" gorm:"not null"`
+	AgentID             int    `json:"agent_id" gorm:"not null"`
+	SafeEnabled         bool   `json:"safe_enabled" gorm:"not null"`
+	ProxyIP             string `json:"proxy_ip"`
 }
 
 func (i *WeChatConfiguration) TableName() string {
@@ -101,11 +101,11 @@ func (i *WeChatConfiguration) encryptPassword() error {
 	if i == nil {
 		return nil
 	}
-	data, err := utils.AesEncrypt(i.CorpPassword)
+	data, err := utils.AesEncrypt(i.CorpSecret)
 	if err != nil {
 		return err
 	}
-	i.CorpSecret = data
+	i.EncryptedCorpSecret = data
 	return nil
 }
 
@@ -122,12 +122,12 @@ func (i *WeChatConfiguration) decryptPassword() error {
 	if i == nil {
 		return nil
 	}
-	if i.CorpPassword == "" {
-		data, err := utils.AesDecrypt(i.CorpSecret)
+	if i.CorpSecret == "" {
+		data, err := utils.AesDecrypt(i.EncryptedCorpSecret)
 		if err != nil {
 			return err
 		}
-		i.CorpPassword = data
+		i.CorpSecret = data
 	}
 	return nil
 }
