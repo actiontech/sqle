@@ -19,13 +19,7 @@ type Notifier interface {
 	Notify(Notification, []*model.User) error
 }
 
-var Notifiers []Notifier
-
-func init() {
-	Notifiers = []Notifier{
-		&EmailNotifier{},
-	}
-}
+var Notifiers = []Notifier{}
 
 func Notify(notification Notification, users []*model.User) error {
 	for _, n := range Notifiers {
@@ -215,4 +209,15 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	if err != nil {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 	}
+}
+
+type TestNotify struct {
+}
+
+func (t *TestNotify) NotificationSubject() string {
+	return "SQLE notification test"
+}
+
+func (t *TestNotify) NotificationBody() string {
+	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
 }

@@ -30,6 +30,7 @@ type User struct {
 	// has created composite index: [id, login_name] by gorm#AddIndex
 	Name                   string `gorm:"index;column:login_name"`
 	Email                  string
+	WeChatID               string                 `json:"wechat_id" gorm:"column:wechat_id"`
 	Password               string                 `json:"-" gorm:"-"`
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`

@@ -10,6 +10,10 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+func init() {
+	Notifiers = append(Notifiers, &EmailNotifier{})
+}
+
 type EmailNotifier struct{}
 
 func (n *EmailNotifier) Notify(notification Notification, users []*model.User) error {
