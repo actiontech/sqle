@@ -4,11 +4,13 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
+
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 func testWeChatConfigurationV1(c echo.Context) error {
