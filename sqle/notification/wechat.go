@@ -35,10 +35,11 @@ func (n *WeChatNotifier) Notify(notification Notification, users []*model.User) 
 		}
 	}
 
-	// no user has configured email, don't send.
+	// no user has configured wechat, don't send.
 	if len(wechatUsers) == 0 {
 		return nil
 	}
+
 	s := model.GetStorage()
 	wechatC, exist, err := s.GetWeChatConfiguration()
 	if err != nil {
@@ -57,10 +58,10 @@ func (n *WeChatNotifier) Notify(notification Notification, users []*model.User) 
 		safe = 1
 	}
 	errs := []string{}
-	for name, u := range wechatUsers {
+	for name, id := range wechatUsers {
 		req := &send.Text{
 			MessageHeader: send.MessageHeader{
-				ToUser:  u,
+				ToUser:  id,
 				MsgType: "text",
 				AgentId: int64(wechatC.AgentID),
 				Safe:    &safe,
