@@ -1353,15 +1353,16 @@ func checkWorkFlowCanExecute(instance *model.Instance, executeTime time.Time) bo
 	for _, period := range instance.MaintenancePeriod {
 		periodStartTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.StartHour, period.StartMinute))
 		if err != nil {
-			return false
+			continue
 		}
 		periodStopTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.EndHour, period.EndMinute))
 		if err != nil {
-			return false
+			continue
 		}
 		if et.After(periodStopTime) || et.Before(periodStartTime) {
-			return false
+			continue
 		}
+		return true
 	}
 	return false
 }
