@@ -76,6 +76,71 @@ func (s *Storage) GetSMTPConfiguration() (*SMTPConfiguration, bool, error) {
 	return smtpC, true, errors.New(errors.ConnectStorageError, err)
 }
 
+// WeChatConfiguration store WeChat configuration.
+type WeChatConfiguration struct {
+	Model
+	EnableWeChatNotify  bool   `json:"enable_wechat_notify" gorm:"not null"`
+	CorpID              string `json:"corp_id" gorm:"not null"`
+	CorpSecret          string `json:"-" gorm:"-"`
+	EncryptedCorpSecret string `json:"encrypted_corp_secret" gorm:"not null"`
+	AgentID             int    `json:"agent_id" gorm:"not null"`
+	SafeEnabled         bool   `json:"safe_enabled" gorm:"not null"`
+	ProxyIP             string `json:"proxy_ip"`
+}
+
+func (i *WeChatConfiguration) TableName() string {
+	return fmt.Sprintf("%v_wechat", globalConfigurationTablePrefix)
+}
+
+// BeforeSave is a hook implement gorm model before exec create.
+func (i *WeChatConfiguration) BeforeSave() error {
+	return i.encryptPassword()
+}
+
+func (i *WeChatConfiguration) encryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	data, err := utils.AesEncrypt(i.CorpSecret)
+	if err != nil {
+		return err
+	}
+	i.EncryptedCorpSecret = data
+	return nil
+}
+
+// AfterFind is a hook implement gorm model after query, ignore err if query from db.
+func (i *WeChatConfiguration) AfterFind() error {
+	err := i.decryptPassword()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt password for WeChat server configuration failed, error: %v", err)
+	}
+	return nil
+}
+
+func (i *WeChatConfiguration) decryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.CorpSecret == "" {
+		data, err := utils.AesDecrypt(i.EncryptedCorpSecret)
+		if err != nil {
+			return err
+		}
+		i.CorpSecret = data
+	}
+	return nil
+}
+
+func (s *Storage) GetWeChatConfiguration() (*WeChatConfiguration, bool, error) {
+	wechatC := new(WeChatConfiguration)
+	err := s.db.Last(wechatC).Error
+	if err == gorm.ErrRecordNotFound {
+		return wechatC, false, nil
+	}
+	return wechatC, true, errors.New(errors.ConnectStorageError, err)
+}
+
 // LDAPConfiguration store ldap server configuration.
 type LDAPConfiguration struct {
 	Model

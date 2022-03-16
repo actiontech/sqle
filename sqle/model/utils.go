@@ -110,6 +110,7 @@ func (s *Storage) AutoMigrate() error {
 		&AuditPlan{},
 		&ExecuteSQL{},
 		&Instance{},
+		&WeChatConfiguration{},
 		&LDAPConfiguration{},
 		&License{},
 		&RoleOperation{},
