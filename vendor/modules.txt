@@ -26,6 +26,9 @@ github.com/agiledragon/gomonkey
 ## explicit
 github.com/alecthomas/template
 github.com/alecthomas/template/parse
+# github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13
+## explicit
+github.com/chanxuehong/util/security
 # github.com/cpuguy83/go-md2man/v2 v2.0.0
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/cznic/golex v0.0.0-20181122101858-9c343928389c
@@ -471,6 +474,12 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
 ## explicit
 gopkg.in/alexcesaro/quotedprintable.v3
+# gopkg.in/chanxuehong/wechat.v1 v1.0.0-20171118020122-aad7e298d1e7
+## explicit
+gopkg.in/chanxuehong/wechat.v1/corp
+gopkg.in/chanxuehong/wechat.v1/corp/message/send
+gopkg.in/chanxuehong/wechat.v1/internal/util
+gopkg.in/chanxuehong/wechat.v1/json
 # gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 ## explicit
 gopkg.in/gomail.v2
