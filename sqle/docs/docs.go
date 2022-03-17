@@ -3825,7 +3825,8 @@ var doc = `{
                         "normal",
                         "notice",
                         "warn",
-                        "error"
+                        "error",
+                        ""
                     ]
                 },
                 "audit_plan_report_id": {

@@ -496,7 +496,7 @@ type GetAuditPlanReportsResV1 struct {
 
 type AuditPlanReportResV1 struct {
 	Id         string  `json:"audit_plan_report_id" example:"1"`
-	AuditLevel string  `json:"audit_level" enums:"normal,notice,warn,error"`
+	AuditLevel string  `json:"audit_level" enums:"normal,notice,warn,error,"`
 	Score      int32   `json:"score"`
 	PassRate   float64 `json:"pass_rate"`
 	Timestamp  string  `json:"audit_plan_report_timestamp" example:"RFC3339"`
@@ -543,13 +543,9 @@ func GetAuditPlanReports(c echo.Context) error {
 
 	auditPlanReportsResV1 := make([]AuditPlanReportResV1, len(auditPlanReports))
 	for i, auditPlanReport := range auditPlanReports {
-		level := ""
-		if auditPlanReport.AuditLevel.String != string(driver.RuleLevelNull) {
-			level = auditPlanReport.AuditLevel.String
-		}
 		auditPlanReportsResV1[i] = AuditPlanReportResV1{
 			Id:         auditPlanReport.ID,
-			AuditLevel: level,
+			AuditLevel: auditPlanReport.AuditLevel.String,
 			Score:      auditPlanReport.Score.Int32,
 			PassRate:   auditPlanReport.PassRate.Float64,
 			Timestamp:  auditPlanReport.CreateAt,
@@ -790,15 +786,11 @@ func TriggerAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	level := ""
-	if report.AuditLevel != string(driver.RuleLevelNull) {
-		level = report.AuditLevel
-	}
 	return c.JSON(http.StatusOK, &TriggerAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: AuditPlanReportResV1{
 			Id:         fmt.Sprintf("%v", report.ID),
-			AuditLevel: level,
+			AuditLevel: report.AuditLevel,
 			Score:      report.Score,
 			PassRate:   report.PassRate,
 			Timestamp:  report.CreatedAt.Format(time.RFC3339),

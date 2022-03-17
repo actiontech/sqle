@@ -52,6 +52,7 @@ definitions:
         - notice
         - warn
         - error
+        - ""
         type: string
       audit_plan_report_id:
         example: "1"
