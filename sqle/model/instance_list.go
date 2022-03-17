@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 )
 
@@ -13,7 +12,7 @@ type InstanceDetail struct {
 	Host                 string         `json:"db_host"`
 	Port                 string         `json:"db_port"`
 	User                 string         `json:"db_user"`
-	MaintenancePeriod    params.Periods `json:"maintenance_period" gorm:"text"`
+	MaintenancePeriod    Periods        `json:"maintenance_period" gorm:"text"`
 	WorkflowTemplateName sql.NullString `json:"workflow_template_name"`
 	RoleNames            RowList        `json:"role_names"`
 	RuleTemplateNames    RowList        `json:"rule_template_names"`

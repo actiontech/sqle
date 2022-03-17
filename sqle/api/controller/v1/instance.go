@@ -106,22 +106,10 @@ type TimeReqV1 struct {
 	Minute int `json:"minute"`
 }
 
-func checkMaintenanceTimeReqV1(mt []*MaintenanceTimeReqV1) bool {
-	for _, v1 := range mt {
-		if v1.MaintenanceStartTime.Hour > v1.MaintenanceStopTime.Hour {
-			return false
-		}
-		if v1.MaintenanceStartTime.Minute >= v1.MaintenanceStopTime.Minute {
-			return false
-		}
-	}
-	return true
-}
-
-func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) params.Periods {
-	periods := make(params.Periods, len(mt))
+func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) model.Periods {
+	periods := make(model.Periods, len(mt))
 	for i, time := range mt {
-		periods[i] = &params.Period{
+		periods[i] = &model.Period{
 			StartHour:   time.MaintenanceStartTime.Hour,
 			StartMinute: time.MaintenanceStartTime.Minute,
 			EndHour:     time.MaintenanceStopTime.Hour,
@@ -159,7 +147,8 @@ func CreateInstance(c echo.Context) error {
 		req.DBType = driver.DriverTypeMySQL
 	}
 
-	if !checkMaintenanceTimeReqV1(req.MaintenanceTimes) {
+	maintenancePeriod := convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+	if !maintenancePeriod.SelfCheck() {
 		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
 	}
 
@@ -180,7 +169,7 @@ func CreateInstance(c echo.Context) error {
 		Password:          req.Password,
 		Desc:              req.Desc,
 		AdditionalParams:  additionalParams,
-		MaintenancePeriod: convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes),
+		MaintenancePeriod: maintenancePeriod,
 	}
 	// set default workflow template
 	if req.WorkflowTemplateName == "" {
@@ -283,7 +272,7 @@ type TimeResV1 struct {
 	Minute int `json:"minute"`
 }
 
-func convertPeriodToMaintenanceTimeResV1(mt params.Periods) []*MaintenanceTimeResV1 {
+func convertPeriodToMaintenanceTimeResV1(mt model.Periods) []*MaintenanceTimeResV1 {
 	periods := make([]*MaintenanceTimeResV1, len(mt))
 	for i, time := range mt {
 		periods[i] = &MaintenanceTimeResV1{
@@ -449,7 +438,8 @@ func UpdateInstance(c echo.Context) error {
 		return err
 	}
 
-	if !checkMaintenanceTimeReqV1(req.MaintenanceTimes) {
+	maintenancePeriod := convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+	if !maintenancePeriod.SelfCheck() {
 		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
 	}
 
@@ -491,7 +481,7 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	if req.MaintenanceTimes != nil {
-		updateMap["maintenance_period"] = convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+		updateMap["maintenance_period"] = maintenancePeriod
 	}
 
 	if req.Password != nil {
