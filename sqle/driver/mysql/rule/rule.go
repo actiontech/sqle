@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/ungerik/go-dry"
 )
@@ -1457,6 +1458,21 @@ func checkEngine(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 	return nil
 }
 
+func getColumnCSFromColumnsDef(columns []*ast.ColumnDef) []string {
+	var columnCharacterSets []string
+	for _, column := range columns {
+		// Just string data type and not binary can be set "character set".
+		if column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+			continue
+		}
+		if column.Tp.Charset == "" {
+			continue
+		}
+		columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
+	}
+	return columnCharacterSets
+}
+
 func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var characterSet string
@@ -1481,11 +1497,8 @@ func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.Audit
 		// create table t1 (
 		//    id varchar(255) character set utf8
 		// )
-		for _, column := range stmt.Cols {
-			if column.Tp.Charset != "" {
-				columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
-			}
-		}
+		columnCharacterSets = getColumnCSFromColumnsDef(stmt.Cols)
+
 	case *ast.AlterTableStmt:
 		tableName = stmt.Table
 		for _, ss := range stmt.Specs {
@@ -1496,11 +1509,7 @@ func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.Audit
 				}
 			}
 			// https://github.com/actiontech/sqle/issues/389
-			for _, column := range ss.NewColumns {
-				if column.Tp.Charset != "" {
-					columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
-				}
-			}
+			columnCharacterSets = append(columnCharacterSets, getColumnCSFromColumnsDef(ss.NewColumns)...)
 		}
 	case *ast.CreateDatabaseStmt:
 		schemaName = stmt.Name
@@ -1535,6 +1544,7 @@ func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.Audit
 	}
 	for _, cs := range columnCharacterSets {
 		if !strings.EqualFold(cs, expectCS) {
+			fmt.Printf("==============cs: %s", cs)
 			addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
 			return nil
 		}
