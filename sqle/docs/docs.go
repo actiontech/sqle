@@ -3950,7 +3950,8 @@ var doc = `{
                         "normal",
                         "notice",
                         "warn",
-                        "error"
+                        "error",
+                        ""
                     ]
                 },
                 "exec_end_time": {
