@@ -489,7 +489,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message:      "必须使用%v数据库引擎",
 		AllowOffline: false,
-		Func:         checkEngineAndCharacterSet,
+		Func:         checkEngine,
 	},
 	{
 		Rule: driver.Rule{
@@ -509,7 +509,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message:      "必须使用%v数据库字符集",
 		AllowOffline: false,
-		Func:         checkEngineAndCharacterSet,
+		Func:         checkCharacterSet,
 	},
 	{
 		Rule: driver.Rule{
@@ -1413,10 +1413,9 @@ func checkMergeAlterTable(ctx *session.Context, rule driver.Rule, res *driver.Au
 	return nil
 }
 
-func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkEngine(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var engine string
-	var characterSet string
 	var err error
 	schemaName := ""
 	switch stmt := node.(type) {
@@ -1429,8 +1428,6 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 			switch op.Tp {
 			case ast.TableOptionEngine:
 				engine = op.StrValue
-			case ast.TableOptionCharset:
-				characterSet = op.StrValue
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -1440,6 +1437,49 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 				switch op.Tp {
 				case ast.TableOptionEngine:
 					engine = op.StrValue
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	if engine == "" {
+		engine, err = ctx.GetSchemaEngine(tableName, schemaName)
+		if err != nil {
+			return err
+		}
+	}
+	expectEngine := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	if !strings.EqualFold(engine, expectEngine) {
+		addResult(res, rule, DDLCheckTableDBEngine, expectEngine)
+		return nil
+	}
+	return nil
+}
+
+func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	var tableName *ast.TableName
+	var characterSet string
+
+	var err error
+	schemaName := ""
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		tableName = stmt.Table
+		if stmt.ReferTable != nil {
+			return nil
+		}
+		for _, op := range stmt.Options {
+			switch op.Tp {
+			case ast.TableOptionCharset:
+				characterSet = op.StrValue
+			}
+		}
+	case *ast.AlterTableStmt:
+		tableName = stmt.Table
+		for _, ss := range stmt.Specs {
+			for _, op := range ss.Options {
+				switch op.Tp {
 				case ast.TableOptionCharset:
 					characterSet = op.StrValue
 				}
@@ -1464,30 +1504,17 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 	default:
 		return nil
 	}
-	if rule.Name == DDLCheckTableDBEngine {
-		if engine == "" {
-			engine, err = ctx.GetSchemaEngine(tableName, schemaName)
-			if err != nil {
-				return err
-			}
+
+	if characterSet == "" {
+		characterSet, err = ctx.GetSchemaCharacter(tableName, schemaName)
+		if err != nil {
+			return err
 		}
-		expectEngine := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-		if !strings.EqualFold(engine, expectEngine) {
-			addResult(res, rule, DDLCheckTableDBEngine, expectEngine)
-			return nil
-		}
-	} else if rule.Name == DDLCheckTableCharacterSet {
-		if characterSet == "" {
-			characterSet, err = ctx.GetSchemaCharacter(tableName, schemaName)
-			if err != nil {
-				return err
-			}
-		}
-		expectCS := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-		if !strings.EqualFold(characterSet, expectCS) {
-			addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
-			return nil
-		}
+	}
+	expectCS := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	if !strings.EqualFold(characterSet, expectCS) {
+		addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
+		return nil
 	}
 	return nil
 }
