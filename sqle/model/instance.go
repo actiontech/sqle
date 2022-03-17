@@ -2,37 +2,31 @@ package model
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/jinzhu/gorm"
 )
-
-type Period struct {
-	StartHour   int `json:"start_hour"`
-	StartMinute int `json:"start_minute"`
-	EndHour     int `json:"end_hour"`
-	EndMinute   int `json:"end_minute"`
-}
 
 // Instance is a table for database info
 type Instance struct {
 	Model
 	// has created composite index: [id, name] by gorm#AddIndex
-	Name               string        `json:"name" gorm:"not null;index" example:""`
-	DbType             string        `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
-	Host               string        `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
-	Port               string        `json:"port" gorm:"column:db_port; not null" example:"3306"`
-	User               string        `json:"user" gorm:"column:db_user; not null" example:"root"`
-	Password           string        `json:"-" gorm:"-"`
-	SecretPassword     string        `json:"secret_password" gorm:"column:db_password; not null"`
-	Desc               string        `json:"desc" example:"this is a instance"`
-	WorkflowTemplateId uint          `json:"workflow_template_id"`
-	AdditionalParams   params.Params `json:"additional_params" gorm:"type:text"`
-	MaintenancePeriod  []*Period     `json:"maintenance_period" gorm:"text"`
+	Name               string         `json:"name" gorm:"not null;index" example:""`
+	DbType             string         `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
+	Host               string         `json:"host" gorm:"column:db_host; not null" example:"10.10.10.10"`
+	Port               string         `json:"port" gorm:"column:db_port; not null" example:"3306"`
+	User               string         `json:"user" gorm:"column:db_user; not null" example:"root"`
+	Password           string         `json:"-" gorm:"-"`
+	SecretPassword     string         `json:"secret_password" gorm:"column:db_password; not null"`
+	Desc               string         `json:"desc" example:"this is a instance"`
+	WorkflowTemplateId uint           `json:"workflow_template_id"`
+	AdditionalParams   params.Params  `json:"additional_params" gorm:"type:text"`
+	MaintenancePeriod  params.Periods `json:"maintenance_period" gorm:"type:text"`
 
 	// relation table
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
