@@ -91,8 +91,56 @@ func TestPeriods_SelfCheck(t *testing.T) {
 	}
 	assert.Equal(t, ps1.SelfCheck(), true)
 
-	// The second rule end hour is to large
+	// The second rule end hour is earlier than start hour
 	ps2 := Periods{
+		{
+			StartHour:   0,
+			StartMinute: 0,
+			EndHour:     23,
+			EndMinute:   59,
+		}, {
+			StartHour:   2,
+			StartMinute: 20,
+			EndHour:     1,
+			EndMinute:   10,
+		},
+	}
+	assert.Equal(t, ps2.SelfCheck(), false)
+
+	// The second rule end minute is equal than start minute
+	ps3 := Periods{
+		{
+			StartHour:   0,
+			StartMinute: 0,
+			EndHour:     23,
+			EndMinute:   59,
+		}, {
+			StartHour:   1,
+			StartMinute: 1,
+			EndHour:     1,
+			EndMinute:   1,
+		},
+	}
+	assert.Equal(t, ps3.SelfCheck(), false)
+
+	// The second rule end minute is earlier than start minute
+	ps4 := Periods{
+		{
+			StartHour:   0,
+			StartMinute: 0,
+			EndHour:     23,
+			EndMinute:   59,
+		}, {
+			StartHour:   1,
+			StartMinute: 10,
+			EndHour:     1,
+			EndMinute:   1,
+		},
+	}
+	assert.Equal(t, ps4.SelfCheck(), false)
+
+	// The second rule end hour is to large
+	ps5 := Periods{
 		{
 			StartHour:   0,
 			StartMinute: 0,
@@ -105,10 +153,10 @@ func TestPeriods_SelfCheck(t *testing.T) {
 			EndMinute:   10,
 		},
 	}
-	assert.Equal(t, ps2.SelfCheck(), false)
+	assert.Equal(t, ps5.SelfCheck(), false)
 
 	// The second rule end minutes is to large
-	ps3 := Periods{
+	ps6 := Periods{
 		{
 			StartHour:   0,
 			StartMinute: 0,
@@ -121,10 +169,10 @@ func TestPeriods_SelfCheck(t *testing.T) {
 			EndMinute:   60,
 		},
 	}
-	assert.Equal(t, ps3.SelfCheck(), false)
+	assert.Equal(t, ps6.SelfCheck(), false)
 
 	// The first start hour is too large
-	ps4 := Periods{
+	ps7 := Periods{
 		{
 			StartHour:   24,
 			StartMinute: 0,
@@ -137,10 +185,10 @@ func TestPeriods_SelfCheck(t *testing.T) {
 			EndMinute:   10,
 		},
 	}
-	assert.Equal(t, ps4.SelfCheck(), false)
+	assert.Equal(t, ps7.SelfCheck(), false)
 
 	//  The first start minute is too large
-	ps5 := Periods{
+	ps8 := Periods{
 		{
 			StartHour:   0,
 			StartMinute: 60,
@@ -153,10 +201,10 @@ func TestPeriods_SelfCheck(t *testing.T) {
 			EndMinute:   10,
 		},
 	}
-	assert.Equal(t, ps5.SelfCheck(), false)
+	assert.Equal(t, ps8.SelfCheck(), false)
 
 	//  The first start hour is too less
-	ps6 := Periods{
+	ps9 := Periods{
 		{
 			StartHour:   -1,
 			StartMinute: 0,
@@ -169,10 +217,10 @@ func TestPeriods_SelfCheck(t *testing.T) {
 			EndMinute:   10,
 		},
 	}
-	assert.Equal(t, ps6.SelfCheck(), false)
+	assert.Equal(t, ps9.SelfCheck(), false)
 
 	//  The first end minute is too less
-	ps7 := Periods{
+	ps10 := Periods{
 		{
 			StartHour:   0,
 			StartMinute: 0,
@@ -185,7 +233,7 @@ func TestPeriods_SelfCheck(t *testing.T) {
 			EndMinute:   10,
 		},
 	}
-	assert.Equal(t, ps7.SelfCheck(), false)
+	assert.Equal(t, ps10.SelfCheck(), false)
 
 }
 
