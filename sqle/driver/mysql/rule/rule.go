@@ -1460,6 +1460,7 @@ func checkEngine(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var characterSet string
+	var columnCharacterSets []string
 
 	var err error
 	schemaName := ""
@@ -1475,6 +1476,16 @@ func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.Audit
 				characterSet = op.StrValue
 			}
 		}
+		// https://github.com/actiontech/sqle/issues/389
+		// character set can ben defined in columns, like:
+		// create table t1 (
+		//    id varchar(255) character set utf8
+		// )
+		for _, column := range stmt.Cols {
+			if column.Tp.Charset != "" {
+				columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
+			}
+		}
 	case *ast.AlterTableStmt:
 		tableName = stmt.Table
 		for _, ss := range stmt.Specs {
@@ -1482,6 +1493,12 @@ func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.Audit
 				switch op.Tp {
 				case ast.TableOptionCharset:
 					characterSet = op.StrValue
+				}
+			}
+			// https://github.com/actiontech/sqle/issues/389
+			for _, column := range ss.NewColumns {
+				if column.Tp.Charset != "" {
+					columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
 				}
 			}
 		}
@@ -1515,6 +1532,12 @@ func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.Audit
 	if !strings.EqualFold(characterSet, expectCS) {
 		addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
 		return nil
+	}
+	for _, cs := range columnCharacterSets {
+		if !strings.EqualFold(cs, expectCS) {
+			addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
+			return nil
+		}
 	}
 	return nil
 }
