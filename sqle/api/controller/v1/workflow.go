@@ -21,7 +21,7 @@ import (
 var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
 var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
 	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
-var errWorkflowNotAllowedExecute = errors.New(errors.TaskActionInvalid, fmt.Errorf("workflow not allowed execute"))
+var errWorkflowExecuteTimeIncorrect = errors.New(errors.TaskActionInvalid, fmt.Errorf("please go online during instance operation and maintenance time"))
 
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
@@ -1436,12 +1436,8 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
 				"request schedule time is too early")))
 		}
-		if checkWorkFlowCanExecute(instance, *req.ScheduleTime) {
-			return controller.JSONBaseErrorReq(c, errWorkflowNotAllowedExecute)
-		}
-	} else {
-		if checkWorkFlowCanExecute(instance, time.Now()) {
-			return controller.JSONBaseErrorReq(c, errWorkflowNotAllowedExecute)
+		if !checkWorkFlowCanExecute(instance, *req.ScheduleTime) {
+			return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
 		}
 	}
 
@@ -1509,8 +1505,8 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if checkWorkFlowCanExecute(instance, time.Now()) {
-		return controller.JSONBaseErrorReq(c, errWorkflowNotAllowedExecute)
+	if !checkWorkFlowCanExecute(instance, time.Now()) {
+		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
 	}
 
 	err = server.ExecuteWorkflow(workflow, user.ID)

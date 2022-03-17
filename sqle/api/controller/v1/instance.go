@@ -118,15 +118,15 @@ func checkMaintenanceTimeReqV1(mt []*MaintenanceTimeReqV1) bool {
 	return true
 }
 
-func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) []*model.Period {
-	periods := []*model.Period{}
-	for _, time := range mt {
-		periods = append(periods, &model.Period{
+func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) params.Periods {
+	periods := make(params.Periods, len(mt))
+	for i, time := range mt {
+		periods[i] = &params.Period{
 			StartHour:   time.MaintenanceStartTime.Hour,
 			StartMinute: time.MaintenanceStartTime.Minute,
 			EndHour:     time.MaintenanceStopTime.Hour,
 			EndMinute:   time.MaintenanceStopTime.Minute,
-		})
+		}
 	}
 	return periods
 }
@@ -283,10 +283,10 @@ type TimeResV1 struct {
 	Minute int `json:"minute"`
 }
 
-func convertPeriodToMaintenanceTimeResV1(mt []*model.Period) []*MaintenanceTimeResV1 {
-	periods := []*MaintenanceTimeResV1{}
-	for _, time := range mt {
-		periods = append(periods, &MaintenanceTimeResV1{
+func convertPeriodToMaintenanceTimeResV1(mt params.Periods) []*MaintenanceTimeResV1 {
+	periods := make([]*MaintenanceTimeResV1, len(mt))
+	for i, time := range mt {
+		periods[i] = &MaintenanceTimeResV1{
 			MaintenanceStartTime: &TimeResV1{
 				Hour:   time.StartHour,
 				Minute: time.StartMinute,
@@ -295,7 +295,7 @@ func convertPeriodToMaintenanceTimeResV1(mt []*model.Period) []*MaintenanceTimeR
 				Hour:   time.EndHour,
 				Minute: time.EndMinute,
 			},
-		})
+		}
 	}
 	return periods
 }
