@@ -1459,7 +1459,7 @@ func checkEngine(ctx *session.Context, rule driver.Rule, res *driver.AuditResult
 }
 
 func getColumnCSFromColumnsDef(columns []*ast.ColumnDef) []string {
-	var columnCharacterSets []string
+	columnCharacterSets := []string{}
 	for _, column := range columns {
 		// Just string data type and not binary can be set "character set".
 		if column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
