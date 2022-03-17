@@ -75,6 +75,7 @@ func TestPeriods_ScanValue(t *testing.T) {
 }
 
 func TestPeriods_SelfCheck(t *testing.T) {
+	// Critical Values and Normal Intervals
 	ps1 := Periods{
 		{
 			StartHour:   0,
@@ -82,94 +83,106 @@ func TestPeriods_SelfCheck(t *testing.T) {
 			EndHour:     23,
 			EndMinute:   59,
 		}, {
-			StartHour:   10,
+			StartHour:   1,
 			StartMinute: 20,
-			EndHour:     10,
-			EndMinute:   40,
+			EndHour:     2,
+			EndMinute:   10,
 		},
 	}
 	assert.Equal(t, ps1.SelfCheck(), true)
+
+	// The second rule end hour is to large
 	ps2 := Periods{
 		{
-			StartHour:   1,
-			StartMinute: 2,
-			EndHour:     0,
-			EndMinute:   4,
+			StartHour:   0,
+			StartMinute: 0,
+			EndHour:     23,
+			EndMinute:   59,
 		}, {
-			StartHour:   10,
+			StartHour:   1,
 			StartMinute: 20,
-			EndHour:     30,
-			EndMinute:   40,
+			EndHour:     24,
+			EndMinute:   10,
 		},
 	}
 	assert.Equal(t, ps2.SelfCheck(), false)
+
+	// The second rule end minutes is to large
 	ps3 := Periods{
 		{
-			StartHour:   1,
-			StartMinute: 2,
-			EndHour:     3,
-			EndMinute:   0,
+			StartHour:   0,
+			StartMinute: 0,
+			EndHour:     23,
+			EndMinute:   59,
 		}, {
-			StartHour:   10,
+			StartHour:   1,
 			StartMinute: 20,
-			EndHour:     30,
-			EndMinute:   40,
+			EndHour:     2,
+			EndMinute:   60,
 		},
 	}
 	assert.Equal(t, ps3.SelfCheck(), false)
+
+	// The first start hour is too large
 	ps4 := Periods{
 		{
-			StartHour:   25,
-			StartMinute: 2,
-			EndHour:     3,
-			EndMinute:   4,
+			StartHour:   24,
+			StartMinute: 0,
+			EndHour:     23,
+			EndMinute:   59,
 		}, {
-			StartHour:   10,
+			StartHour:   1,
 			StartMinute: 20,
-			EndHour:     30,
-			EndMinute:   40,
+			EndHour:     2,
+			EndMinute:   10,
 		},
 	}
 	assert.Equal(t, ps4.SelfCheck(), false)
+
+	//  The first start minute is too large
 	ps5 := Periods{
 		{
-			StartHour:   1,
+			StartHour:   0,
 			StartMinute: 60,
-			EndHour:     3,
-			EndMinute:   4,
+			EndHour:     23,
+			EndMinute:   59,
 		}, {
-			StartHour:   10,
+			StartHour:   1,
 			StartMinute: 20,
-			EndHour:     30,
-			EndMinute:   40,
+			EndHour:     2,
+			EndMinute:   10,
 		},
 	}
 	assert.Equal(t, ps5.SelfCheck(), false)
+
+	//  The first start hour is too less
 	ps6 := Periods{
 		{
 			StartHour:   -1,
-			StartMinute: 2,
-			EndHour:     3,
-			EndMinute:   4,
+			StartMinute: 0,
+			EndHour:     23,
+			EndMinute:   59,
 		}, {
-			StartHour:   10,
+			StartHour:   1,
 			StartMinute: 20,
-			EndHour:     30,
-			EndMinute:   40,
+			EndHour:     2,
+			EndMinute:   10,
 		},
 	}
 	assert.Equal(t, ps6.SelfCheck(), false)
+
+	//  The first end minute is too less
 	ps7 := Periods{
 		{
-			StartHour:   1,
-			StartMinute: 2,
-			EndHour:     3,
+			StartHour:   0,
+			StartMinute: 0,
+			EndHour:     23,
 			EndMinute:   -4,
 		}, {
-			StartHour:   10,
+			StartHour:   1,
 			StartMinute: 20,
-			EndHour:     30,
-			EndMinute:   40,
+			EndHour:     2,
+			EndMinute:   10,
 		},
 	}
 	assert.Equal(t, ps7.SelfCheck(), false)
@@ -179,38 +192,44 @@ func TestPeriods_SelfCheck(t *testing.T) {
 func TestPeriods_IsWithinScope(t *testing.T) {
 	ps := Periods{
 		{
-			StartHour:   2,
-			StartMinute: 1,
-			EndHour:     3,
-			EndMinute:   2,
-		}, {
 			StartHour:   4,
 			StartMinute: 3,
 			EndHour:     5,
 			EndMinute:   4,
+		}, {
+			StartHour:   2,
+			StartMinute: 1,
+			EndHour:     3,
+			EndMinute:   2,
 		},
 	}
 
+	// The first end threshold
 	t0, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 05:04:03")
 	assert.NoError(t, err)
 	assert.Equal(t, ps.IsWithinScope(t0), true)
 
+	// The second start threshold
 	t1, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 02:01:03")
 	assert.NoError(t, err)
 	assert.Equal(t, ps.IsWithinScope(t1), true)
 
+	// in the first interval
 	t2, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 03:01:53")
 	assert.NoError(t, err)
 	assert.Equal(t, ps.IsWithinScope(t2), true)
 
+	// too early
 	t3, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 01:01:53")
 	assert.NoError(t, err)
 	assert.Equal(t, ps.IsWithinScope(t3), false)
 
+	// between two periods
 	t4, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 03:03:53")
 	assert.NoError(t, err)
 	assert.Equal(t, ps.IsWithinScope(t4), false)
 
+	// too late
 	t5, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 23:01:53")
 	assert.NoError(t, err)
 	assert.Equal(t, ps.IsWithinScope(t5), false)

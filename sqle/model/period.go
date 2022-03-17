@@ -76,7 +76,7 @@ func (r *Periods) SelfCheck() bool {
 		if p.StartHour > p.EndHour {
 			return false
 		}
-		if p.StartMinute >= p.EndMinute {
+		if p.StartHour == p.EndHour && p.StartMinute >= p.EndMinute {
 			return false
 		}
 	}
