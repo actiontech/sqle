@@ -19,6 +19,7 @@ import (
 var errInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 var errInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
 var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
+var errWrongTimePeriod = errors.New(errors.DataInvalid, fmt.Errorf("wrong time period"))
 
 type GetInstanceAdditionalMetasResV1 struct {
 	controller.BaseRes
@@ -105,6 +106,19 @@ type TimeReqV1 struct {
 	Minute int `json:"minute"`
 }
 
+func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) model.Periods {
+	periods := make(model.Periods, len(mt))
+	for i, time := range mt {
+		periods[i] = &model.Period{
+			StartHour:   time.MaintenanceStartTime.Hour,
+			StartMinute: time.MaintenanceStartTime.Minute,
+			EndHour:     time.MaintenanceStopTime.Hour,
+			EndMinute:   time.MaintenanceStopTime.Minute,
+		}
+	}
+	return periods
+}
+
 // CreateInstance create instance
 // @Summary 添加实例
 // @Description create a instance
@@ -133,6 +147,11 @@ func CreateInstance(c echo.Context) error {
 		req.DBType = driver.DriverTypeMySQL
 	}
 
+	maintenancePeriod := convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+	if !maintenancePeriod.SelfCheck() {
+		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
+	}
+
 	additionalParams := driver.AllAdditionalParams()[req.DBType]
 	for _, additionalParam := range req.AdditionalParams {
 		err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
@@ -142,14 +161,15 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	instance := &model.Instance{
-		DbType:           req.DBType,
-		Name:             req.Name,
-		User:             req.User,
-		Host:             req.Host,
-		Port:             req.Port,
-		Password:         req.Password,
-		Desc:             req.Desc,
-		AdditionalParams: additionalParams,
+		DbType:            req.DBType,
+		Name:              req.Name,
+		User:              req.User,
+		Host:              req.Host,
+		Port:              req.Port,
+		Password:          req.Password,
+		Desc:              req.Desc,
+		AdditionalParams:  additionalParams,
+		MaintenancePeriod: maintenancePeriod,
 	}
 	// set default workflow template
 	if req.WorkflowTemplateName == "" {
@@ -252,6 +272,23 @@ type TimeResV1 struct {
 	Minute int `json:"minute"`
 }
 
+func convertPeriodToMaintenanceTimeResV1(mt model.Periods) []*MaintenanceTimeResV1 {
+	periods := make([]*MaintenanceTimeResV1, len(mt))
+	for i, time := range mt {
+		periods[i] = &MaintenanceTimeResV1{
+			MaintenanceStartTime: &TimeResV1{
+				Hour:   time.StartHour,
+				Minute: time.StartMinute,
+			},
+			MaintenanceStopTime: &TimeResV1{
+				Hour:   time.EndHour,
+				Minute: time.EndMinute,
+			},
+		}
+	}
+	return periods
+}
+
 type GetInstanceResV1 struct {
 	controller.BaseRes
 	Data InstanceResV1 `json:"data"`
@@ -265,6 +302,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 		User:             instance.User,
 		Desc:             instance.Desc,
 		DBType:           instance.DbType,
+		MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
 		AdditionalParams: []*InstanceAdditionalParamResV1{},
 	}
 	if instance.WorkflowTemplate != nil {
@@ -400,6 +438,11 @@ func UpdateInstance(c echo.Context) error {
 		return err
 	}
 
+	maintenancePeriod := convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+	if !maintenancePeriod.SelfCheck() {
+		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
+	}
+
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
 	instance, exist, err := s.GetInstanceByName(instanceName)
@@ -436,6 +479,11 @@ func UpdateInstance(c echo.Context) error {
 	if req.User != nil {
 		updateMap["db_user"] = *req.User
 	}
+
+	if req.MaintenanceTimes != nil {
+		updateMap["maintenance_period"] = maintenancePeriod
+	}
+
 	if req.Password != nil {
 		password, err := utils.AesEncrypt(*req.Password)
 		if err != nil {
@@ -583,6 +631,7 @@ func GetInstances(c echo.Context) error {
 			User:                 instance.User,
 			WorkflowTemplateName: instance.WorkflowTemplateName.String,
 			Roles:                instance.RoleNames,
+			MaintenanceTimes:     convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
 			RuleTemplates:        instance.RuleTemplateNames,
 		}
 		instancesReq = append(instancesReq, instanceReq)

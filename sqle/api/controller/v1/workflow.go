@@ -21,6 +21,7 @@ import (
 var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
 var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
 	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
+var errWorkflowExecuteTimeIncorrect = errors.New(errors.TaskActionInvalid, fmt.Errorf("please go online during instance operation and maintenance time"))
 
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
@@ -646,10 +647,11 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow,
 
 func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowResV1 {
 	workflowRes := &WorkflowResV1{
-		Id:         workflow.ID,
-		Subject:    workflow.Subject,
-		Desc:       workflow.Desc,
-		CreateTime: &workflow.CreatedAt,
+		Id:                       workflow.ID,
+		Subject:                  workflow.Subject,
+		Desc:                     workflow.Desc,
+		CreateTime:               &workflow.CreatedAt,
+		InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(task.Instance.MaintenancePeriod),
 	}
 
 	workflowRes.CreateUser = utils.AddDelTag(workflow.CreateUser.DeletedAt, workflow.CreateUserName())
@@ -1408,6 +1410,14 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 			"request schedule time is too early")))
 	}
 
+	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.ScheduleTime != nil && !instance.MaintenancePeriod.IsWithinScope(*req.ScheduleTime) {
+		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
+	}
+
 	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1467,6 +1477,13 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	if workflow.Record.ScheduledAt != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow has been set to scheduled execution, not allowed to be executed")))
+	}
+	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !instance.MaintenancePeriod.IsWithinScope(time.Now()) {
+		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
 	}
 
 	err = server.ExecuteWorkflow(workflow, user.ID)

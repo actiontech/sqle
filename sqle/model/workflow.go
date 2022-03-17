@@ -593,7 +593,7 @@ func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 
 func (s *Storage) GetInstanceByWorkflowID(workflowID uint) (*Instance, error) {
 	query := `
-SELECT instances.id 
+SELECT instances.id ,instances.maintenance_period
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
 LEFT JOIN tasks ON tasks.id = wr.task_id

@@ -2,12 +2,13 @@ package model
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -25,6 +26,7 @@ type Instance struct {
 	Desc               string        `json:"desc" example:"this is a instance"`
 	WorkflowTemplateId uint          `json:"workflow_template_id"`
 	AdditionalParams   params.Params `json:"additional_params" gorm:"type:text"`
+	MaintenancePeriod  Periods       `json:"maintenance_period" gorm:"type:text"`
 
 	// relation table
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
