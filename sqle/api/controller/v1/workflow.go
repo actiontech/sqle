@@ -1346,6 +1346,9 @@ func FormatStringToInt(s string) (ret int, err error) {
 }
 
 func checkWorkFlowCanExecute(instance *model.Instance, executeTime time.Time) bool {
+	if len(instance.MaintenancePeriod) == 0 {
+		return true
+	}
 	et, err := time.Parse("15:04", executeTime.Format("15:04"))
 	if err != nil {
 		return false
