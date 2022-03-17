@@ -47,7 +47,7 @@ type DSN struct {
 type RuleLevel string
 
 const (
-	RuleLevelNull   RuleLevel = "null" // used to indicate no rank
+	RuleLevelNull   RuleLevel = "" // used to indicate no rank
 	RuleLevelNormal RuleLevel = "normal"
 	RuleLevelNotice RuleLevel = "notice"
 	RuleLevelWarn   RuleLevel = "warn"
