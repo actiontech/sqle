@@ -191,7 +191,11 @@ func TestPeriods_IsWithinScope(t *testing.T) {
 		},
 	}
 
-	t1, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 04:50:03")
+	t0, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 05:04:03")
+	assert.NoError(t, err)
+	assert.Equal(t, ps.IsWithinScope(t0), true)
+
+	t1, err := time.Parse("2006-01-02 15:04:05", "2017-12-08 02:01:03")
 	assert.NoError(t, err)
 	assert.Equal(t, ps.IsWithinScope(t1), true)
 
