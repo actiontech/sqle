@@ -142,6 +142,7 @@ definitions:
         - notice
         - warn
         - error
+        - ""
         type: string
       exec_end_time:
         type: string
