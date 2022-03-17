@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -48,15 +47,11 @@ type AuditTaskResV1 struct {
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
-	level := ""
-	if task.AuditLevel != string(driver.RuleLevelNull) {
-		level = task.AuditLevel
-	}
 	return &AuditTaskResV1{
 		Id:             task.ID,
 		InstanceName:   task.InstanceName(),
 		InstanceSchema: task.Schema,
-		AuditLevel:     level,
+		AuditLevel:     task.AuditLevel,
 		Score:          task.Score,
 		PassRate:       task.PassRate,
 		Status:         task.Status,
