@@ -37,7 +37,7 @@ type AuditTaskResV1 struct {
 	Id             uint       `json:"task_id"`
 	InstanceName   string     `json:"instance_name"`
 	InstanceSchema string     `json:"instance_schema" example:"db1"`
-	AuditLevel     string     `json:"audit_level" enums:"normal,notice,warn,error"`
+	AuditLevel     string     `json:"audit_level" enums:"normal,notice,warn,error,"`
 	Score          int32      `json:"score"`
 	PassRate       float64    `json:"pass_rate"`
 	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
