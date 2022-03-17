@@ -1,9 +1,10 @@
-package params
+package model
 
 import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type Periods []*Period
@@ -56,4 +57,50 @@ func (r *Periods) Copy() Periods {
 		})
 	}
 	return ps
+}
+
+func (r *Periods) SelfCheck() bool {
+	for _, p := range *r {
+		if p.StartHour > 23 || p.StartHour < 0 {
+			return false
+		}
+		if p.EndHour > 23 || p.EndHour < 0 {
+			return false
+		}
+		if p.StartMinute > 59 || p.StartMinute < 0 {
+			return false
+		}
+		if p.EndMinute > 59 || p.EndMinute < 0 {
+			return false
+		}
+		if p.StartHour > p.EndHour {
+			return false
+		}
+		if p.StartMinute >= p.EndMinute {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *Periods) IsWithinScope(executeTime time.Time) bool {
+	et, err := time.Parse("15:04", executeTime.Format("15:04"))
+	if err != nil {
+		return false
+	}
+	for _, period := range *r {
+		periodStartTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.StartHour, period.StartMinute))
+		if err != nil {
+			continue
+		}
+		periodStopTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.EndHour, period.EndMinute))
+		if err != nil {
+			continue
+		}
+		if et.After(periodStopTime) || et.Before(periodStartTime) {
+			continue
+		}
+		return true
+	}
+	return false
 }

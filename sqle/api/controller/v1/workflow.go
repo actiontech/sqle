@@ -1345,31 +1345,6 @@ func FormatStringToInt(s string) (ret int, err error) {
 	return ret, nil
 }
 
-func checkWorkFlowCanExecute(instance *model.Instance, executeTime time.Time) bool {
-	if len(instance.MaintenancePeriod) == 0 {
-		return true
-	}
-	et, err := time.Parse("15:04", executeTime.Format("15:04"))
-	if err != nil {
-		return false
-	}
-	for _, period := range instance.MaintenancePeriod {
-		periodStartTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.StartHour, period.StartMinute))
-		if err != nil {
-			continue
-		}
-		periodStopTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.EndHour, period.EndMinute))
-		if err != nil {
-			continue
-		}
-		if et.After(periodStopTime) || et.Before(periodStartTime) {
-			continue
-		}
-		return true
-	}
-	return false
-}
-
 type UpdateWorkflowScheduleV1 struct {
 	ScheduleTime *time.Time `json:"schedule_time"`
 }
@@ -1430,18 +1405,17 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
+	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
+			"request schedule time is too early")))
+	}
+
 	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if req.ScheduleTime != nil {
-		if req.ScheduleTime.Before(time.Now()) {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
-				"request schedule time is too early")))
-		}
-		if !checkWorkFlowCanExecute(instance, *req.ScheduleTime) {
-			return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
-		}
+	if req.ScheduleTime != nil && !instance.MaintenancePeriod.IsWithinScope(*req.ScheduleTime) {
+		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
 	}
 
 	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
@@ -1508,7 +1482,7 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !checkWorkFlowCanExecute(instance, time.Now()) {
+	if !instance.MaintenancePeriod.IsWithinScope(time.Now()) {
 		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
 	}
 
