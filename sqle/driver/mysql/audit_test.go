@@ -1664,45 +1664,45 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 `,
 		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
 	)
-		runDefaultRulesInspectCase(t, "create_table: column charset is utf8mb4", DefaultMysqlInspect(),
-			`
+	runDefaultRulesInspectCase(t, "create_table: column charset is utf8mb4", DefaultMysqlInspect(),
+		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 	id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 	v1 varchar(255) CHARACTER SET utf8mb4 NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4  COMMENT="unit test";
 	`,
-			newTestResult(),
-		)
+		newTestResult(),
+	)
 
-		runDefaultRulesInspectCase(t, "create_table: column charset not utf8mb4 1", DefaultMysqlInspect(),
-			`
+	runDefaultRulesInspectCase(t, "create_table: column charset not utf8mb4 1", DefaultMysqlInspect(),
+		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 	id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 	v1 varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4  COMMENT="unit test";
 	`,
-			newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
-		)
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
 
-		runDefaultRulesInspectCase(t, "create_table: column charset has not utf8mb4 2", DefaultMysqlInspect(),
-			`
+	runDefaultRulesInspectCase(t, "create_table: column charset has not utf8mb4 2", DefaultMysqlInspect(),
+		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 	id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 	v1 varchar(255) CHARACTER SET utf8mb4 NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	v2 varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT "unit test" COMMENT "unit test"
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4  COMMENT="unit test";
 	`,
-			newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
-		)
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
 
-		runDefaultRulesInspectCase(t, "alter_table: column charset has not utf8mb4 1", DefaultMysqlInspect(),
-			`
+	runDefaultRulesInspectCase(t, "alter_table: column charset has not utf8mb4 1", DefaultMysqlInspect(),
+		`
 	ALTER TABLE exist_db.exist_tb_1 ADD column v3 varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT "unit test" COMMENT "unit test";
 	`,
-			newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
-		)
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column charset has not utf8mb4 3", DefaultMysqlInspect(),
 		`
