@@ -159,7 +159,7 @@ func CreateInstance(c echo.Context) error {
 		req.DBType = driver.DriverTypeMySQL
 	}
 
-	if len(req.MaintenanceTimes) > 0 && !checkMaintenanceTimeReqV1(req.MaintenanceTimes) {
+	if !checkMaintenanceTimeReqV1(req.MaintenanceTimes) {
 		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
 	}
 
@@ -449,7 +449,7 @@ func UpdateInstance(c echo.Context) error {
 		return err
 	}
 
-	if len(req.MaintenanceTimes) > 0 && !checkMaintenanceTimeReqV1(req.MaintenanceTimes) {
+	if !checkMaintenanceTimeReqV1(req.MaintenanceTimes) {
 		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
 	}
 
