@@ -52,6 +52,7 @@ type DSN struct {
 type RuleLevel string
 
 const (
+	RuleLevelNull   RuleLevel = "" // used to indicate no rank
 	RuleLevelNormal RuleLevel = "normal"
 	RuleLevelNotice RuleLevel = "notice"
 	RuleLevelWarn   RuleLevel = "warn"
@@ -59,6 +60,7 @@ const (
 )
 
 var ruleLevelMap = map[RuleLevel]int{
+	RuleLevelNull:   -1,
 	RuleLevelNormal: 0,
 	RuleLevelNotice: 1,
 	RuleLevelWarn:   2,
@@ -71,6 +73,10 @@ func (r RuleLevel) LessOrEqual(l RuleLevel) bool {
 
 func (r RuleLevel) More(l RuleLevel) bool {
 	return ruleLevelMap[r] > ruleLevelMap[l]
+}
+
+func (r RuleLevel) MoreOrEqual(l RuleLevel) bool {
+	return ruleLevelMap[r] >= ruleLevelMap[l]
 }
 
 type Rule struct {
@@ -312,7 +318,7 @@ func NewInspectResults() *AuditResult {
 
 // Level find highest Level in result
 func (rs *AuditResult) Level() RuleLevel {
-	level := RuleLevelNormal
+	level := RuleLevelNull
 	for _, curr := range rs.results {
 		if ruleLevelMap[curr.level] > ruleLevelMap[level] {
 			level = curr.level
