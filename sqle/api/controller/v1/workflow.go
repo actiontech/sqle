@@ -1414,7 +1414,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if req.ScheduleTime != nil && !instance.MaintenancePeriod.IsWithinScope(*req.ScheduleTime) {
+	if req.ScheduleTime != nil && len(instance.MaintenancePeriod) != 0 && !instance.MaintenancePeriod.IsWithinScope(*req.ScheduleTime) {
 		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
 	}
 
@@ -1482,7 +1482,7 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !instance.MaintenancePeriod.IsWithinScope(time.Now()) {
+	if len(instance.MaintenancePeriod) != 0 && !instance.MaintenancePeriod.IsWithinScope(time.Now()) {
 		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
 	}
 
