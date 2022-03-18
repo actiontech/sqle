@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/ungerik/go-dry"
 )
@@ -489,7 +490,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message:      "必须使用%v数据库引擎",
 		AllowOffline: false,
-		Func:         checkEngineAndCharacterSet,
+		Func:         checkEngine,
 	},
 	{
 		Rule: driver.Rule{
@@ -509,7 +510,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message:      "必须使用%v数据库字符集",
 		AllowOffline: false,
-		Func:         checkEngineAndCharacterSet,
+		Func:         checkCharacterSet,
 	},
 	{
 		Rule: driver.Rule{
@@ -1413,10 +1414,9 @@ func checkMergeAlterTable(ctx *session.Context, rule driver.Rule, res *driver.Au
 	return nil
 }
 
-func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func checkEngine(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	var tableName *ast.TableName
 	var engine string
-	var characterSet string
 	var err error
 	schemaName := ""
 	switch stmt := node.(type) {
@@ -1429,8 +1429,6 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 			switch op.Tp {
 			case ast.TableOptionEngine:
 				engine = op.StrValue
-			case ast.TableOptionCharset:
-				characterSet = op.StrValue
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -1440,10 +1438,78 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 				switch op.Tp {
 				case ast.TableOptionEngine:
 					engine = op.StrValue
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	if engine == "" {
+		engine, err = ctx.GetSchemaEngine(tableName, schemaName)
+		if err != nil {
+			return err
+		}
+	}
+	expectEngine := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	if !strings.EqualFold(engine, expectEngine) {
+		addResult(res, rule, DDLCheckTableDBEngine, expectEngine)
+		return nil
+	}
+	return nil
+}
+
+func getColumnCSFromColumnsDef(columns []*ast.ColumnDef) []string {
+	columnCharacterSets := []string{}
+	for _, column := range columns {
+		// Just string data type and not binary can be set "character set".
+		if column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+			continue
+		}
+		if column.Tp.Charset == "" {
+			continue
+		}
+		columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
+	}
+	return columnCharacterSets
+}
+
+func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+	var tableName *ast.TableName
+	var characterSet string
+	var columnCharacterSets []string
+
+	var err error
+	schemaName := ""
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		tableName = stmt.Table
+		if stmt.ReferTable != nil {
+			return nil
+		}
+		for _, op := range stmt.Options {
+			switch op.Tp {
+			case ast.TableOptionCharset:
+				characterSet = op.StrValue
+			}
+		}
+		// https://github.com/actiontech/sqle/issues/389
+		// character set can ben defined in columns, like:
+		// create table t1 (
+		//    id varchar(255) character set utf8
+		// )
+		columnCharacterSets = getColumnCSFromColumnsDef(stmt.Cols)
+
+	case *ast.AlterTableStmt:
+		tableName = stmt.Table
+		for _, ss := range stmt.Specs {
+			for _, op := range ss.Options {
+				switch op.Tp {
 				case ast.TableOptionCharset:
 					characterSet = op.StrValue
 				}
 			}
+			// https://github.com/actiontech/sqle/issues/389
+			columnCharacterSets = append(columnCharacterSets, getColumnCSFromColumnsDef(ss.NewColumns)...)
 		}
 	case *ast.CreateDatabaseStmt:
 		schemaName = stmt.Name
@@ -1464,27 +1530,20 @@ func checkEngineAndCharacterSet(ctx *session.Context, rule driver.Rule, res *dri
 	default:
 		return nil
 	}
-	if rule.Name == DDLCheckTableDBEngine {
-		if engine == "" {
-			engine, err = ctx.GetSchemaEngine(tableName, schemaName)
-			if err != nil {
-				return err
-			}
+
+	if characterSet == "" {
+		characterSet, err = ctx.GetSchemaCharacter(tableName, schemaName)
+		if err != nil {
+			return err
 		}
-		expectEngine := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-		if !strings.EqualFold(engine, expectEngine) {
-			addResult(res, rule, DDLCheckTableDBEngine, expectEngine)
-			return nil
-		}
-	} else if rule.Name == DDLCheckTableCharacterSet {
-		if characterSet == "" {
-			characterSet, err = ctx.GetSchemaCharacter(tableName, schemaName)
-			if err != nil {
-				return err
-			}
-		}
-		expectCS := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-		if !strings.EqualFold(characterSet, expectCS) {
+	}
+	expectCS := rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	if !strings.EqualFold(characterSet, expectCS) {
+		addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
+		return nil
+	}
+	for _, cs := range columnCharacterSets {
+		if !strings.EqualFold(cs, expectCS) {
 			addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
 			return nil
 		}
