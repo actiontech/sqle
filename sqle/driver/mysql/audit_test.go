@@ -1512,8 +1512,8 @@ INDEX idx_1 (id,v1,v2,v3,v4,v5)
 	)
 }
 
-func TestCheckTableWithoutInnodbUtf8mb4(t *testing.T) {
-	runDefaultRulesInspectCase(t, "create_table: ok 1", DefaultMysqlInspect(),
+func TestCheckTableWithoutInnodb(t *testing.T) {
+	runDefaultRulesInspectCase(t, "create_table: table engine is innodb 1", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
@@ -1523,7 +1523,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 `,
 		newTestResult(),
 	)
-	runDefaultRulesInspectCase(t, "create_table: ok 2", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "create_table: table engine is innodb 2", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
@@ -1533,7 +1533,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 `,
 		newTestResult(),
 	)
-	runDefaultRulesInspectCase(t, "create_table: ok 3", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "create_table: table engine is innodb 3", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
@@ -1544,7 +1544,18 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "create_table: table engine not innodb", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "create_table: table engine is innodb 4", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists myisam_utf8_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=Innodb AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "create_table: table engine not innodb 1", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
@@ -1554,8 +1565,85 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 `,
 		newTestResult().addResult(rulepkg.DDLCheckTableDBEngine, "Innodb"),
 	)
+	runDefaultRulesInspectCase(t, "create_table: table engine not innodb 2", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists myisam_utf8_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+) AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckTableDBEngine, "Innodb"),
+	)
+}
 
-	runDefaultRulesInspectCase(t, "create_table: table charset not utf8mb4", DefaultMysqlInspect(),
+func TestCheckDatabaseWithoutUtf8mb4(t *testing.T) {
+	runDefaultRulesInspectCase(t, "create_database: character is utf8mb4", DefaultMysqlInspect(),
+		`
+CREATE DATABASE not_exist_db CHARACTER SET utf8mb4;
+`,
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "create_database: character not utf8mb4", DefaultMysqlInspect(),
+		`
+CREATE DATABASE not_exist_db CHARACTER SET utf8;
+`,
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
+
+	runDefaultRulesInspectCase(t, "alter_database: character not utf8mb4", DefaultMysqlInspect(),
+		`
+CREATE DATABASE not_exist_db CHARACTER SET utf8;
+`,
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
+}
+
+func TestCheckTableWithoutUtf8mb4(t *testing.T) {
+	runDefaultRulesInspectCase(t, "create_table: table charset is utf8mb4 1", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "create_table: table charset is utf8mb4 2", DefaultMysqlInspect(),
+		`
+CREATE TABLE if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)CHARSET=utf8mb4 AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "create_table:table charset is utf8mb4 3", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)CHARSET=UTF8MB4 AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "create_table:table charset is utf8mb4 4", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists myisam_utf8_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB CHARSET=utf8mb4 AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "create_table: table charset not utf8mb4 1", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
@@ -1563,6 +1651,63 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1  COMMENT="unit test";
 `,
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
+
+	runDefaultRulesInspectCase(t, "create_table: table charset not utf8mb4 2", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists myisam_utf8_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+)ENGINE=InnoDB AUTO_INCREMENT=3 COMMENT="unit test";
+`,
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
+	runDefaultRulesInspectCase(t, "create_table: column charset is utf8mb4", DefaultMysqlInspect(),
+		`
+	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+	id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+	v1 varchar(255) CHARACTER SET utf8mb4 NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4  COMMENT="unit test";
+	`,
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "create_table: column charset not utf8mb4 1", DefaultMysqlInspect(),
+		`
+	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+	id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+	v1 varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4  COMMENT="unit test";
+	`,
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
+
+	runDefaultRulesInspectCase(t, "create_table: column charset has not utf8mb4 2", DefaultMysqlInspect(),
+		`
+	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+	id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
+	v1 varchar(255) CHARACTER SET utf8mb4 NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	v2 varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT "unit test" COMMENT "unit test"
+	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4  COMMENT="unit test";
+	`,
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
+
+	runDefaultRulesInspectCase(t, "alter_table: column charset has not utf8mb4 1", DefaultMysqlInspect(),
+		`
+	ALTER TABLE exist_db.exist_tb_1 ADD column v3 varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT "unit test" COMMENT "unit test";
+	`,
+		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
+	)
+
+	runDefaultRulesInspectCase(t, "alter_table: column charset has not utf8mb4 3", DefaultMysqlInspect(),
+		`
+	ALTER TABLE exist_db.exist_tb_1 MODIFY column v2 varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT "unit test" COMMENT "unit test";
+	`,
 		newTestResult().addResult(rulepkg.DDLCheckTableCharacterSet, "utf8mb4"),
 	)
 }
