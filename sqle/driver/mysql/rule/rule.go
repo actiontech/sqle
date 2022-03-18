@@ -1544,7 +1544,6 @@ func checkCharacterSet(ctx *session.Context, rule driver.Rule, res *driver.Audit
 	}
 	for _, cs := range columnCharacterSets {
 		if !strings.EqualFold(cs, expectCS) {
-			fmt.Printf("==============cs: %s", cs)
 			addResult(res, rule, DDLCheckTableCharacterSet, expectCS)
 			return nil
 		}
