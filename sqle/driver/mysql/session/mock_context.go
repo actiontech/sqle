@@ -63,6 +63,20 @@ func NewMockContext(e *executor.Executor) *Context {
 					},
 				},
 			},
+			"myisam_utf8_db": {
+				DefaultEngine:    "MyISAM",
+				engineLoad:       true,
+				DefaultCharacter: "utf8",
+				characterLoad:    true,
+				Tables: map[string]*TableInfo{
+					"exist_tb_1": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt1(),
+					},
+				},
+			},
 		},
 		historySqlInfo: &HistorySQLInfo{},
 	}
