@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/notification"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -118,7 +119,33 @@ type TestSMTPConfigurationResDataV1 struct {
 // @Success 200 {object} v1.TestSMTPConfigurationResV1
 // @router /v1/configurations/smtp/test [post]
 func TestSMTPConfigurationV1(c echo.Context) error {
-	return nil
+	req := new(TestSMTPConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	addr := req.RecipientAddr
+	notifier := &notification.EmailNotifier{}
+	err := notifier.Notify(&notification.TestNotify{}, []*model.User{
+		{
+			Email: addr,
+		},
+	})
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestSMTPConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestSMTPConfigurationResDataV1{
+				IsSMTPSendNormal: false,
+				SendErrorMessage: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, &TestSMTPConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestSMTPConfigurationResDataV1{
+			IsSMTPSendNormal: true,
+			SendErrorMessage: "ok",
+		},
+	})
 }
 
 type TestWeChatConfigurationReqV1 struct {
