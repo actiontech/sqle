@@ -5812,7 +5812,7 @@ var doc = `{
         "v1.SMTPConfigurationResV1": {
             "type": "object",
             "properties": {
-                "disable_smtp_notify": {
+                "enable_smtp_notify": {
                     "type": "boolean"
                 },
                 "smtp_host": {
@@ -6094,7 +6094,7 @@ var doc = `{
         "v1.UpdateSMTPConfigurationReqV1": {
             "type": "object",
             "properties": {
-                "disable_smtp_notify": {
+                "enable_smtp_notify": {
                     "type": "boolean"
                 },
                 "smtp_host": {
