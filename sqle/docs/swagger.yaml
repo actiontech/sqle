@@ -2661,7 +2661,7 @@ paths:
       parameters:
       - description: test SMTP configuration req
         in: body
-        name: instance
+        name: req
         required: true
         schema:
           $ref: '#/definitions/v1.TestSMTPConfigurationReqV1'

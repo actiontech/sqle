@@ -926,7 +926,7 @@ var doc = `{
                 "parameters": [
                     {
                         "description": "test SMTP configuration req",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {

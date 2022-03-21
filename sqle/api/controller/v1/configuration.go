@@ -112,7 +112,7 @@ type TestSMTPConfigurationResDataV1 struct {
 // @Id testSMTPConfigurationV1
 // @Tags configuration
 // @Security ApiKeyAuth
-// @Param instance body v1.TestSMTPConfigurationReqV1 true "test SMTP configuration req"
+// @Param req body v1.TestSMTPConfigurationReqV1 true "test SMTP configuration req"
 // @Success 200 {object} v1.TestSMTPConfigurationResV1
 // @router /v1/configurations/smtp/test [post]
 func TestSMTPConfigurationV1(c echo.Context) error {
