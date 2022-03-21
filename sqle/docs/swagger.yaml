@@ -1347,7 +1347,7 @@ definitions:
     type: object
   v1.SMTPConfigurationResV1:
     properties:
-      disable_smtp_notify:
+      enable_smtp_notify:
         type: boolean
       smtp_host:
         type: string
@@ -1536,7 +1536,7 @@ definitions:
     type: object
   v1.UpdateSMTPConfigurationReqV1:
     properties:
-      disable_smtp_notify:
+      enable_smtp_notify:
         type: boolean
       smtp_host:
         example: smtp.email.qq.com
