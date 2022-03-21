@@ -91,6 +91,34 @@ func GetSMTPConfiguration(c echo.Context) error {
 	})
 }
 
+type TestSMTPConfigurationReqV1 struct {
+	RecipientAddr string `json:"recipient_addr" from:"recipient_addr" description:"消息接收者邮箱地址"`
+}
+
+type TestSMTPConfigurationResV1 struct {
+	controller.BaseRes
+	Data TestSMTPConfigurationResDataV1 `json:"data"`
+}
+
+type TestSMTPConfigurationResDataV1 struct {
+	IsSMTPSendNormal bool   `json:"is_smtp_send_normal"`
+	SendErrorMessage string `json:"send_error_message,omitempty"`
+}
+
+// TestSMTPConfigurationV1 used to test SMTP notifications
+// @Summary 测试 邮箱 配置
+// @Description test SMTP configuration
+// @Accept json
+// @Id testSMTPConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param instance body v1.TestSMTPConfigurationReqV1 true "test SMTP configuration req"
+// @Success 200 {object} v1.TestSMTPConfigurationResV1
+// @router /v1/configurations/smtp/test [post]
+func TestSMTPConfigurationV1(c echo.Context) error {
+	return nil
+}
+
 type TestWeChatConfigurationReqV1 struct {
 	RecipientID string `json:"recipient_id" from:"recipient_id" description:"消息接收者企业微信ID"`
 }

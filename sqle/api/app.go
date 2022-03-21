@@ -130,6 +130,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/ldap", v1.UpdateLDAPConfiguration, AdminUserAllowed())
 		v1Router.GET("/configurations/smtp", v1.GetSMTPConfiguration, AdminUserAllowed())
+		v1Router.POST("/configurations/smtp/test", v1.TestSMTPConfigurationV1, AdminUserAllowed())
 		v1Router.PATCH("/configurations/smtp", v1.UpdateSMTPConfiguration, AdminUserAllowed())
 		v1Router.GET("/configurations/wechat", v1.GetWeChatConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/wechat", v1.UpdateWeChatConfigurationV1, AdminUserAllowed())
