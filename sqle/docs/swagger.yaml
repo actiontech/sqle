@@ -1347,6 +1347,8 @@ definitions:
     type: object
   v1.SMTPConfigurationResV1:
     properties:
+      enable_smtp_notify:
+        type: boolean
       smtp_host:
         type: string
       smtp_port:
@@ -1358,6 +1360,30 @@ definitions:
     properties:
       workflow_expired_hours:
         type: integer
+    type: object
+  v1.TestSMTPConfigurationReqV1:
+    properties:
+      recipient_addr:
+        type: string
+    type: object
+  v1.TestSMTPConfigurationResDataV1:
+    properties:
+      is_smtp_send_normal:
+        type: boolean
+      send_error_message:
+        type: string
+    type: object
+  v1.TestSMTPConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestSMTPConfigurationResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.TestWeChatConfigurationReqV1:
     properties:
@@ -1534,6 +1560,8 @@ definitions:
     type: object
   v1.UpdateSMTPConfigurationReqV1:
     properties:
+      enable_smtp_notify:
+        type: boolean
       smtp_host:
         example: smtp.email.qq.com
         type: string
@@ -2626,6 +2654,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 添加 SMTP 配置
+      tags:
+      - configuration
+  /v1/configurations/smtp/test:
+    post:
+      consumes:
+      - application/json
+      description: test SMTP configuration
+      operationId: testSMTPConfigurationV1
+      parameters:
+      - description: test SMTP configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestSMTPConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestSMTPConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试 邮箱 配置
       tags:
       - configuration
   /v1/configurations/system_variables:

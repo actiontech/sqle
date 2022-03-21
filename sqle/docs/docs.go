@@ -907,6 +907,43 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/smtp/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test SMTP configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试 邮箱 配置",
+                "operationId": "testSMTPConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "test SMTP configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestSMTPConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestSMTPConfigurationResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/system_variables": {
             "get": {
                 "security": [
@@ -5812,6 +5849,9 @@ var doc = `{
         "v1.SMTPConfigurationResV1": {
             "type": "object",
             "properties": {
+                "enable_smtp_notify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string"
                 },
@@ -5828,6 +5868,42 @@ var doc = `{
             "properties": {
                 "workflow_expired_hours": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.TestSMTPConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "recipient_addr": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TestSMTPConfigurationResDataV1": {
+            "type": "object",
+            "properties": {
+                "is_smtp_send_normal": {
+                    "type": "boolean"
+                },
+                "send_error_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TestSMTPConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestSMTPConfigurationResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -6091,6 +6167,9 @@ var doc = `{
         "v1.UpdateSMTPConfigurationReqV1": {
             "type": "object",
             "properties": {
+                "enable_smtp_notify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string",
                     "example": "smtp.email.qq.com"

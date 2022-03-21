@@ -13,10 +13,11 @@ import (
 )
 
 type UpdateSMTPConfigurationReqV1 struct {
-	Host     *string `json:"smtp_host" form:"smtp_host" example:"smtp.email.qq.com"`
-	Port     *string `json:"smtp_port" form:"smtp_port" example:"465" valid:"omitempty,port"`
-	Username *string `json:"smtp_username" form:"smtp_username" example:"test@qq.com" valid:"omitempty,email"`
-	Password *string `json:"smtp_password" form:"smtp_password" example:"123"`
+	EnableSMTPNotify *bool   `json:"enable_smtp_notify" from:"enable_smtp_notify" description:"是否启用邮件通知"`
+	Host             *string `json:"smtp_host" form:"smtp_host" example:"smtp.email.qq.com"`
+	Port             *string `json:"smtp_port" form:"smtp_port" example:"465" valid:"omitempty,port"`
+	Username         *string `json:"smtp_username" form:"smtp_username" example:"test@qq.com" valid:"omitempty,email"`
+	Password         *string `json:"smtp_password" form:"smtp_password" example:"123"`
 }
 
 // @Summary 添加 SMTP 配置
@@ -63,9 +64,10 @@ type GetSMTPConfigurationResV1 struct {
 }
 
 type SMTPConfigurationResV1 struct {
-	Host     string `json:"smtp_host"`
-	Port     string `json:"smtp_port"`
-	Username string `json:"smtp_username"`
+	EnableSMTPNotify bool   `json:"enable_smtp_notify"`
+	Host             string `json:"smtp_host"`
+	Port             string `json:"smtp_port"`
+	Username         string `json:"smtp_username"`
 }
 
 // @Summary 获取 SMTP 配置
@@ -89,6 +91,34 @@ func GetSMTPConfiguration(c echo.Context) error {
 			Username: smtpC.Username,
 		},
 	})
+}
+
+type TestSMTPConfigurationReqV1 struct {
+	RecipientAddr string `json:"recipient_addr" from:"recipient_addr" description:"消息接收者邮箱地址" valid:"required,email"`
+}
+
+type TestSMTPConfigurationResV1 struct {
+	controller.BaseRes
+	Data TestSMTPConfigurationResDataV1 `json:"data"`
+}
+
+type TestSMTPConfigurationResDataV1 struct {
+	IsSMTPSendNormal bool   `json:"is_smtp_send_normal"`
+	SendErrorMessage string `json:"send_error_message,omitempty"`
+}
+
+// TestSMTPConfigurationV1 used to test SMTP notifications
+// @Summary 测试 邮箱 配置
+// @Description test SMTP configuration
+// @Accept json
+// @Id testSMTPConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param req body v1.TestSMTPConfigurationReqV1 true "test SMTP configuration req"
+// @Success 200 {object} v1.TestSMTPConfigurationResV1
+// @router /v1/configurations/smtp/test [post]
+func TestSMTPConfigurationV1(c echo.Context) error {
+	return nil
 }
 
 type TestWeChatConfigurationReqV1 struct {
