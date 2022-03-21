@@ -5796,6 +5796,9 @@
         "v1.SMTPConfigurationResV1": {
             "type": "object",
             "properties": {
+                "enable_smtp_notify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string"
                 },
@@ -6075,6 +6078,9 @@
         "v1.UpdateSMTPConfigurationReqV1": {
             "type": "object",
             "properties": {
+                "enable_smtp_notify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string",
                     "example": "smtp.email.qq.com"
