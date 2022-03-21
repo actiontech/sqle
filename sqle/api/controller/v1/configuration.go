@@ -92,7 +92,7 @@ func GetSMTPConfiguration(c echo.Context) error {
 }
 
 type TestSMTPConfigurationReqV1 struct {
-	RecipientAddr string `json:"recipient_addr" from:"recipient_addr" description:"消息接收者邮箱地址"`
+	RecipientAddr string `json:"recipient_addr" from:"recipient_addr" description:"消息接收者邮箱地址" valid:"required,email"`
 }
 
 type TestSMTPConfigurationResV1 struct {
