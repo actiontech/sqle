@@ -13,10 +13,11 @@ import (
 )
 
 type UpdateSMTPConfigurationReqV1 struct {
-	Host     *string `json:"smtp_host" form:"smtp_host" example:"smtp.email.qq.com"`
-	Port     *string `json:"smtp_port" form:"smtp_port" example:"465" valid:"omitempty,port"`
-	Username *string `json:"smtp_username" form:"smtp_username" example:"test@qq.com" valid:"omitempty,email"`
-	Password *string `json:"smtp_password" form:"smtp_password" example:"123"`
+	DisableSMTPNotify *bool   `json:"disable_smtp_notify" from:"disable_smtp_notify" description:"是否禁用邮件通知"`
+	Host              *string `json:"smtp_host" form:"smtp_host" example:"smtp.email.qq.com"`
+	Port              *string `json:"smtp_port" form:"smtp_port" example:"465" valid:"omitempty,port"`
+	Username          *string `json:"smtp_username" form:"smtp_username" example:"test@qq.com" valid:"omitempty,email"`
+	Password          *string `json:"smtp_password" form:"smtp_password" example:"123"`
 }
 
 // @Summary 添加 SMTP 配置
@@ -63,9 +64,10 @@ type GetSMTPConfigurationResV1 struct {
 }
 
 type SMTPConfigurationResV1 struct {
-	Host     string `json:"smtp_host"`
-	Port     string `json:"smtp_port"`
-	Username string `json:"smtp_username"`
+	DisableSMTPNotify bool   `json:"disable_smtp_notify"`
+	Host              string `json:"smtp_host"`
+	Port              string `json:"smtp_port"`
+	Username          string `json:"smtp_username"`
 }
 
 // @Summary 获取 SMTP 配置
