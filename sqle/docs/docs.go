@@ -5812,6 +5812,9 @@ var doc = `{
         "v1.SMTPConfigurationResV1": {
             "type": "object",
             "properties": {
+                "disable_smtp_notify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string"
                 },
@@ -6091,6 +6094,9 @@ var doc = `{
         "v1.UpdateSMTPConfigurationReqV1": {
             "type": "object",
             "properties": {
+                "disable_smtp_notify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string",
                     "example": "smtp.email.qq.com"
