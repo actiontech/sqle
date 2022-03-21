@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 
@@ -16,11 +17,12 @@ const globalConfigurationTablePrefix = "global_configuration"
 // SMTPConfiguration store SMTP server configuration.
 type SMTPConfiguration struct {
 	Model
-	Host           string `json:"smtp_host" gorm:"column:smtp_host; not null"`
-	Port           string `json:"smtp_port" gorm:"column:smtp_port; not null"`
-	Username       string `json:"smtp_username" gorm:"column:smtp_username; not null"`
-	Password       string `json:"-"`
-	SecretPassword string `json:"secret_smtp_password" gorm:"column:secret_smtp_password; not null"`
+	EnableSMTPNotify sql.NullBool `json:"enable_smtp_notify" gorm:"default:true"`
+	Host             string       `json:"smtp_host" gorm:"column:smtp_host; not null"`
+	Port             string       `json:"smtp_port" gorm:"column:smtp_port; not null"`
+	Username         string       `json:"smtp_username" gorm:"column:smtp_username; not null"`
+	Password         string       `json:"-"`
+	SecretPassword   string       `json:"secret_smtp_password" gorm:"column:secret_smtp_password; not null"`
 }
 
 func (i *SMTPConfiguration) TableName() string {
