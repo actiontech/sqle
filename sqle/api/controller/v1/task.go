@@ -5,10 +5,8 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver"
 	"mime"
 	"net/http"
-	"sort"
 	"strconv"
 	"time"
 
@@ -357,9 +355,6 @@ func GetTaskSQLs(c echo.Context) error {
 		}
 		taskSQLsRes = append(taskSQLsRes, taskSQLRes)
 	}
-	sort.Slice(taskSQLsRes, func(i, j int) bool {
-		return driver.RuleLevel(taskSQLsRes[i].AuditLevel).More(driver.RuleLevel(taskSQLsRes[j].AuditLevel))
-	})
 
 	return c.JSON(http.StatusOK, &GetAuditTaskSQLsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
