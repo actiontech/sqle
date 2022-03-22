@@ -442,5 +442,5 @@ func (s *Storage) GetTaskSQLByNumber(taskId, number string) (*ExecuteSQL, bool, 
 
 func (s *Storage) GetTaskSQLCountByTaskID(taskId uint) (int64, error) {
 	var count int64
-	return count, s.db.Debug().Model(&ExecuteSQL{}).Where("task_id = ?", taskId).Count(&count).Error
+	return count, s.db.Model(&ExecuteSQL{}).Where("task_id = ?", taskId).Count(&count).Error
 }
