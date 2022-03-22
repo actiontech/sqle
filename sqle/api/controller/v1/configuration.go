@@ -52,6 +52,10 @@ func UpdateSMTPConfiguration(c echo.Context) error {
 	if req.Password != nil {
 		smtpC.Password = *req.Password
 	}
+	if req.EnableSMTPNotify != nil {
+		// It is never possible to trigger an error here
+		_ = smtpC.EnableSMTPNotify.Scan(*req.EnableSMTPNotify)
+	}
 
 	if err := s.Save(smtpC); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -87,9 +91,10 @@ func GetSMTPConfiguration(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSMTPConfigurationResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SMTPConfigurationResV1{
-			Host:     smtpC.Host,
-			Port:     smtpC.Port,
-			Username: smtpC.Username,
+			EnableSMTPNotify: smtpC.EnableSMTPNotify.Bool,
+			Host:             smtpC.Host,
+			Port:             smtpC.Port,
+			Username:         smtpC.Username,
 		},
 	})
 }
