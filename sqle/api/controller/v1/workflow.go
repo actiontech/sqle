@@ -22,6 +22,7 @@ var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow i
 var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
 	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
 var errWorkflowExecuteTimeIncorrect = errors.New(errors.TaskActionInvalid, fmt.Errorf("please go online during instance operation and maintenance time"))
+var errExecuteSQLsIsNull = errors.New(errors.DataInvalid, fmt.Errorf("workflow's execute sql is null"))
 
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
@@ -497,6 +498,14 @@ func CreateWorkflow(c echo.Context) error {
 
 	if task.Instance == nil {
 		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+	}
+
+	count, err := s.GetTaskSQLCountByTaskID(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if count == 0 {
+		return controller.JSONBaseErrorReq(c, errExecuteSQLsIsNull)
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -1260,6 +1269,15 @@ func UpdateWorkflow(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
+
+	count, err := s.GetTaskSQLCountByTaskID(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if count == 0 {
+		return controller.JSONBaseErrorReq(c, errExecuteSQLsIsNull)
+	}
+
 	err = checkCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
