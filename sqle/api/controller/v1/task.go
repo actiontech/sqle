@@ -355,6 +355,7 @@ func GetTaskSQLs(c echo.Context) error {
 		}
 		taskSQLsRes = append(taskSQLsRes, taskSQLRes)
 	}
+
 	return c.JSON(http.StatusOK, &GetAuditTaskSQLsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
 		Data:      taskSQLsRes,

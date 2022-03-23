@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 
@@ -352,6 +353,13 @@ func (rs *AuditResult) Add(level RuleLevel, message string, args ...interface{})
 	rs.results = append(rs.results, &auditResult{
 		level:   level,
 		message: fmt.Sprintf(message, args...),
+	})
+	rs.SortByLevel()
+}
+
+func (rs *AuditResult) SortByLevel() {
+	sort.Slice(rs.results, func(i, j int) bool {
+		return rs.results[i].level.More(rs.results[j].level)
 	})
 }
 
