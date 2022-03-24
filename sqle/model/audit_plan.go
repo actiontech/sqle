@@ -6,6 +6,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/jinzhu/gorm"
 )
 
@@ -31,14 +32,28 @@ type AuditPlanSQLV2 struct {
 
 	// add unique index on fingerprint and audit_plan_id
 	// it's done by AutoMigrate() because gorm can't create index on TEXT column directly by tag.
-	AuditPlanID uint   `json:"audit_plan_id" gorm:"not null"`
-	Fingerprint string `json:"fingerprint" gorm:"type:text;not null"`
-	SQLContent  string `json:"sql" gorm:"type:text;not null"`
-	Info        JSON   `gorm:"type:json"`
+	AuditPlanID    uint   `json:"audit_plan_id" gorm:"not null"`
+	Fingerprint    string `json:"fingerprint" gorm:"type:text;not null"`
+	FingerprintMD5 string `json:"fingerprint_md5" gorm:"column:fingerprint_md5;not null"`
+	SQLContent     string `json:"sql" gorm:"type:text;not null"`
+	Info           JSON   `gorm:"type:json"`
 }
 
 func (a AuditPlanSQLV2) TableName() string {
 	return "audit_plan_sqls_v2"
+}
+
+func (a *AuditPlanSQLV2) GetFingerprintMD5() string {
+	if a.FingerprintMD5 != "" {
+		return a.GetFingerprintMD5()
+	}
+	return utils.Md5String(a.Fingerprint)
+}
+
+// BeforeSave is a hook implement gorm model before exec create.
+func (a *AuditPlanSQLV2) BeforeSave() error {
+	a.FingerprintMD5 = a.GetFingerprintMD5()
+	return nil
 }
 
 func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
@@ -104,10 +119,10 @@ func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQL
 func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
 	pattern := make([]string, 0, len(sqls))
 	for _, sql := range sqls {
-		pattern = append(pattern, "(?, ?, ?, ?)")
-		args = append(args, ap.ID, sql.Fingerprint, sql.SQLContent, sql.Info)
+		pattern = append(pattern, "(?, ?, ?, ?, ?)")
+		args = append(args, ap.ID, sql.GetFingerprintMD5(), sql.Fingerprint, sql.SQLContent, sql.Info)
 	}
-	raw = fmt.Sprintf("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`, `fingerprint`, `sql_content`, `info`) VALUES %s",
+	raw = fmt.Sprintf("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`,`fingerprint_md5`, `fingerprint`, `sql_content`, `info`) VALUES %s",
 		strings.Join(pattern, ", "))
 	return
 }
