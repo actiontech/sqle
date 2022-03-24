@@ -44,8 +44,8 @@ func TestInspectResults(t *testing.T) {
 	results4.Add(driver.RuleLevelError, "[osc]test")
 	assert.Equal(t, driver.RuleLevelError, results4.Level())
 	assert.Equal(t,
-		`[notice]test
-[osc]test`, results4.Message())
+		`[osc]test
+[notice]test`, results4.Message())
 
 	results5 := driver.NewInspectResults()
 	results5.Add(driver.RuleLevelWarn, "[warn]test")

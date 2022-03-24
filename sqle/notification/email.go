@@ -43,6 +43,10 @@ func (n *EmailNotifier) Notify(notification Notification, users []*model.User) e
 		return nil
 	}
 
+	if !smtpC.EnableSMTPNotify.Bool {
+		return nil
+	}
+
 	message := gomail.NewMessage()
 	message.SetHeader("From", smtpC.Username)
 	message.SetHeader("To", emails...)
