@@ -142,8 +142,8 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint",
-		"audit_plan_id", "fingerprint(255)").Error
+	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5",
+		"audit_plan_id", "fingerprint_md5").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
