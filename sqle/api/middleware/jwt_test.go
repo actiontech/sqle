@@ -21,7 +21,7 @@ import (
 func TestScannerVerifier(t *testing.T) {
 	e := echo.New()
 
-	jwt := utils.NewJWT(utils.SecretKey)
+	jwt := utils.NewJWT(utils.JWTSecretKey)
 	apName := "test_audit_plan"
 	testUser := "test_user"
 
