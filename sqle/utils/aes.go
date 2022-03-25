@@ -11,7 +11,16 @@ import (
 
 var SecretKey = []byte("471F77D078C5994BD06B65B8B5B1935B")
 
-func SetSecretKey(key []byte) (err error) {
+func SetSecretKey(key []byte) error {
+	err := setAesSecretKey(key)
+	if err != nil {
+		return err
+	}
+	setJWTSecretKey(key)
+	return nil
+}
+
+func setAesSecretKey(key []byte) (err error) {
 	origKey := SecretKey
 	SecretKey = key
 	origData := "test"

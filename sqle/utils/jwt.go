@@ -4,8 +4,11 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-// TODO: Using configuration to set jwt secret
-const JWTSecret = "secret"
+var JWTSecretKey = []byte("secret")
+
+func setJWTSecretKey(key []byte) {
+	JWTSecretKey = key
+}
 
 type JWT struct {
 	key []byte
@@ -61,7 +64,7 @@ func WithAuditPlanName(name string) CustomClaimOption {
 // ParseAuditPlanName used by echo middleware which only verify api request to audit plan related.
 func ParseAuditPlanName(tokenString string) (string, error) {
 	keyFunc := func(t *jwt.Token) (interface{}, error) {
-		return SecretKey, nil
+		return JWTSecretKey, nil
 	}
 	token, err := jwt.Parse(tokenString, keyFunc)
 	if err != nil {
