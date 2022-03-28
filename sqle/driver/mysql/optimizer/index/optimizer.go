@@ -192,12 +192,7 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 			if !ok {
 				continue
 			}
-
-			if leftTable.AsName.L != "" {
-				o.tables[leftTable.AsName.O] = &tableInSelect{singleTableSel: ss}
-			} else {
-				o.tables[leftTable.Source.(*ast.TableName).Name.O] = &tableInSelect{singleTableSel: ss}
-			}
+			o.tables[leftTable.Source.(*ast.TableName).Name.O] = &tableInSelect{singleTableSel: ss}
 		} else {
 			if ss.From.TableRefs.On != nil {
 				boe, ok := ss.From.TableRefs.On.Expr.(*ast.BinaryOperationExpr)
