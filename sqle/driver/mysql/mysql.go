@@ -308,7 +308,8 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 
 		advices, err := optimizer.Optimize(ctx, nodes[0].(*ast.SelectStmt))
 		if err != nil {
-			return nil, errors.Wrap(err, "optimize sql")
+			// ignore error, source: https://github.com/actiontech/sqle/issues/416
+			i.log.Errorf("optimize sqle failed: %v", err)
 		}
 
 		var buf strings.Builder

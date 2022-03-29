@@ -195,8 +195,10 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 
 			if leftTable.AsName.L != "" {
 				o.tables[leftTable.AsName.O] = &tableInSelect{singleTableSel: ss}
-			} else {
-				o.tables[leftTable.Source.(*ast.TableName).Name.O] = &tableInSelect{singleTableSel: ss}
+			}
+			// may appear: select * from (select v1,v2 from t1 where v1 = 2) as t1
+			if source, ok := leftTable.Source.(*ast.TableName); ok {
+				o.tables[source.Name.O] = &tableInSelect{singleTableSel: ss}
 			}
 		} else {
 			if ss.From.TableRefs.On != nil {
