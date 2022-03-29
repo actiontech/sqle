@@ -52,6 +52,14 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 		},
 		{
+			"select * from exist_tb_1 as t where id = 1",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "t", "const"}}},
+			},
+			nil,
+			nil,
+		},
+		{
 			"select * from exist_tb_3 where v1 = 1",
 			[]databaseMock{
 				{"EXPLAIN", [][]string{explainHead, {"1", "exist_tb_3", executor.ExplainRecordAccessTypeAll}}},
@@ -300,7 +308,7 @@ func TestOptimizer_Optimize(t *testing.T) {
 			}
 
 			o := NewOptimizer(entry, session.NewMockContext(e), tt.optimizerOption...)
-
+			fmt.Println("sqle:", ss)
 			optimizeResults, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
 			assert.NoError(t, err)
 			assert.Equal(t, len(tt.output), len(optimizeResults))
@@ -324,7 +332,7 @@ func TestOptimizer_parseSelectStmt(t *testing.T) {
 		// single select(single table)
 		{"select 1", nil, nil},
 		{"select * from t1", map[string]string{"t1": "SELECT * FROM t1"}, nil},
-		{"select * from t1 as t2", map[string]string{"t2": "SELECT * FROM t1 AS t2"}, nil},
+		{"select * from t1 as t2", map[string]string{"t2": "SELECT * FROM t1 AS t2", "t1": "SELECT * FROM t1 AS t2"}, nil},
 		// single select(multi table/join)
 		{"select * from t1 join t2 on t1.id = t2.id", nil, map[string]string{"t1": "id", "t2": "id"}},
 		{"select * from t1 left join t2 on t1.id = t2.id", nil, map[string]string{"t1": "id", "t2": "id"}},
