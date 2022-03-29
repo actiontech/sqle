@@ -308,7 +308,6 @@ func TestOptimizer_Optimize(t *testing.T) {
 			}
 
 			o := NewOptimizer(entry, session.NewMockContext(e), tt.optimizerOption...)
-			fmt.Println("sqle:", ss)
 			optimizeResults, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
 			assert.NoError(t, err)
 			assert.Equal(t, len(tt.output), len(optimizeResults))
