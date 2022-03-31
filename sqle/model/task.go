@@ -78,7 +78,7 @@ type BaseSQL struct {
 	//
 	// Content may store batch SQLs When BaseSQL embed to RollbackSQL.
 	// Split Content to single SQL before execute RollbackSQL.
-	Content         string `json:"sql" gorm:"type:text"`
+	Content         string `json:"sql" gorm:"type:longtext"`
 	Description     string `json:"description" gorm:"type:text"`
 	StartBinlogFile string `json:"start_binlog_file"`
 	StartBinlogPos  int64  `json:"start_binlog_pos"`
