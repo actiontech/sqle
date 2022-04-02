@@ -559,10 +559,8 @@ func GetAuditPlanReports(c echo.Context) error {
 }
 
 type GetAuditPlanReportResV1 struct {
-	AuditLevel string  `json:"audit_level" enums:"normal,notice,warn,error,"`
-	Score      int32   `json:"score"`
-	PassRate   float64 `json:"pass_rate"`
-	Timestamp  string  `json:"audit_plan_report_timestamp" example:"RFC3339"`
+	controller.BaseRes
+	Data AuditPlanReportResV1 `json:"data"`
 }
 
 // @Summary 获取指定审核计划的SQL审核记录统计信息

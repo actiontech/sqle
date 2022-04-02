@@ -4650,25 +4650,17 @@ var doc = `{
         "v1.GetAuditPlanReportResV1": {
             "type": "object",
             "properties": {
-                "audit_level": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanReportResV1"
+                },
+                "message": {
                     "type": "string",
-                    "enum": [
-                        "normal",
-                        "notice",
-                        "warn",
-                        "error",
-                        ""
-                    ]
-                },
-                "audit_plan_report_timestamp": {
-                    "type": "string",
-                    "example": "RFC3339"
-                },
-                "pass_rate": {
-                    "type": "number"
-                },
-                "score": {
-                    "type": "integer"
+                    "example": "ok"
                 }
             }
         },
