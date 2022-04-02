@@ -80,15 +80,6 @@ definitions:
         example: RFC3339
         type: string
     type: object
-  v1.AuditPlanReportsSQLResV1:
-    properties:
-      audit_plan_report_sql:
-        example: select * from t1 where id = 1
-        type: string
-      audit_plan_report_sql_audit_result:
-        example: same format as task audit result
-        type: string
-    type: object
   v1.AuditPlanResV1:
     properties:
       audit_plan_cron:
@@ -514,21 +505,6 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.AuditPlanReportResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v1.GetAuditPlanReportsSQLsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.AuditPlanReportsSQLResV1'
         type: array
       message:
         example: ok
@@ -2359,39 +2335,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取指定审核计划的SQL审核记录统计信息
-      tags:
-      - audit_plan
-  /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
-    get:
-      description: get audit plan report SQLs
-      operationId: getAuditPlanReportsSQLsV1
-      parameters:
-      - description: audit plan name
-        in: path
-        name: audit_plan_name
-        required: true
-        type: string
-      - description: audit plan report id
-        in: path
-        name: audit_plan_report_id
-        required: true
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditPlanReportsSQLsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQL审核详情
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls:
@@ -4500,6 +4443,39 @@ paths:
       deprecated: true
       description: get audit plan report SQLs
       operationId: getAuditPlanReportSQLsV2
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditPlanReportSQLsResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核计划的SQL审核详情
+      tags:
+      - audit_plan
+  /v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
+    get:
+      description: get audit plan report SQLs
+      operationId: getAuditPlanReportsSQLsV2
       parameters:
       - description: audit plan name
         in: path
