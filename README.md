@@ -13,9 +13,8 @@ SQLE由上海爱可生信息技术股份有限公司（以下简称爱可生公�
 
 [官方网站](https://opensource.actionsky.com/sqle/) | [文档](https://actiontech.github.io/sqle-docs-cn/) | [安装](https://actiontech.github.io/sqle-docs-cn/2.deploy/overview.html) | [在线体验](https://actiontech.github.io/sqle-docs-cn/0.overview/1_online_demo.html)
 
-## 产品展示
+## 产品展示[[更多]](https://actiontech.github.io/sqle-docs-cn/0.overview/2_product_show.html)
 ![product_show](./SQLE_product_show.gif)
-[查看更多](https://actiontech.github.io/sqle-docs-cn/0.overview/2_product_show.html)
 
 ## 产品特色
 1. 支持SQL审核上线的工单审批流程；
