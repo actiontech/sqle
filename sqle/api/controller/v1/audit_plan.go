@@ -558,6 +558,24 @@ func GetAuditPlanReports(c echo.Context) error {
 	})
 }
 
+type GetAuditPlanReportResV1 struct {
+	controller.BaseRes
+	Data AuditPlanReportResV1 `json:"data"`
+}
+
+// @Summary 获取指定审核计划的SQL审核记录统计信息
+// @Description get audit plan report
+// @Id getAuditPlanReportV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Success 200 {object} v1.GetAuditPlanReportResV1
+// @router /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
+func GetAuditPlanReport(c echo.Context) error {
+	return nil
+}
+
 type GetAuditPlanReportSQLsReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`

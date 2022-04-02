@@ -107,6 +107,7 @@ type AuditPlanReportSQLResV2 struct {
 // @Summary 获取指定审核计划的SQL审核详情
 // @Description get audit plan report SQLs
 // @Id getAuditPlanReportSQLsV2
+// @Deprecated
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Param audit_plan_name path string true "audit plan name"
@@ -157,4 +158,19 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		Data:      auditPlanReportSQLsResV2,
 		TotalNums: count,
 	})
+}
+
+// @Summary 获取指定审核计划的SQL审核详情
+// @Description get audit plan report SQLs
+// @Id getAuditPlanReportsSQLsV2
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Success 200 {object} v2.GetAuditPlanReportSQLsResV2
+// @router /v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
+func GetAuditPlanReportSQLsV2(c echo.Context) error {
+	return nil
 }
