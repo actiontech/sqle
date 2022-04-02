@@ -11,9 +11,9 @@
 
 SQLE由上海爱可生信息技术股份有限公司（以下简称爱可生公司）出品和维护，是爱可生公司“云树SQL审核软件”（简称：CTREE SQLE）软件产品的开源版本。SQLE 是一个支持多场景，原生支持 MySQL 审核且数据库类型可扩展的 SQL 审核工具。
 
-[文档](https://actiontech.github.io/sqle-docs-cn/) | [安装](https://actiontech.github.io/sqle-docs-cn/2.deploy/overview.html) | [官方网站](https://opensource.actionsky.com/sqle/)
+[官方网站](https://opensource.actionsky.com/sqle/) | [文档](https://actiontech.github.io/sqle-docs-cn/) | [安装](https://actiontech.github.io/sqle-docs-cn/2.deploy/overview.html) | [在线体验](https://actiontech.github.io/sqle-docs-cn/0.overview/1_online_demo.html)
 
-## 产品展示
+## 产品展示([查看更多](https://actiontech.github.io/sqle-docs-cn/0.overview/2_product_show.html))
 ![product_show](./SQLE_product_show.gif)
 
 ## 产品特色
