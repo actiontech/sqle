@@ -61,39 +61,34 @@ func (r *Periods) Copy() Periods {
 
 func (r *Periods) SelfCheck() bool {
 	for _, p := range *r {
-		if p.StartHour > 23 || p.StartHour < 0 {
+		periodStartTime, err := time.Parse(FormatHourAndMinute, fmt.Sprintf("%02d:%02d", p.StartHour, p.StartMinute))
+		if err != nil {
 			return false
 		}
-		if p.EndHour > 23 || p.EndHour < 0 {
+		periodStopTime, err := time.Parse(FormatHourAndMinute, fmt.Sprintf("%02d:%02d", p.EndHour, p.EndMinute))
+		if err != nil {
 			return false
 		}
-		if p.StartMinute > 59 || p.StartMinute < 0 {
-			return false
-		}
-		if p.EndMinute > 59 || p.EndMinute < 0 {
-			return false
-		}
-		if p.StartHour > p.EndHour {
-			return false
-		}
-		if p.StartHour == p.EndHour && p.StartMinute >= p.EndMinute {
+		if periodStopTime.Before(periodStartTime) || periodStopTime.Equal(periodStartTime) {
 			return false
 		}
 	}
 	return true
 }
 
+const FormatHourAndMinute = "15:04"
+
 func (r *Periods) IsWithinScope(executeTime time.Time) bool {
-	et, err := time.Parse("15:04", executeTime.Format("15:04"))
+	et, err := time.Parse(FormatHourAndMinute, executeTime.Format(FormatHourAndMinute))
 	if err != nil {
 		return false
 	}
 	for _, period := range *r {
-		periodStartTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.StartHour, period.StartMinute))
+		periodStartTime, err := time.Parse(FormatHourAndMinute, fmt.Sprintf("%02d:%02d", period.StartHour, period.StartMinute))
 		if err != nil {
 			continue
 		}
-		periodStopTime, err := time.Parse("15:04", fmt.Sprintf("%02d:%02d", period.EndHour, period.EndMinute))
+		periodStopTime, err := time.Parse(FormatHourAndMinute, fmt.Sprintf("%02d:%02d", period.EndHour, period.EndMinute))
 		if err != nil {
 			continue
 		}
