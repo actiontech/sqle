@@ -107,6 +107,7 @@ type AuditPlanReportSQLResV2 struct {
 // @Summary 获取指定审核计划的SQL审核详情
 // @Description get audit plan report SQLs
 // @Id getAuditPlanReportSQLsV2
+// @Deprecated
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Param audit_plan_name path string true "audit plan name"

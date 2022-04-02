@@ -558,6 +558,57 @@ func GetAuditPlanReports(c echo.Context) error {
 	})
 }
 
+type GetAuditPlanReportResV1 struct {
+	AuditLevel string  `json:"audit_level" enums:"normal,notice,warn,error,"`
+	Score      int32   `json:"score"`
+	PassRate   float64 `json:"pass_rate"`
+	Timestamp  string  `json:"audit_plan_report_timestamp" example:"RFC3339"`
+}
+
+// @Summary 获取指定审核计划的SQL审核记录统计信息
+// @Description get audit plan report
+// @Id getAuditPlanReportV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Success 200 {object} v1.GetAuditPlanReportResV1
+// @router /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
+func GetAuditPlanReport(c echo.Context) error {
+	return nil
+}
+
+type GetAuditPlanReportsSQLsReqV1 struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
+type GetAuditPlanReportsSQLsResV1 struct {
+	controller.BaseRes
+	Data      []AuditPlanReportsSQLResV1 `json:"data"`
+	TotalNums uint64                     `json:"total_nums"`
+}
+
+type AuditPlanReportsSQLResV1 struct {
+	SQL         string `json:"audit_plan_report_sql" example:"select * from t1 where id = 1"`
+	AuditResult string `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
+}
+
+// @Summary 获取指定审核计划的SQL审核详情
+// @Description get audit plan report SQLs
+// @Id getAuditPlanReportsSQLsV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Success 200 {object} v1.GetAuditPlanReportsSQLsResV1
+// @router /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
+func GetAuditPlanReportsSQLsV1(c echo.Context) error {
+	return nil
+}
+
 type GetAuditPlanReportSQLsReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
