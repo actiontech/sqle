@@ -13,14 +13,14 @@ SQLE由上海爱可生信息技术股份有限公司（以下简称爱可生公�
 
 [文档](https://actiontech.github.io/sqle-docs-cn/) | [安装](https://actiontech.github.io/sqle-docs-cn/2.deploy/overview.html) | [官方网站](https://opensource.actionsky.com/sqle/)
 
+## 产品展示
+![product_show](./SQLE_product_show.gif)
+
 ## 产品特色
 1. 支持SQL审核上线的工单审批流程；
 2. 支持事前事中事后多场景审核；
 3. 支持通过插件的形式扩展可审核上线的数据库类型；
 4. 支持标准的 HTTP API，可与其他内部流程系统对接。
-
-## 产品展示
-![product_show](./SQLE_product_show.gif)
 
 ## 在线体验
 [在线 SQLE Server](http://124.70.158.246:8888/)
