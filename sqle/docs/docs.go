@@ -331,6 +331,45 @@ var doc = `{
                 }
             }
         },
+        "/v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定审核计划的SQL审核记录统计信息",
+                "operationId": "getAuditPlanReportV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plans/{audit_plan_name}/sqls": {
             "get": {
                 "security": [
@@ -3652,6 +3691,58 @@ var doc = `{
                 ],
                 "summary": "获取指定审核计划的SQL审核详情",
                 "operationId": "getAuditPlanReportSQLsV2",
+                "deprecated": true,
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlanReportSQLsResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定审核计划的SQL审核详情",
+                "operationId": "getAuditPlanReportsSQLsV2",
                 "parameters": [
                     {
                         "type": "string",
@@ -4549,6 +4640,23 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.AuditPlanMetaV1"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetAuditPlanReportResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanReportResV1"
                 },
                 "message": {
                     "type": "string",
