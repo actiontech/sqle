@@ -160,6 +160,8 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	})
 }
 
+// GetAuditPlanReportSQLsV2 is to fix the irregular uri used by GetAuditPlanReportSQLs
+// issue: https://github.com/actiontech/sqle/issues/429
 // @Summary 获取指定审核计划的SQL审核详情
 // @Description get audit plan report SQLs
 // @Id getAuditPlanReportsSQLsV2
@@ -172,5 +174,5 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 // @Success 200 {object} v2.GetAuditPlanReportSQLsResV2
 // @router /v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
 func GetAuditPlanReportSQLsV2(c echo.Context) error {
-	return nil
+	return GetAuditPlanReportSQLs(c)
 }
