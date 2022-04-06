@@ -573,7 +573,38 @@ type GetAuditPlanReportResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanReportResV1
 // @router /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
 func GetAuditPlanReport(c echo.Context) error {
-	return nil
+	apName := c.Param("audit_plan_name")
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	id := c.Param("audit_plan_report_id")
+	// echo will treat the end of the path as part of the "audit_plan_report_id" value, e.g. ~/reports/183/ --> audit_plan_report_id="183/"
+	id = strings.TrimSuffix(id, "/")
+	reportID, err := strconv.Atoi(id)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id faild: %v", err)))
+	}
+	s := model.GetStorage()
+	report, exist, err := s.GetAuditPlanReportByID(uint(reportID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("audit plan report not exist")))
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditPlanReportResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: AuditPlanReportResV1{
+			Id:         id,
+			AuditLevel: report.AuditLevel,
+			Score:      report.Score,
+			PassRate:   report.PassRate,
+			Timestamp:  report.CreatedAt.Format(time.RFC3339),
+		},
+	})
 }
 
 type GetAuditPlanReportSQLsReqV1 struct {
