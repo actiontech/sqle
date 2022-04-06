@@ -207,6 +207,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// deprecated
 	v1Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", DeprecatedBy(apiV2))
 	v2Router.GET("/audit_plans/:audit_plan_name/report/:audit_plan_report_id/", v2.GetAuditPlanReportSQLs)
+	v2Router.GET("/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLsV2)
 	// deprecated
 	v1Router.GET("/audit_plans/:audit_plan_name/sqls", DeprecatedBy(apiV2))
 	v2Router.GET("/audit_plans/:audit_plan_name/sqls", v2.GetAuditPlanSQLs)
