@@ -160,6 +160,8 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	})
 }
 
+// GetAuditPlanReportSQLsV2 is to fix the irregular uri used by GetAuditPlanReportSQLs
+// issue: https://github.com/actiontech/sqle/issues/429
 // @Summary 获取指定审核计划的SQL审核详情
 // @Description get audit plan report SQLs
 // @Id getAuditPlanReportsSQLsV2
