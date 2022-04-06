@@ -582,7 +582,7 @@ func GetAuditPlanReport(c echo.Context) error {
 	id := c.Param("audit_plan_report_id")
 	reportID, err := strconv.Atoi(id)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id faild: %v", err)))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
 	}
 	s := model.GetStorage()
 	report, exist, err := s.GetAuditPlanReportByID(uint(reportID))
