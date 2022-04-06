@@ -580,8 +580,6 @@ func GetAuditPlanReport(c echo.Context) error {
 	}
 
 	id := c.Param("audit_plan_report_id")
-	// echo will treat the end of the path as part of the "audit_plan_report_id" value, e.g. ~/reports/183/ --> audit_plan_report_id="183/"
-	id = strings.TrimSuffix(id, "/")
 	reportID, err := strconv.Atoi(id)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id faild: %v", err)))
