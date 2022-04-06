@@ -172,5 +172,5 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 // @Success 200 {object} v2.GetAuditPlanReportSQLsResV2
 // @router /v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
 func GetAuditPlanReportSQLsV2(c echo.Context) error {
-	return nil
+	return GetAuditPlanReportSQLs(c)
 }
