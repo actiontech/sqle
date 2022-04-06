@@ -71,6 +71,15 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetAuditPlanReportByID(id uint) (*AuditPlanReportV2, bool, error) {
+	ap := &AuditPlanReportV2{}
+	err := s.db.Model(AuditPlanReportV2{}).Where("id = ?", id).Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
+	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQLV2, error) {
 	ap, exist, err := s.GetAuditPlanByName(name)
 	if err != nil {
