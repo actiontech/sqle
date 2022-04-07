@@ -121,6 +121,45 @@ func (i *Inspect) IsOfflineAudit() bool {
 	return i.isOfflineAudit
 }
 
+func (i *Inspect) executeByGhost(ctx context.Context, query string, isDryRun bool) (_driver.Result, error) {
+	node, err := i.ParseSql(query)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse SQL")
+	}
+
+	stmt, ok := node[0].(*ast.AlterTableStmt)
+	if !ok {
+		return nil, errors.New("type assertion failed, unable to convert to expected type")
+	}
+	schema := i.Ctx.GetSchemaName(stmt.Table)
+
+	run := func(dryRun bool) error {
+		executor, err := onlineddl.NewExecutor(i.log, i.inst, schema, query)
+		if err != nil {
+			return err
+		}
+
+		err = executor.Execute(ctx, dryRun)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	actionStr := "run"
+	if isDryRun {
+		actionStr = "dry-run"
+	}
+
+	i.log.Infof("%s gh-ost", actionStr)
+	if err := run(isDryRun); err != nil {
+		i.log.Errorf("%s gh-ost error:%v", err, actionStr)
+		return nil, errors.Wrap(err, fmt.Sprintf("%s gh-ost", actionStr))
+	}
+	i.log.Infof("%s OK!", actionStr)
+	return _driver.ResultNoRows, nil
+}
+
 func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
@@ -132,45 +171,10 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 	}
 
 	if useGhost {
-		node, err := i.ParseSql(query)
-		if err != nil {
-			return nil, errors.Wrap(err, "parse SQL")
+		if _, err := i.executeByGhost(ctx, query, true); err != nil {
+			return nil, err
 		}
-
-		stmt, ok := node[0].(*ast.AlterTableStmt)
-		if !ok {
-			return nil, errors.New("type assertion failed, unable to convert to expected type")
-		}
-		schema := i.Ctx.GetSchemaName(stmt.Table)
-
-		run := func(dryRun bool) error {
-			executor, err := onlineddl.NewExecutor(i.log, i.inst, schema, query)
-			if err != nil {
-				return err
-			}
-
-			err = executor.Execute(ctx, dryRun)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-
-		i.log.Infof("dry-run gh-ost")
-		if err := run(true); err != nil {
-			i.log.Errorf("dry-run gh-ost error:%v", err)
-			return nil, errors.Wrap(err, "dry-run gh-ost")
-		}
-		i.log.Infof("dry-run OK!")
-
-		i.log.Infof("run gh-ost")
-		if err := run(false); err != nil {
-			i.log.Errorf("run gh-ost error:%v", err)
-			return nil, errors.Wrap(err, "run gh-ost")
-		}
-		i.log.Infof("run OK!")
-
-		return _driver.ResultNoRows, nil
+		return i.executeByGhost(ctx, query, false)
 	}
 
 	conn, err := i.getDbConn()
@@ -286,7 +290,12 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), i.result.Message())
 	}
 
+	var ghostRule *driver.Rule
 	for _, rule := range i.rules {
+		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
+			ghostRule = rule
+		}
+
 		handler, ok := rulepkg.RuleHandlerMap[rule.Name]
 		if !ok || handler.Func == nil {
 			continue
@@ -320,6 +329,19 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 			}
 		}
 		i.result.Add(driver.RuleLevelNotice, buf.String())
+	}
+
+	// dry run gh-ost
+	useGhost, err := i.onlineddlWithGhost(sql)
+	if err != nil {
+		return nil, errors.Wrap(err, "check whether use ghost or not")
+	}
+	if useGhost {
+		if _, err := i.executeByGhost(ctx, sql, true); err != nil {
+			i.result.Add(ghostRule.Level, err.Error())
+		} else {
+			i.result.Add(ghostRule.Level, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线", i.cnf.DDLGhostMinSize))
+		}
 	}
 
 	// print osc
