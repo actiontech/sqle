@@ -69,7 +69,7 @@ func DefaultMysqlInspect() *Inspect {
 		Ctx: session.NewMockContext(nil),
 		cnf: &Config{
 			DDLOSCMinSize:      16,
-			DDLGhostMinSize:    16,
+			DDLGhostMinSize:    -1,
 			DMLRollbackMaxRows: 1000,
 		},
 	}
