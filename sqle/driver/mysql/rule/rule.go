@@ -2752,14 +2752,27 @@ func checkDMLSelectForUpdate(ctx *session.Context, rule driver.Rule, res *driver
 	return nil
 }
 
+func getColumnCollationsFromColumnsDef(columns []*ast.ColumnDef) []string {
+	columnCollations := []string{}
+	for _, column := range columns {
+		for _, op := range column.Options {
+			if op.Tp == ast.ColumnOptionCollate {
+				columnCollations = append(columnCollations, op.StrValue)
+				break
+			}
+		}
+	}
+	return columnCollations
+}
+
 func checkCollationDatabase(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	var tableName *ast.TableName
 	var collationDatabase string
+	var columnCollations []string
 	var err error
-	schemaName := ""
+
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
-		tableName = stmt.Table
+		tableName := stmt.Table
 		if stmt.ReferTable != nil {
 			return nil
 		}
@@ -2769,8 +2782,22 @@ func checkCollationDatabase(ctx *session.Context, rule driver.Rule, res *driver.
 				break
 			}
 		}
+		// if create table not define collation, using default.
+		if collationDatabase == "" {
+			collationDatabase, err = ctx.GetCollationDatabase(tableName, "")
+			if err != nil {
+				return err
+			}
+		}
+
+		// https://github.com/actiontech/sqle/issues/443
+		// character set can ben defined in columns, like:
+		// create table t1 (
+		//    id varchar(255) collate utf8mb4_bin
+		// )
+		columnCollations = getColumnCollationsFromColumnsDef(stmt.Cols)
+
 	case *ast.AlterTableStmt:
-		tableName = stmt.Table
 		for _, ss := range stmt.Specs {
 			for _, op := range ss.Options {
 				if op.Tp == ast.TableOptionCollate {
@@ -2778,17 +2805,25 @@ func checkCollationDatabase(ctx *session.Context, rule driver.Rule, res *driver.
 					break
 				}
 			}
+			// https://github.com/actiontech/sqle/issues/443
+			columnCollations = append(columnCollations, getColumnCollationsFromColumnsDef(ss.NewColumns)...)
 		}
 	case *ast.CreateDatabaseStmt:
-		schemaName = stmt.Name
+		schemaName := stmt.Name
 		for _, ss := range stmt.Options {
 			if ss.Tp == ast.DatabaseOptionCollate {
 				collationDatabase = ss.Value
 				break
 			}
 		}
+		// if create schema not define collation, using default.
+		if collationDatabase == "" {
+			collationDatabase, err = ctx.GetCollationDatabase(nil, schemaName)
+			if err != nil {
+				return err
+			}
+		}
 	case *ast.AlterDatabaseStmt:
-		schemaName = stmt.Name
 		for _, ss := range stmt.Options {
 			if ss.Tp == ast.DatabaseOptionCollate {
 				collationDatabase = ss.Value
@@ -2798,15 +2833,19 @@ func checkCollationDatabase(ctx *session.Context, rule driver.Rule, res *driver.
 	default:
 		return nil
 	}
-	if collationDatabase == "" && (tableName != nil || schemaName != "") {
-		collationDatabase, err = ctx.GetCollationDatabase(tableName, schemaName)
-		if err != nil {
-			return err
-		}
-	}
 	expectCollation := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-	if !strings.EqualFold(collationDatabase, expectCollation) {
+
+	// if collationDatabase empty, it means that we are not "create object"
+	// and collation not change in "update object", so don't to check it.
+	if collationDatabase != "" && !strings.EqualFold(collationDatabase, expectCollation) {
 		addResult(res, rule, DDLCheckDatabaseCollation, expectCollation)
+	}
+
+	for _, cs := range columnCollations {
+		if !strings.EqualFold(cs, expectCollation) {
+			addResult(res, rule, DDLCheckDatabaseCollation, expectCollation)
+			return nil
+		}
 	}
 	return nil
 }
