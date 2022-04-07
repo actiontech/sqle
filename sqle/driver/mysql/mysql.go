@@ -336,7 +336,8 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 	if err != nil {
 		return nil, errors.Wrap(err, "check whether use ghost or not")
 	}
-	if useGhost {
+	// ghostRule != nil is because DDLGhostMinSize may be manually modified in the unit test without using gh-ost related rules
+	if useGhost && ghostRule != nil {
 		if _, err := i.executeByGhost(ctx, sql, true); err != nil {
 			i.result.Add(ghostRule.Level, err.Error())
 		} else {
