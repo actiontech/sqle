@@ -131,6 +131,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			i := DefaultMysqlInspect()
+			i.cnf.DDLGhostMinSize = 16
 			got, err := tt.setUp(i).onlineddlWithGhost(tt.args.query)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Inspect.onlineddlWithGhost() error = %v, wantErr %v", err, tt.wantErr)
