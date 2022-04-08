@@ -47,7 +47,7 @@ var (
 
 func init() {
 	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
-	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-unqualified-sql", "S", false, "skip unqualified sql")
+	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-error-query", "S", false, "skip SQL that cannot be resolved by scannerd")
 	_ = mybatisCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(mybatisCmd)
 }
