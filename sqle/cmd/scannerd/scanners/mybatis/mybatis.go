@@ -27,27 +27,30 @@ type MyBatis struct {
 	allSQL []driver.Node
 	getAll chan struct{}
 
-	apName string
-	xmlDir string
+	apName         string
+	xmlDir         string
+	skipErrorQuery bool
 }
 
 type Params struct {
-	XMLDir string
-	APName string
+	XMLDir         string
+	APName         string
+	SkipErrorQuery bool
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 	return &MyBatis{
-		xmlDir: params.XMLDir,
-		apName: params.APName,
-		l:      l,
-		c:      c,
-		getAll: make(chan struct{}),
+		xmlDir:         params.XMLDir,
+		apName:         params.APName,
+		skipErrorQuery: params.SkipErrorQuery,
+		l:              l,
+		c:              c,
+		getAll:         make(chan struct{}),
 	}, nil
 }
 
 func (mb *MyBatis) Run(ctx context.Context) error {
-	sqls, err := GetSQLFromPath(mb.xmlDir)
+	sqls, err := GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery)
 	if err != nil {
 		return err
 	}
@@ -118,7 +121,7 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	return mb.c.GetAuditReportReq(mb.apName, reportID)
 }
 
-func GetSQLFromPath(pathName string) (allSQL []driver.Node, err error) {
+func GetSQLFromPath(pathName string, skipErrorQuery bool) (allSQL []driver.Node, err error) {
 	if !path.IsAbs(pathName) {
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -134,9 +137,9 @@ func GetSQLFromPath(pathName string) (allSQL []driver.Node, err error) {
 	for _, fi := range fileInfos {
 		var sqlList []driver.Node
 		if fi.IsDir() {
-			sqlList, err = GetSQLFromPath(path.Join(pathName, fi.Name()))
+			sqlList, err = GetSQLFromPath(path.Join(pathName, fi.Name()), skipErrorQuery)
 		} else if strings.HasSuffix(fi.Name(), "xml") {
-			sqlList, err = GetSQLFromFile(path.Join(pathName, fi.Name()))
+			sqlList, err = GetSQLFromFile(path.Join(pathName, fi.Name()), skipErrorQuery)
 		}
 
 		if err != nil {
@@ -147,16 +150,23 @@ func GetSQLFromPath(pathName string) (allSQL []driver.Node, err error) {
 	return allSQL, err
 }
 
-func GetSQLFromFile(file string) (r []driver.Node, err error) {
+func GetSQLFromFile(file string, skipErrorQuery bool) (r []driver.Node, err error) {
 	content, err := ReadFileContent(file)
 	if err != nil {
 		return nil, err
 	}
-	sql, err := mybatisParser.ParseXML(content)
+	sqls, err := mybatisParser.ParseXMLQuery(content, skipErrorQuery)
 	if err != nil {
 		return nil, err
 	}
-	return Parse(context.TODO(), sql)
+	for _, sql := range sqls {
+		n, err := Parse(context.TODO(), sql)
+		if err != nil {
+			return nil, err
+		}
+		r = append(r, n...)
+	}
+	return r, nil
 }
 
 func ReadFileContent(file string) (content string, err error) {

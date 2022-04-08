@@ -15,15 +15,17 @@ import (
 )
 
 var (
-	dir string
+	dir            string
+	skipErrorQuery bool
 
 	mybatisCmd = &cobra.Command{
 		Use:   "mybatis",
 		Short: "Parse MyBatis XML file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &mybatis.Params{
-				XMLDir: dir,
-				APName: rootCmdFlags.auditPlanName,
+				XMLDir:         dir,
+				APName:         rootCmdFlags.auditPlanName,
+				SkipErrorQuery: skipErrorQuery,
 			}
 			log := logrus.WithField("scanner", "mybatis")
 			client := scanner.NewSQLEClient(time.Second, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
@@ -45,6 +47,7 @@ var (
 
 func init() {
 	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
+	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-unqualified-sql", "S", false, "skip unqualified sql")
 	_ = mybatisCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(mybatisCmd)
 }
