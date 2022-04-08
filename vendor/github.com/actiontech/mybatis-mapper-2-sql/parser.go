@@ -2,12 +2,14 @@ package parser
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"strings"
 
 	"github.com/actiontech/mybatis-mapper-2-sql/ast"
 )
 
+// ParseXML is a parser for parse all query in XML to string.
 func ParseXML(data string) (string, error) {
 	r := strings.NewReader(data)
 	d := xml.NewDecoder(r)
@@ -23,6 +25,29 @@ func ParseXML(data string) (string, error) {
 		return "", err
 	}
 	return stmt, nil
+}
+
+// ParseXMLQuery is a parser for parse all query in XML to []string one by one;
+// you can set `skipErrorQuery` true to ignore invalid query.
+func ParseXMLQuery(data string, skipErrorQuery bool) ([]string, error) {
+	r := strings.NewReader(data)
+	d := xml.NewDecoder(r)
+	n, err := parse(d, nil)
+	if err != nil {
+		return nil, err
+	}
+	if n == nil {
+		return nil, nil
+	}
+	m, ok := n.(*ast.Mapper)
+	if !ok {
+		return nil, fmt.Errorf("the mapper is not found")
+	}
+	stmts, err := m.GetStmts(ast.NewContext(), skipErrorQuery)
+	if err != nil {
+		return nil, err
+	}
+	return stmts, nil
 }
 
 func parse(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
