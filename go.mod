@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20220126024519-1c4141e2df0e
+	github.com/actiontech/mybatis-mapper-2-sql v0.0.0-20220407031757-4495db4cb81f
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
@@ -39,9 +39,7 @@ require (
 	github.com/jinzhu/gorm v1.9.15
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.3
-	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
