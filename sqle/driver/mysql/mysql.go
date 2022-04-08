@@ -153,7 +153,7 @@ func (i *Inspect) executeByGhost(ctx context.Context, query string, isDryRun boo
 
 	i.log.Infof("%s gh-ost", actionStr)
 	if err := run(isDryRun); err != nil {
-		i.log.Errorf("%s gh-ost error:%v", err, actionStr)
+		i.log.Errorf("%s gh-ost error:%v", actionStr, err)
 		return nil, errors.Wrap(err, fmt.Sprintf("%s gh-ost", actionStr))
 	}
 	i.log.Infof("%s OK!", actionStr)
