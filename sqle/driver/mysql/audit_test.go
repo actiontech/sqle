@@ -69,7 +69,7 @@ func DefaultMysqlInspect() *Inspect {
 		Ctx: session.NewMockContext(nil),
 		cnf: &Config{
 			DDLOSCMinSize:      16,
-			DDLGhostMinSize:    16,
+			DDLGhostMinSize:    -1,
 			DMLRollbackMaxRows: 1000,
 		},
 	}
@@ -2491,9 +2491,11 @@ select v1 from exist_db.exist_tb_1 where v1= ?;
 
 func TestCheckCollationDatabase(t *testing.T) {
 	for desc, sql := range map[string]string{
-		`create table`:    `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8_general_ci;`,
-		`alter table`:     `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8_general_ci;`,
-		`create database`: `CREATE DATABASE db COLLATE utf8_general_ci;`,
+		`create table`:                     `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8_general_ci;`,
+		`alter table`:                      `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8_general_ci;`,
+		`create database`:                  `CREATE DATABASE db COLLATE utf8_general_ci;`,
+		`create table with column collate`: `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10) COLLATE utf8_general_ci) COLLATE utf8mb4_0900_ai_ci;`,
+		`alter table with column collate`:  `ALTER TABLE exist_db.exist_tb_1 modify column c1 varchar(255) COLLATE utf8_general_ci;`,
 	} {
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckDatabaseCollation].Rule,
@@ -2505,10 +2507,12 @@ func TestCheckCollationDatabase(t *testing.T) {
 	}
 
 	for desc, sql := range map[string]string{
-		`create table`:               `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci;`,
-		`alter table`:                `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8mb4_0900_ai_ci;`,
-		`create database`:            `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
-		`create database upper case`: `CREATE DATABASE db COLLATE UTF8MB4_0900_AI_CI;`,
+		`create table`:                     `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10)) COLLATE utf8mb4_0900_ai_ci;`,
+		`alter table`:                      `ALTER TABLE exist_db.exist_tb_1 COLLATE utf8mb4_0900_ai_ci;`,
+		`create database`:                  `CREATE DATABASE db COLLATE utf8mb4_0900_ai_ci;`,
+		`create database upper case`:       `CREATE DATABASE db COLLATE UTF8MB4_0900_AI_CI;`,
+		`create table with column collate`: `CREATE TABLE exist_db.not_exist_tb_4 (v1 varchar(10) COLLATE utf8mb4_0900_ai_ci) COLLATE utf8mb4_0900_ai_ci;`,
+		`alter table with column collate`:  `ALTER TABLE exist_db.exist_tb_1 modify column c1 varchar(255) COLLATE utf8mb4_0900_ai_ci;`,
 	} {
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckDatabaseCollation].Rule,
