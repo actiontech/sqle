@@ -1241,6 +1241,12 @@ var doc = `{
                         "description": "filter db type",
                         "name": "filter_db_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter operations",
+                        "name": "filter_operations",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6554,6 +6560,9 @@ var doc = `{
         "v1.WorkFlowStepTemplateReqV1": {
             "type": "object",
             "properties": {
+                "approved_by_authorized": {
+                    "type": "boolean"
+                },
                 "assignee_user_name_list": {
                     "type": "array",
                     "items": {
@@ -6575,6 +6584,9 @@ var doc = `{
         "v1.WorkFlowStepTemplateResV1": {
             "type": "object",
             "properties": {
+                "approved_by_authorized": {
+                    "type": "boolean"
+                },
                 "assignee_user_name_list": {
                     "type": "array",
                     "items": {
