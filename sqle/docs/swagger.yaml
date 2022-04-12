@@ -1757,6 +1757,8 @@ definitions:
     type: object
   v1.WorkFlowStepTemplateReqV1:
     properties:
+      approved_by_authorized:
+        type: boolean
       assignee_user_name_list:
         items:
           type: string
@@ -1771,6 +1773,8 @@ definitions:
     type: object
   v1.WorkFlowStepTemplateResV1:
     properties:
+      approved_by_authorized:
+        type: boolean
       assignee_user_name_list:
         items:
           type: string
@@ -2873,6 +2877,10 @@ paths:
       - description: filter db type
         in: query
         name: filter_db_type
+        type: string
+      - description: filter operations
+        in: query
+        name: filter_operations
         type: string
       responses:
         "200":
