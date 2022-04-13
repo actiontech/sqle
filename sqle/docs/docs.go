@@ -1243,9 +1243,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "create_audit_plan"
+                        ],
                         "type": "string",
-                        "description": "filter operations",
-                        "name": "filter_operations",
+                        "description": "functional module",
+                        "name": "functional_module",
                         "in": "query"
                     }
                 ],
