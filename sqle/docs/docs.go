@@ -1241,6 +1241,15 @@ var doc = `{
                         "description": "filter db type",
                         "name": "filter_db_type",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "create_audit_plan"
+                        ],
+                        "type": "string",
+                        "description": "functional module",
+                        "name": "functional_module",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6554,6 +6563,9 @@ var doc = `{
         "v1.WorkFlowStepTemplateReqV1": {
             "type": "object",
             "properties": {
+                "approved_by_authorized": {
+                    "type": "boolean"
+                },
                 "assignee_user_name_list": {
                     "type": "array",
                     "items": {
@@ -6575,6 +6587,9 @@ var doc = `{
         "v1.WorkFlowStepTemplateResV1": {
             "type": "object",
             "properties": {
+                "approved_by_authorized": {
+                    "type": "boolean"
+                },
                 "assignee_user_name_list": {
                     "type": "array",
                     "items": {
