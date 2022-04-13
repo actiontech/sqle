@@ -2878,9 +2878,11 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: filter operations
+      - description: functional module
+        enum:
+        - create_audit_plan
         in: query
-        name: filter_operations
+        name: functional_module
         type: string
       responses:
         "200":
