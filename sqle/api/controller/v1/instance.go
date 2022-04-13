@@ -808,7 +808,8 @@ func GetInstanceSchemas(c echo.Context) error {
 }
 
 type InstanceTipReqV1 struct {
-	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
+	FilterDBType     string `json:"filter_db_type" query:"filter_db_type"`
+	FunctionalModule string `json:"functional_module" query:"functional_module" enums:"create_audit_plan" valid:"omitempty,oneof=create_audit_plan"`
 }
 
 type InstanceTipResV1 struct {
@@ -828,6 +829,7 @@ type GetInstanceTipsResV1 struct {
 // @Id getInstanceTipListV1
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
+// @Param functional_module query string false "functional module" Enums(create_audit_plan)
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {

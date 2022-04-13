@@ -38,10 +38,11 @@ type WorkflowTemplateDetailResV1 struct {
 }
 
 type WorkFlowStepTemplateResV1 struct {
-	Number int      `json:"number"`
-	Typ    string   `json:"type"`
-	Desc   string   `json:"desc,omitempty"`
-	Users  []string `json:"assignee_user_name_list"`
+	Number               int      `json:"number"`
+	Typ                  string   `json:"type"`
+	Desc                 string   `json:"desc,omitempty"`
+	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
+	Users                []string `json:"assignee_user_name_list"`
 }
 
 // @Summary 获取审批流程模板详情
@@ -120,9 +121,10 @@ type CreateWorkflowTemplateReqV1 struct {
 }
 
 type WorkFlowStepTemplateReqV1 struct {
-	Type  string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
-	Desc  string   `json:"desc" form:"desc"`
-	Users []string `json:"assignee_user_name_list" form:"assignee_user_name_list" valid:"required"`
+	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
+	Desc                 string   `json:"desc" form:"desc"`
+	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
+	Users                []string `json:"assignee_user_name_list" form:"assignee_user_name_list"`
 }
 
 func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
