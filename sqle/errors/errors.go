@@ -23,6 +23,7 @@ const (
 	DataConflict      ErrorCode = 4012
 	DataInvalid       ErrorCode = 4013
 	DataParseFail     ErrorCode = 4014
+	UserNotPermission ErrorCode = 4015
 
 	ConnectStorageError        ErrorCode = 5001
 	ConnectRemoteDatabaseError ErrorCode = 5002
@@ -102,4 +103,8 @@ func ConnectStorageErrWrapper(err error) error {
 
 func NewAccessDeniedErr(format string, a ...interface{}) error {
 	return New(ErrAccessDeniedError, fmt.Errorf(format, a...))
+}
+
+func NewUserNotPermissionError(op string) error {
+	return New(UserNotPermission, fmt.Errorf("当前用户没有 %v 的权限, 无法执行此操作", op))
 }
