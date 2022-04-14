@@ -19,8 +19,12 @@ const (
 	// NOTE: 用户默认可以查看自己创建的工单，无需定义此项动作权限
 	OP_WORKFLOW_VIEW_OTHERS = 20100
 	OP_WORKFLOW_SAVE        = 20200 // including "CREATE" and "UPDATE"
+	OP_WORKFLOW_AUDIT       = 20300 // including "PASSED" and "REJECT"
 
 	// AuditPlan: 审核计划 reserved 30000-39999
+	// NOTE: 用户默认可以查看自己创建的审核任务，无需定义此项动作权限
+	OP_AUDIT_PLAN_VIEW_OTHERS = 30100
+	OP_AUDIT_PLAN_SAVE        = 30200 // including "CREATE" and "UPDATE"
 )
 
 func GetConfigurableOperationCodeList() []uint {
@@ -28,6 +32,10 @@ func GetConfigurableOperationCodeList() []uint {
 		// Workflow：工单
 		OP_WORKFLOW_VIEW_OTHERS,
 		OP_WORKFLOW_SAVE,
+		OP_WORKFLOW_AUDIT,
+		// Audit plan: 审核任务
+		OP_AUDIT_PLAN_VIEW_OTHERS,
+		OP_AUDIT_PLAN_SAVE,
 	}
 }
 
@@ -37,6 +45,12 @@ func GetOperationCodeDesc(opCode uint) string {
 		return "查看他人创建的工单"
 	case OP_WORKFLOW_SAVE:
 		return "创建/编辑工单"
+	case OP_WORKFLOW_AUDIT:
+		return "审核/驳回工单"
+	case OP_AUDIT_PLAN_VIEW_OTHERS:
+		return "查看别人创建的审核任务"
+	case OP_AUDIT_PLAN_SAVE:
+		return "创建审核任务"
 	}
 	return "未知动作"
 }
@@ -104,4 +118,26 @@ func (s *Storage) GetRoleOperationsByRoleID(roleID uint) (roleOps []*RoleOperati
 func (s *Storage) DeleteRoleOperationByRoleID(roleID uint) (err error) {
 	return errors.ConnectStorageErrWrapper(
 		s.db.Where("role_id = ?", roleID).Delete(RoleOperation{}).Error)
+}
+
+func (s *Storage) CheckUserCanOperation(userID uint, opCode ...int) (bool, error) {
+	codes := []int{}
+	err := s.db.Model(&RoleOperation{}).
+		Joins("LEFT JOIN user_role ON ? = user_id", userID).
+		Where("role_operations.role_id = user_role.role_id").
+		Pluck("op_code", &codes).Error
+	if err != nil {
+		return false, errors.ConnectStorageErrWrapper(err)
+	}
+
+	temp := map[int]struct{}{}
+	for _, code := range codes {
+		temp[code] = struct{}{}
+	}
+	for _, code := range opCode {
+		if _, ok := temp[code]; !ok {
+			return false, nil
+		}
+	}
+	return true, nil
 }
