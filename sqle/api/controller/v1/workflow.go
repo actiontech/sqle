@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -89,9 +90,10 @@ func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*Wor
 	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(steps))
 	for _, step := range steps {
 		stepRes := &WorkFlowStepTemplateResV1{
-			Number: int(step.Number),
-			Typ:    step.Typ,
-			Desc:   step.Desc,
+			Number:               int(step.Number),
+			ApprovedByAuthorized: step.ApprovedByAuthorized.Bool,
+			Typ:                  step.Typ,
+			Desc:                 step.Desc,
 		}
 		users := []string{}
 		if step.Users != nil {
@@ -143,7 +145,7 @@ func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
 		if !isLastStep && step.Type == model.WorkflowStepTypeSQLExecute {
 			return fmt.Errorf("workflow step type sql_execute just be used in last step")
 		}
-		if len(step.Users) == 0 {
+		if len(step.Users) == 0 && !step.ApprovedByAuthorized {
 			return fmt.Errorf("the assignee is empty for step %s", step.Desc)
 		}
 		if len(step.Users) > 3 {
@@ -212,8 +214,12 @@ func CreateWorkflowTemplate(c echo.Context) error {
 	for i, step := range req.Steps {
 		s := &model.WorkflowStepTemplate{
 			Number: uint(i + 1),
-			Typ:    step.Type,
-			Desc:   step.Desc,
+			ApprovedByAuthorized: sql.NullBool{
+				Bool:  step.ApprovedByAuthorized,
+				Valid: true,
+			},
+			Typ:  step.Type,
+			Desc: step.Desc,
 		}
 		stepUsers := make([]*model.User, 0, len(step.Users))
 		for _, userName := range step.Users {
@@ -300,8 +306,12 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 		for i, step := range req.Steps {
 			s := &model.WorkflowStepTemplate{
 				Number: uint(i + 1),
-				Typ:    step.Type,
-				Desc:   step.Desc,
+				ApprovedByAuthorized: sql.NullBool{
+					Bool:  step.ApprovedByAuthorized,
+					Valid: true,
+				},
+				Typ:  step.Type,
+				Desc: step.Desc,
 			}
 			stepUsers := make([]*model.User, 0, len(step.Users))
 			for _, userName := range step.Users {
@@ -750,8 +760,8 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV1 {
 	if step.OperationUser != nil {
 		stepRes.OperationUser = step.OperationUser.Name
 	}
-	if step.Template.Users != nil {
-		for _, user := range step.Template.Users {
+	if step.Assignees != nil {
+		for _, user := range step.Assignees {
 			stepRes.Users = append(stepRes.Users, user.Name)
 		}
 	}
