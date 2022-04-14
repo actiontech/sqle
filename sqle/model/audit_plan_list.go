@@ -2,6 +2,8 @@ package model
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
@@ -43,7 +45,8 @@ WHERE audit_plans.deleted_at IS NULL
 AND users.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
-AND users.login_name = :current_user_name
+AND ( users.login_name = :current_user_name 
+%s )
 {{- end }}
 
 {{- if .filter_audit_plan_db_type }}
@@ -55,16 +58,26 @@ AND audit_plans.db_type = :filter_audit_plan_db_type
 
 func (s *Storage) GetAuditPlansByReq(data map[string]interface{}) (
 	list []*AuditPlanListDetail, count uint64, err error) {
-
-	err = s.getListResult(auditPlanBodyTpl, auditPlanQueryTpl, data, &list)
+	instance := []string{}
+	instance, _ = data["filter_instance_name"].([]string)
+	queryBody := saveInstanceNameFilter(auditPlanBodyTpl, instance)
+	err = s.getListResult(queryBody, auditPlanQueryTpl, data, &list)
 	if err != nil {
 		return nil, 0, err
 	}
-	count, err = s.getCountResult(auditPlanBodyTpl, auditPlanCountTpl, data)
+	count, err = s.getCountResult(queryBody, auditPlanCountTpl, data)
 	if err != nil {
 		return nil, 0, err
 	}
 	return
+}
+
+func saveInstanceNameFilter(query string, instances []string) string {
+	sql := ""
+	if len(instances) != 0 {
+		sql = fmt.Sprintf("OR instance_name in ('%s')", strings.Join(instances, "', '"))
+	}
+	return fmt.Sprintf(query, sql)
 }
 
 type AuditPlanSQLListDetail struct {
