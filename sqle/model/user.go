@@ -299,3 +299,19 @@ func (s *Storage) SaveUserAndAssociations(
 		return nil
 	})
 }
+
+// GetUsersByOperationCode will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
+func (s *Storage) GetUsersByOperationCode(opCode ...int) (users []*User, err error) {
+	names := []string{}
+	err = s.db.Model(&User{}).Select("DISTINCT users.login_name").
+		Joins("LEFT JOIN user_role ON users.id = user_role.user_id "+
+			"LEFT JOIN role_operations ON user_role.role_id = role_operations.role_id AND role_operations.deleted_at IS NULL ").
+		Where("users.deleted_at IS NULL "+
+			"AND role_operations.op_code in (?) ", opCode).
+		Group("users.id").
+		Pluck("login_name", &names).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+	return s.GetUsersByNames(names)
+}
