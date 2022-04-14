@@ -140,3 +140,21 @@ func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{
 	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Update(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) CheckUserCanSeeAuditPlan(user *User, ap *AuditPlan) (bool, error) {
+	if ap.CreateUserID == user.ID {
+		return true, nil
+	}
+	if ap.Name == DefaultAdminUser {
+		return true, nil
+	}
+
+	return s.CheckUserCanOperation(user.ID, OP_AUDIT_PLAN_VIEW_OTHERS)
+}
+
+func (s *Storage) CheckUserCanCreateAuditPlan(user *User) (bool, error) {
+	if user.Name == DefaultAdminUser {
+		return true, nil
+	}
+	return s.CheckUserCanOperation(user.ID, OP_AUDIT_PLAN_SAVE)
+}
