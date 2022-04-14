@@ -807,6 +807,10 @@ func GetInstanceSchemas(c echo.Context) error {
 	})
 }
 
+const ( // InstanceTipReqV1.FunctionalModule Enums
+	create_audit_plan = "create_audit_plan"
+)
+
 type InstanceTipReqV1 struct {
 	FilterDBType     string `json:"filter_db_type" query:"filter_db_type"`
 	FunctionalModule string `json:"functional_module" query:"functional_module" enums:"create_audit_plan" valid:"omitempty,oneof=create_audit_plan"`
@@ -843,7 +847,13 @@ func GetInstanceTips(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	instances, err := s.GetInstanceTipsByUser(user, req.FilterDBType)
+	var instances []*model.Instance
+	switch req.FunctionalModule {
+	case create_audit_plan:
+		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_AUDIT_PLAN_SAVE)
+	default:
+		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType)
+	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
