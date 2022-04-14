@@ -58,12 +58,14 @@ LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
 LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
 LEFT JOIN workflow_step_template_user AS curr_wst_re_user ON curr_wst.id = curr_wst_re_user.workflow_step_template_id
+LEFT JOIN workflow_step_user AS curr_wst_re_user ON curr_ws.id = curr_wst_re_user.workflow_step_id
 LEFT JOIN users AS curr_ass_user ON curr_wst_re_user.user_id = curr_ass_user.id
 
 {{- if .check_user_can_access }}
 LEFT JOIN workflow_steps AS all_ws ON w.id = all_ws.workflow_id AND all_ws.state !="initialized"
 LEFT JOIN workflow_step_templates AS all_wst ON all_ws.workflow_step_template_id = all_wst.id
 LEFT JOIN workflow_step_template_user AS all_wst_re_user ON all_wst.id = all_wst_re_user.workflow_step_template_id
+LEFT JOIN workflow_step_user AS all_wst_re_user ON all_ws.id = all_wst_re_user.workflow_step_id
 LEFT JOIN users AS all_ass_user ON all_wst_re_user.user_id = all_ass_user.id
 {{- end }}
 WHERE
