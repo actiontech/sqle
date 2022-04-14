@@ -174,7 +174,26 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
 	}
 
-	_, exist, err := s.GetAuditPlanByName(req.Name)
+	// check user
+	currentUserName := controller.GetUserName(c)
+	user, exist, err := s.GetUserByName(currentUserName)
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
+	} else if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
+
+	// check operation
+	can, err := s.CheckUserCanCreateAuditPlan(user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
+	}
+
+	// check audit plan name
+	_, exist, err = s.GetAuditPlanByName(req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -221,15 +240,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
 
-	// check user and generate token
-	currentUserName := controller.GetUserName(c)
-	user, exist, err := s.GetUserByName(currentUserName)
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
-	} else if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-	}
-
+	// generate token
 	j := utils.NewJWT(utils.JWTSecretKey)
 	t, err := j.CreateToken(currentUserName, time.Now().Add(tokenExpire).Unix(),
 		utils.WithAuditPlanName(req.Name))
@@ -397,11 +408,23 @@ func GetAuditPlans(c echo.Context) error {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 
-	currentUserName := controller.GetUserName(c)
+	currentUser, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	instances, err := s.GetInstanceTipsByUserAndOperation(currentUser, req.FilterAuditPlanDBType, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	names := []string{}
+	for _, instance := range instances {
+		names = append(names, instance.Name)
+	}
 	data := map[string]interface{}{
 		"filter_audit_plan_db_type": req.FilterAuditPlanDBType,
-		"current_user_name":         currentUserName,
-		"current_user_is_admin":     model.DefaultAdminUser == currentUserName,
+		"current_user_name":         currentUser.Name,
+		"current_user_is_admin":     model.DefaultAdminUser == currentUser.Name,
+		"filter_instance_name":      names,
 		"limit":                     req.PageSize,
 		"offset":                    offset,
 	}
@@ -864,8 +887,13 @@ func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {
 	if err != nil {
 		return err
 	}
-	if user.ID != ap.CreateUserID {
-		return errAuditPlanCannotAccess
+
+	can, err := storage.CheckUserCanSeeAuditPlan(user, ap)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
 	}
 	return nil
 }
