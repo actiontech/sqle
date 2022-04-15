@@ -323,7 +323,7 @@ func UpdateAuditPlan(c echo.Context) error {
 
 	apName := c.Param("audit_plan_name")
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_SAVE)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
