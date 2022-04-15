@@ -364,7 +364,14 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 	for _, step := range steps {
 		currentStep := step
 		currentStep.WorkflowRecordId = record.ID
+		users := currentStep.Assignees
+		currentStep.Assignees = nil
 		err = tx.Save(currentStep).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
+		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
