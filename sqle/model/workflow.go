@@ -220,6 +220,7 @@ func (w *Workflow) cloneWorkflowStep() []*WorkflowStep {
 		steps = append(steps, &WorkflowStep{
 			WorkflowStepTemplateId: step.Template.ID,
 			WorkflowId:             w.ID,
+			Assignees:              step.Assignees,
 		})
 	}
 	return steps
@@ -266,7 +267,7 @@ func (w *Workflow) IsOperationUser(user *User) bool {
 	if w.CurrentStep() == nil {
 		return false
 	}
-	for _, assUser := range w.CurrentStep().Template.Users {
+	for _, assUser := range w.CurrentStep().Assignees {
 		if user.ID == assUser.ID {
 			return true
 		}
@@ -298,7 +299,7 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 		TaskId: task.ID,
 	}
 
-	inspector, err := s.GetUsersByOperationCode(OP_WORKFLOW_AUDIT)
+	inspector, err := s.GetUsersByOperationCode(task.Instance, OP_WORKFLOW_AUDIT)
 	if err != nil {
 		return err
 	}
@@ -324,7 +325,14 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 		currentStep := step
 		currentStep.WorkflowRecordId = record.ID
 		currentStep.WorkflowId = workflow.ID
+		users := currentStep.Assignees
+		currentStep.Assignees = nil
 		err = tx.Save(currentStep).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
+		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
@@ -427,7 +435,7 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 		stepTemplateIds = append(stepTemplateIds, step.WorkflowStepTemplateId)
 	}
 	stepTemplates := []*WorkflowStepTemplate{}
-	err = s.db.Preload("Users").Where("id in (?)", stepTemplateIds).Find(&stepTemplates).Error
+	err = s.db.Where("id in (?)", stepTemplateIds).Find(&stepTemplates).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}

@@ -183,15 +183,6 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
 
-	// check operation
-	can, err := s.CheckUserCanCreateAuditPlan(user)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
-	}
-
 	// check audit plan name
 	_, exist, err = s.GetAuditPlanByName(req.Name)
 	if err != nil {
@@ -227,6 +218,16 @@ func CreateAuditPlan(c echo.Context) error {
 			}
 		}
 		instanceType = inst.DbType
+
+		// check operation
+		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !can {
+			return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
+		}
+
 	} else {
 		instanceType = req.InstanceType
 	}
