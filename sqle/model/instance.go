@@ -203,7 +203,7 @@ GROUP BY instances.id
 
 func (s *Storage) GetUserCanOpInstances(user *User, ops []uint) (instances []*Instance, err error) {
 	query := `
-SELECT instances.id
+SELECT instances.id, instances.name
 FROM instances
 LEFT JOIN instance_role ON instance_role.instance_id = instances.id
 LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
@@ -216,7 +216,7 @@ AND users.id = ?
 AND role_operations.op_code IN (?)
 GROUP BY instances.id
 UNION
-SELECT instances.id
+SELECT instances.id, instances.name
 FROM instances
 LEFT JOIN instance_role ON instance_role.instance_id = instances.id
 LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
