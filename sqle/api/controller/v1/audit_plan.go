@@ -428,7 +428,7 @@ func GetAuditPlans(c echo.Context) error {
 		"offset":                    offset,
 	}
 	if len(names) > 0 {
-		data["accessible_instances_name"] = fmt.Sprintf("'%s'", strings.Join(names, ", "))
+		data["accessible_instances_name"] = fmt.Sprintf("'%s'", strings.Join(names, "', '"))
 	}
 	auditPlans, count, err := s.GetAuditPlansByReq(data)
 	if err != nil {
