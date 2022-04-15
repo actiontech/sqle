@@ -15,7 +15,7 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	LEFT JOIN users ON audit_plans.create_user_id = users.id
 	WHERE audit_plans.deleted_at IS NULL 
 	AND users.deleted_at IS NULL
-	AND users.login_name = ? 
+	AND ( users.login_name = ? ) 
 	AND audit_plans.db_type = ?
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
