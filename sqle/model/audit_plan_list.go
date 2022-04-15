@@ -45,8 +45,7 @@ WHERE audit_plans.deleted_at IS NULL
 AND users.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
-AND ( users.login_name = :current_user_name 
-%s )
+AND ( users.login_name = :current_user_name %s )
 {{- end }}
 
 {{- if .filter_audit_plan_db_type }}
@@ -58,8 +57,7 @@ AND audit_plans.db_type = :filter_audit_plan_db_type
 
 func (s *Storage) GetAuditPlansByReq(data map[string]interface{}) (
 	list []*AuditPlanListDetail, count uint64, err error) {
-	instance := []string{}
-	instance, _ = data["filter_instance_name"].([]string)
+	instance, _ := data["filter_instance_name"].([]string)
 	queryBody := saveInstanceNameFilter(auditPlanBodyTpl, instance)
 	err = s.getListResult(queryBody, auditPlanQueryTpl, data, &list)
 	if err != nil {
