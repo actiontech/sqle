@@ -2,9 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
-	"strings"
-
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
@@ -47,7 +44,9 @@ AND users.deleted_at IS NULL
 {{- if not .current_user_is_admin }}
 AND ( 
 users.login_name = :current_user_name
-OR instance_name IN ( {{ .filter_instance_name }} )
+{{- if .accessible_instances_name }}
+OR instance_name IN ( {{ .accessible_instances_name }} ) 
+{{- end }}
 )
 {{- end }}
 
@@ -60,8 +59,6 @@ AND audit_plans.db_type = :filter_audit_plan_db_type
 
 func (s *Storage) GetAuditPlansByReq(data map[string]interface{}) (
 	list []*AuditPlanListDetail, count uint64, err error) {
-	instance, _ := data["filter_instance_name"].([]string)
-	data["filter_instance_name"] = fmt.Sprintf("'%s'", strings.Join(instance, ", "))
 	err = s.getListResult(auditPlanBodyTpl, auditPlanQueryTpl, data, &list)
 	if err != nil {
 		return nil, 0, err

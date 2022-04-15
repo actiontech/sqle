@@ -141,23 +141,6 @@ func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) CheckUserCanSeeAuditPlan(user *User, ap *AuditPlan) (bool, error) {
-	if ap.CreateUserID == user.ID {
-		return true, nil
-	}
-
-	instances, err := s.GetUserCanOpInstances(user, []uint{OP_AUDIT_PLAN_VIEW_OTHERS})
-	if err != nil {
-		return false, err
-	}
-	for _, instance := range instances {
-		if ap.InstanceName == instance.Name {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (s *Storage) CheckUserCanCreateAuditPlan(user *User, instName, dbType string) (bool, error) {
 	instances, err := s.GetUserCanOpInstances(user, []uint{OP_AUDIT_PLAN_SAVE})
 	if err != nil {
