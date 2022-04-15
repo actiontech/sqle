@@ -28,10 +28,11 @@ const (
 
 type WorkflowStepTemplate struct {
 	Model
-	Number             uint   `gorm:"index; column:step_number"`
-	WorkflowTemplateId int    `gorm:"index"`
-	Typ                string `gorm:"column:type; not null"`
-	Desc               string
+	Number               uint   `gorm:"index; column:step_number"`
+	WorkflowTemplateId   int    `gorm:"index"`
+	Typ                  string `gorm:"column:type; not null"`
+	Desc                 string
+	ApprovedByAuthorized sql.NullBool `gorm:"column:approved_by_authorized"`
 
 	Users []*User `gorm:"many2many:workflow_step_template_user"`
 }
@@ -56,7 +57,7 @@ func (s *Storage) GetWorkflowTemplateById(id uint) (*WorkflowTemplate, bool, err
 
 func (s *Storage) GetWorkflowStepsByTemplateId(id uint) ([]*WorkflowStepTemplate, error) {
 	steps := []*WorkflowStepTemplate{}
-	err := s.db.Where("workflow_template_id = ?", id).Find(&steps).Error
+	err := s.db.Preload("Users").Where("workflow_template_id = ?", id).Find(&steps).Error
 	return steps, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -79,8 +80,8 @@ func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 		}
 		template.ID = uint(templateId)
 		for _, step := range template.Steps {
-			result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`) values (?,?,?,?)",
-				step.Number, templateId, step.Typ, step.Desc)
+			result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized) values (?,?,?,?,?)",
+				step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized)
 			if err != nil {
 				return err
 			}
@@ -109,8 +110,8 @@ func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*Workflow
 			return err
 		}
 		for _, step := range steps {
-			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`) values (?,?,?,?)",
-				step.Number, templateId, step.Typ, step.Desc)
+			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized) values (?,?,?,?,?)",
+				step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized)
 			if err != nil {
 				return err
 			}
@@ -193,15 +194,20 @@ type WorkflowStep struct {
 	State                  string `gorm:"default:\"initialized\""`
 	Reason                 string
 
+	Assignees     []*User               `gorm:"many2many:workflow_step_user"`
 	Template      *WorkflowStepTemplate `gorm:"foreignkey:WorkflowStepTemplateId"`
 	OperationUser *User                 `gorm:"foreignkey:OperationUserId"`
 }
 
-func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate) []*WorkflowStep {
+func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allInspector []*User) []*WorkflowStep {
 	steps := make([]*WorkflowStep, 0, len(stepsTemplate))
 	for _, st := range stepsTemplate {
 		step := &WorkflowStep{
 			WorkflowStepTemplateId: st.ID,
+			Assignees:              st.Users,
+		}
+		if st.ApprovedByAuthorized.Bool {
+			step.Assignees = allInspector
 		}
 		steps = append(steps, step)
 	}
@@ -214,6 +220,7 @@ func (w *Workflow) cloneWorkflowStep() []*WorkflowStep {
 		steps = append(steps, &WorkflowStep{
 			WorkflowStepTemplateId: step.Template.ID,
 			WorkflowId:             w.ID,
+			Assignees:              step.Assignees,
 		})
 	}
 	return steps
@@ -235,10 +242,7 @@ func (w *Workflow) CurrentAssigneeUser() []*User {
 	if currentStep == nil {
 		return []*User{}
 	}
-	if currentStep.Template == nil {
-		return []*User{}
-	}
-	return currentStep.Template.Users
+	return currentStep.Assignees
 }
 
 func (w *Workflow) NextStep() *WorkflowStep {
@@ -263,7 +267,7 @@ func (w *Workflow) IsOperationUser(user *User) bool {
 	if w.CurrentStep() == nil {
 		return false
 	}
-	for _, assUser := range w.CurrentStep().Template.Users {
+	for _, assUser := range w.CurrentStep().Assignees {
 		if user.ID == assUser.ID {
 			return true
 		}
@@ -294,11 +298,17 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 	record := &WorkflowRecord{
 		TaskId: task.ID,
 	}
-	steps := generateWorkflowStepByTemplate(stepTemplates)
+
+	inspector, err := s.GetUsersByOperationCode(task.Instance, OP_WORKFLOW_AUDIT)
+	if err != nil {
+		return err
+	}
+
+	steps := generateWorkflowStepByTemplate(stepTemplates, inspector)
 
 	tx := s.db.Begin()
 
-	err := tx.Save(record).Error
+	err = tx.Save(record).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
@@ -315,7 +325,14 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 		currentStep := step
 		currentStep.WorkflowRecordId = record.ID
 		currentStep.WorkflowId = workflow.ID
+		users := currentStep.Assignees
+		currentStep.Assignees = nil
 		err = tx.Save(currentStep).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
+		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
@@ -347,7 +364,14 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 	for _, step := range steps {
 		currentStep := step
 		currentStep.WorkflowRecordId = record.ID
+		users := currentStep.Assignees
+		currentStep.Assignees = nil
 		err = tx.Save(currentStep).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
+		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
@@ -408,6 +432,7 @@ func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime 
 func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, error) {
 	steps := []*WorkflowStep{}
 	err := s.db.Where("workflow_record_id in (?)", ids).
+		Preload("Assignees").
 		Preload("OperationUser").Find(&steps).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
@@ -417,7 +442,7 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 		stepTemplateIds = append(stepTemplateIds, step.WorkflowStepTemplateId)
 	}
 	stepTemplates := []*WorkflowStepTemplate{}
-	err = s.db.Preload("Users").Where("id in (?)", stepTemplateIds).Find(&stepTemplates).Error
+	err = s.db.Where("id in (?)", stepTemplateIds).Find(&stepTemplates).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
