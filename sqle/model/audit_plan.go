@@ -145,16 +145,28 @@ func (s *Storage) CheckUserCanSeeAuditPlan(user *User, ap *AuditPlan) (bool, err
 	if ap.CreateUserID == user.ID {
 		return true, nil
 	}
-	if ap.Name == DefaultAdminUser {
-		return true, nil
-	}
 
-	return s.CheckUserCanOperation(user.ID, OP_AUDIT_PLAN_VIEW_OTHERS)
+	instances, err := s.GetInstanceTipsByUserAndOperation(user, ap.Instance.DbType, OP_AUDIT_PLAN_VIEW_OTHERS)
+	if err != nil {
+		return false, err
+	}
+	for _, instance := range instances {
+		if ap.InstanceName == instance.Name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
-func (s *Storage) CheckUserCanCreateAuditPlan(user *User) (bool, error) {
-	if user.Name == DefaultAdminUser {
-		return true, nil
+func (s *Storage) CheckUserCanCreateAuditPlan(user *User, instName, dbType string) (bool, error) {
+	instances, err := s.GetInstanceTipsByUserAndOperation(user, dbType, OP_AUDIT_PLAN_SAVE)
+	if err != nil {
+		return false, err
 	}
-	return s.CheckUserCanOperation(user.ID, OP_AUDIT_PLAN_SAVE)
+	for _, instance := range instances {
+		if instName == instance.Name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
