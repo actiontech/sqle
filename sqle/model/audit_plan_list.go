@@ -47,9 +47,7 @@ AND users.deleted_at IS NULL
 {{- if not .current_user_is_admin }}
 AND ( 
 users.login_name = :current_user_name
-{{- if .filter_instance_name }}
-OR instance_name IN ( {{ .filter_instance_name }} ) 
-{{- end }}
+OR instance_name IN ( {{ .filter_instance_name }} )
 )
 {{- end }}
 
