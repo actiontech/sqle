@@ -146,7 +146,7 @@ func (s *Storage) CheckUserCanSeeAuditPlan(user *User, ap *AuditPlan) (bool, err
 		return true, nil
 	}
 
-	instances, err := s.GetInstanceTipsByUserAndOperation(user, ap.Instance.DbType, OP_AUDIT_PLAN_VIEW_OTHERS)
+	instances, err := s.GetUserCanOpInstances(user, []uint{OP_AUDIT_PLAN_VIEW_OTHERS})
 	if err != nil {
 		return false, err
 	}
@@ -159,7 +159,7 @@ func (s *Storage) CheckUserCanSeeAuditPlan(user *User, ap *AuditPlan) (bool, err
 }
 
 func (s *Storage) CheckUserCanCreateAuditPlan(user *User, instName, dbType string) (bool, error) {
-	instances, err := s.GetInstanceTipsByUserAndOperation(user, dbType, OP_AUDIT_PLAN_SAVE)
+	instances, err := s.GetUserCanOpInstances(user, []uint{OP_AUDIT_PLAN_SAVE})
 	if err != nil {
 		return false, err
 	}

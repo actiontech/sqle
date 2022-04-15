@@ -412,7 +412,7 @@ func GetAuditPlans(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	instances, err := s.GetInstanceTipsByUserAndOperation(currentUser, req.FilterAuditPlanDBType, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
