@@ -45,7 +45,12 @@ WHERE audit_plans.deleted_at IS NULL
 AND users.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
-AND ( users.login_name = :current_user_name %s )
+AND ( 
+users.login_name = :current_user_name
+{{- if .filter_instance_name }}
+OR instance_name IN ( {{ .filter_instance_name }} ) 
+{{- end }}
+)
 {{- end }}
 
 {{- if .filter_audit_plan_db_type }}
@@ -58,24 +63,16 @@ AND audit_plans.db_type = :filter_audit_plan_db_type
 func (s *Storage) GetAuditPlansByReq(data map[string]interface{}) (
 	list []*AuditPlanListDetail, count uint64, err error) {
 	instance, _ := data["filter_instance_name"].([]string)
-	queryBody := saveInstanceNameFilter(auditPlanBodyTpl, instance)
-	err = s.getListResult(queryBody, auditPlanQueryTpl, data, &list)
+	data["filter_instance_name"] = fmt.Sprintf("'%s'", strings.Join(instance, ", "))
+	err = s.getListResult(auditPlanBodyTpl, auditPlanQueryTpl, data, &list)
 	if err != nil {
 		return nil, 0, err
 	}
-	count, err = s.getCountResult(queryBody, auditPlanCountTpl, data)
+	count, err = s.getCountResult(auditPlanBodyTpl, auditPlanCountTpl, data)
 	if err != nil {
 		return nil, 0, err
 	}
 	return
-}
-
-func saveInstanceNameFilter(query string, instances []string) string {
-	sql := ""
-	if len(instances) != 0 {
-		sql = fmt.Sprintf("OR instance_name in ('%s')", strings.Join(instances, "', '"))
-	}
-	return fmt.Sprintf(query, sql)
 }
 
 type AuditPlanSQLListDetail struct {
