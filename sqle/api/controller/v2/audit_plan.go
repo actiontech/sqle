@@ -50,7 +50,7 @@ func GetAuditPlanSQLs(c echo.Context) error {
 	}
 
 	apName := c.Param("audit_plan_name")
-	err := v1.CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := v1.CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -125,7 +125,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	}
 
 	apName := c.Param("audit_plan_name")
-	err := v1.CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := v1.CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

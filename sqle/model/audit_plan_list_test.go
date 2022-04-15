@@ -17,7 +17,6 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	AND users.deleted_at IS NULL
 	AND ( 
 	users.login_name = ?
-	OR instance_name IN ( '' )
 	)
 	AND audit_plans.db_type = ?
 	`

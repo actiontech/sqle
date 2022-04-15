@@ -278,7 +278,7 @@ func CreateAuditPlan(c echo.Context) error {
 // @router /v1/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -323,7 +323,7 @@ func UpdateAuditPlan(c echo.Context) error {
 
 	apName := c.Param("audit_plan_name")
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_SAVE)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -424,9 +424,11 @@ func GetAuditPlans(c echo.Context) error {
 		"filter_audit_plan_db_type": req.FilterAuditPlanDBType,
 		"current_user_name":         currentUser.Name,
 		"current_user_is_admin":     model.DefaultAdminUser == currentUser.Name,
-		"filter_instance_name":      names,
 		"limit":                     req.PageSize,
 		"offset":                    offset,
+	}
+	if len(names) > 0 {
+		data["accessible_instances_name"] = fmt.Sprintf("'%s'", strings.Join(names, ", "))
 	}
 	auditPlans, count, err := s.GetAuditPlansByReq(data)
 	if err != nil {
@@ -472,7 +474,7 @@ type GetAuditPlanResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/ [get]
 func GetAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -544,7 +546,7 @@ func GetAuditPlanReports(c echo.Context) error {
 	}
 
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -597,7 +599,7 @@ type GetAuditPlanReportResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
 func GetAuditPlanReport(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -730,7 +732,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
 	s := model.GetStorage()
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -846,7 +848,7 @@ type TriggerAuditPlanResV1 struct {
 // @router /v1/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName)
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -868,7 +870,7 @@ func TriggerAuditPlan(c echo.Context) error {
 	})
 }
 
-func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {
+func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string, opCode int) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
@@ -888,12 +890,19 @@ func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string) error {
 		return err
 	}
 
-	can, err := storage.CheckUserCanSeeAuditPlan(user, ap)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	if ap.CreateUserID == user.ID {
+		return nil
 	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
+	if opCode > 0 {
+		instances, err := storage.GetUserCanOpInstances(user, []uint{uint(opCode)})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode))))
+		}
+		for _, instance := range instances {
+			if ap.InstanceName == instance.Name {
+				return nil
+			}
+		}
 	}
 	return nil
 }
