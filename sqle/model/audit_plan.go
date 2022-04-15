@@ -142,6 +142,9 @@ func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{
 }
 
 func (s *Storage) CheckUserCanCreateAuditPlan(user *User, instName, dbType string) (bool, error) {
+	if user.Name == DefaultAdminUser {
+		return true, nil
+	}
 	instances, err := s.GetUserCanOpInstances(user, []uint{OP_AUDIT_PLAN_SAVE})
 	if err != nil {
 		return false, err
