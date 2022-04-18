@@ -268,6 +268,14 @@ func (s *Storage) CreateDefaultWorkflowTemplate() error {
 			Steps: []*WorkflowStepTemplate{
 				{
 					Number: 1,
+					Typ:    WorkflowStepTypeSQLReview,
+					ApprovedByAuthorized: sql.NullBool{
+						Bool:  true,
+						Valid: true,
+					},
+				},
+				{
+					Number: 2,
 					Typ:    WorkflowStepTypeSQLExecute,
 					Users:  []*User{user},
 				},
