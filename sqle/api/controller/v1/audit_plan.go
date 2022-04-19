@@ -906,3 +906,73 @@ func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string, opCode in
 	}
 	return nil
 }
+
+type UpdateAuditPlanNotifyConfigReqV1 struct {
+	NotifyInterval      *int    `json:"notify_interval" default:"10"`
+	NotifyLevel         *string `json:"notify_level" default:"warn" enums:"normal,notice,warn,error" valid:"oneof=normal notice warn error"`
+	EnableEmailNotify   *bool   `json:"enable_email_notify"`
+	EnableWebHookNotify *bool   `json:"enable_web_hook_notify"`
+	WebHookURL          *string `json:"web_hook_url"`
+	WebHookTemplate     *string `json:"web_hook_template"`
+}
+
+// @Summary 更新审核计划通知设置
+// @Description update audit plan notify config
+// @Id updateAuditPlanNotifyConfigV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @param config body v1.UpdateAuditPlanNotifyConfigReqV1 true "update audit plan notify config"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/audit_plans/{audit_plan_name}/notify_config [patch]
+func UpdateAuditPlanNotifyConfig(c echo.Context) error {
+	return nil
+}
+
+type GetAuditPlanNotifyConfigResV1 struct {
+	controller.BaseRes
+	Data GetAuditPlanNotifyConfigResDataV1 `json:"data"`
+}
+
+type GetAuditPlanNotifyConfigResDataV1 struct {
+	NotifyInterval      int    `json:"notify_interval"`
+	NotifyLevel         string `json:"notify_level"`
+	EnableEmailNotify   bool   `json:"enable_email_notify"`
+	EnableWebHookNotify bool   `json:"enable_web_hook_notify"`
+	WebHookURL          string `json:"web_hook_url"`
+	WebHookTemplate     string `json:"web_hook_template"`
+}
+
+// @Summary 获取审核任务消息推送设置
+// @Description get audit plan notify config
+// @Id getAuditPlanNotifyConfigV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Success 200 {object} v1.GetAuditPlanNotifyConfigResV1
+// @router /v1/audit_plans/{audit_plan_name}/notify_config [get]
+func GetAuditPlanNotifyConfig(c echo.Context) error {
+	return nil
+}
+
+type TestAuditPlanNotifyConfigResV1 struct {
+	controller.BaseRes
+	Data TestAuditPlanNotifyConfigResDataV1 `json:"data"`
+}
+
+type TestAuditPlanNotifyConfigResDataV1 struct {
+	IsAuditPlanNotifySendNormal bool   `json:"IsAuditPlanNotifySendNormal"`
+	SendErrorMessage            string `json:"send_error_message,omitempty"`
+}
+
+// @Summary 测试审核任务消息推送
+// @Description Test audit task message push
+// @Id testAuditPlanNotifyConfigV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Success 200 {object} v1.TestAuditPlanNotifyConfigResV1
+// @router /v1/audit_plans/{audit_plan_name}/notify_config/test [get]
+func TestAuditPlanNotifyConfig(c echo.Context) error {
+	return nil
+}

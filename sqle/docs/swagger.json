@@ -219,6 +219,109 @@
                 }
             }
         },
+        "/v1/audit_plans/{audit_plan_name}/notify_config": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan notify config",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取审核任务消息推送设置",
+                "operationId": "getAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanNotifyConfigResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update audit plan notify config",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "更新审核计划通知设置",
+                "operationId": "updateAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update audit plan notify config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditPlanNotifyConfigReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/audit_plans/{audit_plan_name}/notify_config/test": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Test audit task message push",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "测试审核任务消息推送",
+                "operationId": "testAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestAuditPlanNotifyConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/": {
             "get": {
                 "security": [
@@ -4640,6 +4743,46 @@
                 }
             }
         },
+        "v1.GetAuditPlanNotifyConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "enable_email_notify": {
+                    "type": "boolean"
+                },
+                "enable_web_hook_notify": {
+                    "type": "boolean"
+                },
+                "notify_interval": {
+                    "type": "integer"
+                },
+                "notify_level": {
+                    "type": "string"
+                },
+                "web_hook_template": {
+                    "type": "string"
+                },
+                "web_hook_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.GetAuditPlanNotifyConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetAuditPlanNotifyConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetAuditPlanReportResV1": {
             "type": "object",
             "properties": {
@@ -5972,6 +6115,34 @@
                 }
             }
         },
+        "v1.TestAuditPlanNotifyConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "IsAuditPlanNotifySendNormal": {
+                    "type": "boolean"
+                },
+                "send_error_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TestAuditPlanNotifyConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestAuditPlanNotifyConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.TestSMTPConfigurationReqV1": {
             "type": "object",
             "properties": {
@@ -6080,6 +6251,37 @@
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.UpdateAuditPlanNotifyConfigReqV1": {
+            "type": "object",
+            "properties": {
+                "enable_email_notify": {
+                    "type": "boolean"
+                },
+                "enable_web_hook_notify": {
+                    "type": "boolean"
+                },
+                "notify_interval": {
+                    "type": "integer",
+                    "default": 10
+                },
+                "notify_level": {
+                    "type": "string",
+                    "default": "warn",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
+                "web_hook_template": {
+                    "type": "string"
+                },
+                "web_hook_url": {
+                    "type": "string"
                 }
             }
         },
