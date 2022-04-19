@@ -464,6 +464,33 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetAuditPlanNotifyConfigResDataV1:
+    properties:
+      enable_email_notify:
+        type: boolean
+      enable_web_hook_notify:
+        type: boolean
+      notify_interval:
+        type: integer
+      notify_level:
+        type: string
+      web_hook_template:
+        type: string
+      web_hook_url:
+        type: string
+    type: object
+  v1.GetAuditPlanNotifyConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetAuditPlanNotifyConfigResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetAuditPlanReportResV1:
     properties:
       code:
@@ -1373,6 +1400,25 @@ definitions:
       workflow_expired_hours:
         type: integer
     type: object
+  v1.TestAuditPlanNotifyConfigResDataV1:
+    properties:
+      IsAuditPlanNotifySendNormal:
+        type: boolean
+      send_error_message:
+        type: string
+    type: object
+  v1.TestAuditPlanNotifyConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestAuditPlanNotifyConfigResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.TestSMTPConfigurationReqV1:
     properties:
       recipient_addr:
@@ -1445,6 +1491,28 @@ definitions:
         type: object
       message:
         example: ok
+        type: string
+    type: object
+  v1.UpdateAuditPlanNotifyConfigReqV1:
+    properties:
+      enable_email_notify:
+        type: boolean
+      enable_web_hook_notify:
+        type: boolean
+      notify_interval:
+        default: 10
+        type: integer
+      notify_level:
+        default: warn
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
+      web_hook_template:
+        type: string
+      web_hook_url:
         type: string
     type: object
   v1.UpdateAuditPlanReqV1:
@@ -2246,6 +2314,71 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新审核计划
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/notify_config:
+    get:
+      description: get audit plan notify config
+      operationId: getAuditPlanNotifyConfigV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanNotifyConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核任务消息推送设置
+      tags:
+      - audit_plan
+    patch:
+      description: update audit plan notify config
+      operationId: updateAuditPlanNotifyConfigV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: update audit plan notify config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateAuditPlanNotifyConfigReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新审核计划通知设置
+      tags:
+      - audit_plan
+  /v1/audit_plans/{audit_plan_name}/notify_config/test:
+    get:
+      description: Test audit task message push
+      operationId: testAuditPlanNotifyConfigV1
+      parameters:
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestAuditPlanNotifyConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试审核任务消息推送
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/:
