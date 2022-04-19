@@ -6134,7 +6134,7 @@ var doc = `{
         "v1.TestAuditPlanNotifyConfigResDataV1": {
             "type": "object",
             "properties": {
-                "IsAuditPlanNotifySendNormal": {
+                "is_notify_send_normal": {
                     "type": "boolean"
                 },
                 "send_error_message": {

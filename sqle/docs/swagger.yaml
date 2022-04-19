@@ -1402,7 +1402,7 @@ definitions:
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
-      IsAuditPlanNotifySendNormal:
+      is_notify_send_normal:
         type: boolean
       send_error_message:
         type: string

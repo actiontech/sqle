@@ -961,8 +961,8 @@ type TestAuditPlanNotifyConfigResV1 struct {
 }
 
 type TestAuditPlanNotifyConfigResDataV1 struct {
-	IsAuditPlanNotifySendNormal bool   `json:"IsAuditPlanNotifySendNormal"`
-	SendErrorMessage            string `json:"send_error_message,omitempty"`
+	IsNotifySendNormal bool   `json:"is_notify_send_normal"`
+	SendErrorMessage   string `json:"send_error_message,omitempty"`
 }
 
 // @Summary 测试审核任务消息推送
