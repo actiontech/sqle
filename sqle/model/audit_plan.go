@@ -22,6 +22,13 @@ type AuditPlan struct {
 	Type             string        `json:"type"`
 	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
+	NotifyInterval      int    `json:"notify_interval"`
+	NotifyLevel         string `json:"notify_level"`
+	EnableEmailNotify   bool   `json:"enable_email_notify"`
+	EnableWebHookNotify bool   `json:"enable_web_hook_notify"`
+	WebHookURL          string `json:"web_hook_url"`
+	WebHookTemplate     string `json:"web_hook_template"`
+
 	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
 	Instance      *Instance         `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
 	AuditPlanSQLs []*AuditPlanSQLV2 `gorm:"foreignkey:AuditPlanID"`
