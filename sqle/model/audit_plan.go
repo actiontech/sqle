@@ -22,8 +22,8 @@ type AuditPlan struct {
 	Type             string        `json:"type"`
 	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
-	NotifyInterval      int    `json:"notify_interval"`
-	NotifyLevel         string `json:"notify_level"`
+	NotifyInterval      int    `json:"notify_interval" gorm:"default:10"`
+	NotifyLevel         string `json:"notify_level" gorm:"default:'warn'"`
 	EnableEmailNotify   bool   `json:"enable_email_notify"`
 	EnableWebHookNotify bool   `json:"enable_web_hook_notify"`
 	WebHookURL          string `json:"web_hook_url"`
