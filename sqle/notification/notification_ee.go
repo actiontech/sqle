@@ -53,9 +53,9 @@ func (n *AuditPlanNotifier) sendJsonReq(webHookUrl string, message string) error
 	if resp.StatusCode != http.StatusOK {
 		body, readErr := ioutil.ReadAll(resp.Body)
 		if readErr != nil {
-			return fmt.Errorf("请求失败, 状态码: %v, webhook返回值读取失败: %v", resp.StatusCode, err)
+			return fmt.Errorf("request failed, status code: %v, webhook return value read failed: %v", resp.StatusCode, err)
 		}
-		return fmt.Errorf("请求失败, 状态码: %v, webhook返回值: %v", resp.StatusCode, string(body))
+		return fmt.Errorf("request failed, status code: %v, webhook return value: %v", resp.StatusCode, string(body))
 	}
 	return resp.Body.Close()
 }
