@@ -237,6 +237,7 @@ vitess
 waddr
 warnf
 warningf
+webhook
 wechat
 whitelist
 wiki
