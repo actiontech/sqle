@@ -2,6 +2,7 @@ package notification
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver"
 	"strconv"
 	"sync"
 	"time"
@@ -225,7 +226,7 @@ func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPla
 }
 
 func (a *AuditPlanNotification) NotificationSubject() string {
-	return fmt.Sprintf("审核计划[%v]结果通知", a.auditPlan.Name)
+	return fmt.Sprintf("SQLE审核任务[%v]审核结果[%v]", a.auditPlan.Name, a.report.AuditLevel)
 }
 
 func (a *AuditPlanNotification) NotificationBody() string {
@@ -259,6 +260,25 @@ func (t *TestNotify) NotificationSubject() string {
 
 func (t *TestNotify) NotificationBody() string {
 	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
+}
+
+func NotifyAuditPlan(apName string, report *model.AuditPlanReportV2) error {
+	s := model.GetStorage()
+	ap, _, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return err
+	}
+	ap.CreateUser, _, err = s.GetUserByID(ap.CreateUserID)
+	if err != nil {
+		return err
+	}
+
+	if driver.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
+		n := NewAuditPlanNotification(ap, report)
+		return GetAuditPlanNotifier().Notify(n, ap)
+	}
+
+	return nil
 }
 
 var stdAuditPlanNotifier = NewAuditPlanNotifier()
