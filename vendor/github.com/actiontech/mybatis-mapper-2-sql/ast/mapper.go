@@ -8,6 +8,7 @@ import (
 )
 
 type Mapper struct {
+	version        int
 	NameSpace      string
 	SqlNodes       map[string]*SqlNode
 	QueryNodeIndex map[string]*QueryNode
