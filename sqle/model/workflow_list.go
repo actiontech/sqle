@@ -76,7 +76,7 @@ OR curr_ass_user.id = :current_user_id
 OR all_ass_user.id = :current_user_id
 
 {{- if .viewable_instance_ids }} 
-OR inst.id IN (:viewable_instance_ids)
+OR inst.id IN ( {{ .viewable_instance_ids }})
 {{- end }}
 
 )
