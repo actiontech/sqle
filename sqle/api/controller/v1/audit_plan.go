@@ -8,15 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/labstack/echo/v4"
 	"github.com/ungerik/go-dry"
 )
@@ -871,10 +872,6 @@ func TriggerAuditPlan(c echo.Context) error {
 }
 
 func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string, opCode int) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
-	}
-
 	storage := model.GetStorage()
 
 	ap, exist, err := storage.GetAuditPlanByName(apName)
@@ -883,6 +880,10 @@ func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string, opCode in
 	}
 	if !exist {
 		return errAuditPlanNotExist
+	}
+
+	if controller.GetUserName(c) == model.DefaultAdminUser {
+		return nil
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -926,7 +927,41 @@ type UpdateAuditPlanNotifyConfigReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/audit_plans/{audit_plan_name}/notify_config [patch]
 func UpdateAuditPlanNotifyConfig(c echo.Context) error {
-	return nil
+	req := new(UpdateAuditPlanNotifyConfigReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	apName := c.Param("audit_plan_name")
+
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	updateAttr := make(map[string]interface{})
+	if req.EnableWebHookNotify != nil {
+		updateAttr["enable_web_hook_notify"] = *req.EnableWebHookNotify
+	}
+	if req.EnableEmailNotify != nil {
+		updateAttr["enable_email_notify"] = *req.EnableEmailNotify
+	}
+	if req.NotifyInterval != nil {
+		updateAttr["notify_interval"] = *req.NotifyInterval
+	}
+	if req.NotifyLevel != nil {
+		updateAttr["notify_level"] = *req.NotifyLevel
+	}
+	if req.WebHookURL != nil {
+		updateAttr["web_hook_url"] = *req.WebHookURL
+	}
+	if req.WebHookTemplate != nil {
+		updateAttr["web_hook_template"] = *req.WebHookTemplate
+	}
+
+	storage := model.GetStorage()
+	err = storage.UpdateAuditPlanByName(apName, updateAttr)
+	return controller.JSONBaseErrorReq(c, err)
 }
 
 type GetAuditPlanNotifyConfigResV1 struct {
@@ -952,7 +987,27 @@ type GetAuditPlanNotifyConfigResDataV1 struct {
 // @Success 200 {object} v1.GetAuditPlanNotifyConfigResV1
 // @router /v1/audit_plans/{audit_plan_name}/notify_config [get]
 func GetAuditPlanNotifyConfig(c echo.Context) error {
-	return nil
+	apName := c.Param("audit_plan_name")
+
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	ap, _, err := s.GetAuditPlanByName(apName)
+
+	return c.JSON(http.StatusOK, GetAuditPlanNotifyConfigResV1{
+		BaseRes: controller.NewBaseReq(err),
+		Data: GetAuditPlanNotifyConfigResDataV1{
+			NotifyInterval:      ap.NotifyInterval,
+			NotifyLevel:         ap.NotifyLevel,
+			EnableEmailNotify:   ap.EnableEmailNotify,
+			EnableWebHookNotify: ap.EnableWebHookNotify,
+			WebHookURL:          ap.WebHookURL,
+			WebHookTemplate:     ap.WebHookTemplate,
+		},
+	})
 }
 
 type TestAuditPlanNotifyConfigResV1 struct {
@@ -974,5 +1029,48 @@ type TestAuditPlanNotifyConfigResDataV1 struct {
 // @Success 200 {object} v1.TestAuditPlanNotifyConfigResV1
 // @router /v1/audit_plans/{audit_plan_name}/notify_config/test [get]
 func TestAuditPlanNotifyConfig(c echo.Context) error {
-	return nil
+	apName := c.Param("audit_plan_name")
+	s := model.GetStorage()
+
+	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	ap, _, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	user, exist, err := s.GetUserByID(ap.CreateUserID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, TestAuditPlanNotifyConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestAuditPlanNotifyConfigResDataV1{
+				IsNotifySendNormal: false,
+				SendErrorMessage:   "audit plan create user not exist",
+			},
+		})
+	}
+	ap.CreateUser = user
+
+	err = notification.GetAuditPlanNotifier().Send(&notification.TestNotify{}, ap)
+	if err != nil {
+		return c.JSON(http.StatusOK, TestAuditPlanNotifyConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestAuditPlanNotifyConfigResDataV1{
+				IsNotifySendNormal: false,
+				SendErrorMessage:   err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, TestAuditPlanNotifyConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestAuditPlanNotifyConfigResDataV1{
+			IsNotifySendNormal: true,
+			SendErrorMessage:   "success",
+		},
+	})
 }
