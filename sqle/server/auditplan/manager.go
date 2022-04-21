@@ -8,6 +8,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
@@ -178,7 +179,11 @@ func (mgr *Manager) Audit(apName string) (*model.AuditPlanReportV2, error) {
 	if err != nil {
 		return nil, err
 	}
-	return task.Audit()
+	report, err := task.Audit()
+	if err != nil {
+		return nil, err
+	}
+	return report, notification.NotifyAuditPlan(apName, report)
 }
 
 func (mgr *Manager) UploadSQLs(apName string, sqls []*SQL, isPartialSync bool) error {

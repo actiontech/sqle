@@ -319,3 +319,12 @@ func (s *Storage) GetUsersByOperationCode(instance *Instance, opCode ...int) (us
 	}
 	return s.GetUsersByNames(names)
 }
+
+func (s *Storage) GetUserByID(id uint) (*User, bool, error) {
+	u := &User{}
+	err := s.db.Model(User{}).Where("id = ?", id).Find(u).Error
+	if err == gorm.ErrRecordNotFound {
+		return u, false, nil
+	}
+	return u, true, errors.New(errors.ConnectStorageError, err)
+}

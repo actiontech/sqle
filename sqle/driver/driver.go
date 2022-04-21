@@ -80,6 +80,11 @@ func (r RuleLevel) MoreOrEqual(l RuleLevel) bool {
 	return ruleLevelMap[r] >= ruleLevelMap[l]
 }
 
+// RuleLevelLessOrEqual return level a <= level b
+func RuleLevelLessOrEqual(a, b string) bool {
+	return RuleLevel(a).LessOrEqual(RuleLevel(b))
+}
+
 type Rule struct {
 	Name string
 	Desc string
