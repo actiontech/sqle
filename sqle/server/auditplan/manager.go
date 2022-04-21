@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
@@ -178,7 +180,30 @@ func (mgr *Manager) Audit(apName string) (*model.AuditPlanReportV2, error) {
 	if err != nil {
 		return nil, err
 	}
-	return task.Audit()
+	report, err := task.Audit()
+	if err != nil {
+		return nil, err
+	}
+	return report, mgr.notifyReport(apName, report)
+}
+
+func (mgr *Manager) notifyReport(apName string, report *model.AuditPlanReportV2) error {
+	s := model.GetStorage()
+	ap, _, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return err
+	}
+	ap.CreateUser, _, err = s.GetUserByID(ap.CreateUserID)
+	if err != nil {
+		return err
+	}
+
+	if driver.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
+		n := notification.NewAuditPlanNotification(ap, report)
+		return notification.GetAuditPlanNotifier().Notify(n, ap)
+	}
+
+	return nil
 }
 
 func (mgr *Manager) UploadSQLs(apName string, sqls []*SQL, isPartialSync bool) error {
