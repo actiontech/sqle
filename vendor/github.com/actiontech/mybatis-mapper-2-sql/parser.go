@@ -13,7 +13,7 @@ import (
 func ParseXML(data string) (string, error) {
 	r := strings.NewReader(data)
 	d := xml.NewDecoder(r)
-	n, err := parse(d, nil)
+	n, err := parse(d)
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +32,7 @@ func ParseXML(data string) (string, error) {
 func ParseXMLQuery(data string, skipErrorQuery bool) ([]string, error) {
 	r := strings.NewReader(data)
 	d := xml.NewDecoder(r)
-	n, err := parse(d, nil)
+	n, err := parse(d)
 	if err != nil {
 		return nil, err
 	}
@@ -50,14 +50,33 @@ func ParseXMLQuery(data string, skipErrorQuery bool) ([]string, error) {
 	return stmts, nil
 }
 
-func parse(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
-	if start != nil {
-		node, err = scan(start)
+func parse(d *xml.Decoder) (node ast.Node, err error) {
+	for {
+		t, err := d.Token()
+		if err == io.EOF { // found end of element
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
+		// get first start element
+		if st, ok := t.(xml.StartElement); ok {
+			switch st.Name.Local {
+			case "mapper":
+				return parseMyBatis(d, &st)
+			case "sqlMap":
+				return parseIBatis(d, &st)
+			}
+		}
 	}
+	return nil, nil
+}
 
+func parseMyBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
+	node, err = scanMyBatis(start)
+	if err != nil {
+		return nil, err
+	}
 	for {
 		t, err := d.Token()
 		if err == io.EOF { // found end of element
@@ -69,7 +88,7 @@ func parse(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
 
 		switch tt := t.(type) {
 		case xml.StartElement:
-			child, err := parse(d, &tt)
+			child, err := parseMyBatis(d, &tt)
 			if err != nil {
 				return nil, err
 			}
@@ -85,7 +104,7 @@ func parse(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
 				}
 			}
 		case xml.EndElement:
-			if start != nil && tt.Name == start.Name {
+			if tt.Name == start.Name {
 				return node, nil
 			}
 		case xml.CharData:
@@ -93,7 +112,7 @@ func parse(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
 			if strings.TrimSpace(s) == "" {
 				continue
 			}
-			d := ast.NewData(tt)
+			d := ast.NewMyBatisData(tt)
 			d.ScanData()
 			if node != nil {
 				node.AddChildren(d)
@@ -105,7 +124,7 @@ func parse(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
 	return node, nil
 }
 
-func scan(start *xml.StartElement) (ast.Node, error) {
+func scanMyBatis(start *xml.StartElement) (ast.Node, error) {
 	var node ast.Node
 	switch start.Name.Local {
 	case "mapper":
@@ -130,6 +149,85 @@ func scan(start *xml.StartElement) (ast.Node, error) {
 		node = ast.NewTrimNode()
 	case "foreach":
 		node = ast.NewForeachNode()
+	default:
+		return nil, nil
+		//return node, fmt.Errorf("unknow xml <%s>", start.Name.Local)
+	}
+	node.Scan(start)
+	return node, nil
+}
+
+// ref: https://ibatis.apache.org/docs/java/pdf/iBATIS-SqlMaps-2_cn.pdf
+func parseIBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
+	node, err = scanIBatis(start)
+	if err != nil {
+		return nil, err
+	}
+	for {
+		t, err := d.Token()
+		if err == io.EOF { // found end of element
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		switch tt := t.(type) {
+		case xml.StartElement:
+			child, err := parseIBatis(d, &tt)
+			if err != nil {
+				return nil, err
+			}
+			if child == nil {
+				continue
+			}
+			if node == nil {
+				node = child
+			} else {
+				err := node.AddChildren(child)
+				if err != nil {
+					return nil, err
+				}
+			}
+		case xml.EndElement:
+			if tt.Name == start.Name {
+				return node, nil
+			}
+		case xml.CharData:
+			s := string(tt)
+			if strings.TrimSpace(s) == "" {
+				continue
+			}
+			d := ast.NewIBatisData(tt)
+			d.ScanData()
+			if node != nil {
+				node.AddChildren(d)
+			}
+		default:
+			continue
+		}
+	}
+	return node, nil
+}
+
+func scanIBatis(start *xml.StartElement) (ast.Node, error) {
+	var node ast.Node
+	switch start.Name.Local {
+	case "sqlMap":
+		node = ast.NewMapper()
+	case "sql":
+		node = ast.NewSqlNode()
+	case "include":
+		node = ast.NewIncludeNode()
+	case "select", "update", "delete", "insert", "statement":
+		node = ast.NewQueryNode()
+	case "isEqual", "isNotEqual", "isGreaterThan", "isGreaterEqual", "isLessEqual",
+		"isPropertyAvailable", "isNotPropertyAvailable", "isNull", "isNotNull", "isEmpty", "isNotEmpty":
+		node = ast.NewConditionStmt()
+	case "dynamic":
+		node = ast.NewDynamicStmt()
+	case "iterate":
+		node = ast.NewIterateStmt()
 	default:
 		return nil, nil
 		//return node, fmt.Errorf("unknow xml <%s>", start.Name.Local)

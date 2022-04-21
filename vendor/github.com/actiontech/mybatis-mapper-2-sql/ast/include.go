@@ -19,7 +19,7 @@ func NewIncludeNode() *IncludeNode {
 func (i *IncludeNode) Scan(start *xml.StartElement) error {
 	for _, attr := range start.Attr {
 		if attr.Name.Local == "refid" {
-			data := NewData([]byte(attr.Value))
+			data := NewMyBatisData([]byte(attr.Value))
 			err := data.ScanData()
 			if err != nil {
 				return err
