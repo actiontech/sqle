@@ -2,6 +2,7 @@ package notification
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver"
 	"strconv"
 	"sync"
 	"time"
@@ -212,6 +213,44 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	}
 }
 
+type AuditPlanNotification struct {
+	auditPlan *model.AuditPlan
+	report    *model.AuditPlanReportV2
+}
+
+func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2) *AuditPlanNotification {
+	return &AuditPlanNotification{
+		auditPlan: auditPlan,
+		report:    report,
+	}
+}
+
+func (a *AuditPlanNotification) NotificationSubject() string {
+	return fmt.Sprintf("SQLE审核任务[%v]审核结果[%v]", a.auditPlan.Name, a.report.AuditLevel)
+}
+
+func (a *AuditPlanNotification) NotificationBody() string {
+	return fmt.Sprintf(`
+- 审核任务: %v
+- 审核时间: %v
+- 审核类型: %v
+- 数据源: %v
+- 数据库名: %v
+- 审核得分: %v
+- 审核通过率：%v
+- 审核结果等级: %v
+`,
+		a.auditPlan.Name,
+		a.report.CreatedAt.Format(time.RFC3339),
+		a.auditPlan.Type,
+		a.auditPlan.InstanceName,
+		a.auditPlan.InstanceDatabase,
+		a.report.Score,
+		a.report.PassRate,
+		a.report.AuditLevel,
+	)
+}
+
 type TestNotify struct {
 }
 
@@ -221,6 +260,25 @@ func (t *TestNotify) NotificationSubject() string {
 
 func (t *TestNotify) NotificationBody() string {
 	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
+}
+
+func NotifyAuditPlan(apName string, report *model.AuditPlanReportV2) error {
+	s := model.GetStorage()
+	ap, _, err := s.GetAuditPlanByName(apName)
+	if err != nil {
+		return err
+	}
+	ap.CreateUser, _, err = s.GetUserByID(ap.CreateUserID)
+	if err != nil {
+		return err
+	}
+
+	if driver.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
+		n := NewAuditPlanNotification(ap, report)
+		return GetAuditPlanNotifier().Notify(n, ap)
+	}
+
+	return nil
 }
 
 var stdAuditPlanNotifier = NewAuditPlanNotifier()

@@ -217,6 +217,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	v1Router.POST("/audit_plans/:audit_plan_name/trigger", v1.TriggerAuditPlan)
 	v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
+	v1Router.PATCH("/audit_plans/:audit_plan_name/notify_config", v1.UpdateAuditPlanNotifyConfig)
+	v1Router.GET("/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
+	v1Router.GET("/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 
 	// UI
 	e.File("/", "ui/index.html")
