@@ -97,7 +97,7 @@ func (n *WhenNode) Scan(start *xml.StartElement) error {
 }
 
 type OtherwiseNode struct {
-	Data *Data
+	Data *MyBatisData
 }
 
 func NewOtherwiseNode() *OtherwiseNode {
@@ -114,7 +114,7 @@ func (n *OtherwiseNode) AddChildren(ns ...Node) error {
 		return err
 	}
 	switch d := ns[0].(type) {
-	case *Data:
+	case *MyBatisData:
 		n.Data = d
 	default:
 		return err
@@ -244,6 +244,134 @@ func (n *ForeachNode) GetStmt(ctx *Context) (string, error) {
 	}
 	if n.Close != "" {
 		buff.WriteString(n.Close)
+	}
+	return buff.String(), nil
+}
+
+type ConditionStmt struct {
+	*ChildrenNode
+	typ     string
+	prepEnd string
+}
+
+func NewConditionStmt() *ConditionStmt {
+	n := &ConditionStmt{}
+	n.ChildrenNode = NewNode()
+	return n
+}
+
+func (n *ConditionStmt) Scan(start *xml.StartElement) error {
+	n.typ = start.Name.Local
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "prepend" {
+			n.prepEnd = attr.Value
+		}
+	}
+	return nil
+}
+
+func (n *ConditionStmt) GetStmt(ctx *Context) (string, error) {
+	buff := bytes.Buffer{}
+	data, err := n.ChildrenNode.GetStmt(ctx)
+	if err != nil {
+		return "", err
+	}
+	if n.prepEnd != "" {
+		buff.WriteString(n.prepEnd)
+		buff.WriteString(" ")
+	}
+	buff.WriteString(data)
+	return buff.String(), nil
+}
+
+type IterateStmt struct {
+	*ForeachNode
+	prepEnd string
+}
+
+func NewIterateStmt() *IterateStmt {
+	n := &IterateStmt{}
+	n.ForeachNode = NewForeachNode()
+	return n
+}
+
+func (n *IterateStmt) Scan(start *xml.StartElement) error {
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "open" {
+			n.Open = attr.Value
+		}
+		if attr.Name.Local == "close" {
+			n.Close = attr.Value
+		}
+		if attr.Name.Local == "conjunction" {
+			n.Separator = attr.Value
+		}
+		if attr.Name.Local == "prepend" {
+			n.prepEnd = attr.Value
+		}
+	}
+	return nil
+}
+
+func (n *IterateStmt) GetStmt(ctx *Context) (string, error) {
+	buff := bytes.Buffer{}
+	data, err := n.ForeachNode.GetStmt(ctx)
+	if err != nil {
+		return "", err
+	}
+	if data != "" && n.prepEnd != "" {
+		buff.WriteString(n.prepEnd)
+	}
+	buff.WriteString(data)
+	return buff.String(), nil
+}
+
+type DynamicStmt struct {
+	*ChildrenNode
+	prepEnd string
+}
+
+func NewDynamicStmt() *DynamicStmt {
+	n := &DynamicStmt{}
+	n.ChildrenNode = NewNode()
+	return n
+}
+
+func (n *DynamicStmt) Scan(start *xml.StartElement) error {
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "prepend" {
+			n.prepEnd = attr.Value
+		}
+	}
+	return nil
+}
+
+func (n *DynamicStmt) GetStmt(ctx *Context) (string, error) {
+	buff := bytes.Buffer{}
+	for i, a := range n.Children {
+		// the first condition
+		if i == 0 {
+			switch c := a.(type) {
+			case *ConditionStmt:
+				c.prepEnd = n.prepEnd
+			case *IterateStmt:
+				c.prepEnd = n.prepEnd
+			default:
+				buff.WriteString(n.prepEnd)
+			}
+		}
+		data, err := a.GetStmt(ctx)
+		if err != nil {
+			return "", err
+		}
+		if i != 0 {
+			d := strings.ToLower(strings.TrimSpace(data))
+			if !strings.HasPrefix(d, "and") && !strings.HasPrefix(d, "or") &&
+				!strings.HasPrefix(d, strings.ToLower(n.prepEnd)) {
+				buff.WriteString("AND ")
+			}
+		}
+		buff.WriteString(data)
 	}
 	return buff.String(), nil
 }
