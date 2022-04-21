@@ -3,6 +3,7 @@ package notification
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/log"
@@ -220,4 +221,71 @@ func (t *TestNotify) NotificationSubject() string {
 
 func (t *TestNotify) NotificationBody() string {
 	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
+}
+
+var stdAuditPlanNotifier = NewAuditPlanNotifier()
+
+func GetAuditPlanNotifier() *AuditPlanNotifier {
+	return stdAuditPlanNotifier
+}
+
+type AuditPlanNotifier struct {
+	lastSend      map[string] /*audit plan name*/ time.Time /*last send time*/
+	mutex         *sync.RWMutex
+	emailNotifier *EmailNotifier
+}
+
+func NewAuditPlanNotifier() *AuditPlanNotifier {
+	return &AuditPlanNotifier{
+		lastSend:      map[string]time.Time{},
+		mutex:         &sync.RWMutex{},
+		emailNotifier: &EmailNotifier{},
+	}
+}
+
+func (n *AuditPlanNotifier) Notify(notification Notification, auditPlan *model.AuditPlan) error {
+	if !n.shouldNotify(auditPlan) {
+		return nil
+	}
+
+	err := n.Send(notification, auditPlan)
+	if err != nil {
+		return err
+	}
+
+	n.updateRecord(auditPlan.Name)
+	return nil
+}
+
+func (n *AuditPlanNotifier) shouldNotify(auditPlan *model.AuditPlan) bool {
+	n.mutex.RLock()
+	last := n.lastSend[auditPlan.Name]
+	n.mutex.RUnlock()
+	return time.Now().After(last.Add(time.Duration(auditPlan.NotifyInterval) * time.Minute))
+}
+
+func (n *AuditPlanNotifier) Send(notification Notification, auditPlan *model.AuditPlan) (err error) {
+	if auditPlan.EnableEmailNotify {
+		err = n.sendEmail(notification, auditPlan.CreateUser)
+		if err != nil {
+			return err
+		}
+	}
+	if auditPlan.EnableWebHookNotify {
+		err = n.sendWebHook(notification, auditPlan.WebHookURL, auditPlan.WebHookTemplate)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *AuditPlanNotifier) sendEmail(notification Notification, user *model.User) error {
+	return n.emailNotifier.Notify(notification, []*model.User{user})
+}
+
+func (n *AuditPlanNotifier) updateRecord(auditPlanName string) {
+	n.mutex.Lock()
+	n.lastSend[auditPlanName] = time.Now()
+	n.mutex.Unlock()
 }
