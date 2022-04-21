@@ -212,6 +212,44 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	}
 }
 
+type AuditPlanNotification struct {
+	auditPlan *model.AuditPlan
+	report    *model.AuditPlanReportV2
+}
+
+func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2) *AuditPlanNotification {
+	return &AuditPlanNotification{
+		auditPlan: auditPlan,
+		report:    report,
+	}
+}
+
+func (a *AuditPlanNotification) NotificationSubject() string {
+	return fmt.Sprintf("审核计划[%v]结果通知", a.auditPlan.Name)
+}
+
+func (a *AuditPlanNotification) NotificationBody() string {
+	return fmt.Sprintf(`
+- 审核任务: %v
+- 审核时间: %v
+- 审核类型: %v
+- 数据源: %v
+- 数据库名: %v
+- 审核得分: %v
+- 审核通过率：%v
+- 审核结果等级: %v
+`,
+		a.auditPlan.Name,
+		a.report.CreatedAt.Format(time.RFC3339),
+		a.auditPlan.Type,
+		a.auditPlan.InstanceName,
+		a.auditPlan.InstanceDatabase,
+		a.report.Score,
+		a.report.PassRate,
+		a.report.AuditLevel,
+	)
+}
+
 type TestNotify struct {
 }
 
