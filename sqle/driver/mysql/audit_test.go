@@ -3270,6 +3270,44 @@ func Test_CheckExplain_ShouldNotError(t *testing.T) {
 	assert.NoError(t, handler.ExpectationsWereMet())
 }
 
+func TestCheckIndexOption(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexOption].Rule
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_3")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("100.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "alter table exist_tb_3 add primary key (v1);", newTestResult())
+
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_3")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("100.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "alter table exist_tb_3 add unique(v1);", newTestResult())
+
+	inspect3 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM exist_tb_3")).
+		WillReturnRows(sqlmock.NewRows([]string{"v2"}).
+			AddRow("30.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect3, "alter table exist_tb_3 add index idx_c2(v2);",
+		newTestResult().addResult(rulepkg.DDLCheckIndexOption, "v2", 70))
+
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v3 ) ) / COUNT( * ) * 100 AS v3 FROM exist_tb_3")).
+		WillReturnRows(sqlmock.NewRows([]string{"v3"}).
+			AddRow("70.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect4, "alter table exist_tb_3 add fulltext(v3);", newTestResult())
+
+	inspect5 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1,COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM exist_tb_3")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1", "v2"}).
+			AddRow("100.0000", "30.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect5, "alter table exist_tb_3 add index idx_c1_c2(v1,v2);", newTestResult())
+
+}
+
 func Test_CheckExplain_ShouldError(t *testing.T) {
 	e, handler, err := executor.NewMockExecutor()
 	assert.NoError(t, err)
