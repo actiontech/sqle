@@ -552,20 +552,20 @@ func (c *Context) GetCollationDatabase(stmt *ast.TableName, schemaName string) (
 }
 
 // GetMaxIndexOptionForTable get max index option column of table.
-func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (string, error) {
+func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (float64, error) {
 	ti, exist := c.GetTableInfo(stmt)
 	if !exist || !ti.isLoad {
-		return "", nil
+		return -1, nil
 	}
 
 	for _, columnName := range columnNames {
 		if !util.TableExistCol(ti.OriginalTable, columnName) {
-			return "", nil
+			return -1, nil
 		}
 	}
 
 	if c.e == nil {
-		return "", nil
+		return -1, nil
 	}
 
 	sqls := make([]string, 0, len(columnNames))
@@ -575,17 +575,22 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 
 	result, err := c.e.Db.Query(fmt.Sprintf("SELECT %v FROM %v", strings.Join(sqls, ","), stmt.Name))
 	if err != nil {
-		return "", fmt.Errorf("query max index option for table error: %v", err)
+		return -1, fmt.Errorf("query max index option for table error: %v", err)
 	}
-	maxIndexOption := ""
+	maxIndexOption := -1.0
 	for _, r := range result {
 		for _, value := range r {
-			if maxIndexOption == "" {
-				maxIndexOption = value.String
+			v, err := strconv.ParseFloat(value.String, 64)
+			if err != nil {
+				return -1, err
+			}
+			if maxIndexOption == -1 {
+				maxIndexOption = v
 				continue
 			}
-			if strings.Compare(value.String, maxIndexOption) > 0 {
-				maxIndexOption = value.String
+
+			if v > maxIndexOption {
+				maxIndexOption = v
 			}
 		}
 	}
