@@ -3052,8 +3052,9 @@ func checkIndexOption(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 		return err
 	}
 	// todo: using number compare, don't use string compare
-	max := rule.Params.GetParam(DefaultSingleParamKeyName).String()
-	if maxIndexOption != "" && strings.Compare(max, maxIndexOption) > 0 {
+	max := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+	if maxIndexOption > 0 && float64(max) > maxIndexOption {
 		addResult(res, rule, rule.Name, strings.Join(indexColumns, ", "), max)
 	}
 	return nil
