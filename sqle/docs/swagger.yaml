@@ -220,6 +220,15 @@ definitions:
           type: string
         type: array
     type: object
+  v1.BindOauth2UserReqV1:
+    properties:
+      oauth2_user_id:
+        type: string
+      pwd:
+        type: string
+      user_name:
+        type: string
+    type: object
   v1.CheckLicenseResV1:
     properties:
       code:
@@ -791,6 +800,60 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetOauth2ConfigurationResDataV1:
+    properties:
+      access_token_tag:
+        type: string
+      client_host:
+        type: string
+      client_id:
+        type: string
+      enable_oauth2:
+        type: boolean
+      login_tip:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      server_auth_url:
+        type: string
+      server_token_url:
+        type: string
+      server_user_id_url:
+        type: string
+    type: object
+  v1.GetOauth2ConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetOauth2ConfigurationResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetOauth2TipsResDataV1:
+    properties:
+      enable_oauth2:
+        type: boolean
+      login_tip:
+        type: string
+    type: object
+  v1.GetOauth2TipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetOauth2TipsResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetOperationsResV1:
     properties:
       code:
@@ -1231,6 +1294,31 @@ definitions:
       maintenance_stop_time:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
+    type: object
+  v1.Oauth2ConfigurationReqV1:
+    properties:
+      access_token_tag:
+        type: string
+      client_host:
+        type: string
+      client_id:
+        type: string
+      client_key:
+        type: string
+      enable_oauth2:
+        type: boolean
+      login_tip:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      server_auth_url:
+        type: string
+      server_token_url:
+        type: string
+      server_user_id_url:
+        type: string
     type: object
   v1.OperationResV1:
     properties:
@@ -2794,6 +2882,54 @@ paths:
       summary: 获取生成 sqle license需要的的信息
       tags:
       - configuration
+  /v1/configurations/oauth2:
+    get:
+      description: get Oauth2 configuration
+      operationId: getOauth2ConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOauth2ConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 Oauth2 配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update Oauth2 configuration
+      operationId: updateOauth2ConfigurationV1
+      parameters:
+      - description: update Oauth2 configuration req
+        in: body
+        name: conf
+        required: true
+        schema:
+          $ref: '#/definitions/v1.Oauth2ConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 修改 Oauth2 配置
+      tags:
+      - configuration
+  /v1/configurations/oauth2/tips:
+    get:
+      description: get Oauth2 tips
+      operationId: getOauth2Tips
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOauth2TipsResV1'
+      summary: 获取 Oauth2 基本信息
+      tags:
+      - configuration
   /v1/configurations/smtp:
     get:
       description: get SMTP configuration
@@ -3267,6 +3403,32 @@ paths:
       summary: 用户登录
       tags:
       - user
+  /v1/oauth2/link:
+    get:
+      description: oauth2 link
+      operationId: Oauth2Link
+      summary: oauth2通过此链接跳转到第三方登录网址
+      tags:
+      - oauth2
+  /v1/oauth2/user/bind:
+    post:
+      description: bind Oauth2 user to sqle
+      operationId: bindOauth2User
+      parameters:
+      - description: bind oauth2 user req
+        in: body
+        name: conf
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BindOauth2UserReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      summary: 绑定 Oauth2 和 sqle用户
+      tags:
+      - oauth2
   /v1/operations:
     get:
       description: get permission operations

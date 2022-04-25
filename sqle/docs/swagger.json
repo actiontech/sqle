@@ -975,6 +975,82 @@
                 }
             }
         },
+        "/v1/configurations/oauth2": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get Oauth2 configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 Oauth2 配置",
+                "operationId": "getOauth2ConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOauth2ConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update Oauth2 configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "修改 Oauth2 配置",
+                "operationId": "updateOauth2ConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update Oauth2 configuration req",
+                        "name": "conf",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.Oauth2ConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/oauth2/tips": {
+            "get": {
+                "description": "get Oauth2 tips",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 Oauth2 基本信息",
+                "operationId": "getOauth2Tips",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOauth2TipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -1722,6 +1798,45 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetUserLoginResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/oauth2/link": {
+            "get": {
+                "description": "oauth2 link",
+                "tags": [
+                    "oauth2"
+                ],
+                "summary": "oauth2通过此链接跳转到第三方登录网址",
+                "operationId": "Oauth2Link"
+            }
+        },
+        "/v1/oauth2/user/bind": {
+            "post": {
+                "description": "bind Oauth2 user to sqle",
+                "tags": [
+                    "oauth2"
+                ],
+                "summary": "绑定 Oauth2 和 sqle用户",
+                "operationId": "bindOauth2User",
+                "parameters": [
+                    {
+                        "description": "bind oauth2 user req",
+                        "name": "conf",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BindOauth2UserReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -4385,6 +4500,20 @@
                 }
             }
         },
+        "v1.BindOauth2UserReqV1": {
+            "type": "object",
+            "properties": {
+                "oauth2_user_id": {
+                    "type": "string"
+                },
+                "pwd": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
@@ -5215,6 +5344,86 @@
                 }
             }
         },
+        "v1.GetOauth2ConfigurationResDataV1": {
+            "type": "object",
+            "properties": {
+                "access_token_tag": {
+                    "type": "string"
+                },
+                "client_host": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "enable_oauth2": {
+                    "type": "boolean"
+                },
+                "login_tip": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "server_auth_url": {
+                    "type": "string"
+                },
+                "server_token_url": {
+                    "type": "string"
+                },
+                "server_user_id_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.GetOauth2ConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetOauth2ConfigurationResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetOauth2TipsResDataV1": {
+            "type": "object",
+            "properties": {
+                "enable_oauth2": {
+                    "type": "boolean"
+                },
+                "login_tip": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.GetOauth2TipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetOauth2TipsResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetOperationsResV1": {
             "type": "object",
             "properties": {
@@ -5858,6 +6067,44 @@
                 "maintenance_stop_time": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TimeResV1"
+                }
+            }
+        },
+        "v1.Oauth2ConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "access_token_tag": {
+                    "type": "string"
+                },
+                "client_host": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "client_key": {
+                    "type": "string"
+                },
+                "enable_oauth2": {
+                    "type": "boolean"
+                },
+                "login_tip": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "server_auth_url": {
+                    "type": "string"
+                },
+                "server_token_url": {
+                    "type": "string"
+                },
+                "server_user_id_url": {
+                    "type": "string"
                 }
             }
         },

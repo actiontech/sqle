@@ -448,3 +448,77 @@ func GetSQLEInfo(c echo.Context) error {
 		Version: config.Version,
 	})
 }
+
+type GetOauth2ConfigurationResV1 struct {
+	controller.BaseRes
+	Data GetOauth2ConfigurationResDataV1 `json:"data"`
+}
+
+type GetOauth2ConfigurationResDataV1 struct {
+	EnableOauth2    bool     `json:"enable_oauth2"`
+	ClientID        string   `json:"client_id"`
+	ClientHost      string   `json:"client_host"`
+	ServerAuthUrl   string   `json:"server_auth_url"`
+	ServerTokenUrl  string   `json:"server_token_url"`
+	ServerUserIdUrl string   `json:"server_user_id_url"`
+	Scopes          []string `json:"scopes"`
+	AccessTokenTag  string   `json:"access_token_tag"`
+	LoginTip        string   `json:"login_tip"`
+}
+
+// @Summary 获取 Oauth2 配置
+// @Description get Oauth2 configuration
+// @Id getOauth2ConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetOauth2ConfigurationResV1
+// @router /v1/configurations/oauth2 [get]
+func GetOauth2Configuration(c echo.Context) error {
+	return nil
+}
+
+type Oauth2ConfigurationReqV1 struct {
+	EnableOauth2    *bool     `json:"enable_oauth2"`
+	ClientID        *string   `json:"client_id"`
+	ClientKey       *string   `json:"client_key"`
+	ClientHost      *string   `json:"client_host"`
+	ServerAuthUrl   *string   `json:"server_auth_url"`
+	ServerTokenUrl  *string   `json:"server_token_url"`
+	ServerUserIdUrl *string   `json:"server_user_id_url"`
+	Scopes          *[]string `json:"scopes"`
+	AccessTokenTag  *string   `json:"access_token_tag"`
+	LoginTip        *string   `json:"login_tip"`
+}
+
+// @Summary 修改 Oauth2 配置
+// @Description update Oauth2 configuration
+// @Accept json
+// @Id updateOauth2ConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param conf body v1.Oauth2ConfigurationReqV1 true "update Oauth2 configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/oauth2 [patch]
+func UpdateOauth2Configuration(c echo.Context) error {
+	return nil
+}
+
+type GetOauth2TipsResV1 struct {
+	controller.BaseRes
+	Data GetOauth2TipsResDataV1 `json:"data"`
+}
+
+type GetOauth2TipsResDataV1 struct {
+	EnableOauth2 bool   `json:"enable_oauth2"`
+	LoginTip     string `json:"login_tip"`
+}
+
+// @Summary 获取 Oauth2 基本信息
+// @Description get Oauth2 tips
+// @Id getOauth2Tips
+// @Tags configuration
+// @Success 200 {object} v1.GetOauth2TipsResV1
+// @router /v1/configurations/oauth2/tips [get]
+func GetOauth2Tips(c echo.Context) error {
+	return nil
+}
