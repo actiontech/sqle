@@ -140,6 +140,7 @@ noprofile
 norc
 nullable
 nxadm
+oauth
 omitempty
 oneof
 onlineddl
