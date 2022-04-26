@@ -488,6 +488,7 @@ func GetOauth2Configuration(c echo.Context) error {
 			ServerUserIdUrl: oauth2C.ServerUserIdUrl,
 			Scopes:          oauth2C.GetScopes(),
 			AccessTokenTag:  oauth2C.AccessTokenTag,
+			UserIdTag:       oauth2C.UserIdTag,
 			LoginTip:        oauth2C.LoginTip,
 		},
 	})
