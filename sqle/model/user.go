@@ -21,8 +21,9 @@ func IsDefaultAdminUser(user string) bool {
 type UserAuthenticationType string
 
 const (
-	UserAuthenticationTypeLDAP UserAuthenticationType = "ldap" // user verify through ldap
-	UserAuthenticationTypeSQLE UserAuthenticationType = "sqle" //user verify through sqle
+	UserAuthenticationTypeLDAP   UserAuthenticationType = "ldap"   // user verify through ldap
+	UserAuthenticationTypeSQLE   UserAuthenticationType = "sqle"   //user verify through sqle
+	UserAuthenticationTypeOAUTH2 UserAuthenticationType = "oauth2" //user verify through oauth2
 )
 
 type User struct {
@@ -37,6 +38,7 @@ type User struct {
 	Roles                  []*Role                `gorm:"many2many:user_role;"`
 	UserGroups             []*UserGroup           `gorm:"many2many:user_group_users"`
 	Stat                   uint                   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
+	ThirdPartyUserID       string                 `json:"third_party_user_id"`
 
 	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
 }
@@ -90,6 +92,15 @@ func (i *User) encryptPassword() error {
 		i.SecretPassword = data
 	}
 	return nil
+}
+
+func (s *Storage) GetUserByThirdPartyUserID(thirdPartyUserID string) (*User, bool, error) {
+	t := &User{}
+	err := s.db.Where("third_party_user_id = ?", thirdPartyUserID).First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		return t, false, nil
+	}
+	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetUserByName(name string) (*User, bool, error) {
