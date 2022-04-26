@@ -463,6 +463,7 @@ type GetOauth2ConfigurationResDataV1 struct {
 	ServerUserIdUrl string   `json:"server_user_id_url"`
 	Scopes          []string `json:"scopes"`
 	AccessTokenTag  string   `json:"access_token_tag"`
+	UserIdTag       string   `json:"user_id_tag"`
 	LoginTip        string   `json:"login_tip"`
 }
 
@@ -487,6 +488,7 @@ type Oauth2ConfigurationReqV1 struct {
 	ServerUserIdUrl *string   `json:"server_user_id_url"`
 	Scopes          *[]string `json:"scopes"`
 	AccessTokenTag  *string   `json:"access_token_tag"`
+	UserIdTag       *string   `json:"user_id_tag"`
 	LoginTip        *string   `json:"login_tip"`
 }
 
