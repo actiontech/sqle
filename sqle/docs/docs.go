@@ -1852,7 +1852,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.BindOauth2UserResDataV1"
                         }
                     }
                 }
@@ -4530,6 +4530,14 @@ var doc = `{
                 }
             }
         },
+        "v1.BindOauth2UserResDataV1": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
@@ -5392,6 +5400,9 @@ var doc = `{
                 },
                 "server_user_id_url": {
                     "type": "string"
+                },
+                "user_id_tag": {
+                    "type": "string"
                 }
             }
         },
@@ -6120,6 +6131,9 @@ var doc = `{
                     "type": "string"
                 },
                 "server_user_id_url": {
+                    "type": "string"
+                },
+                "user_id_tag": {
                     "type": "string"
                 }
             }

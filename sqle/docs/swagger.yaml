@@ -229,6 +229,11 @@ definitions:
       user_name:
         type: string
     type: object
+  v1.BindOauth2UserResDataV1:
+    properties:
+      token:
+        type: string
+    type: object
   v1.CheckLicenseResV1:
     properties:
       code:
@@ -822,6 +827,8 @@ definitions:
         type: string
       server_user_id_url:
         type: string
+      user_id_tag:
+        type: string
     type: object
   v1.GetOauth2ConfigurationResV1:
     properties:
@@ -1318,6 +1325,8 @@ definitions:
       server_token_url:
         type: string
       server_user_id_url:
+        type: string
+      user_id_tag:
         type: string
     type: object
   v1.OperationResV1:
@@ -3425,7 +3434,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/v1.BindOauth2UserResDataV1'
       summary: 绑定 Oauth2 和 sqle用户
       tags:
       - oauth2
