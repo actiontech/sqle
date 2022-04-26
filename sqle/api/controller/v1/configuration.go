@@ -463,6 +463,7 @@ type GetOauth2ConfigurationResDataV1 struct {
 	ServerUserIdUrl string   `json:"server_user_id_url"`
 	Scopes          []string `json:"scopes"`
 	AccessTokenTag  string   `json:"access_token_tag"`
+	UserIdTag       string   `json:"user_id_tag"`
 	LoginTip        string   `json:"login_tip"`
 }
 
@@ -474,7 +475,23 @@ type GetOauth2ConfigurationResDataV1 struct {
 // @Success 200 {object} v1.GetOauth2ConfigurationResV1
 // @router /v1/configurations/oauth2 [get]
 func GetOauth2Configuration(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	oauth2C, _, err := s.GetOauth2Configuration()
+	return c.JSON(http.StatusOK, &GetOauth2ConfigurationResV1{
+		BaseRes: controller.NewBaseReq(err),
+		Data: GetOauth2ConfigurationResDataV1{
+			EnableOauth2:    oauth2C.EnableOauth2,
+			ClientID:        oauth2C.ClientID,
+			ClientHost:      oauth2C.ClientHost,
+			ServerAuthUrl:   oauth2C.ServerAuthUrl,
+			ServerTokenUrl:  oauth2C.ServerTokenUrl,
+			ServerUserIdUrl: oauth2C.ServerUserIdUrl,
+			Scopes:          oauth2C.GetScopes(),
+			AccessTokenTag:  oauth2C.AccessTokenTag,
+			UserIdTag:       oauth2C.UserIdTag,
+			LoginTip:        oauth2C.LoginTip,
+		},
+	})
 }
 
 type Oauth2ConfigurationReqV1 struct {
@@ -487,6 +504,7 @@ type Oauth2ConfigurationReqV1 struct {
 	ServerUserIdUrl *string   `json:"server_user_id_url"`
 	Scopes          *[]string `json:"scopes"`
 	AccessTokenTag  *string   `json:"access_token_tag"`
+	UserIdTag       *string   `json:"user_id_tag"`
 	LoginTip        *string   `json:"login_tip"`
 }
 
@@ -500,7 +518,54 @@ type Oauth2ConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/oauth2 [patch]
 func UpdateOauth2Configuration(c echo.Context) error {
-	return nil
+	req := new(Oauth2ConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	oauth2C, _, err := s.GetOauth2Configuration()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	{ // patch oauth2 config
+		if req.EnableOauth2 != nil {
+			oauth2C.EnableOauth2 = *req.EnableOauth2
+		}
+		if req.ClientID != nil {
+			oauth2C.ClientID = *req.ClientID
+		}
+		if req.ClientKey != nil {
+			oauth2C.ClientKey = *req.ClientKey
+		}
+		if req.ClientHost != nil {
+			oauth2C.ClientHost = *req.ClientHost
+		}
+		if req.ServerAuthUrl != nil {
+			oauth2C.ServerAuthUrl = *req.ServerAuthUrl
+		}
+		if req.ServerTokenUrl != nil {
+			oauth2C.ServerTokenUrl = *req.ServerTokenUrl
+		}
+		if req.ServerUserIdUrl != nil {
+			oauth2C.ServerUserIdUrl = *req.ServerUserIdUrl
+		}
+		if req.Scopes != nil {
+			oauth2C.SetScopes(*req.Scopes)
+		}
+		if req.AccessTokenTag != nil {
+			oauth2C.AccessTokenTag = *req.AccessTokenTag
+		}
+		if req.UserIdTag != nil {
+			oauth2C.UserIdTag = *req.UserIdTag
+		}
+		if req.LoginTip != nil {
+			oauth2C.LoginTip = *req.LoginTip
+		}
+
+	}
+
+	return controller.JSONBaseErrorReq(c, s.Save(oauth2C))
 }
 
 type GetOauth2TipsResV1 struct {
@@ -520,5 +585,13 @@ type GetOauth2TipsResDataV1 struct {
 // @Success 200 {object} v1.GetOauth2TipsResV1
 // @router /v1/configurations/oauth2/tips [get]
 func GetOauth2Tips(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	oauth2C, _, err := s.GetOauth2Configuration()
+	return c.JSON(http.StatusOK, &GetOauth2TipsResV1{
+		BaseRes: controller.NewBaseReq(err),
+		Data: GetOauth2TipsResDataV1{
+			EnableOauth2: oauth2C.EnableOauth2,
+			LoginTip:     oauth2C.LoginTip,
+		},
+	})
 }
