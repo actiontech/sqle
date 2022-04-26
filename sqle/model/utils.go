@@ -112,6 +112,7 @@ func (s *Storage) AutoMigrate() error {
 		&Instance{},
 		&WeChatConfiguration{},
 		&LDAPConfiguration{},
+		&Oauth2Configuration{},
 		&License{},
 		&RoleOperation{},
 		&Role{},
@@ -381,6 +382,10 @@ func (r *RowList) Scan(src interface{}) error {
 		}
 	}
 	return nil
+}
+
+func (r RowList) Value() (sqlDriver.Value, error) {
+	return strings.Join(r, ","), nil
 }
 
 type JSON json.RawMessage
