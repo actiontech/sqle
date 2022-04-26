@@ -51,8 +51,7 @@ func Login(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
 	}
 
-	j := utils.NewJWT(utils.JWTSecretKey)
-	t, err := j.CreateToken(req.UserName, time.Now().Add(time.Hour*24).Unix())
+	t, err := generateToken(req.UserName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -62,6 +61,11 @@ func Login(c echo.Context) error {
 			Token: t,
 		},
 	})
+}
+
+func generateToken(userName string) (string, error) {
+	j := utils.NewJWT(utils.JWTSecretKey)
+	return j.CreateToken(userName, time.Now().Add(time.Hour*24).Unix())
 }
 
 // GetLoginCheckerByUserName get login checker by user name and init login checker
@@ -126,8 +130,8 @@ func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) (chec
 		}
 	}
 
-	// sqle login condition
-	if user != nil && (user.UserAuthenticationType == model.UserAuthenticationTypeSQLE || user.UserAuthenticationType == "") {
+	// sqle login condition, oauth 2 and other login types of users can also log in through the account and password
+	if user != nil && (user.UserAuthenticationType != model.UserAuthenticationTypeLDAP) {
 		return loginCheckerTypeSQLE, true
 	}
 
