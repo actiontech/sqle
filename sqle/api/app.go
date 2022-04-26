@@ -65,6 +65,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
 
+	// oauth2 interface does not require login authentication
+	e.GET("/v1/configurations/oauth2/tips", v1.GetOauth2Tips)
+	e.GET("/v1/oauth2/link", v1.Oauth2Link)
+	e.GET("/v1/oauth2/callback", v1.Oauth2Callback)
+	e.POST("/v1/oauth2/user/bind", v1.BindOauth2User)
+
 	v1Router := e.Group(apiV1)
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
 	v2Router := e.Group(apiV2)
@@ -141,6 +147,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.POST("/configurations/license", v1.SetLicense, AdminUserAllowed())
 		v1Router.GET("/configurations/license/info", v1.GetSQLELicenseInfo, AdminUserAllowed())
 		v1Router.POST("/configurations/license/check", v1.CheckLicense, AdminUserAllowed())
+		v1Router.GET("/configurations/oauth2", v1.GetOauth2Configuration, AdminUserAllowed())
+		v1Router.PATCH("/configurations/oauth2", v1.UpdateOauth2Configuration, AdminUserAllowed())
 
 	}
 
