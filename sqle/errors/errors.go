@@ -12,7 +12,8 @@ const (
 
 	HttpRequestFormatError ErrorCode = 2001
 
-	ErrAccessDeniedError ErrorCode = 3001
+	ErrAccessDeniedError      ErrorCode = 3001
+	EnterpriseEditionFeatures ErrorCode = 3002
 
 	LoginAuthFail     ErrorCode = 4001
 	UserDisabled      ErrorCode = 4005
