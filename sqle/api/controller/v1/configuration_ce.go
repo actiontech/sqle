@@ -12,7 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var errCommunityEditionDoesNotSupportWeChatConfiguration = errors.New(errors.ErrAccessDeniedError, e.New("community edition does not support WeChat configuration"))
+var errCommunityEditionDoesNotSupportWeChatConfiguration = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support WeChat configuration"))
 
 func testWeChatConfigurationV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWeChatConfiguration)
