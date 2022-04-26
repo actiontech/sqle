@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -218,6 +219,85 @@ func (s *Storage) GetLDAPConfiguration() (*LDAPConfiguration, bool, error) {
 		return ldapC, false, nil
 	}
 	return ldapC, true, errors.New(errors.ConnectStorageError, err)
+}
+
+// Oauth2Configuration store ldap server configuration.
+type Oauth2Configuration struct {
+	Model
+	EnableOauth2    bool   `json:"enable_oauth2" gorm:"column:enable_oauth2"`
+	ClientID        string `json:"client_id" gorm:"column:client_id"`
+	ClientKey       string `json:"-" gorm:"-"`
+	ClientSecret    string `json:"client_secret" gorm:"client_secret"`
+	ClientHost      string `json:"client_host" gorm:"column:client_host"`
+	ServerAuthUrl   string `json:"server_auth_url" gorm:"column:server_auth_url"`
+	ServerTokenUrl  string `json:"server_token_url" gorm:"column:server_token_url"`
+	ServerUserIdUrl string `json:"server_user_id_url" gorm:"column:server_user_id_url"`
+	Scopes          string `json:"scopes" gorm:"column:scopes"`
+	AccessTokenTag  string `json:"access_token_tag" gorm:"column:access_token_tag"`
+	UserIdTag       string `json:"user_id_tag" gorm:"column:user_id_tag"`
+	LoginTip        string `json:"login_tip" gorm:"column:login_tip default:使用第三方账户登录"`
+}
+
+func (i *Oauth2Configuration) GetScopes() []string {
+	return strings.Split(i.Scopes, ",")
+}
+
+func (i *Oauth2Configuration) SetScopes(s []string) {
+	i.Scopes = strings.Join(s, ",")
+}
+
+func (i *Oauth2Configuration) TableName() string {
+	return fmt.Sprintf("%v_oauth2", globalConfigurationTablePrefix)
+}
+
+// BeforeSave is a hook implement gorm model before exec create
+func (i *Oauth2Configuration) BeforeSave() error {
+	return i.encryptPassword()
+}
+
+// AfterFind is a hook implement gorm model after query, ignore err if query from db
+func (i *Oauth2Configuration) AfterFind() error {
+	err := i.decryptPassword()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt password for ldap administrative user failed, error: %v", err)
+	}
+	return nil
+}
+
+func (i *Oauth2Configuration) decryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.ClientKey == "" {
+		data, err := utils.AesDecrypt(i.ClientSecret)
+		if err != nil {
+			return err
+		} else {
+			i.ClientKey = data
+		}
+	}
+	return nil
+}
+
+func (i *Oauth2Configuration) encryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	data, err := utils.AesEncrypt(i.ClientKey)
+	if err != nil {
+		return err
+	}
+	i.ClientSecret = data
+	return nil
+}
+
+func (s *Storage) GetOauth2Configuration() (*Oauth2Configuration, bool, error) {
+	oauth2C := new(Oauth2Configuration)
+	err := s.db.Last(oauth2C).Error
+	if err == gorm.ErrRecordNotFound {
+		return oauth2C, false, nil
+	}
+	return oauth2C, true, errors.New(errors.ConnectStorageError, err)
 }
 
 const (
