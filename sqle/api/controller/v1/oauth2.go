@@ -39,7 +39,7 @@ type BindOauth2UserResDataV1 struct {
 // @Id bindOauth2User
 // @Tags oauth2
 // @Param conf body v1.BindOauth2UserReqV1 true "bind oauth2 user req"
-// @Success 200 {object} v1.BindOauth2UserResDataV1
+// @Success 200 {object} v1.BindOauth2UserResV1
 // @router /v1/oauth2/user/bind [post]
 func BindOauth2User(c echo.Context) error {
 	return bindOauth2User(c)
