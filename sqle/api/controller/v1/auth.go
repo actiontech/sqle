@@ -130,7 +130,7 @@ func getLoginCheckerType(user *model.User, ldapC *model.LDAPConfiguration) (chec
 		}
 	}
 
-	// sqle login condition
+	// sqle login condition, oauth 2 and other login types of users can also log in through the account and password
 	if user != nil && (user.UserAuthenticationType != model.UserAuthenticationTypeLDAP) {
 		return loginCheckerTypeSQLE, true
 	}
