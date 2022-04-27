@@ -50,7 +50,7 @@ func generateOauth2Config(conf *model.Oauth2Configuration) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientKey,
-		RedirectURL:  fmt.Sprintf("http://%v/v1/oauth2/callback", conf.ClientHost),
+		RedirectURL:  fmt.Sprintf("%v/v1/oauth2/callback", conf.ClientHost),
 		Scopes:       conf.GetScopes(),
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  conf.ServerAuthUrl,
@@ -88,7 +88,7 @@ func oauth2Callback(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// TODO sqle https should also support
-	uri := fmt.Sprintf("http://%v", oauth2C.ClientHost)
+	uri := oauth2C.ClientHost
 	data := callbackRedirectData{}
 
 	// check callback request
@@ -158,6 +158,9 @@ func getOauth2UserID(conf *model.Oauth2Configuration, token *oauth2.Token) (user
 	return fmt.Sprintf("%v", user), nil
 }
 
+// prevent users from malicious password attempts
+var errBeenBoundOrThePasswordIsWrong = errors.New(errors.DataExist, fmt.Errorf("the platform user has been bound or the password is wrong"))
+
 func bindOauth2User(c echo.Context) error {
 	req := new(BindOauth2UserReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -168,6 +171,16 @@ func bindOauth2User(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+
+	// check third-party users have bound sqle user
+	_, exist, err := s.GetUserByThirdPartyUserID(req.Oauth2UserID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errBeenBoundOrThePasswordIsWrong)
+	}
+
 	user, exist, err := s.GetUserByName(req.UserName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -185,33 +198,34 @@ func bindOauth2User(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+	} else {
+		// check user login type
+		if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 &&
+			user.UserAuthenticationType != model.UserAuthenticationTypeSQLE &&
+			user.UserAuthenticationType != "" {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("the user has bound other login methods")))
+		}
+
+		// check user bind third party users
+		if user.ThirdPartyUserID != req.Oauth2UserID && user.ThirdPartyUserID != "" {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("the user has bound other third-party user")))
+		}
+
+		// modify user login type
+		if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 {
+			user.ThirdPartyUserID = req.Oauth2UserID
+			user.UserAuthenticationType = model.UserAuthenticationTypeOAUTH2
+			err := s.UpdateUserAuthenticationTypeByName(user.Name, model.UserAuthenticationTypeOAUTH2)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		}
+
 	}
 
 	// check password
 	if user.Password != req.Pwd {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("wrong password")))
-	}
-
-	// check user login type
-	if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 &&
-		user.UserAuthenticationType != model.UserAuthenticationTypeSQLE &&
-		user.UserAuthenticationType != "" {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("the user has bound other login methods")))
-	}
-
-	// check user bind third party users
-	if user.ThirdPartyUserID != req.Oauth2UserID && user.ThirdPartyUserID != "" {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("the user has bound other third-party user")))
-	}
-
-	// modify user login type
-	if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 {
-		user.ThirdPartyUserID = req.Oauth2UserID
-		user.UserAuthenticationType = model.UserAuthenticationTypeOAUTH2
-		err = s.UpdateUserAuthenticationTypeByName(user.Name, model.UserAuthenticationTypeOAUTH2)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+		return controller.JSONBaseErrorReq(c, errBeenBoundOrThePasswordIsWrong)
 	}
 
 	t, err := generateToken(req.UserName)
