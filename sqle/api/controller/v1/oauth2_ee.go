@@ -168,10 +168,12 @@ func bindOauth2User(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	user, exist, err := s.GetUserByThirdPartyUserID(req.Oauth2UserID)
+	user, exist, err := s.GetUserByName(req.UserName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	// create user if not exist
 	if !exist {
 		user = &model.User{
 			Name:                   req.UserName,
@@ -192,11 +194,16 @@ func bindOauth2User(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("the user has bound other login methods")))
 	}
 
+	// check user bind third party users
+	if user.ThirdPartyUserID != req.Oauth2UserID && user.ThirdPartyUserID != "" {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("the user has bound other third-party user")))
+	}
+
 	// modify user login type
 	if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 {
 		user.ThirdPartyUserID = req.Oauth2UserID
 		user.UserAuthenticationType = model.UserAuthenticationTypeOAUTH2
-		err = s.Update(user)
+		err = s.UpdateUserAuthenticationTypeByName(user.Name, model.UserAuthenticationTypeOAUTH2)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
