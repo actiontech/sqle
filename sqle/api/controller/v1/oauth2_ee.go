@@ -199,6 +199,12 @@ func bindOauth2User(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	} else {
+
+		// check password
+		if user.Password != req.Pwd {
+			return controller.JSONBaseErrorReq(c, errBeenBoundOrThePasswordIsWrong)
+		}
+
 		// check user login type
 		if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 &&
 			user.UserAuthenticationType != model.UserAuthenticationTypeSQLE &&
@@ -221,11 +227,6 @@ func bindOauth2User(c echo.Context) error {
 			}
 		}
 
-	}
-
-	// check password
-	if user.Password != req.Pwd {
-		return controller.JSONBaseErrorReq(c, errBeenBoundOrThePasswordIsWrong)
 	}
 
 	t, err := generateToken(req.UserName)
