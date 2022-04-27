@@ -103,6 +103,14 @@ func (s *Storage) GetUserByThirdPartyUserID(thirdPartyUserID string) (*User, boo
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) UpdateUserAuthenticationTypeByName(name string, tp UserAuthenticationType) error {
+	err := s.db.Model(&User{}).Where("login_name = ?", name).Update("user_authentication_type", string(tp)).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
 func (s *Storage) GetUserByName(name string) (*User, bool, error) {
 	t := &User{}
 	err := s.db.Where("login_name = ?", name).First(t).Error
