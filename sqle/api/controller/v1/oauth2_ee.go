@@ -187,6 +187,11 @@ func bindOauth2User(c echo.Context) error {
 		}
 	}
 
+	// check password
+	if user.Password != req.Pwd {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("wrong password")))
+	}
+
 	// check user login type
 	if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 &&
 		user.UserAuthenticationType != model.UserAuthenticationTypeSQLE &&
