@@ -4519,7 +4519,7 @@ var doc = `{
         "v1.BindOauth2UserReqV1": {
             "type": "object",
             "properties": {
-                "oauth2_user_id": {
+                "oauth2_token": {
                     "type": "string"
                 },
                 "pwd": {
