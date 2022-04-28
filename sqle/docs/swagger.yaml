@@ -222,7 +222,7 @@ definitions:
     type: object
   v1.BindOauth2UserReqV1:
     properties:
-      oauth2_user_id:
+      oauth2_token:
         type: string
       pwd:
         type: string

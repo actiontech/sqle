@@ -20,9 +20,9 @@ func Oauth2Callback(c echo.Context) error {
 }
 
 type BindOauth2UserReqV1 struct {
-	UserName     string `json:"user_name" from:"user_name" valid:"required"`
-	Pwd          string `json:"pwd" from:"pwd" valid:"required"`
-	Oauth2UserID string `json:"oauth2_user_id" from:"oauth2_user_id" valid:"required"`
+	UserName    string `json:"user_name" from:"user_name" valid:"required"`
+	Pwd         string `json:"pwd" from:"pwd" valid:"required"`
+	Oauth2Token string `json:"oauth2_token" from:"oauth2_token" valid:"required"`
 }
 
 type BindOauth2UserResV1 struct {
