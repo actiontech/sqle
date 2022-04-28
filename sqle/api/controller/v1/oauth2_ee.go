@@ -60,10 +60,10 @@ func generateOauth2Config(conf *model.Oauth2Configuration) *oauth2.Config {
 }
 
 type callbackRedirectData struct {
-	UserExist    bool
-	SqleToken    string
-	Oauth2UserId string
-	Error        string
+	UserExist   bool
+	SqleToken   string
+	Oauth2Token string
+	Error       string
 }
 
 func (c callbackRedirectData) generateQuery(uri string) string {
@@ -72,8 +72,8 @@ func (c callbackRedirectData) generateQuery(uri string) string {
 	if c.SqleToken != "" {
 		params.Set("sqle_token", c.SqleToken)
 	}
-	if c.Oauth2UserId != "" {
-		params.Set("oauth2_user_id", c.Oauth2UserId)
+	if c.Oauth2Token != "" {
+		params.Set("oauth2_token", c.Oauth2Token)
 	}
 	if c.Error != "" {
 		params.Set("error", c.Error)
@@ -109,15 +109,14 @@ func oauth2Callback(c echo.Context) error {
 		data.Error = err.Error()
 		return c.Redirect(http.StatusFound, data.generateQuery(uri))
 	}
+	data.Oauth2Token = oauth2Token.AccessToken
 
-	//get user id using oauth2 token
-	userID, err := getOauth2UserID(oauth2C, oauth2Token)
+	//get user is exist
+	userID, err := getOauth2UserID(oauth2C, oauth2Token.AccessToken)
 	if err != nil {
 		data.Error = err.Error()
 		return c.Redirect(http.StatusFound, data.generateQuery(uri))
 	}
-	data.Oauth2UserId = userID
-
 	user, exist, err := s.GetUserByThirdPartyUserID(userID)
 	if err != nil {
 		data.Error = err.Error()
@@ -138,8 +137,8 @@ func oauth2Callback(c echo.Context) error {
 	return c.Redirect(http.StatusFound, data.generateQuery(uri))
 }
 
-func getOauth2UserID(conf *model.Oauth2Configuration, token *oauth2.Token) (userID string, err error) {
-	uri := fmt.Sprintf("%v?%v=%v", conf.ServerUserIdUrl, conf.AccessTokenTag, token.AccessToken)
+func getOauth2UserID(conf *model.Oauth2Configuration, token string) (userID string, err error) {
+	uri := fmt.Sprintf("%v?%v=%v", conf.ServerUserIdUrl, conf.AccessTokenTag, token)
 	resp, err := (&http.Client{}).Get(uri)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -166,14 +165,22 @@ func bindOauth2User(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	if req.Oauth2UserID == "" {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("oauth2 user id can not empty")))
+	if req.Oauth2Token == "" {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("oauth2 token can not empty")))
 	}
 
 	s := model.GetStorage()
+	oauth2C, _, err := s.GetOauth2Configuration()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	oauth2UserID, err := getOauth2UserID(oauth2C, req.Oauth2Token)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
 
 	// check third-party users have bound sqle user
-	_, exist, err := s.GetUserByThirdPartyUserID(req.Oauth2UserID)
+	_, exist, err := s.GetUserByThirdPartyUserID(oauth2UserID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -191,7 +198,7 @@ func bindOauth2User(c echo.Context) error {
 		user = &model.User{
 			Name:                   req.UserName,
 			Password:               req.Pwd,
-			ThirdPartyUserID:       req.Oauth2UserID,
+			ThirdPartyUserID:       oauth2UserID,
 			UserAuthenticationType: model.UserAuthenticationTypeOAUTH2,
 		}
 		err = s.Save(user)
@@ -213,13 +220,13 @@ func bindOauth2User(c echo.Context) error {
 		}
 
 		// check user bind third party users
-		if user.ThirdPartyUserID != req.Oauth2UserID && user.ThirdPartyUserID != "" {
+		if user.ThirdPartyUserID != oauth2UserID && user.ThirdPartyUserID != "" {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("the user has bound other third-party user")))
 		}
 
 		// modify user login type
 		if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 {
-			user.ThirdPartyUserID = req.Oauth2UserID
+			user.ThirdPartyUserID = oauth2UserID
 			user.UserAuthenticationType = model.UserAuthenticationTypeOAUTH2
 			err := s.UpdateUserAuthenticationTypeByName(user.Name, model.UserAuthenticationTypeOAUTH2)
 			if err != nil {
