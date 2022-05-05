@@ -987,6 +987,6 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 
 // checkUnparsedStmt might add more check in future.
 func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
-	i.result.Add(driver.RuleLevelError, "语法错误或者解析器不支持")
+	i.result.Add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性")
 	return nil
 }
