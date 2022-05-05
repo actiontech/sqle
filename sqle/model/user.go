@@ -324,7 +324,9 @@ func (s *Storage) GetUsersByOperationCode(instance *Instance, opCode ...int) (us
 	names := []string{}
 	err = s.db.Model(&User{}).Select("DISTINCT users.login_name").
 		Joins("LEFT JOIN user_role ON users.id = user_role.user_id "+
-			"LEFT JOIN role_operations ON user_role.role_id = role_operations.role_id AND role_operations.deleted_at IS NULL "+
+			"LEFT JOIN user_group_users ON users.id = user_group_users.user_id "+
+			"LEFT JOIN user_group_roles ON user_group_users.user_group_id = user_group_roles.role_id "+
+			"LEFT JOIN role_operations ON ( user_role.role_id = role_operations.role_id OR user_group_roles.role_id = role_operations.role_id ) AND role_operations.deleted_at IS NULL "+
 			"LEFT JOIN instance_role ON instance_role.role_id = role_operations.role_id ").
 		Where("instance_role.instance_id = ?", instance.ID).
 		Where("role_operations.op_code in (?)", opCode).
