@@ -211,7 +211,7 @@ func Ping(entry *logrus.Entry, instance *mdriver.DSN) error {
 }
 
 func (c *Executor) ShowCreateTable(tableName string) (string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show create table %s", tableName))
+	result, err := c.Db.Query(fmt.Sprintf("show create table `%s`", tableName))
 	if err != nil {
 		return "", err
 	}
