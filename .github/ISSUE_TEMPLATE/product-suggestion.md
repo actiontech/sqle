@@ -8,10 +8,10 @@ assignees: ''
 ---
 
 **Describe**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+<!-- A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]  -->
 
 **Suggestion**
-A clear and concise description of what you want to happen.
+<!-- A clear and concise description of what you want to happen. -->
 
 **Why**
-Why it can solve your problem.
+<!-- Why it can solve your problem. -->
