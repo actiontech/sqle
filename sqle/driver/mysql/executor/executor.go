@@ -299,7 +299,7 @@ func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
 }
 
 func (c *Executor) ShowCreateView(tableName string) (string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show create view %s", tableName))
+	result, err := c.Db.Query(fmt.Sprintf("show create view %s", utils.SupplementalQuotationMarks(tableName)))
 	if err != nil {
 		return "", err
 	}
