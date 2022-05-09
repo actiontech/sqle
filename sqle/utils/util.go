@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -104,4 +105,20 @@ func JoinUintSliceToString(s []uint, sep string) string {
 	}
 
 	return strings.Join(strSlice, sep)
+}
+
+// If there are no quotation marks (', ", `) at the beginning and end of the string, the string will be wrapped with "`"
+// Need to be wary of the presence of "`" in the string
+func SupplementalQuotationMarks(s string) string {
+	end := len(s) - 1
+	if end <= 0 {
+		return "``"
+	}
+	if s[0] != s[end] {
+		return fmt.Sprintf("`%s`", s)
+	}
+	if string(s[0]) != "'" && s[0] != '"' && s[0] != '`' {
+		return fmt.Sprintf("`%s`", s)
+	}
+	return s
 }
