@@ -14,6 +14,8 @@ Copyright (c)  ActionTech and/or its affiliates. SQLE is a SQL audit platform, w
 
 [Docs](https://actiontech.github.io/sqle-docs-cn/) | [Deploy](https://actiontech.github.io/sqle-docs-cn/2.deploy/overview.html) | [Official website](https://opensource.actionsky.com/sqle/)
 
+## Product show
+![product_show](./SQLE_product_show.gif)
 ## Online demo
 [Online SQLE Server](http://124.70.158.246:8888/)
 #### Login user
