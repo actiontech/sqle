@@ -338,7 +338,7 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 	}
 	if useGhost {
 		if _, err := i.executeByGhost(ctx, sql, true); err != nil {
-			i.result.Add(ghostRule.Level, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线, 但是dry-run抛出如下错误: %v", i.cnf.DDLGhostMinSize, err))
+			i.result.Add(driver.RuleLevelError, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线, 但是dry-run抛出如下错误: %v", i.cnf.DDLGhostMinSize, err))
 		} else {
 			i.result.Add(ghostRule.Level, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线", i.cnf.DDLGhostMinSize))
 		}
