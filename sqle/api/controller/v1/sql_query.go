@@ -88,7 +88,8 @@ func GetSQLResult(c echo.Context) error {
 }
 
 type PrepareSQLQueryReqV1 struct {
-	SQL string `json:"sql" from:"sql"`
+	SQL            string `json:"sql" from:"sql"`
+	InstanceScheme string `json:"instance_schema"`
 }
 
 type PrepareSQLQueryResV1 struct {

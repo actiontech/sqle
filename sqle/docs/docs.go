@@ -6413,6 +6413,9 @@ var doc = `{
         "v1.PrepareSQLQueryReqV1": {
             "type": "object",
             "properties": {
+                "instance_schema": {
+                    "type": "string"
+                },
                 "sql": {
                     "type": "string"
                 }

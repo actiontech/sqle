@@ -1417,6 +1417,8 @@ definitions:
     type: object
   v1.PrepareSQLQueryReqV1:
     properties:
+      instance_schema:
+        type: string
       sql:
         type: string
     type: object
