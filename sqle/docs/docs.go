@@ -4999,30 +4999,18 @@ var doc = `{
         "v1.ExecSQLQueryResDataV1": {
             "type": "object",
             "properties": {
-                "current_page": {
-                    "type": "integer"
-                },
-                "end_line": {
-                    "type": "integer"
-                },
                 "execute_result": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ExecSQLQueryResResultItemV1"
+                        "$ref": "#/definitions/v1.SQLResultItemResV1"
                     }
-                },
-                "execution_time": {
-                    "type": "integer"
-                },
-                "start_line": {
-                    "type": "integer"
                 }
             }
         },
         "v1.ExecSQLQueryResResultItemV1": {
             "type": "object",
             "properties": {
-                "key": {
+                "field": {
                     "type": "string"
                 },
                 "value": {
@@ -6604,7 +6592,7 @@ var doc = `{
                     "type": "integer",
                     "example": 10
                 },
-                "result_length": {
+                "number_of_result": {
                     "type": "integer",
                     "example": 100
                 }
@@ -6616,7 +6604,33 @@ var doc = `{
                 "execute_timeout_second": {
                     "type": "integer"
                 },
-                "result_length": {
+                "number_of_result": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.SQLResultItemResV1": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "end_line": {
+                    "type": "integer"
+                },
+                "execution_time": {
+                    "type": "integer"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ExecSQLQueryResResultItemV1"
+                    }
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "start_line": {
                     "type": "integer"
                 }
             }

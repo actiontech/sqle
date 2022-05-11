@@ -49,15 +49,21 @@ type ExecSQLQueryResV1 struct {
 }
 
 type ExecSQLQueryResDataV1 struct {
-	StartLine     int                           `json:"start_line"`
-	EndLine       int                           `json:"end_line"`
-	CurrentPage   int                           `json:"current_page"`
-	ExecuteTime   int                           `json:"execution_time"`
-	ExecuteResult []ExecSQLQueryResResultItemV1 `json:"execute_result"`
+	ExecuteResult []SQLResultItemResV1 `json:"execute_result"`
+}
+
+// multiple SQLs may be passed in, and each SQL corresponds to an Item
+type SQLResultItemResV1 struct {
+	SQL         string                        `json:"sql"`
+	StartLine   int                           `json:"start_line"`
+	EndLine     int                           `json:"end_line"`
+	CurrentPage int                           `json:"current_page"`
+	ExecuteTime int                           `json:"execution_time"`
+	Result      []ExecSQLQueryResResultItemV1 `json:"result"`
 }
 
 type ExecSQLQueryResResultItemV1 struct {
-	Key   string `json:"key"`
+	Field string `json:"field"`
 	Value string `json:"value"`
 }
 

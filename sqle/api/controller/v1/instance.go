@@ -93,7 +93,7 @@ type CreateInstanceReqV1 struct {
 }
 
 type SQLQueryLimitReqV1 struct {
-	ResultLength         int `json:"result_length" from:"result_length" example:"100"`
+	NumberOfResult       int `json:"number_of_result" from:"number_of_result" example:"100"`
 	ExecuteTimeoutSecond int `json:"execute_timeout_second" from:"execute_timeout_second" example:"10"`
 }
 
@@ -270,7 +270,7 @@ type InstanceResV1 struct {
 }
 
 type SQLQueryLimitResV1 struct {
-	ResultLength         int `json:"result_length"`
+	NumberOfResult       int `json:"number_of_result"`
 	ExecuteTimeoutSecond int `json:"execute_timeout_second"`
 }
 
