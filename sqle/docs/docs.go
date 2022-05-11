@@ -6234,6 +6234,9 @@ var doc = `{
                 "enable_ldap": {
                     "type": "boolean"
                 },
+                "enable_ssl": {
+                    "type": "boolean"
+                },
                 "ldap_connect_dn": {
                     "type": "string"
                 },
@@ -6261,6 +6264,9 @@ var doc = `{
             "type": "object",
             "properties": {
                 "enable_ldap": {
+                    "type": "boolean"
+                },
+                "enable_ssl": {
                     "type": "boolean"
                 },
                 "ldap_connect_dn": {

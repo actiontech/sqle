@@ -1299,6 +1299,8 @@ definitions:
     properties:
       enable_ldap:
         type: boolean
+      enable_ssl:
+        type: boolean
       ldap_connect_dn:
         type: string
       ldap_connect_pwd:
@@ -1317,6 +1319,8 @@ definitions:
   v1.LDAPConfigurationResV1:
     properties:
       enable_ldap:
+        type: boolean
+      enable_ssl:
         type: boolean
       ldap_connect_dn:
         type: string

@@ -236,6 +236,7 @@ type GetLDAPConfigurationResV1 struct {
 
 type LDAPConfigurationReqV1 struct {
 	EnableLdap          *bool   `json:"enable_ldap"`
+	EnableSSL           *bool   `json:"enable_ssl"`
 	LdapServerHost      *string `json:"ldap_server_host"`
 	LdapServerPort      *string `json:"ldap_server_port"`
 	LdapConnectDn       *string `json:"ldap_connect_dn"`
@@ -247,6 +248,7 @@ type LDAPConfigurationReqV1 struct {
 
 type LDAPConfigurationResV1 struct {
 	EnableLdap          bool   `json:"enable_ldap"`
+	EnableSSL           bool   `json:"enable_ssl"`
 	LdapServerHost      string `json:"ldap_server_host"`
 	LdapServerPort      string `json:"ldap_server_port"`
 	LdapConnectDn       string `json:"ldap_connect_dn"`
