@@ -266,7 +266,7 @@ type InstanceResV1 struct {
 	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
 	Roles                []string                        `json:"role_name_list,omitempty"`
 	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
-	SQLQueryLimit        *SQLQueryLimitReqV1             `json:"sql_query_limit"`
+	SQLQueryLimit        *SQLQueryLimitResV1             `json:"sql_query_limit"`
 }
 
 type SQLQueryLimitResV1 struct {

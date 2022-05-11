@@ -6186,7 +6186,7 @@ var doc = `{
                 },
                 "sql_query_limit": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.SQLQueryLimitReqV1"
+                    "$ref": "#/definitions/v1.SQLQueryLimitResV1"
                 },
                 "workflow_template_name": {
                     "type": "string"
@@ -6607,6 +6607,17 @@ var doc = `{
                 "result_length": {
                     "type": "integer",
                     "example": 100
+                }
+            }
+        },
+        "v1.SQLQueryLimitResV1": {
+            "type": "object",
+            "properties": {
+                "execute_timeout_second": {
+                    "type": "integer"
+                },
+                "result_length": {
+                    "type": "integer"
                 }
             }
         },
