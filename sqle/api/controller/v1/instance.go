@@ -85,10 +85,16 @@ type CreateInstanceReqV1 struct {
 	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
 	Desc                 string                          `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName string                          `json:"workflow_template_name" form:"workflow_template_name"`
+	SQLQueryLimit        *SQLQueryLimitReqV1             `json:"sql_query_limit" from:"sql_query_limit"`
 	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+}
+
+type SQLQueryLimitReqV1 struct {
+	ResultLength         int `json:"result_length" from:"result_length" example:"100"`
+	ExecuteTimeoutSecond int `json:"execute_timeout_second" from:"execute_timeout_second" example:"10"`
 }
 
 type InstanceAdditionalParamReqV1 struct {
@@ -260,6 +266,12 @@ type InstanceResV1 struct {
 	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
 	Roles                []string                        `json:"role_name_list,omitempty"`
 	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
+	SQLQueryLimit        *SQLQueryLimitReqV1             `json:"sql_query_limit"`
+}
+
+type SQLQueryLimitResV1 struct {
+	ResultLength         int `json:"result_length"`
+	ExecuteTimeoutSecond int `json:"execute_timeout_second"`
 }
 
 type MaintenanceTimeResV1 struct {
@@ -419,6 +431,7 @@ type UpdateInstanceReqV1 struct {
 	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
+	SQLQueryLimit        *SQLQueryLimitReqV1             `json:"sql_query_limit" from:"sql_query_limit"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
@@ -813,7 +826,7 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 
 type InstanceTipReqV1 struct {
 	FilterDBType     string `json:"filter_db_type" query:"filter_db_type"`
-	FunctionalModule string `json:"functional_module" query:"functional_module" enums:"create_audit_plan" valid:"omitempty,oneof=create_audit_plan"`
+	FunctionalModule string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,sql_query" valid:"omitempty,oneof=create_audit_plan sql_query"`
 }
 
 type InstanceTipResV1 struct {
@@ -833,7 +846,7 @@ type GetInstanceTipsResV1 struct {
 // @Id getInstanceTipListV1
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
-// @Param functional_module query string false "functional module" Enums(create_audit_plan)
+// @Param functional_module query string false "functional module" Enums(create_audit_plan,sql_query)
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {

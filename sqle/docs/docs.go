@@ -1423,7 +1423,8 @@ var doc = `{
                     },
                     {
                         "enum": [
-                            "create_audit_plan"
+                            "create_audit_plan",
+                            "sql_query"
                         ],
                         "type": "string",
                         "description": "functional module",
@@ -2369,6 +2370,100 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetRulesResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sql_query/{instance_name}/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute sql query",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "执行查询sql",
+                "operationId": "execSQLQuery",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "exec sql",
+                        "name": "exec",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.ExecSQLQueryReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ExecSQLQueryResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sql_query/{instance_name}/history": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql query history",
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "获取当前用户历史查询SQL",
+                "operationId": "getSQLQueryHistory",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search filter",
+                        "name": "filter_fuzzy_search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLQueryHistoryResV1"
                         }
                     }
                 }
@@ -4705,6 +4800,10 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "sql_query_limit": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLQueryLimitReqV1"
+                },
                 "workflow_template_name": {
                     "type": "string"
                 }
@@ -4880,6 +4979,71 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.ExecSQLQueryReqV1": {
+            "type": "object",
+            "properties": {
+                "page_index": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ExecSQLQueryResDataV1": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "end_line": {
+                    "type": "integer"
+                },
+                "execute_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ExecSQLQueryResResultItemV1"
+                    }
+                },
+                "execution_time": {
+                    "type": "integer"
+                },
+                "start_line": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.ExecSQLQueryResResultItemV1": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ExecSQLQueryResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ExecSQLQueryResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -5638,6 +5802,34 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSQLQueryHistoryResDataV1": {
+            "type": "object",
+            "properties": {
+                "sql_histories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.GetSQLQueryHistoryResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetSQLQueryHistoryResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -5991,6 +6183,10 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "sql_query_limit": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLQueryLimitReqV1"
                 },
                 "workflow_template_name": {
                     "type": "string"
@@ -6401,6 +6597,19 @@ var doc = `{
                 }
             }
         },
+        "v1.SQLQueryLimitReqV1": {
+            "type": "object",
+            "properties": {
+                "execute_timeout_second": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "result_length": {
+                    "type": "integer",
+                    "example": 100
+                }
+            }
+        },
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -6704,6 +6913,10 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "sql_query_limit": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLQueryLimitReqV1"
                 },
                 "workflow_template_name": {
                     "type": "string"
