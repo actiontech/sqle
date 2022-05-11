@@ -2469,7 +2469,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/{instance_name}/result": {
+        "/v1/sql_query/{instance_name}/results/{query_id}/": {
             "get": {
                 "security": [
                     {
@@ -2492,9 +2492,9 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "sql id",
-                        "name": "sql_id",
-                        "in": "query"
+                        "description": "query sql id",
+                        "name": "query_id",
+                        "in": "path"
                     },
                     {
                         "type": "integer",
@@ -4850,9 +4850,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "sql_query_limit": {
+                "sql_query_config": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.SQLQueryLimitReqV1"
+                    "$ref": "#/definitions/v1.SQLQueryConfigReqV1"
                 },
                 "workflow_template_name": {
                     "type": "string"
@@ -6197,9 +6197,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "sql_query_limit": {
+                "sql_query_config": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.SQLQueryLimitResV1"
+                    "$ref": "#/definitions/v1.SQLQueryConfigResV1"
                 },
                 "workflow_template_name": {
                     "type": "string"
@@ -6421,15 +6421,7 @@ var doc = `{
         "v1.PrepareSQLQueryResDataV1": {
             "type": "object",
             "properties": {
-                "error_sql": {
-                    "description": "SQL not allowed",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.PrepareSQLQueryResErrorSQLItemV1"
-                    }
-                },
-                "sql_ids": {
-                    "description": "When there is no wrong SQL, an SQL ID will be generated for each SQL",
+                "query_ids": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.PrepareSQLQueryResSQLV1"
@@ -6437,24 +6429,13 @@ var doc = `{
                 }
             }
         },
-        "v1.PrepareSQLQueryResErrorSQLItemV1": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                },
-                "sql": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.PrepareSQLQueryResSQLV1": {
             "type": "object",
             "properties": {
-                "sql": {
+                "query_id": {
                     "type": "string"
                 },
-                "sql_id": {
+                "sql": {
                     "type": "string"
                 }
             }
@@ -6684,26 +6665,26 @@ var doc = `{
                 }
             }
         },
-        "v1.SQLQueryLimitReqV1": {
+        "v1.SQLQueryConfigReqV1": {
             "type": "object",
             "properties": {
-                "execute_timeout_second": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "number_of_result": {
+                "max_pre_query_rows": {
                     "type": "integer",
                     "example": 100
+                },
+                "query_timeout_second": {
+                    "type": "integer",
+                    "example": 10
                 }
             }
         },
-        "v1.SQLQueryLimitResV1": {
+        "v1.SQLQueryConfigResV1": {
             "type": "object",
             "properties": {
-                "execute_timeout_second": {
+                "max_pre_query_rows": {
                     "type": "integer"
                 },
-                "number_of_result": {
+                "query_timeout_second": {
                     "type": "integer"
                 }
             }
@@ -6711,7 +6692,7 @@ var doc = `{
         "v1.SQLResultItemHeadResV1": {
             "type": "object",
             "properties": {
-                "head_name": {
+                "field_name ": {
                     "type": "string"
                 }
             }
@@ -7055,9 +7036,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "sql_query_limit": {
+                "sql_query_config": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.SQLQueryLimitReqV1"
+                    "$ref": "#/definitions/v1.SQLQueryConfigReqV1"
                 },
                 "workflow_template_name": {
                     "type": "string"

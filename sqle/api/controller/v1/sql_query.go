@@ -44,7 +44,7 @@ func GetSQLQueryHistory(c echo.Context) error {
 type GetSQLResultReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
-	SQLId     string `json:"sql_id" from:"sql_id"`
+	QueryId   string `json:"query_id" from:"query_id"`
 }
 
 type GetSQLResultResV1 struct {
@@ -68,7 +68,7 @@ type SQLResultItemResV1 struct {
 }
 
 type SQLResultItemHeadResV1 struct {
-	HeadName string `json:"head_name"`
+	FieldName string `json:"field_name "`
 }
 
 // GetSQLResult get sql query result
@@ -77,12 +77,12 @@ type SQLResultItemHeadResV1 struct {
 // @Id getSQLQueryResult
 // @Tags sql_query
 // @Param instance_name path string true "instance name"
-// @Param sql_id query string false "sql id"
+// @Param query_id path string false "query sql id"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSQLResultResV1
-// @router /v1/sql_query/{instance_name}/result [get]
+// @router /v1/sql_query/{instance_name}/results/{query_id}/ [get]
 func GetSQLResult(c echo.Context) error {
 	return nil
 }
@@ -97,18 +97,12 @@ type PrepareSQLQueryResV1 struct {
 }
 
 type PrepareSQLQueryResDataV1 struct {
-	SQLIds   []PrepareSQLQueryResSQLV1          `json:"sql_ids"`   // When there is no wrong SQL, an SQL ID will be generated for each SQL
-	ErrorSQL []PrepareSQLQueryResErrorSQLItemV1 `json:"error_sql"` // SQL not allowed
+	QueryIds []PrepareSQLQueryResSQLV1 `json:"query_ids"`
 }
 
 type PrepareSQLQueryResSQLV1 struct {
-	SQL   string `json:"sql"`
-	SQLId string `json:"sql_id"`
-}
-
-type PrepareSQLQueryResErrorSQLItemV1 struct {
-	SQL   string `json:"sql"`
-	Error string `json:"error"`
+	SQL     string `json:"sql"`
+	QueryId string `json:"query_id"`
 }
 
 // PrepareSQLQuery prepare execute sql query

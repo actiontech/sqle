@@ -351,8 +351,8 @@ definitions:
         items:
           type: string
         type: array
-      sql_query_limit:
-        $ref: '#/definitions/v1.SQLQueryLimitReqV1'
+      sql_query_config:
+        $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
       workflow_template_name:
         type: string
@@ -1275,8 +1275,8 @@ definitions:
         items:
           type: string
         type: array
-      sql_query_limit:
-        $ref: '#/definitions/v1.SQLQueryLimitResV1'
+      sql_query_config:
+        $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
       workflow_template_name:
         type: string
@@ -1422,30 +1422,16 @@ definitions:
     type: object
   v1.PrepareSQLQueryResDataV1:
     properties:
-      error_sql:
-        description: SQL not allowed
-        items:
-          $ref: '#/definitions/v1.PrepareSQLQueryResErrorSQLItemV1'
-        type: array
-      sql_ids:
-        description: When there is no wrong SQL, an SQL ID will be generated for each
-          SQL
+      query_ids:
         items:
           $ref: '#/definitions/v1.PrepareSQLQueryResSQLV1'
         type: array
     type: object
-  v1.PrepareSQLQueryResErrorSQLItemV1:
-    properties:
-      error:
-        type: string
-      sql:
-        type: string
-    type: object
   v1.PrepareSQLQueryResSQLV1:
     properties:
-      sql:
+      query_id:
         type: string
-      sql_id:
+      sql:
         type: string
     type: object
   v1.PrepareSQLQueryResV1:
@@ -1598,25 +1584,25 @@ definitions:
       sql:
         type: string
     type: object
-  v1.SQLQueryLimitReqV1:
+  v1.SQLQueryConfigReqV1:
     properties:
-      execute_timeout_second:
-        example: 10
-        type: integer
-      number_of_result:
+      max_pre_query_rows:
         example: 100
         type: integer
-    type: object
-  v1.SQLQueryLimitResV1:
-    properties:
-      execute_timeout_second:
+      query_timeout_second:
+        example: 10
         type: integer
-      number_of_result:
+    type: object
+  v1.SQLQueryConfigResV1:
+    properties:
+      max_pre_query_rows:
+        type: integer
+      query_timeout_second:
         type: integer
     type: object
   v1.SQLResultItemHeadResV1:
     properties:
-      head_name:
+      'field_name ':
         type: string
     type: object
   v1.SQLResultItemResV1:
@@ -1849,8 +1835,8 @@ definitions:
         items:
           type: string
         type: array
-      sql_query_limit:
-        $ref: '#/definitions/v1.SQLQueryLimitReqV1'
+      sql_query_config:
+        $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
       workflow_template_name:
         type: string
@@ -3978,7 +3964,7 @@ paths:
       summary: 准备执行查询sql
       tags:
       - sql_query
-  /v1/sql_query/{instance_name}/result:
+  /v1/sql_query/{instance_name}/results/{query_id}/:
     get:
       description: get sql query result
       operationId: getSQLQueryResult
@@ -3988,9 +3974,9 @@ paths:
         name: instance_name
         required: true
         type: string
-      - description: sql id
-        in: query
-        name: sql_id
+      - description: query sql id
+        in: path
+        name: query_id
         type: string
       - description: page index
         in: query
