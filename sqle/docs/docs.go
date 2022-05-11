@@ -2440,7 +2440,7 @@ var doc = `{
                     "sql_query"
                 ],
                 "summary": "准备执行查询sql",
-                "operationId": "execSQLQuery",
+                "operationId": "prepareSQLQuery",
                 "parameters": [
                     {
                         "type": "string",
@@ -2481,7 +2481,7 @@ var doc = `{
                     "sql_query"
                 ],
                 "summary": "获取SQL查询结果",
-                "operationId": "getSQLQueryResult",
+                "operationId": "getSQLResult",
                 "parameters": [
                     {
                         "type": "string",
