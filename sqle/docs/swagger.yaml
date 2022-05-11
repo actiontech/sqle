@@ -1300,7 +1300,7 @@ definitions:
           type: string
         type: array
       sql_query_limit:
-        $ref: '#/definitions/v1.SQLQueryLimitReqV1'
+        $ref: '#/definitions/v1.SQLQueryLimitResV1'
         type: object
       workflow_template_name:
         type: string
@@ -1579,6 +1579,13 @@ definitions:
         type: integer
       result_length:
         example: 100
+        type: integer
+    type: object
+  v1.SQLQueryLimitResV1:
+    properties:
+      execute_timeout_second:
+        type: integer
+      result_length:
         type: integer
     type: object
   v1.SystemVariablesResV1:
