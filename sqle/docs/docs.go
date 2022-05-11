@@ -2375,50 +2375,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/{instance_name}/execute": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "execute sql query",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "执行查询sql",
-                "operationId": "execSQLQuery",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "exec sql",
-                        "name": "exec",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.ExecSQLQueryReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.ExecSQLQueryResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/sql_query/{instance_name}/history": {
             "get": {
                 "security": [
@@ -2464,6 +2420,100 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetSQLQueryHistoryResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sql_query/{instance_name}/prepare": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute sql query",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "准备执行查询sql",
+                "operationId": "execSQLQuery",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "exec sql",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.PrepareSQLQueryReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.PrepareSQLQueryResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sql_query/{instance_name}/result": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql query result",
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "获取SQL查询结果",
+                "operationId": "getSQLQueryResult",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql id",
+                        "name": "sql_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLResultResV1"
                         }
                     }
                 }
@@ -4982,59 +5032,6 @@ var doc = `{
                 }
             }
         },
-        "v1.ExecSQLQueryReqV1": {
-            "type": "object",
-            "properties": {
-                "page_index": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
-                },
-                "sql": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ExecSQLQueryResDataV1": {
-            "type": "object",
-            "properties": {
-                "execute_result": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemResV1"
-                    }
-                }
-            }
-        },
-        "v1.ExecSQLQueryResResultItemV1": {
-            "type": "object",
-            "properties": {
-                "field": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ExecSQLQueryResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.ExecSQLQueryResDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.FullSyncAuditPlanSQLsReqV1": {
             "type": "object",
             "properties": {
@@ -5796,7 +5793,7 @@ var doc = `{
                 "sql_histories": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.SQLHistoryItemResV1"
                     }
                 }
             }
@@ -5811,6 +5808,34 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.GetSQLQueryHistoryResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSQLResultResDataV1": {
+            "type": "object",
+            "properties": {
+                "execute_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLResultItemResV1"
+                    }
+                }
+            }
+        },
+        "v1.GetSQLResultResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetSQLResultResDataV1"
                 },
                 "message": {
                     "type": "string",
@@ -6385,6 +6410,72 @@ var doc = `{
                 }
             }
         },
+        "v1.PrepareSQLQueryReqV1": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.PrepareSQLQueryResDataV1": {
+            "type": "object",
+            "properties": {
+                "error_sql": {
+                    "description": "SQL not allowed",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.PrepareSQLQueryResErrorSQLItemV1"
+                    }
+                },
+                "sql_ids": {
+                    "description": "When there is no wrong SQL, an SQL ID will be generated for each SQL",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.PrepareSQLQueryResSQLV1"
+                    }
+                }
+            }
+        },
+        "v1.PrepareSQLQueryResErrorSQLItemV1": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.PrepareSQLQueryResSQLV1": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string"
+                },
+                "sql_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.PrepareSQLQueryResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.PrepareSQLQueryResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.RejectWorkflowReqV1": {
             "type": "object",
             "properties": {
@@ -6585,6 +6676,14 @@ var doc = `{
                 }
             }
         },
+        "v1.SQLHistoryItemResV1": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.SQLQueryLimitReqV1": {
             "type": "object",
             "properties": {
@@ -6609,6 +6708,14 @@ var doc = `{
                 }
             }
         },
+        "v1.SQLResultItemHeadResV1": {
+            "type": "object",
+            "properties": {
+                "head_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.SQLResultItemResV1": {
             "type": "object",
             "properties": {
@@ -6621,10 +6728,19 @@ var doc = `{
                 "execution_time": {
                     "type": "integer"
                 },
-                "result": {
+                "head": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ExecSQLQueryResResultItemV1"
+                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
                     }
                 },
                 "sql": {

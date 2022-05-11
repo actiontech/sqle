@@ -473,41 +473,6 @@ definitions:
           type: string
         type: array
     type: object
-  v1.ExecSQLQueryReqV1:
-    properties:
-      page_index:
-        type: integer
-      page_size:
-        type: integer
-      sql:
-        type: string
-    type: object
-  v1.ExecSQLQueryResDataV1:
-    properties:
-      execute_result:
-        items:
-          $ref: '#/definitions/v1.SQLResultItemResV1'
-        type: array
-    type: object
-  v1.ExecSQLQueryResResultItemV1:
-    properties:
-      field:
-        type: string
-      value:
-        type: string
-    type: object
-  v1.ExecSQLQueryResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.ExecSQLQueryResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -1032,7 +997,7 @@ definitions:
     properties:
       sql_histories:
         items:
-          type: string
+          $ref: '#/definitions/v1.SQLHistoryItemResV1'
         type: array
     type: object
   v1.GetSQLQueryHistoryResV1:
@@ -1042,6 +1007,25 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.GetSQLQueryHistoryResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetSQLResultResDataV1:
+    properties:
+      execute_result:
+        items:
+          $ref: '#/definitions/v1.SQLResultItemResV1'
+        type: array
+    type: object
+  v1.GetSQLResultResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetSQLResultResDataV1'
         type: object
       message:
         example: ok
@@ -1431,6 +1415,51 @@ definitions:
           type: string
         type: array
     type: object
+  v1.PrepareSQLQueryReqV1:
+    properties:
+      sql:
+        type: string
+    type: object
+  v1.PrepareSQLQueryResDataV1:
+    properties:
+      error_sql:
+        description: SQL not allowed
+        items:
+          $ref: '#/definitions/v1.PrepareSQLQueryResErrorSQLItemV1'
+        type: array
+      sql_ids:
+        description: When there is no wrong SQL, an SQL ID will be generated for each
+          SQL
+        items:
+          $ref: '#/definitions/v1.PrepareSQLQueryResSQLV1'
+        type: array
+    type: object
+  v1.PrepareSQLQueryResErrorSQLItemV1:
+    properties:
+      error:
+        type: string
+      sql:
+        type: string
+    type: object
+  v1.PrepareSQLQueryResSQLV1:
+    properties:
+      sql:
+        type: string
+      sql_id:
+        type: string
+    type: object
+  v1.PrepareSQLQueryResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.PrepareSQLQueryResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.RejectWorkflowReqV1:
     properties:
       reason:
@@ -1564,6 +1593,11 @@ definitions:
       smtp_username:
         type: string
     type: object
+  v1.SQLHistoryItemResV1:
+    properties:
+      sql:
+        type: string
+    type: object
   v1.SQLQueryLimitReqV1:
     properties:
       execute_timeout_second:
@@ -1580,6 +1614,11 @@ definitions:
       number_of_result:
         type: integer
     type: object
+  v1.SQLResultItemHeadResV1:
+    properties:
+      head_name:
+        type: string
+    type: object
   v1.SQLResultItemResV1:
     properties:
       current_page:
@@ -1588,9 +1627,15 @@ definitions:
         type: integer
       execution_time:
         type: integer
-      result:
+      head:
         items:
-          $ref: '#/definitions/v1.ExecSQLQueryResResultItemV1'
+          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+        type: array
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
         type: array
       sql:
         type: string
@@ -3873,34 +3918,6 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
-  /v1/sql_query/{instance_name}/execute:
-    post:
-      consumes:
-      - application/json
-      description: execute sql query
-      operationId: execSQLQuery
-      parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: exec sql
-        in: body
-        name: exec
-        required: true
-        schema:
-          $ref: '#/definitions/v1.ExecSQLQueryReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.ExecSQLQueryResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 执行查询sql
-      tags:
-      - sql_query
   /v1/sql_query/{instance_name}/history:
     get:
       description: get sql query history
@@ -3931,6 +3948,66 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取当前用户历史查询SQL
+      tags:
+      - sql_query
+  /v1/sql_query/{instance_name}/prepare:
+    post:
+      consumes:
+      - application/json
+      description: execute sql query
+      operationId: execSQLQuery
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: exec sql
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.PrepareSQLQueryReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.PrepareSQLQueryResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 准备执行查询sql
+      tags:
+      - sql_query
+  /v1/sql_query/{instance_name}/result:
+    get:
+      description: get sql query result
+      operationId: getSQLQueryResult
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: sql id
+        in: query
+        name: sql_id
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLResultResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL查询结果
       tags:
       - sql_query
   /v1/tasks/audits:
