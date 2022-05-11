@@ -6695,7 +6695,7 @@ var doc = `{
         "v1.SQLResultItemHeadResV1": {
             "type": "object",
             "properties": {
-                "field_name ": {
+                "field_name": {
                     "type": "string"
                 }
             }
