@@ -484,22 +484,14 @@ definitions:
     type: object
   v1.ExecSQLQueryResDataV1:
     properties:
-      current_page:
-        type: integer
-      end_line:
-        type: integer
       execute_result:
         items:
-          $ref: '#/definitions/v1.ExecSQLQueryResResultItemV1'
+          $ref: '#/definitions/v1.SQLResultItemResV1'
         type: array
-      execution_time:
-        type: integer
-      start_line:
-        type: integer
     type: object
   v1.ExecSQLQueryResResultItemV1:
     properties:
-      key:
+      field:
         type: string
       value:
         type: string
@@ -1577,7 +1569,7 @@ definitions:
       execute_timeout_second:
         example: 10
         type: integer
-      result_length:
+      number_of_result:
         example: 100
         type: integer
     type: object
@@ -1585,7 +1577,24 @@ definitions:
     properties:
       execute_timeout_second:
         type: integer
-      result_length:
+      number_of_result:
+        type: integer
+    type: object
+  v1.SQLResultItemResV1:
+    properties:
+      current_page:
+        type: integer
+      end_line:
+        type: integer
+      execution_time:
+        type: integer
+      result:
+        items:
+          $ref: '#/definitions/v1.ExecSQLQueryResResultItemV1'
+        type: array
+      sql:
+        type: string
+      start_line:
         type: integer
     type: object
   v1.SystemVariablesResV1:
