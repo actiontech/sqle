@@ -351,6 +351,9 @@ definitions:
         items:
           type: string
         type: array
+      sql_query_limit:
+        $ref: '#/definitions/v1.SQLQueryLimitReqV1'
+        type: object
       workflow_template_name:
         type: string
     type: object
@@ -469,6 +472,49 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.ExecSQLQueryReqV1:
+    properties:
+      page_index:
+        type: integer
+      page_size:
+        type: integer
+      sql:
+        type: string
+    type: object
+  v1.ExecSQLQueryResDataV1:
+    properties:
+      current_page:
+        type: integer
+      end_line:
+        type: integer
+      execute_result:
+        items:
+          $ref: '#/definitions/v1.ExecSQLQueryResResultItemV1'
+        type: array
+      execution_time:
+        type: integer
+      start_line:
+        type: integer
+    type: object
+  v1.ExecSQLQueryResResultItemV1:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
+  v1.ExecSQLQueryResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.ExecSQLQueryResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
@@ -990,6 +1036,25 @@ definitions:
       version:
         type: string
     type: object
+  v1.GetSQLQueryHistoryResDataV1:
+    properties:
+      sql_histories:
+        items:
+          type: string
+        type: array
+    type: object
+  v1.GetSQLQueryHistoryResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetSQLQueryHistoryResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -1234,6 +1299,9 @@ definitions:
         items:
           type: string
         type: array
+      sql_query_limit:
+        $ref: '#/definitions/v1.SQLQueryLimitReqV1'
+        type: object
       workflow_template_name:
         type: string
     type: object
@@ -1504,6 +1572,15 @@ definitions:
       smtp_username:
         type: string
     type: object
+  v1.SQLQueryLimitReqV1:
+    properties:
+      execute_timeout_second:
+        example: 10
+        type: integer
+      result_length:
+        example: 100
+        type: integer
+    type: object
   v1.SystemVariablesResV1:
     properties:
       workflow_expired_hours:
@@ -1711,6 +1788,9 @@ definitions:
         items:
           type: string
         type: array
+      sql_query_limit:
+        $ref: '#/definitions/v1.SQLQueryLimitReqV1'
+        type: object
       workflow_template_name:
         type: string
     type: object
@@ -3171,6 +3251,7 @@ paths:
       - description: functional module
         enum:
         - create_audit_plan
+        - sql_query
         in: query
         name: functional_module
         type: string
@@ -3776,6 +3857,66 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
+  /v1/sql_query/{instance_name}/execute:
+    post:
+      consumes:
+      - application/json
+      description: execute sql query
+      operationId: execSQLQuery
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: exec sql
+        in: body
+        name: exec
+        required: true
+        schema:
+          $ref: '#/definitions/v1.ExecSQLQueryReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ExecSQLQueryResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 执行查询sql
+      tags:
+      - sql_query
+  /v1/sql_query/{instance_name}/history:
+    get:
+      description: get sql query history
+      operationId: getSQLQueryHistory
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: fuzzy search filter
+        in: query
+        name: filter_fuzzy_search
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLQueryHistoryResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取当前用户历史查询SQL
+      tags:
+      - sql_query
   /v1/tasks/audits:
     post:
       consumes:
