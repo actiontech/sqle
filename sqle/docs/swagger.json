@@ -6218,6 +6218,9 @@
                 "enable_ldap": {
                     "type": "boolean"
                 },
+                "enable_ssl": {
+                    "type": "boolean"
+                },
                 "ldap_connect_dn": {
                     "type": "string"
                 },
@@ -6245,6 +6248,9 @@
             "type": "object",
             "properties": {
                 "enable_ldap": {
+                    "type": "boolean"
+                },
+                "enable_ssl": {
                     "type": "boolean"
                 },
                 "ldap_connect_dn": {
