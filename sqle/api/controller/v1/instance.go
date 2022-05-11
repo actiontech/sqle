@@ -85,16 +85,16 @@ type CreateInstanceReqV1 struct {
 	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
 	Desc                 string                          `json:"desc" example:"this is a test instance"`
 	WorkflowTemplateName string                          `json:"workflow_template_name" form:"workflow_template_name"`
-	SQLQueryLimit        *SQLQueryLimitReqV1             `json:"sql_query_limit" from:"sql_query_limit"`
+	SQLQueryConfig       *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
 	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
-type SQLQueryLimitReqV1 struct {
-	NumberOfResult       int `json:"number_of_result" from:"number_of_result" example:"100"`
-	ExecuteTimeoutSecond int `json:"execute_timeout_second" from:"execute_timeout_second" example:"10"`
+type SQLQueryConfigReqV1 struct {
+	MaxPreQueryRows    int `json:"max_pre_query_rows" from:"max_pre_query_rows" example:"100"`
+	QueryTimeoutSecond int `json:"query_timeout_second" from:"query_timeout_second" example:"10"`
 }
 
 type InstanceAdditionalParamReqV1 struct {
@@ -266,12 +266,12 @@ type InstanceResV1 struct {
 	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
 	Roles                []string                        `json:"role_name_list,omitempty"`
 	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
-	SQLQueryLimit        *SQLQueryLimitResV1             `json:"sql_query_limit"`
+	SQLQueryConfig       *SQLQueryConfigResV1            `json:"sql_query_config"`
 }
 
-type SQLQueryLimitResV1 struct {
-	NumberOfResult       int `json:"number_of_result"`
-	ExecuteTimeoutSecond int `json:"execute_timeout_second"`
+type SQLQueryConfigResV1 struct {
+	MaxPreQueryRows    int `json:"max_pre_query_rows"`
+	QueryTimeoutSecond int `json:"query_timeout_second"`
 }
 
 type MaintenanceTimeResV1 struct {
@@ -431,7 +431,7 @@ type UpdateInstanceReqV1 struct {
 	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
 	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
 	Roles                []string                        `json:"role_name_list" form:"role_name_list"`
-	SQLQueryLimit        *SQLQueryLimitReqV1             `json:"sql_query_limit" from:"sql_query_limit"`
+	SQLQueryConfig       *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
 	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
