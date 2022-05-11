@@ -74,7 +74,7 @@ type SQLResultItemHeadResV1 struct {
 // GetSQLResult get sql query result
 // @Summary 获取SQL查询结果
 // @Description get sql query result
-// @Id getSQLQueryResult
+// @Id getSQLResult
 // @Tags sql_query
 // @Param instance_name path string true "instance name"
 // @Param query_id path string false "query sql id"
@@ -110,7 +110,7 @@ type PrepareSQLQueryResSQLV1 struct {
 // @Summary 准备执行查询sql
 // @Accept json
 // @Description execute sql query
-// @Id execSQLQuery
+// @Id prepareSQLQuery
 // @Tags sql_query
 // @Param instance_name path string true "instance name"
 // @Param req body v1.PrepareSQLQueryReqV1 true "exec sql"

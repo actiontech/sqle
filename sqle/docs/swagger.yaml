@@ -3943,7 +3943,7 @@ paths:
       consumes:
       - application/json
       description: execute sql query
-      operationId: execSQLQuery
+      operationId: prepareSQLQuery
       parameters:
       - description: instance name
         in: path
@@ -3969,7 +3969,7 @@ paths:
   /v1/sql_query/{instance_name}/results/{query_id}/:
     get:
       description: get sql query result
-      operationId: getSQLQueryResult
+      operationId: getSQLResult
       parameters:
       - description: instance name
         in: path
