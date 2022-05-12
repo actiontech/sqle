@@ -149,6 +149,8 @@ type LDAPConfiguration struct {
 	Model
 	// whether the ldap is enabled
 	Enable bool `json:"enable" gorm:"not null"`
+	// whether the ssl is enabled
+	EnableSSL bool `json:"enable_ssl" gorm:"not null"`
 	// ldap server's ip
 	Host string `json:"host" gorm:"not null"`
 	// ldap server's port
