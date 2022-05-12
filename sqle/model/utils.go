@@ -131,6 +131,8 @@ func (s *Storage) AutoMigrate() error {
 		&WorkflowStep{},
 		&WorkflowTemplate{},
 		&Workflow{},
+		&SqlQueryExecutionSql{},
+		&SqlQueryHistory{},
 	).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
