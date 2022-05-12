@@ -274,6 +274,7 @@ func GetLDAPConfiguration(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: LDAPConfigurationResV1{
 			EnableLdap:          ldapC.Enable,
+			EnableSSL:           ldapC.EnableSSL,
 			LdapServerHost:      ldapC.Host,
 			LdapServerPort:      ldapC.Port,
 			LdapConnectDn:       ldapC.ConnectDn,
@@ -308,6 +309,10 @@ func UpdateLDAPConfiguration(c echo.Context) error {
 
 		if req.EnableLdap != nil {
 			ldapC.Enable = *req.EnableLdap
+		}
+
+		if req.EnableSSL != nil {
+			ldapC.EnableSSL = *req.EnableSSL
 		}
 
 		if req.LdapServerHost != nil {
