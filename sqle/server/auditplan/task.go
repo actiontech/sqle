@@ -358,7 +358,7 @@ func (at *SchemaMetaTask) collectorDo() {
 	}
 	sqls := make([]string, 0, len(tables)+len(views))
 	for _, table := range tables {
-		sql, err := db.ShowCreateTable(table)
+		sql, err := db.ShowCreateTable(utils.SupplementalQuotationMarks(table))
 		if err != nil {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
@@ -366,7 +366,7 @@ func (at *SchemaMetaTask) collectorDo() {
 		sqls = append(sqls, sql)
 	}
 	for _, view := range views {
-		sql, err := db.ShowCreateView(view)
+		sql, err := db.ShowCreateView(utils.SupplementalQuotationMarks(view))
 		if err != nil {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return
