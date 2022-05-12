@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type SqlQueryConfig struct {
@@ -40,11 +41,18 @@ func (c SqlQueryConfig) Value() (driver.Value, error) {
 
 type SqlQueryHistory struct {
 	Model
-	RawSql string `json:"raw_sql" gorm:"type:text;not null"`
+	CreateUserId uint   `json:"create_user_id" gorm:"not null"`
+	InstanceId   uint   `json:"instance_id" gorm:"not null"`
+	Database     string `json:"database"`
+	RawSql       string `json:"raw_sql" gorm:"type:text;not null"`
 }
 
 type SqlQueryExecutionSql struct {
 	Model
-	Sql        string `json:"sql" gorm:"type:text;not null"`
-	InstanceId uint   `json:"instance_id" gorm:"not null"`
+	SqlQueryHistoryId uint            `json:"sql_query_history_id" gorm:"not null"`
+	Sql               string          `json:"sql" gorm:"type:text;not null"`
+	ExecStartAt       *time.Time      `json:"exec_start_at"`
+	ExecEndAt         *time.Time      `json:"exec_end_at"`
+	ExecResult        string          `json:"exec_result" gorm:"type:text"`
+	RawSqlInfo        SqlQueryHistory `json:"raw_sql_info" gorm:"foreignkey:SqlQueryHistoryId"`
 }
