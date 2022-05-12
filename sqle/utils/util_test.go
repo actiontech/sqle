@@ -73,3 +73,23 @@ func TestRound(t *testing.T) {
 	assert.Equal(t, 1.1, Round(1.11, 1))
 	assert.Equal(t, 1.11112, Round(1.111117, 5))
 }
+
+func TestSupplementalQuotationMarks(t *testing.T) {
+	assert.Equal(t, "'asdf'", SupplementalQuotationMarks("'asdf'"))
+	assert.Equal(t, "\"asdf\"", SupplementalQuotationMarks("\"asdf\""))
+	assert.Equal(t, "`asdf`", SupplementalQuotationMarks("`asdf`"))
+	assert.Equal(t, "``", SupplementalQuotationMarks(""))
+	assert.Equal(t, "`asdf`", SupplementalQuotationMarks("asdf"))
+	assert.Equal(t, "`\"asdf`", SupplementalQuotationMarks("\"asdf"))
+	assert.Equal(t, "`asdf\"`", SupplementalQuotationMarks("asdf\""))
+	assert.Equal(t, "`'asdf`", SupplementalQuotationMarks("'asdf"))
+	assert.Equal(t, "`asdf'`", SupplementalQuotationMarks("asdf'"))
+	assert.Equal(t, "``asdf`", SupplementalQuotationMarks("`asdf"))
+	assert.Equal(t, "`asdf``", SupplementalQuotationMarks("asdf`"))
+	assert.Equal(t, "`\"asdf'`", SupplementalQuotationMarks("\"asdf'"))
+	assert.Equal(t, "`\"asdf``", SupplementalQuotationMarks("\"asdf`"))
+	assert.Equal(t, "`'asdf\"`", SupplementalQuotationMarks("'asdf\""))
+	assert.Equal(t, "`'asdf``", SupplementalQuotationMarks("'asdf`"))
+	assert.Equal(t, "``asdf\"`", SupplementalQuotationMarks("`asdf\""))
+	assert.Equal(t, "``asdf'`", SupplementalQuotationMarks("`asdf'"))
+}

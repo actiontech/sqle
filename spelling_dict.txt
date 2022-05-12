@@ -8,6 +8,7 @@ agiledragon
 alecthomas
 aliyun
 apikey
+asdf
 asensitive
 atoi
 attrs
@@ -104,6 +105,7 @@ jmoiron
 kodf
 labstack
 ldap
+ldaps
 lifecycle
 lname
 localhost
