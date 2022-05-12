@@ -82,7 +82,7 @@ func TestSupplementalQuotationMarks(t *testing.T) {
 	assert.Equal(t, "`asdf`", SupplementalQuotationMarks("asdf"))
 	assert.Equal(t, "`\"asdf`", SupplementalQuotationMarks("\"asdf"))
 	assert.Equal(t, "`asdf\"`", SupplementalQuotationMarks("asdf\""))
-	assert.Equal(t, "`'adsf`", SupplementalQuotationMarks("'adsf"))
+	assert.Equal(t, "`'asdf`", SupplementalQuotationMarks("'asdf"))
 	assert.Equal(t, "`asdf'`", SupplementalQuotationMarks("asdf'"))
 	assert.Equal(t, "``asdf`", SupplementalQuotationMarks("`asdf"))
 	assert.Equal(t, "`asdf``", SupplementalQuotationMarks("asdf`"))
