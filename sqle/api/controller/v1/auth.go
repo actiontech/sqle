@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"crypto/tls"
 	_errors "errors"
 	"fmt"
 	"net/http"
@@ -194,8 +195,15 @@ func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	if err != nil {
 		return err
 	}
-	url := fmt.Sprintf("ldap://%s:%s", ldapC.Host, ldapC.Port)
-	conn, err := ldap.DialURL(url)
+
+	var conn *ldap.Conn
+	if l.config.EnableSSL {
+		url := fmt.Sprintf("ldaps://%s:%s", ldapC.Host, ldapC.Port)
+		conn, err = ldap.DialURL(url, ldap.DialWithTLSConfig(&tls.Config{InsecureSkipVerify: true}))
+	} else {
+		url := fmt.Sprintf("ldap://%s:%s", ldapC.Host, ldapC.Port)
+		conn, err = ldap.DialURL(url)
+	}
 	if err != nil {
 		return fmt.Errorf("get ldap server connect failed: %v", err)
 	}
