@@ -61,10 +61,31 @@ func (n *ChooseNode) AddChildren(ns ...Node) error {
 
 func (n *ChooseNode) GetStmt(ctx *Context) (string, error) {
 	buff := bytes.Buffer{}
-	for _, a := range n.When {
+
+	for i, a := range n.When {
 		data, err := a.GetStmt(ctx)
 		if err != nil {
 			return "", err
+		}
+		// https://github.com/actiontech/sqle/issues/302
+		// In some cases, users like to write XML like:
+		/*
+		<select id="selectUserByState" resultType="com.bz.model.entity.User">
+		    SELECT * FROM user
+		    <choose>
+		        <when test="state == 1">
+		            where name = #{name1}
+		        </when>
+		        <otherwise>
+		            where name = #{name2}
+		        </otherwise>
+		    </choose>
+		</select>
+		*/
+		// parer it as "where name = ? and name = ?".
+		//strings.
+		if i > 0 {
+			data = replaceWhere(data)
 		}
 		buff.WriteString(data)
 	}
@@ -72,7 +93,7 @@ func (n *ChooseNode) GetStmt(ctx *Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	buff.WriteString(data)
+	buff.WriteString(replaceWhere(data))
 	return buff.String(), nil
 }
 
