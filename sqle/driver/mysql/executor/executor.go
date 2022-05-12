@@ -210,8 +210,9 @@ func Ping(entry *logrus.Entry, instance *mdriver.DSN) error {
 	return conn.Db.Ping()
 }
 
+// When using keywords as table names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) ShowCreateTable(tableName string) (string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show create table `%s`", tableName))
+	result, err := c.Db.Query(fmt.Sprintf("show create table %s", tableName))
 	if err != nil {
 		return "", err
 	}
@@ -297,6 +298,7 @@ func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
 	return tables, nil
 }
 
+// When using keywords as view names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) ShowCreateView(tableName string) (string, error) {
 	result, err := c.Db.Query(fmt.Sprintf("show create view %s", tableName))
 	if err != nil {
