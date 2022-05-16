@@ -25,6 +25,9 @@ const (
 	// NOTE: 用户默认可以查看自己创建的审核任务，无需定义此项动作权限
 	OP_AUDIT_PLAN_VIEW_OTHERS = 30100
 	OP_AUDIT_PLAN_SAVE        = 30200 // including "CREATE" and "UPDATE"
+
+	// SqlQuery: SQL查询 reserved 40000-49999
+	OP_SQL_QUERY_QUERY = 40100
 )
 
 func GetConfigurableOperationCodeList() []uint {
@@ -36,6 +39,8 @@ func GetConfigurableOperationCodeList() []uint {
 		// Audit plan: 审核任务
 		OP_AUDIT_PLAN_VIEW_OTHERS,
 		OP_AUDIT_PLAN_SAVE,
+		// Sql Query: SQL查询
+		OP_SQL_QUERY_QUERY,
 	}
 }
 
@@ -51,6 +56,8 @@ func GetOperationCodeDesc(opCode uint) string {
 		return "查看他人创建的审核任务"
 	case OP_AUDIT_PLAN_SAVE:
 		return "创建审核任务"
+	case OP_SQL_QUERY_QUERY:
+		return "SQL查询"
 	}
 	return "未知动作"
 }
