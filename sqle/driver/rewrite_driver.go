@@ -16,22 +16,22 @@ func NewSQLQueryDriver(log *logrus.Entry, dbType string, cfg *DSN) (SQLQueryDriv
 	return nil, nil
 }
 
-type SQLQueryType string
+type SQLRewriteType string
 
 const (
-	SQLQueryTypeQuery = "query" // rewrite query sql
+	SQLRewriteTypeQuery = "query" // rewrite query sql
 )
 
 const (
-	SQLQueryTypeKey = "sql-rewrite-type"
+	SQLRewriteTypeKey = "sql-rewrite-type"
 )
 
 // rewrite query sql will perform limit processing on the basis of the original sql query result
-func GenerateQueryQueryParams(limit, offset uint32) params.Params {
+func GenerateQueryRewriteParams(limit, offset uint32) params.Params {
 	return params.Params{
 		&params.Param{
-			Key:   SQLQueryTypeKey,
-			Value: SQLQueryTypeQuery,
+			Key:   SQLRewriteTypeKey,
+			Value: SQLRewriteTypeQuery,
 		},
 	}
 }
