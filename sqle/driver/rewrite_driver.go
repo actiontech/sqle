@@ -1,18 +1,44 @@
 package driver
 
 import (
+	"context"
 	"github.com/sirupsen/logrus"
 )
 
 // SQLQueryDriver is a SQL rewrite and execute driver
 type SQLQueryDriver interface {
-	IsQuerySQL(sql string) (bool, error)
-	Repage(sql string, limit, offset uint32) (newSql string, err error)
-	// The data location in values should be consistent with that in column
-	Query(sql string, timeOutSecond uint32) (column []string, values [][]string, err error)
+	QueryPrepare(ctx context.Context, sql string, conf QueryPrepareConf) (QueryPrepareResult, error)
+	Query(ctx context.Context, sql string, conf QueryConf) (*QueryResult, error)
 }
 
 // NewSQLQueryDriver return a new instantiated SQLQueryDriver.
 func NewSQLQueryDriver(log *logrus.Entry, dbType string, cfg *DSN) (SQLQueryDriver, error) {
 	return nil, nil
+}
+
+type ErrorType string
+
+const (
+	ErrorTypeNotQuery = "not query"
+)
+
+type QueryPrepareConf struct {
+	Limit  uint32
+	Offset uint32
+}
+
+type QueryPrepareResult struct {
+	NewSQL    string
+	ErrorType ErrorType
+	Error     string
+}
+
+type QueryConf struct {
+	TimeOutSecond uint32
+}
+
+// The data location in Values should be consistent with that in Column
+type QueryResult struct {
+	Column []string
+	Values [][]string
 }
