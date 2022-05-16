@@ -38,7 +38,7 @@ type SQLHistoryItemResV1 struct {
 // @Success 200 {object} v1.GetSQLQueryHistoryResV1
 // @router /v1/sql_query/{instance_name}/history [get]
 func GetSQLQueryHistory(c echo.Context) error {
-	return nil
+	return getSQLQueryHistory(c)
 }
 
 type GetSQLResultReqV1 struct {
@@ -84,7 +84,7 @@ type SQLResultItemHeadResV1 struct {
 // @Success 200 {object} v1.GetSQLResultResV1
 // @router /v1/sql_query/{instance_name}/results/{query_id}/ [get]
 func GetSQLResult(c echo.Context) error {
-	return nil
+	return getSQLResult(c)
 }
 
 type PrepareSQLQueryReqV1 struct {
@@ -118,5 +118,5 @@ type PrepareSQLQueryResSQLV1 struct {
 // @Success 200 {object} v1.PrepareSQLQueryResV1
 // @router /v1/sql_query/{instance_name}/prepare [post]
 func PrepareSQLQuery(c echo.Context) error {
-	return nil
+	return prepareSQLQuery(c)
 }
