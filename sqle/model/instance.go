@@ -27,7 +27,7 @@ type Instance struct {
 	WorkflowTemplateId uint           `json:"workflow_template_id"`
 	AdditionalParams   params.Params  `json:"additional_params" gorm:"type:text"`
 	MaintenancePeriod  Periods        `json:"maintenance_period" gorm:"type:text"`
-	SqlQueryConfig     SqlQueryConfig `json:"sql_query_config" gorm:"type:text"`
+	SqlQueryConfig     SqlQueryConfig `json:"sql_query_config" gorm:"type:text default:{\"max_pre_query_rows\":100,\"query_timeout_second\":10}"`
 
 	// relation table
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
