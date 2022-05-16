@@ -442,12 +442,17 @@ func (at *OracleTopSQLTask) collectorDo() {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
 	}
+	// This depends on: https://github.com/actiontech/sqle-oracle-plugin.
+	// If your Oracle db plugin does not implement the parameter `service_name`,
+	// you can only use the default service name `XE`.
+	// TODO: using DB plugin to query SQL.
+	serviceName := inst.AdditionalParams.GetParam("service_name").String()
 	dsn := &oracle.DSN{
 		Host:        inst.Host,
 		Port:        inst.Port,
 		User:        inst.User,
 		Password:    inst.Password,
-		ServiceName: at.ap.InstanceDatabase,
+		ServiceName: serviceName,
 	}
 	db, err := oracle.NewDB(dsn)
 	if err != nil {
