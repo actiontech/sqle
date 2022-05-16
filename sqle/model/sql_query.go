@@ -41,18 +41,18 @@ func (c SqlQueryConfig) Value() (driver.Value, error) {
 
 type SqlQueryHistory struct {
 	Model
-	CreateUserId uint   `json:"create_user_id" gorm:"not null"`
-	InstanceId   uint   `json:"instance_id" gorm:"not null"`
-	Database     string `json:"database"`
-	RawSql       string `json:"raw_sql" gorm:"type:text;not null"`
+	CreateUserId uint                    `json:"create_user_id" gorm:"not null"`
+	InstanceId   uint                    `json:"instance_id" gorm:"not null"`
+	Database     string                  `json:"database"`
+	RawSql       string                  `json:"raw_sql" gorm:"type:text;not null"`
+	ExecSQLs     []*SqlQueryExecutionSql `json:"-" gorm:"foreignkey:SqlQueryHistoryId"`
 }
 
 type SqlQueryExecutionSql struct {
 	Model
-	SqlQueryHistoryId uint            `json:"sql_query_history_id" gorm:"not null"`
-	Sql               string          `json:"sql" gorm:"type:text;not null"`
-	ExecStartAt       *time.Time      `json:"exec_start_at"`
-	ExecEndAt         *time.Time      `json:"exec_end_at"`
-	ExecResult        string          `json:"exec_result" gorm:"type:text"`
-	RawSqlInfo        SqlQueryHistory `json:"raw_sql_info" gorm:"foreignkey:SqlQueryHistoryId"`
+	SqlQueryHistoryId uint       `json:"sql_query_history_id" gorm:"not null"`
+	Sql               string     `json:"sql" gorm:"type:text;not null"`
+	ExecStartAt       *time.Time `json:"exec_start_at"`
+	ExecEndAt         *time.Time `json:"exec_end_at"`
+	ExecResult        string     `json:"exec_result" gorm:"type:text"`
 }
