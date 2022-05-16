@@ -229,6 +229,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
 	v1Router.GET("/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 
+	// sql query
+	v1Router.POST("/sql_query/:instance_name/prepare", v1.PrepareSQLQuery)
+	v1Router.GET("/sql_query/:instance_name/history", v1.GetSQLQueryHistory)
+	v1Router.GET("/sql_query/{instance_name}/results/:query_id/", v1.GetSQLResult)
+
 	// UI
 	e.File("/", "ui/index.html")
 	e.Static("/static", "ui/static")
