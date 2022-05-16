@@ -232,7 +232,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// sql query
 	v1Router.POST("/sql_query/:instance_name/prepare", v1.PrepareSQLQuery)
 	v1Router.GET("/sql_query/:instance_name/history", v1.GetSQLQueryHistory)
-	v1Router.GET("/sql_query/{instance_name}/results/:query_id/", v1.GetSQLResult)
+	v1Router.GET("/sql_query/:instance_name/results/:query_id/", v1.GetSQLResult)
 
 	// UI
 	e.File("/", "ui/index.html")
