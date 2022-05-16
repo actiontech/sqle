@@ -822,7 +822,6 @@ func GetInstanceSchemas(c echo.Context) error {
 
 const ( // InstanceTipReqV1.FunctionalModule Enums
 	create_audit_plan = "create_audit_plan"
-	sql_query         = "sql_query"
 )
 
 type InstanceTipReqV1 struct {
@@ -865,8 +864,6 @@ func GetInstanceTips(c echo.Context) error {
 	switch req.FunctionalModule {
 	case create_audit_plan:
 		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_AUDIT_PLAN_SAVE)
-	case sql_query:
-		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_SQL_QUERY_QUERY)
 	default:
 		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType)
 	}
