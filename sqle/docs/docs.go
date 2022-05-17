@@ -5814,11 +5814,35 @@ var doc = `{
         "v1.GetSQLResultResDataV1": {
             "type": "object",
             "properties": {
-                "execute_result": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "end_line": {
+                    "type": "integer"
+                },
+                "execution_time": {
+                    "type": "integer"
+                },
+                "head": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemResV1"
+                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
                     }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "start_line": {
+                    "type": "integer"
                 }
             }
         },
@@ -6699,41 +6723,6 @@ var doc = `{
             "properties": {
                 "field_name": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.SQLResultItemResV1": {
-            "type": "object",
-            "properties": {
-                "current_page": {
-                    "type": "integer"
-                },
-                "end_line": {
-                    "type": "integer"
-                },
-                "execution_time": {
-                    "type": "integer"
-                },
-                "head": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
-                    }
-                },
-                "rows": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "sql": {
-                    "type": "string"
-                },
-                "start_line": {
-                    "type": "integer"
                 }
             }
         },
