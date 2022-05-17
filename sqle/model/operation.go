@@ -25,9 +25,17 @@ const (
 	// NOTE: 用户默认可以查看自己创建的审核任务，无需定义此项动作权限
 	OP_AUDIT_PLAN_VIEW_OTHERS = 30100
 	OP_AUDIT_PLAN_SAVE        = 30200 // including "CREATE" and "UPDATE"
+
+	// SqlQuery: SQL查询 reserved 40000-49999
+	// SqlQuery is implement in edition ee
 )
 
 func GetConfigurableOperationCodeList() []uint {
+	opts := append(getConfigurableOperationCodeList(), getConfigurableOperationCodeListForEE()...)
+	return opts
+}
+
+func getConfigurableOperationCodeList() []uint {
 	return []uint{
 		// Workflow：工单
 		OP_WORKFLOW_VIEW_OTHERS,
@@ -51,8 +59,9 @@ func GetOperationCodeDesc(opCode uint) string {
 		return "查看他人创建的审核任务"
 	case OP_AUDIT_PLAN_SAVE:
 		return "创建审核任务"
+	default:
+		return additionalOperationForEE(opCode)
 	}
-	return "未知动作"
 }
 
 func CheckIfOperationCodeValid(opCodes []uint) (err error) {
