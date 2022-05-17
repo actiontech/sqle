@@ -166,12 +166,12 @@ func CreateInstance(c echo.Context) error {
 		}
 	}
 
-	sqlQueryconfig := model.SqlQueryConfig{
+	sqlQueryConfig := model.SqlQueryConfig{
 		MaxPreQueryRows:    100,
 		QueryTimeoutSecond: 10,
 	}
 	if req.SQLQueryConfig != nil {
-		sqlQueryconfig = model.SqlQueryConfig{
+		sqlQueryConfig = model.SqlQueryConfig{
 			MaxPreQueryRows:    req.SQLQueryConfig.MaxPreQueryRows,
 			QueryTimeoutSecond: req.SQLQueryConfig.QueryTimeoutSecond,
 		}
@@ -187,7 +187,7 @@ func CreateInstance(c echo.Context) error {
 		Desc:              req.Desc,
 		AdditionalParams:  additionalParams,
 		MaintenancePeriod: maintenancePeriod,
-		SqlQueryConfig:    sqlQueryconfig,
+		SqlQueryConfig:    sqlQueryConfig,
 	}
 	// set default workflow template
 	if req.WorkflowTemplateName == "" {
