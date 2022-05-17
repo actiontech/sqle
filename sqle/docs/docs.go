@@ -2375,7 +2375,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/{instance_name}/history": {
+        "/v1/sql_query/history/{instance_name}/": {
             "get": {
                 "security": [
                     {
@@ -2425,7 +2425,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/{instance_name}/prepare": {
+        "/v1/sql_query/prepare/{instance_name}/": {
             "post": {
                 "security": [
                     {
@@ -2469,7 +2469,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/{instance_name}/results/{query_id}/": {
+        "/v1/sql_query/results/{query_id}/": {
             "get": {
                 "security": [
                     {
@@ -2485,28 +2485,24 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "query sql id",
                         "name": "query_id",
-                        "in": "path"
+                        "in": "path",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
