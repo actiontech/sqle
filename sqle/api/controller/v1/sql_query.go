@@ -36,7 +36,7 @@ type SQLHistoryItemResV1 struct {
 // @Param page_size query uint32 false "size of per page"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSQLQueryHistoryResV1
-// @router /v1/sql_query/{instance_name}/history [get]
+// @router /v1/sql_query/history/{instance_name}/ [get]
 func GetSQLQueryHistory(c echo.Context) error {
 	return getSQLQueryHistory(c)
 }
@@ -81,7 +81,7 @@ type SQLResultItemHeadResV1 struct {
 // @Param page_size query uint32 true "size of per page"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSQLResultResV1
-// @router /v1/sql_query/execution/results/{query_id}/ [get]
+// @router /v1/sql_query/results/{query_id}/ [get]
 func GetSQLResult(c echo.Context) error {
 	return getSQLResult(c)
 }
@@ -115,7 +115,7 @@ type PrepareSQLQueryResSQLV1 struct {
 // @Param req body v1.PrepareSQLQueryReqV1 true "exec sql"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.PrepareSQLQueryResV1
-// @router /v1/sql_query/{instance_name}/prepare [post]
+// @router /v1/sql_query/prepare/{instance_name}/ [post]
 func PrepareSQLQuery(c echo.Context) error {
 	return prepareSQLQuery(c)
 }
