@@ -2375,7 +2375,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/results/{query_id}/": {
+        "/v1/sql_query/execution/results/{query_id}/": {
             "get": {
                 "security": [
                     {

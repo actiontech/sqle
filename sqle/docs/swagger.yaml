@@ -3970,7 +3970,7 @@ paths:
       summary: 准备执行查询sql
       tags:
       - sql_query
-  /v1/sql_query/results/{query_id}/:
+  /v1/sql_query/execution/results/{query_id}/:
     get:
       description: get sql query result
       operationId: getSQLResult

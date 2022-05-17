@@ -81,7 +81,7 @@ type SQLResultItemHeadResV1 struct {
 // @Param page_size query uint32 true "size of per page"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSQLResultResV1
-// @router /v1/sql_query/results/{query_id}/ [get]
+// @router /v1/sql_query/execution/results/{query_id}/ [get]
 func GetSQLResult(c echo.Context) error {
 	return getSQLResult(c)
 }
