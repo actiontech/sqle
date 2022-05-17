@@ -21,6 +21,7 @@ type ErrorType string
 
 const (
 	ErrorTypeNotQuery = "not query"
+	ErrorTypeNotError = "not error"
 )
 
 type QueryPrepareConf struct {
