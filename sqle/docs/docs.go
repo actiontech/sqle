@@ -2375,53 +2375,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/execution/results/{query_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sql query result",
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "获取SQL查询结果",
-                "operationId": "getSQLResult",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "query sql id",
-                        "name": "query_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSQLResultResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sql_query/{instance_name}/history": {
+        "/v1/sql_query/history/{instance_name}/": {
             "get": {
                 "security": [
                     {
@@ -2471,7 +2425,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/{instance_name}/prepare": {
+        "/v1/sql_query/prepare/{instance_name}/": {
             "post": {
                 "security": [
                     {
@@ -2510,6 +2464,52 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.PrepareSQLQueryResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sql_query/results/{query_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql query result",
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "获取SQL查询结果",
+                "operationId": "getSQLResult",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "query sql id",
+                        "name": "query_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLResultResV1"
                         }
                     }
                 }
