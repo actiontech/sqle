@@ -44,7 +44,7 @@ func GetSQLQueryHistory(c echo.Context) error {
 type GetSQLResultReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
-	QueryId   string `json:"query_id" from:"query_id"`
+	QueryId   string `json:"query_id" from:"query_id" valid:"required"`
 }
 
 type GetSQLResultResV1 struct {
@@ -76,13 +76,12 @@ type SQLResultItemHeadResV1 struct {
 // @Description get sql query result
 // @Id getSQLResult
 // @Tags sql_query
-// @Param instance_name path string true "instance name"
-// @Param query_id path string false "query sql id"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param query_id path string true "query sql id"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSQLResultResV1
-// @router /v1/sql_query/{instance_name}/results/{query_id}/ [get]
+// @router /v1/sql_query/results/{query_id}/ [get]
 func GetSQLResult(c echo.Context) error {
 	return getSQLResult(c)
 }

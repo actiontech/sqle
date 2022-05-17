@@ -3970,27 +3970,25 @@ paths:
       summary: 准备执行查询sql
       tags:
       - sql_query
-  /v1/sql_query/{instance_name}/results/{query_id}/:
+  /v1/sql_query/results/{query_id}/:
     get:
       description: get sql query result
       operationId: getSQLResult
       parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
       - description: query sql id
         in: path
         name: query_id
+        required: true
         type: string
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
