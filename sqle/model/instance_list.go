@@ -16,10 +16,11 @@ type InstanceDetail struct {
 	WorkflowTemplateName sql.NullString `json:"workflow_template_name"`
 	RoleNames            RowList        `json:"role_names"`
 	RuleTemplateNames    RowList        `json:"rule_template_names"`
+	SqlQueryConfig       SqlQueryConfig `json:"sql_query_config"`
 }
 
 var instancesQueryTpl = `SELECT inst.name, inst.desc, inst.db_host,
-inst.db_port, inst.db_user, inst.maintenance_period, wt.name AS workflow_template_name,
+inst.db_port, inst.db_user, inst.maintenance_period, inst.sql_query_config, wt.name AS workflow_template_name,
 GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names,
 GROUP_CONCAT(DISTINCT COALESCE(rt.name,'')) AS rule_template_names
 FROM instances AS inst
