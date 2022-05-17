@@ -2,13 +2,14 @@ package driver
 
 import (
 	"context"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
 )
 
 // SQLQueryDriver is a SQL rewrite and execute driver
 type SQLQueryDriver interface {
-	QueryPrepare(ctx context.Context, sql string, conf QueryPrepareConf) (QueryPrepareResult, error)
-	Query(ctx context.Context, sql string, conf QueryConf) (*QueryResult, error)
+	QueryPrepare(ctx context.Context, sql string, conf *QueryPrepareConf) (*QueryPrepareResult, error)
+	Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error)
 }
 
 // NewSQLQueryDriver return a new instantiated SQLQueryDriver.
@@ -39,6 +40,14 @@ type QueryConf struct {
 
 // The data location in Values should be consistent with that in Column
 type QueryResult struct {
-	Column []string
-	Values [][]string
+	Column params.Params
+	Rows   []*QueryResultValue
+}
+
+type QueryResultRow struct {
+	Values []*QueryResultValue
+}
+
+type QueryResultValue struct {
+	Value string
 }
