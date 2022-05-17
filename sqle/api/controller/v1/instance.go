@@ -166,6 +166,17 @@ func CreateInstance(c echo.Context) error {
 		}
 	}
 
+	sqlQueryconfig := model.SqlQueryConfig{
+		MaxPreQueryRows:    100,
+		QueryTimeoutSecond: 10,
+	}
+	if req.SQLQueryConfig != nil {
+		sqlQueryconfig = model.SqlQueryConfig{
+			MaxPreQueryRows:    req.SQLQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond: req.SQLQueryConfig.QueryTimeoutSecond,
+		}
+	}
+
 	instance := &model.Instance{
 		DbType:            req.DBType,
 		Name:              req.Name,
@@ -176,6 +187,7 @@ func CreateInstance(c echo.Context) error {
 		Desc:              req.Desc,
 		AdditionalParams:  additionalParams,
 		MaintenancePeriod: maintenancePeriod,
+		SqlQueryConfig:    sqlQueryconfig,
 	}
 	// set default workflow template
 	if req.WorkflowTemplateName == "" {
@@ -235,23 +247,23 @@ func CreateInstance(c echo.Context) error {
 
 // 1. admin user have all access to all instance
 // 2. non-admin user have access to instance which is bound to one of his roles
-func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) error {
+func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) (bool, error) {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
+		return true, nil
 	}
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
-		return err
+		return false, err
 	}
 	s := model.GetStorage()
 	access, err := s.UserCanAccessInstance(user, instance)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if !access {
-		return errInstanceNoAccess
+		return false, nil
 	}
-	return nil
+	return true, nil
 }
 
 type InstanceResV1 struct {
@@ -306,6 +318,17 @@ type GetInstanceResV1 struct {
 	Data InstanceResV1 `json:"data"`
 }
 
+func convertInstanceExposesToRes(instance *model.Instance) InstanceResV1 {
+	instanceResV1 := InstanceResV1{
+		MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
+		SQLQueryConfig: &SQLQueryConfigResV1{
+			MaxPreQueryRows:    instance.SqlQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond: instance.SqlQueryConfig.QueryTimeoutSecond,
+		},
+	}
+	return instanceResV1
+}
+
 func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
 		Name:             instance.Name,
@@ -316,6 +339,10 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 		DBType:           instance.DbType,
 		MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
 		AdditionalParams: []*InstanceAdditionalParamResV1{},
+		SQLQueryConfig: &SQLQueryConfigResV1{
+			MaxPreQueryRows:    instance.SqlQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond: instance.SqlQueryConfig.QueryTimeoutSecond,
+		},
 	}
 	if instance.WorkflowTemplate != nil {
 		instanceResV1.WorkflowTemplateName = instance.WorkflowTemplate.Name
@@ -365,9 +392,15 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	err = checkCurrentUserCanAccessInstance(c, instance)
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return c.JSON(http.StatusOK, &GetInstanceResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    convertInstanceExposesToRes(instance),
+		})
 	}
 
 	return c.JSON(http.StatusOK, &GetInstanceResV1{
@@ -554,6 +587,13 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["additional_params"] = additionalParams
 	}
 
+	if req.SQLQueryConfig != nil {
+		updateMap["sql_query_config"] = model.SqlQueryConfig{
+			MaxPreQueryRows:    req.SQLQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond: req.SQLQueryConfig.QueryTimeoutSecond,
+		}
+	}
+
 	err = s.UpdateInstanceById(instance.ID, updateMap)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -638,14 +678,18 @@ func GetInstances(c echo.Context) error {
 	for _, instance := range instances {
 		instanceReq := InstanceResV1{
 			Name:                 instance.Name,
-			Desc:                 instance.Desc,
 			Host:                 instance.Host,
 			Port:                 instance.Port,
 			User:                 instance.User,
+			Desc:                 instance.Desc,
 			WorkflowTemplateName: instance.WorkflowTemplateName.String,
-			Roles:                instance.RoleNames,
 			MaintenanceTimes:     convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
 			RuleTemplates:        instance.RuleTemplateNames,
+			Roles:                instance.RoleNames,
+			SQLQueryConfig: &SQLQueryConfigResV1{
+				MaxPreQueryRows:    instance.SqlQueryConfig.MaxPreQueryRows,
+				QueryTimeoutSecond: instance.SqlQueryConfig.QueryTimeoutSecond,
+			},
 		}
 		instancesReq = append(instancesReq, instanceReq)
 	}
@@ -716,9 +760,12 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-	err = checkCurrentUserCanAccessInstance(c, instance)
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 	return checkInstanceIsConnectable(c, instance)
 }
@@ -798,9 +845,12 @@ func GetInstanceSchemas(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-	err = checkCurrentUserCanAccessInstance(c, instance)
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
@@ -874,9 +924,12 @@ func GetInstanceRules(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 
-	err = checkCurrentUserCanAccessInstance(c, instance)
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	rules, err := s.GetRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
@@ -937,9 +990,12 @@ func GetInstanceWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 
-	err = checkCurrentUserCanAccessInstance(c, instance)
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	template, exist, err := s.GetWorkflowTemplateById(instance.WorkflowTemplateId)

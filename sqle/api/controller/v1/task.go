@@ -134,9 +134,12 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	err = checkCurrentUserCanAccessInstance(c, instance)
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
