@@ -1014,10 +1014,26 @@ definitions:
     type: object
   v1.GetSQLResultResDataV1:
     properties:
-      execute_result:
+      current_page:
+        type: integer
+      end_line:
+        type: integer
+      execution_time:
+        type: integer
+      head:
         items:
-          $ref: '#/definitions/v1.SQLResultItemResV1'
+          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
         type: array
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+      sql:
+        type: string
+      start_line:
+        type: integer
     type: object
   v1.GetSQLResultResV1:
     properties:
@@ -1610,29 +1626,6 @@ definitions:
     properties:
       field_name:
         type: string
-    type: object
-  v1.SQLResultItemResV1:
-    properties:
-      current_page:
-        type: integer
-      end_line:
-        type: integer
-      execution_time:
-        type: integer
-      head:
-        items:
-          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
-        type: array
-      rows:
-        items:
-          additionalProperties:
-            type: string
-          type: object
-        type: array
-      sql:
-        type: string
-      start_line:
-        type: integer
     type: object
   v1.SystemVariablesResV1:
     properties:

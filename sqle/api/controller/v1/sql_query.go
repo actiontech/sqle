@@ -53,11 +53,6 @@ type GetSQLResultResV1 struct {
 }
 
 type GetSQLResultResDataV1 struct {
-	ExecuteResult []SQLResultItemResV1 `json:"execute_result"`
-}
-
-// multiple SQLs may be passed in, and each SQL corresponds to an Item
-type SQLResultItemResV1 struct {
 	SQL         string                               `json:"sql"`
 	StartLine   int                                  `json:"start_line"`
 	EndLine     int                                  `json:"end_line"`
