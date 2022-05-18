@@ -318,17 +318,6 @@ type GetInstanceResV1 struct {
 	Data InstanceResV1 `json:"data"`
 }
 
-func convertInstanceExposesToRes(instance *model.Instance) InstanceResV1 {
-	instanceResV1 := InstanceResV1{
-		MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
-		SQLQueryConfig: &SQLQueryConfigResV1{
-			MaxPreQueryRows:    instance.SqlQueryConfig.MaxPreQueryRows,
-			QueryTimeoutSecond: instance.SqlQueryConfig.QueryTimeoutSecond,
-		},
-	}
-	return instanceResV1
-}
-
 func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	instanceResV1 := InstanceResV1{
 		Name:             instance.Name,
@@ -397,10 +386,7 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return c.JSON(http.StatusOK, &GetInstanceResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data:    convertInstanceExposesToRes(instance),
-		})
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	return c.JSON(http.StatusOK, &GetInstanceResV1{
