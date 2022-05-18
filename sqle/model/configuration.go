@@ -237,7 +237,7 @@ type Oauth2Configuration struct {
 	Scopes          string `json:"scopes" gorm:"column:scopes"`
 	AccessTokenTag  string `json:"access_token_tag" gorm:"column:access_token_tag"`
 	UserIdTag       string `json:"user_id_tag" gorm:"column:user_id_tag"`
-	LoginTip        string `json:"login_tip" gorm:"column:login_tip default:使用第三方账户登录"`
+	LoginTip        string `json:"login_tip" gorm:"column:login_tip; default:'使用第三方账户登录'"`
 }
 
 func (i *Oauth2Configuration) GetScopes() []string {
