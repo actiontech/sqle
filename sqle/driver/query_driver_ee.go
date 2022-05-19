@@ -1,5 +1,5 @@
-//go:build release
-// +build release
+//go:build enterprise
+// +build enterprise
 
 package driver
 
@@ -42,7 +42,7 @@ func NewSQLQueryDriver(log *logrus.Entry, dbType string, cfg *DSN) (SQLQueryDriv
 // SQLQueryDriver's initialize handler and audit rules register by RegisterSQLQueryDriver.
 func RegisterSQLQueryDriver(name string, h queryHandler) {
 	queryDriverMu.RLock()
-	_, exist := drivers[name]
+	_, exist := queryDrivers[name]
 	queryDriverMu.RUnlock()
 	if exist {
 		panic("duplicated driver name")

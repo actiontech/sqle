@@ -75,7 +75,7 @@ func prepareSQLQuery(c echo.Context) error {
 	rawSQL := &model.SqlQueryHistory{
 		CreateUserId: user.ID,
 		InstanceId:   instance.ID,
-		Database:     req.InstanceScheme,
+		Schema:       req.InstanceSchema,
 		RawSql:       req.SQL,
 	}
 	queryDriver, err := driver.NewSQLQueryDriver(log.NewEntry(), instance.DbType, &driver.DSN{
