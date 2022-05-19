@@ -199,6 +199,7 @@ func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf)
 				Value: value.String,
 			})
 		}
+		res.Rows = append(res.Rows, r)
 	}
 	return res, nil
 }
