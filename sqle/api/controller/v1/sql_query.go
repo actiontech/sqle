@@ -44,7 +44,6 @@ func GetSQLQueryHistory(c echo.Context) error {
 type GetSQLResultReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
-	QueryId   string `json:"query_id" from:"query_id" valid:"required"`
 }
 
 type GetSQLResultResV1 struct {
@@ -83,7 +82,7 @@ func GetSQLResult(c echo.Context) error {
 
 type PrepareSQLQueryReqV1 struct {
 	SQL            string `json:"sql" from:"sql"`
-	InstanceScheme string `json:"instance_schema"`
+	InstanceSchema string `json:"instance_schema"`
 }
 
 type PrepareSQLQueryResV1 struct {

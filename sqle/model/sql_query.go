@@ -41,9 +41,9 @@ func (c SqlQueryConfig) Value() (driver.Value, error) {
 
 type SqlQueryHistory struct {
 	Model
-	CreateUserId uint                    `json:"create_user_id" gorm:"not null"`
-	InstanceId   uint                    `json:"instance_id" gorm:"not null"`
-	Database     string                  `json:"database"`
+	CreateUserId uint                    `json:"create_user_id" gorm:"not null;index"`
+	InstanceId   uint                    `json:"instance_id" gorm:"not null;index"`
+	Schema       string                  `json:"schema"`
 	RawSql       string                  `json:"raw_sql" gorm:"type:text;not null"`
 	ExecSQLs     []*SqlQueryExecutionSql `json:"-" gorm:"foreignkey:SqlQueryHistoryId"`
 }
