@@ -5,8 +5,16 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/actiontech/sqle/sqle/driver"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -62,16 +70,37 @@ func prepareSQLQuery(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// todo: check DQL using driver
-
-	// save db
 	rawSQL := &model.SqlQueryHistory{
 		CreateUserId: user.ID,
 		InstanceId:   instance.ID,
 		Database:     req.InstanceScheme,
 		RawSql:       req.SQL,
 	}
+	queryDriver, err := driver.NewSQLQueryDriver(log.NewEntry(), instance.DbType, &driver.DSN{
+		Host:         instance.Host,
+		Port:         instance.Port,
+		User:         instance.User,
+		Password:     instance.Password,
+		DatabaseName: req.InstanceSchema,
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	for _, node := range nodes {
+		// validate SQL
+		validateResult, err := queryDriver.QueryPrepare(context.TODO(), node.Text, &driver.QueryPrepareConf{
+			// these two parameters are used to rewrite sql, but the rewrite result is useless here
+			// so fill them with smaller numeric values
+			Limit:  1,
+			Offset: 1,
+		})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if validateResult.ErrorType == driver.ErrorTypeNotQuery {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("the SQL[%s] is invalid: %w", node.Text, err))
+		}
+
 		rawSQL.ExecSQLs = append(rawSQL.ExecSQLs, &model.SqlQueryExecutionSql{
 			Sql:         node.Text,
 			ExecStartAt: nil,
@@ -79,6 +108,8 @@ func prepareSQLQuery(c echo.Context) error {
 			ExecResult:  "",
 		})
 	}
+
+	// save db
 	err = s.Save(rawSQL)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
