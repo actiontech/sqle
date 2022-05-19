@@ -218,7 +218,7 @@ func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, 
 	return conn.Db.Transact(queries...)
 }
 
-func (i *Inspect) Query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+func (i *Inspect) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
