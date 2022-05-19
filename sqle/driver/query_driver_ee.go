@@ -1,8 +1,15 @@
+//go:build release
+// +build release
+
 package driver
 
 import (
 	"context"
+	"fmt"
+	"sync"
+
 	"github.com/actiontech/sqle/sqle/pkg/params"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,9 +19,38 @@ type SQLQueryDriver interface {
 	Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error)
 }
 
+var queryDriverMu = &sync.RWMutex{}
+var queryDrivers = make(map[string]queryHandler)
+
+// queryHandler is a template which SQLQueryDriver plugin should provide such function signature.
+type queryHandler func(log *logrus.Entry, c *DSN) (SQLQueryDriver, error)
+
 // NewSQLQueryDriver return a new instantiated SQLQueryDriver.
 func NewSQLQueryDriver(log *logrus.Entry, dbType string, cfg *DSN) (SQLQueryDriver, error) {
-	return nil, nil
+	queryDriverMu.RLock()
+	defer queryDriverMu.RUnlock()
+	d, exist := queryDrivers[dbType]
+	if !exist {
+		return nil, fmt.Errorf("driver type %v is not supported", dbType)
+	}
+	return d(log, cfg)
+}
+
+// RegisterSQLQueryDriver like sql.Register.
+//
+// RegisterSQLQueryDriver makes a database driver available by the provided driver name.
+// SQLQueryDriver's initialize handler and audit rules register by RegisterSQLQueryDriver.
+func RegisterSQLQueryDriver(name string, h queryHandler) {
+	queryDriverMu.RLock()
+	_, exist := drivers[name]
+	queryDriverMu.RUnlock()
+	if exist {
+		panic("duplicated driver name")
+	}
+
+	queryDriverMu.Lock()
+	queryDrivers[name] = h
+	queryDriverMu.Unlock()
 }
 
 type ErrorType string
@@ -42,7 +78,7 @@ type QueryConf struct {
 // The data location in Values should be consistent with that in Column
 type QueryResult struct {
 	Column params.Params
-	Rows   []*QueryResultValue
+	Rows   []*QueryResultRow
 }
 
 type QueryResultRow struct {
