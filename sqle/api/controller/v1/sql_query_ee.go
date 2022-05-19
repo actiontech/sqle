@@ -133,5 +133,49 @@ func getSQLResult(c echo.Context) error {
 }
 
 func getSQLQueryHistory(c echo.Context) error {
-	return nil
+	instanceName := c.Param("instance_name")
+	req := new(GetSQLQueryHistoryReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+	instance, exist, err := s.GetInstanceByName(instanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	// check user auth
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if user.Name != model.DefaultAdminUser {
+		exist, err = s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		}
+	}
+
+	sqlHistories, err := s.GetSqlQueryRawSqlByUserId(user.ID, req.PageIndex, req.PageSize, req.FilterFuzzySearch)
+	items := make([]SQLHistoryItemResV1, len(sqlHistories))
+	for i, h := range sqlHistories {
+		items[i] = SQLHistoryItemResV1{
+			SQL: h.RawSql,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetSQLQueryHistoryResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetSQLQueryHistoryResDataV1{
+			SQLHistories: items,
+		},
+	})
 }
