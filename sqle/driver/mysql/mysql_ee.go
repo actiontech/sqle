@@ -86,25 +86,25 @@ func QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf
 			offset = 0
 		}
 	}
-	appendlimit, appendOffset := -1, -1
+	appendLimit, appendOffset := -1, -1
 	if conf != nil {
-		appendlimit, appendOffset = int(conf.Limit), int(conf.Offset)
+		appendLimit, appendOffset = int(conf.Limit), int(conf.Offset)
 	}
-	if appendlimit != -1 && appendOffset == -1 {
-		appendlimit = 0
+	if appendLimit != -1 && appendOffset == -1 {
+		appendLimit = 0
 	}
 
-	newlimit, newoffset := CalculateOffset(limit, offset, appendlimit, appendOffset)
+	newLimit, newOffset := CalculateOffset(limit, offset, appendLimit, appendOffset)
 
-	if newlimit != -1 {
+	if newLimit != -1 {
 		l := &sqlparser.Limit{
 			Offset: &sqlparser.Literal{
 				Type: sqlparser.IntVal,
-				Val:  strconv.Itoa(newoffset),
+				Val:  strconv.Itoa(newOffset),
 			},
 			Rowcount: &sqlparser.Literal{
 				Type: sqlparser.IntVal,
-				Val:  strconv.Itoa(newlimit),
+				Val:  strconv.Itoa(newLimit),
 			},
 		}
 		stmt.SetLimit(l)
