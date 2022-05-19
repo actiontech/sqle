@@ -22,6 +22,7 @@ type Db interface {
 	Exec(query string) (driver.Result, error)
 	Transact(qs ...string) ([]driver.Result, error)
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
+	QueryWithContext(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	Logger() *logrus.Entry
 }
 
@@ -138,9 +139,8 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 	}
 	return results, nil
 }
-
-func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
-	rows, err := c.conn.QueryContext(context.Background(), query, args...)
+func (c *BaseConn) QueryWithContext(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+	rows, err := c.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		c.Logger().Errorf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
 			c.host, c.port, c.user, query, err.Error())
@@ -179,6 +179,10 @@ func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.Nu
 		return nil, err
 	}
 	return result, nil
+}
+
+func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+	return c.QueryWithContext(context.TODO(), query, args...)
 }
 
 func (c *BaseConn) Logger() *logrus.Entry {
