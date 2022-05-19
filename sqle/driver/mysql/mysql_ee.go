@@ -188,7 +188,8 @@ func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf)
 		r := &driver.QueryResultRow{
 			Values: []*driver.QueryResultValue{},
 		}
-		for key, value := range row {
+		index := 0
+		for key := range row {
 			if i == 0 {
 				res.Column = append(res.Column, &params.Param{
 					Key:   key,
@@ -196,9 +197,11 @@ func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf)
 				})
 			}
 			r.Values = append(r.Values, &driver.QueryResultValue{
-				Value: value.String,
+				Value: row[res.Column[index].Value].String,
 			})
+			index++
 		}
+		res.Rows = append(res.Rows, r)
 	}
 	return res, nil
 }
