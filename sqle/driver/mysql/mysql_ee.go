@@ -75,12 +75,12 @@ func QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf
 	}
 
 	// Generate new limit
-	limit, offset := -1, -1
+	limit, offset := -1, 0
 	if stmt.Limit != nil {
 		if stmt.Limit.Rowcount != nil {
 			limit, _ = strconv.Atoi(stmt.Limit.Rowcount.(*sqlparser.Literal).Val)
 		}
-		if stmt.Limit.Rowcount != nil {
+		if stmt.Limit.Offset != nil {
 			offset, _ = strconv.Atoi(stmt.Limit.Offset.(*sqlparser.Literal).Val)
 		} else if limit != -1 {
 			offset = 0
@@ -174,6 +174,7 @@ func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf)
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Db.Close()
 	columns, rows, err := conn.Db.QueryWithContext(ctx, sql)
 	if err != nil {
 		return nil, err
