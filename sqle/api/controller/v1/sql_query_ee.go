@@ -233,6 +233,15 @@ func getSQLResult(c echo.Context) error {
 	if err != nil {
 		// update sql_query_execution_sqls table
 		singleSql.ExecResult = err.Error()
+		endAt := time.Now()
+		singleSql.ExecEndAt = &endAt
+
+		l.WithFields(logrus.Fields{
+			"exec_start_time":   startTime,
+			"exec_sql":          rewriteRes.NewSQL,
+			"elapsed_time":      endAt.Sub(startTime) / time.Millisecond,
+		}).Errorln("SQL Query error")
+
 		if err := s.Save(singleSql); err != nil {
 			log.Logger().Errorf("update result to sql_query_execution_sqls failed: %v", err)
 		}
