@@ -100,7 +100,7 @@ func prepareSQLQuery(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if validateResult.ErrorType == driver.ErrorTypeNotQuery {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("the SQL[%s] is invalid: %w", node.Text, err))
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("the SQL[%s] is invalid: %v", node.Text, validateResult.Error))
 		}
 
 		rawSQL.ExecSQLs = append(rawSQL.ExecSQLs, &model.SqlQueryExecutionSql{
