@@ -24,6 +24,7 @@ import (
 )
 
 var errSqlQueryUserNoAccessToSql = errors.New(errors.DataNotExist, fmt.Errorf("current user has no access to this sql"))
+var errSqlQueryNoSql = errors.New(errors.DataNotExist, fmt.Errorf("there is no sql"))
 
 func prepareSQLQuery(c echo.Context) error {
 	instanceName := c.Param("instance_name")
@@ -88,6 +89,11 @@ func prepareSQLQuery(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	if len(nodes) == 0 {
+		return controller.JSONBaseErrorReq(c, errSqlQueryNoSql)
+	}
+
 	for _, node := range nodes {
 		// validate SQL
 		validateResult, err := queryDriver.QueryPrepare(context.TODO(), node.Text, &driver.QueryPrepareConf{
@@ -100,7 +106,7 @@ func prepareSQLQuery(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if validateResult.ErrorType == driver.ErrorTypeNotQuery {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("the SQL[%s] is invalid: %w", node.Text, err))
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("the SQL[%s] is invalid: %v", node.Text, validateResult.Error))
 		}
 
 		rawSQL.ExecSQLs = append(rawSQL.ExecSQLs, &model.SqlQueryExecutionSql{
@@ -227,6 +233,15 @@ func getSQLResult(c echo.Context) error {
 	if err != nil {
 		// update sql_query_execution_sqls table
 		singleSql.ExecResult = err.Error()
+		endAt := time.Now()
+		singleSql.ExecEndAt = &endAt
+
+		l.WithFields(logrus.Fields{
+			"exec_start_time":   startTime,
+			"exec_sql":          rewriteRes.NewSQL,
+			"elapsed_time":      endAt.Sub(startTime) / time.Millisecond,
+		}).Errorln("SQL Query error")
+
 		if err := s.Save(singleSql); err != nil {
 			log.Logger().Errorf("update result to sql_query_execution_sqls failed: %v", err)
 		}
