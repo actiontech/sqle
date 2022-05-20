@@ -22,7 +22,7 @@ type Db interface {
 	Exec(query string) (driver.Result, error)
 	Transact(qs ...string) ([]driver.Result, error)
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
-	QueryWithContext(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error)
+	QueryWithContext(ctx context.Context, query string, args ...interface{}) (column []string, row [][]sql.NullString, err error)
 	Logger() *logrus.Entry
 }
 
@@ -139,12 +139,12 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 	}
 	return results, nil
 }
-func (c *BaseConn) QueryWithContext(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+func (c *BaseConn) QueryWithContext(ctx context.Context, query string, args ...interface{}) (column []string, row [][]sql.NullString, err error) {
 	rows, err := c.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		c.Logger().Errorf("query sql failed; host: %s, port: %s, user: %s, query: %s, error: %s\n",
 			c.host, c.port, c.user, query, err.Error())
-		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
+		return nil, nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	} else {
 		c.Logger().Infof("query sql success; host: %s, port: %s, user: %s, query: %s\n",
 			c.host, c.port, c.user, query)
@@ -154,9 +154,9 @@ func (c *BaseConn) QueryWithContext(ctx context.Context, query string, args ...i
 	if err != nil {
 		// unknown error
 		c.Logger().Error(err)
-		return nil, err
+		return nil, nil, err
 	}
-	result := make([]map[string]sql.NullString, 0)
+	result := make([][]sql.NullString, 0)
 	for rows.Next() {
 		buf := make([]interface{}, len(columns))
 		data := make([]sql.NullString, len(columns))
@@ -165,24 +165,34 @@ func (c *BaseConn) QueryWithContext(ctx context.Context, query string, args ...i
 		}
 		if err := rows.Scan(buf...); err != nil {
 			c.Logger().Error(err)
-			return nil, err
+			return nil, nil, err
 		}
-		value := make(map[string]sql.NullString, len(columns))
+		value := make([]sql.NullString, len(columns))
 		for i := 0; i < len(columns); i++ {
-			k := columns[i]
-			v := data[i]
-			value[k] = v
+			value[i] = data[i]
 		}
 		result = append(result, value)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return result, nil
+	return columns, result, nil
 }
 
 func (c *BaseConn) Query(query string, args ...interface{}) ([]map[string]sql.NullString, error) {
-	return c.QueryWithContext(context.TODO(), query, args...)
+	columns, rows, err := c.QueryWithContext(context.TODO(), query, args...)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]map[string]sql.NullString, len(rows))
+	for j, row := range rows {
+		value := make(map[string]sql.NullString)
+		for i, s := range row {
+			value[columns[i]] = s
+		}
+		result[j] = value
+	}
+	return result, nil
 }
 
 func (c *BaseConn) Logger() *logrus.Entry {
