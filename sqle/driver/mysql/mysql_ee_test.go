@@ -107,13 +107,24 @@ func TestQueryPrepare(t *testing.T) {
 			},
 			hasError: false,
 		}, { // 能识别offset ? limit ?
-			sql: "select * from a limit 8  offset 1",
+			sql: "select * from a limit 8 offset 1",
 			conf: &driver.QueryPrepareConf{
 				Limit:  8,
 				Offset: 2,
 			},
 			result: &driver.QueryPrepareResult{
 				NewSQL:    "select * from a limit 3, 6",
+				ErrorType: driver.ErrorTypeNotError,
+			},
+			hasError: false,
+		}, { // 只有limit没有offset
+			sql: "select * from a limit 8",
+			conf: &driver.QueryPrepareConf{
+				Limit:  8,
+				Offset: 2,
+			},
+			result: &driver.QueryPrepareResult{
+				NewSQL:    "select * from a limit 2, 6",
 				ErrorType: driver.ErrorTypeNotError,
 			},
 			hasError: false,

@@ -75,7 +75,7 @@ func QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf
 	}
 
 	// Generate new limit
-	limit, offset := -1, -1
+	limit, offset := -1, 0
 	if stmt.Limit != nil {
 		if stmt.Limit.Rowcount != nil {
 			limit, _ = strconv.Atoi(stmt.Limit.Rowcount.(*sqlparser.Literal).Val)
