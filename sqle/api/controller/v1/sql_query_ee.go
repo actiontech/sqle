@@ -24,6 +24,7 @@ import (
 )
 
 var errSqlQueryUserNoAccessToSql = errors.New(errors.DataNotExist, fmt.Errorf("current user has no access to this sql"))
+var errSqlQueryNoSql = errors.New(errors.DataNotExist, fmt.Errorf("there is no sql"))
 
 func prepareSQLQuery(c echo.Context) error {
 	instanceName := c.Param("instance_name")
@@ -88,6 +89,11 @@ func prepareSQLQuery(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	if len(nodes) == 0 {
+		return controller.JSONBaseErrorReq(c, errSqlQueryNoSql)
+	}
+
 	for _, node := range nodes {
 		// validate SQL
 		validateResult, err := queryDriver.QueryPrepare(context.TODO(), node.Text, &driver.QueryPrepareConf{
