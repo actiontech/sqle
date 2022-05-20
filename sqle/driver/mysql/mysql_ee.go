@@ -174,7 +174,7 @@ func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf)
 	if err != nil {
 		return nil, err
 	}
-	result, err := conn.Db.QueryWithContext(ctx, sql)
+	columns, rows, err := conn.Db.QueryWithContext(ctx, sql)
 	if err != nil {
 		return nil, err
 	}
@@ -184,22 +184,20 @@ func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf)
 		Column: params.Params{},
 		Rows:   []*driver.QueryResultRow{},
 	}
-	for i, row := range result {
+	for _, column := range columns {
+		res.Column = append(res.Column, &params.Param{
+			Key:   column,
+			Value: column,
+		})
+	}
+	for _, row := range rows {
 		r := &driver.QueryResultRow{
 			Values: []*driver.QueryResultValue{},
 		}
-		index := 0
-		for key := range row {
-			if i == 0 {
-				res.Column = append(res.Column, &params.Param{
-					Key:   key,
-					Value: key,
-				})
-			}
+		for _, s := range row {
 			r.Values = append(r.Values, &driver.QueryResultValue{
-				Value: row[res.Column[index].Value].String,
+				Value: s.String,
 			})
-			index++
 		}
 		res.Rows = append(res.Rows, r)
 	}
