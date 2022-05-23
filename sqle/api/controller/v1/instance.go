@@ -168,15 +168,20 @@ func CreateInstance(c echo.Context) error {
 		}
 	}
 
-	sqlQueryConfig := model.SqlQueryConfig{
-		MaxPreQueryRows:    100,
-		QueryTimeoutSecond: 10,
-	}
+	sqlQueryConfig := model.SqlQueryConfig{}
 	if req.SQLQueryConfig != nil {
 		sqlQueryConfig = model.SqlQueryConfig{
 			MaxPreQueryRows:    req.SQLQueryConfig.MaxPreQueryRows,
 			QueryTimeoutSecond: req.SQLQueryConfig.QueryTimeoutSecond,
 		}
+	}
+	// default value
+	if sqlQueryConfig.QueryTimeoutSecond == 0 {
+		sqlQueryConfig.QueryTimeoutSecond = 10
+	}
+	// default value
+	if sqlQueryConfig.MaxPreQueryRows == 0 {
+		sqlQueryConfig.MaxPreQueryRows = 100
 	}
 
 	instance := &model.Instance{
@@ -578,9 +583,21 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	if req.SQLQueryConfig != nil {
+		maxPreQueryRows := req.SQLQueryConfig.MaxPreQueryRows
+		queryTimeout := req.SQLQueryConfig.QueryTimeoutSecond
+
+		// default value
+		if queryTimeout == 0 {
+			queryTimeout = 10
+		}
+		// default value
+		if maxPreQueryRows == 0 {
+			maxPreQueryRows = 100
+		}
+
 		updateMap["sql_query_config"] = model.SqlQueryConfig{
-			MaxPreQueryRows:    req.SQLQueryConfig.MaxPreQueryRows,
-			QueryTimeoutSecond: req.SQLQueryConfig.QueryTimeoutSecond,
+			MaxPreQueryRows:    maxPreQueryRows,
+			QueryTimeoutSecond: queryTimeout,
 		}
 	}
 
