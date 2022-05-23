@@ -171,8 +171,10 @@ func CreateInstance(c echo.Context) error {
 	sqlQueryConfig := model.SqlQueryConfig{}
 	if req.SQLQueryConfig != nil {
 		sqlQueryConfig = model.SqlQueryConfig{
-			MaxPreQueryRows:    req.SQLQueryConfig.MaxPreQueryRows,
-			QueryTimeoutSecond: req.SQLQueryConfig.QueryTimeoutSecond,
+			MaxPreQueryRows:                  req.SQLQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond:               req.SQLQueryConfig.QueryTimeoutSecond,
+			AuditEnabled:                     req.SQLQueryConfig.AuditEnabled,
+			AllowQueryWhenLessThanAuditLevel: req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel,
 		}
 	}
 	// default value
@@ -182,6 +184,10 @@ func CreateInstance(c echo.Context) error {
 	// default value
 	if sqlQueryConfig.MaxPreQueryRows == 0 {
 		sqlQueryConfig.MaxPreQueryRows = 100
+	}
+
+	if sqlQueryConfig.AuditEnabled && sqlQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("allow_query_when_less_than_audit_level is required when audit_enabled is true")))
 	}
 
 	instance := &model.Instance{
@@ -338,8 +344,10 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 		MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
 		AdditionalParams: []*InstanceAdditionalParamResV1{},
 		SQLQueryConfig: &SQLQueryConfigResV1{
-			MaxPreQueryRows:    instance.SqlQueryConfig.MaxPreQueryRows,
-			QueryTimeoutSecond: instance.SqlQueryConfig.QueryTimeoutSecond,
+			MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond:               instance.SqlQueryConfig.QueryTimeoutSecond,
+			AuditEnabled:                     instance.SqlQueryConfig.AuditEnabled,
+			AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
 		},
 	}
 	if instance.WorkflowTemplate != nil {
@@ -583,6 +591,10 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	if req.SQLQueryConfig != nil {
+		if req.SQLQueryConfig.AuditEnabled && req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("allow_query_when_less_than_audit_level is required when audit_enabled is true")))
+		}
+
 		maxPreQueryRows := req.SQLQueryConfig.MaxPreQueryRows
 		queryTimeout := req.SQLQueryConfig.QueryTimeoutSecond
 
@@ -596,8 +608,10 @@ func UpdateInstance(c echo.Context) error {
 		}
 
 		updateMap["sql_query_config"] = model.SqlQueryConfig{
-			MaxPreQueryRows:    maxPreQueryRows,
-			QueryTimeoutSecond: queryTimeout,
+			MaxPreQueryRows:                  maxPreQueryRows,
+			QueryTimeoutSecond:               queryTimeout,
+			AuditEnabled:                     req.SQLQueryConfig.AuditEnabled,
+			AllowQueryWhenLessThanAuditLevel: req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel,
 		}
 	}
 
@@ -694,8 +708,10 @@ func GetInstances(c echo.Context) error {
 			RuleTemplates:        instance.RuleTemplateNames,
 			Roles:                instance.RoleNames,
 			SQLQueryConfig: &SQLQueryConfigResV1{
-				MaxPreQueryRows:    instance.SqlQueryConfig.MaxPreQueryRows,
-				QueryTimeoutSecond: instance.SqlQueryConfig.QueryTimeoutSecond,
+				MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
+				QueryTimeoutSecond:               instance.SqlQueryConfig.QueryTimeoutSecond,
+				AuditEnabled:                     instance.SqlQueryConfig.AuditEnabled,
+				AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
 			},
 		}
 		instancesReq = append(instancesReq, instanceReq)
