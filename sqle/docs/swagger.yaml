@@ -1608,6 +1608,17 @@ definitions:
     type: object
   v1.SQLQueryConfigReqV1:
     properties:
+      allow_query_when_less_than_audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        example: error
+        type: string
+      audit_enabled:
+        example: false
+        type: boolean
       max_pre_query_rows:
         example: 100
         type: integer
@@ -1617,6 +1628,15 @@ definitions:
     type: object
   v1.SQLQueryConfigResV1:
     properties:
+      allow_query_when_less_than_audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
+      audit_enabled:
+        type: boolean
       max_pre_query_rows:
         type: integer
       query_timeout_second:

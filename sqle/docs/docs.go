@@ -6697,6 +6697,20 @@ var doc = `{
         "v1.SQLQueryConfigReqV1": {
             "type": "object",
             "properties": {
+                "allow_query_when_less_than_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ],
+                    "example": "error"
+                },
+                "audit_enabled": {
+                    "type": "boolean",
+                    "example": false
+                },
                 "max_pre_query_rows": {
                     "type": "integer",
                     "example": 100
@@ -6710,6 +6724,18 @@ var doc = `{
         "v1.SQLQueryConfigResV1": {
             "type": "object",
             "properties": {
+                "allow_query_when_less_than_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
+                "audit_enabled": {
+                    "type": "boolean"
+                },
                 "max_pre_query_rows": {
                     "type": "integer"
                 },
