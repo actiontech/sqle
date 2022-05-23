@@ -8,8 +8,10 @@ import (
 )
 
 type SqlQueryConfig struct {
-	MaxPreQueryRows    int `json:"max_pre_query_rows"`
-	QueryTimeoutSecond int `json:"query_timeout_second"`
+	MaxPreQueryRows                  int    `json:"max_pre_query_rows"`
+	QueryTimeoutSecond               int    `json:"query_timeout_second"`
+	AuditEnabled                     bool   `json:"audit_enabled"`
+	AllowQueryWhenLessThanAuditLevel string `json:"allow_query_when_less_than_audit_level"`
 }
 
 // Scan impl sql.Scanner interface
