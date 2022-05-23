@@ -6697,7 +6697,7 @@ var doc = `{
         "v1.SQLQueryConfigReqV1": {
             "type": "object",
             "properties": {
-                "allow_submit_when_less_than_audit_level": {
+                "allow_query_when_less_than_audit_level": {
                     "type": "string",
                     "enum": [
                         "normal",
@@ -6724,7 +6724,7 @@ var doc = `{
         "v1.SQLQueryConfigResV1": {
             "type": "object",
             "properties": {
-                "allow_submit_when_less_than_audit_level": {
+                "allow_query_when_less_than_audit_level": {
                     "type": "string",
                     "enum": [
                         "normal",

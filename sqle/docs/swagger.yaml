@@ -1608,7 +1608,7 @@ definitions:
     type: object
   v1.SQLQueryConfigReqV1:
     properties:
-      allow_submit_when_less_than_audit_level:
+      allow_query_when_less_than_audit_level:
         enum:
         - normal
         - notice
@@ -1628,7 +1628,7 @@ definitions:
     type: object
   v1.SQLQueryConfigResV1:
     properties:
-      allow_submit_when_less_than_audit_level:
+      allow_query_when_less_than_audit_level:
         enum:
         - normal
         - notice

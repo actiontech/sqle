@@ -93,10 +93,10 @@ type CreateInstanceReqV1 struct {
 }
 
 type SQLQueryConfigReqV1 struct {
-	MaxPreQueryRows                   int    `json:"max_pre_query_rows" from:"max_pre_query_rows" example:"100"`
-	QueryTimeoutSecond                int    `json:"query_timeout_second" from:"query_timeout_second" example:"10"`
-	AuditEnabled                      bool   `json:"audit_enabled" from:"audit_enabled" example:"false"`
-	AllowSubmitWhenLessThanAuditLevel string `json:"allow_submit_when_less_than_audit_level" from:"allow_submit_when_less_than_audit_level" enums:"normal,notice,warn,error" valid:"omitempty,oneof=normal notice warn error " example:"error"`
+	MaxPreQueryRows                  int    `json:"max_pre_query_rows" from:"max_pre_query_rows" example:"100"`
+	QueryTimeoutSecond               int    `json:"query_timeout_second" from:"query_timeout_second" example:"10"`
+	AuditEnabled                     bool   `json:"audit_enabled" from:"audit_enabled" example:"false"`
+	AllowQueryWhenLessThanAuditLevel string `json:"allow_query_when_less_than_audit_level" from:"allow_query_when_less_than_audit_level" enums:"normal,notice,warn,error" valid:"omitempty,oneof=normal notice warn error " example:"error"`
 }
 
 type InstanceAdditionalParamReqV1 struct {
@@ -284,10 +284,10 @@ type InstanceResV1 struct {
 }
 
 type SQLQueryConfigResV1 struct {
-	MaxPreQueryRows                   int    `json:"max_pre_query_rows"`
-	QueryTimeoutSecond                int    `json:"query_timeout_second"`
-	AuditEnabled                      bool   `json:"audit_enabled"`
-	AllowSubmitWhenLessThanAuditLevel string `json:"allow_submit_when_less_than_audit_level"  enums:"normal,notice,warn,error"`
+	MaxPreQueryRows                  int    `json:"max_pre_query_rows"`
+	QueryTimeoutSecond               int    `json:"query_timeout_second"`
+	AuditEnabled                     bool   `json:"audit_enabled"`
+	AllowQueryWhenLessThanAuditLevel string `json:"allow_query_when_less_than_audit_level"  enums:"normal,notice,warn,error"`
 }
 
 type MaintenanceTimeResV1 struct {
