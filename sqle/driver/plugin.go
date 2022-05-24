@@ -5,15 +5,12 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/actiontech/sqle/sqle/driver/proto"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pingcap/errors"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -56,39 +53,13 @@ func convertRuleFromDriverToProto(rule *Rule) *proto.Rule {
 }
 
 // InitPlugins init plugins at plugins directory. It should be called on host process.
+
 func InitPlugins(pluginDir string) error {
 	if pluginDir == "" {
 		return nil
 	}
 
-	getServerHandle := func(path string, closeCh <-chan struct{}) (proto.DriverClient, error) {
-		client := goPlugin.NewClient(&goPlugin.ClientConfig{
-			HandshakeConfig: handshakeConfig,
-			Plugins: goPlugin.PluginSet{
-				filepath.Base(path): &driverPlugin{},
-			},
-			Cmd:              exec.Command(path),
-			AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
-		})
-		go func() {
-			<-closeCh
-			client.Kill()
-		}()
-
-		gRPCClient, err := client.Client()
-		if err != nil {
-			return nil, err
-		}
-		rawI, err := gRPCClient.Dispense(filepath.Base(path))
-		if err != nil {
-			return nil, err
-		}
-		// srv can only be proto.DriverClient
-		//nolint:forcetypeassert
-		srv := rawI.(proto.DriverClient)
-		return srv, nil
-	}
-
+	// read plugin file
 	var plugins []os.FileInfo
 	if err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -104,74 +75,28 @@ func InitPlugins(pluginDir string) error {
 		return err
 	}
 
+	// register plugin
 	for _, p := range plugins {
 		binaryPath := filepath.Join(pluginDir, p.Name())
 
-		closeCh := make(chan struct{})
-		srv, err := getServerHandle(binaryPath, closeCh)
-		if err != nil {
+		// check plugin
+		client := newClientV2FromFile(binaryPath)
+		if !testConnClient(client) {
+			client = newClientV1FromFile(binaryPath)
+			if !testConnClient(client) {
+				return fmt.Errorf("unable to load plugin: %v", binaryPath)
+			}
+		}
+		if err := RegisterDriverFromClient(client); err != nil {
 			return err
 		}
-		pluginMeta, err := srv.Metas(context.TODO(), &proto.Empty{})
-		if err != nil {
-			return err
-		}
-		close(closeCh)
 
-		// driverRules get from plugin when plugin initialize.
-		var driverRules = make([]*Rule, 0, len(pluginMeta.Rules))
-		for _, rule := range pluginMeta.Rules {
-			driverRules = append(driverRules, convertRuleFromProtoToDriver(rule))
-		}
-
-		handler := func(log *logrus.Entry, config *Config) (Driver, error) {
-			pluginCloseCh := make(chan struct{})
-			srv, err := getServerHandle(binaryPath, pluginCloseCh)
-			if err != nil {
-				return nil, err
-			}
-
-			// protoRules send to plugin for Audit.
-			var protoRules []*proto.Rule
-			for _, rule := range config.Rules {
-				protoRules = append(protoRules, convertRuleFromDriverToProto(rule))
-			}
-
-			initRequest := &proto.InitRequest{
-				Rules: protoRules,
-			}
-			if config.DSN != nil {
-				initRequest.Dsn = &proto.DSN{
-					Host:             config.DSN.Host,
-					Port:             config.DSN.Port,
-					User:             config.DSN.User,
-					Password:         config.DSN.Password,
-					AdditionalParams: proto.ConvertParamToProtoParam(config.DSN.AdditionalParams),
-
-					// database is to open.
-					Database: config.DSN.DatabaseName,
-				}
-			}
-
-			_, err = srv.Init(context.TODO(), initRequest)
-			if err != nil {
-				return nil, err
-			}
-			return &driverPluginClient{srv, pluginCloseCh}, nil
-
-		}
-
-		Register(pluginMeta.Name, handler, driverRules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()))
-
-		log.Logger().WithFields(logrus.Fields{
-			"plugin_name": pluginMeta.Name,
-		}).Infoln("plugin inited")
 	}
-
 	return nil
 }
 
 // ServePlugin start plugin process service. It should be called on plugin process.
+// Deprecated: Use PluginServer.AddDriverPlugin and PluginServer.Serve instead.
 func ServePlugin(r Registerer, newDriver func(cfg *Config) Driver) {
 	name := r.Name()
 	goPlugin.Serve(&goPlugin.ServeConfig{
@@ -468,6 +393,16 @@ type driverPlugin struct {
 	goPlugin.NetRPCUnsupportedPlugin
 
 	Srv *driverGRPCServer
+}
+
+func NewDriverPlugin(r Registerer, newDriver func(cfg *Config) Driver) *driverPlugin {
+	return &driverPlugin{
+		NetRPCUnsupportedPlugin: goPlugin.NetRPCUnsupportedPlugin{},
+		Srv: &driverGRPCServer{
+			newDriver: newDriver,
+			r:         r,
+		},
+	}
 }
 
 func (dp *driverPlugin) GRPCServer(broker *goPlugin.GRPCBroker, s *grpc.Server) error {
