@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	sqlQuery "github.com/actiontech/sqle/sqle/server/sql_query"
+
 	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/sirupsen/logrus"
@@ -73,6 +75,22 @@ func prepareSQLQuery(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	if len(nodes) == 0 {
+		return controller.JSONBaseErrorReq(c, errSqlQueryNoSql)
+	}
+
+	// audit
+	if instance.SqlQueryConfig.AuditEnabled {
+		singleSqls := make([]string, len(nodes))
+		for i, node := range nodes {
+			singleSqls[i] = node.Text
+		}
+		err = sqlQuery.Audit(singleSqls, instance)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
 	rawSQL := &model.SqlQueryHistory{
 		CreateUserId: user.ID,
 		InstanceId:   instance.ID,
@@ -88,10 +106,6 @@ func prepareSQLQuery(c echo.Context) error {
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if len(nodes) == 0 {
-		return controller.JSONBaseErrorReq(c, errSqlQueryNoSql)
 	}
 
 	for _, node := range nodes {
@@ -237,9 +251,9 @@ func getSQLResult(c echo.Context) error {
 		singleSql.ExecEndAt = &endAt
 
 		l.WithFields(logrus.Fields{
-			"exec_start_time":   startTime,
-			"exec_sql":          rewriteRes.NewSQL,
-			"elapsed_time":      endAt.Sub(startTime) / time.Millisecond,
+			"exec_start_time": startTime,
+			"exec_sql":        rewriteRes.NewSQL,
+			"elapsed_time":    endAt.Sub(startTime) / time.Millisecond,
 		}).Errorln("SQL Query error")
 
 		if err := s.Save(singleSql); err != nil {
