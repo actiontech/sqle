@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/hashicorp/go-hclog"
+	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/percona/go-mysql/query"
 	"github.com/pkg/errors"
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -73,6 +74,14 @@ func (a *Adaptor) AddRuleWithSQLParser(r *driver.Rule, h astSQLRuleHandler) {
 }
 
 func (a *Adaptor) Serve(opts ...AdaptorOption) {
+	plugin := a.GeneratePlugin(opts...)
+	a.l.Info("start serve plugin", "name", a.dt)
+	p := driver.NewPlugin()
+	p.AddPlugin(driver.PluginNameDriver, driver.DefaultPluginVersion, plugin)
+	p.Serve()
+}
+
+func (a *Adaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 	defer func() {
 		if err := recover(); err != nil {
 			a.l.Error("panic", "err", err)
@@ -124,9 +133,7 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 		return di
 	}
 
-	a.l.Info("start serve plugin", "name", a.dt)
-
-	driver.ServePlugin(r, newDriver)
+	return driver.NewDriverPlugin(r, newDriver)
 }
 
 // AdaptorOption store some custom options for the driver adaptor.
