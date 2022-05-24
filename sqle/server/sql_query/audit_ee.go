@@ -49,7 +49,7 @@ func Audit(sqls []string, instance *model.Instance) error {
 		}
 
 		var auditResultsMsg string
-		for res, _ := range auditResults {
+		for res := range auditResults {
 			auditResultsMsg = fmt.Sprintf("%v\n%v", auditResultsMsg, res)
 		}
 
