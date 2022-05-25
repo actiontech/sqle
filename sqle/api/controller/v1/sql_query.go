@@ -57,7 +57,7 @@ type GetSQLResultResDataV1 struct {
 	EndLine     int                                  `json:"end_line"`
 	CurrentPage int                                  `json:"current_page"`
 	ExecuteTime int                                  `json:"execution_time"`
-	Rows        []map[string] /* head name */ string `json:"rows"`
+	Rows         []map[string] /* head name */ string `json:"rows"`
 	Head         []SQLResultItemHeadResV1             `json:"head"`
 }
 
