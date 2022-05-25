@@ -85,7 +85,7 @@ func prepareSQLQuery(c echo.Context) error {
 		for i, node := range nodes {
 			singleSqls[i] = node.Text
 		}
-		err = sqlQuery.Audit(singleSqls, instance)
+		err = sqlQuery.Audit(singleSqls, req.InstanceSchema, instance)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
