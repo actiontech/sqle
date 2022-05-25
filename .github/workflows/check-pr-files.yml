@@ -1,0 +1,16 @@
+name: prevent-file-change
+on:
+  pull_request:
+    branches:
+      - '*-ee'
+jobs:
+  prevent-file-change:
+    if: github.head_ref != 'main' && !startsWith(github.head_ref, 'release')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: xalvarez/prevent-file-change-action@v1
+        name: Prevent file change
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          pattern: ^(?!.*-ee\.go$).*
+          trustedAuthors: xalvarez
