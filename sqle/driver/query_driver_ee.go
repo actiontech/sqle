@@ -53,6 +53,17 @@ func RegisterSQLQueryDriver(name string, h queryHandler) {
 	queryDriverMu.Unlock()
 }
 
+// QueryDriverName = InstanceType
+func GetQueryDriverNames() []string {
+	queryDriverMu.RLock()
+	defer queryDriverMu.RUnlock()
+	names := []string{}
+	for s := range queryDrivers {
+		names = append(names, s)
+	}
+	return names
+}
+
 type ErrorType string
 
 const (

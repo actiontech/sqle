@@ -7,7 +7,9 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -32,6 +34,16 @@ func getInstanceTips(c echo.Context) error {
 		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_AUDIT_PLAN_SAVE)
 	case sql_query:
 		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_SQL_QUERY_QUERY)
+		supportedTypes := driver.GetQueryDriverNames()
+	A:
+		for i := len(instances) - 1; i >= 0; i-- {
+			for _, supportedType := range supportedTypes {
+				if supportedType == instances[i].DbType {
+					continue A
+				}
+			}
+			instances = append(instances[:i], instances[i+1:]...)
+		}
 	default:
 		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType)
 	}
