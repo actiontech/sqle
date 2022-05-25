@@ -187,7 +187,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if sqlQueryConfig.AuditEnabled && sqlQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("the audit level is required when audit is enabled")))
+		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driver.RuleLevelError)
 	}
 
 	instance := &model.Instance{
@@ -592,7 +592,7 @@ func UpdateInstance(c echo.Context) error {
 
 	if req.SQLQueryConfig != nil {
 		if req.SQLQueryConfig.AuditEnabled && req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("the audit level is required when audit is enabled")))
+			req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driver.RuleLevelError)
 		}
 
 		maxPreQueryRows := req.SQLQueryConfig.MaxPreQueryRows
