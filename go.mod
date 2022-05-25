@@ -3,7 +3,7 @@ module github.com/actiontech/sqle
 go 1.16
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/DATA-DOG/go-sqlmock v1.5.01
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220512094443-95c243e8ebb8
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
