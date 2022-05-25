@@ -13,10 +13,11 @@ import (
 
 var ErrSqlQueryAuditLevelIsNotAllowed = errors.New(errors.DataExist, fmt.Errorf("the audit level is not allowed to perform sql query"))
 
-func Audit(sqls []string, instance *model.Instance) error {
+func Audit(sqls []string, schema string, instance *model.Instance) error {
 	task := &model.Task{
 		DBType:   instance.DbType,
 		Instance: instance,
+		Schema:   schema,
 	}
 	for i, sql := range sqls {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
