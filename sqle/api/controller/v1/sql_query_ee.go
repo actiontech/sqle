@@ -227,7 +227,7 @@ func getSQLResult(c echo.Context) error {
 	if limit > req.PageSize {
 		limit = req.PageSize
 	}
-	offset := req.PageSize * (req.PageIndex - 1)
+	offset := limit * (req.PageIndex - 1)
 	rewriteRes, err := queryDriver.QueryPrepare(context.TODO(), singleSql.Sql, &driver.QueryPrepareConf{
 		Limit:  limit,
 		Offset: offset,
