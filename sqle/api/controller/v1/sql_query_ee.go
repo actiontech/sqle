@@ -364,7 +364,7 @@ func getSQLQueryHistory(c echo.Context) error {
 		}
 	}
 
-	sqlHistories, err := s.GetSqlQueryRawSqlByUserId(user.ID, req.PageIndex, req.PageSize, req.FilterFuzzySearch)
+	sqlHistories, err := s.GetSqlQueryRawSqlByUserId(user.ID, instance.ID, req.PageIndex, req.PageSize, req.FilterFuzzySearch)
 	items := make([]SQLHistoryItemResV1, len(sqlHistories))
 	for i, h := range sqlHistories {
 		items[i] = SQLHistoryItemResV1{

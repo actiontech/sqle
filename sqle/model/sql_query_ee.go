@@ -21,9 +21,9 @@ func (s *Storage) GetSqlQueryHistoryById(id uint) (*SqlQueryHistory, error) {
 	return history, nil
 }
 
-func (s *Storage) GetSqlQueryRawSqlByUserId(userID uint, pageIndex, pageSize uint32, fuzzyKey string) ([]SqlQueryHistory, error) {
+func (s *Storage) GetSqlQueryRawSqlByUserId(userID, instanceId uint, pageIndex, pageSize uint32, fuzzyKey string) ([]SqlQueryHistory, error) {
 	var res []SqlQueryHistory
-	query := s.db.Select("raw_sql").Where("create_user_id = ?", userID)
+	query := s.db.Select("raw_sql").Where("create_user_id = ?", userID).Where("instance_id = ?", instanceId)
 	if fuzzyKey != "" {
 		query = query.Where("raw_sql LIKE ?", fmt.Sprintf("%%%s%%", fuzzyKey))
 	}
