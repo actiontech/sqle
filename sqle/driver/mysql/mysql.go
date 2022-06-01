@@ -27,7 +27,7 @@ func init() {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
-	driver.Register(driver.DriverTypeMySQL, newInspect, allRules, params.Params{})
+	driver.RegisterAuditDriver(driver.DriverTypeMySQL, newInspect, allRules, params.Params{})
 
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)

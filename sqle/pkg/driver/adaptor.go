@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_driver "database/sql/driver"
+	goPlugin "github.com/hashicorp/go-plugin"
 	"os"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -16,9 +17,9 @@ import (
 	"vitess.io/vitess/go/vt/sqlparser"
 )
 
-// Adaptor is a wrapper for the sqle driver layer. It
+// AuditAdaptor is a wrapper for the sqle driver layer. It
 // provides a more simpler interface for the database plugin.
-type Adaptor struct {
+type AuditAdaptor struct {
 	l hclog.Logger
 
 	cfg *driver.Config
@@ -41,9 +42,10 @@ type adaptorOptions struct {
 type rawSQLRuleHandler func(ctx context.Context, rule *driver.Rule, rawSQL string) (string, error)
 type astSQLRuleHandler func(ctx context.Context, rule *driver.Rule, astSQL interface{}) (string, error)
 
-// NewAdaptor create a database plugin Adaptor with dialector.
-func NewAdaptor(dt Dialector) *Adaptor {
-	return &Adaptor{
+// NewAdaptor create a database plugin AuditAdaptor with dialector.
+// NewAdaptor is actually NewAuditAdaptor, but the method name cannot be changed for historical reasons
+func NewAdaptor(dt Dialector) *AuditAdaptor {
+	return &AuditAdaptor{
 		ao: &adaptorOptions{},
 
 		dt: dt,
@@ -58,21 +60,29 @@ func NewAdaptor(dt Dialector) *Adaptor {
 	}
 }
 
-func (a *Adaptor) AddRule(r *driver.Rule, h rawSQLRuleHandler) {
+func (a *AuditAdaptor) AddRule(r *driver.Rule, h rawSQLRuleHandler) {
 	a.rules = append(a.rules, r)
 	a.ruleToRawHandler[r.Name] = h
 }
 
-func (a *Adaptor) AddAdditionalParams(p *params.Param) {
+func (a *AuditAdaptor) AddAdditionalParams(p *params.Param) {
 	a.additionalParams = append(a.additionalParams, p)
 }
 
-func (a *Adaptor) AddRuleWithSQLParser(r *driver.Rule, h astSQLRuleHandler) {
+func (a *AuditAdaptor) AddRuleWithSQLParser(r *driver.Rule, h astSQLRuleHandler) {
 	a.rules = append(a.rules, r)
 	a.ruleToASTHandler[r.Name] = h
 }
 
-func (a *Adaptor) Serve(opts ...AdaptorOption) {
+func (a *AuditAdaptor) Serve(opts ...AdaptorOption) {
+	plugin := a.GeneratePlugin(opts...)
+	a.l.Info("start serve plugin", "name", a.dt)
+	p := driver.NewPlugin()
+	p.AddPlugin(driver.PluginNameDriver, driver.DefaultPluginVersion, plugin)
+	p.Serve()
+}
+
+func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 	defer func() {
 		if err := recover(); err != nil {
 			a.l.Error("panic", "err", err)
@@ -91,7 +101,7 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 		panic("Add rule by AddRuleWithSQLParser(), but no SQL parser provided.")
 	}
 
-	r := &registererImpl{
+	r := &auditRegistererImpl{
 		dt:               a.dt,
 		rules:            a.rules,
 		additionalParams: a.additionalParams,
@@ -100,7 +110,7 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 	newDriver := func(cfg *driver.Config) driver.Driver {
 		a.cfg = cfg
 
-		di := &driverImpl{a: a}
+		di := &auditDriverImpl{a: a}
 
 		if cfg.DSN == nil {
 			return di
@@ -124,9 +134,7 @@ func (a *Adaptor) Serve(opts ...AdaptorOption) {
 		return di
 	}
 
-	a.l.Info("start serve plugin", "name", a.dt)
-
-	driver.ServePlugin(r, newDriver)
+	return driver.NewAuditDriverPlugin(r, newDriver)
 }
 
 // AdaptorOption store some custom options for the driver adaptor.
@@ -157,34 +165,34 @@ func WithSQLParser(parser func(sql string) (ast interface{}, err error)) Adaptor
 	})
 }
 
-var _ driver.Driver = (*driverImpl)(nil)
-var _ driver.Registerer = (*registererImpl)(nil)
+var _ driver.Driver = (*auditDriverImpl)(nil)
+var _ driver.Registerer = (*auditRegistererImpl)(nil)
 
-type registererImpl struct {
+type auditRegistererImpl struct {
 	dt               Dialector
 	rules            []*driver.Rule
 	additionalParams params.Params
 }
 
-func (r *registererImpl) Name() string {
+func (r *auditRegistererImpl) Name() string {
 	return r.dt.String()
 }
 
-func (r *registererImpl) Rules() []*driver.Rule {
+func (r *auditRegistererImpl) Rules() []*driver.Rule {
 	return r.rules
 }
 
-func (r *registererImpl) AdditionalParams() params.Params {
+func (r *auditRegistererImpl) AdditionalParams() params.Params {
 	return r.additionalParams
 }
 
-type driverImpl struct {
-	a    *Adaptor
+type auditDriverImpl struct {
+	a    *AuditAdaptor
 	db   *sql.DB
 	conn *sql.Conn
 }
 
-func (d *driverImpl) Close(ctx context.Context) {
+func (d *auditDriverImpl) Close(ctx context.Context) {
 	if err := d.conn.Close(); err != nil {
 		d.a.l.Error("failed to close connection in driver adaptor", "err", err)
 	}
@@ -193,14 +201,14 @@ func (d *driverImpl) Close(ctx context.Context) {
 	}
 }
 
-func (d *driverImpl) Ping(ctx context.Context) error {
+func (d *auditDriverImpl) Ping(ctx context.Context) error {
 	if err := d.conn.PingContext(ctx); err != nil {
 		return errors.Wrap(err, "ping in driver adaptor")
 	}
 	return nil
 }
 
-func (d *driverImpl) Exec(ctx context.Context, sql string) (_driver.Result, error) {
+func (d *auditDriverImpl) Exec(ctx context.Context, sql string) (_driver.Result, error) {
 	res, err := d.conn.ExecContext(ctx, sql)
 	if err != nil {
 		return nil, errors.Wrap(err, "exec sql in driver adaptor")
@@ -208,7 +216,7 @@ func (d *driverImpl) Exec(ctx context.Context, sql string) (_driver.Result, erro
 	return res, nil
 }
 
-func (d *driverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, error) {
+func (d *auditDriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, error) {
 	var (
 		err error
 		tx  *sql.Tx
@@ -246,7 +254,7 @@ func (d *driverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 	return results, nil
 }
 
-func (d *driverImpl) Schemas(ctx context.Context) ([]string, error) {
+func (d *auditDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 	rows, err := d.conn.QueryContext(ctx, d.a.dt.ShowDatabaseSQL())
 	if err != nil {
 		return nil, errors.Wrap(err, "query database in driver adaptor")
@@ -269,7 +277,7 @@ func (d *driverImpl) Schemas(ctx context.Context) ([]string, error) {
 	return schemas, nil
 }
 
-func (d *driverImpl) Parse(ctx context.Context, sql string) ([]driver.Node, error) {
+func (d *auditDriverImpl) Parse(ctx context.Context, sql string) ([]driver.Node, error) {
 	sqls, err := sqlparser.SplitStatementToPieces(sql)
 	if err != nil {
 		return nil, errors.Wrap(err, "split sql")
@@ -300,7 +308,7 @@ func classifySQL(sql string) (sqlType string) {
 	return driver.SQLTypeDDL
 }
 
-func (d *driverImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
+func (d *auditDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
 	var err error
 	var ast interface{}
 	if d.a.ao.sqlParser != nil {
@@ -334,6 +342,6 @@ func (d *driverImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult
 	return result, nil
 }
 
-func (d *driverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+func (d *auditDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
 	return "", "", nil
 }
