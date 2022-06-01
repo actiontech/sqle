@@ -2,9 +2,10 @@ package driver
 
 import (
 	"context"
-	"github.com/actiontech/sqle/sqle/driver/proto"
-	goPlugin "github.com/hashicorp/go-plugin"
 
+	"github.com/actiontech/sqle/sqle/driver/proto"
+
+	goPlugin "github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 )
 

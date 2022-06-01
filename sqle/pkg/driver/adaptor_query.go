@@ -8,9 +8,9 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-	goPlugin "github.com/hashicorp/go-plugin"
 
 	"github.com/hashicorp/go-hclog"
+	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 )
 
