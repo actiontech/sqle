@@ -3,10 +3,10 @@ package driver
 import (
 	"context"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/proto"
-	"github.com/actiontech/sqle/sqle/log"
 	"sync"
 
+	"github.com/actiontech/sqle/sqle/driver/proto"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/sirupsen/logrus"

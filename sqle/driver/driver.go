@@ -1,11 +1,13 @@
 package driver
 
 import (
+	"os/exec"
+
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
-	"os/exec"
 )
 
 // DSN provide necessary information to connect to database.
