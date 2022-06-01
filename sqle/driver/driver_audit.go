@@ -4,15 +4,17 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/proto"
-	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/pkg/params"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/actiontech/sqle/sqle/driver/proto"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/params"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var (

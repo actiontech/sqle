@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	_driver "database/sql/driver"
-	goPlugin "github.com/hashicorp/go-plugin"
 	"os"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -12,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/hashicorp/go-hclog"
+	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/percona/go-mysql/query"
 	"github.com/pkg/errors"
 	"vitess.io/vitess/go/vt/sqlparser"

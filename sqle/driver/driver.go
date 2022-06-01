@@ -1,9 +1,13 @@
 package driver
 
 import (
-	"github.com/actiontech/sqle/sqle/pkg/params"
-	goPlugin "github.com/hashicorp/go-plugin"
 	"os/exec"
+
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/params"
+
+	goPlugin "github.com/hashicorp/go-plugin"
+	"github.com/sirupsen/logrus"
 )
 
 // DSN provide necessary information to connect to database.
@@ -115,4 +119,14 @@ func testConnClient(client PluginClient) bool {
 
 func RegisterDriverFromClient(client PluginClient) error {
 	return client.RegisterPlugin(client)
+}
+
+func registerPlugin(pluginName string, c PluginClient) error {
+	if err := registerQueryPlugin(pluginName, c); err != nil {
+		log.Logger().WithFields(logrus.Fields{
+			"plugin_name": pluginName,
+			"plugin_type": PluginNameQueryDriver,
+		}).Infoln("plugin not exist or failed to load")
+	}
+	return nil
 }
