@@ -570,3 +570,32 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 func checkCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
 	return checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
 }
+
+type SQLExplain struct {
+	SQL  string                   `json:"sql"`
+	Rows []map[string]string      `json:"rows"`
+	Head []SQLResultItemHeadResV1 `json:"head"`
+}
+
+type GetTaskAnalysisDataResItemV1 struct {
+	SQLExplains []SQLExplain `json:"sql_explains"`
+	TableMetas  []TableMeta  `json:"table_metas"`
+}
+
+type GetTaskAnalysisDataResV1 struct {
+	controller.BaseRes
+	Data GetTaskAnalysisDataResItemV1 `json:"data"`
+}
+
+// GetTaskAnalysisData get SQL explain and related table metadata for analysis
+// @Summary 获取task相关的SQL执行计划和表元数据
+// @Description get SQL explain and related table metadata for analysis
+// @Id getTaskAnalysisData
+// @Tags task
+// @Param task_id path string true "task id"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetTaskAnalysisDataResV1
+// @router /v1/tasks/analysis/{task_id}/ [get]
+func GetTaskAnalysisData(c echo.Context) error {
+	return nil
+}
