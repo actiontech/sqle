@@ -27,7 +27,7 @@ func init() {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
-	driver.RegisterAuditDriver(driver.DriverTypeMySQL, newInspect, allRules, params.Params{})
+	driver.RegisterAuditDriver(driver.DriverTypeMySQL, NewInspect, allRules, params.Params{})
 
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
@@ -60,7 +60,7 @@ type Inspect struct {
 	isOfflineAudit bool
 }
 
-func newInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
+func NewInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	var inspect = &Inspect{}
 
 	if cfg.DSN != nil {
