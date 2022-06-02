@@ -3437,6 +3437,61 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
+  /v1/instance/{instance_name}/schema_tables:
+    get:
+      description: list table by schema
+      operationId: listTableBySchema
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: query
+        name: schema
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ListTableBySchemaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据库下的所有表
+      tags:
+      - instance
+  /v1/instance/{instance_name}/table_metadata:
+    get:
+      description: get table metadata
+      operationId: getTableMetadata
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: query
+        name: schema
+        required: true
+        type: string
+      - description: table name
+        in: query
+        name: table
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTableMetadataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取表元数据
+      tags:
+      - instance
   /v1/instance_additional_metas:
     get:
       description: get instance additional metas
@@ -4093,14 +4148,14 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
-  /v1/sql_query/explain/{query_id}/:
+  /v1/sql_query/explain:
     get:
       description: get SQL explain
       operationId: getSQLExplain
       parameters:
-      - description: query id
-        in: path
-        name: query_id
+      - description: sql for explain
+        in: formData
+        name: sql
         required: true
         type: string
       responses:
@@ -4203,51 +4258,6 @@ paths:
       summary: 获取SQL查询结果
       tags:
       - sql_query
-  /v1/sql_query/table/metadata/{schema}/{table}/:
-    get:
-      description: get table metadata
-      operationId: getTableMetadata
-      parameters:
-      - description: schema name
-        in: path
-        name: schema
-        required: true
-        type: string
-      - description: table name
-        in: path
-        name: table
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTableMetadataResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取表元数据
-      tags:
-      - sql_query
-  /v1/sql_query/tables/{schema}/:
-    get:
-      description: list table by schema
-      operationId: listTableBySchema
-      parameters:
-      - description: schema name
-        in: path
-        name: schema
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.ListTableBySchemaResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取数据库下的所有表
-      tags:
-      - sql_query
   /v1/tasks/analysis/{task_id}/:
     get:
       description: get SQL explain and related table metadata for analysis
@@ -4258,6 +4268,11 @@ paths:
         name: task_id
         required: true
         type: string
+      - description: sql number
+        in: query
+        name: sql_number
+        required: true
+        type: integer
       responses:
         "200":
           description: OK

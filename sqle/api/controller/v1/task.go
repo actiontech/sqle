@@ -593,6 +593,7 @@ type GetTaskAnalysisDataResV1 struct {
 // @Id getTaskAnalysisData
 // @Tags task
 // @Param task_id path string true "task id"
+// @Param sql_number query uint true "sql number"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetTaskAnalysisDataResV1
 // @router /v1/tasks/analysis/{task_id}/ [get]

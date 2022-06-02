@@ -1040,3 +1040,67 @@ func GetInstanceWorkflowTemplate(c echo.Context) error {
 		Data:    res,
 	})
 }
+
+type Table struct {
+	Name string `json:"name"`
+}
+
+type ListTableBySchemaResV1 struct {
+	controller.BaseRes
+	Data []Table `json:"data"`
+}
+
+// ListTableBySchema list table by schema
+// @Summary 获取数据库下的所有表
+// @Description list table by schema
+// @Id listTableBySchema
+// @Tags instance
+// @Param instance_name path string true "instance name"
+// @Param schema query string true "schema name"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.ListTableBySchemaResV1
+// @router /v1/instance/{instance_name}/schema_tables [get]
+func ListTableBySchema(c echo.Context) error {
+	return nil
+}
+
+type TableInfo struct {
+	Items map[string]string `json:"items"`
+}
+
+type TableColumns struct {
+	Rows []map[string]string      `json:"rows"`
+	Head []SQLResultItemHeadResV1 `json:"head"`
+}
+
+type TableIndexes struct {
+	Rows []map[string]string      `json:"rows"`
+	Head []SQLResultItemHeadResV1 `json:"head"`
+}
+
+type TableMeta struct {
+	Name    string       `json:"name"`
+	Info    TableInfo    `json:"information"`
+	Columns TableColumns `json:"columns"`
+	Indexes TableIndexes `json:"indexes"`
+}
+
+type GetTableMetadataResV1 struct {
+	controller.BaseRes
+	Data TableMeta `json:"data"`
+}
+
+// GetTableMetadata get table metadata
+// @Summary 获取表元数据
+// @Description get table metadata
+// @Id getTableMetadata
+// @Tags instance
+// @Param instance_name path string true "instance name"
+// @Param schema query string true "schema name"
+// @Param table query string true "table name"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetTableMetadataResV1
+// @router /v1/instance/{instance_name}/table_metadata [get]
+func GetTableMetadata(c echo.Context) error {
+	return nil
+}

@@ -1373,6 +1373,91 @@ var doc = `{
                 }
             }
         },
+        "/v1/instance/{instance_name}/schema_tables": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "list table by schema",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取数据库下的所有表",
+                "operationId": "listTableBySchema",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ListTableBySchemaResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instance/{instance_name}/table_metadata": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get table metadata",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取表元数据",
+                "operationId": "getTableMetadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "table name",
+                        "name": "table",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTableMetadataResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/instance_additional_metas": {
             "get": {
                 "security": [
@@ -2407,7 +2492,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/explain/{query_id}/": {
+        "/v1/sql_query/explain": {
             "get": {
                 "security": [
                     {
@@ -2423,9 +2508,9 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "query id",
-                        "name": "query_id",
-                        "in": "path",
+                        "description": "sql for explain",
+                        "name": "sql",
+                        "in": "formData",
                         "required": true
                     }
                 ],
@@ -2579,77 +2664,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/table/metadata/{schema}/{table}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get table metadata",
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "获取表元数据",
-                "operationId": "getTableMetadata",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "schema name",
-                        "name": "schema",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "table name",
-                        "name": "table",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetTableMetadataResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sql_query/tables/{schema}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "list table by schema",
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "获取数据库下的所有表",
-                "operationId": "listTableBySchema",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "schema name",
-                        "name": "schema",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.ListTableBySchemaResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/tasks/analysis/{task_id}/": {
             "get": {
                 "security": [
@@ -2669,6 +2683,13 @@ var doc = `{
                         "description": "task id",
                         "name": "task_id",
                         "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "sql number",
+                        "name": "sql_number",
+                        "in": "query",
                         "required": true
                     }
                 ],
