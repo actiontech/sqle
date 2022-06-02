@@ -1074,3 +1074,26 @@ func TestAuditPlanNotifyConfig(c echo.Context) error {
 		},
 	})
 }
+
+type GetSQLAnalysisDataResItemV1 struct {
+	SQLExplains []SQLExplain `json:"sql_explains"`
+	TableMetas  []TableMeta  `json:"table_metas"`
+}
+
+type GetAuditPlanAnalysisDataResV1 struct {
+	controller.BaseRes
+	Data GetSQLAnalysisDataResItemV1 `json:"data"`
+}
+
+// GetAuditPlanAnalysisData get SQL explain and related table metadata for analysis
+// @Summary 获取task相关的SQL执行计划和表元数据
+// @Description get SQL explain and related table metadata for analysis
+// @Id getTaskAnalysisData
+// @Tags audit_plan
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetAuditPlanAnalysisDataResV1
+// @router /v1/audit_plans/analysis/{audit_plan_report_id}/ [get]
+func GetAuditPlanAnalysisData(c echo.Context) error {
+	return nil
+}

@@ -134,6 +134,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/audit_plans/analysis/{audit_plan_report_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plans/{audit_plan_name}/": {
             "get": {
                 "security": [
@@ -2375,6 +2407,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/sql_query/explain/{query_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain",
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "获取SQL执行计划",
+                "operationId": "getSQLExplain",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "query id",
+                        "name": "query_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLExplainResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sql_query/history/{instance_name}/": {
             "get": {
                 "security": [
@@ -2510,6 +2574,109 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetSQLResultResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sql_query/table/metadata/{schema}/{table}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get table metadata",
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "获取表元数据",
+                "operationId": "getTableMetadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "table name",
+                        "name": "table",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTableMetadataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sql_query/tables/{schema}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "list table by schema",
+                "tags": [
+                    "sql_query"
+                ],
+                "summary": "获取数据库下的所有表",
+                "operationId": "listTableBySchema",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ListTableBySchemaResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/analysis/{task_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
                         }
                     }
                 }
@@ -5039,6 +5206,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetAuditPlanAnalysisDataResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetSQLAnalysisDataResItemV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetAuditPlanMetasResV1": {
             "type": "object",
             "properties": {
@@ -5767,6 +5951,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSQLAnalysisDataResItemV1": {
+            "type": "object",
+            "properties": {
+                "sql_explains": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLExplain"
+                    }
+                },
+                "table_metas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
+                }
+            }
+        },
         "v1.GetSQLEInfoResV1": {
             "type": "object",
             "properties": {
@@ -5780,6 +5981,23 @@ var doc = `{
                 },
                 "version": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.GetSQLExplainResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLExplain"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -5873,6 +6091,57 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SystemVariablesResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTableMetadataResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableMeta"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskAnalysisDataResItemV1": {
+            "type": "object",
+            "properties": {
+                "sql_explains": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLExplain"
+                    }
+                },
+                "table_metas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
+                }
+            }
+        },
+        "v1.GetTaskAnalysisDataResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetTaskAnalysisDataResItemV1"
                 },
                 "message": {
                     "type": "string",
@@ -6323,6 +6592,25 @@ var doc = `{
                 }
             }
         },
+        "v1.ListTableBySchemaResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Table"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.MaintenanceTimeReqV1": {
             "type": "object",
             "properties": {
@@ -6686,6 +6974,29 @@ var doc = `{
                 }
             }
         },
+        "v1.SQLExplain": {
+            "type": "object",
+            "properties": {
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.SQLHistoryItemResV1": {
             "type": "object",
             "properties": {
@@ -6757,6 +7068,85 @@ var doc = `{
             "properties": {
                 "workflow_expired_hours": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.Table": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TableColumns": {
+            "type": "object",
+            "properties": {
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "v1.TableIndexes": {
+            "type": "object",
+            "properties": {
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "v1.TableInfo": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.TableMeta": {
+            "type": "object",
+            "properties": {
+                "columns": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableColumns"
+                },
+                "indexes": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableIndexes"
+                },
+                "information": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableInfo"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
