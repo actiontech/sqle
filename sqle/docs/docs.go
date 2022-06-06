@@ -134,7 +134,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/audit_plans/analysis/{audit_plan_report_id}/": {
+        "/v1/audit_plans/analysis/reports/{audit_plan_report_id}/sqls/{number}/": {
             "get": {
                 "security": [
                     {
@@ -152,6 +152,13 @@ var doc = `{
                         "type": "string",
                         "description": "audit plan report id",
                         "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql number",
+                        "name": "number",
                         "in": "path",
                         "required": true
                     }
@@ -1373,91 +1380,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/instance/{instance_name}/schema_tables": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "list table by schema",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取数据库下的所有表",
-                "operationId": "listTableBySchema",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema name",
-                        "name": "schema",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.ListTableBySchemaResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instance/{instance_name}/table_metadata": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get table metadata",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取表元数据",
-                "operationId": "getTableMetadata",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema name",
-                        "name": "schema",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "table name",
-                        "name": "table",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetTableMetadataResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/instance_additional_metas": {
             "get": {
                 "security": [
@@ -1871,6 +1793,91 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetInstanceSchemaResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances/{instance_name}/schemas/{schema_name}/tables": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "list table by schema",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取数据库下的所有表",
+                "operationId": "listTableBySchema",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ListTableBySchemaResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get table metadata",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取表元数据",
+                "operationId": "getTableMetadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "table name",
+                        "name": "table_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTableMetadataResV1"
                         }
                     }
                 }
@@ -2664,7 +2671,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/tasks/analysis/{task_id}/": {
+        "/v1/tasks/analysis/{task_id}/sqls/{number}/": {
             "get": {
                 "security": [
                     {
@@ -2688,8 +2695,8 @@ var doc = `{
                     {
                         "type": "integer",
                         "description": "sql number",
-                        "name": "sql_number",
-                        "in": "query",
+                        "name": "number",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -8108,6 +8115,10 @@ var doc = `{
                 "audit_plan_report_sql_audit_result": {
                     "type": "string",
                     "example": "same format as task audit result"
+                },
+                "number": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },

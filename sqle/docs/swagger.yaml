@@ -2435,6 +2435,9 @@ definitions:
       audit_plan_report_sql_audit_result:
         example: same format as task audit result
         type: string
+      number:
+        example: 1
+        type: integer
     type: object
   v2.AuditPlanSQLHeadV2:
     properties:
@@ -2974,7 +2977,7 @@ paths:
       summary: 触发审核计划
       tags:
       - audit_plan
-  /v1/audit_plans/analysis/{audit_plan_report_id}/:
+  /v1/audit_plans/analysis/reports/{audit_plan_report_id}/sqls/{number}/:
     get:
       description: get SQL explain and related table metadata for analysis
       operationId: getTaskAnalysisData
@@ -2982,6 +2985,11 @@ paths:
       - description: audit plan report id
         in: path
         name: audit_plan_report_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
         required: true
         type: string
       responses:
@@ -3437,61 +3445,6 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
-  /v1/instance/{instance_name}/schema_tables:
-    get:
-      description: list table by schema
-      operationId: listTableBySchema
-      parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: schema name
-        in: query
-        name: schema
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.ListTableBySchemaResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取数据库下的所有表
-      tags:
-      - instance
-  /v1/instance/{instance_name}/table_metadata:
-    get:
-      description: get table metadata
-      operationId: getTableMetadata
-      parameters:
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: schema name
-        in: query
-        name: schema
-        required: true
-        type: string
-      - description: table name
-        in: query
-        name: table
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTableMetadataResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取表元数据
-      tags:
-      - instance
   /v1/instance_additional_metas:
     get:
       description: get instance additional metas
@@ -3755,6 +3708,61 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 实例 Schema 列表
+      tags:
+      - instance
+  /v1/instances/{instance_name}/schemas/{schema_name}/tables:
+    get:
+      description: list table by schema
+      operationId: listTableBySchema
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: path
+        name: schema_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ListTableBySchemaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据库下的所有表
+      tags:
+      - instance
+  /v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata:
+    get:
+      description: get table metadata
+      operationId: getTableMetadata
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: path
+        name: schema_name
+        required: true
+        type: string
+      - description: table name
+        in: path
+        name: table_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTableMetadataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取表元数据
       tags:
       - instance
   /v1/instances/{instance_name}/workflow_template:
@@ -4258,7 +4266,7 @@ paths:
       summary: 获取SQL查询结果
       tags:
       - sql_query
-  /v1/tasks/analysis/{task_id}/:
+  /v1/tasks/analysis/{task_id}/sqls/{number}/:
     get:
       description: get SQL explain and related table metadata for analysis
       operationId: getTaskAnalysisData
@@ -4269,8 +4277,8 @@ paths:
         required: true
         type: string
       - description: sql number
-        in: query
-        name: sql_number
+        in: path
+        name: number
         required: true
         type: integer
       responses:
