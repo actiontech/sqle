@@ -2499,7 +2499,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_query/explain": {
+        "/v1/sql_query/explain/{instance_name}/": {
             "get": {
                 "security": [
                     {
@@ -2515,8 +2515,22 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "sql for explain",
                         "name": "sql",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema for explain",
+                        "name": "schema_name",
                         "in": "formData",
                         "required": true
                     }
@@ -5223,7 +5237,7 @@ var doc = `{
                 }
             }
         },
-        "v1.ExplainTable": {
+        "v1.ExplainClassicResult": {
             "type": "object",
             "properties": {
                 "head": {
@@ -6002,13 +6016,15 @@ var doc = `{
         "v1.GetSQLAnalysisDataResItemV1": {
             "type": "object",
             "properties": {
-                "sql_explains": {
+                "sql_explain": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLExplain"
                 },
                 "table_metas": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TableMeta"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
                 }
             }
         },
@@ -6036,8 +6052,10 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.SQLExplain"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLExplain"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -6162,13 +6180,15 @@ var doc = `{
         "v1.GetTaskAnalysisDataResItemV1": {
             "type": "object",
             "properties": {
-                "sql_explains": {
+                "sql_explain": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLExplain"
                 },
                 "table_metas": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TableMeta"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
                 }
             }
         },
@@ -7017,13 +7037,13 @@ var doc = `{
         "v1.SQLExplain": {
             "type": "object",
             "properties": {
-                "sql": {
-                    "type": "string"
-                },
-                "table": {
+                "classic_result": {
                     "description": "explain result in table format",
                     "type": "object",
-                    "$ref": "#/definitions/v1.ExplainTable"
+                    "$ref": "#/definitions/v1.ExplainClassicResult"
+                },
+                "sql": {
+                    "type": "string"
                 }
             }
         },

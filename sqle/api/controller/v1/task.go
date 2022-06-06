@@ -572,19 +572,19 @@ func checkCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
 }
 
 type SQLExplain struct {
-	SQL   string       `json:"sql"`
+	SQL string `json:"sql"`
 	// explain result in table format
-	Table ExplainTable `json:"table"`
+	ClassicResult ExplainClassicResult `json:"classic_result"`
 }
 
-type ExplainTable struct {
+type ExplainClassicResult struct {
 	Rows []map[string] /* head name */ string `json:"rows"`
 	Head []SQLResultItemHeadResV1             `json:"head"`
 }
 
 type GetTaskAnalysisDataResItemV1 struct {
-	SQLExplains SQLExplain `json:"sql_explains"`
-	TableMetas  TableMeta  `json:"table_metas"`
+	SQLExplain SQLExplain  `json:"sql_explain"`
+	TableMetas []TableMeta `json:"table_metas"`
 }
 
 type GetTaskAnalysisDataResV1 struct {
