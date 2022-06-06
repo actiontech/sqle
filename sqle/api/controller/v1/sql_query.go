@@ -113,3 +113,23 @@ type PrepareSQLQueryResSQLV1 struct {
 func PrepareSQLQuery(c echo.Context) error {
 	return prepareSQLQuery(c)
 }
+
+type GetSQLExplainResV1 struct {
+	controller.BaseRes
+	Data []SQLExplain `json:"data"`
+}
+
+// GetSQLExplain get SQL explain
+// @Summary 获取SQL执行计划
+// @Description get SQL explain
+// @Id getSQLExplain
+// @Tags sql_query
+// @Param instance_name path string true "instance name"
+// @Param sql formData string true "sql for explain"
+// @Param schema_name formData string true "schema for explain"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSQLExplainResV1
+// @router /v1/sql_query/explain/{instance_name}/ [get]
+func GetSQLExplain(c echo.Context) error {
+	return nil
+}

@@ -473,12 +473,37 @@ definitions:
           type: string
         type: array
     type: object
+  v1.ExplainClassicResult:
+    properties:
+      head:
+        items:
+          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+        type: array
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
         items:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
+    type: object
+  v1.GetAuditPlanAnalysisDataResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetSQLAnalysisDataResItemV1'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetAuditPlanMetasResV1:
     properties:
@@ -982,6 +1007,16 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSQLAnalysisDataResItemV1:
+    properties:
+      sql_explain:
+        $ref: '#/definitions/v1.SQLExplain'
+        type: object
+      table_metas:
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
+    type: object
   v1.GetSQLEInfoResV1:
     properties:
       code:
@@ -991,6 +1026,19 @@ definitions:
         example: ok
         type: string
       version:
+        type: string
+    type: object
+  v1.GetSQLExplainResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SQLExplain'
+        type: array
+      message:
+        example: ok
         type: string
     type: object
   v1.GetSQLQueryHistoryResDataV1:
@@ -1054,6 +1102,40 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.SystemVariablesResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTableMetadataResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TableMeta'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskAnalysisDataResItemV1:
+    properties:
+      sql_explain:
+        $ref: '#/definitions/v1.SQLExplain'
+        type: object
+      table_metas:
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
+    type: object
+  v1.GetTaskAnalysisDataResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetTaskAnalysisDataResItemV1'
         type: object
       message:
         example: ok
@@ -1360,6 +1442,19 @@ definitions:
       name:
         type: string
     type: object
+  v1.ListTableBySchemaResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.Table'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.MaintenanceTimeReqV1:
     properties:
       maintenance_start_time:
@@ -1601,6 +1696,15 @@ definitions:
       smtp_username:
         type: string
     type: object
+  v1.SQLExplain:
+    properties:
+      classic_result:
+        $ref: '#/definitions/v1.ExplainClassicResult'
+        description: explain result in table format
+        type: object
+      sql:
+        type: string
+    type: object
   v1.SQLHistoryItemResV1:
     properties:
       sql:
@@ -1651,6 +1755,50 @@ definitions:
     properties:
       workflow_expired_hours:
         type: integer
+    type: object
+  v1.Table:
+    properties:
+      name:
+        type: string
+    type: object
+  v1.TableColumns:
+    properties:
+      head:
+        items:
+          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+        type: array
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
+  v1.TableIndexes:
+    properties:
+      head:
+        items:
+          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+        type: array
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
+  v1.TableMeta:
+    properties:
+      columns:
+        $ref: '#/definitions/v1.TableColumns'
+        type: object
+      create_table_sql:
+        type: string
+      indexes:
+        $ref: '#/definitions/v1.TableIndexes'
+        type: object
+      name:
+        type: string
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
@@ -2285,6 +2433,9 @@ definitions:
       audit_plan_report_sql_audit_result:
         example: same format as task audit result
         type: string
+      number:
+        example: 1
+        type: integer
     type: object
   v2.AuditPlanSQLHeadV2:
     properties:
@@ -2822,6 +2973,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 触发审核计划
+      tags:
+      - audit_plan
+  /v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getTaskAnalysisData
+      parameters:
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanAnalysisDataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - audit_plan
   /v1/audit_whitelist:
@@ -3532,6 +3708,61 @@ paths:
       summary: 实例 Schema 列表
       tags:
       - instance
+  /v1/instances/{instance_name}/schemas/{schema_name}/tables:
+    get:
+      description: list table by schema
+      operationId: listTableBySchema
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: path
+        name: schema_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ListTableBySchemaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据库下的所有表
+      tags:
+      - instance
+  /v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata:
+    get:
+      description: get table metadata
+      operationId: getTableMetadata
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: path
+        name: schema_name
+        required: true
+        type: string
+      - description: table name
+        in: path
+        name: table_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTableMetadataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取表元数据
+      tags:
+      - instance
   /v1/instances/{instance_name}/workflow_template:
     get:
       description: get instance workflow template
@@ -3923,6 +4154,36 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
+  /v1/sql_query/explain/{instance_name}/:
+    get:
+      description: get SQL explain
+      operationId: getSQLExplain
+      parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: sql for explain
+        in: formData
+        name: sql
+        required: true
+        type: string
+      - description: schema for explain
+        in: formData
+        name: schema_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLExplainResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL执行计划
+      tags:
+      - sql_query
   /v1/sql_query/history/{instance_name}/:
     get:
       description: get sql query history
@@ -4232,6 +4493,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 修改审核任务中某条SQL的相关信息
+      tags:
+      - task
+  /v1/tasks/audits/{task_id}/sqls/{number}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getTaskAnalysisData
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskAnalysisDataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
   /v1/user:
