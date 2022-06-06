@@ -134,7 +134,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/audit_plans/analysis/reports/{audit_plan_report_id}/sqls/{number}/": {
+        "/v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
             "get": {
                 "security": [
                     {
@@ -2671,45 +2671,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/tasks/analysis/{task_id}/sqls/{number}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get SQL explain and related table metadata for analysis",
-                "tags": [
-                    "task"
-                ],
-                "summary": "获取task相关的SQL执行计划和表元数据",
-                "operationId": "getTaskAnalysisData",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "sql number",
-                        "name": "number",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/tasks/audits": {
             "post": {
                 "security": [
@@ -3037,6 +2998,45 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/audits/{task_id}/sqls/{number}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
                         }
                     }
                 }
@@ -5223,6 +5223,26 @@ var doc = `{
                 }
             }
         },
+        "v1.ExplainTable": {
+            "type": "object",
+            "properties": {
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "v1.FullSyncAuditPlanSQLsReqV1": {
             "type": "object",
             "properties": {
@@ -5983,16 +6003,12 @@ var doc = `{
             "type": "object",
             "properties": {
                 "sql_explains": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLExplain"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLExplain"
                 },
                 "table_metas": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.TableMeta"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableMeta"
                 }
             }
         },
@@ -6147,16 +6163,12 @@ var doc = `{
             "type": "object",
             "properties": {
                 "sql_explains": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLExplain"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLExplain"
                 },
                 "table_metas": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.TableMeta"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableMeta"
                 }
             }
         },
@@ -7005,23 +7017,13 @@ var doc = `{
         "v1.SQLExplain": {
             "type": "object",
             "properties": {
-                "head": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
-                    }
-                },
-                "rows": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
-                    }
-                },
                 "sql": {
                     "type": "string"
+                },
+                "table": {
+                    "description": "explain result in table format",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ExplainTable"
                 }
             }
         },

@@ -473,6 +473,19 @@ definitions:
           type: string
         type: array
     type: object
+  v1.ExplainTable:
+    properties:
+      head:
+        items:
+          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+        type: array
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -997,13 +1010,11 @@ definitions:
   v1.GetSQLAnalysisDataResItemV1:
     properties:
       sql_explains:
-        items:
-          $ref: '#/definitions/v1.SQLExplain'
-        type: array
+        $ref: '#/definitions/v1.SQLExplain'
+        type: object
       table_metas:
-        items:
-          $ref: '#/definitions/v1.TableMeta'
-        type: array
+        $ref: '#/definitions/v1.TableMeta'
+        type: object
     type: object
   v1.GetSQLEInfoResV1:
     properties:
@@ -1109,13 +1120,11 @@ definitions:
   v1.GetTaskAnalysisDataResItemV1:
     properties:
       sql_explains:
-        items:
-          $ref: '#/definitions/v1.SQLExplain'
-        type: array
+        $ref: '#/definitions/v1.SQLExplain'
+        type: object
       table_metas:
-        items:
-          $ref: '#/definitions/v1.TableMeta'
-        type: array
+        $ref: '#/definitions/v1.TableMeta'
+        type: object
     type: object
   v1.GetTaskAnalysisDataResV1:
     properties:
@@ -1686,18 +1695,12 @@ definitions:
     type: object
   v1.SQLExplain:
     properties:
-      head:
-        items:
-          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
-        type: array
-      rows:
-        items:
-          additionalProperties:
-            type: string
-          type: object
-        type: array
       sql:
         type: string
+      table:
+        $ref: '#/definitions/v1.ExplainTable'
+        description: explain result in table format
+        type: object
     type: object
   v1.SQLHistoryItemResV1:
     properties:
@@ -2969,7 +2972,7 @@ paths:
       summary: 触发审核计划
       tags:
       - audit_plan
-  /v1/audit_plans/analysis/reports/{audit_plan_report_id}/sqls/{number}/:
+  /v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis:
     get:
       description: get SQL explain and related table metadata for analysis
       operationId: getTaskAnalysisData
@@ -4258,31 +4261,6 @@ paths:
       summary: 获取SQL查询结果
       tags:
       - sql_query
-  /v1/tasks/analysis/{task_id}/sqls/{number}/:
-    get:
-      description: get SQL explain and related table metadata for analysis
-      operationId: getTaskAnalysisData
-      parameters:
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      - description: sql number
-        in: path
-        name: number
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTaskAnalysisDataResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取task相关的SQL执行计划和表元数据
-      tags:
-      - task
   /v1/tasks/audits:
     post:
       consumes:
@@ -4502,6 +4480,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 修改审核任务中某条SQL的相关信息
+      tags:
+      - task
+  /v1/tasks/audits/{task_id}/sqls/{number}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getTaskAnalysisData
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskAnalysisDataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
   /v1/user:

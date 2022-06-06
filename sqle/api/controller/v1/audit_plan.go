@@ -1076,8 +1076,8 @@ func TestAuditPlanNotifyConfig(c echo.Context) error {
 }
 
 type GetSQLAnalysisDataResItemV1 struct {
-	SQLExplains []SQLExplain `json:"sql_explains"`
-	TableMetas  []TableMeta  `json:"table_metas"`
+	SQLExplains SQLExplain `json:"sql_explains"`
+	TableMetas  TableMeta  `json:"table_metas"`
 }
 
 type GetAuditPlanAnalysisDataResV1 struct {
@@ -1094,7 +1094,7 @@ type GetAuditPlanAnalysisDataResV1 struct {
 // @Param number path string true "sql number"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetAuditPlanAnalysisDataResV1
-// @router /v1/audit_plans/analysis/reports/{audit_plan_report_id}/sqls/{number}/ [get]
+// @router /v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
 func GetAuditPlanAnalysisData(c echo.Context) error {
 	return nil
 }
