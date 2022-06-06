@@ -572,14 +572,19 @@ func checkCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
 }
 
 type SQLExplain struct {
-	SQL  string                   `json:"sql"`
-	Rows []map[string]string      `json:"rows"`
-	Head []SQLResultItemHeadResV1 `json:"head"`
+	SQL   string       `json:"sql"`
+	// explain result in table format
+	Table ExplainTable `json:"table"`
+}
+
+type ExplainTable struct {
+	Rows []map[string] /* head name */ string `json:"rows"`
+	Head []SQLResultItemHeadResV1             `json:"head"`
 }
 
 type GetTaskAnalysisDataResItemV1 struct {
-	SQLExplains []SQLExplain `json:"sql_explains"`
-	TableMetas  []TableMeta  `json:"table_metas"`
+	SQLExplains SQLExplain `json:"sql_explains"`
+	TableMetas  TableMeta  `json:"table_metas"`
 }
 
 type GetTaskAnalysisDataResV1 struct {
@@ -596,7 +601,7 @@ type GetTaskAnalysisDataResV1 struct {
 // @Param number path uint true "sql number"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetTaskAnalysisDataResV1
-// @router /v1/tasks/analysis/{task_id}/sqls/{number}/ [get]
+// @router /v1/tasks/audits/{task_id}/sqls/{number}/analysis [get]
 func GetTaskAnalysisData(c echo.Context) error {
 	return nil
 }
