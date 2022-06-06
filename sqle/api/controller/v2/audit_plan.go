@@ -102,6 +102,7 @@ type GetAuditPlanReportSQLsResV2 struct {
 type AuditPlanReportSQLResV2 struct {
 	SQL         string `json:"audit_plan_report_sql" example:"select * from t1 where id = 1"`
 	AuditResult string `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
+	Number      uint   `json:"number" example:"1"`
 }
 
 // @Summary 获取指定审核计划的SQL审核详情
