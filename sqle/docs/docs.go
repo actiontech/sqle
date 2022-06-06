@@ -7147,17 +7147,6 @@ var doc = `{
                 }
             }
         },
-        "v1.TableInfo": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "v1.TableMeta": {
             "type": "object",
             "properties": {
@@ -7165,13 +7154,12 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/v1.TableColumns"
                 },
+                "create_table_sql": {
+                    "type": "string"
+                },
                 "indexes": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TableIndexes"
-                },
-                "information": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TableInfo"
                 },
                 "name": {
                     "type": "string"

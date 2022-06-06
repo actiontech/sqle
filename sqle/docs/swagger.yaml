@@ -1781,23 +1781,15 @@ definitions:
           type: object
         type: array
     type: object
-  v1.TableInfo:
-    properties:
-      items:
-        additionalProperties:
-          type: string
-        type: object
-    type: object
   v1.TableMeta:
     properties:
       columns:
         $ref: '#/definitions/v1.TableColumns'
         type: object
+      create_table_sql:
+        type: string
       indexes:
         $ref: '#/definitions/v1.TableIndexes'
-        type: object
-      information:
-        $ref: '#/definitions/v1.TableInfo'
         type: object
       name:
         type: string

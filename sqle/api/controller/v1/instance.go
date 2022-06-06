@@ -1064,10 +1064,6 @@ func ListTableBySchema(c echo.Context) error {
 	return nil
 }
 
-type TableInfo struct {
-	Items map[string]string `json:"items"`
-}
-
 type TableColumns struct {
 	Rows []map[string]string      `json:"rows"`
 	Head []SQLResultItemHeadResV1 `json:"head"`
@@ -1079,10 +1075,10 @@ type TableIndexes struct {
 }
 
 type TableMeta struct {
-	Name    string       `json:"name"`
-	Info    TableInfo    `json:"information"`
-	Columns TableColumns `json:"columns"`
-	Indexes TableIndexes `json:"indexes"`
+	Name           string       `json:"name"`
+	Columns        TableColumns `json:"columns"`
+	Indexes        TableIndexes `json:"indexes"`
+	CreateTableSQL string       `json:"create_table_sql"`
 }
 
 type GetTableMetadataResV1 struct {
