@@ -1076,8 +1076,8 @@ func TestAuditPlanNotifyConfig(c echo.Context) error {
 }
 
 type GetSQLAnalysisDataResItemV1 struct {
-	SQLExplains SQLExplain `json:"sql_explains"`
-	TableMetas  TableMeta  `json:"table_metas"`
+	SQLExplain SQLExplain  `json:"sql_explain"`
+	TableMetas []TableMeta `json:"table_metas"`
 }
 
 type GetAuditPlanAnalysisDataResV1 struct {

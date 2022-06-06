@@ -473,7 +473,7 @@ definitions:
           type: string
         type: array
     type: object
-  v1.ExplainTable:
+  v1.ExplainClassicResult:
     properties:
       head:
         items:
@@ -1009,12 +1009,13 @@ definitions:
     type: object
   v1.GetSQLAnalysisDataResItemV1:
     properties:
-      sql_explains:
+      sql_explain:
         $ref: '#/definitions/v1.SQLExplain'
         type: object
       table_metas:
-        $ref: '#/definitions/v1.TableMeta'
-        type: object
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
     type: object
   v1.GetSQLEInfoResV1:
     properties:
@@ -1033,8 +1034,9 @@ definitions:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v1.SQLExplain'
-        type: object
+        items:
+          $ref: '#/definitions/v1.SQLExplain'
+        type: array
       message:
         example: ok
         type: string
@@ -1119,12 +1121,13 @@ definitions:
     type: object
   v1.GetTaskAnalysisDataResItemV1:
     properties:
-      sql_explains:
+      sql_explain:
         $ref: '#/definitions/v1.SQLExplain'
         type: object
       table_metas:
-        $ref: '#/definitions/v1.TableMeta'
-        type: object
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
     type: object
   v1.GetTaskAnalysisDataResV1:
     properties:
@@ -1695,12 +1698,12 @@ definitions:
     type: object
   v1.SQLExplain:
     properties:
-      sql:
-        type: string
-      table:
-        $ref: '#/definitions/v1.ExplainTable'
+      classic_result:
+        $ref: '#/definitions/v1.ExplainClassicResult'
         description: explain result in table format
         type: object
+      sql:
+        type: string
     type: object
   v1.SQLHistoryItemResV1:
     properties:
@@ -4151,14 +4154,24 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
-  /v1/sql_query/explain:
+  /v1/sql_query/explain/{instance_name}/:
     get:
       description: get SQL explain
       operationId: getSQLExplain
       parameters:
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
       - description: sql for explain
         in: formData
         name: sql
+        required: true
+        type: string
+      - description: schema for explain
+        in: formData
+        name: schema_name
         required: true
         type: string
       responses:
