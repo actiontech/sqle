@@ -1056,10 +1056,10 @@ type ListTableBySchemaResV1 struct {
 // @Id listTableBySchema
 // @Tags instance
 // @Param instance_name path string true "instance name"
-// @Param schema query string true "schema name"
+// @Param schema_name path string true "schema name"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.ListTableBySchemaResV1
-// @router /v1/instance/{instance_name}/schema_tables [get]
+// @router /v1/instances/{instance_name}/schemas/{schema_name}/tables [get]
 func ListTableBySchema(c echo.Context) error {
 	return nil
 }
@@ -1096,11 +1096,11 @@ type GetTableMetadataResV1 struct {
 // @Id getTableMetadata
 // @Tags instance
 // @Param instance_name path string true "instance name"
-// @Param schema query string true "schema name"
-// @Param table query string true "table name"
+// @Param schema_name path string true "schema name"
+// @Param table_name path string true "table name"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetTableMetadataResV1
-// @router /v1/instance/{instance_name}/table_metadata [get]
+// @router /v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata [get]
 func GetTableMetadata(c echo.Context) error {
 	return nil
 }
