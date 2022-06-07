@@ -50,7 +50,21 @@ func newAnalysisDriverInspect(log *logrus.Entry, dsn *driver.DSN) (driver.Analys
 
 // ListTablesInSchema list tables in specified schema.
 func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
-	return nil, nil
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Db.Close()
+	tables, err := conn.ShowSchemaTables(conf.Schema)
+	if err != nil {
+		return nil, err
+	}
+
+	resItems := make([]driver.Table, len(tables))
+	for i, t := range tables {
+		resItems[i].Name = t
+	}
+	return &driver.ListTablesInSchemaResult{Tables: resItems}, nil
 }
 
 // GetTableMetaByTableName get table's metadata by table name.
