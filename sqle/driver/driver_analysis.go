@@ -10,7 +10,8 @@ import (
 // AnalysisDriver is a driver for SQL analysis and getting table metadata
 type AnalysisDriver interface {
 	ListTablesInSchema(ctx context.Context, conf *ListTablesInSchemaConf) (*ListTablesInSchemaResult, error)
-	GetTableMeta(ctx context.Context, conf *GetTableMetaConf) (*GetTableMetaResult, error)
+	GetTableMetaByTableName(ctx context.Context, conf *GetTableMetaByTableNameConf) (*GetTableMetaByTableNameResult, error)
+	GetTableMetaBySQL(ctx context.Context, conf *GetTableMetaBySQLConf) (*GetTableMetaBySQLResult, error)
 	Explain(ctx context.Context, conf *ExplainConf) (*ExplainResult, error)
 }
 
@@ -40,9 +41,13 @@ type AnalysisInfoInTableFormat struct {
 	Rows   [][]string
 }
 
-type GetTableMetaConf struct {
+type GetTableMetaByTableNameConf struct {
 	Schema string
 	Table  string
+}
+
+type GetTableMetaBySQLConf struct {
+	Sql string
 }
 
 type ColumnsInfo struct {
@@ -53,10 +58,18 @@ type IndexesInfo struct {
 	AnalysisInfoInTableFormat
 }
 
-type GetTableMetaResult struct {
+type TableMetaItem struct {
 	ColumnsInfo    ColumnsInfo
 	IndexesInfo    IndexesInfo
 	CreateTableSQL string
+}
+
+type GetTableMetaByTableNameResult struct {
+	TableMeta TableMetaItem
+}
+
+type GetTableMetaBySQLResult struct {
+	TableMetas []TableMetaItem
 }
 
 type ExplainConf struct {
