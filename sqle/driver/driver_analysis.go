@@ -2,6 +2,8 @@ package driver
 
 import (
 	"context"
+	"fmt"
+	"sync"
 
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
@@ -16,7 +18,7 @@ type AnalysisDriver interface {
 }
 
 type ListTablesInSchemaConf struct {
-	schema string
+	Schema string
 }
 
 type Table struct {
@@ -73,7 +75,7 @@ type GetTableMetaBySQLResult struct {
 }
 
 type ExplainConf struct {
-	sql string
+	Sql string
 }
 
 type ExplainClassicResult struct {
@@ -85,5 +87,34 @@ type ExplainResult struct {
 }
 
 func NewAnalysisDriver(log *logrus.Entry, dbType string, cfg *DSN) (AnalysisDriver, error) {
-	return nil, nil
+	analysisDriverMu.RLock()
+	defer analysisDriverMu.RUnlock()
+	d, exist := analysisDrivers[dbType]
+	if !exist {
+		return nil, fmt.Errorf("driver type %v is not supported", dbType)
+	}
+	return d(log, cfg)
+}
+
+var analysisDriverMu = &sync.RWMutex{}
+var analysisDrivers = make(map[string]analysisHandler)
+
+// analysisHandler is a template which AnalysisDriver plugin should provide such function signature.
+type analysisHandler func(log *logrus.Entry, c *DSN) (AnalysisDriver, error)
+
+// RegisterAnalysisDriver like sql.RegisterAuditDriver.
+//
+// RegisterAnalysisDriver makes a database driver available by the provided driver name.
+// RegisterAnalysisDriver's initialize handler registered by RegisterAnalysisDriver.
+func RegisterAnalysisDriver(name string, h analysisHandler) {
+	analysisDriverMu.RLock()
+	_, exist := analysisDrivers[name]
+	analysisDriverMu.RUnlock()
+	if exist {
+		panic("duplicated driver name")
+	}
+
+	analysisDriverMu.Lock()
+	analysisDrivers[name] = h
+	analysisDriverMu.Unlock()
 }
