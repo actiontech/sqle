@@ -579,7 +579,7 @@ type SQLExplain struct {
 
 type ExplainClassicResult struct {
 	Rows []map[string] /* head name */ string `json:"rows"`
-	Head []SQLResultItemHeadResV1             `json:"head"`
+	Head []TableMetaItemHeadResV1             `json:"head"`
 }
 
 type GetTaskAnalysisDataResItemV1 struct {

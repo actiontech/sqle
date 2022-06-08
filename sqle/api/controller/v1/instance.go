@@ -1064,14 +1064,19 @@ func ListTableBySchema(c echo.Context) error {
 	return nil
 }
 
+type TableMetaItemHeadResV1 struct {
+	FieldName string `json:"field_name"`
+	Desc      string `json:"desc"`
+}
+
 type TableColumns struct {
 	Rows []map[string]string      `json:"rows"`
-	Head []SQLResultItemHeadResV1 `json:"head"`
+	Head []TableMetaItemHeadResV1 `json:"head"`
 }
 
 type TableIndexes struct {
 	Rows []map[string]string      `json:"rows"`
-	Head []SQLResultItemHeadResV1 `json:"head"`
+	Head []TableMetaItemHeadResV1 `json:"head"`
 }
 
 type TableMeta struct {
