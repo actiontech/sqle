@@ -537,7 +537,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 	case *ast.TableName:
 		table = source
 		tableAlias = tableSource.AsName.String()
-	case *ast.SelectStmt, *ast.UnionStmt:
+	case *ast.SelectStmt, *ast.SetOprStmt:
 		i.Logger().Infof("not support generate rollback sql with update-select statement")
 		return "", NotSupportSubQueryStatementRollback, nil
 	default:

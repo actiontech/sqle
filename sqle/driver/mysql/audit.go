@@ -582,7 +582,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) error {
 	}
 	keyColsName := []string{}
 	keyColNeedExist := []string{}
-	for _, col := range stmt.IndexColNames {
+	for _, col := range stmt.IndexPartSpecifications {
 		colName := col.Column.Name.L
 		keyColsName = append(keyColsName, colName)
 		if _, ok := colNameMap[col.Column.Name.L]; !ok {
@@ -746,7 +746,7 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 			if alias != "" {
 				tableAlias[table] = alias
 			}
-		case *ast.SelectStmt, *ast.UnionStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			continue
 		}
 	}
@@ -950,7 +950,7 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		case *ast.TableName:
 			table := source
 			tables = append(tables, table)
-		case *ast.SelectStmt, *ast.UnionStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			continue
 		}
 	}

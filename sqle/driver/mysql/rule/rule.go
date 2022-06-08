@@ -1168,10 +1168,12 @@ func checkSelectWhere(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 		checkWhere(rule, res, stmt.Where)
 	case *ast.DeleteStmt:
 		checkWhere(rule, res, stmt.Where)
-	case *ast.UnionStmt:
+	case *ast.SetOprStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			if checkWhere(rule, res, ss.Where) {
-				break
+			if sss, ok := ss.(*ast.SelectStmt); ok {
+				if checkWhere(rule, res, sss.Where) {
+					break
+				}
 			}
 		}
 	default:
@@ -1634,7 +1636,7 @@ func disableAddIndexForColumnsTypeBlob(ctx *session.Context, rule driver.Rule, r
 				isTypeBlobCols[col.Name.Name.String()] = false
 			}
 		}
-		for _, indexColumns := range stmt.IndexColNames {
+		for _, indexColumns := range stmt.IndexPartSpecifications {
 			if isTypeBlobCols[indexColumns.Column.Name.String()] {
 				indexDataTypeIsBlob = true
 				break
@@ -1843,11 +1845,11 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 
 	case *ast.CreateIndexStmt:
 		indexCounter++
-		if compositeIndexMax < len(stmt.IndexColNames) {
-			compositeIndexMax = len(stmt.IndexColNames)
+		if compositeIndexMax < len(stmt.IndexPartSpecifications) {
+			compositeIndexMax = len(stmt.IndexPartSpecifications)
 		}
 		singleConstraint := index{Name: stmt.IndexName, Column: []string{}}
-		for _, key := range stmt.IndexColNames {
+		for _, key := range stmt.IndexPartSpecifications {
 			singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
 			singleIndexCounter[key.Column.Name.L]++
 		}
@@ -2190,7 +2192,7 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 			}
 		}
 	case *ast.CreateIndexStmt:
-		if !stmt.Unique {
+		if stmt.KeyType == ast.IndexKeyTypeNone {
 			indexesName = append(indexesName, stmt.IndexName)
 		}
 	default:
@@ -2256,8 +2258,8 @@ func getTableUniqIndex(node ast.Node) (string, map[string][]string) {
 		}
 	case *ast.CreateIndexStmt:
 		tableName = stmt.Table.Name.String()
-		if stmt.Unique {
-			for _, indexCol := range stmt.IndexColNames {
+		if stmt.KeyType == ast.IndexKeyTypeUnique {
+			for _, indexCol := range stmt.IndexPartSpecifications {
 				indexes[stmt.IndexName] = append(indexes[stmt.IndexName], indexCol.Column.Name.String())
 			}
 		}
@@ -2609,20 +2611,22 @@ func checkWhereExistFunc(ctx *session.Context, rule driver.Rule, res *driver.Aud
 		if stmt.Where != nil {
 			checkExistFunc(ctx, rule, res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
-	case *ast.UnionStmt:
+	case *ast.SetOprStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			tableSources := util.GetTableSources(ss.From.TableRefs)
-			if len(tableSources) < 1 {
-				continue
-			}
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
+			if sss, ok := ss.(*ast.SelectStmt); ok {
+				tableSources := util.GetTableSources(sss.From.TableRefs)
+				if len(tableSources) < 1 {
+					continue
 				}
-			}
-			if checkExistFunc(ctx, rule, res, tables, ss.Where) {
-				break
+				for _, tableSource := range tableSources {
+					switch source := tableSource.Source.(type) {
+					case *ast.TableName:
+						tables = append(tables, source)
+					}
+				}
+				if checkExistFunc(ctx, rule, res, tables, sss.Where) {
+					break
+				}
 			}
 		}
 	default:
@@ -2686,20 +2690,22 @@ func checkWhereColumnImplicitConversion(ctx *session.Context, rule driver.Rule, 
 		if stmt.Where != nil {
 			checkWhereColumnImplicitConversionFunc(ctx, rule, res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
-	case *ast.UnionStmt:
+	case *ast.SetOprStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			tableSources := util.GetTableSources(ss.From.TableRefs)
-			if len(tableSources) < 1 {
-				continue
-			}
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
+			if sss, ok := ss.(*ast.SelectStmt); ok {
+				tableSources := util.GetTableSources(sss.From.TableRefs)
+				if len(tableSources) < 1 {
+					continue
 				}
-			}
-			if checkWhereColumnImplicitConversionFunc(ctx, rule, res, tables, ss.Where) {
-				break
+				for _, tableSource := range tableSources {
+					switch source := tableSource.Source.(type) {
+					case *ast.TableName:
+						tables = append(tables, source)
+					}
+				}
+				if checkWhereColumnImplicitConversionFunc(ctx, rule, res, tables, sss.Where) {
+					break
+				}
 			}
 		}
 	default:
@@ -2745,7 +2751,7 @@ func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driver.Ru
 func checkDMLSelectForUpdate(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
-		if stmt.LockTp == ast.SelectLockForUpdate {
+		if stmt.LockInfo.LockType == ast.SelectLockForUpdate {
 			addResult(res, rule, DMLCheckSelectForUpdate)
 		}
 	}
@@ -2995,11 +3001,13 @@ func checkNumberOfJoinTables(ctx *session.Context, rule driver.Rule, res *driver
 
 func checkIsAfterUnionDistinct(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
-	case *ast.UnionStmt:
+	case *ast.SetOprStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			if ss.IsAfterUnionDistinct {
-				addResult(res, rule, DMLCheckIfAfterUnionDistinct)
-				return nil
+			if sss, ok := ss.(*ast.SelectStmt); ok {
+				if *sss.AfterSetOperator == ast.Union {
+					addResult(res, rule, DMLCheckIfAfterUnionDistinct)
+					return nil
+				}
 			}
 		}
 	default:
@@ -3038,7 +3046,7 @@ func checkIndexOption(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 		}
 	case *ast.CreateIndexStmt:
 		tableName = stmt.Table
-		for _, indexCol := range stmt.IndexColNames {
+		for _, indexCol := range stmt.IndexPartSpecifications {
 			indexColumns = append(indexColumns, indexCol.Column.Name.String())
 		}
 	default:
