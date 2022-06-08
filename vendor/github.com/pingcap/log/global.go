@@ -8,6 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -17,6 +18,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// ZapEncodingName is the encoder name registered in zap
+var ZapEncodingName = "pingcap-log"
 
 // Debug logs a message at DebugLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
@@ -59,12 +63,18 @@ func Fatal(msg string, fields ...zap.Field) {
 	L().WithOptions(zap.AddCallerSkip(1)).Fatal(msg, fields...)
 }
 
+// With creates a child logger and adds structured context to it.
+// Fields added to the child don't affect the parent, and vice versa.
+func With(fields ...zap.Field) *zap.Logger {
+	return L().WithOptions(zap.AddCallerSkip(1)).With(fields...)
+}
+
 // SetLevel alters the logging level.
 func SetLevel(l zapcore.Level) {
-	_globalP.Level.SetLevel(l)
+	globalProperties.Load().(*ZapProperties).Level.SetLevel(l)
 }
 
 // GetLevel gets the logging level.
 func GetLevel() zapcore.Level {
-	return _globalP.Level.Level()
+	return globalProperties.Load().(*ZapProperties).Level.Level()
 }

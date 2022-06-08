@@ -14,19 +14,15 @@
 package terror
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
+	"sync"
 
 	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
 	"github.com/pingcap/parser/mysql"
-	log "github.com/sirupsen/logrus"
-)
-
-// Global error instances.
-var (
-	ErrCritical           = ClassGlobal.New(CodeExecResultIsEmpty, "critical error %v")
-	ErrResultUndetermined = ClassGlobal.New(CodeResultUndetermined, "execution result undetermined")
+	"go.uber.org/zap"
 )
 
 // ErrCode represents a specific error type in a error class.
@@ -55,67 +51,75 @@ const (
 // ErrClass represents a class of errors.
 type ErrClass int
 
+type Error = errors.Error
+
 // Error classes.
-const (
-	ClassAutoid ErrClass = iota + 1
-	ClassDDL
-	ClassDomain
-	ClassEvaluator
-	ClassExecutor
-	ClassExpression
-	ClassAdmin
-	ClassKV
-	ClassMeta
-	ClassOptimizer
-	ClassParser
-	ClassPerfSchema
-	ClassPrivilege
-	ClassSchema
-	ClassServer
-	ClassStructure
-	ClassVariable
-	ClassXEval
-	ClassTable
-	ClassTypes
-	ClassGlobal
-	ClassMockTikv
-	ClassJSON
-	ClassTiKV
-	ClassSession
-	ClassPlugin
+var (
+	ClassAutoid     = RegisterErrorClass(1, "autoid")
+	ClassDDL        = RegisterErrorClass(2, "ddl")
+	ClassDomain     = RegisterErrorClass(3, "domain")
+	ClassEvaluator  = RegisterErrorClass(4, "evaluator")
+	ClassExecutor   = RegisterErrorClass(5, "executor")
+	ClassExpression = RegisterErrorClass(6, "expression")
+	ClassAdmin      = RegisterErrorClass(7, "admin")
+	ClassKV         = RegisterErrorClass(8, "kv")
+	ClassMeta       = RegisterErrorClass(9, "meta")
+	ClassOptimizer  = RegisterErrorClass(10, "planner")
+	ClassParser     = RegisterErrorClass(11, "parser")
+	ClassPerfSchema = RegisterErrorClass(12, "perfschema")
+	ClassPrivilege  = RegisterErrorClass(13, "privilege")
+	ClassSchema     = RegisterErrorClass(14, "schema")
+	ClassServer     = RegisterErrorClass(15, "server")
+	ClassStructure  = RegisterErrorClass(16, "structure")
+	ClassVariable   = RegisterErrorClass(17, "variable")
+	ClassXEval      = RegisterErrorClass(18, "xeval")
+	ClassTable      = RegisterErrorClass(19, "table")
+	ClassTypes      = RegisterErrorClass(20, "types")
+	ClassGlobal     = RegisterErrorClass(21, "global")
+	ClassMockTikv   = RegisterErrorClass(22, "mocktikv")
+	ClassJSON       = RegisterErrorClass(23, "json")
+	ClassTiKV       = RegisterErrorClass(24, "tikv")
+	ClassSession    = RegisterErrorClass(25, "session")
+	ClassPlugin     = RegisterErrorClass(26, "plugin")
+	ClassUtil       = RegisterErrorClass(27, "util")
 	// Add more as needed.
 )
 
-var errClz2Str = map[ErrClass]string{
-	ClassAutoid:     "autoid",
-	ClassDDL:        "ddl",
-	ClassDomain:     "domain",
-	ClassExecutor:   "executor",
-	ClassExpression: "expression",
-	ClassAdmin:      "admin",
-	ClassMeta:       "meta",
-	ClassKV:         "kv",
-	ClassOptimizer:  "planner",
-	ClassParser:     "parser",
-	ClassPerfSchema: "perfschema",
-	ClassPrivilege:  "privilege",
-	ClassSchema:     "schema",
-	ClassServer:     "server",
-	ClassStructure:  "structure",
-	ClassVariable:   "variable",
-	ClassTable:      "table",
-	ClassTypes:      "types",
-	ClassGlobal:     "global",
-	ClassMockTikv:   "mocktikv",
-	ClassJSON:       "json",
-	ClassTiKV:       "tikv",
-	ClassSession:    "session",
-	ClassPlugin:     "plugin",
+var errClass2Desc = make(map[ErrClass]string)
+var rfcCode2errClass = newCode2ErrClassMap()
+
+type code2ErrClassMap struct {
+	data sync.Map
+}
+
+func newCode2ErrClassMap() *code2ErrClassMap {
+	return &code2ErrClassMap{
+		data: sync.Map{},
+	}
+}
+
+func (m *code2ErrClassMap) Get(key string) (ErrClass, bool) {
+	ret, have := m.data.Load(key)
+	return ret.(ErrClass), have
+}
+
+func (m *code2ErrClassMap) Put(key string, err ErrClass) {
+	m.data.Store(key, err)
+}
+
+// RegisterErrorClass registers new error class for terror.
+func RegisterErrorClass(classCode int, desc string) ErrClass {
+	errClass := ErrClass(classCode)
+	if _, exists := errClass2Desc[errClass]; exists {
+		panic(fmt.Sprintf("duplicate register ClassCode %d - %s", classCode, desc))
+	}
+	errClass2Desc[errClass] = desc
+	return errClass
 }
 
 // String implements fmt.Stringer interface.
 func (ec ErrClass) String() string {
-	if s, exists := errClz2Str[ec]; exists {
+	if s, exists := errClass2Desc[ec]; exists {
 		return s
 	}
 	return strconv.Itoa(int(ec))
@@ -128,7 +132,12 @@ func (ec ErrClass) EqualClass(err error) bool {
 		return false
 	}
 	if te, ok := e.(*Error); ok {
-		return te.class == ec
+		rfcCode := te.RFCCode()
+		if index := strings.Index(string(rfcCode), ":"); index > 0 {
+			if class, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
+				return class == ec
+			}
+		}
 	}
 	return false
 }
@@ -138,171 +147,96 @@ func (ec ErrClass) NotEqualClass(err error) bool {
 	return !ec.EqualClass(err)
 }
 
-// New creates an *Error with an error code and an error message.
-// Usually used to create base *Error.
-func (ec ErrClass) New(code ErrCode, message string) *Error {
-	return &Error{
-		class:   ec,
-		code:    code,
-		message: message,
+func (ec ErrClass) initError(code ErrCode) string {
+	clsMap, ok := ErrClassToMySQLCodes[ec]
+	if !ok {
+		clsMap = make(map[ErrCode]struct{})
+		ErrClassToMySQLCodes[ec] = clsMap
 	}
+	clsMap[code] = struct{}{}
+	class := errClass2Desc[ec]
+	rfcCode := fmt.Sprintf("%s:%d", class, code)
+	rfcCode2errClass.Put(class, ec)
+	return rfcCode
+}
+
+// New defines an *Error with an error code and an error message.
+// Usually used to create base *Error.
+// Attention:
+// this method is not goroutine-safe and
+// usually be used in global variable initializer
+//
+// Deprecated: use NewStd or NewStdErr instead.
+func (ec ErrClass) New(code ErrCode, message string) *Error {
+	rfcCode := ec.initError(code)
+	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
+	return err
+}
+
+// NewStdErr defines an *Error with an error code, an error
+// message and workaround to create standard error.
+func (ec ErrClass) NewStdErr(code ErrCode, message *mysql.ErrMessage) *Error {
+	rfcCode := ec.initError(code)
+	err := errors.Normalize(message.Raw, errors.RedactArgs(message.RedactArgPos), errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
+	return err
 }
 
 // NewStd calls New using the standard message for the error code
+// Attention:
+// this method is not goroutine-safe and
+// usually be used in global variable initializer
 func (ec ErrClass) NewStd(code ErrCode) *Error {
-	return ec.New(code, mysql.MySQLErrName[uint16(code)])
+	return ec.NewStdErr(code, mysql.MySQLErrName[uint16(code)])
 }
 
-// Error implements error interface and adds integer Class and Code, so
-// errors with different message can be compared.
-type Error struct {
-	class   ErrClass
-	code    ErrCode
-	message string
-	args    []interface{}
-	file    string
-	line    int
-}
-
-// Class returns ErrClass
-func (e *Error) Class() ErrClass {
-	return e.class
-}
-
-// Code returns ErrCode
-func (e *Error) Code() ErrCode {
-	return e.code
-}
-
-// MarshalJSON implements json.Marshaler interface.
-func (e *Error) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&struct {
-		Class ErrClass `json:"class"`
-		Code  ErrCode  `json:"code"`
-		Msg   string   `json:"message"`
-	}{
-		Class: e.class,
-		Code:  e.code,
-		Msg:   e.getMsg(),
-	})
-}
-
-// UnmarshalJSON implements json.Unmarshaler interface.
-func (e *Error) UnmarshalJSON(data []byte) error {
-	err := &struct {
-		Class ErrClass `json:"class"`
-		Code  ErrCode  `json:"code"`
-		Msg   string   `json:"message"`
-	}{}
-
-	if err := json.Unmarshal(data, &err); err != nil {
-		return errors.Trace(err)
-	}
-
-	e.class = err.Class
-	e.code = err.Code
-	e.message = err.Msg
-	return nil
-}
-
-// Location returns the location where the error is created,
-// implements juju/errors locationer interface.
-func (e *Error) Location() (file string, line int) {
-	return e.file, e.line
-}
-
-// Error implements error interface.
-func (e *Error) Error() string {
-	return fmt.Sprintf("[%s:%d]%s", e.class, e.code, e.getMsg())
-}
-
-func (e *Error) getMsg() string {
-	if len(e.args) > 0 {
-		return fmt.Sprintf(e.message, e.args...)
-	}
-	return e.message
-}
-
-// GenWithStack generates a new *Error with the same class and code, and a new formatted message.
-func (e *Error) GenWithStack(format string, args ...interface{}) error {
-	err := *e
-	err.message = format
-	err.args = args
-	return errors.AddStack(&err)
-}
-
-// GenWithStackByArgs generates a new *Error with the same class and code, and new arguments.
-func (e *Error) GenWithStackByArgs(args ...interface{}) error {
-	err := *e
-	err.args = args
-	return errors.AddStack(&err)
-}
-
-// FastGen generates a new *Error with the same class and code, and a new formatted message.
-// This will not call runtime.Caller to get file and line.
-func (e *Error) FastGen(format string, args ...interface{}) error {
-	err := *e
-	err.message = format
-	err.args = args
-	return errors.SuspendStack(&err)
-}
-
-// FastGen generates a new *Error with the same class and code, and a new arguments.
-// This will not call runtime.Caller to get file and line.
-func (e *Error) FastGenByArgs(args ...interface{}) error {
-	err := *e
-	err.args = args
-	return errors.SuspendStack(&err)
-}
-
-// Equal checks if err is equal to e.
-func (e *Error) Equal(err error) bool {
-	originErr := errors.Cause(err)
-	if originErr == nil {
-		return false
-	}
-
-	if error(e) == originErr {
-		return true
-	}
-	inErr, ok := originErr.(*Error)
-	return ok && e.class == inErr.class && e.code == inErr.code
-}
-
-// NotEqual checks if err is not equal to e.
-func (e *Error) NotEqual(err error) bool {
-	return !e.Equal(err)
+// Synthesize synthesizes an *Error in the air
+// it didn't register error into ErrClassToMySQLCodes
+// so it's goroutine-safe
+// and often be used to create Error came from other systems like TiKV.
+func (ec ErrClass) Synthesize(code ErrCode, message string) *Error {
+	return errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(fmt.Sprintf("%s:%d", errClass2Desc[ec], code)))
 }
 
 // ToSQLError convert Error to mysql.SQLError.
-func (e *Error) ToSQLError() *mysql.SQLError {
-	code := e.getMySQLErrorCode()
-	return mysql.NewErrf(code, "%s", e.getMsg())
+func ToSQLError(e *Error) *mysql.SQLError {
+	code := getMySQLErrorCode(e)
+	return mysql.NewErrf(code, "%s", nil, e.GetMsg())
 }
 
 var defaultMySQLErrorCode uint16
 
-func (e *Error) getMySQLErrorCode() uint16 {
-	codeMap, ok := ErrClassToMySQLCodes[e.class]
+func getMySQLErrorCode(e *Error) uint16 {
+	rfcCode := e.RFCCode()
+	var class ErrClass
+	if index := strings.Index(string(rfcCode), ":"); index > 0 {
+		if ec, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
+			class = ec
+		} else {
+			log.Warn("Unknown error class", zap.String("class", string(rfcCode)[:index]))
+			return defaultMySQLErrorCode
+		}
+	}
+	codeMap, ok := ErrClassToMySQLCodes[class]
 	if !ok {
-		log.Warnf("Unknown error class: %v", e.class)
+		log.Warn("Unknown error class", zap.Int("class", int(class)))
 		return defaultMySQLErrorCode
 	}
-	code, ok := codeMap[e.code]
+	_, ok = codeMap[ErrCode(e.Code())]
 	if !ok {
-		log.Debugf("Unknown error class: %v code: %v", e.class, e.code)
+		log.Debug("Unknown error code", zap.Int("class", int(class)), zap.Int("code", int(e.Code())))
 		return defaultMySQLErrorCode
 	}
-	return code
+	return uint16(e.Code())
 }
 
 var (
-	// ErrClassToMySQLCodes is the map of ErrClass to code-map.
-	ErrClassToMySQLCodes map[ErrClass]map[ErrCode]uint16
+	// ErrClassToMySQLCodes is the map of ErrClass to code-set.
+	ErrClassToMySQLCodes  = make(map[ErrClass]map[ErrCode]struct{})
+	ErrCritical           = ClassGlobal.NewStdErr(CodeExecResultIsEmpty, mysql.Message("critical error %v", nil))
+	ErrResultUndetermined = ClassGlobal.NewStdErr(CodeResultUndetermined, mysql.Message("execution result undetermined", nil))
 )
 
 func init() {
-	ErrClassToMySQLCodes = make(map[ErrClass]map[ErrCode]uint16)
 	defaultMySQLErrorCode = mysql.ErrUnknown
 }
 
@@ -322,7 +256,7 @@ func ErrorEqual(err1, err2 error) bool {
 	te1, ok1 := e1.(*Error)
 	te2, ok2 := e2.(*Error)
 	if ok1 && ok2 {
-		return te1.class == te2.class && te1.code == te2.code
+		return te1.RFCCode() == te2.RFCCode()
 	}
 
 	return e1.Error() == e2.Error()
@@ -339,7 +273,7 @@ func MustNil(err error, closeFuns ...func()) {
 		for _, f := range closeFuns {
 			f()
 		}
-		log.Fatalf(errors.ErrorStack(err))
+		log.Fatal("unexpected error", zap.Error(err), zap.Stack("stack"))
 	}
 }
 
@@ -347,13 +281,23 @@ func MustNil(err error, closeFuns ...func()) {
 func Call(fn func() error) {
 	err := fn()
 	if err != nil {
-		log.Error(errors.ErrorStack(err))
+		log.Error("function call errored", zap.Error(err), zap.Stack("stack"))
 	}
 }
 
 // Log logs the error if it is not nil.
 func Log(err error) {
 	if err != nil {
-		log.Error(errors.ErrorStack(err))
+		log.Error("encountered error", zap.Error(err), zap.Stack("stack"))
 	}
+}
+
+func GetErrClass(e *Error) ErrClass {
+	rfcCode := e.RFCCode()
+	if index := strings.Index(string(rfcCode), ":"); index > 0 {
+		if class, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
+			return class
+		}
+	}
+	return ErrClass(-1)
 }

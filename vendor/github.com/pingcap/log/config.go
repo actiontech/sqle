@@ -8,6 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -28,8 +29,6 @@ const (
 type FileLogConfig struct {
 	// Log filename, leave empty to disable file log.
 	Filename string `toml:"filename" json:"filename"`
-	// Is log rotate enabled.
-	LogRotate bool `toml:"log-rotate" json:"log-rotate"`
 	// Max size for a single file, in MB.
 	MaxSize int `toml:"max-size" json:"max-size"`
 	// Max log keep days, default is never deleting.
@@ -74,10 +73,6 @@ type ZapProperties struct {
 	Core   zapcore.Core
 	Syncer zapcore.WriteSyncer
 	Level  zap.AtomicLevel
-}
-
-func newZapTextEncoder(cfg *Config) zapcore.Encoder {
-	return NewTextEncoder(cfg)
 }
 
 func (cfg *Config) buildOptions(errSink zapcore.WriteSyncer) []zap.Option {

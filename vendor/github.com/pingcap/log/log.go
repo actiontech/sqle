@@ -8,6 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -16,11 +17,24 @@ package log
 import (
 	"errors"
 	"os"
+	"sync"
+	"sync/atomic"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
+
+var globalLogger, globalProperties, globalSugarLogger atomic.Value
+
+var registerOnce sync.Once
+
+func init() {
+	conf := &Config{Level: "info", File: FileLogConfig{}}
+	logger, props, _ := InitLogger(conf)
+	ReplaceGlobals(logger, props)
+}
 
 // InitLogger initializes a zap logger.
 func InitLogger(cfg *Config, opts ...zap.Option) (*zap.Logger, *ZapProperties, error) {
@@ -32,9 +46,8 @@ func InitLogger(cfg *Config, opts ...zap.Option) (*zap.Logger, *ZapProperties, e
 		}
 		output = zapcore.AddSync(lg)
 	} else {
-		stdOut, close, err := zap.Open([]string{"stdout"}...)
+		stdOut, _, err := zap.Open([]string{"stdout"}...)
 		if err != nil {
-			close()
 			return nil, nil, err
 		}
 		output = stdOut
@@ -42,14 +55,34 @@ func InitLogger(cfg *Config, opts ...zap.Option) (*zap.Logger, *ZapProperties, e
 	return InitLoggerWithWriteSyncer(cfg, output, opts...)
 }
 
-// InitLoggerWithWriteSyncer initializes a zap logger with specified  write syncer.
+func InitTestLogger(t zaptest.TestingT, cfg *Config, opts ...zap.Option) (*zap.Logger, *ZapProperties, error) {
+	writer := newTestingWriter(t)
+	zapOptions := []zap.Option{
+		// Send zap errors to the same writer and mark the test as failed if
+		// that happens.
+		zap.ErrorOutput(writer.WithMarkFailed(true)),
+	}
+	opts = append(zapOptions, opts...)
+	return InitLoggerWithWriteSyncer(cfg, writer, opts...)
+}
+
+// InitLoggerWithWriteSyncer initializes a zap logger with specified write syncer.
 func InitLoggerWithWriteSyncer(cfg *Config, output zapcore.WriteSyncer, opts ...zap.Option) (*zap.Logger, *ZapProperties, error) {
 	level := zap.NewAtomicLevel()
 	err := level.UnmarshalText([]byte(cfg.Level))
 	if err != nil {
 		return nil, nil, err
 	}
-	core := NewTextCore(newZapTextEncoder(cfg).(*textEncoder), output, level)
+	encoder := NewTextEncoder(cfg)
+	registerOnce.Do(func() {
+		err = zap.RegisterEncoder(ZapEncodingName, func(zapcore.EncoderConfig) (zapcore.Encoder, error) {
+			return encoder, nil
+		})
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	core := NewTextCore(encoder, output, level)
 	opts = append(cfg.buildOptions(output), opts...)
 	lg := zap.New(core, opts...)
 	r := &ZapProperties{
@@ -81,35 +114,24 @@ func initFileLog(cfg *FileLogConfig) (*lumberjack.Logger, error) {
 	}, nil
 }
 
-func newStdLogger() (*zap.Logger, *ZapProperties) {
-	conf := &Config{Level: "info", File: FileLogConfig{}}
-	lg, r, _ := InitLogger(conf)
-	return lg, r
-}
-
-var (
-	_globalL, _globalP = newStdLogger()
-	_globalS           = _globalL.Sugar()
-)
-
 // L returns the global Logger, which can be reconfigured with ReplaceGlobals.
 // It's safe for concurrent use.
 func L() *zap.Logger {
-	return _globalL
+	return globalLogger.Load().(*zap.Logger)
 }
 
 // S returns the global SugaredLogger, which can be reconfigured with
 // ReplaceGlobals. It's safe for concurrent use.
 func S() *zap.SugaredLogger {
-	return _globalS
+	return globalSugarLogger.Load().(*zap.SugaredLogger)
 }
 
 // ReplaceGlobals replaces the global Logger and SugaredLogger.
-// It's unsafe for concurrent use.
+// It's safe for concurrent use.
 func ReplaceGlobals(logger *zap.Logger, props *ZapProperties) {
-	_globalL = logger
-	_globalS = logger.Sugar()
-	_globalP = props
+	globalLogger.Store(logger)
+	globalSugarLogger.Store(logger.Sugar())
+	globalProperties.Store(props)
 }
 
 // Sync flushes any buffered log entries.

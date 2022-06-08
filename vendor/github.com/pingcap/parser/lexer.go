@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/pingcap/parser/mysql"
+	tidbfeature "github.com/pingcap/parser/tidb"
 )
 
 var _ = yyLexer(&Scanner{})
@@ -42,8 +43,9 @@ type Scanner struct {
 	warns        []error
 	stmtStartPos int
 
-	// For scanning such kind of comment: /*! MySQL-specific code */ or /*+ optimizer hint */
-	specialComment specialCommentScanner
+	// inBangComment is true if we are inside a `/*! ... */` block.
+	// It is used to ignore a stray `*/` when scanning.
+	inBangComment bool
 
 	sqlMode mysql.SQLMode
 
@@ -55,51 +57,23 @@ type Scanner struct {
 	// lastScanOffset indicates last offset returned by scan().
 	// It's used to substring sql in syntax error message.
 	lastScanOffset int
-}
 
-type specialCommentScanner interface {
-	stmtTexter
-	scan() (tok int, pos Pos, lit string)
-}
+	// lastKeyword records the previous keyword returned by scan().
+	// determine whether an optimizer hint should be parsed or ignored.
+	lastKeyword int
+	// lastKeyword2 records the keyword before lastKeyword, it is used
+	// to disambiguate hint after for update, which should be ignored.
+	lastKeyword2 int
+	// lastKeyword3 records the keyword before lastKeyword2, it is used
+	// to disambiguate hint after create binding for update, which should
+	// be pertained.
+	lastKeyword3 int
 
-type mysqlSpecificCodeScanner struct {
-	*Scanner
-	Pos
-}
+	// hintPos records the start position of the previous optimizer hint.
+	lastHintPos Pos
 
-func (s *mysqlSpecificCodeScanner) scan() (tok int, pos Pos, lit string) {
-	tok, pos, lit = s.Scanner.scan()
-	pos.Line += s.Pos.Line
-	pos.Col += s.Pos.Col
-	pos.Offset += s.Pos.Offset
-	return
-}
-
-type optimizerHintScanner struct {
-	*Scanner
-	Pos
-	end bool
-}
-
-func (s *optimizerHintScanner) scan() (tok int, pos Pos, lit string) {
-	tok, pos, lit = s.Scanner.scan()
-	pos.Line += s.Pos.Line
-	pos.Col += s.Pos.Col
-	pos.Offset += s.Pos.Offset
-	switch tok {
-	case 0:
-		if !s.end {
-			tok = hintEnd
-			s.end = true
-		}
-	case invalid:
-		// an optimizer hint is allowed to contain invalid characters, the
-		// remaining hints are just ignored.
-		// force advance the lexer even when encountering an invalid character
-		// to prevent infinite parser loop. (see issue #336)
-		s.r.inc()
-	}
-	return
+	// true if a dot follows an identifier
+	identifierDot bool
 }
 
 // Errors returns the errors and warns during a scan.
@@ -114,14 +88,11 @@ func (s *Scanner) reset(sql string) {
 	s.errs = s.errs[:0]
 	s.warns = s.warns[:0]
 	s.stmtStartPos = 0
-	s.specialComment = nil
+	s.inBangComment = false
+	s.lastKeyword = 0
 }
 
 func (s *Scanner) stmtText() string {
-	if s.specialComment != nil {
-		return s.specialComment.stmtText()
-	}
-
 	endPos := s.r.pos().Offset
 	if s.r.s[endPos-1] == '\n' {
 		endPos = endPos - 1 // trim new line
@@ -160,6 +131,21 @@ func (s *Scanner) AppendError(err error) {
 	s.errs = append(s.errs, err)
 }
 
+func (s *Scanner) getNextToken() int {
+	r := s.r
+	tok, pos, lit := s.scan()
+	if tok == identifier {
+		tok = handleIdent(&yySymType{})
+	}
+	if tok == identifier {
+		if tok1 := s.isTokenIdentifier(lit, pos.Offset); tok1 != 0 {
+			tok = tok1
+		}
+	}
+	s.r = r
+	return tok
+}
+
 // Lex returns a token and store the token value in v.
 // Scanner satisfies yyLexer interface.
 // 0 and invalid are special token id this function would return:
@@ -168,6 +154,9 @@ func (s *Scanner) AppendError(err error) {
 func (s *Scanner) Lex(v *yySymType) int {
 	tok, pos, lit := s.scan()
 	s.lastScanOffset = pos.Offset
+	s.lastKeyword3 = s.lastKeyword2
+	s.lastKeyword2 = s.lastKeyword
+	s.lastKeyword = 0
 	v.offset = pos.Offset
 	v.ident = lit
 	if tok == identifier {
@@ -176,6 +165,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 	if tok == identifier {
 		if tok1 := s.isTokenIdentifier(lit, pos.Offset); tok1 != 0 {
 			tok = tok1
+			s.lastKeyword = tok1
 		}
 	}
 	if s.sqlMode.HasANSIQuotesMode() &&
@@ -190,6 +180,14 @@ func (s *Scanner) Lex(v *yySymType) int {
 
 	if tok == not && s.sqlMode.HasHighNotPrecedenceMode() {
 		return not2
+	}
+	if tok == as && s.getNextToken() == of {
+		_, pos, lit = s.scan()
+		v.ident = fmt.Sprintf("%s %s", v.ident, lit)
+		s.lastKeyword = asof
+		s.lastScanOffset = pos.Offset
+		v.offset = pos.Offset
+		return asof
 	}
 
 	switch tok {
@@ -208,12 +206,15 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return tok
 	case null:
 		v.item = nil
-	case quotedIdentifier:
+	case quotedIdentifier, identifier:
 		tok = identifier
+		s.identifierDot = s.r.peek() == '.'
 	}
-	if tok == unicode.ReplacementChar && s.r.eof() {
-		return 0
+
+	if tok == unicode.ReplacementChar {
+		return invalid
 	}
+
 	return tok
 }
 
@@ -251,19 +252,6 @@ func (s *Scanner) skipWhitespace() rune {
 }
 
 func (s *Scanner) scan() (tok int, pos Pos, lit string) {
-	if s.specialComment != nil {
-		// Enter specialComment scan mode.
-		// for scanning such kind of comment: /*! MySQL-specific code */
-		specialComment := s.specialComment
-		tok, pos, lit = specialComment.scan()
-		if tok != 0 {
-			// return the specialComment scan result as the result
-			return
-		}
-		// leave specialComment scan mode after all stream consumed.
-		s.specialComment = nil
-	}
-
 	ch0 := s.r.peek()
 	if unicode.IsSpace(ch0) {
 		ch0 = s.skipWhitespace()
@@ -311,9 +299,8 @@ func startWithXx(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.incAsLongAs(isIdentChar)
-	tok, lit = identifier, s.r.data(&pos)
-	return
+	s.r.p = pos
+	return scanIdentifier(s)
 }
 
 func startWithNn(s *Scanner) (tok int, pos Pos, lit string) {
@@ -344,9 +331,8 @@ func startWithBb(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.incAsLongAs(isIdentChar)
-	tok, lit = identifier, s.r.data(&pos)
-	return
+	s.r.p = pos
+	return scanIdentifier(s)
 }
 
 func startWithSharp(s *Scanner) (tok int, pos Pos, lit string) {
@@ -386,145 +372,106 @@ func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
 func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
-	ch0 := s.r.peek()
-	if ch0 == '*' {
-		s.r.inc()
-		startWithAsterisk := false
-		for {
-			ch0 = s.r.readByte()
-			if startWithAsterisk && ch0 == '/' {
-				// Meets */, means comment end.
-				break
-			} else if ch0 == '*' {
-				startWithAsterisk = true
-			} else {
-				startWithAsterisk = false
-			}
+	if s.r.peek() != '*' {
+		tok = int('/')
+		lit = "/"
+		return
+	}
 
-			if ch0 == unicode.ReplacementChar && s.r.eof() {
-				// unclosed comment
-				s.errs = append(s.errs, ParseErrorWith(s.r.data(&pos), s.r.p.Line))
-				return
-			}
+	isOptimizerHint := false
+	currentCharIsStar := false
 
-		}
-
-		comment := s.r.data(&pos)
-
-		// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html
-		if strings.HasPrefix(comment, "/*+") {
-			begin := sqlOffsetInComment(comment)
-			end := len(comment) - 2
-			sql := comment[begin:end]
-			s.specialComment = &optimizerHintScanner{
-				Scanner: s.InheritScanner(sql),
-				Pos: Pos{
-					pos.Line,
-					pos.Col,
-					pos.Offset + begin,
-				},
-			}
-
-			tok = hintBegin
-			return
-		}
-
-		// Convert "/*T![feature_id1,feature_id2] TiDB-specific-code */" to "TiDB-specific-code".
-		if strings.HasPrefix(comment, "/*T!") {
-			features := scanFeatureIDs(comment)
-			if SpecialCommentsController.ContainsAll(features) {
-				sql := specTiDBCodePattern.ReplaceAllStringFunc(comment, TrimTiDBSpecialComment)
-				s.specialComment = &mysqlSpecificCodeScanner{
-					Scanner: s.InheritScanner(sql),
-					Pos: Pos{
-						pos.Line,
-						pos.Col,
-						pos.Offset + sqlOffsetInComment(comment),
-					},
-				}
-			}
-		}
-
+	s.r.inc() // we see '/*' so far.
+	switch s.r.readByte() {
+	case '!': // '/*!' MySQL-specific comments
 		// See http://dev.mysql.com/doc/refman/5.7/en/comments.html
-		// Convert "/*!VersionNumber MySQL-specific-code */" to "MySQL-specific-code".
-		if strings.HasPrefix(comment, "/*!") {
-			sql := specCodePattern.ReplaceAllStringFunc(comment, TrimComment)
-			s.specialComment = &mysqlSpecificCodeScanner{
-				Scanner: s.InheritScanner(sql),
-				Pos: Pos{
-					pos.Line,
-					pos.Col,
-					pos.Offset + sqlOffsetInComment(comment),
-				},
+		// in '/*!', which we always recognize regardless of version.
+		s.scanVersionDigits(5, 5)
+		s.inBangComment = true
+		return s.scan()
+
+	case 'T': // '/*T' maybe TiDB-specific comments
+		if s.r.peek() != '!' {
+			// '/*TX' is just normal comment.
+			break
+		}
+		s.r.inc()
+		// in '/*T!', try to match the pattern '/*T![feature1,feature2,...]'.
+		features := s.scanFeatureIDs()
+		if tidbfeature.CanParseFeature(features...) {
+			s.inBangComment = true
+			return s.scan()
+		}
+	case 'M': // '/*M' maybe MariaDB-specific comments
+		// no special treatment for now.
+		break
+
+	case '+': // '/*+' optimizer hints
+		// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html
+		if _, ok := hintedTokens[s.lastKeyword]; ok {
+			// only recognize optimizers hints directly followed by certain
+			// keywords like SELECT, INSERT, etc., only a special case "FOR UPDATE" needs to be handled
+			// we will report a warning in order to match MySQL's behavior, but the hint content will be ignored
+			if s.lastKeyword2 == forKwd {
+				if s.lastKeyword3 == binding {
+					// special case of `create binding for update`
+					isOptimizerHint = true
+				} else {
+					s.warns = append(s.warns, ParseErrorWith(s.r.data(&pos), s.r.p.Line))
+				}
+			} else {
+				isOptimizerHint = true
 			}
 		}
 
+	case '*': // '/**' if the next char is '/' it would close the comment.
+		currentCharIsStar = true
+
+	default:
+		break
+	}
+
+	// standard C-like comment. read until we see '*/' then drop it.
+	for {
+		if currentCharIsStar || s.r.incAsLongAs(func(ch rune) bool { return ch != '*' }) == '*' {
+			switch s.r.readByte() {
+			case '/':
+				// Meets */, means comment end.
+				if isOptimizerHint {
+					s.lastHintPos = pos
+					return hintComment, pos, s.r.data(&pos)
+				} else {
+					return s.scan()
+				}
+			case 0:
+				break
+			case '*':
+				currentCharIsStar = true
+				continue
+			default:
+				currentCharIsStar = false
+				continue
+			}
+		}
+		// unclosed comment or other errors.
+		s.errs = append(s.errs, ParseErrorWith(s.r.data(&pos), s.r.p.Line))
+		return
+	}
+}
+
+func startWithStar(s *Scanner) (tok int, pos Pos, lit string) {
+	pos = s.r.pos()
+	s.r.inc()
+
+	// skip and exit '/*!' if we see '*/'
+	if s.inBangComment && s.r.peek() == '/' {
+		s.inBangComment = false
+		s.r.inc()
 		return s.scan()
 	}
-	tok = int('/')
-	return
-}
-
-func sqlOffsetInComment(comment string) int {
-	// find the first SQL token offset in pattern like "/*!40101 mysql specific code */"
-	offset := 0
-	for i := 0; i < len(comment); i++ {
-		if unicode.IsSpace(rune(comment[i])) {
-			offset = i
-			break
-		}
-	}
-	for offset < len(comment) {
-		offset++
-		if !unicode.IsSpace(rune(comment[offset])) {
-			break
-		}
-	}
-	return offset
-}
-
-func scanFeatureIDs(comment string) (featureIDs []string) {
-	// strip the starting '/*T!'
-	comment = comment[len("/*T!"):]
-	idx := 0
-	const init, expectChar, obtainChar = 0, 1, 2
-	state := init
-	var b strings.Builder
-	for idx < len(comment) {
-		ch := rune(comment[idx])
-		idx++
-		switch state {
-		case init:
-			if ch == '[' {
-				state = expectChar
-				break
-			}
-			return nil
-		case expectChar:
-			if isIdentChar(ch) {
-				b.WriteRune(ch)
-				state = obtainChar
-				break
-			}
-			return nil
-		case obtainChar:
-			if isIdentChar(ch) {
-				b.WriteRune(ch)
-				state = obtainChar
-				break
-			} else if ch == ',' {
-				featureIDs = append(featureIDs, b.String())
-				b.Reset()
-				state = expectChar
-				break
-			} else if ch == ']' {
-				featureIDs = append(featureIDs, b.String())
-				return featureIDs
-			}
-			return nil
-		}
-	}
-	return nil
+	// otherwise it is just a normal star.
+	s.identifierDot = false
+	return '*', pos, "*"
 }
 
 func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
@@ -565,7 +512,6 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 
 func scanIdentifier(s *Scanner) (int, Pos, string) {
 	pos := s.r.pos()
-	s.r.inc()
 	s.r.incAsLongAs(isIdentChar)
 	return identifier, pos, s.r.data(&pos)
 }
@@ -717,6 +663,9 @@ func handleEscape(s *Scanner) rune {
 }
 
 func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
+	if s.identifierDot {
+		return scanIdentifier(s)
+	}
 	pos = s.r.pos()
 	tok = intLit
 	ch0 := s.r.readByte()
@@ -775,14 +724,15 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 func startWithDot(s *Scanner) (tok int, pos Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
-	save := s.r.pos()
+	if s.identifierDot {
+		return int('.'), pos, "."
+	}
 	if isDigit(s.r.peek()) {
-		tok, _, lit = s.scanFloat(&pos)
-		if s.r.eof() || !isIdentChar(s.r.peek()) {
-			return
+		tok, p, l := s.scanFloat(&pos)
+		if tok == identifier {
+			return invalid, p, l
 		}
-		// Fail to parse a float, reset to dot.
-		s.r.p = save
+		return tok, p, l
 	}
 	tok, lit = int('.'), "."
 	return
@@ -821,14 +771,17 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 	if ch0 == 'e' || ch0 == 'E' {
 		s.r.inc()
 		ch0 = s.r.peek()
-		if ch0 == '-' || ch0 == '+' || isDigit(ch0) {
+		if ch0 == '-' || ch0 == '+' {
 			s.r.inc()
+		}
+		if isDigit(s.r.peek()) {
 			s.scanDigits()
 			tok = floatLit
 		} else {
 			// D1 . D2 e XX when XX is not D3, parse the result to an identifier.
 			// 9e9e = 9e9(float) + e(identifier)
 			// 9est = 9est(identifier)
+			s.r.p = *beg
 			s.r.incAsLongAs(isIdentChar)
 			tok = identifier
 		}
@@ -843,6 +796,77 @@ func (s *Scanner) scanDigits() string {
 	pos := s.r.pos()
 	s.r.incAsLongAs(isDigit)
 	return s.r.data(&pos)
+}
+
+// scanVersionDigits scans for `min` to `max` digits (range inclusive) used in
+// `/*!12345 ... */` comments.
+func (s *Scanner) scanVersionDigits(min, max int) {
+	pos := s.r.pos()
+	for i := 0; i < max; i++ {
+		ch := s.r.peek()
+		if isDigit(ch) {
+			s.r.inc()
+		} else if i < min {
+			s.r.p = pos
+			return
+		} else {
+			break
+		}
+	}
+}
+
+func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
+	pos := s.r.pos()
+	const init, expectChar, obtainChar = 0, 1, 2
+	state := init
+	var b strings.Builder
+	for !s.r.eof() {
+		ch := s.r.peek()
+		s.r.inc()
+		switch state {
+		case init:
+			if ch == '[' {
+				state = expectChar
+				break
+			}
+			s.r.p = pos
+			return nil
+		case expectChar:
+			if isIdentChar(ch) {
+				b.WriteRune(ch)
+				state = obtainChar
+				break
+			}
+			s.r.p = pos
+			return nil
+		case obtainChar:
+			if isIdentChar(ch) {
+				b.WriteRune(ch)
+				state = obtainChar
+				break
+			} else if ch == ',' {
+				featureIDs = append(featureIDs, b.String())
+				b.Reset()
+				state = expectChar
+				break
+			} else if ch == ']' {
+				featureIDs = append(featureIDs, b.String())
+				return featureIDs
+			}
+			s.r.p = pos
+			return nil
+		}
+	}
+	s.r.p = pos
+	return nil
+}
+
+func (s *Scanner) lastErrorAsWarn() {
+	if len(s.errs) == 0 {
+		return
+	}
+	s.warns = append(s.warns, s.errs[len(s.errs)-1])
+	s.errs = s.errs[:len(s.errs)-1]
 }
 
 type reader struct {

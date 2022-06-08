@@ -41,33 +41,33 @@ func IsTypeChar(tp byte) bool {
 }
 
 var type2Str = map[byte]string{
-	mysql.TypeBit:        "bit",
-	mysql.TypeBlob:       "text",
-	mysql.TypeDate:       "date",
-	mysql.TypeDatetime:   "datetime",
-	mysql.TypeDecimal:    "unspecified",
-	mysql.TypeNewDecimal: "decimal",
-	mysql.TypeDouble:     "double",
-	mysql.TypeEnum:       "enum",
-	mysql.TypeFloat:      "float",
-	mysql.TypeGeometry:   "geometry",
-	mysql.TypeInt24:      "mediumint",
-	mysql.TypeJSON:       "json",
-	mysql.TypeLong:       "int",
-	mysql.TypeLonglong:   "bigint",
-	mysql.TypeLongBlob:   "longtext",
-	mysql.TypeMediumBlob: "mediumtext",
-	mysql.TypeNull:       "null",
-	mysql.TypeSet:        "set",
-	mysql.TypeShort:      "smallint",
-	mysql.TypeString:     "char",
-	mysql.TypeDuration:   "time",
-	mysql.TypeTimestamp:  "timestamp",
-	mysql.TypeTiny:       "tinyint",
-	mysql.TypeTinyBlob:   "tinytext",
-	mysql.TypeVarchar:    "varchar",
-	mysql.TypeVarString:  "var_string",
-	mysql.TypeYear:       "year",
+	mysql.TypeBit:         "bit",
+	mysql.TypeBlob:        "text",
+	mysql.TypeDate:        "date",
+	mysql.TypeDatetime:    "datetime",
+	mysql.TypeUnspecified: "unspecified",
+	mysql.TypeNewDecimal:  "decimal",
+	mysql.TypeDouble:      "double",
+	mysql.TypeEnum:        "enum",
+	mysql.TypeFloat:       "float",
+	mysql.TypeGeometry:    "geometry",
+	mysql.TypeInt24:       "mediumint",
+	mysql.TypeJSON:        "json",
+	mysql.TypeLong:        "int",
+	mysql.TypeLonglong:    "bigint",
+	mysql.TypeLongBlob:    "longtext",
+	mysql.TypeMediumBlob:  "mediumtext",
+	mysql.TypeNull:        "null",
+	mysql.TypeSet:         "set",
+	mysql.TypeShort:       "smallint",
+	mysql.TypeString:      "char",
+	mysql.TypeDuration:    "time",
+	mysql.TypeTimestamp:   "timestamp",
+	mysql.TypeTiny:        "tinyint",
+	mysql.TypeTinyBlob:    "tinytext",
+	mysql.TypeVarchar:     "varchar",
+	mysql.TypeVarString:   "var_string",
+	mysql.TypeYear:        "year",
 }
 
 // TypeStr converts tp to a string.
@@ -104,9 +104,5 @@ const (
 	wordSize      = 4 // A word is 4 bytes int32.
 )
 
-const (
-	codeInvalidDefault = terror.ErrCode(mysql.ErrInvalidDefault)
-)
-
 // ErrInvalidDefault is returned when meet a invalid default value.
-var ErrInvalidDefault = terror.ClassTypes.New(codeInvalidDefault, "Invalid default value for '%s'")
+var ErrInvalidDefault = terror.ClassTypes.NewStd(mysql.ErrInvalidDefault)

@@ -15,17 +15,17 @@ package mysql
 
 // MySQL type information.
 const (
-	TypeDecimal   byte = 0
-	TypeTiny      byte = 1
-	TypeShort     byte = 2
-	TypeLong      byte = 3
-	TypeFloat     byte = 4
-	TypeDouble    byte = 5
-	TypeNull      byte = 6
-	TypeTimestamp byte = 7
-	TypeLonglong  byte = 8
-	TypeInt24     byte = 9
-	TypeDate      byte = 10
+	TypeUnspecified byte = 0
+	TypeTiny        byte = 1
+	TypeShort       byte = 2
+	TypeLong        byte = 3
+	TypeFloat       byte = 4
+	TypeDouble      byte = 5
+	TypeNull        byte = 6
+	TypeTimestamp   byte = 7
+	TypeLonglong    byte = 8
+	TypeInt24       byte = 9
+	TypeDate        byte = 10
 	/* TypeDuration original name was TypeTime, renamed to TypeDuration to resolve the conflict with Go type Time.*/
 	TypeDuration byte = 11
 	TypeDatetime byte = 12
@@ -46,9 +46,6 @@ const (
 	TypeString     byte = 0xfe
 	TypeGeometry   byte = 0xff
 )
-
-// TypeUnspecified is an uninitialized type. TypeDecimal is not used in MySQL.
-const TypeUnspecified = TypeDecimal
 
 // Flag information.
 const (
@@ -75,6 +72,7 @@ const (
 	ParseToJSONFlag       uint = 1 << 18 /* Internal: Used when we want to parse string to JSON in CAST */
 	IsBooleanFlag         uint = 1 << 19 /* Internal: Used for telling boolean literal from integer */
 	PreventNullInsertFlag uint = 1 << 20 /* Prevent this Field from inserting NULL values */
+	EnumSetAsIntFlag      uint = 1 << 21 /* Internal: Used for inferring enum eval type. */
 )
 
 // TypeInt24 bounds.
@@ -152,4 +150,9 @@ func HasIsBooleanFlag(flag uint) bool {
 // HasPreventNullInsertFlag checks if PreventNullInsertFlag is set.
 func HasPreventNullInsertFlag(flag uint) bool {
 	return (flag & PreventNullInsertFlag) > 0
+}
+
+// HasEnumSetAsIntFlag checks if EnumSetAsIntFlag is set.
+func HasEnumSetAsIntFlag(flag uint) bool {
+	return (flag & EnumSetAsIntFlag) > 0
 }
