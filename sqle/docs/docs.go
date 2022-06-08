@@ -5243,7 +5243,7 @@ var doc = `{
                 "head": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                        "$ref": "#/definitions/v1.TableMetaItemHeadResV1"
                     }
                 },
                 "rows": {
@@ -7108,9 +7108,6 @@ var doc = `{
         "v1.SQLResultItemHeadResV1": {
             "type": "object",
             "properties": {
-                "desc": {
-                    "type": "string"
-                },
                 "field_name": {
                     "type": "string"
                 }
@@ -7138,7 +7135,7 @@ var doc = `{
                 "head": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                        "$ref": "#/definitions/v1.TableMetaItemHeadResV1"
                     }
                 },
                 "rows": {
@@ -7158,7 +7155,7 @@ var doc = `{
                 "head": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
+                        "$ref": "#/definitions/v1.TableMetaItemHeadResV1"
                     }
                 },
                 "rows": {
@@ -7187,6 +7184,17 @@ var doc = `{
                     "$ref": "#/definitions/v1.TableIndexes"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TableMetaItemHeadResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "field_name": {
                     "type": "string"
                 }
             }
