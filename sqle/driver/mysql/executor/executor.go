@@ -356,14 +356,32 @@ const (
 	ExplainRecordAccessTypeIndex = "index"
 )
 
-func (c *Executor) Explain(query string) ([]*ExplainRecord, error) {
-	records, err := c.Db.Query(fmt.Sprintf("EXPLAIN %s", query))
+func (c *Executor) Explain(query string) (columns []string, rows [][]sql.NullString, err error) {
+	columns, rows, err = c.Db.QueryWithContext(context.TODO(), fmt.Sprintf("EXPLAIN %s", query))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(rows) == 0 {
+		return nil, nil, fmt.Errorf("no explain record for sql %v", query)
+	}
+
+	return columns, rows, nil
+}
+
+func (c *Executor) GetExplainRecord(query string) ([]*ExplainRecord, error) {
+	columns, rows, err := c.Explain(query)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(records) == 0 {
-		return nil, fmt.Errorf("no explain record for sql %v", query)
+	records := make([]map[string]sql.NullString, len(rows))
+	for j, row := range rows {
+		value := make(map[string]sql.NullString)
+		for i, s := range row {
+			value[columns[i]] = s
+		}
+		records[j] = value
 	}
 
 	ret := make([]*ExplainRecord, len(records))

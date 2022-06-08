@@ -2,9 +2,10 @@ package session
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/log"
 	"strconv"
 	"strings"
+
+	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -685,7 +686,7 @@ func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 		return nil, nil
 	}
 
-	records, err := c.e.Explain(sql)
+	records, err := c.e.GetExplainRecord(sql)
 	if err != nil {
 		return nil, err
 	}
