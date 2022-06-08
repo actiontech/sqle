@@ -1748,6 +1748,8 @@ definitions:
     type: object
   v1.SQLResultItemHeadResV1:
     properties:
+      desc:
+        type: string
       field_name:
         type: string
     type: object
