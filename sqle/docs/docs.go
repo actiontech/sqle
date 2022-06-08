@@ -7108,6 +7108,9 @@ var doc = `{
         "v1.SQLResultItemHeadResV1": {
             "type": "object",
             "properties": {
+                "desc": {
+                    "type": "string"
+                },
                 "field_name": {
                     "type": "string"
                 }
