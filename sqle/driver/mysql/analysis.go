@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pingcap/parser/ast"
-
 	"github.com/actiontech/sqle/sqle/pkg/params"
+
+	"github.com/pingcap/parser/ast"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -101,8 +101,7 @@ func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*drive
 		return nil, err
 	}
 	defer conn.Db.Close()
-
-	columns, rows, err := conn.Db.QueryWithContext(context.TODO(), fmt.Sprintf("EXPLAIN %s", conf.Sql))
+	columns, rows, err := conn.Explain(conf.Sql)
 	if err != nil {
 		return nil, err
 	}
