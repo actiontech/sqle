@@ -63,7 +63,6 @@ type GetSQLResultResDataV1 struct {
 
 type SQLResultItemHeadResV1 struct {
 	FieldName string `json:"field_name"`
-	Desc      string `json:"desc"`
 }
 
 // GetSQLResult get sql query result

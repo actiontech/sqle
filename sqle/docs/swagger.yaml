@@ -477,7 +477,7 @@ definitions:
     properties:
       head:
         items:
-          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+          $ref: '#/definitions/v1.TableMetaItemHeadResV1'
         type: array
       rows:
         items:
@@ -1748,8 +1748,6 @@ definitions:
     type: object
   v1.SQLResultItemHeadResV1:
     properties:
-      desc:
-        type: string
       field_name:
         type: string
     type: object
@@ -1767,7 +1765,7 @@ definitions:
     properties:
       head:
         items:
-          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+          $ref: '#/definitions/v1.TableMetaItemHeadResV1'
         type: array
       rows:
         items:
@@ -1780,7 +1778,7 @@ definitions:
     properties:
       head:
         items:
-          $ref: '#/definitions/v1.SQLResultItemHeadResV1'
+          $ref: '#/definitions/v1.TableMetaItemHeadResV1'
         type: array
       rows:
         items:
@@ -1800,6 +1798,13 @@ definitions:
         $ref: '#/definitions/v1.TableIndexes'
         type: object
       name:
+        type: string
+    type: object
+  v1.TableMetaItemHeadResV1:
+    properties:
+      desc:
+        type: string
+      field_name:
         type: string
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
