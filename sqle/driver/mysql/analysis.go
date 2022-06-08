@@ -2,6 +2,11 @@ package mysql
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -79,5 +84,51 @@ func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMe
 
 // Explain get explain result for SQL.
 func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
-	return nil, nil
+	// check sql
+	// only support dml
+	nodes, err := i.ParseSql(conf.Sql)
+	if err != nil {
+		return nil, err
+	}
+	switch nodes[0].(type) {
+	case ast.DMLNode:
+	default:
+		return nil, fmt.Errorf("the sql is `%v`, but we only support DML", conf.Sql)
+	}
+
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Db.Close()
+
+	columns, rows, err := conn.Db.QueryWithContext(context.TODO(), fmt.Sprintf("EXPLAIN %s", conf.Sql))
+	if err != nil {
+		return nil, err
+	}
+
+	resColumn := params.Params{}
+	for _, column := range columns {
+		resColumn = append(resColumn, &params.Param{
+			Key:   column,
+			Value: column,
+		})
+	}
+
+	resRows := make([][]string, len(rows))
+	for i, row := range rows {
+		for _, s := range row {
+			resRows[i] = append(resRows[i], s.String)
+		}
+	}
+	res := driver.ExplainClassicResult{
+		AnalysisInfoInTableFormat: driver.AnalysisInfoInTableFormat{
+			Column: resColumn,
+			Rows:   resRows,
+		},
+	}
+
+	return &driver.ExplainResult{
+		ClassicResult: res,
+	}, nil
 }
