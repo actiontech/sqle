@@ -49,6 +49,7 @@ type GetTableMetaByTableNameConf struct {
 }
 
 type GetTableMetaBySQLConf struct {
+	// this SQL should be a single SQL
 	Sql string
 }
 
@@ -75,6 +76,7 @@ type GetTableMetaBySQLResult struct {
 }
 
 type ExplainConf struct {
+	// this SQL should be a single SQL
 	Sql string
 }
 
