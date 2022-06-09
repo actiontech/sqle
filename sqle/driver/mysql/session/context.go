@@ -515,7 +515,7 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return nil, false, nil
 	}
 
-	createTableSql, err := c.e.ShowCreateTable(util.GetTableNameWithQuote(stmt))
+	createTableSql, err := c.e.ShowCreateTable("", util.GetTableNameWithQuote(stmt))
 	if err != nil {
 		return nil, exist, err
 	}

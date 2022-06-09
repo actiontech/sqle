@@ -225,8 +225,12 @@ func Ping(entry *logrus.Entry, instance *mdriver.DSN) error {
 }
 
 // When using keywords as table names, you need to pay attention to wrapping them in quotation marks
-func (c *Executor) ShowCreateTable(tableName string) (string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show create table %s", tableName))
+func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
+	query := fmt.Sprintf("show create table %s", tableName)
+	if schema != "" {
+		query = fmt.Sprintf("show create table %s.%s", schema, tableName)
+	}
+	result, err := c.Db.Query(query)
 	if err != nil {
 		return "", err
 	}
@@ -472,4 +476,20 @@ func (c *Executor) ShowDefaultConfiguration(sql, column string) (string, error) 
 		return "", nil
 	}
 	return ret.String, nil
+}
+
+func (c *Executor) ShowInformationSchemaColumns(schema, tableName string) ([]map[string]sql.NullString, error) {
+	records, err := c.Db.Query(fmt.Sprintf("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s'", schema, tableName))
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+func (c *Executor) ShowIndex(schema, tableName string) ([]map[string]sql.NullString, error) {
+	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM %s.%s", schema, tableName))
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
 }
