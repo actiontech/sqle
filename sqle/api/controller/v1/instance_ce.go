@@ -4,12 +4,16 @@
 package v1
 
 import (
+	e "errors"
+	"github.com/actiontech/sqle/sqle/errors"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
+
+var errCommunityEditionDoesNotSupportListTables = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support list tables"))
 
 func getInstanceTips(c echo.Context) error {
 	req := new(InstanceTipReqV1)
@@ -45,4 +49,8 @@ func getInstanceTips(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    instanceTipsResV1,
 	})
+}
+
+func listTableBySchema(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportListTables)
 }
