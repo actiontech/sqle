@@ -4,6 +4,7 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -68,7 +69,7 @@ func getInstanceTips(c echo.Context) error {
 	})
 }
 
-func listTableBySchema(e echo.Context) error {
+func listTableBySchema(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
 	schemaName := c.Param("schema_name")
