@@ -6,6 +6,7 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
@@ -77,7 +78,170 @@ func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTable
 
 // GetTableMetaByTableName get table's metadata by table name.
 func (i *Inspect) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
-	return nil, nil
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Db.Close()
+
+	columnsInfo, err := i.getTableColumnsInfo(conn, conf.Schema, conf.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	indexesInfo, err := i.getTableIndexesInfo(conn, conf.Schema, conf.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	sql, err := conn.ShowCreateTable(conf.Schema, conf.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	return &driver.GetTableMetaByTableNameResult{TableMeta: driver.TableMetaItem{
+		ColumnsInfo:    columnsInfo,
+		IndexesInfo:    indexesInfo,
+		CreateTableSQL: sql,
+	}}, nil
+}
+
+func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driver.ColumnsInfo, error) {
+	columns := []*params.Param{
+		{
+			Key:   "COLUMN_NAME",
+			Value: "COLUMN_NAME",
+			Desc:  "列名",
+		}, {
+			Key:   "COLUMN_TYPE",
+			Value: "COLUMN_TYPE",
+			Desc:  "列类型",
+		}, {
+			Key:   "CHARACTER_SET_NAME",
+			Value: "CHARACTER_SET_NAME",
+			Desc:  "列字符集",
+		}, {
+			Key:   "IS_NULLABLE",
+			Value: "IS_NULLABLE",
+			Desc:  "是否可以为空",
+		}, {
+			Key:   "COLUMN_KEY",
+			Value: "COLUMN_KEY",
+			Desc:  "列索引",
+		}, {
+			Key:   "COLUMN_DEFAULT",
+			Value: "COLUMN_DEFAULT",
+			Desc:  "默认值",
+		}, {
+			Key:   "EXTRA",
+			Value: "EXTRA",
+			Desc:  "拓展信息",
+		}, {
+			Key:   "COLUMN_COMMENT",
+			Value: "COLUMN_COMMENT",
+			Desc:  "列说明",
+		},
+	}
+
+	columnsRecords, err := conn.ShowInformationSchemaColumns(schema, tableName)
+	if err != nil {
+		return driver.ColumnsInfo{}, err
+	}
+
+	rows := make([][]string, len(columnsRecords))
+	for i, record := range columnsRecords {
+		row := make([]string, len(columns))
+		for j, column := range columns {
+			row[j] = record[column.Value].String
+		}
+		rows[i] = row
+	}
+
+	ret := driver.ColumnsInfo{}
+	ret.Column = columns
+	ret.Rows = rows
+	return ret, nil
+}
+
+func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName string) (driver.IndexesInfo, error) {
+	columns := []*params.Param{
+
+		{
+			Key:   "Column_name",
+			Value: "Column_name",
+			Desc:  "列名",
+		}, {
+			Key:   "Key_name",
+			Value: "Key_name",
+			Desc:  "索引名",
+		}, {
+			// set the row's value as Yes if Non_unique is 0 and No if Non_unique is 1
+			Key:   "Unique",
+			Value: "Unique",
+			Desc:  "唯一性",
+		}, {
+			Key:   "Seq_in_index",
+			Value: "Seq_in_index",
+			Desc:  "列序列",
+		}, {
+			Key:   "COLUMN_KEY",
+			Value: "COLUMN_KEY",
+			Desc:  "列索引类型",
+		}, {
+			Key:   "Cardinality",
+			Value: "Cardinality",
+			Desc:  "基数",
+		}, {
+			// set the row's value as Yes if the column may contain NULL values and No if not
+			Key:   "Null",
+			Value: "Null",
+			Desc:  "是否可以为空",
+		}, {
+			Key:   "Index_type",
+			Value: "Index_type",
+			Desc:  "索引类型",
+		}, {
+			Key:   "Comment",
+			Value: "Comment",
+			Desc:  "备注",
+		},
+	}
+
+	indexRecords, err := conn.ShowIndex(schema, tableName)
+	if err != nil {
+		return driver.IndexesInfo{}, err
+	}
+
+	rows := make([][]string, len(indexRecords))
+	for i, record := range indexRecords {
+		// rewrite value
+		{
+			if strings.ToUpper(record["Null"].String) != "YES" {
+				nullable := record["Null"]
+				nullable.String = "NO"
+				record["Null"] = nullable
+			}
+
+			unique := record["Non_unique"]
+			if record["Non_unique"].String == "1" {
+				unique.String = "NO"
+			} else {
+				unique.String = "YES"
+			}
+			record["Unique"] = unique
+		}
+
+		row := make([]string, len(columns))
+		for j, column := range columns {
+			row[j] = record[column.Value].String
+		}
+		rows[i] = row
+	}
+
+	ret := driver.IndexesInfo{}
+	ret.Column = columns
+	ret.Rows = rows
+	return ret, nil
 }
 
 // GetTableMetaBySQL get table's metadata by SQL.
