@@ -1061,7 +1061,54 @@ type ListTableBySchemaResV1 struct {
 // @Success 200 {object} v1.ListTableBySchemaResV1
 // @router /v1/instances/{instance_name}/schemas/{schema_name}/tables [get]
 func ListTableBySchema(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	instanceName := c.Param("instance_name")
+	schemaName := c.Param("schema_name")
+
+	instance, exist, err := s.GetInstanceByName(instanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
+	}
+
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	dsn, err := newDSN(instance, "")
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	tablesInSchema, err := analysisDriver.ListTablesInSchema(context.TODO(), &driver.ListTablesInSchemaConf{Schema: schemaName})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &ListTableBySchemaResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertTablesToRes(tablesInSchema),
+	})
+}
+
+func convertTablesToRes(listTablesInSchemaResult *driver.ListTablesInSchemaResult) []Table {
+	result := make([]Table, 0, len(listTablesInSchemaResult.Tables))
+	for _, table := range listTablesInSchemaResult.Tables {
+		result = append(result, Table{Name: table.Name})
+	}
+
+	return result
 }
 
 type TableMetaItemHeadResV1 struct {
