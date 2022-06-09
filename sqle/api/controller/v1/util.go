@@ -33,3 +33,18 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 func newDriverWithoutCfg(l *logrus.Entry, dbType string) (driver.Driver, error) {
 	return driver.NewDriver(l, dbType, &driver.Config{})
 }
+
+func newDSN(instance *model.Instance, database string) (*driver.DSN, error) {
+	if instance == nil {
+		return nil, errors.Errorf("instance is nil")
+	}
+
+	return &driver.DSN{
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: instance.AdditionalParams,
+		DatabaseName:     database,
+	}, nil
+}
