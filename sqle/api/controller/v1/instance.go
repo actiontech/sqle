@@ -1061,7 +1061,7 @@ type ListTableBySchemaResV1 struct {
 // @Success 200 {object} v1.ListTableBySchemaResV1
 // @router /v1/instances/{instance_name}/schemas/{schema_name}/tables [get]
 func ListTableBySchema(c echo.Context) error {
-	return nil
+	return listTableBySchema(c)
 }
 
 type TableMetaItemHeadResV1 struct {
