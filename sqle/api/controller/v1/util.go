@@ -12,14 +12,9 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 		return nil, errors.Errorf("instance is nil")
 	}
 
-	dsn := &driver.DSN{
-		Host:             inst.Host,
-		Port:             inst.Port,
-		User:             inst.User,
-		Password:         inst.Password,
-		AdditionalParams: inst.AdditionalParams,
-
-		DatabaseName: database,
+	dsn, err := newDSN(inst, database)
+	if err != nil {
+		return nil, errors.Wrap(err, "new dsn")
 	}
 
 	cfg, err := driver.NewConfig(dsn, nil)
