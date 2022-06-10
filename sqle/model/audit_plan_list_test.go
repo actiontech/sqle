@@ -149,10 +149,10 @@ func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 	assert.NoError(t, err)
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
-	mock.ExpectPrepare(fmt.Sprintf(`SELECT report_sqls.sql, report_sqls.audit_result %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
+	mock.ExpectPrepare(fmt.Sprintf(`SELECT report_sqls.sql, report_sqls.audit_result, report_sqls.number %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs(1, 100, 10).WillReturnRows(sqlmock.NewRows([]string{
-		"sql", "audit_result",
-	}).AddRow("select * from t1 where id = 1", "FAKE AUDIT RESULT"))
+		"sql", "audit_result", "number",
+	}).AddRow("select * from t1 where id = 1", "FAKE AUDIT RESULT", "1"))
 
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))

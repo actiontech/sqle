@@ -58,10 +58,11 @@ func (s *Storage) GetAuditPlanReportsByReq(data map[string]interface{}) (
 type AuditPlanReportSQLListDetail struct {
 	SQL         string `json:"sql"`
 	AuditResult string `json:"audit_result"`
+	Number      uint   `json:"number"`
 }
 
 var auditPlanReportSQLQueryTpl = `
-SELECT report_sqls.sql, report_sqls.audit_result
+SELECT report_sqls.sql, report_sqls.audit_result, report_sqls.number
 
 {{- template "body" . -}} 
 
