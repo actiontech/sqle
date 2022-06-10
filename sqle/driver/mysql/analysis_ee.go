@@ -147,16 +147,22 @@ func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName
 	for i, c := range columns {
 		queryColumns[i] = c.Value
 	}
-	columnsRecords, err := conn.ShowInformationSchemaColumns(queryColumns, schema, tableName)
+	records, err := conn.GetTableColumnsInfo(schema, tableName)
 	if err != nil {
 		return driver.ColumnsInfo{}, err
 	}
 
-	rows := make([][]string, len(columnsRecords))
-	for i, record := range columnsRecords {
-		row := make([]string, len(columns))
-		for j, column := range columns {
-			row[j] = record[column.Value].String
+	rows := make([][]string, len(records))
+	for i, record := range records {
+		row := []string{
+			record.ColumnName,
+			record.ColumnType,
+			record.CharacterSetName,
+			record.IsNullable,
+			record.ColumnKey,
+			record.ColumnDefault,
+			record.Extra,
+			record.ColumnComment,
 		}
 		rows[i] = row
 	}
@@ -188,10 +194,6 @@ func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName
 			Value: "Seq_in_index",
 			Desc:  "列序列",
 		}, {
-			Key:   "COLUMN_KEY",
-			Value: "COLUMN_KEY",
-			Desc:  "列索引类型",
-		}, {
 			Key:   "Cardinality",
 			Value: "Cardinality",
 			Desc:  "基数",
@@ -211,33 +213,31 @@ func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName
 		},
 	}
 
-	indexRecords, err := conn.ShowIndex(schema, tableName)
+	indexRecords, err := conn.GetTableIndexesInfo(schema, tableName)
 	if err != nil {
 		return driver.IndexesInfo{}, err
 	}
 
 	rows := make([][]string, len(indexRecords))
 	for i, record := range indexRecords {
-		// rewrite value
-		{
-			if strings.ToUpper(record["Null"].String) != "YES" {
-				nullable := record["Null"]
-				nullable.String = "NO"
-				record["Null"] = nullable
-			}
-
-			unique := record["Non_unique"]
-			if record["Non_unique"].String == "1" {
-				unique.String = "NO"
-			} else {
-				unique.String = "YES"
-			}
-			record["Unique"] = unique
+		nullable := strings.ToUpper(record.Null)
+		if nullable != "YES" {
+			nullable = "NO"
+		}
+		unique := "YES"
+		if record.NonUnique == "1" {
+			unique = "NO"
 		}
 
-		row := make([]string, len(columns))
-		for j, column := range columns {
-			row[j] = record[column.Value].String
+		row := []string{
+			record.ColumnName,
+			record.KeyName,
+			unique,
+			record.SeqInIndex,
+			record.Cardinality,
+			nullable,
+			record.IndexType,
+			record.Comment,
 		}
 		rows[i] = row
 	}
