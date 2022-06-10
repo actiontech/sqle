@@ -152,6 +152,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		auditPlanReportSQLsResV2[i] = AuditPlanReportSQLResV2{
 			SQL:         auditPlanReportSQL.SQL,
 			AuditResult: auditPlanReportSQL.AuditResult,
+			Number:      auditPlanReportSQL.Number,
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanReportSQLsResV2{
