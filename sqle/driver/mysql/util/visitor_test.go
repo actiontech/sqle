@@ -17,7 +17,7 @@ func TestSelectStmtExtractor(t *testing.T) {
 		output []string
 	}{
 		{"SELECT * FROM t1", []string{"SELECT * FROM t1"}},
-		{"SELECT * FROM (SELECT * FROM t1) as t2", []string{"SELECT * FROM (SELECT * FROM (t1)) AS t2", "SELECT * FROM t1"}},
+		{"SELECT * FROM (SELECT * FROM t1) as t2", []string{"SELECT * FROM (SELECT * FROM t1) AS t2", "SELECT * FROM t1"}},
 		{"SELECT * FROM t1 WHERE id = (SELECT id FROM t2 WHERE a = 1)", []string{"SELECT * FROM t1 WHERE id=(SELECT id FROM t2 WHERE a=1)", "SELECT id FROM t2 WHERE a=1"}},
 		{"SELECT * FROM t1 UNION SELECT * FROM t2", []string{"SELECT * FROM t1", "SELECT * FROM t2"}},
 	}
