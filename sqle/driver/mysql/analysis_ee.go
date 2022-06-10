@@ -143,7 +143,11 @@ func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName
 		},
 	}
 
-	columnsRecords, err := conn.ShowInformationSchemaColumns(schema, tableName)
+	queryColumns := make([]string, len(columns))
+	for i, c := range columns {
+		queryColumns[i] = c.Value
+	}
+	columnsRecords, err := conn.ShowInformationSchemaColumns(queryColumns, schema, tableName)
 	if err != nil {
 		return driver.ColumnsInfo{}, err
 	}
