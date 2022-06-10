@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/pkg/params"
-
 	"github.com/pingcap/parser/ast"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -107,45 +105,37 @@ func (i *Inspect) GetTableMetaByTableName(ctx context.Context, conf *driver.GetT
 }
 
 func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driver.ColumnsInfo, error) {
-	columns := []*params.Param{
+	columns := []driver.AnalysisInfoHead{
 		{
-			Key:   "COLUMN_NAME",
-			Value: "COLUMN_NAME",
-			Desc:  "列名",
+			Name: "COLUMN_NAME",
+			Desc: "列名",
 		}, {
-			Key:   "COLUMN_TYPE",
-			Value: "COLUMN_TYPE",
-			Desc:  "列类型",
+			Name: "COLUMN_TYPE",
+			Desc: "列类型",
 		}, {
-			Key:   "CHARACTER_SET_NAME",
-			Value: "CHARACTER_SET_NAME",
-			Desc:  "列字符集",
+			Name: "CHARACTER_SET_NAME",
+			Desc: "列字符集",
 		}, {
-			Key:   "IS_NULLABLE",
-			Value: "IS_NULLABLE",
-			Desc:  "是否可以为空",
+			Name: "IS_NULLABLE",
+			Desc: "是否可以为空",
 		}, {
-			Key:   "COLUMN_KEY",
-			Value: "COLUMN_KEY",
-			Desc:  "列索引",
+			Name: "COLUMN_KEY",
+			Desc: "列索引",
 		}, {
-			Key:   "COLUMN_DEFAULT",
-			Value: "COLUMN_DEFAULT",
-			Desc:  "默认值",
+			Name: "COLUMN_DEFAULT",
+			Desc: "默认值",
 		}, {
-			Key:   "EXTRA",
-			Value: "EXTRA",
-			Desc:  "拓展信息",
+			Name: "EXTRA",
+			Desc: "拓展信息",
 		}, {
-			Key:   "COLUMN_COMMENT",
-			Value: "COLUMN_COMMENT",
-			Desc:  "列说明",
+			Name: "COLUMN_COMMENT",
+			Desc: "列说明",
 		},
 	}
 
 	queryColumns := make([]string, len(columns))
 	for i, c := range columns {
-		queryColumns[i] = c.Value
+		queryColumns[i] = c.Name
 	}
 	records, err := conn.GetTableColumnsInfo(schema, tableName)
 	if err != nil {
@@ -174,42 +164,33 @@ func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName
 }
 
 func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName string) (driver.IndexesInfo, error) {
-	columns := []*params.Param{
-
+	columns := []driver.AnalysisInfoHead{
 		{
-			Key:   "Column_name",
-			Value: "Column_name",
-			Desc:  "列名",
+			Name: "Column_name",
+			Desc: "列名",
 		}, {
-			Key:   "Key_name",
-			Value: "Key_name",
-			Desc:  "索引名",
+			Name: "Key_name",
+			Desc: "索引名",
 		}, {
 			// set the row's value as Yes if Non_unique is 0 and No if Non_unique is 1
-			Key:   "Unique",
-			Value: "Unique",
-			Desc:  "唯一性",
+			Name: "Unique",
+			Desc: "唯一性",
 		}, {
-			Key:   "Seq_in_index",
-			Value: "Seq_in_index",
-			Desc:  "列序列",
+			Name: "Seq_in_index",
+			Desc: "列序列",
 		}, {
-			Key:   "Cardinality",
-			Value: "Cardinality",
-			Desc:  "基数",
+			Name: "Cardinality",
+			Desc: "基数",
 		}, {
 			// set the row's value as Yes if the column may contain NULL values and No if not
-			Key:   "Null",
-			Value: "Null",
-			Desc:  "是否可以为空",
+			Name: "Null",
+			Desc: "是否可以为空",
 		}, {
-			Key:   "Index_type",
-			Value: "Index_type",
-			Desc:  "索引类型",
+			Name: "Index_type",
+			Desc: "索引类型",
 		}, {
-			Key:   "Comment",
-			Value: "Comment",
-			Desc:  "备注",
+			Name: "Comment",
+			Desc: "备注",
 		},
 	}
 
@@ -277,12 +258,9 @@ func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*drive
 		return nil, err
 	}
 
-	resColumn := params.Params{}
-	for _, column := range columns {
-		resColumn = append(resColumn, &params.Param{
-			Key:   column,
-			Value: column,
-		})
+	resColumn := make([]driver.AnalysisInfoHead, len(columns))
+	for i, column := range columns {
+		resColumn[i] = driver.AnalysisInfoHead{Name: column}
 	}
 
 	resRows := make([][]string, len(rows))
