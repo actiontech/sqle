@@ -95,7 +95,7 @@ upload:
 
 ###################################### docker #####################################################
 docker_lint:
-	$(DOCKER) run -v $(shell pwd):/universe -w /universe --rm $(GOLANGCI_LINT_IMAGE) golangci-lint run -c ./.golangci.yml --timeout=3m
+	$(DOCKER) run -v $(shell pwd):/universe -w /universe --rm $(GOLANGCI_LINT_IMAGE) golangci-lint run -c ./.golangci.yml --timeout=20m
 
 docker_scspell:
 	$(DOCKER) run -v $(shell pwd):/universe -w /universe --rm $(SCSPELL_IMAGE) sh -c "python scspell.py sqle"
