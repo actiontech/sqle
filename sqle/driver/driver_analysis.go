@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,6 +28,11 @@ type ListTablesInSchemaResult struct {
 	Tables []Table
 }
 
+type AnalysisInfoHead struct {
+	Name string
+	Desc string
+}
+
 // AnalysisInfoInTableFormat
 // the field Column represents the column name of a table
 // the field Rows represents the data of the table
@@ -39,7 +43,7 @@ type ListTablesInSchemaResult struct {
 	| Rows[1][0] | Rows[1][1] | Rows[1][2] |
 */
 type AnalysisInfoInTableFormat struct {
-	Column params.Params
+	Column []AnalysisInfoHead
 	Rows   [][]string
 }
 
