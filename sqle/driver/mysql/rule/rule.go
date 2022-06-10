@@ -2751,7 +2751,7 @@ func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driver.Ru
 func checkDMLSelectForUpdate(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
-		if stmt.LockInfo.LockType == ast.SelectLockForUpdate {
+		if stmt.LockInfo != nil && stmt.LockInfo.LockType == ast.SelectLockForUpdate {
 			addResult(res, rule, DMLCheckSelectForUpdate)
 		}
 	}
@@ -3004,7 +3004,7 @@ func checkIsAfterUnionDistinct(ctx *session.Context, rule driver.Rule, res *driv
 	case *ast.SetOprStmt:
 		for _, ss := range stmt.SelectList.Selects {
 			if sss, ok := ss.(*ast.SelectStmt); ok {
-				if *sss.AfterSetOperator == ast.Union {
+				if sss.AfterSetOperator != nil && *sss.AfterSetOperator == ast.Union {
 					addResult(res, rule, DMLCheckIfAfterUnionDistinct)
 					return nil
 				}
