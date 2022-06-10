@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	mdriver "github.com/actiontech/sqle/sqle/driver"
@@ -478,8 +479,8 @@ func (c *Executor) ShowDefaultConfiguration(sql, column string) (string, error) 
 	return ret.String, nil
 }
 
-func (c *Executor) ShowInformationSchemaColumns(schema, tableName string) ([]map[string]sql.NullString, error) {
-	records, err := c.Db.Query(fmt.Sprintf("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s'", schema, tableName))
+func (c *Executor) ShowInformationSchemaColumns(columns []string, schema, tableName string) ([]map[string]sql.NullString, error) {
+	records, err := c.Db.Query(fmt.Sprintf("SELECT %s FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s'", strings.Join(columns, ","), schema, tableName))
 	if err != nil {
 		return nil, err
 	}
