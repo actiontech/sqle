@@ -6,7 +6,6 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	mdriver "github.com/actiontech/sqle/sqle/driver"
@@ -479,18 +478,70 @@ func (c *Executor) ShowDefaultConfiguration(sql, column string) (string, error) 
 	return ret.String, nil
 }
 
-func (c *Executor) ShowInformationSchemaColumns(columns []string, schema, tableName string) ([]map[string]sql.NullString, error) {
-	records, err := c.Db.Query(fmt.Sprintf("SELECT %s FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s'", strings.Join(columns, ","), schema, tableName))
+type TableColumnsInfo struct {
+	ColumnName       string
+	ColumnType       string
+	CharacterSetName string
+	IsNullable       string
+	ColumnKey        string
+	ColumnDefault    string
+	Extra            string
+	ColumnComment    string
+}
+
+func (c *Executor) GetTableColumnsInfo(schema, tableName string) ([]*TableColumnsInfo, error) {
+	query := fmt.Sprintf("SELECT COLUMN_NAME, COLUMN_TYPE, CHARACTER_SET_NAME, IS_NULLABLE, COLUMN_KEY, COLUMN_DEFAULT, EXTRA, COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s'", schema, tableName)
+	records, err := c.Db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	return records, nil
+
+	ret := make([]*TableColumnsInfo, len(records))
+	for i, record := range records {
+		ret[i] = &TableColumnsInfo{
+			ColumnName:       record["COLUMN_NAME"].String,
+			ColumnType:       record["COLUMN_TYPE"].String,
+			CharacterSetName: record["CHARACTER_SET_NAME"].String,
+			IsNullable:       record["IS_NULLABLE"].String,
+			ColumnKey:        record["COLUMN_KEY"].String,
+			ColumnDefault:    record["COLUMN_DEFAULT"].String,
+			Extra:            record["EXTRA"].String,
+			ColumnComment:    record["COLUMN_COMMENT"].String,
+		}
+	}
+
+	return ret, nil
 }
 
-func (c *Executor) ShowIndex(schema, tableName string) ([]map[string]sql.NullString, error) {
+type TableIndexesInfo struct {
+	ColumnName  string
+	KeyName     string
+	NonUnique   string
+	SeqInIndex  string
+	Cardinality string
+	Null        string
+	IndexType   string
+	Comment     string
+}
+
+func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexesInfo, error) {
 	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM %s.%s", schema, tableName))
 	if err != nil {
 		return nil, err
 	}
-	return records, nil
+
+	ret := make([]*TableIndexesInfo, len(records))
+	for i, record := range records {
+		ret[i] = &TableIndexesInfo{
+			ColumnName:  record["Column_name"].String,
+			KeyName:     record["Key_name"].String,
+			NonUnique:   record["Non_unique"].String,
+			SeqInIndex:  record["Seq_in_index"].String,
+			Cardinality: record["Cardinality"].String,
+			Null:        record["Null"].String,
+			IndexType:   record["Index_type"].String,
+			Comment:     record["Comment"].String,
+		}
+	}
+	return ret, nil
 }
