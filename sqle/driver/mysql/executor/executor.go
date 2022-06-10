@@ -225,8 +225,12 @@ func Ping(entry *logrus.Entry, instance *mdriver.DSN) error {
 }
 
 // When using keywords as table names, you need to pay attention to wrapping them in quotation marks
-func (c *Executor) ShowCreateTable(tableName string) (string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show create table %s", tableName))
+func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
+	query := fmt.Sprintf("show create table %s", tableName)
+	if schema != "" {
+		query = fmt.Sprintf("show create table %s.%s", schema, tableName)
+	}
+	result, err := c.Db.Query(query)
 	if err != nil {
 		return "", err
 	}
@@ -472,4 +476,72 @@ func (c *Executor) ShowDefaultConfiguration(sql, column string) (string, error) 
 		return "", nil
 	}
 	return ret.String, nil
+}
+
+type TableColumnsInfo struct {
+	ColumnName       string
+	ColumnType       string
+	CharacterSetName string
+	IsNullable       string
+	ColumnKey        string
+	ColumnDefault    string
+	Extra            string
+	ColumnComment    string
+}
+
+func (c *Executor) GetTableColumnsInfo(schema, tableName string) ([]*TableColumnsInfo, error) {
+	query := fmt.Sprintf("SELECT COLUMN_NAME, COLUMN_TYPE, CHARACTER_SET_NAME, IS_NULLABLE, COLUMN_KEY, COLUMN_DEFAULT, EXTRA, COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s'", schema, tableName)
+	records, err := c.Db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]*TableColumnsInfo, len(records))
+	for i, record := range records {
+		ret[i] = &TableColumnsInfo{
+			ColumnName:       record["COLUMN_NAME"].String,
+			ColumnType:       record["COLUMN_TYPE"].String,
+			CharacterSetName: record["CHARACTER_SET_NAME"].String,
+			IsNullable:       record["IS_NULLABLE"].String,
+			ColumnKey:        record["COLUMN_KEY"].String,
+			ColumnDefault:    record["COLUMN_DEFAULT"].String,
+			Extra:            record["EXTRA"].String,
+			ColumnComment:    record["COLUMN_COMMENT"].String,
+		}
+	}
+
+	return ret, nil
+}
+
+type TableIndexesInfo struct {
+	ColumnName  string
+	KeyName     string
+	NonUnique   string
+	SeqInIndex  string
+	Cardinality string
+	Null        string
+	IndexType   string
+	Comment     string
+}
+
+func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexesInfo, error) {
+	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM %s.%s", schema, tableName))
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]*TableIndexesInfo, len(records))
+	for i, record := range records {
+		ret[i] = &TableIndexesInfo{
+			ColumnName:  record["Column_name"].String,
+			KeyName:     record["Key_name"].String,
+			NonUnique:   record["Non_unique"].String,
+			SeqInIndex:  record["Seq_in_index"].String,
+			Cardinality: record["Cardinality"].String,
+			Null:        record["Null"].String,
+			IndexType:   record["Index_type"].String,
+			Comment:     record["Comment"].String,
+		}
+	}
+	return ret, nil
 }
