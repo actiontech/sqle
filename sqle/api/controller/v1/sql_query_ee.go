@@ -379,3 +379,107 @@ func getSQLQueryHistory(c echo.Context) error {
 		},
 	})
 }
+
+type GetSqlExplainReqV1 struct {
+	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
+}
+
+func getSQLExplain(c echo.Context) error {
+	instanceName := c.Param("instance_name")
+	req := new(GetSqlExplainReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+	instance, exist, err := s.GetInstanceByName(instanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if user.Name != model.DefaultAdminUser {
+		exist, err = s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		}
+	}
+
+	dsn, err := newDSN(instance, req.InstanceSchema)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	driverWithoutAudit, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
+	if err != nil {
+		return err
+	}
+
+	if err := driverWithoutAudit.Ping(context.TODO()); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	defer driverWithoutAudit.Close(context.TODO())
+
+	nodes, err := driverWithoutAudit.Parse(context.TODO(), req.Sql)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if len(nodes) == 0 {
+		return controller.JSONBaseErrorReq(c, errSqlQueryNoSql)
+	}
+
+	var sqlExplains []SQLExplain
+	for _, node := range nodes {
+		analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: node.Text})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		classicResult := convertExplainResultsToRes(explainResult)
+		sqlExplains = append(sqlExplains, SQLExplain{SQL: node.Text, ClassicResult: classicResult})
+	}
+
+	return c.JSON(http.StatusOK, &GetSQLExplainResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    sqlExplains,
+	})
+}
+
+func convertExplainResultsToRes(explainResult *driver.ExplainResult) ExplainClassicResult {
+	explainClassicResult := ExplainClassicResult{
+		Rows: make([]map[string]string, len(explainResult.ClassicResult.Rows)),
+		Head: make([]TableMetaItemHeadResV1, len(explainResult.ClassicResult.Column)),
+	}
+
+	for i, column := range explainResult.ClassicResult.Column {
+		explainClassicResult.Head[i].FieldName = column.Name
+		explainClassicResult.Head[i].Desc = column.Desc
+	}
+
+	for k, rows := range explainResult.ClassicResult.Rows {
+		explainClassicResult.Rows[k] = make(map[string]string)
+		for i, row := range rows {
+			columnName := explainResult.ClassicResult.Column[i].Name
+			explainClassicResult.Rows[k][columnName] = row
+		}
+	}
+
+	return explainClassicResult
+}
