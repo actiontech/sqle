@@ -131,5 +131,5 @@ type GetSQLExplainResV1 struct {
 // @Success 200 {object} v1.GetSQLExplainResV1
 // @router /v1/sql_query/explain/{instance_name}/ [get]
 func GetSQLExplain(c echo.Context) error {
-	return nil
+	return getSQLExplain(c)
 }
