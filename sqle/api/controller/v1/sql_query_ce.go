@@ -24,3 +24,7 @@ func getSQLResult(c echo.Context) error {
 func getSQLQueryHistory(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSqlQuery)
 }
+
+func getSQLExplain(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSqlQuery)
+}
