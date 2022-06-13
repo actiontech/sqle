@@ -442,6 +442,7 @@ func getSQLExplain(c echo.Context) error {
 
 	var sqlExplains []SQLExplain
 	for _, node := range nodes {
+		// todo:move the NewAnalysisDriver function outside the for loop
 		analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
