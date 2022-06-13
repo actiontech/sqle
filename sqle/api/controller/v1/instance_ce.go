@@ -14,6 +14,7 @@ import (
 )
 
 var errCommunityEditionDoesNotSupportListTables = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support list tables"))
+var errCommunityEditionDoesNotSupportGetTablesMetadata = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support get table metadata"))
 
 func getInstanceTips(c echo.Context) error {
 	req := new(InstanceTipReqV1)
@@ -53,4 +54,8 @@ func getInstanceTips(c echo.Context) error {
 
 func listTableBySchema(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportListTables)
+}
+
+func getTableMetadata(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportGetTablesMetadata)
 }

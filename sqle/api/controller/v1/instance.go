@@ -1103,5 +1103,5 @@ type GetTableMetadataResV1 struct {
 // @Success 200 {object} v1.GetTableMetadataResV1
 // @router /v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata [get]
 func GetTableMetadata(c echo.Context) error {
-	return nil
+	return getTableMetadata(c)
 }
