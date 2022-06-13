@@ -171,6 +171,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/instances/:instance_name/rules", v1.GetInstanceRules)
 	v1Router.GET("/instances/:instance_name/workflow_template", v1.GetInstanceWorkflowTemplate)
 	v1Router.GET("/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
+	v1Router.GET("/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
+
 	// rule template
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
 	v1Router.GET("/rule_template_tips", v1.GetRuleTemplateTips)
