@@ -10,6 +10,7 @@ import (
 
 // AnalysisDriver is a driver for SQL analysis and getting table metadata
 type AnalysisDriver interface {
+	Close(ctx context.Context)
 	ListTablesInSchema(ctx context.Context, conf *ListTablesInSchemaConf) (*ListTablesInSchemaResult, error)
 	GetTableMetaByTableName(ctx context.Context, conf *GetTableMetaByTableNameConf) (*GetTableMetaByTableNameResult, error)
 	GetTableMetaBySQL(ctx context.Context, conf *GetTableMetaBySQLConf) (*GetTableMetaBySQLResult, error)
