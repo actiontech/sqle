@@ -7169,6 +7169,9 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "schema": {
+                    "type": "string"
                 }
             }
         },

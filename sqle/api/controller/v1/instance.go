@@ -1081,6 +1081,7 @@ type TableIndexes struct {
 
 type TableMeta struct {
 	Name           string       `json:"name"`
+	Schema         string       `json:"schema"`
 	Columns        TableColumns `json:"columns"`
 	Indexes        TableIndexes `json:"indexes"`
 	CreateTableSQL string       `json:"create_table_sql"`
