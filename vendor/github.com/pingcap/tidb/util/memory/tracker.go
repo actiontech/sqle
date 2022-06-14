@@ -35,41 +35,95 @@ import (
 //
 // NOTE: We only protect concurrent access to "bytesConsumed" and "children",
 // that is to say:
-// 1. Only "BytesConsumed()", "Consume()", "AttachTo()" and "Detach" are thread-safe.
+// 1. Only "BytesConsumed()", "Consume()" and "AttachTo()" are thread-safe.
 // 2. Other operations of a Tracker tree is not thread-safe.
 type Tracker struct {
 	mu struct {
 		sync.Mutex
-		children []*Tracker // The children memory trackers
+		// The children memory trackers. If the Tracker is the Global Tracker, like executor.GlobalDiskUsageTracker,
+		// we wouldn't maintain its children in order to avoiding mutex contention.
+		children []*Tracker
+	}
+	actionMu struct {
+		sync.Mutex
+		actionOnExceed ActionOnExceed
 	}
 
-	label          fmt.Stringer // Label of this "Tracker".
-	bytesConsumed  int64        // Consumed bytes.
-	bytesLimit     int64        // Negative value means no limit.
-	maxConsumed    int64        // max number of bytes consumed during execution.
-	actionOnExceed ActionOnExceed
-	parent         *Tracker // The parent memory tracker.
+	label         fmt.Stringer // Label of this "Tracker".
+	bytesConsumed int64        // Consumed bytes.
+	bytesLimit    int64        // bytesLimit <= 0 means no limit.
+	maxConsumed   int64        // max number of bytes consumed during execution.
+	parent        *Tracker     // The parent memory tracker.
+	isGlobal      bool         // isGlobal indicates whether this tracker is global tracker
 }
 
 // NewTracker creates a memory tracker.
 //	1. "label" is the label used in the usage string.
-//	2. "bytesLimit < 0" means no limit.
+//	2. "bytesLimit <= 0" means no limit.
+// For the common tracker, isGlobal is default as false
 func NewTracker(label fmt.Stringer, bytesLimit int64) *Tracker {
-	return &Tracker{
-		label:          label,
-		bytesLimit:     bytesLimit,
-		actionOnExceed: &LogOnExceed{},
+	t := &Tracker{
+		label:      label,
+		bytesLimit: bytesLimit,
 	}
+	t.actionMu.actionOnExceed = &LogOnExceed{}
+	t.isGlobal = false
+	return t
 }
 
-// SetActionOnExceed sets the action when memory usage is out of memory quota.
+// NewGlobalTracker creates a global tracker, its isGlobal is default as true
+func NewGlobalTracker(label fmt.Stringer, bytesLimit int64) *Tracker {
+	t := &Tracker{
+		label:      label,
+		bytesLimit: bytesLimit,
+	}
+	t.actionMu.actionOnExceed = &LogOnExceed{}
+	t.isGlobal = true
+	return t
+}
+
+// CheckBytesLimit check whether the bytes limit of the tracker is equal to a value.
+// Only used in test.
+func (t *Tracker) CheckBytesLimit(val int64) bool {
+	return t.bytesLimit == val
+}
+
+// SetBytesLimit sets the bytes limit for this tracker.
+// "bytesLimit <= 0" means no limit.
+func (t *Tracker) SetBytesLimit(bytesLimit int64) {
+	t.bytesLimit = bytesLimit
+}
+
+// GetBytesLimit gets the bytes limit for this tracker.
+// "bytesLimit <= 0" means no limit.
+func (t *Tracker) GetBytesLimit() int64 {
+	return t.bytesLimit
+}
+
+// SetActionOnExceed sets the action when memory usage exceeds bytesLimit.
 func (t *Tracker) SetActionOnExceed(a ActionOnExceed) {
-	t.actionOnExceed = a
+	t.actionMu.Lock()
+	t.actionMu.actionOnExceed = a
+	t.actionMu.Unlock()
+}
+
+// FallbackOldAndSetNewAction sets the action when memory usage exceeds bytesLimit
+// and set the original action as its fallback.
+func (t *Tracker) FallbackOldAndSetNewAction(a ActionOnExceed) {
+	t.actionMu.Lock()
+	defer t.actionMu.Unlock()
+	a.SetFallback(t.actionMu.actionOnExceed)
+	t.actionMu.actionOnExceed = a
 }
 
 // SetLabel sets the label of a Tracker.
 func (t *Tracker) SetLabel(label fmt.Stringer) {
 	t.label = label
+}
+
+// Label gets the label of a Tracker.
+func (t *Tracker) Label() fmt.Stringer {
+	return t.label
 }
 
 // AttachTo attaches this memory tracker as a child to another Tracker. If it
@@ -85,6 +139,17 @@ func (t *Tracker) AttachTo(parent *Tracker) {
 
 	t.parent = parent
 	t.parent.Consume(t.BytesConsumed())
+}
+
+// Detach de-attach the tracker child from its parent, then set its parent property as nil
+func (t *Tracker) Detach() {
+	if t.parent == nil {
+		return
+	}
+	t.parent.remove(t)
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.parent = nil
 }
 
 func (t *Tracker) remove(oldChild *Tracker) {
@@ -131,7 +196,8 @@ func (t *Tracker) ReplaceChild(oldChild, newChild *Tracker) {
 }
 
 // Consume is used to consume a memory usage. "bytes" can be a negative value,
-// which means this is a memory release operation.
+// which means this is a memory release operation. When memory usage of a tracker
+// exceeds its bytesLimit, the tracker calls its action, so does each of its ancestors.
 func (t *Tracker) Consume(bytes int64) {
 	var rootExceed *Tracker
 	for tracker := t; tracker != nil; tracker = tracker.parent {
@@ -149,7 +215,11 @@ func (t *Tracker) Consume(bytes int64) {
 		}
 	}
 	if rootExceed != nil {
-		rootExceed.actionOnExceed.Action(rootExceed)
+		rootExceed.actionMu.Lock()
+		defer rootExceed.actionMu.Unlock()
+		if rootExceed.actionMu.actionOnExceed != nil {
+			rootExceed.actionMu.actionOnExceed.Action(rootExceed)
+		}
 	}
 }
 
@@ -220,4 +290,39 @@ func (t *Tracker) BytesToString(numBytes int64) string {
 	}
 
 	return fmt.Sprintf("%v Bytes", numBytes)
+}
+
+// AttachToGlobalTracker attach the tracker to the global tracker
+// AttachToGlobalTracker should be called at the initialization for the session executor's tracker
+func (t *Tracker) AttachToGlobalTracker(globalTracker *Tracker) {
+	if globalTracker == nil {
+		return
+	}
+	if !globalTracker.isGlobal {
+		panic("Attach to a non-GlobalTracker")
+	}
+	if t.parent != nil {
+		if t.parent.isGlobal {
+			t.parent.Consume(-t.BytesConsumed())
+		} else {
+			t.parent.remove(t)
+		}
+	}
+	t.parent = globalTracker
+	t.parent.Consume(t.BytesConsumed())
+}
+
+// DetachFromGlobalTracker detach itself from its parent
+// Note that only the parent of this tracker is Global Tracker could call this function
+// Otherwise it should use Detach
+func (t *Tracker) DetachFromGlobalTracker() {
+	if t.parent == nil {
+		return
+	}
+	if !t.parent.isGlobal {
+		panic("Detach from a non-GlobalTracker")
+	}
+	parent := t.parent
+	parent.Consume(-t.BytesConsumed())
+	t.parent = nil
 }

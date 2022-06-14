@@ -15,7 +15,7 @@ package ast
 
 import (
 	"github.com/pingcap/errors"
-	. "github.com/pingcap/parser/format"
+	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 )
 
@@ -32,15 +32,42 @@ type AnalyzeTableStmt struct {
 	TableNames     []*TableName
 	PartitionNames []model.CIStr
 	IndexNames     []model.CIStr
-	MaxNumBuckets  uint64
+	AnalyzeOpts    []AnalyzeOpt
 
 	// IndexFlag is true when we only analyze indices for a table.
 	IndexFlag   bool
 	Incremental bool
 }
 
+// AnalyzeOptType is the type for analyze options.
+type AnalyzeOptionType int
+
+// Analyze option types.
+const (
+	AnalyzeOptNumBuckets = iota
+	AnalyzeOptNumTopN
+	AnalyzeOptCMSketchDepth
+	AnalyzeOptCMSketchWidth
+	AnalyzeOptNumSamples
+)
+
+// AnalyzeOptionString stores the string form of analyze options.
+var AnalyzeOptionString = map[AnalyzeOptionType]string{
+	AnalyzeOptNumBuckets:    "BUCKETS",
+	AnalyzeOptNumTopN:       "TOPN",
+	AnalyzeOptCMSketchWidth: "CMSKETCH WIDTH",
+	AnalyzeOptCMSketchDepth: "CMSKETCH DEPTH",
+	AnalyzeOptNumSamples:    "SAMPLES",
+}
+
+// AnalyzeOpt stores the analyze option type and value.
+type AnalyzeOpt struct {
+	Type  AnalyzeOptionType
+	Value uint64
+}
+
 // Restore implements Node interface.
-func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
+func (n *AnalyzeTableStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.Incremental {
 		ctx.WriteKeyWord("ANALYZE INCREMENTAL TABLE ")
 	} else {
@@ -74,10 +101,15 @@ func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteName(index.O)
 	}
-	if n.MaxNumBuckets != 0 {
-		ctx.WriteKeyWord(" WITH ")
-		ctx.WritePlainf("%d", n.MaxNumBuckets)
-		ctx.WriteKeyWord(" BUCKETS")
+	if len(n.AnalyzeOpts) != 0 {
+		ctx.WriteKeyWord(" WITH")
+		for i, opt := range n.AnalyzeOpts {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WritePlainf(" %d ", opt.Value)
+			ctx.WritePlain(AnalyzeOptionString[opt.Type])
+		}
 	}
 	return nil
 }
@@ -107,7 +139,7 @@ type DropStatsStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DropStatsStmt) Restore(ctx *RestoreCtx) error {
+func (n *DropStatsStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("DROP STATS ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while add table")
@@ -139,7 +171,7 @@ type LoadStatsStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *LoadStatsStmt) Restore(ctx *RestoreCtx) error {
+func (n *LoadStatsStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("LOAD STATS ")
 	ctx.WriteString(n.Path)
 	return nil
