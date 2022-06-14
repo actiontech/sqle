@@ -119,3 +119,103 @@ func convertTablesToRes(listTablesInSchemaResult *driver.ListTablesInSchemaResul
 
 	return result
 }
+
+func getTableMetadata(c echo.Context) error {
+	s := model.GetStorage()
+	instanceName := c.Param("instance_name")
+	schemaName := c.Param("schema_name")
+	tableName := c.Param("table_name")
+
+	instance, exist, err := s.GetInstanceByName(instanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if user.Name != model.DefaultAdminUser {
+		exist, err := s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		}
+	}
+
+	dsn, err := newDSN(instance, schemaName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	tableMetadata, err := analysisDriver.GetTableMetaByTableName(context.TODO(), &driver.GetTableMetaByTableNameConf{
+		Schema: schemaName,
+		Table:  tableName,
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetTableMetadataResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertTableMetadataToRes(tableMetadata, tableName),
+	})
+}
+
+func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTableNameResult, tableName string) TableMeta {
+	columnsInfo := metaByTableNameResult.TableMeta.ColumnsInfo
+	indexesInfo := metaByTableNameResult.TableMeta.IndexesInfo
+
+	tableMeta := TableMeta{
+		Columns: TableColumns{
+			Rows: make([]map[string]string, len(columnsInfo.Rows)),
+			Head: make([]TableMetaItemHeadResV1, len(columnsInfo.Column)),
+		},
+		Indexes: TableIndexes{
+			Rows: make([]map[string]string, len(indexesInfo.Rows)),
+			Head: make([]TableMetaItemHeadResV1, len(indexesInfo.Column)),
+		},
+	}
+
+	for i, column := range columnsInfo.Column {
+		tableMeta.Columns.Head[i].FieldName = column.Name
+		tableMeta.Columns.Head[i].Desc = column.Desc
+	}
+
+	for i, rows := range columnsInfo.Rows {
+		tableMeta.Columns.Rows[i] = make(map[string]string)
+		for k, row := range rows {
+			columnName := columnsInfo.Column[k].Name
+			tableMeta.Columns.Rows[i][columnName] = row
+		}
+	}
+
+	for i, column := range indexesInfo.Column {
+		tableMeta.Indexes.Head[i].FieldName = column.Name
+		tableMeta.Indexes.Head[i].Desc = column.Desc
+	}
+
+	for i, rows := range indexesInfo.Rows {
+		tableMeta.Indexes.Rows[i] = make(map[string]string)
+		for k, row := range rows {
+			columnName := indexesInfo.Column[k].Name
+			tableMeta.Indexes.Rows[i][columnName] = row
+		}
+	}
+
+	tableMeta.CreateTableSQL = metaByTableNameResult.TableMeta.CreateTableSQL
+	tableMeta.Name = tableName
+
+	return tableMeta
+}
