@@ -18,8 +18,10 @@ import (
 	"strconv"
 
 	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
+	"go.uber.org/zap"
 )
 
 // RoundMode is the type for round mode.
@@ -248,6 +250,11 @@ func (d *MyDecimal) IsNegative() bool {
 // GetDigitsFrac returns the digitsFrac.
 func (d *MyDecimal) GetDigitsFrac() int8 {
 	return d.digitsFrac
+}
+
+// GetDigitsInt returns the digitsInt.
+func (d *MyDecimal) GetDigitsInt() int8 {
+	return d.digitsInt
 }
 
 // String returns the decimal string representation rounded to resultFrac.
@@ -1088,7 +1095,7 @@ with the correct -1/0/+1 result
 		then the encoded value is not memory comparable.
 
   NOTE
-    the buffer is assumed to be of the size decimalBinSize(precision, frac)
+    the buffer is assumed to be of the size DecimalBinSize(precision, frac)
 
   RETURN VALUE
   	bin     - binary value
@@ -1334,7 +1341,7 @@ func (d *MyDecimal) FromBin(bin []byte, precision, frac int) (binSize int, err e
 	if bin[binIdx]&0x80 > 0 {
 		mask = 0
 	}
-	binSize = decimalBinSize(precision, frac)
+	binSize = DecimalBinSize(precision, frac)
 	dCopy := make([]byte, 40)
 	dCopy = dCopy[:binSize]
 	copy(dCopy, bin)
@@ -1409,8 +1416,8 @@ func (d *MyDecimal) FromBin(bin []byte, precision, frac int) (binSize int, err e
 	return binSize, err
 }
 
-// decimalBinSize returns the size of array to hold a binary representation of a decimal.
-func decimalBinSize(precision, frac int) int {
+// DecimalBinSize returns the size of array to hold a binary representation of a decimal.
+func DecimalBinSize(precision, frac int) int {
 	digitsInt := precision - frac
 	wordsInt := digitsInt / digitsPerWord
 	wordsFrac := frac / digitsPerWord
@@ -1485,6 +1492,7 @@ func DecimalNeg(from *MyDecimal) *MyDecimal {
 // Note: DO NOT use `from1` or `from2` as `to` since the metadata
 // of `to` may be changed during evaluating.
 func DecimalAdd(from1, from2, to *MyDecimal) error {
+	from1, from2, to = validateArgs(from1, from2, to)
 	to.resultFrac = myMaxInt8(from1.resultFrac, from2.resultFrac)
 	if from1.negative == from2.negative {
 		return doAdd(from1, from2, to)
@@ -1495,12 +1503,35 @@ func DecimalAdd(from1, from2, to *MyDecimal) error {
 
 // DecimalSub subs one decimal from another, sets the result to 'to'.
 func DecimalSub(from1, from2, to *MyDecimal) error {
+	from1, from2, to = validateArgs(from1, from2, to)
 	to.resultFrac = myMaxInt8(from1.resultFrac, from2.resultFrac)
 	if from1.negative == from2.negative {
 		_, err := doSub(from1, from2, to)
 		return err
 	}
 	return doAdd(from1, from2, to)
+}
+
+func validateArgs(f1, f2, to *MyDecimal) (*MyDecimal, *MyDecimal, *MyDecimal) {
+	if to == nil {
+		return f1, f2, to
+	}
+	if f1 == to {
+		tmp := *f1
+		f1 = &tmp
+	}
+	if f2 == to {
+		tmp := *f2
+		f2 = &tmp
+	}
+	to.digitsFrac = 0
+	to.digitsInt = 0
+	to.resultFrac = 0
+	to.negative = false
+	for i := range to.wordBuf {
+		to.wordBuf[i] = 0
+	}
+	return f1, f2, to
 }
 
 func doSub(from1, from2, to *MyDecimal) (cmp int, err error) {
@@ -1757,10 +1788,10 @@ func doAdd(from1, from2, to *MyDecimal) error {
 	stop = 0
 	if wordsInt1 > wordsInt2 {
 		idx1 = wordsInt1 - wordsInt2
-		dec1, dec2 = from1, from2
+		dec1 = from1
 	} else {
 		idx1 = wordsInt2 - wordsInt1
-		dec1, dec2 = from2, from1
+		dec1 = from2
 	}
 	for idx1 > stop {
 		idxTo--
@@ -1823,6 +1854,7 @@ DecimalMul multiplies two decimals.
     digits, fast multiplication must be implemented.
 */
 func DecimalMul(from1, from2, to *MyDecimal) error {
+	from1, from2, to = validateArgs(from1, from2, to)
 	var (
 		err         error
 		wordsInt1   = digitsToWords(int(from1.digitsInt))
@@ -1951,6 +1983,7 @@ func DecimalMul(from1, from2, to *MyDecimal) error {
 // to       - quotient
 // fracIncr - increment of fraction
 func DecimalDiv(from1, from2, to *MyDecimal, fracIncr int) error {
+	from1, from2, to = validateArgs(from1, from2, to)
 	to.resultFrac = myMinInt8(from1.resultFrac+int8(fracIncr), mysql.MaxDecimalScale)
 	return doDivMod(from1, from2, to, nil, fracIncr)
 }
@@ -1980,6 +2013,7 @@ DecimalMod does modulus of two decimals.
    thus, there's no requirement for M or N to be integers
 */
 func DecimalMod(from1, from2, to *MyDecimal) error {
+	from1, from2, to = validateArgs(from1, from2, to)
 	to.resultFrac = myMaxInt8(from1.resultFrac, from2.resultFrac)
 	return doDivMod(from1, from2, nil, to, 0)
 }
@@ -2242,7 +2276,7 @@ func DecimalPeak(b []byte) (int, error) {
 	}
 	precision := int(b[0])
 	frac := int(b[1])
-	return decimalBinSize(precision, frac) + 2, nil
+	return DecimalBinSize(precision, frac) + 2, nil
 }
 
 // NewDecFromInt creates a MyDecimal from int.
@@ -2259,7 +2293,9 @@ func NewDecFromUint(i uint64) *MyDecimal {
 func NewDecFromFloatForTest(f float64) *MyDecimal {
 	dec := new(MyDecimal)
 	err := dec.FromFloat64(f)
-	terror.Log(errors.Trace(err))
+	if err != nil {
+		log.Panic("encountered error", zap.Error(err), zap.String("DecimalStr", strconv.FormatFloat(f, 'g', -1, 64)))
+	}
 	return dec
 }
 
@@ -2267,7 +2303,9 @@ func NewDecFromFloatForTest(f float64) *MyDecimal {
 func NewDecFromStringForTest(s string) *MyDecimal {
 	dec := new(MyDecimal)
 	err := dec.FromString([]byte(s))
-	terror.Log(errors.Trace(err))
+	if err != nil {
+		log.Panic("encountered error", zap.Error(err), zap.String("DecimalStr", s))
+	}
 	return dec
 }
 

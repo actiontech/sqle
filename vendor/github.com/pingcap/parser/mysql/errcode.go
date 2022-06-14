@@ -884,8 +884,11 @@ const (
 	ErrErrorLast                                                    = 1863
 	ErrMaxExecTimeExceeded                                          = 1907
 	ErrInvalidFieldSize                                             = 3013
+	ErrIncorrectType                                                = 3064
 	ErrInvalidJSONData                                              = 3069
 	ErrGeneratedColumnFunctionIsNotAllowed                          = 3102
+	ErrUnsupportedAlterInplaceOnVirtualColumn                       = 3103
+	ErrWrongFKOptionForGeneratedColumn                              = 3104
 	ErrBadGeneratedColumn                                           = 3105
 	ErrUnsupportedOnGeneratedColumn                                 = 3106
 	ErrGeneratedColumnNonPrior                                      = 3107
@@ -897,9 +900,11 @@ const (
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
-	ErrInvalidJSONPathArrayCell                                     = 3165
-	ErrSecureTransportRequired                                      = 3159
+	ErrJSONDocumentNULLKey                                          = 3158
 	ErrBadUser                                                      = 3162
+	ErrUserAlreadyExists                                            = 3163
+	ErrInvalidJSONPathArrayCell                                     = 3165
+	ErrInvalidEncryptionOption                                      = 3184
 	ErrRoleNotGranted                                               = 3530
 	ErrLockAcquireFailAndNoWaitSet                                  = 3572
 	ErrWindowNoSuchWindow                                           = 3579
@@ -923,41 +928,45 @@ const (
 	ErrWindowNoGroupOrderUnused                                     = 3597
 	ErrWindowExplainJson                                            = 3598
 	ErrWindowFunctionIgnoresFrame                                   = 3599
+	ErrDataTruncatedFunctionalIndex                                 = 3751
+	ErrDataOutOfRangeFunctionalIndex                                = 3752
+	ErrFunctionalIndexOnJsonOrGeometryFunction                      = 3753
+	ErrFunctionalIndexRefAutoIncrement                              = 3754
+	ErrCannotDropColumnFunctionalIndex                              = 3755
+	ErrFunctionalIndexPrimaryKey                                    = 3756
+	ErrFunctionalIndexOnLob                                         = 3757
+	ErrFunctionalIndexFunctionIsNotAllowed                          = 3758
+	ErrFulltextFunctionalIndex                                      = 3759
+	ErrSpatialFunctionalIndex                                       = 3760
+	ErrWrongKeyColumnFunctionalIndex                                = 3761
+	ErrFunctionalIndexOnField                                       = 3762
 	ErrFKIncompatibleColumns                                        = 3780
+	ErrFunctionalIndexRowValueIsNotAllowed                          = 3800
+	ErrDependentByFunctionalIndex                                   = 3837
+	ErrInvalidJsonValueForFuncIndex                                 = 3903
+	ErrJsonValueOutOfRangeForFuncIndex                              = 3904
+	ErrFunctionalIndexDataIsTooLong                                 = 3907
+	ErrFunctionalIndexNotApplicable                                 = 3909
 
 	// MariaDB errors.
 	ErrOnlyOneDefaultPartionAllowed         = 4030
 	ErrWrongPartitionTypeExpectedSystemTime = 4113
 	ErrSystemVersioningWrongPartitions      = 4128
+	ErrSequenceRunOut                       = 4135
+	ErrSequenceInvalidData                  = 4136
+	ErrSequenceAccessFail                   = 4137
+	ErrNotSequence                          = 4138
+	ErrUnknownSequence                      = 4139
+	ErrWrongInsertIntoSequence              = 4140
+	ErrSequenceInvalidTableStructure        = 4141
 
 	// TiDB self-defined errors.
-	ErrMemExceedThreshold         = 8001
-	ErrForUpdateCantRetry         = 8002
-	ErrAdminCheckTable            = 8003
-	ErrTxnTooLarge                = 8004
-	ErrWriteConflictInTiDB        = 8005
-	ErrInvalidPluginID            = 8101
-	ErrInvalidPluginManifest      = 8102
-	ErrInvalidPluginName          = 8103
-	ErrInvalidPluginVersion       = 8104
-	ErrDuplicatePlugin            = 8105
-	ErrInvalidPluginSysVarName    = 8106
-	ErrRequireVersionCheckFail    = 8107
-	ErrUnsupportedReloadPlugin    = 8018
-	ErrUnsupportedReloadPluginVar = 8019
-	ErrTableLocked                = 8020
-	ErrInfoSchemaExpired          = 8027
-	ErrInfoSchemaChanged          = 8028
-	ErrInvalidIncrementAndOffset  = 8060
+	ErrWarnOptimizerHintUnsupportedHint = 8061
+	ErrWarnOptimizerHintInvalidToken    = 8062
+	ErrWarnMemoryQuotaOverflow          = 8063
+	ErrWarnOptimizerHintParseError      = 8064
+	ErrWarnOptimizerHintInvalidInteger  = 8065
 
-	// TiKV/PD errors.
-	ErrPDServerTimeout    = 9001
-	ErrTiKVServerTimeout  = 9002
-	ErrTiKVServerBusy     = 9003
-	ErrResolveLockTimeout = 9004
-	ErrRegionUnavailable  = 9005
-	ErrGCTooEarly         = 9006
-	ErrWriteConflict      = 9007
-	ErrTiKVStoreLimit     = 9008
-	ErrTiKVStaleCommand   = 9010
+	// Stop adding error code here!
+	// They are moved to github.com/pingcap/tidb/errno
 )
