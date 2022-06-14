@@ -134,12 +134,19 @@ func getTableMetadata(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
 	}
 
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+
+	if user.Name != model.DefaultAdminUser {
+		exist, err := s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		}
 	}
 
 	dsn, err := newDSN(instance, schemaName)
