@@ -14,26 +14,33 @@
 package logutil
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
-	"runtime/trace"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
 	"time"
 
-	gzap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/opentracing/opentracing-go"
 	tlog "github.com/opentracing/opentracing-go/log"
 	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
+	zaplog "github.com/pingcap/log"
+	log "github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
+	defaultLogTimeFormat = "2006/01/02 15:04:05.000"
 	// DefaultLogMaxSize is the default size of log files.
 	DefaultLogMaxSize = 300 // MB
 	// DefaultLogFormat is the default format of the log.
 	DefaultLogFormat = "text"
+	defaultLogLevel  = log.InfoLevel
 	// DefaultSlowThreshold is the default slow log threshold in millisecond.
 	DefaultSlowThreshold = 300
 	// DefaultQueryLogMaxLen is the default max length of the query in the log.
@@ -49,12 +56,12 @@ var EmptyFileLogConfig = FileLogConfig{}
 
 // FileLogConfig serializes file log related config in toml/json.
 type FileLogConfig struct {
-	log.FileLogConfig
+	zaplog.FileLogConfig
 }
 
 // NewFileLogConfig creates a FileLogConfig.
 func NewFileLogConfig(maxSize uint) FileLogConfig {
-	return FileLogConfig{FileLogConfig: log.FileLogConfig{
+	return FileLogConfig{FileLogConfig: zaplog.FileLogConfig{
 		MaxSize: int(maxSize),
 	},
 	}
@@ -62,16 +69,16 @@ func NewFileLogConfig(maxSize uint) FileLogConfig {
 
 // LogConfig serializes log related config in toml/json.
 type LogConfig struct {
-	log.Config
+	zaplog.Config
 
 	// SlowQueryFile filename, default to File log config on empty.
 	SlowQueryFile string
 }
 
 // NewLogConfig creates a LogConfig.
-func NewLogConfig(level, format, slowQueryFile string, fileCfg FileLogConfig, disableTimestamp bool, opts ...func(*log.Config)) *LogConfig {
+func NewLogConfig(level, format, slowQueryFile string, fileCfg FileLogConfig, disableTimestamp bool, opts ...func(*zaplog.Config)) *LogConfig {
 	c := &LogConfig{
-		Config: log.Config{
+		Config: zaplog.Config{
 			Level:            level,
 			Format:           format,
 			DisableTimestamp: disableTimestamp,
@@ -85,6 +92,102 @@ func NewLogConfig(level, format, slowQueryFile string, fileCfg FileLogConfig, di
 	return c
 }
 
+// isSKippedPackageName tests wether path name is on log library calling stack.
+func isSkippedPackageName(name string) bool {
+	return strings.Contains(name, "github.com/sirupsen/logrus") ||
+		strings.Contains(name, "github.com/coreos/pkg/capnslog")
+}
+
+// modifyHook injects file name and line pos into log entry.
+type contextHook struct{}
+
+// Fire implements logrus.Hook interface
+// https://github.com/sirupsen/logrus/issues/63
+func (hook *contextHook) Fire(entry *log.Entry) error {
+	pc := make([]uintptr, 4)
+	cnt := runtime.Callers(8, pc)
+
+	for i := 0; i < cnt; i++ {
+		fu := runtime.FuncForPC(pc[i] - 1)
+		name := fu.Name()
+		if !isSkippedPackageName(name) {
+			file, line := fu.FileLine(pc[i] - 1)
+			entry.Data["file"] = filepath.Base(file)
+			entry.Data["line"] = line
+			break
+		}
+	}
+	return nil
+}
+
+// Levels implements logrus.Hook interface.
+func (hook *contextHook) Levels() []log.Level {
+	return log.AllLevels
+}
+
+func stringToLogLevel(level string) log.Level {
+	switch strings.ToLower(level) {
+	case "fatal":
+		return log.FatalLevel
+	case "error":
+		return log.ErrorLevel
+	case "warn", "warning":
+		return log.WarnLevel
+	case "debug":
+		return log.DebugLevel
+	case "info":
+		return log.InfoLevel
+	}
+	return defaultLogLevel
+}
+
+// textFormatter is for compatibility with ngaut/log
+type textFormatter struct {
+	DisableTimestamp bool
+	EnableEntryOrder bool
+}
+
+// Format implements logrus.Formatter
+func (f *textFormatter) Format(entry *log.Entry) ([]byte, error) {
+	var b *bytes.Buffer
+	if entry.Buffer != nil {
+		b = entry.Buffer
+	} else {
+		b = &bytes.Buffer{}
+	}
+
+	if !f.DisableTimestamp {
+		fmt.Fprintf(b, "%s ", entry.Time.Format(defaultLogTimeFormat))
+	}
+	if file, ok := entry.Data["file"]; ok {
+		fmt.Fprintf(b, "%s:%v:", file, entry.Data["line"])
+	}
+	fmt.Fprintf(b, " [%s] %s", entry.Level.String(), entry.Message)
+
+	if f.EnableEntryOrder {
+		keys := make([]string, 0, len(entry.Data))
+		for k := range entry.Data {
+			if k != "file" && k != "line" {
+				keys = append(keys, k)
+			}
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			fmt.Fprintf(b, " %v=%v", k, entry.Data[k])
+		}
+	} else {
+		for k, v := range entry.Data {
+			if k != "file" && k != "line" {
+				fmt.Fprintf(b, " %v=%v", k, v)
+			}
+		}
+	}
+
+	b.WriteByte('\n')
+
+	return b.Bytes(), nil
+}
+
 const (
 	// SlowLogTimeFormat is the time format for slow log.
 	SlowLogTimeFormat = time.RFC3339Nano
@@ -92,54 +195,125 @@ const (
 	OldSlowLogTimeFormat = "2006-01-02-15:04:05.999999999 -0700"
 )
 
+type slowLogFormatter struct{}
+
+func (f *slowLogFormatter) Format(entry *log.Entry) ([]byte, error) {
+	var b *bytes.Buffer
+	if entry.Buffer != nil {
+		b = entry.Buffer
+	} else {
+		b = &bytes.Buffer{}
+	}
+
+	fmt.Fprintf(b, "# Time: %s\n", entry.Time.Format(SlowLogTimeFormat))
+	fmt.Fprintf(b, "%s\n", entry.Message)
+	return b.Bytes(), nil
+}
+
+func stringToLogFormatter(format string, disableTimestamp bool) log.Formatter {
+	switch strings.ToLower(format) {
+	case "text":
+		return &textFormatter{
+			DisableTimestamp: disableTimestamp,
+		}
+	default:
+		return &textFormatter{}
+	}
+}
+
+// initFileLog initializes file based logging options.
+func initFileLog(cfg *zaplog.FileLogConfig, logger *log.Logger) error {
+	if st, err := os.Stat(cfg.Filename); err == nil {
+		if st.IsDir() {
+			return errors.New("can't use directory as log file name")
+		}
+	}
+	if cfg.MaxSize == 0 {
+		cfg.MaxSize = DefaultLogMaxSize
+	}
+
+	// use lumberjack to logrotate
+	output := &lumberjack.Logger{
+		Filename:   cfg.Filename,
+		MaxSize:    int(cfg.MaxSize),
+		MaxBackups: int(cfg.MaxBackups),
+		MaxAge:     int(cfg.MaxDays),
+		LocalTime:  true,
+	}
+
+	if logger == nil {
+		log.SetOutput(output)
+	} else {
+		logger.Out = output
+	}
+	return nil
+}
+
 // SlowQueryLogger is used to log slow query, InitLogger will modify it according to config file.
-var SlowQueryLogger = log.L()
+var SlowQueryLogger = log.StandardLogger()
 
-// InitLogger initializes a logger with cfg.
+// SlowQueryZapLogger is used to log slow query, InitZapLogger will modify it according to config file.
+var SlowQueryZapLogger = zaplog.L()
+
+// InitLogger initializes PD's logger.
 func InitLogger(cfg *LogConfig) error {
-	gl, props, err := log.InitLogger(&cfg.Config, zap.AddStacktrace(zapcore.FatalLevel))
-	if err != nil {
-		return errors.Trace(err)
-	}
-	log.ReplaceGlobals(gl, props)
+	log.SetLevel(stringToLogLevel(cfg.Level))
+	log.AddHook(&contextHook{})
 
-	// init dedicated logger for slow query log
-	SlowQueryLogger, _, err = newSlowQueryLogger(cfg)
-	if err != nil {
-		return errors.Trace(err)
+	if cfg.Format == "" {
+		cfg.Format = DefaultLogFormat
+	}
+	formatter := stringToLogFormatter(cfg.Format, cfg.DisableTimestamp)
+	log.SetFormatter(formatter)
+
+	if len(cfg.File.Filename) != 0 {
+		if err := initFileLog(&cfg.File, nil); err != nil {
+			return errors.Trace(err)
+		}
 	}
 
-	_, _, err = initGRPCLogger(cfg)
-	if err != nil {
-		return errors.Trace(err)
+	if len(cfg.SlowQueryFile) != 0 {
+		SlowQueryLogger = log.New()
+		tmp := cfg.File
+		tmp.Filename = cfg.SlowQueryFile
+		if err := initFileLog(&tmp, SlowQueryLogger); err != nil {
+			return errors.Trace(err)
+		}
+		SlowQueryLogger.Formatter = &slowLogFormatter{}
 	}
 
 	return nil
 }
 
-func initGRPCLogger(cfg *LogConfig) (*zap.Logger, *log.ZapProperties, error) {
-	// Copy Config struct by assignment.
-	config := cfg.Config
-	var l *zap.Logger
-	var err error
-	var prop *log.ZapProperties
-	if len(os.Getenv("GRPC_DEBUG")) > 0 {
-		config.Level = "debug"
-		l, prop, err = log.InitLogger(&config, zap.AddStacktrace(zapcore.FatalLevel))
-		if err != nil {
-			return nil, nil, errors.Trace(err)
+// InitZapLogger initializes a zap logger with cfg.
+func InitZapLogger(cfg *LogConfig) error {
+	gl, props, err := zaplog.InitLogger(&cfg.Config, zap.AddStacktrace(zapcore.FatalLevel))
+	if err != nil {
+		return errors.Trace(err)
+	}
+	zaplog.ReplaceGlobals(gl, props)
+
+	if len(cfg.SlowQueryFile) != 0 {
+		sqfCfg := zaplog.FileLogConfig{
+			MaxSize:  cfg.File.MaxSize,
+			Filename: cfg.SlowQueryFile,
 		}
-		gzap.ReplaceGrpcLoggerV2WithVerbosity(l, 999)
+		sqCfg := &zaplog.Config{
+			Level:            cfg.Level,
+			Format:           cfg.Format,
+			DisableTimestamp: cfg.DisableTimestamp,
+			File:             sqfCfg,
+		}
+		sqLogger, _, err := zaplog.InitLogger(sqCfg)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		SlowQueryZapLogger = sqLogger
 	} else {
-		config.Level = "error"
-		l, prop, err = log.InitLogger(&config, zap.AddStacktrace(zapcore.FatalLevel))
-		if err != nil {
-			return nil, nil, errors.Trace(err)
-		}
-		gzap.ReplaceGrpcLoggerV2(l)
+		SlowQueryZapLogger = gl
 	}
 
-	return l, prop, nil
+	return nil
 }
 
 // SetLevel sets the zap logger's level.
@@ -148,7 +322,7 @@ func SetLevel(level string) error {
 	if err := l.UnmarshalText([]byte(level)); err != nil {
 		return errors.Trace(err)
 	}
-	log.SetLevel(l.Level())
+	zaplog.SetLevel(l.Level())
 	return nil
 }
 
@@ -162,60 +336,23 @@ func Logger(ctx context.Context) *zap.Logger {
 	if ctxlogger, ok := ctx.Value(ctxLogKey).(*zap.Logger); ok {
 		return ctxlogger
 	}
-	return log.L()
+	return zaplog.L()
 }
 
 // BgLogger is alias of `logutil.BgLogger()`
 func BgLogger() *zap.Logger {
-	return log.L()
+	return zaplog.L()
 }
 
 // WithConnID attaches connId to context.
-func WithConnID(ctx context.Context, connID uint64) context.Context {
+func WithConnID(ctx context.Context, connID uint32) context.Context {
 	var logger *zap.Logger
 	if ctxLogger, ok := ctx.Value(ctxLogKey).(*zap.Logger); ok {
 		logger = ctxLogger
 	} else {
-		logger = log.L()
+		logger = zaplog.L()
 	}
-	return context.WithValue(ctx, ctxLogKey, logger.With(zap.Uint64("conn", connID)))
-}
-
-// WithTraceLogger attaches trace identifier to context
-func WithTraceLogger(ctx context.Context, connID uint64) context.Context {
-	var logger *zap.Logger
-	if ctxLogger, ok := ctx.Value(ctxLogKey).(*zap.Logger); ok {
-		logger = ctxLogger
-	} else {
-		logger = log.L()
-	}
-	return context.WithValue(ctx, ctxLogKey, wrapTraceLogger(ctx, connID, logger))
-}
-
-func wrapTraceLogger(ctx context.Context, connID uint64, logger *zap.Logger) *zap.Logger {
-	return logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		tl := &traceLog{ctx: ctx}
-		traceCore := log.NewTextCore(log.NewTextEncoder(&log.Config{}), tl, tl).
-			With([]zapcore.Field{zap.Uint64("conn", connID)})
-		return zapcore.NewTee(traceCore, core)
-	}))
-}
-
-type traceLog struct {
-	ctx context.Context
-}
-
-func (t *traceLog) Enabled(_ zapcore.Level) bool {
-	return true
-}
-
-func (t *traceLog) Write(p []byte) (n int, err error) {
-	trace.Log(t.ctx, "log", string(p))
-	return len(p), nil
-}
-
-func (t *traceLog) Sync() error {
-	return nil
+	return context.WithValue(ctx, ctxLogKey, logger.With(zap.Uint32("conn", connID)))
 }
 
 // WithKeyValue attaches key/value to context.
@@ -224,7 +361,7 @@ func WithKeyValue(ctx context.Context, key, value string) context.Context {
 	if ctxLogger, ok := ctx.Value(ctxLogKey).(*zap.Logger); ok {
 		logger = ctxLogger
 	} else {
-		logger = log.L()
+		logger = zaplog.L()
 	}
 	return context.WithValue(ctx, ctxLogKey, logger.With(zap.String(key, value)))
 }

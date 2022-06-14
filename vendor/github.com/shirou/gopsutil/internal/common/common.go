@@ -94,17 +94,6 @@ func (i FakeInvoke) CommandWithContext(ctx context.Context, name string, arg ...
 
 var ErrNotImplementedError = errors.New("not implemented yet")
 
-// ReadFile reads contents from a file
-func ReadFile(filename string) (string, error) {
-	content, err := ioutil.ReadFile(filename)
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(content), nil
-}
-
 // ReadLines reads contents from a file and splits them by new lines.
 // A convenience wrapper to ReadLinesOffsetN(filename, 0, -1).
 func ReadLines(filename string) ([]string, error) {
@@ -326,6 +315,7 @@ func GetEnv(key string, dfault string, combineWith ...string) string {
 		copy(all[1:], combineWith)
 		return filepath.Join(all...)
 	}
+	panic("invalid switch case")
 }
 
 func HostProc(combineWith ...string) string {
@@ -346,10 +336,6 @@ func HostVar(combineWith ...string) string {
 
 func HostRun(combineWith ...string) string {
 	return GetEnv("HOST_RUN", "/run", combineWith...)
-}
-
-func HostDev(combineWith ...string) string {
-	return GetEnv("HOST_DEV", "/dev", combineWith...)
 }
 
 // getSysctrlEnv sets LC_ALL=C in a list of env vars for use when running

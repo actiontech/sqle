@@ -73,6 +73,7 @@ func initTokenFunc(str string, fn func(s *Scanner) (int, Pos, string)) {
 		}
 		ruleTable.childs[c].fn = fn
 	}
+	return
 }
 
 func init() {
@@ -132,12 +133,6 @@ func init() {
 	initTokenFunc("'\"", startString)
 }
 
-// isInTokenMap indicates whether the target string is contained in tokenMap.
-func isInTokenMap(target string) bool {
-	_, ok := tokenMap[target]
-	return ok
-}
-
 // tokenMap is a map of known identifiers to the parser token ID.
 // Please try to keep the map in alphabetical order.
 var tokenMap = map[string]int{
@@ -157,12 +152,9 @@ var tokenMap = map[string]int{
 	"ANALYZE":                  analyze,
 	"AND":                      and,
 	"ANY":                      any,
-	"APPROX_COUNT_DISTINCT":    approxCountDistinct,
-	"APPROX_PERCENTILE":        approxPercentile,
 	"AS":                       as,
 	"ASC":                      asc,
 	"ASCII":                    ascii,
-	"ATTRIBUTES":               attributes,
 	"AUTO_ID_CACHE":            autoIdCache,
 	"AUTO_INCREMENT":           autoIncrement,
 	"AUTO_RANDOM":              autoRandom,
@@ -174,7 +166,6 @@ var tokenMap = map[string]int{
 	"BACKUPS":                  backups,
 	"BEGIN":                    begin,
 	"BETWEEN":                  between,
-	"BERNOULLI":                bernoulli,
 	"BIGINT":                   bigIntType,
 	"BINARY":                   binaryType,
 	"BINDING":                  binding,
@@ -190,22 +181,18 @@ var tokenMap = map[string]int{
 	"BOOLEAN":                  booleanType,
 	"BOTH":                     both,
 	"BOUND":                    bound,
-	"BRIEF":                    briefType,
 	"BTREE":                    btree,
 	"BUCKETS":                  buckets,
 	"BUILTINS":                 builtins,
 	"BY":                       by,
 	"BYTE":                     byteType,
 	"CACHE":                    cache,
-	"CALL":                     call,
 	"CANCEL":                   cancel,
 	"CAPTURE":                  capture,
-	"CARDINALITY":              cardinality,
 	"CASCADE":                  cascade,
 	"CASCADED":                 cascaded,
 	"CASE":                     caseKwd,
 	"CAST":                     cast,
-	"CAUSAL":                   causal,
 	"CHAIN":                    chain,
 	"CHANGE":                   change,
 	"CHAR":                     charType,
@@ -217,8 +204,6 @@ var tokenMap = map[string]int{
 	"CIPHER":                   cipher,
 	"CLEANUP":                  cleanup,
 	"CLIENT":                   client,
-	"CLIENT_ERRORS_SUMMARY":    clientErrorsSummary,
-	"CLUSTERED":                clustered,
 	"CMSKETCH":                 cmSketch,
 	"COALESCE":                 coalesce,
 	"COLLATE":                  collate,
@@ -235,14 +220,13 @@ var tokenMap = map[string]int{
 	"CONCURRENCY":              concurrency,
 	"CONFIG":                   config,
 	"CONNECTION":               connection,
-	"CONSISTENCY":              consistency,
 	"CONSISTENT":               consistent,
 	"CONSTRAINT":               constraint,
-	"CONSTRAINTS":              constraints,
 	"CONTEXT":                  context,
 	"CONVERT":                  convert,
 	"COPY":                     copyKwd,
-	"CORRELATION":              correlation,
+	"COUNT":                    count,
+	"APPROX_COUNT_DISTINCT":    approxCountDistinct,
 	"CPU":                      cpu,
 	"CREATE":                   create,
 	"CROSS":                    cross,
@@ -282,7 +266,6 @@ var tokenMap = map[string]int{
 	"DELAY_KEY_WRITE":          delayKeyWrite,
 	"DELAYED":                  delayed,
 	"DELETE":                   deleteKwd,
-	"DEPENDENCY":               dependency,
 	"DEPTH":                    depth,
 	"DESC":                     desc,
 	"DESCRIBE":                 describe,
@@ -294,12 +277,10 @@ var tokenMap = map[string]int{
 	"DISTINCTROW":              distinct,
 	"DIV":                      div,
 	"DO":                       do,
-	"DOT":                      dotType,
 	"DOUBLE":                   doubleType,
 	"DRAINER":                  drainer,
 	"DROP":                     drop,
 	"DUAL":                     dual,
-	"DUMP":                     dump,
 	"DUPLICATE":                duplicate,
 	"DYNAMIC":                  dynamic,
 	"ELSE":                     elseKwd,
@@ -332,7 +313,6 @@ var tokenMap = map[string]int{
 	"EXTRACT":                  extract,
 	"FALSE":                    falseKwd,
 	"FAULTS":                   faultsSym,
-	"FETCH":                    fetch,
 	"FIELDS":                   fields,
 	"FILE":                     file,
 	"FIRST":                    first,
@@ -340,7 +320,6 @@ var tokenMap = map[string]int{
 	"FLASHBACK":                flashback,
 	"FLOAT":                    floatType,
 	"FLUSH":                    flush,
-	"FOLLOWER":                 follower,
 	"FOLLOWING":                following,
 	"FOR":                      forKwd,
 	"FORCE":                    force,
@@ -360,10 +339,8 @@ var tokenMap = map[string]int{
 	"GROUP":                    group,
 	"HASH":                     hash,
 	"HAVING":                   having,
-	"HELP":                     help,
 	"HIGH_PRIORITY":            highPriority,
 	"HISTORY":                  history,
-	"HISTOGRAM":                histogram,
 	"HOSTS":                    hosts,
 	"HOUR_MICROSECOND":         hourMicrosecond,
 	"HOUR_MINUTE":              hourMinute,
@@ -394,7 +371,6 @@ var tokenMap = map[string]int{
 	"INT8":                     int8Type,
 	"INTEGER":                  integerType,
 	"INTERNAL":                 internal,
-	"INTERSECT":                intersect,
 	"INTERVAL":                 interval,
 	"INTO":                     into,
 	"INVISIBLE":                invisible,
@@ -407,7 +383,6 @@ var tokenMap = map[string]int{
 	"JOB":                      job,
 	"JOBS":                     jobs,
 	"JOIN":                     join,
-	"JSON_ARRAYAGG":            jsonArrayagg,
 	"JSON_OBJECTAGG":           jsonObjectAgg,
 	"JSON":                     jsonType,
 	"KEY_BLOCK_SIZE":           keyBlockSize,
@@ -419,9 +394,7 @@ var tokenMap = map[string]int{
 	"LAST_BACKUP":              lastBackup,
 	"LAST":                     last,
 	"LASTVAL":                  lastval,
-	"LEADER":                   leader,
 	"LEADING":                  leading,
-	"LEARNER":                  learner,
 	"LEFT":                     left,
 	"LESS":                     less,
 	"LEVEL":                    level,
@@ -436,7 +409,6 @@ var tokenMap = map[string]int{
 	"LOCALTIMESTAMP":           localTs,
 	"LOCATION":                 location,
 	"LOCK":                     lock,
-	"LOCKED":                   locked,
 	"LOGS":                     logs,
 	"LONG":                     long,
 	"LONGBLOB":                 longblobType,
@@ -487,7 +459,6 @@ var tokenMap = map[string]int{
 	"NODEGROUP":                nodegroup,
 	"NOMAXVALUE":               nomaxvalue,
 	"NOMINVALUE":               nominvalue,
-	"NONCLUSTERED":             nonclustered,
 	"NONE":                     none,
 	"NOT":                      not,
 	"NOW":                      now,
@@ -496,8 +467,6 @@ var tokenMap = map[string]int{
 	"NULLS":                    nulls,
 	"NUMERIC":                  numericType,
 	"NVARCHAR":                 nvarcharType,
-	"OF":                       of,
-	"OFF":                      off,
 	"OFFSET":                   offset,
 	"ON_DUPLICATE":             onDuplicate,
 	"ON":                       on,
@@ -508,7 +477,6 @@ var tokenMap = map[string]int{
 	"OPTIMISTIC":               optimistic,
 	"OPTIMIZE":                 optimize,
 	"OPTION":                   option,
-	"OPTIONAL":                 optional,
 	"OPTIONALLY":               optionally,
 	"OR":                       or,
 	"ORDER":                    order,
@@ -522,20 +490,15 @@ var tokenMap = map[string]int{
 	"PARTITIONING":             partitioning,
 	"PARTITIONS":               partitions,
 	"PASSWORD":                 password,
-	"PERCENT":                  percent,
 	"PER_DB":                   per_db,
 	"PER_TABLE":                per_table,
 	"PESSIMISTIC":              pessimistic,
-	"PLACEMENT":                placement,
-	"PLAN":                     plan,
 	"PLUGINS":                  plugins,
-	"POLICY":                   policy,
 	"POSITION":                 position,
 	"PRE_SPLIT_REGIONS":        preSplitRegions,
 	"PRECEDING":                preceding,
 	"PRECISION":                precisionType,
 	"PREPARE":                  prepare,
-	"PRESERVE":                 preserve,
 	"PRIMARY":                  primary,
 	"PRIVILEGES":               privileges,
 	"PROCEDURE":                procedure,
@@ -543,9 +506,7 @@ var tokenMap = map[string]int{
 	"PROCESSLIST":              processlist,
 	"PROFILE":                  profile,
 	"PROFILES":                 profiles,
-	"PROXY":                    proxy,
 	"PUMP":                     pump,
-	"PURGE":                    purge,
 	"QUARTER":                  quarter,
 	"QUERIES":                  queries,
 	"QUERY":                    query,
@@ -557,8 +518,6 @@ var tokenMap = map[string]int{
 	"REBUILD":                  rebuild,
 	"RECENT":                   recent,
 	"RECOVER":                  recover,
-	"RECREATOR":                recreator,
-	"RECURSIVE":                recursive,
 	"REDUNDANT":                redundant,
 	"REFERENCES":               references,
 	"REGEXP":                   regexpKwd,
@@ -574,13 +533,10 @@ var tokenMap = map[string]int{
 	"REPEATABLE":               repeatable,
 	"REPLACE":                  replace,
 	"REPLICA":                  replica,
-	"REPLICAS":                 replicas,
 	"REPLICATION":              replication,
 	"REQUIRE":                  require,
-	"REQUIRED":                 required,
 	"RESET":                    reset,
 	"RESPECT":                  respect,
-	"RESTART":                  restart,
 	"RESTORE":                  restore,
 	"RESTORES":                 restores,
 	"RESTRICT":                 restrict,
@@ -594,11 +550,7 @@ var tokenMap = map[string]int{
 	"ROW_COUNT":                rowCount,
 	"ROW_FORMAT":               rowFormat,
 	"ROW":                      row,
-	"ROWS":                     rows,
 	"RTREE":                    rtree,
-	"RESUME":                   resume,
-	"RUNNING":                  running,
-	"S3":                       s3,
 	"SAMPLES":                  samples,
 	"SAN":                      san,
 	"SCHEMA":                   database,
@@ -625,7 +577,6 @@ var tokenMap = map[string]int{
 	"SHUTDOWN":                 shutdown,
 	"SIGNED":                   signed,
 	"SIMPLE":                   simple,
-	"SKIP":                     skip,
 	"SKIP_SCHEMA_FILES":        skipSchemaFiles,
 	"SLAVE":                    slave,
 	"SLOW":                     slow,
@@ -654,13 +605,10 @@ var tokenMap = map[string]int{
 	"STALENESS":                staleness,
 	"START":                    start,
 	"STARTING":                 starting,
-	"STATISTICS":               statistics,
 	"STATS_AUTO_RECALC":        statsAutoRecalc,
 	"STATS_BUCKETS":            statsBuckets,
-	"STATS_EXTENDED":           statsExtended,
 	"STATS_HEALTHY":            statsHealthy,
 	"STATS_HISTOGRAMS":         statsHistograms,
-	"STATS_TOPN":               statsTopN,
 	"STATS_META":               statsMeta,
 	"STATS_PERSISTENT":         statsPersistent,
 	"STATS_SAMPLE_PAGES":       statsSamplePages,
@@ -670,11 +618,9 @@ var tokenMap = map[string]int{
 	"STDDEV_POP":               stddevPop,
 	"STDDEV_SAMP":              stddevSamp,
 	"STDDEV":                   stddevPop,
-	"STOP":                     stop,
 	"STORAGE":                  storage,
 	"STORED":                   stored,
 	"STRAIGHT_JOIN":            straightJoin,
-	"STRICT":                   strict,
 	"STRICT_FORMAT":            strictFormat,
 	"STRONG":                   strong,
 	"SUBDATE":                  subDate,
@@ -687,12 +633,10 @@ var tokenMap = map[string]int{
 	"SUPER":                    super,
 	"SWAPS":                    swaps,
 	"SWITCHES":                 switchesSym,
-	"SYSTEM":                   system,
 	"SYSTEM_TIME":              systemTime,
 	"TABLE_CHECKSUM":           tableChecksum,
 	"TABLE":                    tableKwd,
 	"TABLES":                   tables,
-	"TABLESAMPLE":              tableSample,
 	"TABLESPACE":               tablespace,
 	"TELEMETRY":                telemetry,
 	"TELEMETRY_ID":             telemetryID,
@@ -762,8 +706,6 @@ var tokenMap = map[string]int{
 	"VARIABLES":                variables,
 	"VARIANCE":                 varPop,
 	"VARYING":                  varying,
-	"VERBOSE":                  verboseType,
-	"VOTER":                    voter,
 	"VIEW":                     view,
 	"VIRTUAL":                  virtual,
 	"VISIBLE":                  visible,
@@ -781,7 +723,6 @@ var tokenMap = map[string]int{
 	"YEAR_MONTH":               yearMonth,
 	"YEAR":                     yearType,
 	"ZEROFILL":                 zerofill,
-	"WAIT":                     wait,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details
@@ -793,7 +734,6 @@ var btFuncTokenMap = map[string]int{
 	"CAST":                  builtinCast,
 	"COUNT":                 builtinCount,
 	"APPROX_COUNT_DISTINCT": builtinApproxCountDistinct,
-	"APPROX_PERCENTILE":     builtinApproxPercentile,
 	"CURDATE":               builtinCurDate,
 	"CURTIME":               builtinCurTime,
 	"DATE_ADD":              builtinDateAdd,
@@ -816,7 +756,6 @@ var btFuncTokenMap = map[string]int{
 	"SUM":                   builtinSum,
 	"SYSDATE":               builtinSysDate,
 	"SYSTEM_USER":           builtinUser,
-	"TRANSLATE":             builtinTranslate,
 	"TRIM":                  builtinTrim,
 	"VARIANCE":              builtinVarPop,
 	"VAR_POP":               builtinVarPop,
@@ -836,6 +775,7 @@ var windowFuncTokenMap = map[string]int{
 	"OVER":         over,
 	"PERCENT_RANK": percentRank,
 	"RANK":         rank,
+	"ROWS":         rows,
 	"ROW_NUMBER":   rowNumber,
 	"WINDOW":       window,
 }
@@ -893,7 +833,6 @@ var hintTokenMap = map[string]int{
 
 	// TiDB hint names
 	"AGG_TO_COP":              hintAggToCop,
-	"LIMIT_TO_COP":            hintLimitToCop,
 	"IGNORE_PLAN_CACHE":       hintIgnorePlanCache,
 	"HASH_AGG":                hintHashAgg,
 	"IGNORE_INDEX":            hintIgnoreIndex,
@@ -905,8 +844,6 @@ var hintTokenMap = map[string]int{
 	"QUERY_TYPE":              hintQueryType,
 	"READ_CONSISTENT_REPLICA": hintReadConsistentReplica,
 	"READ_FROM_STORAGE":       hintReadFromStorage,
-	"BROADCAST_JOIN":          hintBCJoin,
-	"BROADCAST_JOIN_LOCAL":    hintBCJoinPreferLocal,
 	"MERGE_JOIN":              hintSMJoin,
 	"STREAM_AGG":              hintStreamAgg,
 	"SWAP_JOIN_INPUTS":        hintSwapJoinInputs,
@@ -916,8 +853,6 @@ var hintTokenMap = map[string]int{
 	"USE_TOJA":                hintUseToja,
 	"TIME_RANGE":              hintTimeRange,
 	"USE_CASCADES":            hintUseCascades,
-	"NTH_PLAN":                hintNthPlan,
-	"FORCE_INDEX":             hintForceIndex,
 
 	// TiDB hint aliases
 	"TIDB_HJ":   hintHashJoin,
@@ -929,7 +864,6 @@ var hintTokenMap = map[string]int{
 	"OLTP":            hintOLTP,
 	"TIKV":            hintTiKV,
 	"TIFLASH":         hintTiFlash,
-	"PARTITION":       hintPartition,
 	"FALSE":           hintFalse,
 	"TRUE":            hintTrue,
 	"MB":              hintMB,
@@ -996,4 +930,39 @@ func handleIdent(lval *yySymType) int {
 	}
 	lval.ident = cs
 	return underscoreCS
+}
+
+// SpecialCommentsController controls whether special comments like `/*T![xxx] yyy */`
+// can be parsed as `yyy`. To add such rules, please use SpecialCommentsController.Register().
+// For example:
+//     SpecialCommentsController.Register("30100");
+// Now the parser will treat
+//   select a, /*T![30100] mysterious_keyword */ from t;
+// and
+//   select a, mysterious_keyword from t;
+// equally.
+// Similar special comments without registration are ignored by parser.
+var SpecialCommentsController = specialCommentsCtrl{
+	supportedFeatures: map[string]struct{}{},
+}
+
+type specialCommentsCtrl struct {
+	supportedFeatures map[string]struct{}
+}
+
+func (s *specialCommentsCtrl) Register(featureID string) {
+	s.supportedFeatures[featureID] = struct{}{}
+}
+
+func (s *specialCommentsCtrl) Unregister(featureID string) {
+	delete(s.supportedFeatures, featureID)
+}
+
+func (s *specialCommentsCtrl) ContainsAll(featureIDs []string) bool {
+	for _, f := range featureIDs {
+		if _, found := s.supportedFeatures[f]; !found {
+			return false
+		}
+	}
+	return true
 }

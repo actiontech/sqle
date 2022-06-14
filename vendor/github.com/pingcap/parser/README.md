@@ -28,9 +28,7 @@ Please read the [quickstart](https://github.com/pingcap/parser/blob/master/docs/
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/tidb)
 - [User Group (Chinese)](https://asktug.com/)
 
-If you have any questions, feel free to discuss in sig-ddl. Here are the steps to join:
-1. Join [TiDB Slack community](https://pingcap.com/tidbslack/), and then
-2. Join [sig-ddl Slack channel](https://slack.tidb.io/invite?team=tidb-community&channel=sig-ddl&ref=github_sig).
+If you have any questions, feel free to join and discuss in #sig-ddl channel of [Slack-community](https://pingcap.com/tidbslack/).
 
 If you want to join as a special interest group member, see [DDL Special Interest Group](https://github.com/pingcap/community/tree/master/special-interest-groups/sig-ddl).
 
@@ -43,11 +41,10 @@ found you are one of the users but not listed here:
 - [XiaoMi/soar](https://github.com/XiaoMi/soar)
 - [XiaoMi/Gaea](https://github.com/XiaoMi/Gaea)
 - [sql-machine-learning/sqlflow](https://github.com/sql-machine-learning/sqlflow)
-- [nooncall/shazam](https://github.com/nooncall/shazam)
 
 ## Contributing
 
-Contributions are welcomed and greatly appreciated. See [Contribution Guide](https://github.com/pingcap/community/blob/master/contributors/README.md) for details on submitting patches and the contribution workflow.
+Contributions are welcomed and greatly appreciated. See [CONTRIBUTING.md](https://github.com/pingcap/community/blob/master/CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
 
 Here is how to [update parser for TiDB](https://github.com/pingcap/parser/blob/master/docs/update-parser-for-tidb.md).
 
@@ -57,15 +54,3 @@ Thanks [cznic](https://github.com/cznic) for providing some great open-source to
 
 ## License
 Parser is under the Apache 2.0 license. See the LICENSE file for details.
-
-## More resources
-
-- TiDB documentation
-
-    - [English](https://docs.pingcap.com/tidb/stable)
-    - [简体中文](https://docs.pingcap.com/zh/tidb/stable)
-    
-- TiDB blog
-
-    - [English](https://pingcap.com/blog/)
-    - [简体中文](https://pingcap.com/blog-cn/)

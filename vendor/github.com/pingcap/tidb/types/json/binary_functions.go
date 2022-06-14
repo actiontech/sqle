@@ -18,7 +18,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"sort"
 	"unicode/utf8"
 
@@ -137,8 +136,11 @@ func decodeEscapedUnicode(s []byte) (char [4]byte, size int, err error) {
 		// The unicode must can be represented in 2 bytes.
 		return char, 0, errors.Trace(err)
 	}
-
-	unicode := binary.BigEndian.Uint16(char[0:2])
+	var unicode uint16
+	err = binary.Read(bytes.NewReader(char[0:2]), binary.BigEndian, &unicode)
+	if err != nil {
+		return char, 0, errors.Trace(err)
+	}
 	size = utf8.RuneLen(rune(unicode))
 	utf8.EncodeRune(char[0:size], rune(unicode))
 	return
@@ -314,7 +316,7 @@ func buildBinaryElements(buf []byte, entryStart int, elems []BinaryJSON) []byte 
 	return buf
 }
 
-func buildBinaryObject(keys [][]byte, elems []BinaryJSON) (BinaryJSON, error) {
+func buildBinaryObject(keys [][]byte, elems []BinaryJSON) BinaryJSON {
 	totalSize := headerSize + len(elems)*(keyEntrySize+valEntrySize)
 	for i, elem := range elems {
 		if elem.TypeCode != TypeCodeLiteral {
@@ -326,16 +328,13 @@ func buildBinaryObject(keys [][]byte, elems []BinaryJSON) (BinaryJSON, error) {
 	endian.PutUint32(buf, uint32(len(elems)))
 	endian.PutUint32(buf[dataSizeOff:], uint32(totalSize))
 	for i, key := range keys {
-		if len(key) > math.MaxUint16 {
-			return BinaryJSON{}, ErrJSONObjectKeyTooLong
-		}
 		endian.PutUint32(buf[headerSize+i*keyEntrySize:], uint32(len(buf)))
 		endian.PutUint16(buf[headerSize+i*keyEntrySize+keyLenOff:], uint16(len(key)))
 		buf = append(buf, key...)
 	}
 	entryStart := headerSize + len(elems)*keyEntrySize
 	buf = buildBinaryElements(buf, entryStart, elems)
-	return BinaryJSON{TypeCode: TypeCodeObject, Value: buf}, nil
+	return BinaryJSON{TypeCode: TypeCodeObject, Value: buf}
 }
 
 // Modify modifies a JSON object by insert, replace or set.
@@ -362,9 +361,6 @@ func (bj BinaryJSON) Modify(pathExprList []PathExpression, values []BinaryJSON, 
 			bj = modifier.replace(pathExpr, value)
 		case ModifySet:
 			bj = modifier.set(pathExpr, value)
-		}
-		if modifier.err != nil {
-			return BinaryJSON{}, modifier.err
 		}
 	}
 	return bj, nil
@@ -426,9 +422,6 @@ func (bj BinaryJSON) Remove(pathExprList []PathExpression) (BinaryJSON, error) {
 		}
 		modifer := &binaryModifier{bj: bj}
 		bj = modifer.remove(pathExpr)
-		if modifer.err != nil {
-			return BinaryJSON{}, modifer.err
-		}
 	}
 	return bj, nil
 }
@@ -437,7 +430,6 @@ type binaryModifier struct {
 	bj          BinaryJSON
 	modifyPtr   *byte
 	modifyValue BinaryJSON
-	err         error
 }
 
 func (bm *binaryModifier) set(path PathExpression, newBj BinaryJSON) BinaryJSON {
@@ -449,9 +441,6 @@ func (bm *binaryModifier) set(path PathExpression, newBj BinaryJSON) BinaryJSON 
 		return bm.rebuild()
 	}
 	bm.doInsert(path, newBj)
-	if bm.err != nil {
-		return BinaryJSON{}
-	}
 	return bm.rebuild()
 }
 
@@ -473,9 +462,6 @@ func (bm *binaryModifier) insert(path PathExpression, newBj BinaryJSON) BinaryJS
 		return bm.bj
 	}
 	bm.doInsert(path, newBj)
-	if bm.err != nil {
-		return BinaryJSON{}
-	}
 	return bm.rebuild()
 }
 
@@ -526,7 +512,7 @@ func (bm *binaryModifier) doInsert(path PathExpression, newBj BinaryJSON) {
 		keys = append(keys, insertKey)
 		elems = append(elems, newBj)
 	}
-	bm.modifyValue, bm.err = buildBinaryObject(keys, elems)
+	bm.modifyValue = buildBinaryObject(keys, elems)
 }
 
 func (bm *binaryModifier) remove(path PathExpression) BinaryJSON {
@@ -536,9 +522,6 @@ func (bm *binaryModifier) remove(path PathExpression) BinaryJSON {
 		return bm.bj
 	}
 	bm.doRemove(path)
-	if bm.err != nil {
-		return BinaryJSON{}
-	}
 	return bm.rebuild()
 }
 
@@ -580,7 +563,7 @@ func (bm *binaryModifier) doRemove(path PathExpression) {
 			elems = append(elems, parentBj.objectGetVal(i))
 		}
 	}
-	bm.modifyValue, bm.err = buildBinaryObject(keys, elems)
+	bm.modifyValue = buildBinaryObject(keys, elems)
 }
 
 // rebuild merges the old and the modified JSON into a new BinaryJSON
@@ -664,16 +647,6 @@ func compareInt64(x int64, y int64) int {
 	return 1
 }
 
-func compareFloat64(x float64, y float64) int {
-	if x < y {
-		return -1
-	} else if x == y {
-		return 0
-	}
-
-	return 1
-}
-
 func compareUint64(x uint64, y uint64) int {
 	if x < y {
 		return -1
@@ -739,7 +712,7 @@ func CompareBinary(left, right BinaryJSON) int {
 			case TypeCodeUint64:
 				cmp = compareFloat64Uint64(left.GetFloat64(), right.GetUint64())
 			case TypeCodeFloat64:
-				cmp = compareFloat64(left.GetFloat64(), right.GetFloat64())
+				cmp = compareFloat64PrecisionLoss(left.GetFloat64(), right.GetFloat64())
 			}
 		case TypeCodeString:
 			cmp = bytes.Compare(left.GetString(), right.GetString())
@@ -756,119 +729,14 @@ func CompareBinary(left, right BinaryJSON) int {
 			}
 			cmp = leftCount - rightCount
 		case TypeCodeObject:
-			// reference:
-			// https://github.com/mysql/mysql-server/blob/ee4455a33b10f1b1886044322e4893f587b319ed/sql/json_dom.cc#L2561
-			leftCount, rightCount := left.GetElemCount(), right.GetElemCount()
-			cmp := compareInt64(int64(leftCount), int64(rightCount))
-			if cmp != 0 {
-				return cmp
-			}
-			for i := 0; i < leftCount; i++ {
-				leftKey, rightKey := left.objectGetKey(i), right.objectGetKey(i)
-				cmp = bytes.Compare(leftKey, rightKey)
-				if cmp != 0 {
-					return cmp
-				}
-				cmp = CompareBinary(left.objectGetVal(i), right.objectGetVal(i))
-				if cmp != 0 {
-					return cmp
-				}
-			}
+			// only equal is defined on two json objects.
+			// larger and smaller are not defined.
+			cmp = bytes.Compare(left.Value, right.Value)
 		}
 	} else {
 		cmp = precedence1 - precedence2
 	}
 	return cmp
-}
-
-// MergePatchBinary implements RFC7396
-// https://datatracker.ietf.org/doc/html/rfc7396
-func MergePatchBinary(bjs []*BinaryJSON) (*BinaryJSON, error) {
-	var err error
-	length := len(bjs)
-
-	// according to the implements of RFC7396
-	// when the last item is not object
-	// we can return the last item directly
-	for i := length - 1; i >= 0; i-- {
-		if bjs[i] == nil || bjs[i].TypeCode != TypeCodeObject {
-			bjs = bjs[i:]
-			break
-		}
-	}
-
-	target := bjs[0]
-	for _, patch := range bjs[1:] {
-		target, err = mergePatchBinary(target, patch)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return target, nil
-}
-
-func mergePatchBinary(target, patch *BinaryJSON) (result *BinaryJSON, err error) {
-	if patch == nil {
-		return nil, nil
-	}
-
-	if patch.TypeCode == TypeCodeObject {
-		if target == nil {
-			return nil, nil
-		}
-
-		keyValMap := make(map[string]BinaryJSON)
-		if target.TypeCode == TypeCodeObject {
-			elemCount := target.GetElemCount()
-			for i := 0; i < elemCount; i++ {
-				key := target.objectGetKey(i)
-				val := target.objectGetVal(i)
-				keyValMap[string(key)] = val
-			}
-		}
-		var tmp *BinaryJSON
-		elemCount := patch.GetElemCount()
-		for i := 0; i < elemCount; i++ {
-			key := patch.objectGetKey(i)
-			val := patch.objectGetVal(i)
-			k := string(key)
-
-			targetKV, exists := keyValMap[k]
-			if val.TypeCode == TypeCodeLiteral && val.Value[0] == LiteralNil {
-				if exists {
-					delete(keyValMap, k)
-				}
-			} else {
-				tmp, err = mergePatchBinary(&targetKV, &val)
-				if err != nil {
-					return result, err
-				}
-
-				keyValMap[k] = *tmp
-			}
-		}
-
-		length := len(keyValMap)
-		keys := make([][]byte, 0, length)
-		for key := range keyValMap {
-			keys = append(keys, []byte(key))
-		}
-		sort.Slice(keys, func(i, j int) bool {
-			return bytes.Compare(keys[i], keys[j]) < 0
-		})
-		length = len(keys)
-		values := make([]BinaryJSON, 0, len(keys))
-		for i := 0; i < length; i++ {
-			values = append(values, keyValMap[string(keys[i])])
-		}
-
-		binaryObject, e := buildBinaryObject(keys, values)
-		if e != nil {
-			return nil, e
-		}
-		return &binaryObject, nil
-	}
-	return patch, nil
 }
 
 // MergeBinary merges multiple BinaryJSON into one according the following rules:
@@ -943,11 +811,7 @@ func mergeBinaryObject(objects []BinaryJSON) BinaryJSON {
 	for i, key := range keys {
 		values[i] = keyValMap[string(key)]
 	}
-	binaryObject, err := buildBinaryObject(keys, values)
-	if err != nil {
-		panic("mergeBinaryObject should never panic, please contact the TiDB team for help")
-	}
-	return binaryObject
+	return buildBinaryObject(keys, values)
 }
 
 // PeekBytesAsJSON trys to peek some bytes from b, until
@@ -957,7 +821,7 @@ func PeekBytesAsJSON(b []byte) (n int, err error) {
 		err = errors.New("Cant peek from empty bytes")
 		return
 	}
-	switch c := b[0]; c {
+	switch c := TypeCode(b[0]); c {
 	case TypeCodeObject, TypeCodeArray:
 		if len(b) >= valTypeSize+headerSize {
 			size := endian.Uint32(b[valTypeSize+dataSizeOff:])
@@ -1116,7 +980,7 @@ func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extra
 		elemCount := bj.GetElemCount()
 		if currentLeg.arrayIndex == arrayIndexAsterisk {
 			for i := 0; i < elemCount; i++ {
-				// buf = bj.arrayGetElem(i).extractTo(buf, subPathExpr)
+				//buf = bj.arrayGetElem(i).extractTo(buf, subPathExpr)
 				path := fullpath.pushBackOneIndexLeg(i)
 				stop, err = bj.arrayGetElem(i).extractToCallback(subPathExpr, callbackFn, path)
 				if stop || err != nil {
@@ -1124,7 +988,7 @@ func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extra
 				}
 			}
 		} else if currentLeg.arrayIndex < elemCount {
-			// buf = bj.arrayGetElem(currentLeg.arrayIndex).extractTo(buf, subPathExpr)
+			//buf = bj.arrayGetElem(currentLeg.arrayIndex).extractTo(buf, subPathExpr)
 			path := fullpath.pushBackOneIndexLeg(currentLeg.arrayIndex)
 			stop, err = bj.arrayGetElem(currentLeg.arrayIndex).extractToCallback(subPathExpr, callbackFn, path)
 			if stop || err != nil {
@@ -1135,7 +999,7 @@ func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extra
 		elemCount := bj.GetElemCount()
 		if currentLeg.dotKey == "*" {
 			for i := 0; i < elemCount; i++ {
-				// buf = bj.objectGetVal(i).extractTo(buf, subPathExpr)
+				//buf = bj.objectGetVal(i).extractTo(buf, subPathExpr)
 				path := fullpath.pushBackOneKeyLeg(string(bj.objectGetKey(i)))
 				stop, err = bj.objectGetVal(i).extractToCallback(subPathExpr, callbackFn, path)
 				if stop || err != nil {
@@ -1145,7 +1009,7 @@ func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extra
 		} else {
 			child, ok := bj.objectSearchKey(hack.Slice(currentLeg.dotKey))
 			if ok {
-				// buf = child.extractTo(buf, subPathExpr)
+				//buf = child.extractTo(buf, subPathExpr)
 				path := fullpath.pushBackOneKeyLeg(currentLeg.dotKey)
 				stop, err = child.extractToCallback(subPathExpr, callbackFn, path)
 				if stop || err != nil {
@@ -1154,7 +1018,7 @@ func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extra
 			}
 		}
 	} else if currentLeg.typ == pathLegDoubleAsterisk {
-		// buf = bj.extractTo(buf, subPathExpr)
+		//buf = bj.extractTo(buf, subPathExpr)
 		stop, err = bj.extractToCallback(subPathExpr, callbackFn, fullpath)
 		if stop || err != nil {
 			return
@@ -1163,7 +1027,7 @@ func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extra
 		if bj.TypeCode == TypeCodeArray {
 			elemCount := bj.GetElemCount()
 			for i := 0; i < elemCount; i++ {
-				// buf = bj.arrayGetElem(i).extractTo(buf, pathExpr)
+				//buf = bj.arrayGetElem(i).extractTo(buf, pathExpr)
 				path := fullpath.pushBackOneIndexLeg(i)
 				stop, err = bj.arrayGetElem(i).extractToCallback(pathExpr, callbackFn, path)
 				if stop || err != nil {
@@ -1173,7 +1037,7 @@ func (bj BinaryJSON) extractToCallback(pathExpr PathExpression, callbackFn extra
 		} else if bj.TypeCode == TypeCodeObject {
 			elemCount := bj.GetElemCount()
 			for i := 0; i < elemCount; i++ {
-				// buf = bj.objectGetVal(i).extractTo(buf, pathExpr)
+				//buf = bj.objectGetVal(i).extractTo(buf, pathExpr)
 				path := fullpath.pushBackOneKeyLeg(string(bj.objectGetKey(i)))
 				stop, err = bj.objectGetVal(i).extractToCallback(pathExpr, callbackFn, path)
 				if stop || err != nil {

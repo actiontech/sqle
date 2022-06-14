@@ -13,25 +13,12 @@
 
 package ast
 
-import (
-	"github.com/pingcap/parser/types"
-)
+import "github.com/pingcap/parser/types"
 
 // node is the struct implements node interface except for Accept method.
 // Node implementations should embed it in.
 type node struct {
-	text   string
-	offset int
-}
-
-// SetOriginTextPosition implements Node interface.
-func (n *node) SetOriginTextPosition(offset int) {
-	n.offset = offset
-}
-
-// OriginTextPosition implements Node interface.
-func (n *node) OriginTextPosition() int {
-	return n.offset
+	text string
 }
 
 // SetText implements Node interface.
@@ -108,3 +95,7 @@ type funcNode struct {
 
 // functionExpression implements FunctionNode interface.
 func (fn *funcNode) functionExpression() {}
+
+type resultSetNode struct {
+	resultFields []*ResultField
+}

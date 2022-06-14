@@ -8,7 +8,6 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -155,18 +154,11 @@ func NewTextEncoder(cfg *Config) zapcore.Encoder {
 	if cfg.DisableTimestamp {
 		cc.TimeKey = ""
 	}
-	switch cfg.Format {
-	case "text", "":
-		return &textEncoder{
-			EncoderConfig:       &cc,
-			buf:                 _pool.Get(),
-			spaced:              false,
-			disableErrorVerbose: cfg.DisableErrorVerbose,
-		}
-	case "json":
-		return zapcore.NewJSONEncoder(cc)
-	default:
-		panic(fmt.Sprintf("unsupport log format: %s", cfg.Format))
+	return &textEncoder{
+		EncoderConfig:       &cc,
+		buf:                 _pool.Get(),
+		spaced:              false,
+		disableErrorVerbose: cfg.DisableErrorVerbose,
 	}
 }
 
@@ -572,7 +564,7 @@ func (enc *textEncoder) safeAddByteString(s []byte) {
 	}
 }
 
-// See [log-fileds](https://github.com/tikv/rfcs/blob/master/text/0018-unified-log-format.md#log-fields-section).
+// See [log-fileds](https://github.com/tikv/rfcs/blob/master/text/2018-12-19-unified-log-format.md#log-fields-section).
 func (enc *textEncoder) needDoubleQuotes(s string) bool {
 	for i := 0; i < len(s); {
 		b := s[i]

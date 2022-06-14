@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/pingcap/errors"
-	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 )
 
@@ -71,16 +70,12 @@ const (
 	ActionDropColumns                   ActionType = 38
 	ActionModifyTableAutoIdCache        ActionType = 39
 	ActionRebaseAutoRandomBase          ActionType = 40
-	ActionAlterIndexVisibility          ActionType = 41
-	ActionExchangeTablePartition        ActionType = 42
-	ActionAddCheckConstraint            ActionType = 43
-	ActionDropCheckConstraint           ActionType = 44
-	ActionAlterCheckConstraint          ActionType = 45
-	ActionAlterTableAlterPartition      ActionType = 46
-	ActionRenameTables                  ActionType = 47
-	ActionDropIndexes                   ActionType = 48
-	ActionAlterTableAttributes          ActionType = 49
-	ActionAlterTablePartitionAttributes ActionType = 50
+)
+
+const (
+	// AddIndexStr is a string related to the operation of "add index".
+	AddIndexStr      = "add index"
+	AddPrimaryKeyStr = "add primary key"
 )
 
 var actionMap = map[ActionType]string{
@@ -90,7 +85,7 @@ var actionMap = map[ActionType]string{
 	ActionDropTable:                     "drop table",
 	ActionAddColumn:                     "add column",
 	ActionDropColumn:                    "drop column",
-	ActionAddIndex:                      "add index",
+	ActionAddIndex:                      AddIndexStr,
 	ActionDropIndex:                     "drop index",
 	ActionAddForeignKey:                 "add foreign key",
 	ActionDropForeignKey:                "drop foreign key",
@@ -115,7 +110,7 @@ var actionMap = map[ActionType]string{
 	ActionRepairTable:                   "repair table",
 	ActionSetTiFlashReplica:             "set tiflash replica",
 	ActionUpdateTiFlashReplicaStatus:    "update tiflash replica status",
-	ActionAddPrimaryKey:                 "add primary key",
+	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
 	ActionDropPrimaryKey:                "drop primary key",
 	ActionCreateSequence:                "create sequence",
 	ActionAlterSequence:                 "alter sequence",
@@ -124,15 +119,6 @@ var actionMap = map[ActionType]string{
 	ActionDropColumns:                   "drop multi-columns",
 	ActionModifyTableAutoIdCache:        "modify auto id cache",
 	ActionRebaseAutoRandomBase:          "rebase auto_random ID",
-	ActionAlterIndexVisibility:          "alter index visibility",
-	ActionExchangeTablePartition:        "exchange partition",
-	ActionAddCheckConstraint:            "add check constraint",
-	ActionDropCheckConstraint:           "drop check constraint",
-	ActionAlterCheckConstraint:          "alter check constraint",
-	ActionAlterTableAlterPartition:      "alter partition",
-	ActionDropIndexes:                   "drop multi-indexes",
-	ActionAlterTableAttributes:          "alter table attributes",
-	ActionAlterTablePartitionAttributes: "alter table partition attributes",
 }
 
 // String return current ddl action in string
@@ -177,10 +163,6 @@ type DDLReorgMeta struct {
 	// EndHandle is the last handle of the adding indices table.
 	// We should only backfill indices in the range [startHandle, EndHandle].
 	EndHandle int64 `json:"end_handle"`
-
-	SQLMode       mysql.SQLMode                    `json:"sql_mode"`
-	Warnings      map[errors.ErrorID]*terror.Error `json:"warnings"`
-	WarningsCount map[errors.ErrorID]int64         `json:"warnings_count"`
 }
 
 // NewDDLReorgMeta new a DDLReorgMeta.
@@ -202,20 +184,14 @@ type Job struct {
 	// ErrorCount will be increased, every time we meet an error when running job.
 	ErrorCount int64 `json:"err_count"`
 	// RowCount means the number of rows that are processed.
-	RowCount int64      `json:"row_count"`
-	Mu       sync.Mutex `json:"-"`
-	// CtxVars are variables attached to the job. It is for internal usage.
-	// E.g. passing arguments between functions by one single *Job pointer.
-	CtxVars []interface{} `json:"-"`
-	Args    []interface{} `json:"-"`
+	RowCount int64         `json:"row_count"`
+	Mu       sync.Mutex    `json:"-"`
+	Args     []interface{} `json:"-"`
 	// RawArgs : We must use json raw message to delay parsing special args.
 	RawArgs     json.RawMessage `json:"raw_args"`
 	SchemaState SchemaState     `json:"schema_state"`
 	// SnapshotVer means snapshot version for this job.
 	SnapshotVer uint64 `json:"snapshot_ver"`
-	// RealStartTS uses timestamp allocated by TSO.
-	// Now it's the TS when we actually start the job.
-	RealStartTS uint64 `json:"real_start_ts"`
 	// StartTS uses timestamp allocated by TSO.
 	// Now it's the TS when we put the job to TiKV queue.
 	StartTS uint64 `json:"start_ts"`
@@ -272,17 +248,6 @@ func (job *Job) GetRowCount() int64 {
 	defer job.Mu.Unlock()
 
 	return job.RowCount
-}
-
-// SetWarnings sets the warnings of rows handled.
-func (job *Job) SetWarnings(warnings map[errors.ErrorID]*terror.Error, warningsCount map[errors.ErrorID]int64) {
-	job.ReorgMeta.Warnings = warnings
-	job.ReorgMeta.WarningsCount = warningsCount
-}
-
-// GetWarnings gets the warnings of the rows handled.
-func (job *Job) GetWarnings() (map[errors.ErrorID]*terror.Error, map[errors.ErrorID]int64) {
-	return job.ReorgMeta.Warnings, job.ReorgMeta.WarningsCount
 }
 
 // Encode encodes job with json format.
@@ -473,15 +438,5 @@ type SchemaDiff struct {
 	// OldTableID is the table ID before truncate, only used by truncate table DDL.
 	OldTableID int64 `json:"old_table_id"`
 	// OldSchemaID is the schema ID before rename table, only used by rename table DDL.
-	OldSchemaID int64 `json:"old_schema_id"`
-
-	AffectedOpts []*AffectedOption `json:"affected_options"`
-}
-
-// AffectedOption is used when a ddl affects multi tables.
-type AffectedOption struct {
-	SchemaID    int64 `json:"schema_id"`
-	TableID     int64 `json:"table_id"`
-	OldTableID  int64 `json:"old_table_id"`
 	OldSchemaID int64 `json:"old_schema_id"`
 }

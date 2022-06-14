@@ -25,13 +25,11 @@ import (
 %}
 
 %union {
-	offset  int
 	ident   string
 	number  uint64
 	hint    *ast.TableOptimizerHint
 	hints []*ast.TableOptimizerHint
 	table 	ast.HintTable
-	modelIdents []model.CIStr
 }
 
 %token	<number>
@@ -92,8 +90,6 @@ import (
 	hintReadConsistentReplica "READ_CONSISTENT_REPLICA"
 	hintReadFromStorage       "READ_FROM_STORAGE"
 	hintSMJoin                "MERGE_JOIN"
-	hintBCJoin                "BROADCAST_JOIN"
-	hintBCJoinPreferLocal     "BROADCAST_JOIN_LOCAL"
 	hintStreamAgg             "STREAM_AGG"
 	hintSwapJoinInputs        "SWAP_JOIN_INPUTS"
 	hintUseIndexMerge         "USE_INDEX_MERGE"
@@ -102,14 +98,10 @@ import (
 	hintUseToja               "USE_TOJA"
 	hintTimeRange             "TIME_RANGE"
 	hintUseCascades           "USE_CASCADES"
-	hintNthPlan               "NTH_PLAN"
-	hintLimitToCop            "LIMIT_TO_COP"
-	hintForceIndex            "FORCE_INDEX"
 
 	/* Other keywords */
 	hintOLAP            "OLAP"
 	hintOLTP            "OLTP"
-	hintPartition       "PARTITION"
 	hintTiKV            "TIKV"
 	hintTiFlash         "TIFLASH"
 	hintFalse           "FALSE"
@@ -160,10 +152,6 @@ import (
 
 %type	<table>
 	HintTable "Table in optimizer hint"
-
-%type	<modelIdents>
-	PartitionList    "partition name list in optimizer hint"
-	PartitionListOpt "optional partition name list in optimizer hint"
 
 
 %start	Start
@@ -246,23 +234,10 @@ TableOptimizerHintOpt:
 			HintData: $4,
 		}
 	}
-|	"NTH_PLAN" '(' QueryBlockOpt hintIntLit ')'
-	{
-		$$ = &ast.TableOptimizerHint{
-			HintName: model.NewCIStr($1),
-			QBName:   model.NewCIStr($3),
-			HintData: int64($4),
-		}
-	}
 |	"SET_VAR" '(' Identifier '=' Value ')'
 	{
-		$$ = &ast.TableOptimizerHint{
-			HintName: model.NewCIStr($1),
-			HintData: ast.HintSetVar{
-				VarName: $3,
-				Value:   $5,
-			},
-		}
+		parser.warnUnsupportedHint($1)
+		$$ = nil
 	}
 |	"RESOURCE_GROUP" '(' Identifier ')'
 	{
@@ -368,26 +343,6 @@ CommaOpt:
 |	','
 	{}
 
-PartitionListOpt:
-	/* empty */
-	{
-		$$ = nil
-	}
-|	"PARTITION" '(' PartitionList ')'
-	{
-		$$ = $3
-	}
-
-PartitionList:
-	Identifier
-	{
-		$$ = []model.CIStr{model.NewCIStr($1)}
-	}
-|	PartitionList CommaOpt Identifier
-	{
-		$$ = append($1, model.NewCIStr($3))
-	}
-
 /**
  * HintTableListOpt:
  *
@@ -420,21 +375,19 @@ HintTableList:
 	}
 
 HintTable:
-	Identifier QueryBlockOpt PartitionListOpt
+	Identifier QueryBlockOpt
 	{
 		$$ = ast.HintTable{
-			TableName:     model.NewCIStr($1),
-			QBName:        model.NewCIStr($2),
-			PartitionList: $3,
+			TableName: model.NewCIStr($1),
+			QBName:    model.NewCIStr($2),
 		}
 	}
-|	Identifier '.' Identifier QueryBlockOpt PartitionListOpt
+|	Identifier '.' Identifier QueryBlockOpt
 	{
 		$$ = ast.HintTable{
-			DBName:        model.NewCIStr($1),
-			TableName:     model.NewCIStr($3),
-			QBName:        model.NewCIStr($4),
-			PartitionList: $5,
+			DBName:    model.NewCIStr($1),
+			TableName: model.NewCIStr($3),
+			QBName:    model.NewCIStr($4),
 		}
 	}
 
@@ -532,8 +485,6 @@ UnsupportedTableLevelOptimizerHintName:
 
 SupportedTableLevelOptimizerHintName:
 	"MERGE_JOIN"
-|	"BROADCAST_JOIN"
-|	"BROADCAST_JOIN_LOCAL"
 |	"INL_JOIN"
 |	"INL_HASH_JOIN"
 |	"SWAP_JOIN_INPUTS"
@@ -555,7 +506,6 @@ SupportedIndexLevelOptimizerHintName:
 	"USE_INDEX"
 |	"IGNORE_INDEX"
 |	"USE_INDEX_MERGE"
-|	"FORCE_INDEX"
 
 SubqueryOptimizerHintName:
 	"SEMIJOIN"
@@ -576,7 +526,6 @@ NullaryHintName:
 |	"HASH_AGG"
 |	"STREAM_AGG"
 |	"AGG_TO_COP"
-|	"LIMIT_TO_COP"
 |	"NO_INDEX_MERGE"
 |	"READ_CONSISTENT_REPLICA"
 |	"IGNORE_PLAN_CACHE"
@@ -620,7 +569,6 @@ Identifier:
 |	"QB_NAME"
 /* TiDB hint names */
 |	"AGG_TO_COP"
-|	"LIMIT_TO_COP"
 |	"IGNORE_PLAN_CACHE"
 |	"HASH_AGG"
 |	"IGNORE_INDEX"
@@ -633,8 +581,6 @@ Identifier:
 |	"READ_CONSISTENT_REPLICA"
 |	"READ_FROM_STORAGE"
 |	"MERGE_JOIN"
-|	"BROADCAST_JOIN"
-|	"BROADCAST_JOIN_LOCAL"
 |	"STREAM_AGG"
 |	"SWAP_JOIN_INPUTS"
 |	"USE_INDEX_MERGE"
@@ -643,8 +589,6 @@ Identifier:
 |	"USE_TOJA"
 |	"TIME_RANGE"
 |	"USE_CASCADES"
-|	"NTH_PLAN"
-|	"FORCE_INDEX"
 /* other keywords */
 |	"OLAP"
 |	"OLTP"

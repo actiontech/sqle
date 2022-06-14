@@ -8,20 +8,15 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
 package log
 
-import (
-	"fmt"
-
-	"go.uber.org/zap/zapcore"
-)
+import "go.uber.org/zap/zapcore"
 
 // NewTextCore creates a Core that writes logs to a WriteSyncer.
-func NewTextCore(enc zapcore.Encoder, ws zapcore.WriteSyncer, enab zapcore.LevelEnabler) zapcore.Core {
+func NewTextCore(enc *textEncoder, ws zapcore.WriteSyncer, enab zapcore.LevelEnabler) zapcore.Core {
 	return &textIOCore{
 		LevelEnabler: enab,
 		enc:          enc,
@@ -33,23 +28,14 @@ func NewTextCore(enc zapcore.Encoder, ws zapcore.WriteSyncer, enab zapcore.Level
 // it can be removed after https://github.com/uber-go/zap/pull/685 be merged
 type textIOCore struct {
 	zapcore.LevelEnabler
-	enc zapcore.Encoder
+	enc *textEncoder
 	out zapcore.WriteSyncer
 }
 
 func (c *textIOCore) With(fields []zapcore.Field) zapcore.Core {
 	clone := c.clone()
 	// it's different to ioCore, here call textEncoder#addFields to fix https://github.com/pingcap/log/issues/3
-	switch e := clone.enc.(type) {
-	case *textEncoder:
-		e.addFields(fields)
-	case zapcore.ObjectEncoder:
-		for _, field := range fields {
-			field.AddTo(e)
-		}
-	default:
-		panic(fmt.Sprintf("unsupported encode type: %T for With operation", clone.enc))
-	}
+	clone.enc.addFields(fields)
 	return clone
 }
 
@@ -85,7 +71,7 @@ func (c *textIOCore) Sync() error {
 func (c *textIOCore) clone() *textIOCore {
 	return &textIOCore{
 		LevelEnabler: c.LevelEnabler,
-		enc:          c.enc.Clone(),
+		enc:          c.enc.Clone().(*textEncoder),
 		out:          c.out,
 	}
 }
