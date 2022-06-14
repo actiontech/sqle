@@ -66,6 +66,8 @@ type IndexesInfo struct {
 }
 
 type TableMetaItem struct {
+	Name           string
+	Schema         string
 	ColumnsInfo    ColumnsInfo
 	IndexesInfo    IndexesInfo
 	CreateTableSQL string
