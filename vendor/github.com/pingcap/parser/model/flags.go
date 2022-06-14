@@ -40,4 +40,8 @@ const (
 	FlagIgnoreZeroInDate = 1 << 7
 	// FlagDividedByZeroAsWarning indicates if DividedByZero should be returned as warning.
 	FlagDividedByZeroAsWarning = 1 << 8
+	// FlagInUnionStmt indicates if this is a UNION statement.
+	FlagInUnionStmt = 1 << 9
+	// FlagInLoadDataStmt indicates if this is a LOAD DATA statement.
+	FlagInLoadDataStmt = 1 << 10
 )

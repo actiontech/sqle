@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/errors"
-	. "github.com/pingcap/parser/format"
+	"github.com/pingcap/parser/format"
 )
 
 func newInvalidModeErr(s string) error {
@@ -244,6 +244,12 @@ const (
 
 	// ShutdownPriv the privilege to shutdown a server.
 	ShutdownPriv
+	// ReloadPriv is the privilege to enable the use of the FLUSH statement.
+	ReloadPriv
+	// FilePriv is the privilege to enable the use of LOAD DATA and SELECT ... INTO OUTFILE.
+	FilePriv
+	// ConfigPriv is the privilege to enable the use SET CONFIG statements.
+	ConfigPriv
 
 	// AllPriv is the privilege for all actions.
 	AllPriv
@@ -317,6 +323,9 @@ var Priv2UserCol = map[PrivilegeType]string{
 	AlterRoutinePriv:   "Alter_routine_priv",
 	EventPriv:          "Event_priv",
 	ShutdownPriv:       "Shutdown_priv",
+	ReloadPriv:         "Reload_priv",
+	FilePriv:           "File_priv",
+	ConfigPriv:         "Config_priv",
 }
 
 // Col2PrivType is the privilege tables column name to privilege type.
@@ -347,6 +356,9 @@ var Col2PrivType = map[string]PrivilegeType{
 	"Alter_routine_priv":    AlterRoutinePriv,
 	"Event_priv":            EventPriv,
 	"Shutdown_priv":         ShutdownPriv,
+	"Reload_priv":           ReloadPriv,
+	"File_priv":             FilePriv,
+	"Config_priv":           ConfigPriv,
 }
 
 // Command2Str is the command information to command name.
@@ -413,6 +425,9 @@ var Priv2Str = map[PrivilegeType]string{
 	AlterRoutinePriv:   "ALTER ROUTINE",
 	EventPriv:          "EVENT",
 	ShutdownPriv:       "SHUTDOWN",
+	ReloadPriv:         "RELOAD",
+	FilePriv:           "FILE",
+	ConfigPriv:         "CONFIG",
 }
 
 // Priv2SetStr is the map for privilege to string.
@@ -451,7 +466,7 @@ var SetStr2Priv = map[string]PrivilegeType{
 }
 
 // AllGlobalPrivs is all the privileges in global scope.
-var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv, CreateTMPTablePriv, LockTablesPriv, CreateRoutinePriv, AlterRoutinePriv, EventPriv, ShutdownPriv}
+var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv, CreateTMPTablePriv, LockTablesPriv, CreateRoutinePriv, AlterRoutinePriv, EventPriv, ShutdownPriv, ReloadPriv, FilePriv, ConfigPriv}
 
 // AllDBPrivs is all the privileges in database scope.
 var AllDBPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv}
@@ -769,7 +784,7 @@ func Str2Priority(val string) PriorityEnum {
 }
 
 // Restore implements Node interface.
-func (n *PriorityEnum) Restore(ctx *RestoreCtx) error {
+func (n *PriorityEnum) Restore(ctx *format.RestoreCtx) error {
 	switch *n {
 	case NoPriority:
 		return nil
