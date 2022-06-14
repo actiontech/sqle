@@ -12,7 +12,7 @@ require (
 	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/cznic/parser v0.0.0-20181122101858-d773202d5b1f
-	github.com/cznic/sortutil v0.0.0-20150617083342-4c7342852e65
+	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8
 	github.com/cznic/strutil v0.0.0-20181122101858-275e90344537
 	github.com/cznic/y v0.0.0-20181122101901-b05e8c2e8d7b
 	github.com/denisenkom/go-mssqldb v0.9.0
@@ -49,7 +49,7 @@ require (
 	github.com/percona/pmm-agent v2.15.1+incompatible
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/parser v3.0.12+incompatible
-	github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340
+	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sijms/go-ora/v2 v2.2.15
@@ -72,7 +72,7 @@ require (
 )
 
 replace (
-	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20190715063458-479153f07ebd
-	github.com/pingcap/parser => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
+	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )

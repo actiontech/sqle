@@ -13,6 +13,13 @@
 
 package ast
 
+import "math"
+
+// UnspecifiedSize is unspecified size.
+const (
+	UnspecifiedSize = math.MaxUint64
+)
+
 // IsReadOnly checks whether the input ast is readOnly.
 func IsReadOnly(node Node) bool {
 	switch st := node.(type) {
@@ -27,7 +34,9 @@ func IsReadOnly(node Node) bool {
 
 		node.Accept(&checker)
 		return checker.readOnly
-	case *ExplainStmt, *DoStmt, *ShowStmt:
+	case *ExplainStmt:
+		return !st.Analyze || IsReadOnly(st.Stmt)
+	case *DoStmt, *ShowStmt:
 		return true
 	case *UnionStmt:
 		for _, sel := range node.(*UnionStmt).SelectList.Selects {

@@ -28,8 +28,6 @@ const (
 type FileLogConfig struct {
 	// Log filename, leave empty to disable file log.
 	Filename string `toml:"filename" json:"filename"`
-	// Is log rotate enabled.
-	LogRotate bool `toml:"log-rotate" json:"log-rotate"`
 	// Max size for a single file, in MB.
 	MaxSize int `toml:"max-size" json:"max-size"`
 	// Max log keep days, default is never deleting.

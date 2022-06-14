@@ -23,7 +23,6 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/types"
-	"github.com/pingcap/tipb/go-tipb"
 )
 
 // SchemaState is the state for schema elements.
@@ -81,19 +80,22 @@ const (
 
 // ColumnInfo provides meta data describing of a table column.
 type ColumnInfo struct {
-	ID                    int64               `json:"id"`
-	Name                  CIStr               `json:"name"`
-	Offset                int                 `json:"offset"`
-	OriginDefaultValue    interface{}         `json:"origin_default"`
-	OriginDefaultValueBit []byte              `json:"origin_default_bit"`
-	DefaultValue          interface{}         `json:"default"`
-	DefaultValueBit       []byte              `json:"default_bit"`
-	GeneratedExprString   string              `json:"generated_expr_string"`
-	GeneratedStored       bool                `json:"generated_stored"`
-	Dependences           map[string]struct{} `json:"dependences"`
-	types.FieldType       `json:"type"`
-	State                 SchemaState `json:"state"`
-	Comment               string      `json:"comment"`
+	ID                 int64       `json:"id"`
+	Name               CIStr       `json:"name"`
+	Offset             int         `json:"offset"`
+	OriginDefaultValue interface{} `json:"origin_default"`
+	DefaultValue       interface{} `json:"default"`
+	DefaultValueBit    []byte      `json:"default_bit"`
+	// DefaultIsExpr is indicates the default value string is expr.
+	DefaultIsExpr       bool                `json:"default_is_expr"`
+	GeneratedExprString string              `json:"generated_expr_string"`
+	GeneratedStored     bool                `json:"generated_stored"`
+	Dependences         map[string]struct{} `json:"dependences"`
+	types.FieldType     `json:"type"`
+	State               SchemaState `json:"state"`
+	Comment             string      `json:"comment"`
+	// A hidden column is used internally(expression index) and are not accessible by users.
+	Hidden bool `json:"hidden"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
 	//              That is a bug if multiple TiDB servers in different system time zone.
@@ -111,35 +113,6 @@ func (c *ColumnInfo) Clone() *ColumnInfo {
 // IsGenerated returns true if the column is generated column.
 func (c *ColumnInfo) IsGenerated() bool {
 	return len(c.GeneratedExprString) != 0
-}
-
-// SetOriginalDefaultValue sets the origin default value.
-// For mysql.TypeBit type, the default value storage format must be a string.
-// Other value such as int must convert to string format first.
-// The mysql.TypeBit type supports the null default value.
-func (c *ColumnInfo) SetOriginDefaultValue(value interface{}) error {
-	c.OriginDefaultValue = value
-	if c.Tp == mysql.TypeBit {
-		if value == nil {
-			return nil
-		}
-		if v, ok := value.(string); ok {
-			c.OriginDefaultValueBit = []byte(v)
-			return nil
-		}
-		return types.ErrInvalidDefault.GenWithStackByArgs(c.Name)
-	}
-	return nil
-}
-
-// GetOriginalDefaultValue gets the origin default value.
-func (c *ColumnInfo) GetOriginDefaultValue() interface{} {
-	if c.Tp == mysql.TypeBit && c.OriginDefaultValueBit != nil {
-		// If the column type is BIT, both `OriginDefaultValue` and `DefaultValue` of ColumnInfo are corrupted,
-		// because the content before json.Marshal is INCONSISTENT with the content after json.Unmarshal.
-		return string(c.OriginDefaultValueBit)
-	}
-	return c.OriginDefaultValue
 }
 
 // SetDefaultValue sets the default value.
@@ -169,6 +142,18 @@ func (c *ColumnInfo) GetDefaultValue() interface{} {
 		return string(c.DefaultValueBit)
 	}
 	return c.DefaultValue
+}
+
+// GetTypeDesc gets the description for column type.
+func (c *ColumnInfo) GetTypeDesc() string {
+	desc := c.FieldType.CompactStr()
+	if mysql.HasUnsignedFlag(c.Flag) && c.Tp != mysql.TypeBit && c.Tp != mysql.TypeYear {
+		desc += " unsigned"
+	}
+	if mysql.HasZerofillFlag(c.Flag) && c.Tp != mysql.TypeYear {
+		desc += " zerofill"
+	}
+	return desc
 }
 
 // FindColumnInfo finds ColumnInfo in cols by name.
@@ -235,6 +220,7 @@ type TableInfo struct {
 	Comment     string        `json:"comment"`
 	AutoIncID   int64         `json:"auto_inc_id"`
 	AutoIdCache int64         `json:"auto_id_cache"`
+	AutoRandID  int64         `json:"auto_rand_id"`
 	MaxColumnID int64         `json:"max_col_id"`
 	MaxIndexID  int64         `json:"max_idx_id"`
 	// UpdateTS is used to record the timestamp of updating the table's schema information.
@@ -252,6 +238,8 @@ type TableInfo struct {
 	ShardRowIDBits uint64
 	// MaxShardRowIDBits uses to record the max ShardRowIDBits be used so far.
 	MaxShardRowIDBits uint64 `json:"max_shard_row_id_bits"`
+	// AutoRandomBits is used to set the bit number to shard automatically when PKIsHandle.
+	AutoRandomBits uint64 `json:"auto_random_bits"`
 	// PreSplitRegions specify the pre-split region when create table.
 	// The pre-split region num is 2^(PreSplitRegions-1).
 	// And the PreSplitRegions should less than or equal to ShardRowIDBits.
@@ -262,11 +250,17 @@ type TableInfo struct {
 	Compression string `json:"compression"`
 
 	View *ViewInfo `json:"view"`
+
+	Sequence *SequenceInfo `json:"sequence"`
+
 	// Lock represent the table lock info.
 	Lock *TableLockInfo `json:"Lock"`
 
 	// Version means the version of the table info.
 	Version uint16 `json:"version"`
+
+	// TiFlashReplica means the TiFlash replica info.
+	TiFlashReplica *TiFlashReplicaInfo `json:"tiflash_replica"`
 }
 
 // TableLockInfo provides meta data describing a table lock.
@@ -354,6 +348,24 @@ func (t TableLockType) String() string {
 	return ""
 }
 
+// TiFlashReplicaInfo means the flash replica info.
+type TiFlashReplicaInfo struct {
+	Count                 uint64
+	LocationLabels        []string
+	Available             bool
+	AvailablePartitionIDs []int64
+}
+
+// IsPartitionAvailable checks whether the partition table replica was available.
+func (tr *TiFlashReplicaInfo) IsPartitionAvailable(pid int64) bool {
+	for _, id := range tr.AvailablePartitionIDs {
+		if id == pid {
+			return true
+		}
+	}
+	return false
+}
+
 // GetPartitionInfo returns the partition information.
 func (t *TableInfo) GetPartitionInfo() *PartitionInfo {
 	if t.Partition != nil && t.Partition.Enable {
@@ -400,11 +412,9 @@ func (t *TableInfo) Clone() *TableInfo {
 
 // GetPkName will return the pk name if pk exists.
 func (t *TableInfo) GetPkName() CIStr {
-	if t.PKIsHandle {
-		for _, colInfo := range t.Columns {
-			if mysql.HasPriKeyFlag(colInfo.Flag) {
-				return colInfo.Name
-			}
+	for _, colInfo := range t.Columns {
+		if mysql.HasPriKeyFlag(colInfo.Flag) {
+			return colInfo.Name
 		}
 	}
 	return CIStr{}
@@ -436,6 +446,19 @@ func (t *TableInfo) IsAutoIncColUnsigned() bool {
 		return false
 	}
 	return mysql.HasUnsignedFlag(col.Flag)
+}
+
+// ContainsAutoRandomBits indicates whether a table contains auto_random column.
+func (t *TableInfo) ContainsAutoRandomBits() bool {
+	return t.AutoRandomBits != 0
+}
+
+// IsAutoRandomBitColUnsigned indicates whether the auto_random column is unsigned. Make sure the table contains auto_random before calling this method.
+func (t *TableInfo) IsAutoRandomBitColUnsigned() bool {
+	if !t.PKIsHandle || t.AutoRandomBits == 0 {
+		return false
+	}
+	return mysql.HasUnsignedFlag(t.GetPkColInfo().Flag)
 }
 
 // Cols returns the columns of the table in public state.
@@ -493,9 +516,14 @@ func (t *TableInfo) ColumnIsInIndex(c *ColumnInfo) bool {
 	return false
 }
 
-// IsView checks if tableinfo is a view
+// IsView checks if TableInfo is a view.
 func (t *TableInfo) IsView() bool {
 	return t.View != nil
+}
+
+// IsSequence checks if TableInfo is a sequence.
+func (t *TableInfo) IsSequence() bool {
+	return t.Sequence != nil
 }
 
 // ViewAlgorithm is VIEW's SQL AlGORITHM characteristic.
@@ -569,6 +597,32 @@ type ViewInfo struct {
 	SelectStmt  string             `json:"view_select"`
 	CheckOption ViewCheckOption    `json:"view_checkoption"`
 	Cols        []CIStr            `json:"view_cols"`
+}
+
+const (
+	DefaultSequenceCacheBool          = true
+	DefaultSequenceCycleBool          = false
+	DefaultSequenceOrderBool          = false
+	DefaultSequenceCacheValue         = int64(1000)
+	DefaultSequenceIncrementValue     = int64(1)
+	DefaultPositiveSequenceStartValue = int64(1)
+	DefaultNegativeSequenceStartValue = int64(-1)
+	DefaultPositiveSequenceMinValue   = int64(1)
+	DefaultPositiveSequenceMaxValue   = int64(9223372036854775806)
+	DefaultNegativeSequenceMaxValue   = int64(-1)
+	DefaultNegativeSequenceMinValue   = int64(-9223372036854775807)
+)
+
+// SequenceInfo provide meta data describing a DB sequence.
+type SequenceInfo struct {
+	Start      int64  `json:"sequence_start"`
+	Cache      bool   `json:"sequence_cache"`
+	Cycle      bool   `json:"sequence_cycle"`
+	MinValue   int64  `json:"sequence_min_value"`
+	MaxValue   int64  `json:"sequence_max_value"`
+	Increment  int64  `json:"sequence_increment"`
+	CacheValue int64  `json:"sequence_cache_value"`
+	Comment    string `json:"sequence_comment"`
 }
 
 // PartitionType is the type for PartitionInfo
@@ -660,6 +714,8 @@ func (t IndexType) String() string {
 		return "BTREE"
 	case IndexTypeHash:
 		return "HASH"
+	case IndexTypeRtree:
+		return "RTREE"
 	default:
 		return ""
 	}
@@ -670,21 +726,23 @@ const (
 	IndexTypeInvalid IndexType = iota
 	IndexTypeBtree
 	IndexTypeHash
+	IndexTypeRtree
 )
 
 // IndexInfo provides meta data describing a DB index.
 // It corresponds to the statement `CREATE INDEX Name ON Table (Column);`
 // See https://dev.mysql.com/doc/refman/5.7/en/create-index.html
 type IndexInfo struct {
-	ID      int64          `json:"id"`
-	Name    CIStr          `json:"idx_name"`   // Index name.
-	Table   CIStr          `json:"tbl_name"`   // Table name.
-	Columns []*IndexColumn `json:"idx_cols"`   // Index columns.
-	Unique  bool           `json:"is_unique"`  // Whether the index is unique.
-	Primary bool           `json:"is_primary"` // Whether the index is primary key.
-	State   SchemaState    `json:"state"`
-	Comment string         `json:"comment"`    // Comment
-	Tp      IndexType      `json:"index_type"` // Index type: Btree or Hash
+	ID        int64          `json:"id"`
+	Name      CIStr          `json:"idx_name"` // Index name.
+	Table     CIStr          `json:"tbl_name"` // Table name.
+	Columns   []*IndexColumn `json:"idx_cols"` // Index columns.
+	State     SchemaState    `json:"state"`
+	Comment   string         `json:"comment"`      // Comment
+	Tp        IndexType      `json:"index_type"`   // Index type: Btree, Hash or Rtree
+	Unique    bool           `json:"is_unique"`    // Whether the index is unique.
+	Primary   bool           `json:"is_primary"`   // Whether the index is primary key.
+	Invisible bool           `json:"is_invisible"` // Whether the index is invisible.
 }
 
 // Clone clones IndexInfo.
@@ -794,75 +852,6 @@ func (cis *CIStr) UnmarshalJSON(b []byte) error {
 	}
 	cis.L = strings.ToLower(cis.O)
 	return nil
-}
-
-// ColumnsToProto converts a slice of model.ColumnInfo to a slice of tipb.ColumnInfo.
-func ColumnsToProto(columns []*ColumnInfo, pkIsHandle bool) []*tipb.ColumnInfo {
-	cols := make([]*tipb.ColumnInfo, 0, len(columns))
-	for _, c := range columns {
-		col := ColumnToProto(c)
-		// TODO: Here `PkHandle`'s meaning is changed, we will change it to `IsHandle` when tikv's old select logic
-		// is abandoned.
-		if (pkIsHandle && mysql.HasPriKeyFlag(c.Flag)) || c.ID == ExtraHandleID {
-			col.PkHandle = true
-		} else {
-			col.PkHandle = false
-		}
-		cols = append(cols, col)
-	}
-	return cols
-}
-
-// IndexToProto converts a model.IndexInfo to a tipb.IndexInfo.
-func IndexToProto(t *TableInfo, idx *IndexInfo) *tipb.IndexInfo {
-	pi := &tipb.IndexInfo{
-		TableId: t.ID,
-		IndexId: idx.ID,
-		Unique:  idx.Unique,
-	}
-	cols := make([]*tipb.ColumnInfo, 0, len(idx.Columns)+1)
-	for _, c := range idx.Columns {
-		cols = append(cols, ColumnToProto(t.Columns[c.Offset]))
-	}
-	if t.PKIsHandle {
-		// Coprocessor needs to know PKHandle column info, so we need to append it.
-		for _, col := range t.Columns {
-			if mysql.HasPriKeyFlag(col.Flag) {
-				colPB := ColumnToProto(col)
-				colPB.PkHandle = true
-				cols = append(cols, colPB)
-				break
-			}
-		}
-	}
-	pi.Columns = cols
-	return pi
-}
-
-// ColumnToProto converts model.ColumnInfo to tipb.ColumnInfo.
-func ColumnToProto(c *ColumnInfo) *tipb.ColumnInfo {
-	pc := &tipb.ColumnInfo{
-		ColumnId:  c.ID,
-		Collation: collationToProto(c.FieldType.Collate),
-		ColumnLen: int32(c.FieldType.Flen),
-		Decimal:   int32(c.FieldType.Decimal),
-		Flag:      int32(c.Flag),
-		Elems:     c.Elems,
-	}
-	pc.Tp = int32(c.FieldType.Tp)
-	return pc
-}
-
-// TODO: update it when more collate is supported.
-func collationToProto(c string) int32 {
-	v := mysql.CollationNames[c]
-	if v == mysql.BinaryDefaultCollationID {
-		return int32(mysql.BinaryDefaultCollationID)
-	}
-	// We only support binary and utf8_bin collation.
-	// Setting other collations to utf8_bin for old data compatibility.
-	// For the data created when we didn't enforce utf8_bin collation in create table.
-	return int32(mysql.DefaultCollationID)
 }
 
 // TableColumnID is composed by table ID and column ID.

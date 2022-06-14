@@ -114,14 +114,14 @@ func (d *sqlDigester) doDigest(sql string) (result string) {
 
 func (d *sqlDigester) doNormalize(sql string) (result string) {
 	d.normalize(sql)
-	result = string(d.buffer.Bytes())
+	result = d.buffer.String()
 	d.buffer.Reset()
 	return
 }
 
 func (d *sqlDigester) doNormalizeDigest(sql string) (normalized, digest string) {
 	d.normalize(sql)
-	normalized = string(d.buffer.Bytes())
+	normalized = d.buffer.String()
 	d.hasher.Write(d.buffer.Bytes())
 	d.buffer.Reset()
 	digest = fmt.Sprintf("%x", d.hasher.Sum(nil))
@@ -173,17 +173,7 @@ func (d *sqlDigester) normalize(sql string) {
 
 func (d *sqlDigester) reduceOptimizerHint(tok *token) (reduced bool) {
 	// ignore /*+..*/
-	if tok.tok == hintBegin {
-		for {
-			tok, _, _ := d.lexer.scan()
-			if tok == 0 || (tok == unicode.ReplacementChar && d.lexer.r.eof()) {
-				break
-			}
-			if tok == hintEnd {
-				reduced = true
-				break
-			}
-		}
+	if tok.tok == hintComment {
 		return
 	}
 

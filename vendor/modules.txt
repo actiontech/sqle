@@ -12,7 +12,7 @@ github.com/Masterminds/semver/v3
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/StackExchange/wmi v0.0.0-20180725035823-b12b22c5341f
+# github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
 github.com/StackExchange/wmi
 # github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220601071856-7364d5abb0a3
 ## explicit
@@ -40,7 +40,7 @@ github.com/cznic/mathutil
 # github.com/cznic/parser v0.0.0-20181122101858-d773202d5b1f
 ## explicit
 github.com/cznic/parser/yacc
-# github.com/cznic/sortutil v0.0.0-20150617083342-4c7342852e65
+# github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8
 ## explicit
 github.com/cznic/sortutil
 # github.com/cznic/strutil v0.0.0-20181122101858-275e90344537
@@ -96,7 +96,7 @@ github.com/go-mysql-org/go-mysql/mysql
 github.com/go-mysql-org/go-mysql/packet
 github.com/go-mysql-org/go-mysql/replication
 github.com/go-mysql-org/go-mysql/utils
-# github.com/go-ole/go-ole v1.2.1
+# github.com/go-ole/go-ole v1.2.4
 github.com/go-ole/go-ole
 github.com/go-ole/go-ole/oleutil
 # github.com/go-openapi/jsonpointer v0.19.3
@@ -223,6 +223,9 @@ github.com/oklog/run
 ## explicit
 github.com/openark/golib/log
 github.com/openark/golib/sqlutils
+# github.com/opentracing/opentracing-go v1.1.0
+github.com/opentracing/opentracing-go
+github.com/opentracing/opentracing-go/log
 # github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 ## explicit
 github.com/percona/go-mysql/log
@@ -233,9 +236,9 @@ github.com/percona/pmm-agent/agents/mysql/slowlog/parser
 # github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 ## explicit
 github.com/pingcap/errors
-# github.com/pingcap/log v0.0.0-20210317133921-96f4fcab92a4 => github.com/pingcap/log v0.0.0-20190715063458-479153f07ebd
+# github.com/pingcap/log v0.0.0-20210317133921-96f4fcab92a4 => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 github.com/pingcap/log
-# github.com/pingcap/parser v3.0.12+incompatible => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
+# github.com/pingcap/parser v3.0.12+incompatible => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
 ## explicit
 github.com/pingcap/parser
 github.com/pingcap/parser/ast
@@ -247,18 +250,23 @@ github.com/pingcap/parser/mysql
 github.com/pingcap/parser/opcode
 github.com/pingcap/parser/terror
 github.com/pingcap/parser/types
-# github.com/pingcap/tidb v0.0.0-20200312110807-8c4696b3f340
+# github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
 ## explicit
+github.com/pingcap/tidb/errno
 github.com/pingcap/tidb/sessionctx/stmtctx
 github.com/pingcap/tidb/types
 github.com/pingcap/tidb/types/json
 github.com/pingcap/tidb/types/parser_driver
+github.com/pingcap/tidb/util/collate
+github.com/pingcap/tidb/util/disk
 github.com/pingcap/tidb/util/execdetails
 github.com/pingcap/tidb/util/hack
 github.com/pingcap/tidb/util/logutil
 github.com/pingcap/tidb/util/math
 github.com/pingcap/tidb/util/memory
-# github.com/pingcap/tipb v0.0.0-20191120045257-1b9900292ab6
+github.com/pingcap/tidb/util/parser
+github.com/pingcap/tidb/util/stringutil
+# github.com/pingcap/tipb v0.0.0-20200522051215-f31a15d98fce
 github.com/pingcap/tipb/go-tipb
 github.com/pingcap/tipb/sharedbytes
 # github.com/pkg/errors v0.9.1
@@ -266,7 +274,7 @@ github.com/pingcap/tipb/sharedbytes
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/remyoudompheng/bigfft v0.0.0-20190512091148-babf20351dd7
+# github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237
 github.com/remyoudompheng/bigfft
 # github.com/robfig/cron/v3 v3.0.1
 ## explicit
@@ -275,7 +283,7 @@ github.com/robfig/cron/v3
 github.com/russross/blackfriday/v2
 # github.com/satori/go.uuid v1.2.0
 github.com/satori/go.uuid
-# github.com/shirou/gopsutil v2.18.10+incompatible
+# github.com/shirou/gopsutil v2.19.10+incompatible
 github.com/shirou/gopsutil/internal/common
 github.com/shirou/gopsutil/mem
 # github.com/shopspring/decimal v1.2.0
@@ -520,6 +528,6 @@ vitess.io/vitess/go/vt/sqlparser
 vitess.io/vitess/go/vt/sysvars
 vitess.io/vitess/go/vt/vterrors
 vitess.io/vitess/go/vt/vtgate/evalengine
-# github.com/pingcap/log => github.com/pingcap/log v0.0.0-20190715063458-479153f07ebd
-# github.com/pingcap/parser => github.com/sjjian/parser v3.0.18-0.20210616112000-9bc0b6c50168+incompatible
+# github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
+# github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
 # google.golang.org/grpc => google.golang.org/grpc v1.29.0
