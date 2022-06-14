@@ -1799,6 +1799,8 @@ definitions:
         type: object
       name:
         type: string
+      schema:
+        type: string
     type: object
   v1.TableMetaItemHeadResV1:
     properties:
