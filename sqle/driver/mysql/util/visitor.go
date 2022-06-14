@@ -78,8 +78,8 @@ func (cp *CapitalizeProcessor) Enter(in ast.Node) (node ast.Node, skipChildren b
 	return in, false
 }
 
-func (cp *CapitalizeProcessor) Leave(in ast.Node) (node ast.Node, skipChildren bool) {
-	return in, false
+func (cp *CapitalizeProcessor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
 }
 
 // TableNameExtractor implements ast.Visitor interface.
