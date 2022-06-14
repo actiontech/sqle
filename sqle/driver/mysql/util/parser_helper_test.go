@@ -158,11 +158,11 @@ func TestFingerprint(t *testing.T) {
 		},
 		{
 			input:  "CREATE TABLE `tb1` SELECT * FROM `tb2` WHERE a=1",
-			expect: "CREATE TABLE `tb1` AS SELECT * FROM `tb2` WHERE `a`=?",
+			expect: "CREATE TABLE `tb1`  AS SELECT * FROM `tb2` WHERE `a`=?",
 		},
 		{
 			input:  "CREATE TABLE `tb1` AS SELECT * FROM `tb2` WHERE a=1",
-			expect: "CREATE TABLE `tb1` AS SELECT * FROM `tb2` WHERE `a`=?",
+			expect: "CREATE TABLE `tb1`  AS SELECT * FROM `tb2` WHERE `a`=?",
 		},
 		// newline
 		{

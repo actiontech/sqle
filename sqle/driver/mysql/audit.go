@@ -746,7 +746,7 @@ func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 			if alias != "" {
 				tableAlias[table] = alias
 			}
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.UnionStmt:
 			continue
 		}
 	}
@@ -950,7 +950,7 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		case *ast.TableName:
 			table := source
 			tables = append(tables, table)
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.UnionStmt:
 			continue
 		}
 	}

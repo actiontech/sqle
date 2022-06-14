@@ -1168,12 +1168,10 @@ func checkSelectWhere(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 		checkWhere(rule, res, stmt.Where)
 	case *ast.DeleteStmt:
 		checkWhere(rule, res, stmt.Where)
-	case *ast.SetOprStmt:
+	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			if sss, ok := ss.(*ast.SelectStmt); ok {
-				if checkWhere(rule, res, sss.Where) {
-					break
-				}
+			if checkWhere(rule, res, ss.Where) {
+				break
 			}
 		}
 	default:
@@ -2611,22 +2609,20 @@ func checkWhereExistFunc(ctx *session.Context, rule driver.Rule, res *driver.Aud
 		if stmt.Where != nil {
 			checkExistFunc(ctx, rule, res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
-	case *ast.SetOprStmt:
+	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			if sss, ok := ss.(*ast.SelectStmt); ok {
-				tableSources := util.GetTableSources(sss.From.TableRefs)
-				if len(tableSources) < 1 {
-					continue
+			tableSources := util.GetTableSources(ss.From.TableRefs)
+			if len(tableSources) < 1 {
+				continue
+			}
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
 				}
-				for _, tableSource := range tableSources {
-					switch source := tableSource.Source.(type) {
-					case *ast.TableName:
-						tables = append(tables, source)
-					}
-				}
-				if checkExistFunc(ctx, rule, res, tables, sss.Where) {
-					break
-				}
+			}
+			if checkExistFunc(ctx, rule, res, tables, ss.Where) {
+				break
 			}
 		}
 	default:
@@ -2690,22 +2686,20 @@ func checkWhereColumnImplicitConversion(ctx *session.Context, rule driver.Rule, 
 		if stmt.Where != nil {
 			checkWhereColumnImplicitConversionFunc(ctx, rule, res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
-	case *ast.SetOprStmt:
+	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			if sss, ok := ss.(*ast.SelectStmt); ok {
-				tableSources := util.GetTableSources(sss.From.TableRefs)
-				if len(tableSources) < 1 {
-					continue
+			tableSources := util.GetTableSources(ss.From.TableRefs)
+			if len(tableSources) < 1 {
+				continue
+			}
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tables = append(tables, source)
 				}
-				for _, tableSource := range tableSources {
-					switch source := tableSource.Source.(type) {
-					case *ast.TableName:
-						tables = append(tables, source)
-					}
-				}
-				if checkWhereColumnImplicitConversionFunc(ctx, rule, res, tables, sss.Where) {
-					break
-				}
+			}
+			if checkWhereColumnImplicitConversionFunc(ctx, rule, res, tables, ss.Where) {
+				break
 			}
 		}
 	default:
@@ -2751,7 +2745,7 @@ func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driver.Ru
 func checkDMLSelectForUpdate(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
-		if stmt.LockInfo != nil && stmt.LockInfo.LockType == ast.SelectLockForUpdate {
+		if stmt.LockTp == ast.SelectLockForUpdate {
 			addResult(res, rule, DMLCheckSelectForUpdate)
 		}
 	}
@@ -3001,13 +2995,11 @@ func checkNumberOfJoinTables(ctx *session.Context, rule driver.Rule, res *driver
 
 func checkIsAfterUnionDistinct(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
 	switch stmt := node.(type) {
-	case *ast.SetOprStmt:
+	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
-			if sss, ok := ss.(*ast.SelectStmt); ok {
-				if sss.AfterSetOperator != nil && *sss.AfterSetOperator == ast.Union {
-					addResult(res, rule, DMLCheckIfAfterUnionDistinct)
-					return nil
-				}
+			if ss.IsAfterUnionDistinct {
+				addResult(res, rule, DMLCheckIfAfterUnionDistinct)
+				return nil
 			}
 		}
 	default:

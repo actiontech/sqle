@@ -45,7 +45,7 @@ require (
 	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63
 	github.com/pingcap/parser v3.0.12+incompatible
-	github.com/pingcap/tidb v1.1.0-beta.0.20220505070855-252842b6e18c
+	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sijms/go-ora/v2 v2.2.15
@@ -66,7 +66,7 @@ require (
 )
 
 replace (
-	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20210818144256-6455d4a4c6f9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220607082906-dfccb15e3dcc
+	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614052128-712cdfee51a1
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )

@@ -338,7 +338,7 @@ func TestOptimizer_parseSelectStmt(t *testing.T) {
 		{"select * from t1 right join t2 on t1.id = t2.id", nil, map[string]string{"t1": "id", "t2": "id"}},
 		{"select * from t1 as t1_alias join t2 as t2_alias on t1_alias.id = t2_alias.id", nil, map[string]string{"t1_alias": "id", "t2_alias": "id"}},
 		// multi select
-		{"select * from (select * from t1) as t2", map[string]string{"t2": "SELECT * FROM (SELECT * FROM t1) AS t2", "t1": "SELECT * FROM t1"}, nil},
+		{"select * from (select * from t1) as t2", map[string]string{"t2": "SELECT * FROM (SELECT * FROM (t1)) AS t2", "t1": "SELECT * FROM t1"}, nil},
 		{"select * from t1 where id = (select * from t2)", map[string]string{"t1": "SELECT * FROM t1 WHERE id=(SELECT * FROM t2)", "t2": "SELECT * FROM t2"}, nil},
 	}
 	for i, tt := range tests {
