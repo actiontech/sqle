@@ -169,11 +169,11 @@ func getTableMetadata(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetTableMetadataResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertTableMetadataToRes(tableMetadata, tableName),
+		Data:    convertTableMetadataToRes(tableMetadata),
 	})
 }
 
-func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTableNameResult, tableName string) TableMeta {
+func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTableNameResult) TableMeta {
 	columnsInfo := metaByTableNameResult.TableMeta.ColumnsInfo
 	indexesInfo := metaByTableNameResult.TableMeta.IndexesInfo
 
@@ -215,7 +215,8 @@ func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTable
 	}
 
 	tableMeta.CreateTableSQL = metaByTableNameResult.TableMeta.CreateTableSQL
-	tableMeta.Name = tableName
+	tableMeta.Name = metaByTableNameResult.TableMeta.Name
+	tableMeta.Schema = metaByTableNameResult.TableMeta.Schema
 
 	return tableMeta
 }
