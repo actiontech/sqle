@@ -61,8 +61,13 @@ func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTable
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Db.Close()
-	tables, err := conn.ShowSchemaTables(conf.Schema)
+	defer conn.Db.Close() //todo do not close connect here, but expose common close() to gracefully close
+
+	schema := conf.Schema
+	if schema == "" {
+		schema = i.Ctx.CurrentSchema()
+	}
+	tables, err := conn.ShowSchemaTables(schema)
 	if err != nil {
 		return nil, err
 	}
@@ -76,6 +81,10 @@ func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTable
 
 // GetTableMetaByTableName get table's metadata by table name.
 func (i *Inspect) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
+	schema := conf.Schema
+	if schema == "" {
+		schema = i.Ctx.CurrentSchema()
+	}
 	columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schema, conf.Table)
 	if err != nil {
 		return nil, err
