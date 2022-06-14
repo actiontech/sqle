@@ -58,9 +58,18 @@ const (
 	ActionModifySchemaCharsetAndCollate ActionType = 26
 	ActionLockTable                     ActionType = 27
 	ActionUnlockTable                   ActionType = 28
+	ActionRepairTable                   ActionType = 29
+	ActionSetTiFlashReplica             ActionType = 30
+	ActionUpdateTiFlashReplicaStatus    ActionType = 31
 	ActionAddPrimaryKey                 ActionType = 32
 	ActionDropPrimaryKey                ActionType = 33
-	ActionModifyTableAutoIdCache        ActionType = 34
+	ActionCreateSequence                ActionType = 34
+	ActionAlterSequence                 ActionType = 35
+	ActionDropSequence                  ActionType = 36
+	ActionAddColumns                    ActionType = 37
+	ActionDropColumns                   ActionType = 38
+	ActionModifyTableAutoIdCache        ActionType = 39
+	ActionRebaseAutoRandomBase          ActionType = 40
 )
 
 const (
@@ -98,9 +107,18 @@ var actionMap = map[ActionType]string{
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
 	ActionLockTable:                     "lock table",
 	ActionUnlockTable:                   "unlock table",
+	ActionRepairTable:                   "repair table",
+	ActionSetTiFlashReplica:             "set tiflash replica",
+	ActionUpdateTiFlashReplicaStatus:    "update tiflash replica status",
 	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
 	ActionDropPrimaryKey:                "drop primary key",
+	ActionCreateSequence:                "create sequence",
+	ActionAlterSequence:                 "alter sequence",
+	ActionDropSequence:                  "drop sequence",
+	ActionAddColumns:                    "add multi-columns",
+	ActionDropColumns:                   "drop multi-columns",
 	ActionModifyTableAutoIdCache:        "modify auto id cache",
+	ActionRebaseAutoRandomBase:          "rebase auto_random ID",
 }
 
 // String return current ddl action in string

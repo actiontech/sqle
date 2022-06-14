@@ -18,10 +18,13 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pingcap/parser"
+	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/tidb/util/disk"
 	"github.com/pingcap/tidb/util/execdetails"
 	"github.com/pingcap/tidb/util/memory"
 	"go.uber.org/zap"
@@ -36,6 +39,13 @@ const (
 	WarnLevelNote = "Note"
 )
 
+var taskIDAlloc uint64
+
+// AllocateTaskID allocates a new unique ID for a statement execution
+func AllocateTaskID() uint64 {
+	return atomic.AddUint64(&taskIDAlloc, 1)
+}
+
 // SQLWarn relates a sql warning and it's level.
 type SQLWarn struct {
 	Level string
@@ -46,6 +56,7 @@ type SQLWarn struct {
 // It should be reset before executing a statement.
 type StatementContext struct {
 	// Set the following variables before execution
+	StmtHints
 
 	// IsDDLJobInQueue is used to mark whether the DDL job is put into the queue.
 	// If IsDDLJobInQueue is true, it means the DDL job is in the queue of storage, and it can be handled by the DDL worker.
@@ -68,11 +79,6 @@ type StatementContext struct {
 	BatchCheck             bool
 	InNullRejectCheck      bool
 	AllowInvalidDate       bool
-	// CastStrToIntStrict is used to control the way we cast float format string to int.
-	// If ConvertStrToIntStrict is false, we convert it to a valid float string first,
-	// then cast the float string to int string. Otherwise, we cast string to integer
-	// prefix in a strict way, only extract 0-9 and (+ or - in first bit).
-	CastStrToIntStrict bool
 
 	// mu struct holds variables that change during execution.
 	mu struct {
@@ -115,11 +121,15 @@ type StatementContext struct {
 	// InsertID is the given insert ID of an auto_increment column.
 	InsertID uint64
 
+	BaseRowID int64
+	MaxRowID  int64
+
 	// Copied from SessionVars.TimeZone.
 	TimeZone         *time.Location
 	Priority         mysql.PriorityEnum
 	NotFillCache     bool
 	MemTracker       *memory.Tracker
+	DiskTracker      *disk.Tracker
 	RuntimeStatsColl *execdetails.RuntimeStatsColl
 	TableIDs         []int64
 	IndexNames       []string
@@ -132,14 +142,36 @@ type StatementContext struct {
 		normalized string
 		digest     string
 	}
+	// planNormalized use for cache the normalized plan, avoid duplicate builds.
+	planNormalized        string
+	planDigest            string
 	Tables                []TableEntry
+	PointExec             bool       // for point update cached execution, Constant expression need to set "paramMarker"
 	lockWaitStartTime     *time.Time // LockWaitStartTime stores the pessimistic lock wait start time
 	PessimisticLockWaited int32
 	LockKeysDuration      time.Duration
-	// planNormalized use for cache the normalized plan, avoid duplicate builds.
-	planNormalized string
-	planDigest     string
-	LockKeysCount  int32
+	LockKeysCount         int32
+	TblInfo2UnionScan     map[*model.TableInfo]bool
+	TaskID                uint64 // unique ID for an execution of a statement
+}
+
+// StmtHints are SessionVars related sql hints.
+type StmtHints struct {
+	// Hint Information
+	MemQuotaQuery           int64
+	MaxExecutionTime        uint64
+	ReplicaRead             byte
+	AllowInSubqToJoinAndAgg bool
+	NoIndexMergeHint        bool
+	// EnableCascadesPlanner is use cascades planner for a single query only.
+	EnableCascadesPlanner bool
+
+	// Hint flags
+	HasAllowInSubqToJoinAndAggHint bool
+	HasMemQuotaHint                bool
+	HasReplicaReadHint             bool
+	HasMaxExecutionTime            bool
+	HasEnableCascadesPlannerHint   bool
 }
 
 // GetNowTsCached getter for nowTs, if not set get now time and cache it
@@ -164,6 +196,13 @@ func (sc *StatementContext) SQLDigest() (normalized, sqlDigest string) {
 		sc.digestMemo.normalized, sc.digestMemo.digest = parser.NormalizeDigest(sc.OriginalSQL)
 	})
 	return sc.digestMemo.normalized, sc.digestMemo.digest
+}
+
+// InitSQLDigest sets the normalized and digest for sql.
+func (sc *StatementContext) InitSQLDigest(normalized, digest string) {
+	sc.digestMemo.Do(func() {
+		sc.digestMemo.normalized, sc.digestMemo.digest = normalized, digest
+	})
 }
 
 // GetPlanDigest gets the normalized plan and plan digest.
@@ -307,30 +346,12 @@ func (sc *StatementContext) WarningCount() uint16 {
 	return wc
 }
 
-const zero = "0"
-
 // NumErrorWarnings gets warning and error count.
-func (sc *StatementContext) NumErrorWarnings() (ec, wc string) {
-	var (
-		ecNum uint16
-		wcNum int
-	)
+func (sc *StatementContext) NumErrorWarnings() (ec uint16, wc int) {
 	sc.mu.Lock()
-	ecNum = sc.mu.errorCount
-	wcNum = len(sc.mu.warnings)
+	ec = sc.mu.errorCount
+	wc = len(sc.mu.warnings)
 	sc.mu.Unlock()
-
-	if ecNum == 0 {
-		ec = zero
-	} else {
-		ec = strconv.Itoa(int(ecNum))
-	}
-
-	if wcNum == 0 {
-		wc = zero
-	} else {
-		wc = strconv.Itoa(wcNum)
-	}
 	return
 }
 
@@ -351,6 +372,15 @@ func (sc *StatementContext) AppendWarning(warn error) {
 	sc.mu.Lock()
 	if len(sc.mu.warnings) < math.MaxUint16 {
 		sc.mu.warnings = append(sc.mu.warnings, SQLWarn{WarnLevelWarning, warn})
+	}
+	sc.mu.Unlock()
+}
+
+// AppendWarnings appends some warnings.
+func (sc *StatementContext) AppendWarnings(warns []SQLWarn) {
+	sc.mu.Lock()
+	if len(sc.mu.warnings) < math.MaxUint16 {
+		sc.mu.warnings = append(sc.mu.warnings, warns...)
 	}
 	sc.mu.Unlock()
 }
@@ -379,14 +409,6 @@ func (sc *StatementContext) SetHistogramsNotLoad() {
 	sc.mu.Lock()
 	sc.mu.histogramsNotLoad = true
 	sc.mu.Unlock()
-}
-
-// HistogramsNotLoad gets histogramsNotLoad.
-func (sc *StatementContext) HistogramsNotLoad() bool {
-	sc.mu.Lock()
-	notLoad := sc.mu.histogramsNotLoad
-	sc.mu.Unlock()
-	return notLoad
 }
 
 // HandleTruncate ignores or returns the error based on the StatementContext state.
@@ -434,8 +456,11 @@ func (sc *StatementContext) ResetForRetry() {
 	sc.mu.execDetails = execdetails.ExecDetails{}
 	sc.mu.allExecDetails = make([]*execdetails.ExecDetails, 0, 4)
 	sc.mu.Unlock()
+	sc.MaxRowID = 0
+	sc.BaseRowID = 0
 	sc.TableIDs = sc.TableIDs[:0]
 	sc.IndexNames = sc.IndexNames[:0]
+	sc.TaskID = AllocateTaskID()
 }
 
 // MergeExecDetails merges a single region execution details into self, used to print
@@ -443,6 +468,7 @@ func (sc *StatementContext) ResetForRetry() {
 func (sc *StatementContext) MergeExecDetails(details *execdetails.ExecDetails, commitDetails *execdetails.CommitDetails) {
 	sc.mu.Lock()
 	if details != nil {
+		sc.mu.execDetails.CopTime += details.CopTime
 		sc.mu.execDetails.ProcessTime += details.ProcessTime
 		sc.mu.execDetails.WaitTime += details.WaitTime
 		sc.mu.execDetails.BackoffTime += details.BackoffTime
@@ -483,12 +509,50 @@ func (sc *StatementContext) ShouldIgnoreOverflowError() bool {
 	return false
 }
 
+// PushDownFlags converts StatementContext to tipb.SelectRequest.Flags.
+func (sc *StatementContext) PushDownFlags() uint64 {
+	var flags uint64
+	if sc.InInsertStmt {
+		flags |= model.FlagInInsertStmt
+	} else if sc.InUpdateStmt || sc.InDeleteStmt {
+		flags |= model.FlagInUpdateOrDeleteStmt
+	} else if sc.InSelectStmt {
+		flags |= model.FlagInSelectStmt
+	}
+	if sc.IgnoreTruncate {
+		flags |= model.FlagIgnoreTruncate
+	} else if sc.TruncateAsWarning {
+		flags |= model.FlagTruncateAsWarning
+	}
+	if sc.OverflowAsWarning {
+		flags |= model.FlagOverflowAsWarning
+	}
+	if sc.IgnoreZeroInDate {
+		flags |= model.FlagIgnoreZeroInDate
+	}
+	if sc.DividedByZeroAsWarning {
+		flags |= model.FlagDividedByZeroAsWarning
+	}
+	if sc.InLoadDataStmt {
+		flags |= model.FlagInLoadDataStmt
+	}
+	return flags
+}
+
 // CopTasksDetails returns some useful information of cop-tasks during execution.
 func (sc *StatementContext) CopTasksDetails() *CopTasksDetails {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	n := len(sc.mu.allExecDetails)
-	d := &CopTasksDetails{NumCopTasks: n}
+	d := &CopTasksDetails{
+		NumCopTasks:       n,
+		MaxBackoffTime:    make(map[string]time.Duration),
+		AvgBackoffTime:    make(map[string]time.Duration),
+		P90BackoffTime:    make(map[string]time.Duration),
+		TotBackoffTime:    make(map[string]time.Duration),
+		TotBackoffTimes:   make(map[string]int),
+		MaxBackoffAddress: make(map[string]string),
+	}
 	if n == 0 {
 		return d
 	}
@@ -508,7 +572,57 @@ func (sc *StatementContext) CopTasksDetails() *CopTasksDetails {
 	d.P90WaitTime = sc.mu.allExecDetails[n*9/10].WaitTime
 	d.MaxWaitTime = sc.mu.allExecDetails[n-1].WaitTime
 	d.MaxWaitAddress = sc.mu.allExecDetails[n-1].CalleeAddress
+
+	// calculate backoff details
+	type backoffItem struct {
+		callee    string
+		sleepTime time.Duration
+		times     int
+	}
+	backoffInfo := make(map[string][]backoffItem)
+	for _, ed := range sc.mu.allExecDetails {
+		for backoff := range ed.BackoffTimes {
+			backoffInfo[backoff] = append(backoffInfo[backoff], backoffItem{
+				callee:    ed.CalleeAddress,
+				sleepTime: ed.BackoffSleep[backoff],
+				times:     ed.BackoffTimes[backoff],
+			})
+		}
+	}
+	for backoff, items := range backoffInfo {
+		if len(items) == 0 {
+			continue
+		}
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].sleepTime < items[j].sleepTime
+		})
+		n := len(items)
+		d.MaxBackoffAddress[backoff] = items[n-1].callee
+		d.MaxBackoffTime[backoff] = items[n-1].sleepTime
+		d.P90BackoffTime[backoff] = items[n*9/10].sleepTime
+
+		var totalTime time.Duration
+		totalTimes := 0
+		for _, it := range items {
+			totalTime += it.sleepTime
+			totalTimes += it.times
+		}
+		d.AvgBackoffTime[backoff] = totalTime / time.Duration(n)
+		d.TotBackoffTime[backoff] = totalTime
+		d.TotBackoffTimes[backoff] = totalTimes
+	}
 	return d
+}
+
+// SetFlagsFromPBFlag set the flag of StatementContext from a `tipb.SelectRequest.Flags`.
+func (sc *StatementContext) SetFlagsFromPBFlag(flags uint64) {
+	sc.IgnoreTruncate = (flags & model.FlagIgnoreTruncate) > 0
+	sc.TruncateAsWarning = (flags & model.FlagTruncateAsWarning) > 0
+	sc.InInsertStmt = (flags & model.FlagInInsertStmt) > 0
+	sc.InSelectStmt = (flags & model.FlagInSelectStmt) > 0
+	sc.OverflowAsWarning = (flags & model.FlagOverflowAsWarning) > 0
+	sc.IgnoreZeroInDate = (flags & model.FlagIgnoreZeroInDate) > 0
+	sc.DividedByZeroAsWarning = (flags & model.FlagDividedByZeroAsWarning) > 0
 }
 
 // GetLockWaitStartTime returns the statement pessimistic lock wait start time
@@ -533,6 +647,13 @@ type CopTasksDetails struct {
 	P90WaitTime    time.Duration
 	MaxWaitAddress string
 	MaxWaitTime    time.Duration
+
+	MaxBackoffTime    map[string]time.Duration
+	MaxBackoffAddress map[string]string
+	AvgBackoffTime    map[string]time.Duration
+	P90BackoffTime    map[string]time.Duration
+	TotBackoffTime    map[string]time.Duration
+	TotBackoffTimes   map[string]int
 }
 
 // ToZapFields wraps the CopTasksDetails as zap.Fileds.

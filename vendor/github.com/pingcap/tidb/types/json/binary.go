@@ -357,23 +357,6 @@ func marshalStringTo(buf, s []byte) []byte {
 	return buf
 }
 
-func (bj BinaryJSON) marshalValueEntryTo(buf []byte, entryOff int) ([]byte, error) {
-	tpCode := bj.Value[entryOff]
-	switch tpCode {
-	case TypeCodeLiteral:
-		buf = marshalLiteralTo(buf, bj.Value[entryOff+1])
-	default:
-		offset := endian.Uint32(bj.Value[entryOff+1:])
-		tmp := BinaryJSON{TypeCode: tpCode, Value: bj.Value[offset:]}
-		var err error
-		buf, err = tmp.marshalTo(buf)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-	}
-	return buf, nil
-}
-
 func marshalLiteralTo(b []byte, litType byte) []byte {
 	switch litType {
 	case LiteralFalse:
@@ -392,7 +375,12 @@ func ParseBinaryFromString(s string) (bj BinaryJSON, err error) {
 		err = ErrInvalidJSONText.GenWithStackByArgs("The document is empty")
 		return
 	}
-	if err = bj.UnmarshalJSON(hack.Slice(s)); err != nil {
+	data := hack.Slice(s)
+	if !json.Valid(data) {
+		err = ErrInvalidJSONText.GenWithStackByArgs("The document root must not be followed by other values.")
+		return
+	}
+	if err = bj.UnmarshalJSON(data); err != nil {
 		err = ErrInvalidJSONText.GenWithStackByArgs(err)
 	}
 	return

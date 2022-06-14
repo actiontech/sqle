@@ -1634,7 +1634,7 @@ func disableAddIndexForColumnsTypeBlob(ctx *session.Context, rule driver.Rule, r
 				isTypeBlobCols[col.Name.Name.String()] = false
 			}
 		}
-		for _, indexColumns := range stmt.IndexColNames {
+		for _, indexColumns := range stmt.IndexPartSpecifications {
 			if isTypeBlobCols[indexColumns.Column.Name.String()] {
 				indexDataTypeIsBlob = true
 				break
@@ -1843,11 +1843,11 @@ func checkIndex(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 
 	case *ast.CreateIndexStmt:
 		indexCounter++
-		if compositeIndexMax < len(stmt.IndexColNames) {
-			compositeIndexMax = len(stmt.IndexColNames)
+		if compositeIndexMax < len(stmt.IndexPartSpecifications) {
+			compositeIndexMax = len(stmt.IndexPartSpecifications)
 		}
 		singleConstraint := index{Name: stmt.IndexName, Column: []string{}}
-		for _, key := range stmt.IndexColNames {
+		for _, key := range stmt.IndexPartSpecifications {
 			singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
 			singleIndexCounter[key.Column.Name.L]++
 		}
@@ -2190,7 +2190,7 @@ func checkIndexPrefix(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 			}
 		}
 	case *ast.CreateIndexStmt:
-		if !stmt.Unique {
+		if stmt.KeyType == ast.IndexKeyTypeNone {
 			indexesName = append(indexesName, stmt.IndexName)
 		}
 	default:
@@ -2256,8 +2256,8 @@ func getTableUniqIndex(node ast.Node) (string, map[string][]string) {
 		}
 	case *ast.CreateIndexStmt:
 		tableName = stmt.Table.Name.String()
-		if stmt.Unique {
-			for _, indexCol := range stmt.IndexColNames {
+		if stmt.KeyType == ast.IndexKeyTypeUnique {
+			for _, indexCol := range stmt.IndexPartSpecifications {
 				indexes[stmt.IndexName] = append(indexes[stmt.IndexName], indexCol.Column.Name.String())
 			}
 		}
@@ -3038,7 +3038,7 @@ func checkIndexOption(ctx *session.Context, rule driver.Rule, res *driver.AuditR
 		}
 	case *ast.CreateIndexStmt:
 		tableName = stmt.Table
-		for _, indexCol := range stmt.IndexColNames {
+		for _, indexCol := range stmt.IndexPartSpecifications {
 			indexColumns = append(indexColumns, indexCol.Column.Name.String())
 		}
 	default:

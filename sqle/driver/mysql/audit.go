@@ -582,7 +582,7 @@ func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) error {
 	}
 	keyColsName := []string{}
 	keyColNeedExist := []string{}
-	for _, col := range stmt.IndexColNames {
+	for _, col := range stmt.IndexPartSpecifications {
 		colName := col.Column.Name.L
 		keyColsName = append(keyColsName, colName)
 		if _, ok := colNameMap[col.Column.Name.L]; !ok {
