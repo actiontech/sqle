@@ -285,7 +285,7 @@ func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMe
 			Table:  t.Name.String(),
 		})
 	}
-	getMultiTalbes := func(stmt *ast.Join) {
+	getMultiTables := func(stmt *ast.Join) {
 		tables := util.GetTables(stmt)
 		for _, t := range tables {
 			addTable(t)
@@ -297,23 +297,23 @@ func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMe
 		if stmt.From == nil {
 			break
 		}
-		getMultiTalbes(stmt.From.TableRefs)
+		getMultiTables(stmt.From.TableRefs)
 	case *ast.UnionStmt:
 		for _, selectStmt := range stmt.SelectList.Selects {
 			if selectStmt.From == nil {
 				continue
 			}
-			getMultiTalbes(selectStmt.From.TableRefs)
+			getMultiTables(selectStmt.From.TableRefs)
 		}
 	case *ast.UpdateStmt:
-		getMultiTalbes(stmt.TableRefs.TableRefs)
+		getMultiTables(stmt.TableRefs.TableRefs)
 	case *ast.InsertStmt:
-		getMultiTalbes(stmt.Table.TableRefs)
+		getMultiTables(stmt.Table.TableRefs)
 		if stmt.Select != nil {
-			getMultiTalbes(stmt.Select.(*ast.SelectStmt).From.TableRefs)
+			getMultiTables(stmt.Select.(*ast.SelectStmt).From.TableRefs)
 		}
 	case *ast.DeleteStmt:
-		getMultiTalbes(stmt.TableRefs.TableRefs)
+		getMultiTables(stmt.TableRefs.TableRefs)
 	case *ast.LoadDataStmt:
 		addTable(stmt.Table)
 	case *ast.ShowStmt:
