@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+
 	"github.com/pingcap/parser/ast"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -61,8 +63,13 @@ func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTable
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Db.Close()
-	tables, err := conn.ShowSchemaTables(conf.Schema)
+	defer conn.Db.Close() //todo do not close connect here, but expose common close() to gracefully close
+
+	schema := conf.Schema
+	if schema == "" {
+		schema = i.Ctx.CurrentSchema()
+	}
+	tables, err := conn.ShowSchemaTables(schema)
 	if err != nil {
 		return nil, err
 	}
@@ -76,32 +83,47 @@ func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTable
 
 // GetTableMetaByTableName get table's metadata by table name.
 func (i *Inspect) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
-	conn, err := i.getDbConn()
-	if err != nil {
-		return nil, err
+	schema := conf.Schema
+	if schema == "" {
+		schema = i.Ctx.CurrentSchema()
 	}
-	defer conn.Db.Close()
-
-	columnsInfo, err := i.getTableColumnsInfo(conn, conf.Schema, conf.Table)
-	if err != nil {
-		return nil, err
-	}
-
-	indexesInfo, err := i.getTableIndexesInfo(conn, conf.Schema, conf.Table)
-	if err != nil {
-		return nil, err
-	}
-
-	sql, err := conn.ShowCreateTable(conf.Schema, conf.Table)
+	columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schema, conf.Table)
 	if err != nil {
 		return nil, err
 	}
 
 	return &driver.GetTableMetaByTableNameResult{TableMeta: driver.TableMetaItem{
+		Name:           conf.Table,
+		Schema:         schema,
 		ColumnsInfo:    columnsInfo,
 		IndexesInfo:    indexesInfo,
 		CreateTableSQL: sql,
 	}}, nil
+}
+
+func (i *Inspect) getTableMetaByTableName(ctx context.Context, schema, table string) (driver.ColumnsInfo, driver.IndexesInfo, string, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+	}
+	defer i.Close(ctx) //todo do not close connect here, but expose common close() to gracefully close
+
+	columnsInfo, err := i.getTableColumnsInfo(conn, schema, table)
+	if err != nil {
+		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+	}
+
+	indexesInfo, err := i.getTableIndexesInfo(conn, schema, table)
+	if err != nil {
+		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+	}
+
+	sql, err := conn.ShowCreateTable(schema, table)
+	if err != nil {
+		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+	}
+
+	return columnsInfo, indexesInfo, sql, nil
 }
 
 func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driver.ColumnsInfo, error) {
@@ -231,20 +253,115 @@ func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName
 
 // GetTableMetaBySQL get table's metadata by SQL.
 func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
-	return nil, nil
+	// check sql
+	if conf.Sql == "" {
+		return nil, errors.New("the SQL should not be empty")
+	}
+	// only support dml
+	if isDML, err := i.isDML(conf.Sql); err != nil {
+		return nil, err
+	} else if !isDML {
+		return nil, fmt.Errorf("the sql is `%v`, but we only support DML", conf.Sql)
+	}
+
+	node, err := util.ParseOneSql(conf.Sql)
+	if err != nil {
+		return nil, err
+	}
+
+	type schemaTable struct {
+		Schema string
+		Table  string
+	}
+
+	schemaTables := []schemaTable{}
+	addTable := func(t *ast.TableName) {
+		schema := t.Schema.String()
+		if schema == "" {
+			schema = i.Ctx.CurrentSchema()
+		}
+		schemaTables = append(schemaTables, schemaTable{
+			Schema: schema,
+			Table:  t.Name.String(),
+		})
+	}
+	getMultiTables := func(stmt *ast.Join) {
+		tables := util.GetTables(stmt)
+		for _, t := range tables {
+			addTable(t)
+		}
+	}
+
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			break
+		}
+		getMultiTables(stmt.From.TableRefs)
+	case *ast.UnionStmt:
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if selectStmt.From == nil {
+				continue
+			}
+			getMultiTables(selectStmt.From.TableRefs)
+		}
+	case *ast.UpdateStmt:
+		getMultiTables(stmt.TableRefs.TableRefs)
+	case *ast.InsertStmt:
+		getMultiTables(stmt.Table.TableRefs)
+		if stmt.Select != nil {
+			getMultiTables(stmt.Select.(*ast.SelectStmt).From.TableRefs)
+		}
+	case *ast.DeleteStmt:
+		getMultiTables(stmt.TableRefs.TableRefs)
+	case *ast.LoadDataStmt:
+		addTable(stmt.Table)
+	case *ast.ShowStmt:
+		addTable(stmt.Table)
+	default:
+		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", conf.Sql)
+	}
+
+	tableMetas := make([]driver.TableMetaItem, len(schemaTables))
+	for j, schemaTable := range schemaTables {
+		columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schemaTable.Schema, schemaTable.Table)
+		if err != nil {
+			return nil, err
+		}
+		tableMetas[j] = driver.TableMetaItem{
+			Name:           schemaTable.Table,
+			Schema:         schemaTable.Schema,
+			ColumnsInfo:    columnsInfo,
+			IndexesInfo:    indexesInfo,
+			CreateTableSQL: sql,
+		}
+	}
+	return &driver.GetTableMetaBySQLResult{
+		TableMetas: tableMetas,
+	}, nil
+}
+
+func (i *Inspect) isDML(sql string) (bool, error) {
+	//get tables from sql
+	node, err := util.ParseOneSql(sql)
+	if err != nil {
+		return false, err
+	}
+	switch node.(type) {
+	case ast.DMLNode:
+		return true, nil
+	default:
+		return false, nil
+	}
 }
 
 // Explain get explain result for SQL.
 func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
 	// check sql
 	// only support dml
-	nodes, err := i.ParseSql(conf.Sql)
-	if err != nil {
+	if isDML, err := i.isDML(conf.Sql); err != nil {
 		return nil, err
-	}
-	switch nodes[0].(type) {
-	case ast.DMLNode:
-	default:
+	} else if !isDML {
 		return nil, fmt.Errorf("the sql is `%v`, but we only support DML", conf.Sql)
 	}
 
@@ -252,7 +369,7 @@ func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*drive
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Db.Close()
+	defer conn.Db.Close() //todo do not close connect here, but expose common Close() to gracefully close
 	columns, rows, err := conn.Explain(conf.Sql)
 	if err != nil {
 		return nil, err
