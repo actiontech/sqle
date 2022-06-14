@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+
 	"github.com/pingcap/parser/ast"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -251,18 +253,94 @@ func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName
 
 // GetTableMetaBySQL get table's metadata by SQL.
 func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
-	return nil, nil
-}
-
-// Explain get explain result for SQL.
-func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
 	// check sql
+	if conf.Sql == "" {
+		return nil, errors.New("the SQL should not be empty")
+	}
 	// only support dml
-	nodes, err := i.ParseSql(conf.Sql)
+	if isDML, err := i.isDML(conf.Sql); err != nil {
+		return nil, err
+	} else if !isDML {
+		return nil, fmt.Errorf("the sql is `%v`, but we only support DML", conf.Sql)
+	}
+
+	node, err := util.ParseOneSql(conf.Sql)
 	if err != nil {
 		return nil, err
 	}
-	switch nodes[0].(type) {
+
+	type schemaTable struct {
+		Schema string
+		Table  string
+	}
+
+	schemaTables := []schemaTable{}
+	addTable := func(t *ast.TableName) {
+		schema := t.Schema.String()
+		if schema == "" {
+			schema = i.Ctx.CurrentSchema()
+		}
+		schemaTables = append(schemaTables, schemaTable{
+			Schema: schema,
+			Table:  t.Name.String(),
+		})
+	}
+	getMultiTalbes := func(stmt *ast.Join) {
+		tables := util.GetTables(stmt)
+		for _, t := range tables {
+			addTable(t)
+		}
+	}
+
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			break
+		}
+		getMultiTalbes(stmt.From.TableRefs)
+	case *ast.UnionStmt:
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if selectStmt.From == nil {
+				continue
+			}
+			getMultiTalbes(selectStmt.From.TableRefs)
+		}
+	case *ast.UpdateStmt:
+		getMultiTalbes(stmt.TableRefs.TableRefs)
+	case *ast.InsertStmt:
+		getMultiTalbes(stmt.Table.TableRefs)
+		if stmt.Select != nil {
+			getMultiTalbes(stmt.Select.(*ast.SelectStmt).From.TableRefs)
+		}
+	case *ast.DeleteStmt:
+		getMultiTalbes(stmt.TableRefs.TableRefs)
+	case *ast.LoadDataStmt:
+		addTable(stmt.Table)
+	case *ast.ShowStmt:
+		addTable(stmt.Table)
+	default:
+		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", conf.Sql)
+	}
+
+	tableMetas := make([]driver.TableMetaItem, len(schemaTables))
+	for j, schemaTable := range schemaTables {
+		columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schemaTable.Schema, schemaTable.Table)
+		if err != nil {
+			return nil, err
+		}
+		tableMetas[j] = driver.TableMetaItem{
+			Name:           schemaTable.Table,
+			Schema:         schemaTable.Schema,
+			ColumnsInfo:    columnsInfo,
+			IndexesInfo:    indexesInfo,
+			CreateTableSQL: sql,
+		}
+	}
+	return &driver.GetTableMetaBySQLResult{
+		TableMetas: tableMetas,
+	}, nil
+}
+
 func (i *Inspect) isDML(sql string) (bool, error) {
 	//get tables from sql
 	node, err := util.ParseOneSql(sql)
@@ -291,7 +369,7 @@ func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*drive
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Db.Close()
+	defer conn.Db.Close() //todo do not close connect here, but expose common Close() to gracefully close
 	columns, rows, err := conn.Explain(conf.Sql)
 	if err != nil {
 		return nil, err
