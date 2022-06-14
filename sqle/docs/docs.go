@@ -7185,6 +7185,9 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "schema": {
+                    "type": "string"
                 }
             }
         },
