@@ -603,5 +603,5 @@ type GetTaskAnalysisDataResV1 struct {
 // @Success 200 {object} v1.GetTaskAnalysisDataResV1
 // @router /v1/tasks/audits/{task_id}/sqls/{number}/analysis [get]
 func GetTaskAnalysisData(c echo.Context) error {
-	return nil
+	return getTaskAnalysisData(c)
 }
