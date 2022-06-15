@@ -28,8 +28,7 @@ func getTaskAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 
-	err = checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS, model.OP_SQL_QUERY_QUERY})
-	if err != nil {
+	if err := checkCurrentUserCanViewTask(c, task); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
