@@ -2500,7 +2500,7 @@ var doc = `{
             }
         },
         "/v1/sql_query/explain/{instance_name}/": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -2508,7 +2508,7 @@ var doc = `{
                 ],
                 "description": "get SQL explain",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "tags": [
                     "sql_query"
@@ -2524,18 +2524,13 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "sql for explain",
-                        "name": "sql",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema for explain",
-                        "name": "schema_name",
-                        "in": "formData",
-                        "required": true
+                        "description": "sql and schema",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlExplainReqV1"
+                        }
                     }
                 ],
                 "responses": {
@@ -6143,6 +6138,19 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetSqlExplainReqV1": {
+            "type": "object",
+            "properties": {
+                "instance_schema": {
+                    "type": "string",
+                    "example": "db1"
+                },
+                "sql": {
+                    "type": "string",
+                    "example": "alter table tb1 drop columns c1"
                 }
             }
         },
