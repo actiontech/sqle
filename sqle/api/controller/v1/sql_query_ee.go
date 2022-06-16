@@ -380,11 +380,6 @@ func getSQLQueryHistory(c echo.Context) error {
 	})
 }
 
-type GetSqlExplainReqV1 struct {
-	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
-	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
-}
-
 func getSQLExplain(c echo.Context) error {
 	instanceName := c.Param("instance_name")
 	req := new(GetSqlExplainReqV1)
