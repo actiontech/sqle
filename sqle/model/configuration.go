@@ -334,10 +334,59 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 
 type License struct {
 	Model
-	Content string `json:"content" gorm:"type:text;"`
+	Content          string `json:"-" gorm:"-"`
+	WorkDurationHour int    `json:"work_duration_hour"`
+	ContentSecret    string `json:"content_secret" gorm:"type:text"`
 }
 
-func (l *License) TableName() string {
+// BeforeSave is a hook implement gorm model before exec create
+func (i *License) BeforeSave() error {
+	return i.encryptPassword()
+}
+
+// AfterFind is a hook implement gorm model after query, ignore err if query from db
+func (i *License) AfterFind() error {
+	err := i.decryptPassword()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt password for ldap administrative user failed, error: %v", err)
+	}
+	return nil
+}
+
+func (i *License) decryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	if i.Content == "" {
+		data, err := utils.AesDecrypt(i.ContentSecret)
+		if err != nil {
+			return err
+		} else {
+			separate := strings.Index(data, "~~")
+			if separate == -1 {
+				i.Content = data
+			} else {
+				i.WorkDurationHour, _ = strconv.Atoi(data[:separate])
+				i.Content = data[separate+1:]
+			}
+		}
+	}
+	return nil
+}
+
+func (i *License) encryptPassword() error {
+	if i == nil {
+		return nil
+	}
+	data, err := utils.AesEncrypt(fmt.Sprintf("%v~~%v", i.WorkDurationHour, i.Content))
+	if err != nil {
+		return err
+	}
+	i.ContentSecret = data
+	return nil
+}
+
+func (i *License) TableName() string {
 	return fmt.Sprintf("%v_license", globalConfigurationTablePrefix)
 }
 
