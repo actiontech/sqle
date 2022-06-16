@@ -1096,5 +1096,5 @@ type GetAuditPlanAnalysisDataResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanAnalysisDataResV1
 // @router /v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
 func GetAuditPlanAnalysisData(c echo.Context) error {
-	return nil
+	return getAuditPlanAnalysisData(c)
 }
