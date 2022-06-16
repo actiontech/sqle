@@ -114,6 +114,11 @@ func PrepareSQLQuery(c echo.Context) error {
 	return prepareSQLQuery(c)
 }
 
+type GetSqlExplainReqV1 struct {
+	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	InstanceSchema string `json:"instance_schema" form:"sql" example:"db1"`
+}
+
 type GetSQLExplainResV1 struct {
 	controller.BaseRes
 	Data []SQLExplain `json:"data"`
@@ -122,15 +127,14 @@ type GetSQLExplainResV1 struct {
 // GetSQLExplain get SQL explain
 // @Summary 获取SQL执行计划
 // @Description get SQL explain
-// @Accept mpfd
+// @Accept json
 // @Id getSQLExplain
 // @Tags sql_query
 // @Param instance_name path string true "instance name"
-// @Param sql formData string true "sql for explain"
-// @Param schema_name formData string true "schema for explain"
+// @Param req body v1.GetSqlExplainReqV1 true "sql and schema"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSQLExplainResV1
-// @router /v1/sql_query/explain/{instance_name}/ [get]
+// @router /v1/sql_query/explain/{instance_name}/ [post]
 func GetSQLExplain(c echo.Context) error {
 	return getSQLExplain(c)
 }
