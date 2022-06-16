@@ -80,7 +80,7 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetAuditPlanReportByID(id uint) (*AuditPlanReportV2, bool, error) {
 	ap := &AuditPlanReportV2{}
-	err := s.db.Model(AuditPlanReportV2{}).Where("id = ?", id).Find(ap).Error
+	err := s.db.Model(AuditPlanReportV2{}).Where("id = ?", id).Preload("AuditPlan").Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
