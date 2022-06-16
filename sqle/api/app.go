@@ -231,6 +231,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.PATCH("/audit_plans/:audit_plan_name/notify_config", v1.UpdateAuditPlanNotifyConfig)
 	v1Router.GET("/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
 	v1Router.GET("/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
+	v1Router.GET("/audit_plans/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
 
 	// sql query
 	v1Router.POST("/sql_query/prepare/:instance_name/", v1.PrepareSQLQuery)
