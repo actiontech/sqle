@@ -2507,6 +2507,9 @@ var doc = `{
                     }
                 ],
                 "description": "get SQL explain",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "tags": [
                     "sql_query"
                 ],
