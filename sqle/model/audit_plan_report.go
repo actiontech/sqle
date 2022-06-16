@@ -1,5 +1,10 @@
 package model
 
+import (
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/jinzhu/gorm"
+)
+
 type AuditPlanReportV2 struct {
 	Model
 	AuditPlanID uint `json:"audit_plan_id" gorm:"index"`
@@ -27,4 +32,16 @@ type AuditPlanReportSQLV2 struct {
 
 func (a AuditPlanReportSQLV2) TableName() string {
 	return "audit_plan_report_sqls_v2"
+}
+
+func (s *Storage) GetAuditPlanReportSQLV2ByReportIDAndNumber(reportId, number uint) (
+	auditPlanReportSQLV2 *AuditPlanReportSQLV2, exist bool, err error) {
+
+	auditPlanReportSQLV2 = &AuditPlanReportSQLV2{}
+	err = s.db.Where("audit_plan_report_id = ? and number = ?", reportId, number).Find(auditPlanReportSQLV2).Error
+	if err == gorm.ErrRecordNotFound {
+		return auditPlanReportSQLV2, false, nil
+	}
+
+	return auditPlanReportSQLV2, true, errors.New(errors.ConnectStorageError, err)
 }
