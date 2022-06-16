@@ -237,7 +237,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/sql_query/prepare/:instance_name/", v1.PrepareSQLQuery)
 	v1Router.GET("/sql_query/history/:instance_name/", v1.GetSQLQueryHistory)
 	v1Router.GET("/sql_query/results/:query_id/", v1.GetSQLResult)
-	v1Router.GET("/sql_query/explain/:instance_name/", v1.GetSQLExplain)
+	v1Router.POST("/sql_query/explain/:instance_name/", v1.GetSQLExplain)
 
 	// UI
 	e.File("/", "ui/index.html")
