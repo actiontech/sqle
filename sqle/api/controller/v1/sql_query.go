@@ -122,6 +122,7 @@ type GetSQLExplainResV1 struct {
 // GetSQLExplain get SQL explain
 // @Summary 获取SQL执行计划
 // @Description get SQL explain
+// @Accept mpfd
 // @Id getSQLExplain
 // @Tags sql_query
 // @Param instance_name path string true "instance name"
