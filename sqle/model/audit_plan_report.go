@@ -34,9 +34,11 @@ func (a AuditPlanReportSQLV2) TableName() string {
 	return "audit_plan_report_sqls_v2"
 }
 
-func (s *Storage) GetAuditPlanReportSQLV2ByReportIDAndNumber(reportId, number uint) (*AuditPlanReportSQLV2, bool, error) {
-	auditPlanReportSQLV2 := &AuditPlanReportSQLV2{}
-	err := s.db.Where("audit_plan_report_id = ? and number = ?", reportId, number).Find(auditPlanReportSQLV2).Error
+func (s *Storage) GetAuditPlanReportSQLV2ByReportIDAndNumber(reportId, number uint) (
+	auditPlanReportSQLV2 *AuditPlanReportSQLV2, exist bool, err error) {
+
+	auditPlanReportSQLV2 = &AuditPlanReportSQLV2{}
+	err = s.db.Where("audit_plan_report_id = ? and number = ?", reportId, number).Find(auditPlanReportSQLV2).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditPlanReportSQLV2, false, nil
 	}
