@@ -1095,6 +1095,15 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlExplainReqV1:
+    properties:
+      instance_schema:
+        example: db1
+        type: string
+      sql:
+        example: alter table tb1 drop columns c1
+        type: string
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -4164,9 +4173,9 @@ paths:
       tags:
       - rule_template
   /v1/sql_query/explain/{instance_name}/:
-    get:
+    post:
       consumes:
-      - multipart/form-data
+      - application/json
       description: get SQL explain
       operationId: getSQLExplain
       parameters:
@@ -4175,16 +4184,12 @@ paths:
         name: instance_name
         required: true
         type: string
-      - description: sql for explain
-        in: formData
-        name: sql
+      - description: sql and schema
+        in: body
+        name: req
         required: true
-        type: string
-      - description: schema for explain
-        in: formData
-        name: schema_name
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/v1.GetSqlExplainReqV1'
       responses:
         "200":
           description: OK
