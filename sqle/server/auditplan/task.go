@@ -359,7 +359,7 @@ func (at *SchemaMetaTask) collectorDo() {
 	}
 	sqls := make([]string, 0, len(tables)+len(views))
 	for _, table := range tables {
-		sql, err := db.ShowCreateTable("", utils.SupplementalQuotationMarks(table))
+		sql, err := db.ShowCreateTable(utils.SupplementalQuotationMarks(table))
 		if err != nil {
 			at.logger.Errorf("show create table fail, error: %v", err)
 			return

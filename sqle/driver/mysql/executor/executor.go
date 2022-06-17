@@ -225,12 +225,9 @@ func Ping(entry *logrus.Entry, instance *mdriver.DSN) error {
 }
 
 // When using keywords as table names, you need to pay attention to wrapping them in quotation marks
-func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
-	query := fmt.Sprintf("show create table %s", tableName)
-	if schema != "" {
-		query = fmt.Sprintf("show create table %s.%s", schema, tableName)
-	}
-	result, err := c.Db.Query(query)
+// the format of schemaTable should be `schemaName`.`tableName`
+func (c *Executor) ShowCreateTable(schemaTable string) (string, error) {
+	result, err := c.Db.Query(fmt.Sprintf("show create table %s", schemaTable))
 	if err != nil {
 		return "", err
 	}
