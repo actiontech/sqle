@@ -8,14 +8,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
-
-	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
-	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
