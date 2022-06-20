@@ -17,7 +17,7 @@ Copyright (c)  ActionTech and/or its affiliates. SQLE is a SQL audit platform, w
 ## Product show
 ![product_show](./SQLE_product_show.gif)
 ## Online demo
-* [SQLE Community Edition](http://124.70.158.246:8888/)
+* [SQLE Community Edition](http://124.70.158.246/)
 * [SQLE Enterprise Edition](http://124.70.158.246:8889/)
 #### Login user
 * user: admin
