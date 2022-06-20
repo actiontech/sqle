@@ -5,12 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/utils"
-
-	"github.com/actiontech/sqle/sqle/log"
-
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 )
