@@ -200,7 +200,8 @@ func (c *BaseConn) Logger() *logrus.Entry {
 }
 
 type Executor struct {
-	Db Db
+	Db            Db
+	CurrentSchema string
 }
 
 func NewExecutor(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*Executor, error) {
@@ -212,6 +213,7 @@ func NewExecutor(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*Ex
 		return nil, err
 	}
 	executor.Db = conn
+	executor.CurrentSchema = schema
 	return executor, nil
 }
 
