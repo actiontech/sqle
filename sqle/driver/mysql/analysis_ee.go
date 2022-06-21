@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/driver/mysql/util"
-
-	"github.com/pingcap/parser/ast"
-
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/utils"
+
+	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -118,7 +118,7 @@ func (i *Inspect) getTableMetaByTableName(ctx context.Context, schema, table str
 		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
 	}
 
-	sql, err := conn.ShowCreateTable(schema, table)
+	sql, err := conn.ShowCreateTable(utils.SupplementalQuotationMarks(schema), utils.SupplementalQuotationMarks(table))
 	if err != nil {
 		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
 	}
