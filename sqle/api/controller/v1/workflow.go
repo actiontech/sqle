@@ -668,11 +668,14 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow,
 
 func convertWorkflowToRes(workflow *model.Workflow, task *model.Task) *WorkflowResV1 {
 	workflowRes := &WorkflowResV1{
-		Id:                       workflow.ID,
-		Subject:                  workflow.Subject,
-		Desc:                     workflow.Desc,
-		CreateTime:               &workflow.CreatedAt,
-		InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(task.Instance.MaintenancePeriod),
+		Id:         workflow.ID,
+		Subject:    workflow.Subject,
+		Desc:       workflow.Desc,
+		CreateTime: &workflow.CreatedAt,
+	}
+
+	if task.Instance != nil {
+		workflowRes.InstanceMaintenanceTimes = convertPeriodToMaintenanceTimeResV1(task.Instance.MaintenancePeriod)
 	}
 
 	workflowRes.CreateUser = utils.AddDelTag(workflow.CreateUser.DeletedAt, workflow.CreateUserName())
