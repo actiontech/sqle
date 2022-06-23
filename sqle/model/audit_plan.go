@@ -126,9 +126,14 @@ func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQL
 
 	raw, args := getBatchInsertRawSQL(ap, sqls)
 	// counter column is a accumulate value when update.
-	raw += `ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content), info = JSON_SET(COALESCE(info, '{}'), 
-'$.counter', COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0)+COALESCE(JSON_EXTRACT(info, '$.counter'), 0),
-'$.last_receive_timestamp', JSON_EXTRACT(values(info), '$.last_receive_timestamp'));`
+	raw += `
+ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
+                        info        = JSON_SET(COALESCE(info, '{}'),
+                                              '$.counter', CAST(COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0) +
+                                                                COALESCE(JSON_EXTRACT(info, '$.counter'), 0) AS SIGNED),
+                                              '$.last_receive_timestamp',
+                                              JSON_EXTRACT(values(info), '$.last_receive_timestamp'));`
+
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
