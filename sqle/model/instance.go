@@ -106,6 +106,12 @@ func (s *Storage) GetInstanceDetailByName(name string) (*Instance, bool, error) 
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetInstancesByType(dbType string) ([]*Instance, error) {
+	instances := []*Instance{}
+	err := s.db.Where("db_type = ?", dbType).Find(&instances).Error
+	return instances, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetInstancesByNames(names []string) ([]*Instance, error) {
 	instances := []*Instance{}
 	err := s.db.Where("name in (?)", names).Find(&instances).Error
@@ -264,9 +270,19 @@ GROUP BY instances.id
 	return instances, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetAllInstanceCount() (int64, error) {
+func (s *Storage) GetAllInstanceCountByType(dbTypes ...string) (int64, error) {
 	var count int64
-	return count, s.db.Model(&Instance{}).Count(&count).Error
+	return count, s.db.Model(&Instance{}).Where("db_type in (?)", dbTypes).Count(&count).Error
+}
+
+type typeCount struct {
+	DBType string `json:"db_type"`
+	Count  int64  `json:"count"`
+}
+
+func (s *Storage) GetAllInstanceCount() ([]*typeCount, error) {
+	var counts []*typeCount
+	return counts, s.db.Table("instances").Select("db_type, count(*) as count").Where("deleted_at is NULL").Group("db_type").Find(&counts).Error
 }
 
 func (s *Storage) GetInstanceTipsByUserViaRoles(

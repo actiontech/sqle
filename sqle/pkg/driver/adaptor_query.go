@@ -147,3 +147,7 @@ func (q *queryDriverImpl) Query(ctx context.Context, query string, conf *driver.
 	}
 	return result, nil
 }
+
+func (q *queryDriverImpl) Close(ctx context.Context) {
+	// Close does not need to be implemented at the Server for the time being
+}

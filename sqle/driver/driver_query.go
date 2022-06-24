@@ -16,6 +16,7 @@ import (
 type SQLQueryDriver interface {
 	QueryPrepare(ctx context.Context, sql string, conf *QueryPrepareConf) (*QueryPrepareResult, error)
 	Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error)
+	Close(ctx context.Context)
 }
 
 type ErrorType string
@@ -70,12 +71,11 @@ type queryDriverPluginClient struct {
 	driverQuitCh chan struct{}
 }
 
-func (q *queryDriverPluginClient) Close() {
+func (q *queryDriverPluginClient) Close(ctx context.Context) {
 	close(q.driverQuitCh)
 }
 
 func (q *queryDriverPluginClient) QueryPrepare(ctx context.Context, sql string, conf *QueryPrepareConf) (*QueryPrepareResult, error) {
-	defer q.Close()
 	req := &proto.QueryPrepareRequest{
 		Sql: sql,
 		Conf: &proto.QueryPrepareConf{
@@ -95,7 +95,6 @@ func (q *queryDriverPluginClient) QueryPrepare(ctx context.Context, sql string, 
 }
 
 func (q *queryDriverPluginClient) Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error) {
-	defer q.Close()
 	req := &proto.QueryRequest{
 		Sql: sql,
 		Conf: &proto.QueryConf{
