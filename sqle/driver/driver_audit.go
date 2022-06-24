@@ -39,6 +39,7 @@ const (
 const (
 	DriverTypeMySQL      = "mysql"
 	DriverTypePostgreSQL = "PostgreSQL"
+	DriverTypeTiDB       = "TiDB"
 )
 
 type RuleLevel string
