@@ -666,7 +666,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
-	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list"`
+	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
 type AuditPlanSQLReqV1 struct {
@@ -702,7 +702,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
-	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list"`
+	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
 // @Summary 增量同步SQL到审核计划

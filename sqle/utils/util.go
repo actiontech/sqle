@@ -109,11 +109,12 @@ func JoinUintSliceToString(s []uint, sep string) string {
 
 // If there are no quotation marks (', ", `) at the beginning and end of the string, the string will be wrapped with "`"
 // Need to be wary of the presence of "`" in the string
+// do nothing if s is an empty string
 func SupplementalQuotationMarks(s string) string {
-	end := len(s) - 1
-	if end <= 0 {
-		return "``"
+	if s == "" {
+		return ""
 	}
+	end := len(s) - 1
 	if s[0] != s[end] {
 		return fmt.Sprintf("`%s`", s)
 	}
