@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/license"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -26,13 +27,15 @@ func initLicense() error {
 	if err != nil {
 		return err
 	}
-	return license.InitChecker(l.Content)
+	return license.InitChecker(l.Content, l.WorkDurationHour)
 }
 
 func licenseAdapter() echo.MiddlewareFunc {
 	initFailed := false
 	once.Do(func() {
-		if initLicense() != nil {
+		err := initLicense()
+		if err != nil {
+			log.NewEntry().Errorf("init license error: %v", err)
 			once = &sync.Once{}
 			initFailed = true
 		}
@@ -40,15 +43,15 @@ func licenseAdapter() echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if initFailed {
+				return ErrInitLicenseFailed
+			}
 			pass, err := license.Check(c)
 			if err != nil {
 				return ErrInitLicenseFailed
 			}
 			if !pass {
 				return ErrLicenseVerifyFailed
-			}
-			if initFailed {
-				return ErrInitLicenseFailed
 			}
 			return next(c)
 		}

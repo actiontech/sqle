@@ -5,6 +5,7 @@ package v1
 
 import (
 	e "errors"
+	"fmt"
 	"mime"
 	"net/http"
 	"strconv"
@@ -92,7 +93,7 @@ func setLicense(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.Save(&model.License{Content: file})
+	err = s.Save(&model.License{Content: file, WorkDurationHour: 0})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -137,13 +138,18 @@ func checkLicense(c echo.Context) error {
 }
 
 func generateLicenseItems(permission *license.LicensePermission, collectedInfosContent string) []LicenseItem {
+	items := []LicenseItem{}
 
-	return []LicenseItem{
+	for n, i := range permission.NumberOfInstanceOfEachType {
+		items = append(items, LicenseItem{
+			Description: fmt.Sprintf("[%v]类型实例数", n),
+			Name:        n,
+			Limit:       strconv.Itoa(i.Count),
+		})
+	}
+
+	items = append(items, []LicenseItem{
 		{
-			Description: "数据源数",
-			Name:        "instance",
-			Limit:       strconv.Itoa(permission.InstanceCount),
-		}, {
 			Description: "用户数",
 			Name:        "user",
 			Limit:       strconv.Itoa(permission.UserCount),
@@ -152,13 +158,15 @@ func generateLicenseItems(permission *license.LicensePermission, collectedInfosC
 			Name:        "info",
 			Limit:       collectedInfosContent,
 		}, {
-			Description: "过期时间",
-			Name:        "expire",
-			Limit:       permission.ExpireDate,
+			Description: "授权运行时长(天)",
+			Name:        "work duration day",
+			Limit:       strconv.Itoa(permission.WorkDurationDay),
 		}, {
 			Description: "SQLE版本",
 			Name:        "version",
 			Limit:       permission.Version,
 		},
-	}
+	}...)
+
+	return items
 }

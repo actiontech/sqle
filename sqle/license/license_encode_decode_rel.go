@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 )
 
 var (
@@ -36,28 +35,10 @@ var (
 )
 
 type LicensePermission struct {
-	ExpireDate    string // License expire date eg: 2021-03-21
-	Version       string // SQLE version
-	UserCount     int    // The number of user
-	InstanceCount int    // The number of instance
-}
-
-func NewLicensePermission(expireTime string, version string, userCount, instanceCount int) (*LicensePermission, error) {
-	if _, err := time.Parse(ExpireDateFormat, expireTime); nil != err {
-		return nil, fmt.Errorf("wrong expire date format(%v)", expireTime)
-	}
-	if userCount < 1 {
-		return nil, errors.New("wrong user count")
-	}
-	if instanceCount < 1 {
-		return nil, errors.New("wrong instance count")
-	}
-	return &LicensePermission{
-		ExpireDate:    expireTime,
-		Version:       version,
-		UserCount:     userCount,
-		InstanceCount: instanceCount,
-	}, nil
+	WorkDurationDay            int             // How long SQLE is authorized to run
+	Version                    string          // SQLE version
+	UserCount                  int             // The number of user
+	NumberOfInstanceOfEachType LimitOfEachType // Instance limit
 }
 
 func EncodeLicense(permission *LicensePermission, collectedInfosContent string) (string, error) {
@@ -125,6 +106,13 @@ func DecodeLicense(license string) (permission *LicensePermission, collectedInfo
 	}
 
 	return permission, collectedInfosContent, nil
+}
+
+type LimitOfEachType map[string] /*db type*/ LimitOfType
+
+type LimitOfType struct {
+	DBType string `json:"db_type"`
+	Count  int    `json:"count"`
 }
 
 func decode(str string, decrypter cipher.Stream) (string, error) {

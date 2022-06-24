@@ -107,6 +107,7 @@ func prepareSQLQuery(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	defer queryDriver.Close(context.TODO())
 
 	for _, node := range nodes {
 		// validate SQL
