@@ -102,38 +102,39 @@ type Storage struct {
 	db *gorm.DB
 }
 
+var autoMigrateList = []interface{}{
+	&AuditPlanReportSQLV2{},
+	&AuditPlanReportV2{},
+	&AuditPlanSQLV2{},
+	&AuditPlan{},
+	&ExecuteSQL{},
+	&Instance{},
+	&WeChatConfiguration{},
+	&LDAPConfiguration{},
+	&Oauth2Configuration{},
+	&RoleOperation{},
+	&Role{},
+	&RollbackSQL{},
+	&RuleTemplateRule{},
+	&RuleTemplate{},
+	&Rule{},
+	&SMTPConfiguration{},
+	&SqlWhitelist{},
+	&SystemVariable{},
+	&Task{},
+	&UserGroup{},
+	&User{},
+	&WorkflowRecord{},
+	&WorkflowStepTemplate{},
+	&WorkflowStep{},
+	&WorkflowTemplate{},
+	&Workflow{},
+	&SqlQueryExecutionSql{},
+	&SqlQueryHistory{},
+}
+
 func (s *Storage) AutoMigrate() error {
-	err := s.db.AutoMigrate(
-		&AuditPlanReportSQLV2{},
-		&AuditPlanReportV2{},
-		&AuditPlanSQLV2{},
-		&AuditPlan{},
-		&ExecuteSQL{},
-		&Instance{},
-		&WeChatConfiguration{},
-		&LDAPConfiguration{},
-		&Oauth2Configuration{},
-		&License{},
-		&RoleOperation{},
-		&Role{},
-		&RollbackSQL{},
-		&RuleTemplateRule{},
-		&RuleTemplate{},
-		&Rule{},
-		&SMTPConfiguration{},
-		&SqlWhitelist{},
-		&SystemVariable{},
-		&Task{},
-		&UserGroup{},
-		&User{},
-		&WorkflowRecord{},
-		&WorkflowStepTemplate{},
-		&WorkflowStep{},
-		&WorkflowTemplate{},
-		&Workflow{},
-		&SqlQueryExecutionSql{},
-		&SqlQueryHistory{},
-	).Error
+	err := s.db.AutoMigrate(autoMigrateList...).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
