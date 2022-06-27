@@ -1035,7 +1035,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/v1.SQLExplain'
+          $ref: '#/definitions/v1.SQLQuerySQLExplain'
         type: array
       message:
         example: ok
@@ -1711,6 +1711,8 @@ definitions:
         $ref: '#/definitions/v1.ExplainClassicResult'
         description: explain result in table format
         type: object
+      message:
+        type: string
       sql:
         type: string
     type: object
@@ -1754,6 +1756,15 @@ definitions:
         type: integer
       query_timeout_second:
         type: integer
+    type: object
+  v1.SQLQuerySQLExplain:
+    properties:
+      classic_result:
+        $ref: '#/definitions/v1.ExplainClassicResult'
+        description: explain result in table format
+        type: object
+      sql:
+        type: string
     type: object
   v1.SQLResultItemHeadResV1:
     properties:
