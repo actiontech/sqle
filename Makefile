@@ -37,6 +37,12 @@ ifeq ($(RELEASE),rel)
     GO_BUILD_TAGS :=$(GO_BUILD_TAGS),release
 endif
 
+override RPM_NAME = $(PROJECT_NAME)-$(EDITION)-$(PROJECT_VERSION).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
+TARGET_USER ?=
+ifdef TARGET_USER
+	override RPM_NAME := $(PROJECT_NAME)-$(EDITION)-$(TARGET_USER)-$(PROJECT_VERSION).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
+endif
+
 ## The docker registry to pull complier image, can be overwrite by: `make DOCKER_REGISTRY=10.0.0.1`
 DOCKER_REGISTRY ?= 10.186.18.20
 
@@ -112,7 +118,6 @@ docker_clean:
 docker_install:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install $(MAKEFLAGS)"
 
-override RPM_NAME = $(PROJECT_NAME)-$(EDITION)-$(PROJECT_VERSION).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
 
 docker_rpm: docker_install
 	$(DOCKER) run -v $(shell pwd):/universe/sqle --user root --rm $(RPM_BUILD_IMAGE) sh -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
