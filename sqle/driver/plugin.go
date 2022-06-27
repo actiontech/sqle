@@ -39,9 +39,11 @@ func (p *PluginServer) Serve() {
 		HandshakeConfig:  handshakeConfig,
 		VersionedPlugins: p.plugins,
 		// A non-nil value here enables gRPC serving for this plugin...
-		GRPCServer: goPlugin.DefaultGRPCServer,
+		GRPCServer: SQLEGrpcServer,
 	})
 }
+
+var SQLEGrpcServer = goPlugin.DefaultGRPCServer
 
 func (p *PluginServer) AddDriverPlugin(plugin goPlugin.Plugin) {
 	p.AddPlugin(PluginNameDriver, DefaultPluginVersion, plugin)
