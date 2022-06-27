@@ -6052,7 +6052,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SQLExplain"
+                        "$ref": "#/definitions/v1.SQLQuerySQLExplain"
                     }
                 },
                 "message": {
@@ -7053,6 +7053,9 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/v1.ExplainClassicResult"
                 },
+                "message": {
+                    "type": "string"
+                },
                 "sql": {
                     "type": "string"
                 }
@@ -7113,6 +7116,19 @@ var doc = `{
                 },
                 "query_timeout_second": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.SQLQuerySQLExplain": {
+            "type": "object",
+            "properties": {
+                "classic_result": {
+                    "description": "explain result in table format",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ExplainClassicResult"
+                },
+                "sql": {
+                    "type": "string"
                 }
             }
         },
