@@ -1122,7 +1122,7 @@ definitions:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v1.TableMeta'
+        $ref: '#/definitions/v1.InstanceTableMeta'
         type: object
       message:
         example: ok
@@ -1394,6 +1394,21 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.InstanceTableMeta:
+    properties:
+      columns:
+        $ref: '#/definitions/v1.TableColumns'
+        type: object
+      create_table_sql:
+        type: string
+      indexes:
+        $ref: '#/definitions/v1.TableIndexes'
+        type: object
+      name:
+        type: string
+      schema:
+        type: string
     type: object
   v1.InstanceTipResV1:
     properties:
@@ -1817,6 +1832,8 @@ definitions:
       indexes:
         $ref: '#/definitions/v1.TableIndexes'
         type: object
+      message:
+        type: string
       name:
         type: string
       schema:
