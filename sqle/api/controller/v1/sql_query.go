@@ -119,9 +119,15 @@ type GetSqlExplainReqV1 struct {
 	InstanceSchema string `json:"instance_schema" form:"sql" example:"db1"`
 }
 
+type SQLQuerySQLExplain struct {
+	SQL string `json:"sql"`
+	// explain result in table format
+	ClassicResult ExplainClassicResult `json:"classic_result"`
+}
+
 type GetSQLExplainResV1 struct {
 	controller.BaseRes
-	Data []SQLExplain `json:"data"`
+	Data []SQLQuerySQLExplain `json:"data"`
 }
 
 // GetSQLExplain get SQL explain
