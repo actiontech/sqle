@@ -6,9 +6,10 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -173,11 +174,11 @@ func getTableMetadata(c echo.Context) error {
 	})
 }
 
-func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTableNameResult) TableMeta {
+func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTableNameResult) InstanceTableMeta {
 	columnsInfo := metaByTableNameResult.TableMeta.ColumnsInfo
 	indexesInfo := metaByTableNameResult.TableMeta.IndexesInfo
 
-	tableMeta := TableMeta{
+	tableMeta := InstanceTableMeta{
 		Columns: TableColumns{
 			Rows: make([]map[string]string, len(columnsInfo.Rows)),
 			Head: make([]TableMetaItemHeadResV1, len(columnsInfo.Column)),
