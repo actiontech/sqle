@@ -436,7 +436,7 @@ func getSQLExplain(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errSqlQueryNoSql)
 	}
 
-	var sqlExplains []SQLExplain
+	var sqlExplains []SQLQuerySQLExplain
 	for _, node := range nodes {
 		// todo:move the NewAnalysisDriver function outside the for loop
 		analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
@@ -450,7 +450,7 @@ func getSQLExplain(c echo.Context) error {
 		}
 
 		classicResult := convertExplainResultsToRes(explainResult)
-		sqlExplains = append(sqlExplains, SQLExplain{SQL: node.Text, ClassicResult: classicResult})
+		sqlExplains = append(sqlExplains, SQLQuerySQLExplain{SQL: node.Text, ClassicResult: classicResult})
 	}
 
 	return c.JSON(http.StatusOK, &GetSQLExplainResV1{
