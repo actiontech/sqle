@@ -37,8 +37,10 @@ Acitontech Sqle
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
+mkdir -p %{_builddir}/%{buildsubdir}/sqle/plugins
 cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp %{_builddir}/%{buildsubdir}/sqle/bin/scannerd $RPM_BUILD_ROOT/usr/local/sqle/bin/scannerd
+cp -R %{_builddir}/%{buildsubdir}/sqle/plugins $RPM_BUILD_ROOT/usr/local/sqle/plugins
 cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
 cp -R %{_builddir}/%{buildsubdir}/sqle/ui $RPM_BUILD_ROOT/usr/local/sqle/ui
 
@@ -106,6 +108,7 @@ server:
   auto_migrate_table: true
   debug_log: false
   log_path: './logs'
+  plugin_path: './plugins'
   enable_https: false
   cert_file_path: './etc/cert.pem'
   key_file_path: './etc/key.pem'
@@ -138,6 +141,7 @@ chown -R %{user_name}: $RPM_INSTALL_PREFIX
 find $RPM_INSTALL_PREFIX -type d -exec chmod 0750 {} \;
 find $RPM_INSTALL_PREFIX -type f -exec chmod 0640 {} \;
 chmod 0750 $RPM_INSTALL_PREFIX/bin/*
+find $RPM_INSTALL_PREFIX/plugins -type f -exec chmod 0750 {} \;
 chmod 0770 $RPM_INSTALL_PREFIX/etc
 
 ##########
@@ -202,6 +206,7 @@ fi
 %defattr(-,root,root)
 /usr/local/sqle/bin/sqled
 /usr/local/sqle/bin/scannerd
+/usr/local/sqle/plugins
 /usr/local/sqle/scripts/sqled.systemd
 /usr/local/sqle/scripts/sqled.initd
 /usr/local/sqle/scripts/pt-online-schema-change.template
