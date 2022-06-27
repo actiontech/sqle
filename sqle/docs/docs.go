@@ -6180,7 +6180,7 @@ var doc = `{
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.TableMeta"
+                    "$ref": "#/definitions/v1.InstanceTableMeta"
                 },
                 "message": {
                     "type": "string",
@@ -6574,6 +6574,28 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.InstanceTableMeta": {
+            "type": "object",
+            "properties": {
+                "columns": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableColumns"
+                },
+                "create_table_sql": {
+                    "type": "string"
+                },
+                "indexes": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableIndexes"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "schema": {
+                    "type": "string"
                 }
             }
         },
@@ -7209,6 +7231,9 @@ var doc = `{
                 "indexes": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TableIndexes"
+                },
+                "message": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
