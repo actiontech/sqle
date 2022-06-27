@@ -1075,6 +1075,15 @@ func TestAuditPlanNotifyConfig(c echo.Context) error {
 	})
 }
 
+type TableMeta struct {
+	Name           string       `json:"name"`
+	Schema         string       `json:"schema"`
+	Columns        TableColumns `json:"columns"`
+	Indexes        TableIndexes `json:"indexes"`
+	CreateTableSQL string       `json:"create_table_sql"`
+	Message        string       `json:"message"`
+}
+
 type GetSQLAnalysisDataResItemV1 struct {
 	SQLExplain SQLExplain  `json:"sql_explain"`
 	TableMetas []TableMeta `json:"table_metas"`
