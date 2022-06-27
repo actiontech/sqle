@@ -8,6 +8,7 @@ import (
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 // DSN provide necessary information to connect to database.
@@ -104,8 +105,11 @@ func (p *pluginClient) resetClient() {
 		VersionedPlugins: defaultPluginSet,
 		Cmd:              exec.Command(p.path),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
+		GRPCDialOptions:  SQLEGRPCDialOptions,
 	})
 }
+
+var SQLEGRPCDialOptions = []grpc.DialOption{}
 
 func testConnClient(client PluginClient) bool {
 	c, err := client.Client()
