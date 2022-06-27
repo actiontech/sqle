@@ -83,7 +83,7 @@ grep systemd /proc/1/comm 1>/dev/null 2>&1
 if [ $? -eq 0 ]; then
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
     -e "s|User=|User=actiontech-universe|g" \
-    -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/sqled.yml --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid|g" \
+    -e "s|ExecStart=|ExecStart=/bin/sh -c 'exec $RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/sqled.yml --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid >$RPM_INSTALL_PREFIX\/std.log 2>\&1'|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
     systemctl daemon-reload
