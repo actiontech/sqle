@@ -1079,7 +1079,7 @@ type TableIndexes struct {
 	Head []TableMetaItemHeadResV1 `json:"head"`
 }
 
-type TableMeta struct {
+type InstanceTableMeta struct {
 	Name           string       `json:"name"`
 	Schema         string       `json:"schema"`
 	Columns        TableColumns `json:"columns"`
@@ -1089,7 +1089,7 @@ type TableMeta struct {
 
 type GetTableMetadataResV1 struct {
 	controller.BaseRes
-	Data TableMeta `json:"data"`
+	Data InstanceTableMeta `json:"data"`
 }
 
 // GetTableMetadata get table metadata
