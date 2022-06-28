@@ -23,8 +23,6 @@ func init() {
 	driver.RegisterAnalysisDriver(driver.DriverTypeMySQL, newAnalysisDriverInspect)
 }
 
-var ErrSQLAnalysisOnlySupportDML = errors.New("SQL Analysis for MySQL only support DML")
-
 func newAnalysisDriverInspect(log *logrus.Entry, dsn *driver.DSN) (driver.AnalysisDriver, error) {
 	var inspect = &Inspect{}
 

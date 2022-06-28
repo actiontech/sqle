@@ -19,7 +19,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var errSQLAnalysisOnlySupportDML = errors.New(errors.SQLAnalysisSQLIsNotDML, mysql.ErrSQLAnalysisOnlySupportDML)
+var errSQLAnalysisOnlySupportDML = errors.New(errors.SQLAnalysisSQLIsNotSupported, mysql.ErrSQLAnalysisOnlySupportDML)
 
 func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
