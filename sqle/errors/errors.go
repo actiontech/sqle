@@ -36,6 +36,8 @@ const (
 	LoadDriverFail ErrorCode = 5008
 
 	FeatureNotImplemented ErrorCode = 7001
+
+	SQLAnalysisSQLIsNotSupported ErrorCode = 8001
 )
 
 var (
