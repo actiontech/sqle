@@ -77,8 +77,17 @@ type GetTableMetaByTableNameResult struct {
 	TableMeta TableMetaItem
 }
 
+type TableMetaItemBySQL struct {
+	Name           string
+	Schema         string
+	ColumnsInfo    ColumnsInfo
+	IndexesInfo    IndexesInfo
+	CreateTableSQL string
+	Message        string
+}
+
 type GetTableMetaBySQLResult struct {
-	TableMetas []TableMetaItem
+	TableMetas []TableMetaItemBySQL
 }
 
 type ExplainConf struct {
