@@ -6,15 +6,20 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+
 	"github.com/labstack/echo/v4"
-	"net/http"
-	"strconv"
 )
+
+var errSQLAnalysisOnlySupportDML = errors.New(errors.SQLAnalysisSQLIsNotDML, mysql.ErrSQLAnalysisOnlySupportDML)
 
 func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
@@ -64,15 +69,18 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
+	l := log.NewEntry()
+	analysisDriver, err := driver.NewAnalysisDriver(l, instance.DbType, dsn)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	explainMessage := ""
 	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: auditPlanReportSQLV2.SQL})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	if err != nil && err == mysql.ErrSQLAnalysisOnlySupportDML {
+		return controller.JSONBaseErrorReq(c, errSQLAnalysisOnlySupportDML)
+	} else if err != nil && err != mysql.ErrSQLAnalysisOnlySupportDML {
+		explainMessage = err.Error()
 	}
 
 	//todo:remove NewAnalysisDriver function later
@@ -82,18 +90,30 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	}
 
 	tableMetaResult, err := analysisDriver01.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{Sql: auditPlanReportSQLV2.SQL})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	if err != nil && err == mysql.ErrSQLAnalysisOnlySupportDML {
+		return controller.JSONBaseErrorReq(c, errSQLAnalysisOnlySupportDML)
+	} else if err != nil && err != mysql.ErrSQLAnalysisOnlySupportDML {
+		l.Errorf("get table metadata failed: %v", err)
 	}
 
 	return c.JSON(http.StatusOK, &GetAuditPlanAnalysisDataResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    explainAndMetaDataToRes(explainResult, tableMetaResult, auditPlanReportSQLV2.SQL),
+		Data:    explainAndMetaDataToRes(explainResult, explainMessage, tableMetaResult, auditPlanReportSQLV2.SQL),
 	})
 }
 
-func explainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDataResult *driver.GetTableMetaBySQLResult,
+func explainAndMetaDataToRes(explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
 	rawSql string) GetSQLAnalysisDataResItemV1 {
+
+	explainResult := explainResultInput
+	if explainResult == nil {
+		explainResult = &driver.ExplainResult{}
+	}
+	metaDataResult := metaDataResultInput
+	if metaDataResult == nil {
+		metaDataResult = &driver.GetTableMetaBySQLResult{}
+	}
+
 	analysisDataResItemV1 := GetSQLAnalysisDataResItemV1{
 		SQLExplain: SQLExplain{
 			ClassicResult: ExplainClassicResult{
@@ -119,6 +139,7 @@ func explainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDataResult
 	}
 
 	analysisDataResItemV1.SQLExplain.SQL = rawSql
+	analysisDataResItemV1.SQLExplain.Message = explainMessage
 
 	for i, tableMeta := range metaDataResult.TableMetas {
 		tableMetaColumnsInfo := tableMeta.ColumnsInfo
@@ -164,6 +185,7 @@ func explainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDataResult
 		analysisDataResItemV1.TableMetas[i].Name = tableMeta.Name
 		analysisDataResItemV1.TableMetas[i].Schema = tableMeta.Schema
 		analysisDataResItemV1.TableMetas[i].CreateTableSQL = tableMeta.CreateTableSQL
+		analysisDataResItemV1.TableMetas[i].Message = tableMeta.Message
 	}
 
 	return analysisDataResItemV1
