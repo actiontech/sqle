@@ -114,11 +114,16 @@ var SQLEGRPCDialOptions = []grpc.DialOption{}
 func testConnClient(client PluginClient) bool {
 	c, err := client.Client()
 	if err != nil {
+		log.NewEntry().Errorf("test conn plugin failed: %v", err)
 		return false
 	}
 	defer client.Kill()
 	err = c.Ping()
-	return err == nil
+	if err != nil {
+		log.NewEntry().Errorf("test conn plugin failed: %v", err)
+		return false
+	}
+	return true
 }
 
 func RegisterDriverFromClient(client PluginClient) error {
