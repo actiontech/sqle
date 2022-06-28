@@ -79,7 +79,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: auditPlanReportSQLV2.SQL})
 	if err != nil && err == mysql.ErrSQLAnalysisOnlySupportDML {
 		return controller.JSONBaseErrorReq(c, errSQLAnalysisOnlySupportDML)
-	} else if err != nil && err != mysql.ErrSQLAnalysisOnlySupportDML {
+	} else if err != nil {
 		explainMessage = err.Error()
 	}
 
