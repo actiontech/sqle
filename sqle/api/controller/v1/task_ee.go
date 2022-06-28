@@ -6,13 +6,16 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 func getTaskAnalysisData(c echo.Context) error {
@@ -50,13 +53,17 @@ func getTaskAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	explainMessage := ""
 	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: taskSql.Content})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	if err != nil && err == mysql.ErrSQLAnalysisOnlySupportDML {
+		return controller.JSONBaseErrorReq(c, errSQLAnalysisOnlySupportDML)
+	} else if err != nil && err != mysql.ErrSQLAnalysisOnlySupportDML {
+		explainMessage = err.Error()
 	}
 
 	//todo:remove NewAnalysisDriver function later
-	analysisDriver01, err := driver.NewAnalysisDriver(log.NewEntry(), task.Instance.DbType, dsn)
+	l := log.NewEntry()
+	analysisDriver01, err := driver.NewAnalysisDriver(l, task.Instance.DbType, dsn)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -64,18 +71,30 @@ func getTaskAnalysisData(c echo.Context) error {
 	metaDataResult, err := analysisDriver01.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{
 		Sql: taskSql.Content,
 	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	if err != nil && err == mysql.ErrSQLAnalysisOnlySupportDML {
+		return controller.JSONBaseErrorReq(c, errSQLAnalysisOnlySupportDML)
+	} else if err != nil && err != mysql.ErrSQLAnalysisOnlySupportDML {
+		l.Errorf("get table metadata failed: %v", err)
 	}
 
 	return c.JSON(http.StatusOK, &GetTaskAnalysisDataResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertExplainAndMetaDataToRes(explainResult, metaDataResult, taskSql.Content),
+		Data:    convertExplainAndMetaDataToRes(explainResult, explainMessage, metaDataResult, taskSql.Content),
 	})
 }
 
-func convertExplainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDataResult *driver.GetTableMetaBySQLResult,
+func convertExplainAndMetaDataToRes(explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
 	rawSql string) GetTaskAnalysisDataResItemV1 {
+
+	explainResult := explainResultInput
+	if explainResult == nil {
+		explainResult = &driver.ExplainResult{}
+	}
+	metaDataResult := metaDataResultInput
+	if metaDataResult == nil {
+		metaDataResult = &driver.GetTableMetaBySQLResult{}
+	}
+
 	analysisDataResItemV1 := GetTaskAnalysisDataResItemV1{
 		SQLExplain: SQLExplain{
 			ClassicResult: ExplainClassicResult{
@@ -101,6 +120,7 @@ func convertExplainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDat
 	}
 
 	analysisDataResItemV1.SQLExplain.SQL = rawSql
+	analysisDataResItemV1.SQLExplain.Message = explainMessage
 
 	for i, tableMeta := range metaDataResult.TableMetas {
 		tableMetaColumnsInfo := tableMeta.ColumnsInfo
@@ -146,6 +166,7 @@ func convertExplainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDat
 		analysisDataResItemV1.TableMetas[i].Name = tableMeta.Name
 		analysisDataResItemV1.TableMetas[i].Schema = tableMeta.Schema
 		analysisDataResItemV1.TableMetas[i].CreateTableSQL = tableMeta.CreateTableSQL
+		analysisDataResItemV1.TableMetas[i].Message = tableMeta.Message
 	}
 
 	return analysisDataResItemV1
