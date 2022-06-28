@@ -4,13 +4,11 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/driver/mysql"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -43,38 +41,9 @@ func getTaskAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("sql number not found")))
 	}
 
-	dsn, err := newDSN(task.Instance, task.Schema)
+	explainResult, explainMessage, metaDataResult, err := getSQLAnalysisResultFromDriver(log.NewEntry(), task.Schema, taskSql.Content, task.Instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), task.Instance.DbType, dsn)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	explainMessage := ""
-	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: taskSql.Content})
-	if err != nil && err == mysql.ErrSQLAnalysisOnlySupportDML {
-		return controller.JSONBaseErrorReq(c, errSQLAnalysisOnlySupportDML)
-	} else if err != nil {
-		explainMessage = err.Error()
-	}
-
-	//todo:remove NewAnalysisDriver function later
-	l := log.NewEntry()
-	analysisDriver01, err := driver.NewAnalysisDriver(l, task.Instance.DbType, dsn)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	metaDataResult, err := analysisDriver01.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{
-		Sql: taskSql.Content,
-	})
-	if err != nil && err == mysql.ErrSQLAnalysisOnlySupportDML {
-		return controller.JSONBaseErrorReq(c, errSQLAnalysisOnlySupportDML)
-	} else if err != nil && err != mysql.ErrSQLAnalysisOnlySupportDML {
-		l.Errorf("get table metadata failed: %v", err)
 	}
 
 	return c.JSON(http.StatusOK, &GetTaskAnalysisDataResV1{

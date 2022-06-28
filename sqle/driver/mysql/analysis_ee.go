@@ -261,7 +261,7 @@ func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMe
 	if isDML, err := i.isDML(conf.Sql); err != nil {
 		return nil, err
 	} else if !isDML {
-		return nil, ErrSQLAnalysisOnlySupportDML
+		return nil, driver.ErrSQLIsNotSupported
 	}
 
 	node, err := util.ParseOneSql(conf.Sql)
@@ -366,7 +366,7 @@ func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*drive
 	if isDML, err := i.isDML(conf.Sql); err != nil {
 		return nil, err
 	} else if !isDML {
-		return nil, ErrSQLAnalysisOnlySupportDML
+		return nil, driver.ErrSQLIsNotSupported
 	}
 
 	conn, err := i.getDbConn()
