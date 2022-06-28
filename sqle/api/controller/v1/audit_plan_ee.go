@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var errSQLAnalysisOnlySupportDML = errors.New(errors.SQLAnalysisSQLIsNotSupported, driver.ErrSQLIsNotSupported)
+var errSQLIsNotSupported = errors.New(errors.SQLAnalysisSQLIsNotSupported, driver.ErrSQLIsNotSupported)
 
 func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
@@ -88,7 +88,7 @@ func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, insta
 
 	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: sql})
 	if err != nil && err == driver.ErrSQLIsNotSupported {
-		return nil, "", nil, errSQLAnalysisOnlySupportDML
+		return nil, "", nil, errSQLIsNotSupported
 	} else if err != nil {
 		explainMessage = err.Error()
 	}
@@ -103,7 +103,7 @@ func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, insta
 		Sql: sql,
 	})
 	if err != nil && err == driver.ErrSQLIsNotSupported {
-		return nil, "", nil, errSQLAnalysisOnlySupportDML
+		return nil, "", nil, errSQLIsNotSupported
 	} else if err != nil {
 		l.Errorf("get table metadata failed: %v", err)
 	}
