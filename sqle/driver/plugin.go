@@ -10,6 +10,8 @@ import (
 	"github.com/pingcap/errors"
 )
 
+var ErrSQLIsNotSupported = errors.New("SQL is not supported")
+
 const (
 	DefaultPluginVersion = 1
 )

@@ -21,8 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var ErrSQLAnalysisOnlySupportDML = errors.New("SQL Analysis for MySQL only support DML")
-
 func init() {
 	allRules := make([]*driver.Rule, len(rulepkg.RuleHandlers))
 	for i := range rulepkg.RuleHandlers {
