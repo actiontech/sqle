@@ -261,7 +261,7 @@ func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMe
 	if isDML, err := i.isDML(conf.Sql); err != nil {
 		return nil, err
 	} else if !isDML {
-		return nil, fmt.Errorf("the sql is `%v`, but we only support DML", conf.Sql)
+		return nil, driver.ErrSQLIsNotSupported
 	}
 
 	node, err := util.ParseOneSql(conf.Sql)
@@ -317,23 +317,27 @@ func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMe
 	case *ast.LoadDataStmt:
 		addTable(stmt.Table)
 	case *ast.ShowStmt:
-		addTable(stmt.Table)
+		if stmt.Table != nil {
+			addTable(stmt.Table)
+		}
 	default:
 		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", conf.Sql)
 	}
 
-	tableMetas := make([]driver.TableMetaItem, len(schemaTables))
+	tableMetas := make([]driver.TableMetaItemBySQL, len(schemaTables))
 	for j, schemaTable := range schemaTables {
+		msg := ""
 		columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schemaTable.Schema, schemaTable.Table)
 		if err != nil {
-			return nil, err
+			msg = err.Error()
 		}
-		tableMetas[j] = driver.TableMetaItem{
+		tableMetas[j] = driver.TableMetaItemBySQL{
 			Name:           schemaTable.Table,
 			Schema:         schemaTable.Schema,
 			ColumnsInfo:    columnsInfo,
 			IndexesInfo:    indexesInfo,
 			CreateTableSQL: sql,
+			Message:        msg,
 		}
 	}
 	return &driver.GetTableMetaBySQLResult{
@@ -362,7 +366,7 @@ func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*drive
 	if isDML, err := i.isDML(conf.Sql); err != nil {
 		return nil, err
 	} else if !isDML {
-		return nil, fmt.Errorf("the sql is `%v`, but we only support DML", conf.Sql)
+		return nil, driver.ErrSQLIsNotSupported
 	}
 
 	conn, err := i.getDbConn()

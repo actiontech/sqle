@@ -6,15 +6,20 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	
 	"github.com/labstack/echo/v4"
-	"net/http"
-	"strconv"
+	"github.com/sirupsen/logrus"
 )
+
+var errSQLAnalysisSQLIsNotSupport = errors.New(errors.SQLAnalysisSQLIsNotSupported, driver.ErrSQLIsNotSupported)
 
 func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
@@ -60,40 +65,63 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance not exist")))
 	}
 
-	dsn, err := newDSN(instance, auditPlanReport.AuditPlan.InstanceDatabase)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: auditPlanReportSQLV2.SQL})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	//todo:remove NewAnalysisDriver function later
-	analysisDriver01, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	tableMetaResult, err := analysisDriver01.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{Sql: auditPlanReportSQLV2.SQL})
+	explainResult, explainMessage, tableMetaResult, err := getSQLAnalysisResultFromDriver(log.NewEntry(), auditPlanReport.AuditPlan.InstanceDatabase, auditPlanReportSQLV2.SQL, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetAuditPlanAnalysisDataResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    explainAndMetaDataToRes(explainResult, tableMetaResult, auditPlanReportSQLV2.SQL),
+		Data:    explainAndMetaDataToRes(explainResult, explainMessage, tableMetaResult, auditPlanReportSQLV2.SQL),
 	})
 }
 
-func explainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDataResult *driver.GetTableMetaBySQLResult,
+func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, instance *model.Instance) (explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult, err error) {
+	dsn, err := newDSN(instance, database)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	analysisDriver, err := driver.NewAnalysisDriver(l, instance.DbType, dsn)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: sql})
+	if err != nil && err == driver.ErrSQLIsNotSupported {
+		return nil, "", nil, errSQLAnalysisSQLIsNotSupport
+	} else if err != nil {
+		explainMessage = err.Error()
+	}
+
+	//todo:remove NewAnalysisDriver function later
+	analysisDriver01, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	tableMetaResult, err := analysisDriver01.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{
+		Sql: sql,
+	})
+	if err != nil && err == driver.ErrSQLIsNotSupported {
+		return nil, "", nil, errSQLAnalysisSQLIsNotSupport
+	} else if err != nil {
+		l.Errorf("get table metadata failed: %v", err)
+	}
+	return explainResult, explainMessage, tableMetaResult, nil
+}
+
+func explainAndMetaDataToRes(explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
 	rawSql string) GetSQLAnalysisDataResItemV1 {
+
+	explainResult := explainResultInput
+	if explainResult == nil {
+		explainResult = &driver.ExplainResult{}
+	}
+	metaDataResult := metaDataResultInput
+	if metaDataResult == nil {
+		metaDataResult = &driver.GetTableMetaBySQLResult{}
+	}
+
 	analysisDataResItemV1 := GetSQLAnalysisDataResItemV1{
 		SQLExplain: SQLExplain{
 			ClassicResult: ExplainClassicResult{
@@ -119,6 +147,7 @@ func explainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDataResult
 	}
 
 	analysisDataResItemV1.SQLExplain.SQL = rawSql
+	analysisDataResItemV1.SQLExplain.Message = explainMessage
 
 	for i, tableMeta := range metaDataResult.TableMetas {
 		tableMetaColumnsInfo := tableMeta.ColumnsInfo
@@ -164,6 +193,7 @@ func explainAndMetaDataToRes(explainResult *driver.ExplainResult, metaDataResult
 		analysisDataResItemV1.TableMetas[i].Name = tableMeta.Name
 		analysisDataResItemV1.TableMetas[i].Schema = tableMeta.Schema
 		analysisDataResItemV1.TableMetas[i].CreateTableSQL = tableMeta.CreateTableSQL
+		analysisDataResItemV1.TableMetas[i].Message = tableMeta.Message
 	}
 
 	return analysisDataResItemV1
