@@ -228,7 +228,7 @@ func bindOauth2User(c echo.Context) error {
 		if user.UserAuthenticationType != model.UserAuthenticationTypeOAUTH2 {
 			user.ThirdPartyUserID = oauth2UserID
 			user.UserAuthenticationType = model.UserAuthenticationTypeOAUTH2
-			err := s.UpdateUserAuthenticationTypeByName(user.Name, model.UserAuthenticationTypeOAUTH2)
+			err := s.Save(user)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
