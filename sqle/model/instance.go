@@ -275,13 +275,13 @@ func (s *Storage) GetAllInstanceCountByType(dbTypes ...string) (int64, error) {
 	return count, s.db.Model(&Instance{}).Where("db_type in (?)", dbTypes).Count(&count).Error
 }
 
-type typeCount struct {
+type TypeCount struct {
 	DBType string `json:"db_type"`
 	Count  int64  `json:"count"`
 }
 
-func (s *Storage) GetAllInstanceCount() ([]*typeCount, error) {
-	var counts []*typeCount
+func (s *Storage) GetAllInstanceCount() ([]*TypeCount, error) {
+	var counts []*TypeCount
 	return counts, s.db.Table("instances").Select("db_type, count(*) as count").Where("deleted_at is NULL").Group("db_type").Find(&counts).Error
 }
 
