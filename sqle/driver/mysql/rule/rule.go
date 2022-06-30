@@ -883,7 +883,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "避免使用不必要的内置函数[%v]",
+		Message:      "避免使用不必要的内置函数%v",
 		Func:         checkNeedlessFunc,
 		AllowOffline: true,
 	},
