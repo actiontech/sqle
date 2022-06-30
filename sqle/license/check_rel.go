@@ -33,6 +33,12 @@ type checker struct {
 	timerHour            int
 }
 
+func (c *checker) GetPermission(key string) int64 {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.permission[key]
+}
+
 const (
 	LimitTypeUser = "user"
 )
@@ -56,6 +62,9 @@ var LicenseCheckers = []LicenseChecker{
 	},
 	// 机器信息不匹配
 	func(c echo.Context) (skipSubsequentCheck bool, checkResult bool, err error) {
+		std.mutex.RLock()
+		defer std.mutex.RUnlock()
+
 		if std.hardwareInfo != std.limitInstallLocation {
 			return true, false, nil
 		}
@@ -63,6 +72,9 @@ var LicenseCheckers = []LicenseChecker{
 	},
 	// license过期
 	func(c echo.Context) (skipSubsequentCheck bool, checkResult bool, err error) {
+		std.mutex.RLock()
+		defer std.mutex.RUnlock()
+
 		if std.timerHour/24 >= std.WorkDurationDay {
 			return true, false, nil
 		}
@@ -73,7 +85,7 @@ var LicenseCheckers = []LicenseChecker{
 		s := model.GetStorage()
 		if c.Request().Method == http.MethodPost && strings.TrimSuffix(c.Path(), "/") == "/v1/users" {
 			count, err := s.GetAllUserCount()
-			return true, count+1 <= std.permission[LimitTypeUser], err
+			return true, count+1 <= std.GetPermission(LimitTypeUser), err
 		}
 		return false, true, nil
 	},
@@ -98,9 +110,9 @@ var InstanceLicenseChecker = func(c echo.Context) (skipSubsequentCheck bool, che
 	if err != nil {
 		return true, false, err
 	}
-	limit, ok := std.permission[dbType]
-	if !ok || limit <= count {
-		return customInstanceLicenseChecker(map[string]int64{dbType: 1}, nil)
+	limit := std.GetPermission(dbType)
+	if limit <= count {
+		return customInstanceLicenseChecker(map[string]int64{dbType: 1}, nil, nil)
 	}
 	return true, true, nil
 }
@@ -134,27 +146,42 @@ func getDBTypeWithReq(c echo.Context) (dbType string, err error) {
 
 const CustomTypeKey = "custom"
 
-var customInstanceLicenseChecker = func(newInstanceCount map[string]int64, numberOfAdditionalInstances map[string]int64) (skipSubsequentCheck bool, checkResult bool, err error) {
+var customInstanceLicenseChecker = func(newInstanceCount map[string]int64, numberOfAdditionalInstances map[string]int64, skipType map[string]struct{}) (skipSubsequentCheck bool, checkResult bool, err error) {
 	s := model.GetStorage()
 	allCount, err := s.GetAllInstanceCount()
 	if err != nil {
 		return true, false, err
 	}
 
+A:
+	for t, i := range numberOfAdditionalInstances {
+		for _, count := range allCount {
+			if count.DBType == t {
+				count.Count += i
+				continue A
+			}
+		}
+		allCount = append(allCount, &model.TypeCount{
+			DBType: t,
+			Count:  i,
+		})
+	}
+
 	var custom int64 = 0
 	for _, count := range allCount {
-		count.Count += numberOfAdditionalInstances[count.DBType] + newInstanceCount[count.DBType]
-		if t := count.Count - std.permission[count.DBType]; t > 0 {
+		if _, ok := skipType[count.DBType]; ok {
+			continue
+		}
+		count.Count += newInstanceCount[count.DBType]
+		if t := count.Count - std.GetPermission(count.DBType); t > 0 {
 			custom += t
 		}
 	}
 
-	return true, std.permission[CustomTypeKey] >= custom, nil
+	return true, std.GetPermission(CustomTypeKey) >= custom, nil
 }
 
 func Check(c echo.Context) (bool, error) {
-	std.mutex.RLock()
-	defer std.mutex.RUnlock()
 	for _, licenseChecker := range LicenseCheckers {
 		skipSubsequentCheck, checkResult, err := licenseChecker(c)
 		if err != nil {
