@@ -147,7 +147,20 @@ func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...RuleTempla
 	if err := s.db.Where(&RuleTemplateRule{RuleTemplateId: tpl.ID}).Delete(&RuleTemplateRule{}).Error; err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	err := s.db.Model(tpl).Association("RuleList").Append(rules).Error
+
+	//err := s.db.Debug().Model(tpl).Association("RuleList").Append(rules).Error //暂时没找到跳过更新关联表的方式
+	//TODO gorm v1 没有预编译, 没有批量插入, 规则可能很多, 为了防止拼SQL批量插入导致SQL太长, 只能通过这种方式插入
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		for _, rule := range rules {
+			rule.RuleTemplateId = tpl.ID
+			err := tx.Omit("Rule").Create(&rule).Error
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
 	return errors.New(errors.ConnectStorageError, err)
 }
 
