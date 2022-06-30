@@ -89,11 +89,22 @@ func (n *ChooseNode) GetStmt(ctx *Context) (string, error) {
 		}
 		buff.WriteString(data)
 	}
-	data, err := n.Otherwise.GetStmt(ctx)
-	if err != nil {
-		return "", err
+	// https://github.com/actiontech/sqle/issues/639
+	// otherwise can be not defined. so ChooseNode -> Otherwise may be nil.
+	/*
+	<choose>
+		<when test="state == 1">
+			where name = #{name1}
+		</when>
+	</choose>
+	*/
+	if n.Otherwise != nil {
+		data, err := n.Otherwise.GetStmt(ctx)
+		if err != nil {
+			return "", err
+		}
+		buff.WriteString(replaceWhere(data))
 	}
-	buff.WriteString(replaceWhere(data))
 	return buff.String(), nil
 }
 
