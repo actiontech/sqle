@@ -582,6 +582,10 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 	maxIndexOption := -1.0
 	for _, r := range result {
 		for _, value := range r {
+			// 当表里没数据时上面的SQL查出来的结果为Null
+			if value.String == "" {
+				value.String = "0"
+			}
 			v, err := strconv.ParseFloat(value.String, 64)
 			if err != nil {
 				return -1, err
