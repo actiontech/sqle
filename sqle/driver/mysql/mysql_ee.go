@@ -9,54 +9,17 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
-	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"vitess.io/vitess/go/vt/sqlparser"
 )
 
 func init() {
-	driver.RegisterSQLQueryDriver(driver.DriverTypeMySQL, newQueryDriverInspect)
+	driver.RegisterSQLQueryDriver(driver.DriverTypeMySQL)
 }
 
-func newQueryDriverInspect(log *logrus.Entry, dsn *driver.DSN) (driver.SQLQueryDriver, error) {
-	var inspect = &Inspect{}
-
-	if dsn != nil {
-		conn, err := executor.NewExecutor(log, dsn, dsn.DatabaseName)
-		if err != nil {
-			return nil, errors.Wrap(err, "new executor in inspect")
-		}
-		inspect.isConnected = true
-		inspect.dbConn = conn
-		inspect.inst = dsn
-
-		ctx := session.NewContext(nil, session.WithExecutor(conn))
-		ctx.SetCurrentSchema(dsn.DatabaseName)
-
-		inspect.Ctx = ctx
-	} else {
-		ctx := session.NewContext(nil)
-		inspect.Ctx = ctx
-	}
-
-	inspect.log = log
-	inspect.result = driver.NewInspectResults()
-	inspect.isOfflineAudit = dsn == nil
-
-	inspect.cnf = &Config{
-		DMLRollbackMaxRows: -1,
-		DDLOSCMinSize:      -1,
-		DDLGhostMinSize:    -1,
-	}
-
-	return inspect, nil
-}
-
-func (*Inspect) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
+func (*MysqlDriverImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
 	return QueryPrepare(ctx, sql, conf)
 }
 
@@ -149,7 +112,7 @@ func checkIsInvalidCalculateOffset(oldLimit, oldOffset, appendLimit, appendOffse
 	return false
 }
 
-func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf) (*driver.QueryResult, error) {
+func (i *MysqlDriverImpl) Query(ctx context.Context, sql string, conf *driver.QueryConf) (*driver.QueryResult, error) {
 	// check sql
 	prepareRes, err := i.QueryPrepare(ctx, sql, &driver.QueryPrepareConf{
 		Limit:  1,
@@ -203,4 +166,12 @@ func (i *Inspect) Query(ctx context.Context, sql string, conf *driver.QueryConf)
 		res.Rows = append(res.Rows, r)
 	}
 	return res, nil
+}
+
+func (d *DriverManager) getSQLQueryDriver() (driver.SQLQueryDriver, error) {
+	return d.inspect, nil
+}
+
+func (d *DriverManager) getAnalysisDriver() (driver.AnalysisDriver, error) {
+	return d.inspect, nil
 }
