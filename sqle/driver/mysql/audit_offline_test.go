@@ -11,9 +11,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func DefaultMysqlInspectOffline() *Inspect {
+func DefaultMysqlInspectOffline() *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
-	return &Inspect{
+	return &MysqlDriverImpl{
 		log:  log.NewEntry(),
 		inst: nil,
 		Ctx:  &session.Context{},

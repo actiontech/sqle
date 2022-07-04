@@ -63,8 +63,8 @@ type QueryResultValue struct {
 	Value string
 }
 
-// queryDriverPluginClient implement SQLQueryDriver. It use for hide gRPC detail, just like DriverGRPCServer.
-type queryDriverPluginClient struct {
+// queryDriverImpl implement SQLQueryDriver. It use for hide gRPC detail, just like DriverGRPCServer.
+type queryDriverImpl struct {
 	plugin proto.QueryDriverClient
 }
 
@@ -87,7 +87,7 @@ func (q *queryDriverImpl) QueryPrepare(ctx context.Context, sql string, conf *Qu
 	}, nil
 }
 
-func (q *queryDriverPluginClient) Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error) {
+func (q *queryDriverImpl) Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error) {
 	req := &proto.QueryRequest{
 		Sql: sql,
 		Conf: &proto.QueryConf{

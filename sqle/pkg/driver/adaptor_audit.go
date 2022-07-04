@@ -78,7 +78,7 @@ func (a *AuditAdaptor) Serve(opts ...AdaptorOption) {
 	plugin := a.GeneratePlugin(opts...)
 	a.l.Info("start serve plugin", "name", a.dt)
 	p := driver.NewPlugin()
-	p.AddPlugin(driver.PluginNameDriver, driver.DefaultPluginVersion, plugin)
+	p.AddPlugin(driver.PluginNameAuditDriver, driver.DefaultPluginVersion, plugin)
 	p.Serve()
 }
 
@@ -110,7 +110,7 @@ func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 	newDriver := func(cfg *driver.Config) driver.Driver {
 		a.cfg = cfg
 
-		di := &auditDriverImpl{a: a}
+		di := &pluginImpl{a: a}
 
 		if cfg.DSN == nil {
 			return di
@@ -165,7 +165,7 @@ func WithSQLParser(parser func(sql string) (ast interface{}, err error)) Adaptor
 	})
 }
 
-var _ driver.Driver = (*auditDriverImpl)(nil)
+var _ driver.Driver = (*pluginImpl)(nil)
 var _ driver.Registerer = (*auditRegistererImpl)(nil)
 
 type auditRegistererImpl struct {

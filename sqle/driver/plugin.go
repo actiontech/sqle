@@ -1,13 +1,10 @@
 package driver
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 
 	goPlugin "github.com/hashicorp/go-plugin"
-	"github.com/pingcap/errors"
+	"github.com/pkg/errors"
 )
 
 var ErrSQLIsNotSupported = errors.New("SQL is not supported")
@@ -18,7 +15,7 @@ const (
 
 var defaultPluginSet = map[int]goPlugin.PluginSet{
 	DefaultPluginVersion: goPlugin.PluginSet{
-		PluginNameDriver: &auditDriverPlugin{},
+		PluginNameAuditDriver: &auditDriverPlugin{},
 	},
 }
 
@@ -48,7 +45,7 @@ func (p *PluginServer) Serve() {
 var SQLEGrpcServer = goPlugin.DefaultGRPCServer
 
 func (p *PluginServer) AddDriverPlugin(plugin goPlugin.Plugin) {
-	p.AddPlugin(PluginNameDriver, DefaultPluginVersion, plugin)
+	p.AddPlugin(PluginNameAuditDriver, DefaultPluginVersion, plugin)
 }
 
 func (p *PluginServer) AddQueryDriverPlugin(plugin goPlugin.Plugin) {

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func runRollbackCase(t *testing.T, desc string, i *Inspect, sql string, results string) {
+func runRollbackCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results string) {
 	stmts, err := util.ParseSql(sql)
 	if err != nil {
 		t.Errorf("%s test failed, error: %v\n", desc, err)
