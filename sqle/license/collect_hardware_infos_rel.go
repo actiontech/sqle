@@ -89,10 +89,24 @@ func cmd(str string) (string, error) {
 		return "", err
 	}
 	defer stdout.Close()
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return "", err
+	}
+	defer stderr.Close()
 
 	if err = cmd.Start(); err != nil {
 		return "", err
 	}
+
+	errBytes, err := ioutil.ReadAll(stderr)
+	if err != nil {
+		return "", err
+	}
+	if len(errBytes) > 0 {
+		return "", fmt.Errorf((string(errBytes)))
+	}
+
 	opBytes, err := ioutil.ReadAll(stdout)
 	return string(opBytes), err
 }
