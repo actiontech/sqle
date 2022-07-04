@@ -39,7 +39,7 @@ const (
 
 // generateOSCCommandLine generate pt-online-schema-change command-line statement;
 // see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
-func (i *Inspect) generateOSCCommandLine(node ast.Node) (string, error) {
+func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) {
 	if i.cnf.DDLOSCMinSize < 0 {
 		return "", nil
 	}

@@ -34,7 +34,7 @@ const (
 
 const CheckInvalidErrorFormat = "预检查失败: %v"
 
-func (i *Inspect) CheckInvalid(node ast.Node) error {
+func (i *MysqlDriverImpl) CheckInvalid(node ast.Node) error {
 	var err error
 	switch stmt := node.(type) {
 	case *ast.UseStmt:
@@ -71,7 +71,7 @@ func (i *Inspect) CheckInvalid(node ast.Node) error {
 
 }
 
-func (i *Inspect) CheckExplain(node ast.Node) error {
+func (i *MysqlDriverImpl) CheckExplain(node ast.Node) error {
 	var err error
 	switch node.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.SelectStmt:
@@ -87,7 +87,7 @@ func (i *Inspect) CheckExplain(node ast.Node) error {
 
 }
 
-func (i *Inspect) CheckInvalidOffline(node ast.Node) error {
+func (i *MysqlDriverImpl) CheckInvalidOffline(node ast.Node) error {
 	stmt, ok := node.(*ast.UnparsedStmt)
 	if ok {
 		return i.checkUnparsedStmt(stmt)
@@ -108,7 +108,7 @@ create table ...
 7. index column can't duplicated, "index idx_1(id,id)" is invalid
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
+func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
@@ -226,7 +226,7 @@ alter table ...
 10. index column can't duplicated.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
+func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
@@ -441,7 +441,7 @@ drop table ...
 2. table must exist if SQL has not "IF EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
+func (i *MysqlDriverImpl) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
 	if stmt.IfExists {
 		return nil
 	}
@@ -483,7 +483,7 @@ use database ...
 1. schema must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidUse(stmt *ast.UseStmt) error {
+func (i *MysqlDriverImpl) checkInvalidUse(stmt *ast.UseStmt) error {
 	schemaExist, err := i.Ctx.IsSchemaExist(stmt.DBName)
 	if err != nil {
 		return err
@@ -501,7 +501,7 @@ create database ...
 1. schema can't exist if SQL has not "IF NOT EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt) error {
+func (i *MysqlDriverImpl) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStmt) error {
 	if stmt.IfNotExists {
 		return nil
 	}
@@ -523,7 +523,7 @@ drop database ...
 1. schema must exist if SQL has not "IF EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt) error {
+func (i *MysqlDriverImpl) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt) error {
 	if stmt.IfExists {
 		return nil
 	}
@@ -548,7 +548,7 @@ create index ...
 4. index column name can't be duplicated.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) error {
+func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) error {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
@@ -611,7 +611,7 @@ drop index ...
 3. index name must exist if SQL has not "IF EXISTS".
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
+func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 	if stmt.IfExists {
 		return nil
 	}
@@ -655,7 +655,7 @@ insert into ... values ...
 4. value length must match column length.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidInsert(stmt *ast.InsertStmt) error {
+func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 	tables := util.GetTables(stmt.Table.TableRefs)
 	table := tables[0]
 	schemaName := i.Ctx.GetSchemaName(table)
@@ -733,7 +733,7 @@ update ... set  ... where ...
 4. where column ("where column = ...") must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
+func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	tables := []*ast.TableName{}
 	tableAlias := map[*ast.TableName]string{}
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
@@ -850,7 +850,7 @@ delete from ... where ...
 3. where column ("where column = ...") must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidDelete(stmt *ast.DeleteStmt) error {
+func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 	tables := util.GetTables(stmt.TableRefs.TableRefs)
 	needExistsSchemasName := []string{}
 	needExistsTablesName := []string{}
@@ -935,7 +935,7 @@ select ... from ...
 2. table must exist.
 ------------------------------------------------------------------
 */
-func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
+func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 	if stmt.From == nil {
 		return nil
 	}
@@ -986,7 +986,7 @@ func (i *Inspect) checkInvalidSelect(stmt *ast.SelectStmt) error {
 }
 
 // checkUnparsedStmt might add more check in future.
-func (i *Inspect) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
+func (i *MysqlDriverImpl) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
 	i.result.Add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性")
 	return nil
 }

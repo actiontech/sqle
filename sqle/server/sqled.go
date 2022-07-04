@@ -58,6 +58,7 @@ func (s *Sqled) HasTask(taskId string) bool {
 func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	var err error
 	var d driver.Driver
+	var drvMgr driver.DriverManager
 	entry := log.NewEntry().WithField("task_id", taskId)
 	action := &action{
 		typ:   typ,
@@ -89,11 +90,16 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	}
 	action.task = task
 
-	// d will be closed in Sqled.do().
-	if d, err = newDriverWithAudit(entry, task.Instance, task.Schema, task.DBType); err != nil {
+	// d will be closed by drvMgr in Sqled.do().
+	drvMgr, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType)
+	if err != nil {
+		goto Error
+	}
+	if d, err = drvMgr.GetAuditDriver(); err != nil {
 		goto Error
 	}
 	action.driver = d
+	action.driverMgr = drvMgr
 
 	s.queue <- action
 	return action, nil
@@ -155,7 +161,7 @@ func (s *Sqled) do(action *action) error {
 		action.err = err
 	}
 
-	action.driver.Close(context.TODO())
+	action.driverMgr.Close(context.TODO())
 
 	s.Lock()
 	taskId := fmt.Sprintf("%d", action.task.ID)
@@ -181,7 +187,8 @@ type action struct {
 	sync.Mutex
 
 	// driver is interface which communicate with specify instance.
-	driver driver.Driver
+	driver    driver.Driver
+	driverMgr driver.DriverManager
 
 	task  *model.Task
 	entry *logrus.Entry
@@ -239,11 +246,16 @@ func (a *action) audit() (err error) {
 	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else {
-		d, err := newDriverWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType)
+		drvMgr, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType)
 		if err != nil {
 			return xerrors.Wrap(err, "new driver for generate rollback SQL")
 		}
-		defer d.Close(context.TODO())
+		defer drvMgr.Close(context.TODO())
+
+		d, err := drvMgr.GetAuditDriver()
+		if err != nil {
+			return err
+		}
 
 		rollbackSQLs, err := genRollbackSQL(a.entry, a.task, d)
 		if err != nil {
@@ -448,7 +460,7 @@ ExecSQLs:
 	return execErr
 }
 
-func newDriverWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string) (driver.Driver, error) {
+func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string) (driver.DriverManager, error) {
 	if inst == nil && dbType == "" {
 		return nil, xerrors.Errorf("instance is nil and dbType is nil")
 	}
@@ -494,5 +506,5 @@ func newDriverWithAudit(l *logrus.Entry, inst *model.Instance, database string, 
 		return nil, xerrors.Wrap(err, "new driver with audit")
 	}
 
-	return driver.NewDriver(l, dbType, cfg)
+	return driver.NewDriverManger(l, dbType, cfg)
 }
