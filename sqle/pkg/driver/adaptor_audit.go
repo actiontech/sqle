@@ -2,15 +2,13 @@ package driver
 
 import (
 	"context"
-	"database/sql"
 	"os"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
-	"github.com/hashicorp/go-hclog"
+	hclog "github.com/hashicorp/go-hclog"
 	goPlugin "github.com/hashicorp/go-plugin"
-	"github.com/pkg/errors"
 )
 
 // AuditAdaptor is a wrapper for the sqle driver layer. It
@@ -110,7 +108,7 @@ func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 
 		a.cfg = cfg
 
-		di := &pluginImpl{a: a}
+		di := &pluginImpl{auditAdaptor: a}
 
 		if cfg.DSN == nil {
 			pluginImpls[driver.PluginNameAuditDriver] = di
@@ -118,18 +116,7 @@ func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 		}
 
 		driverName, dsnDetail := a.dt.Dialect(cfg.DSN)
-		db, err := sql.Open(driverName, dsnDetail)
-		if err != nil {
-			panic(errors.Wrap(err, "open database failed when new driver"))
-		}
-		conn, err := db.Conn(context.TODO())
-		if err != nil {
-			panic(errors.Wrap(err, "get database connection failed when new driver"))
-		}
-		if err := conn.PingContext(context.TODO()); err != nil {
-			panic(errors.Wrap(err, "ping database connection failed when new driver"))
-		}
-
+		db, conn := getDbConn(driverName, dsnDetail)
 		di.db = db
 		di.conn = conn
 		pluginImpls[driver.PluginNameAuditDriver] = di

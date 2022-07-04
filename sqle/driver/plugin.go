@@ -52,6 +52,10 @@ func (p *PluginServer) AddQueryDriverPlugin(plugin goPlugin.Plugin) {
 	p.AddPlugin(PluginNameQueryDriver, DefaultPluginVersion, plugin)
 }
 
+func (p *PluginServer) AddAnalysisDriverPlugin(plugin goPlugin.Plugin) {
+	p.AddPlugin(PluginNameAnalysisDriver, DefaultPluginVersion, plugin)
+}
+
 func (p *PluginServer) AddPlugin(pluginName string, pluginVersion int, plugin goPlugin.Plugin) {
 	p.mutex.Lock()
 	if _, ok := p.plugins[pluginVersion]; !ok {
