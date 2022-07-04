@@ -55,9 +55,9 @@ func (t *testResult) message() string {
 	return t.Results.Message()
 }
 
-func DefaultMysqlInspect() *Inspect {
+func DefaultMysqlInspect() *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
-	return &Inspect{
+	return &MysqlDriverImpl{
 		log: log.NewEntry(),
 		inst: &driver.DSN{
 			Host:         "127.0.0.1",
@@ -75,9 +75,9 @@ func DefaultMysqlInspect() *Inspect {
 	}
 }
 
-func NewMockInspect(e *executor.Executor) *Inspect {
+func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
-	return &Inspect{
+	return &MysqlDriverImpl{
 		log: log.NewEntry(),
 		inst: &driver.DSN{
 			Host:         "127.0.0.1",
@@ -96,12 +96,12 @@ func NewMockInspect(e *executor.Executor) *Inspect {
 	}
 }
 
-func runSingleRuleInspectCase(rule driver.Rule, t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+func runSingleRuleInspectCase(rule driver.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	i.rules = []*driver.Rule{&rule}
 	inspectCase(t, desc, i, sql, results...)
 }
 
-func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	ptrRules := []*driver.Rule{}
 	// this rule will be test in single rule
 	filterRule := map[string]struct{}{
@@ -128,12 +128,12 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *Inspect, sql strin
 	inspectCase(t, desc, i, sql, results...)
 }
 
-func runEmptyRuleInspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+func runEmptyRuleInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	i.rules = []*driver.Rule{}
 	inspectCase(t, desc, i, sql, results...)
 }
 
-func inspectCase(t *testing.T, desc string, i *Inspect, sql string, results ...*testResult) {
+func inspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	stmts, err := util.ParseSql(sql)
 	if err != nil {
 		t.Errorf("%s test failed, error: %v\n", desc, err)
@@ -3654,7 +3654,7 @@ func TestWhitelist(t *testing.T) {
 // }
 
 func Test_LowerCaseTableNameOpen(t *testing.T) {
-	getLowerCaseOpenInspect := func() *Inspect {
+	getLowerCaseOpenInspect := func() *MysqlDriverImpl {
 		inspect := DefaultMysqlInspect()
 		inspect.Ctx = session.NewMockContextForTestLowerCaseTableNameOpen(nil)
 		return inspect
@@ -3796,7 +3796,7 @@ alter table exist_db.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test";
 }
 
 func Test_LowerCaseTableNameClose(t *testing.T) {
-	getLowerCaseCloseInspect := func() *Inspect {
+	getLowerCaseCloseInspect := func() *MysqlDriverImpl {
 		inspect := DefaultMysqlInspect()
 		inspect.Ctx = session.NewMockContextForTestLowerCaseTableNameClose(nil)
 		return inspect

@@ -203,11 +203,16 @@ func CreateAuditPlan(c echo.Context) error {
 		}
 		// check instance database
 		if req.InstanceDatabase != "" {
-			d, err := newDriverWithoutAudit(log.NewEntry(), inst, "")
+			drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), inst, "")
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
-			defer d.Close(context.TODO())
+			defer drvMgr.Close(context.TODO())
+
+			d, err := drvMgr.GetAuditDriver()
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 
 			schemas, err := d.Schemas(context.TODO())
 			if err != nil {
@@ -746,11 +751,16 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil, errAuditPlanNotExist
 	}
 
-	var driver driver.Driver
+	var drvMgr driver.DriverManager
+	var drv driver.Driver
 	// lazy load driver
 	initDriver := func() error {
-		if driver == nil {
-			driver, err = newDriverWithoutCfg(log.NewEntry(), ap.DBType)
+		if drv == nil {
+			drvMgr, err = newDriverManagerWithoutCfg(log.NewEntry(), ap.DBType)
+			if err != nil {
+				return err
+			}
+			drv, err = drvMgr.GetAuditDriver()
 			if err != nil {
 				return err
 			}
@@ -758,8 +768,8 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil
 	}
 	defer func() {
-		if driver != nil {
-			driver.Close(context.TODO())
+		if drvMgr != nil {
+			drvMgr.Close(context.TODO())
 		}
 	}()
 
@@ -774,7 +784,7 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 			if err != nil {
 				return nil, err
 			}
-			nodes, err := driver.Parse(context.TODO(), reqSQL.LastReceiveText)
+			nodes, err := drv.Parse(context.TODO(), reqSQL.LastReceiveText)
 			if err != nil {
 				return nil, err
 			}

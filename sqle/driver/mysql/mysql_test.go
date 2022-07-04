@@ -30,7 +30,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 		query string
 	}
 	tests := []struct {
-		setUp   func(*Inspect) *Inspect
+		setUp   func(*MysqlDriverImpl) *MysqlDriverImpl
 		name    string
 		args    args
 		want    bool
@@ -38,7 +38,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 	}{
 		{
 			name: "alter stmt(true); config onlineddl(true); table size enough(true)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
 			},
@@ -49,7 +49,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 
 		{
 			name: "alter stmt(true); config onlineddl(true); table size enough(false)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
 			},
@@ -60,7 +60,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 
 		{
 			name: "alter stmt(true); config onlineddl(false); table size enough(true)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.cnf.DDLGhostMinSize = -1
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
@@ -72,7 +72,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 
 		{
 			name: "alter stmt(false); config onlineddl(true); table size enough(true)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
 			},
@@ -83,7 +83,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 
 		{
 			name: "alter stmt(false); config onlineddl(false); table size enough(true)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.cnf.DDLGhostMinSize = -1
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 17
 				return i
@@ -95,7 +95,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 
 		{
 			name: "alter stmt(false); config onlineddl(true); table size enough(false)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
 			},
@@ -106,7 +106,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 
 		{
 			name: "alter stmt(true); config onlineddl(false); table size enough(false)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.cnf.DDLGhostMinSize = -1
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
@@ -118,7 +118,7 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 
 		{
 			name: "alter stmt(false); config onlineddl(false); table size enough(false)",
-			setUp: func(i *Inspect) *Inspect {
+			setUp: func(i *MysqlDriverImpl) *MysqlDriverImpl {
 				i.cnf.DDLGhostMinSize = -1
 				i.Ctx.Schemas()["exist_db"].Tables["exist_tb_1"].Size = 15
 				return i
@@ -134,11 +134,11 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 			i.cnf.DDLGhostMinSize = 16
 			got, err := tt.setUp(i).onlineddlWithGhost(tt.args.query)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Inspect.onlineddlWithGhost() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MysqlDriverImpl.onlineddlWithGhost() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("Inspect.onlineddlWithGhost() = %v, want %v", got, tt.want)
+				t.Errorf("MysqlDriverImpl.onlineddlWithGhost() = %v, want %v", got, tt.want)
 			}
 		})
 	}

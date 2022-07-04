@@ -14,12 +14,16 @@ import (
 )
 
 func Audit(l *logrus.Entry, task *model.Task) (err error) {
-	d, err := newDriverWithAudit(l, task.Instance, task.Schema, task.DBType)
+	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType)
 	if err != nil {
 		return err
 	}
-	defer d.Close(context.TODO())
+	defer drvMgr.Close(context.TODO())
 
+	d, err := drvMgr.GetAuditDriver()
+	if err != nil {
+		return err
+	}
 	return audit(l, task, d)
 }
 
