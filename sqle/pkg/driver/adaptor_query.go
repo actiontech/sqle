@@ -2,14 +2,12 @@ package driver
 
 import (
 	"context"
-	"database/sql"
 	"os"
 
 	"github.com/actiontech/sqle/sqle/driver"
 
-	"github.com/hashicorp/go-hclog"
+	hclog "github.com/hashicorp/go-hclog"
 	goPlugin "github.com/hashicorp/go-plugin"
-	"github.com/pkg/errors"
 )
 
 type SQLQueryPrepareFunc func(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error)
@@ -64,18 +62,7 @@ func (q *QueryAdaptor) GeneratePlugin() goPlugin.Plugin {
 			return di
 		}
 		driverName, dsnDetail := q.dt.Dialect(dsn)
-		db, err := sql.Open(driverName, dsnDetail)
-		if err != nil {
-			panic(errors.Wrap(err, "open database failed when new driver"))
-		}
-		conn, err := db.Conn(context.TODO())
-		if err != nil {
-			panic(errors.Wrap(err, "get database connection failed when new driver"))
-		}
-		if err := conn.PingContext(context.TODO()); err != nil {
-			panic(errors.Wrap(err, "ping database connection failed when new driver"))
-		}
-
+		db, conn := getDbConn(driverName, dsnDetail)
 		di.db = db
 		di.conn = conn
 		pluginImpls[driver.PluginNameQueryDriver] = di
