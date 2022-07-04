@@ -1,0 +1,100 @@
+syntax = "proto3";
+package proto;
+option go_package = "./;proto";
+import "driver.proto";
+
+service AnalysisDriver {
+  // Init should be called at first before calling following methods.
+  // It will pass some necessary info to plugin server. In the beginning,
+  // we consider that put this info to the executable binary environment.
+  // We put all communication on gRPC for unification in the end.
+  rpc Init(AnalysisDriverInitRequest) returns (Empty);
+  rpc ListTablesInSchema(ListTablesInSchemaRequest) returns (ListTablesInSchemaResponse);
+  rpc GetTableMetaByTableName(GetTableMetaByTableNameRequest) returns (GetTableMetaByTableNameResponse);
+  rpc GetTableMetaBySQL(GetTableMetaBySQLRequest) returns (GetTableMetaBySQLResponse);
+  rpc Explain(ExplainRequest) returns (ExplainResponse);
+}
+
+message AnalysisDriverInitRequest {
+  DSN dsn = 1;
+}
+
+message ListTablesInSchemaRequest {
+  string schema = 1;
+}
+
+message ListTablesInSchemaResponse {
+  repeated Table tables = 1;
+}
+
+message Table {
+  string name = 1;
+}
+
+message GetTableMetaByTableNameRequest {
+  string schema = 1;
+  string table = 2;
+}
+
+message GetTableMetaByTableNameResponse {
+  TableItem tableMeta = 1;
+}
+
+message TableItem {
+  string name = 1;
+  string schema = 2;
+  ColumnsInfo columnsInfo = 3;
+  IndexesInfo indexesInfo = 4;
+  string createTableSQL = 5;
+}
+
+message ColumnsInfo {
+  AnalysisInfoInTableFormat analysisInfoInTableFormat = 1;
+}
+
+message IndexesInfo {
+  AnalysisInfoInTableFormat analysisInfoInTableFormat = 1;
+}
+
+message Row {
+  repeated string items = 1;
+}
+
+message AnalysisInfoInTableFormat {
+  repeated AnalysisInfoHead columns = 1;
+  repeated Row rows = 2;
+}
+
+message AnalysisInfoHead {
+  string name = 1;
+  string desc = 2;
+}
+
+message GetTableMetaBySQLRequest {
+  string sql = 1;
+}
+
+message GetTableMetaBySQLResponse {
+  repeated TableMetaItemBySQL tableMetas = 1;
+}
+
+message TableMetaItemBySQL {
+  string name = 1;
+  string schema = 2;
+  ColumnsInfo columnsInfo = 3;
+  IndexesInfo indexesInfo = 4;
+  string createTableSQL = 5;
+  string errMessage = 6;
+}
+
+message ExplainRequest {
+  string sql = 1;
+}
+
+message ExplainResponse {
+  ExplainClassicResult classicResult = 1;
+}
+
+message ExplainClassicResult {
+  AnalysisInfoInTableFormat analysisInfoInTableFormat = 1;
+}
