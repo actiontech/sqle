@@ -142,7 +142,7 @@ func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, t
 	}
 
 	ret := driver.ColumnsInfo{}
-	ret.Column = columns
+	ret.Columns = columns
 	ret.Rows = rows
 	return ret, nil
 }
@@ -208,7 +208,7 @@ func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, t
 	}
 
 	ret := driver.IndexesInfo{}
-	ret.Column = columns
+	ret.Columns = columns
 	ret.Rows = rows
 	return ret, nil
 }
@@ -353,8 +353,8 @@ func (i *MysqlDriverImpl) Explain(ctx context.Context, conf *driver.ExplainConf)
 	}
 	res := driver.ExplainClassicResult{
 		AnalysisInfoInTableFormat: driver.AnalysisInfoInTableFormat{
-			Column: resColumn,
-			Rows:   resRows,
+			Columns: resColumn,
+			Rows:    resRows,
 		},
 	}
 

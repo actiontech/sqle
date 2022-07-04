@@ -193,15 +193,15 @@ func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTable
 	tableMeta := InstanceTableMeta{
 		Columns: TableColumns{
 			Rows: make([]map[string]string, len(columnsInfo.Rows)),
-			Head: make([]TableMetaItemHeadResV1, len(columnsInfo.Column)),
+			Head: make([]TableMetaItemHeadResV1, len(columnsInfo.Columns)),
 		},
 		Indexes: TableIndexes{
 			Rows: make([]map[string]string, len(indexesInfo.Rows)),
-			Head: make([]TableMetaItemHeadResV1, len(indexesInfo.Column)),
+			Head: make([]TableMetaItemHeadResV1, len(indexesInfo.Columns)),
 		},
 	}
 
-	for i, column := range columnsInfo.Column {
+	for i, column := range columnsInfo.Columns {
 		tableMeta.Columns.Head[i].FieldName = column.Name
 		tableMeta.Columns.Head[i].Desc = column.Desc
 	}
@@ -209,12 +209,12 @@ func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTable
 	for i, rows := range columnsInfo.Rows {
 		tableMeta.Columns.Rows[i] = make(map[string]string)
 		for k, row := range rows {
-			columnName := columnsInfo.Column[k].Name
+			columnName := columnsInfo.Columns[k].Name
 			tableMeta.Columns.Rows[i][columnName] = row
 		}
 	}
 
-	for i, column := range indexesInfo.Column {
+	for i, column := range indexesInfo.Columns {
 		tableMeta.Indexes.Head[i].FieldName = column.Name
 		tableMeta.Indexes.Head[i].Desc = column.Desc
 	}
@@ -222,7 +222,7 @@ func convertTableMetadataToRes(metaByTableNameResult *driver.GetTableMetaByTable
 	for i, rows := range indexesInfo.Rows {
 		tableMeta.Indexes.Rows[i] = make(map[string]string)
 		for k, row := range rows {
-			columnName := indexesInfo.Column[k].Name
+			columnName := indexesInfo.Columns[k].Name
 			tableMeta.Indexes.Rows[i][columnName] = row
 		}
 	}
