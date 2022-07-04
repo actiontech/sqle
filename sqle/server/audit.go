@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -193,6 +195,20 @@ func parse(l *logrus.Entry, d driver.Driver, sql string) (node driver.Node, err 
 }
 
 func genRollbackSQL(l *logrus.Entry, task *model.Task, d driver.Driver) ([]*model.RollbackSQL, error) {
+	st := model.GetStorage()
+	taskId := strconv.Itoa(int(task.InstanceId))
+	rules, err := st.GetRulesByInstanceId(taskId)
+	if err != nil {
+		return nil, err
+	}
+
+	var level string
+	for _, rule := range rules {
+		if rule.Name == rulepkg.ConfigDMLRollbackMaxRows {
+			level = rule.Level
+		}
+	}
+
 	rollbackSQLs := make([]*model.RollbackSQL, 0, len(task.ExecuteSQLs))
 	for _, executeSQL := range task.ExecuteSQLs {
 		rollbackSQL, reason, err := d.GenRollbackSQL(context.TODO(), executeSQL.Content)
@@ -200,9 +216,10 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, d driver.Driver) ([]*mode
 			l.Errorf("gen rollback sql error, %v", err)
 			return nil, err
 		}
+
 		result := driver.NewInspectResults()
 		result.Add(driver.RuleLevel(executeSQL.AuditLevel), executeSQL.AuditResult)
-		result.Add(driver.RuleLevelNotice, reason)
+		result.Add(driver.RuleLevel(level), reason)
 		executeSQL.AuditLevel = string(result.Level())
 		executeSQL.AuditResult = result.Message()
 
@@ -214,5 +231,6 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, d driver.Driver) ([]*mode
 			ExecuteSQLId: executeSQL.ID,
 		})
 	}
+
 	return rollbackSQLs, nil
 }
