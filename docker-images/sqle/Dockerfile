@@ -20,7 +20,7 @@ COPY ./docker-images/sqle/start.sh /opt/
 RUN rpm -ivh /opt/sqle.rpm --prefix=/opt/sqle
 RUN rm -f /opt/sqle.rpm
 
-RUN mkdir /opt/sqle/plugins
+RUN mkdir -p /opt/sqle/plugins
 RUN chown actiontech-universe:actiontech /opt/sqle/plugins
 
 RUN chown actiontech-universe:actiontech /opt/start.sh
