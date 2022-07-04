@@ -20,10 +20,11 @@ var pluginImpls = make(map[string]*pluginImpl)
 var pluginImplsMu = &sync.Mutex{}
 
 type pluginImpl struct {
-	a    *AuditAdaptor
-	q    *QueryAdaptor
-	db   *sql.DB
-	conn *sql.Conn
+	a               *AuditAdaptor
+	q               *QueryAdaptor
+	analysisAdaptor *AnalysisAdaptor
+	db              *sql.DB
+	conn            *sql.Conn
 }
 
 func (p *pluginImpl) Close(ctx context.Context) {
@@ -251,4 +252,33 @@ func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.Query
 		return nil, err
 	}
 	return result, nil
+}
+
+func (p *pluginImpl) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
+	if p.analysisAdaptor.listTablesInSchemaFunc != nil {
+		return p.analysisAdaptor.listTablesInSchemaFunc(ctx, conf)
+	}
+
+	return &driver.ListTablesInSchemaResult{}, nil
+}
+func (p *pluginImpl) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
+	if p.analysisAdaptor.getTableMetaByTableNameFunc != nil {
+		return p.analysisAdaptor.getTableMetaByTableNameFunc(ctx, conf)
+	}
+
+	return &driver.GetTableMetaByTableNameResult{}, nil
+}
+func (p *pluginImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
+	if p.analysisAdaptor.getTableMetaBySQLFunc != nil {
+		return p.analysisAdaptor.getTableMetaBySQLFunc(ctx, conf)
+	}
+
+	return &driver.GetTableMetaBySQLResult{}, nil
+}
+func (p *pluginImpl) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
+	if p.analysisAdaptor.explainFunc != nil {
+		return p.analysisAdaptor.explainFunc(ctx, conf)
+	}
+
+	return &driver.ExplainResult{}, nil
 }
