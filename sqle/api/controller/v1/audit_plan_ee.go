@@ -14,7 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	
+
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -81,7 +81,13 @@ func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, insta
 	if err != nil {
 		return nil, "", nil, err
 	}
-	analysisDriver, err := driver.NewAnalysisDriver(l, instance.DbType, dsn)
+	drvMgr, err := driver.NewDriverManger(log.NewEntry(), instance.DbType, &driver.Config{DSN: dsn})
+	if err != nil {
+		return nil, "", nil, err
+	}
+	defer drvMgr.Close(context.TODO())
+
+	analysisDriver, err := drvMgr.GetAnalysisDriver()
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -93,13 +99,7 @@ func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, insta
 		explainMessage = err.Error()
 	}
 
-	//todo:remove NewAnalysisDriver function later
-	analysisDriver01, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
-	if err != nil {
-		return nil, "", nil, err
-	}
-
-	tableMetaResult, err := analysisDriver01.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{
+	tableMetaResult, err := analysisDriver.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{
 		Sql: sql,
 	})
 	if err != nil && err == driver.ErrSQLIsNotSupported {

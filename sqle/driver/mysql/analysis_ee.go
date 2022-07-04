@@ -10,60 +10,23 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
-	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
-	driver.RegisterAnalysisDriver(driver.DriverTypeMySQL, newAnalysisDriverInspect)
-}
-
-func newAnalysisDriverInspect(log *logrus.Entry, dsn *driver.DSN) (driver.AnalysisDriver, error) {
-	var inspect = &Inspect{}
-
-	if dsn != nil {
-		conn, err := executor.NewExecutor(log, dsn, dsn.DatabaseName)
-		if err != nil {
-			return nil, errors.Wrap(err, "new executor in inspect")
-		}
-		inspect.isConnected = true
-		inspect.dbConn = conn
-		inspect.inst = dsn
-
-		ctx := session.NewContext(nil, session.WithExecutor(conn))
-		ctx.SetCurrentSchema(dsn.DatabaseName)
-
-		inspect.Ctx = ctx
-	} else {
-		ctx := session.NewContext(nil)
-		inspect.Ctx = ctx
-	}
-
-	inspect.log = log
-	inspect.result = driver.NewInspectResults()
-	inspect.isOfflineAudit = dsn == nil
-
-	inspect.cnf = &Config{
-		DMLRollbackMaxRows: -1,
-		DDLOSCMinSize:      -1,
-		DDLGhostMinSize:    -1,
-	}
-
-	return inspect, nil
+	driver.RegisterAnalysisDriver(driver.DriverTypeMySQL)
 }
 
 // ListTablesInSchema list tables in specified schema.
-func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
+func (i *MysqlDriverImpl) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Db.Close() //todo do not close connect here, but expose common close() to gracefully close
 
 	schema := conf.Schema
 	if schema == "" {
@@ -82,7 +45,7 @@ func (i *Inspect) ListTablesInSchema(ctx context.Context, conf *driver.ListTable
 }
 
 // GetTableMetaByTableName get table's metadata by table name.
-func (i *Inspect) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
+func (i *MysqlDriverImpl) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
 	schema := conf.Schema
 	if schema == "" {
 		schema = i.Ctx.CurrentSchema()
@@ -101,12 +64,11 @@ func (i *Inspect) GetTableMetaByTableName(ctx context.Context, conf *driver.GetT
 	}}, nil
 }
 
-func (i *Inspect) getTableMetaByTableName(ctx context.Context, schema, table string) (driver.ColumnsInfo, driver.IndexesInfo, string, error) {
+func (i *MysqlDriverImpl) getTableMetaByTableName(ctx context.Context, schema, table string) (driver.ColumnsInfo, driver.IndexesInfo, string, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
 	}
-	defer i.Close(ctx) //todo do not close connect here, but expose common close() to gracefully close
 
 	columnsInfo, err := i.getTableColumnsInfo(conn, schema, table)
 	if err != nil {
@@ -126,7 +88,7 @@ func (i *Inspect) getTableMetaByTableName(ctx context.Context, schema, table str
 	return columnsInfo, indexesInfo, sql, nil
 }
 
-func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driver.ColumnsInfo, error) {
+func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driver.ColumnsInfo, error) {
 	columns := []driver.AnalysisInfoHead{
 		{
 			Name: "COLUMN_NAME",
@@ -185,7 +147,7 @@ func (i *Inspect) getTableColumnsInfo(conn *executor.Executor, schema, tableName
 	return ret, nil
 }
 
-func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName string) (driver.IndexesInfo, error) {
+func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, tableName string) (driver.IndexesInfo, error) {
 	columns := []driver.AnalysisInfoHead{
 		{
 			Name: "Column_name",
@@ -252,7 +214,7 @@ func (i *Inspect) getTableIndexesInfo(conn *executor.Executor, schema, tableName
 }
 
 // GetTableMetaBySQL get table's metadata by SQL.
-func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
+func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
 	// check sql
 	if conf.Sql == "" {
 		return nil, errors.New("the SQL should not be empty")
@@ -345,7 +307,7 @@ func (i *Inspect) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMe
 	}, nil
 }
 
-func (i *Inspect) isDML(sql string) (bool, error) {
+func (i *MysqlDriverImpl) isDML(sql string) (bool, error) {
 	//get tables from sql
 	node, err := util.ParseOneSql(sql)
 	if err != nil {
@@ -360,7 +322,7 @@ func (i *Inspect) isDML(sql string) (bool, error) {
 }
 
 // Explain get explain result for SQL.
-func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
+func (i *MysqlDriverImpl) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
 	// check sql
 	// only support dml
 	if isDML, err := i.isDML(conf.Sql); err != nil {
@@ -373,7 +335,6 @@ func (i *Inspect) Explain(ctx context.Context, conf *driver.ExplainConf) (*drive
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Db.Close() //todo do not close connect here, but expose common Close() to gracefully close
 	columns, rows, err := conn.Explain(conf.Sql)
 	if err != nil {
 		return nil, err
