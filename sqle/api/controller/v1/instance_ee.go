@@ -96,7 +96,13 @@ func listTableBySchema(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
+	drvMgr, err := driver.NewDriverManger(log.NewEntry(), instance.DbType, &driver.Config{DSN: dsn})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	defer drvMgr.Close(context.TODO())
+
+	analysisDriver, err := drvMgr.GetAnalysisDriver()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -155,7 +161,13 @@ func getTableMetadata(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
+	drvMgr, err := driver.NewDriverManger(log.NewEntry(), instance.DbType, &driver.Config{DSN: dsn})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	defer drvMgr.Close(context.TODO())
+
+	analysisDriver, err := drvMgr.GetAnalysisDriver()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

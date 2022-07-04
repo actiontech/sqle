@@ -61,11 +61,16 @@ func prepareSQLQuery(c echo.Context) error {
 	}
 
 	// parse sql using driver
-	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer d.Close(context.TODO())
+	defer drvMgr.Close(context.TODO())
+
+	d, err := drvMgr.GetAuditDriver()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	if err := d.Ping(context.TODO()); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -97,17 +102,11 @@ func prepareSQLQuery(c echo.Context) error {
 		Schema:       req.InstanceSchema,
 		RawSql:       req.SQL,
 	}
-	queryDriver, err := driver.NewSQLQueryDriver(log.NewEntry(), instance.DbType, &driver.DSN{
-		Host:         instance.Host,
-		Port:         instance.Port,
-		User:         instance.User,
-		Password:     instance.Password,
-		DatabaseName: req.InstanceSchema,
-	})
+
+	queryDriver, err := drvMgr.GetSQLQueryDriver()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer queryDriver.Close(context.TODO())
 
 	for _, node := range nodes {
 		// validate SQL
@@ -214,16 +213,21 @@ func getSQLResult(c echo.Context) error {
 	l.Infoln("SQL Query begin")
 
 	// rewrite sql
-	queryDriver, err := driver.NewSQLQueryDriver(log.NewEntry(), instance.DbType, &driver.DSN{
-		Host:         instance.Host,
-		Port:         instance.Port,
-		User:         instance.User,
-		Password:     instance.Password,
-		DatabaseName: history.Schema,
-	})
+	dsn, err := newDSN(instance, history.Schema)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	drvMgr, err := driver.NewDriverManger(log.NewEntry(), instance.DbType, &driver.Config{DSN: dsn})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	defer drvMgr.Close(context.TODO())
+
+	queryDriver, err := drvMgr.GetSQLQueryDriver()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	limit := uint32(instance.SqlQueryConfig.MaxPreQueryRows)
 	if limit > req.PageSize {
 		limit = req.PageSize
@@ -412,20 +416,20 @@ func getSQLExplain(c echo.Context) error {
 		}
 	}
 
-	dsn, err := newDSN(instance, req.InstanceSchema)
+	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, req.InstanceSchema)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	defer drvMgr.Close(context.TODO())
 
-	driverWithoutAudit, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
+	driverWithoutAudit, err := drvMgr.GetAuditDriver()
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if err := driverWithoutAudit.Ping(context.TODO()); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer driverWithoutAudit.Close(context.TODO())
 
 	nodes, err := driverWithoutAudit.Parse(context.TODO(), req.Sql)
 	if err != nil {
@@ -437,13 +441,11 @@ func getSQLExplain(c echo.Context) error {
 	}
 
 	var sqlExplains []SQLQuerySQLExplain
+	analysisDriver, err := drvMgr.GetAnalysisDriver()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	for _, node := range nodes {
-		// todo:move the NewAnalysisDriver function outside the for loop
-		analysisDriver, err := driver.NewAnalysisDriver(log.NewEntry(), instance.DbType, dsn)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-
 		explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: node.Text})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
