@@ -54,7 +54,7 @@ func (q *QueryAdaptor) GeneratePlugin() goPlugin.Plugin {
 	}()
 	newDriver := func(dsn *driver.DSN) driver.SQLQueryDriver {
 		q.dsn = dsn
-		di := &queryDriverImpl{
+		di := &pluginImpl{
 			q: q,
 		}
 		if q.dsn == nil {

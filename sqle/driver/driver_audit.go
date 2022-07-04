@@ -13,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
+	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -184,8 +185,8 @@ func AllDrivers() []string {
 	rulesMu.RLock()
 	defer rulesMu.RUnlock()
 
-	driverNames := make([]string, 0, len(drivers))
-	for n := range drivers {
+	driverNames := make([]string, 0, len(auditDrivers))
+	for n := range auditDrivers {
 		driverNames = append(driverNames, n)
 	}
 	return driverNames
@@ -342,20 +343,20 @@ func (rs *AuditResult) HasResult() bool {
 	return len(rs.results) != 0
 }
 
-// driverPluginClient implement Driver. It use for hide gRPC detail, just like DriverGRPCServer.
-type driverPluginClient struct {
+// driverImpl implement Driver. It use for hide gRPC detail, just like DriverGRPCServer.
+type driverImpl struct {
 	plugin proto.DriverClient
 
 	// driverQuitCh produce a singal for telling caller that it's time to Client.Kill() plugin process.
 	driverQuitCh chan struct{}
 }
 
-func (s *driverPluginClient) Close(ctx context.Context) {
+func (s *driverImpl) Close(ctx context.Context) {
 	s.plugin.Close(ctx, &proto.Empty{})
 	close(s.driverQuitCh)
 }
 
-func (s *driverPluginClient) Ping(ctx context.Context) error {
+func (s *driverImpl) Ping(ctx context.Context) error {
 	_, err := s.plugin.Ping(ctx, &proto.Empty{})
 	return err
 }
@@ -381,7 +382,7 @@ func (s *dbDriverResult) RowsAffected() (int64, error) {
 	return s.rowsAffected, nil
 }
 
-func (s *driverPluginClient) Exec(ctx context.Context, query string) (driver.Result, error) {
+func (s *driverImpl) Exec(ctx context.Context, query string) (driver.Result, error) {
 	resp, err := s.plugin.Exec(ctx, &proto.ExecRequest{Query: query})
 	if err != nil {
 		return nil, err
@@ -394,7 +395,7 @@ func (s *driverPluginClient) Exec(ctx context.Context, query string) (driver.Res
 	}, nil
 }
 
-func (s *driverPluginClient) Tx(ctx context.Context, queries ...string) ([]driver.Result, error) {
+func (s *driverImpl) Tx(ctx context.Context, queries ...string) ([]driver.Result, error) {
 	resp, err := s.plugin.Tx(ctx, &proto.TxRequest{Queries: queries})
 	if err != nil {
 		return nil, err
@@ -412,7 +413,7 @@ func (s *driverPluginClient) Tx(ctx context.Context, queries ...string) ([]drive
 	return ret, nil
 }
 
-func (s *driverPluginClient) Schemas(ctx context.Context) ([]string, error) {
+func (s *driverImpl) Schemas(ctx context.Context) ([]string, error) {
 	resp, err := s.plugin.Databases(ctx, &proto.Empty{})
 	if err != nil {
 		return nil, err
@@ -420,7 +421,7 @@ func (s *driverPluginClient) Schemas(ctx context.Context) ([]string, error) {
 	return resp.Databases, nil
 }
 
-func (s *driverPluginClient) Parse(ctx context.Context, sqlText string) ([]Node, error) {
+func (s *driverImpl) Parse(ctx context.Context, sqlText string) ([]Node, error) {
 	resp, err := s.plugin.Parse(ctx, &proto.ParseRequest{SqlText: sqlText})
 	if err != nil {
 		return nil, err
@@ -437,7 +438,7 @@ func (s *driverPluginClient) Parse(ctx context.Context, sqlText string) ([]Node,
 	return nodes, nil
 }
 
-func (s *driverPluginClient) Audit(ctx context.Context, sql string) (*AuditResult, error) {
+func (s *driverImpl) Audit(ctx context.Context, sql string) (*AuditResult, error) {
 	resp, err := s.plugin.Audit(ctx, &proto.AuditRequest{Sql: sql})
 	if err != nil {
 		return nil, err
@@ -453,7 +454,7 @@ func (s *driverPluginClient) Audit(ctx context.Context, sql string) (*AuditResul
 	return ret, nil
 }
 
-func (s *driverPluginClient) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+func (s *driverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
 	resp, err := s.plugin.GenRollbackSQL(ctx, &proto.GenRollbackSQLRequest{Sql: sql})
 	if err != nil {
 		return "", "", err
