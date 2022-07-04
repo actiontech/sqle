@@ -74,6 +74,13 @@ func (p *PluginClient) RegisterDrivers(c *PluginClient) (pluginName string, err 
 		}).Infof("plugin not exist or failed to load. err: %v", err)
 	}
 
+	if err := registerAnalysisDriver(pluginName, gRPCClient); err != nil {
+		log.Logger().WithFields(logrus.Fields{
+			"plugin_name": pluginName,
+			"plugin_type": PluginNameQueryDriver,
+		}).Infof("plugin not exist or failed to load. err: %v", err)
+	}
+	
 	_, err = drvClient.Close(context.TODO(), &proto.Empty{})
 	if err != nil {
 		log.Logger().Errorf("gracefully close plugins failed, will force kill the sub progress. err: %v", err)
@@ -153,6 +160,9 @@ func RegisterDriverFromClient(client *PluginClient) error {
 		if err = drvMgr.initSQLQueryDriver(); err != nil {
 			return nil, err
 		}
+		if err = drvMgr.initAnalysisDriver(); err != nil {
+			return nil, err
+		}
 
 		return drvMgr, nil
 	}
@@ -187,13 +197,14 @@ type DriverManager interface {
 }
 
 type PluginDriverManager struct {
-	grpcClient        goPlugin.ClientProtocol
-	pluginCloseCh     chan struct{}
-	dbType            string
-	log               *logrus.Entry
-	config            *Config
-	auditPluginClient proto.DriverClient
-	queryPluginClient proto.QueryDriverClient
+	grpcClient           goPlugin.ClientProtocol
+	pluginCloseCh        chan struct{}
+	dbType               string
+	log                  *logrus.Entry
+	config               *Config
+	auditPluginClient    proto.DriverClient
+	queryPluginClient    proto.QueryDriverClient
+	analysisPluginClient proto.AnalysisDriverClient
 }
 
 func (d *PluginDriverManager) GetAuditDriver() (Driver, error) {
@@ -300,8 +311,48 @@ func (d *PluginDriverManager) initSQLQueryDriver() error {
 }
 
 func (d *PluginDriverManager) GetAnalysisDriver() (AnalysisDriver, error) {
-	// todo
-	return nil, errors.New("analysis driver has not supported now")
+	if d.analysisPluginClient == nil {
+		return nil, fmt.Errorf("analysis driver type %v is not supported", d.dbType)
+	}
+	return &analysisDriverImpl{d.analysisPluginClient}, nil
+}
+
+func (d *PluginDriverManager) initAnalysisDriver() error {
+	_, exist := analysisDrivers[d.dbType]
+	if !exist {
+		return nil
+	}
+
+	if d.analysisPluginClient != nil {
+		return nil
+	}
+
+	rawI, err := d.grpcClient.Dispense(PluginNameAnalysisDriver)
+	if err != nil {
+		return fmt.Errorf("dispense analysis driver failed: %v", err)
+	}
+	//nolint:forcetypeassert
+	pluginInst := rawI.(proto.AnalysisDriverClient)
+
+	initRequest := &proto.AnalysisDriverInitRequest{}
+	if d.config != nil && d.config.DSN != nil {
+		initRequest.Dsn = &proto.DSN{
+			Host:             d.config.DSN.Host,
+			Port:             d.config.DSN.Port,
+			User:             d.config.DSN.User,
+			Password:         d.config.DSN.Password,
+			AdditionalParams: proto.ConvertParamToProtoParam(d.config.DSN.AdditionalParams),
+
+			// database is to open.
+			Database: d.config.DSN.DatabaseName,
+		}
+	}
+	_, err = pluginInst.Init(context.TODO(), initRequest)
+	if err != nil {
+		return fmt.Errorf("init analysis driver failed: %v", err)
+	}
+	d.analysisPluginClient = pluginInst
+	return nil
 }
 
 func (d *PluginDriverManager) Close(ctx context.Context) {
