@@ -752,11 +752,17 @@ func newGetInstanceConnectableResV1(err error) GetInstanceConnectableResV1 {
 }
 
 func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
-	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
-		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer d.Close(context.TODO())
+	defer drvMgr.Close(context.TODO())
+
+	d, err := drvMgr.GetAuditDriver()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	if err := d.Ping(context.TODO()); err != nil {
 		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
 	}
@@ -876,11 +882,16 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer d.Close(context.TODO())
+	defer drvMgr.Close(context.TODO())
+
+	d, err := drvMgr.GetAuditDriver()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	schemas, err := d.Schemas(context.TODO())
 	if err != nil {
 		return err

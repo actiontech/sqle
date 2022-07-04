@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	PluginNameDriver = "audit-driver"
+	PluginNameAuditDriver = "audit-driver"
 )
 
 // auditDriverPlugin use for hide gRPC detail.

@@ -9,6 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
+	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,7 +17,6 @@ import (
 type SQLQueryDriver interface {
 	QueryPrepare(ctx context.Context, sql string, conf *QueryPrepareConf) (*QueryPrepareResult, error)
 	Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error)
-	Close(ctx context.Context)
 }
 
 type ErrorType string
@@ -63,19 +63,12 @@ type QueryResultValue struct {
 	Value string
 }
 
-// queryDriverPluginClient implement SQLQueryDriver. It use for hide gRPC detail, just like DriverGRPCServer.
-type queryDriverPluginClient struct {
+// queryDriverImpl implement SQLQueryDriver. It use for hide gRPC detail, just like DriverGRPCServer.
+type queryDriverImpl struct {
 	plugin proto.QueryDriverClient
-
-	// driverQuitCh produce a singal for telling caller that it's time to Client.Kill() plugin process.
-	driverQuitCh chan struct{}
 }
 
-func (q *queryDriverPluginClient) Close(ctx context.Context) {
-	close(q.driverQuitCh)
-}
-
-func (q *queryDriverPluginClient) QueryPrepare(ctx context.Context, sql string, conf *QueryPrepareConf) (*QueryPrepareResult, error) {
+func (q *queryDriverImpl) QueryPrepare(ctx context.Context, sql string, conf *QueryPrepareConf) (*QueryPrepareResult, error) {
 	req := &proto.QueryPrepareRequest{
 		Sql: sql,
 		Conf: &proto.QueryPrepareConf{
@@ -94,7 +87,7 @@ func (q *queryDriverPluginClient) QueryPrepare(ctx context.Context, sql string, 
 	}, nil
 }
 
-func (q *queryDriverPluginClient) Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error) {
+func (q *queryDriverImpl) Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error) {
 	req := &proto.QueryRequest{
 		Sql: sql,
 		Conf: &proto.QueryConf{
@@ -132,21 +125,7 @@ func (q *queryDriverPluginClient) Query(ctx context.Context, sql string, conf *Q
 }
 
 var queryDriverMu = &sync.RWMutex{}
-var queryDrivers = make(map[string]queryHandler)
-
-// queryHandler is a template which SQLQueryDriver plugin should provide such function signature.
-type queryHandler func(log *logrus.Entry, c *DSN) (SQLQueryDriver, error)
-
-// NewSQLQueryDriver return a new instantiated SQLQueryDriver.
-func NewSQLQueryDriver(log *logrus.Entry, dbType string, cfg *DSN) (SQLQueryDriver, error) {
-	queryDriverMu.RLock()
-	defer queryDriverMu.RUnlock()
-	d, exist := queryDrivers[dbType]
-	if !exist {
-		return nil, fmt.Errorf("driver type %v is not supported", dbType)
-	}
-	return d(log, cfg)
-}
+var queryDrivers = make(map[string]struct{})
 
 // QueryDriverName = InstanceType
 func GetQueryDriverNames() []string {
@@ -163,88 +142,38 @@ func GetQueryDriverNames() []string {
 //
 // RegisterSQLQueryDriver makes a database driver available by the provided driver name.
 // SQLQueryDriver's initialize handler and audit rules register by RegisterSQLQueryDriver.
-func RegisterSQLQueryDriver(name string, h queryHandler) {
+func RegisterSQLQueryDriver(name string) {
 	queryDriverMu.RLock()
 	_, exist := queryDrivers[name]
 	queryDriverMu.RUnlock()
 	if exist {
-		panic("duplicated driver name")
+		panic(fmt.Sprintf("duplicated driver name %v", name))
 	}
 
 	queryDriverMu.Lock()
-	queryDrivers[name] = h
+	queryDrivers[name] = struct{}{}
 	queryDriverMu.Unlock()
 }
 
-func registerQueryPlugin(pluginName string, c PluginClient) error {
-	closeCh := make(chan struct{})
-	s, err := getQueryServerHandle(c, closeCh)
+func registerQueryDriver(pluginName string, gRPCClient goPlugin.ClientProtocol) error {
+	rawI, err := gRPCClient.Dispense(PluginNameQueryDriver)
 	if err != nil {
 		return err
 	}
+	// srv can only be proto.QueryDriverClient
+	//nolint:forcetypeassert
+	s := rawI.(proto.QueryDriverClient)
+
 	// The test target plugin implements the QueryDriver plugin
 	_, err = s.Init(context.TODO(), &proto.InitRequest{})
-	close(closeCh)
 	if err != nil {
 		return err
 	}
-	handler := func(log *logrus.Entry, config *DSN) (SQLQueryDriver, error) {
-		pluginCloseCh := make(chan struct{})
-		srv, err := getQueryServerHandle(c, pluginCloseCh)
-		if err != nil {
-			return nil, err
-		}
 
-		initRequest := &proto.InitRequest{
-			Rules: []*proto.Rule{},
-		}
-		if config != nil {
-			initRequest.Dsn = &proto.DSN{
-				Host:             config.Host,
-				Port:             config.Port,
-				User:             config.User,
-				Password:         config.Password,
-				AdditionalParams: proto.ConvertParamToProtoParam(config.AdditionalParams),
-
-				// database is to open.
-				Database: config.DatabaseName,
-			}
-		}
-
-		_, err = srv.Init(context.TODO(), initRequest)
-		if err != nil {
-			return nil, err
-		}
-
-		return &queryDriverPluginClient{srv, pluginCloseCh}, nil
-
-	}
-
-	RegisterSQLQueryDriver(pluginName, handler)
+	RegisterSQLQueryDriver(pluginName)
 	log.Logger().WithFields(logrus.Fields{
 		"plugin_name": pluginName,
 		"plugin_type": PluginNameQueryDriver,
 	}).Infoln("plugin inited")
 	return nil
-}
-
-func getQueryServerHandle(client PluginClient, closeCh <-chan struct{}) (proto.QueryDriverClient, error) {
-	gRPCClient, err := client.Client()
-	if err != nil {
-		return nil, err
-	}
-	go func() {
-		<-closeCh
-		client.Kill()
-	}()
-
-	rawI, err := gRPCClient.Dispense(PluginNameQueryDriver)
-	if err != nil {
-		return nil, err
-	}
-	// srv can only be proto.QueryDriverClient
-	//nolint:forcetypeassert
-	srv := rawI.(proto.QueryDriverClient)
-
-	return srv, nil
 }

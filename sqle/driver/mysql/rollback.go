@@ -13,7 +13,7 @@ import (
 	_model "github.com/pingcap/parser/model"
 )
 
-func (i *Inspect) GenerateRollbackSql(node ast.Node) (string, string, error) {
+func (i *MysqlDriverImpl) GenerateRollbackSql(node ast.Node) (string, string, error) {
 	switch node.(type) {
 	case ast.DDLNode:
 		return i.GenerateDDLStmtRollbackSql(node)
@@ -23,7 +23,7 @@ func (i *Inspect) GenerateRollbackSql(node ast.Node) (string, string, error) {
 	return "", "", nil
 }
 
-func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
+func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		rollbackSql, unableRollbackReason, err = i.generateAlterTableRollbackSql(stmt)
@@ -41,8 +41,8 @@ func (i *Inspect) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql, unable
 	return rollbackSql, unableRollbackReason, err
 }
 
-func (i *Inspect) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
-	// Inspect may skip initialized cnf when Audited SQLs in whitelist.
+func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
+	// MysqlDriverImpl may skip initialized cnf when Audited SQLs in whitelist.
 	if i.cnf == nil || i.cnf.DMLRollbackMaxRows < 0 {
 		return "", "", nil
 	}
@@ -68,7 +68,7 @@ const (
 )
 
 // generateAlterTableRollbackSql generate alter table SQL for alter table.
-func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, string, error) {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
@@ -261,7 +261,7 @@ func (i *Inspect) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (strin
 }
 
 // generateCreateSchemaRollbackSql generate drop database SQL for create database.
-func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, string, error) {
 	schemaName := stmt.Name
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
@@ -275,7 +275,7 @@ func (i *Inspect) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) 
 }
 
 // generateCreateTableRollbackSql generate drop table SQL for create table.
-func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, string, error) {
 	schemaExist, err := i.Ctx.IsSchemaExist(i.Ctx.GetSchemaName(stmt.Table))
 	if err != nil {
 		return "", "", err
@@ -298,7 +298,7 @@ func (i *Inspect) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (str
 }
 
 // generateDropTableRollbackSql generate create table SQL for drop table.
-func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, string, error) {
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
 		stmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
@@ -315,12 +315,12 @@ func (i *Inspect) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string,
 }
 
 // generateCreateIndexRollbackSql generate drop index SQL for create index.
-func (i *Inspect) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, string, error) {
 	return fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)), "", nil
 }
 
 // generateDropIndexRollbackSql generate create index SQL for drop index.
-func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, string, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
@@ -354,7 +354,7 @@ func (i *Inspect) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string,
 }
 
 // generateInsertRollbackSql generate delete SQL for insert.
-func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, string, error) {
 	tables := util.GetTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(tables) != 1 {
@@ -442,7 +442,7 @@ func (i *Inspect) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, strin
 }
 
 // generateDeleteRollbackSql generate insert SQL for delete.
-func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, string, error) {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
 		i.Logger().Infof("not support generate rollback sql with multi-delete statement")
@@ -516,7 +516,7 @@ func (i *Inspect) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, strin
 }
 
 // generateUpdateRollbackSql generate update SQL for update.
-func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, string, error) {
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tableSources) != 1 {
@@ -624,7 +624,7 @@ func (i *Inspect) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, strin
 }
 
 // getRecords select all data which will be update or delete.
-func (i *Inspect) getRecords(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+func (i *MysqlDriverImpl) getRecords(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
@@ -635,7 +635,7 @@ func (i *Inspect) getRecords(tableName *ast.TableName, tableAlias string, where 
 }
 
 // getRecordCount select all data count which will be update or delete.
-func (i *Inspect) getRecordCount(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+func (i *MysqlDriverImpl) getRecordCount(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) (int64, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
@@ -667,7 +667,7 @@ ERROR:
 }
 
 // generateGetRecordsSql generate select SQL.
-func (i *Inspect) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+func (i *MysqlDriverImpl) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
 	order *ast.OrderByClause, limit int64) string {
 	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, i.getTableNameWithQuote(tableName))
 	if tableAlias != "" {

@@ -27,15 +27,16 @@ func init() {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
-	driver.RegisterAuditDriver(driver.DriverTypeMySQL, NewInspect, allRules, params.Params{})
+	driver.RegisterAuditDriver(driver.DriverTypeMySQL, allRules, params.Params{})
+	driver.RegisterDriverManger(nil, driver.DriverTypeMySQL, NewDriverManagerFunc)
 
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
 	}
 }
 
-// Inspect implements driver.Driver interface
-type Inspect struct {
+// MysqlDriverImpl implements driver.Driver interface
+type MysqlDriverImpl struct {
 	// Ctx is SQL session.
 	Ctx *session.Context
 	// cnf is task cnf, cnf variables record in rules.
@@ -60,8 +61,8 @@ type Inspect struct {
 	isOfflineAudit bool
 }
 
-func NewInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
-	var inspect = &Inspect{}
+func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error) {
+	var inspect = &MysqlDriverImpl{}
 
 	if cfg.DSN != nil {
 		conn, err := executor.NewExecutor(log, cfg.DSN, cfg.DSN.DatabaseName)
@@ -117,11 +118,11 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (driver.Driver, error) {
 	return inspect, nil
 }
 
-func (i *Inspect) IsOfflineAudit() bool {
+func (i *MysqlDriverImpl) IsOfflineAudit() bool {
 	return i.isOfflineAudit
 }
 
-func (i *Inspect) executeByGhost(ctx context.Context, query string, isDryRun bool) (_driver.Result, error) {
+func (i *MysqlDriverImpl) executeByGhost(ctx context.Context, query string, isDryRun bool) (_driver.Result, error) {
 	node, err := i.ParseSql(query)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse SQL")
@@ -160,7 +161,7 @@ func (i *Inspect) executeByGhost(ctx context.Context, query string, isDryRun boo
 	return _driver.ResultNoRows, nil
 }
 
-func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error) {
+func (i *MysqlDriverImpl) Exec(ctx context.Context, query string) (_driver.Result, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
 	}
@@ -184,7 +185,7 @@ func (i *Inspect) Exec(ctx context.Context, query string) (_driver.Result, error
 	return conn.Db.Exec(query)
 }
 
-func (i *Inspect) onlineddlWithGhost(query string) (bool, error) {
+func (i *MysqlDriverImpl) onlineddlWithGhost(query string) (bool, error) {
 	if i.cnf.DDLGhostMinSize == -1 {
 		return false, nil
 	}
@@ -207,7 +208,7 @@ func (i *Inspect) onlineddlWithGhost(query string) (bool, error) {
 	return int64(tableSize) > i.cnf.DDLGhostMinSize, nil
 }
 
-func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+func (i *MysqlDriverImpl) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
 	}
@@ -218,7 +219,7 @@ func (i *Inspect) Tx(ctx context.Context, queries ...string) ([]_driver.Result, 
 	return conn.Db.Transact(queries...)
 }
 
-func (i *Inspect) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
+func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
@@ -226,7 +227,7 @@ func (i *Inspect) query(ctx context.Context, query string, args ...interface{}) 
 	return conn.Db.Query(query, args...)
 }
 
-func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, error) {
+func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driver.Node, error) {
 	nodes, err := i.ParseSql(sqlText)
 	if err != nil {
 		return nil, err
@@ -258,7 +259,7 @@ func (i *Inspect) Parse(ctx context.Context, sqlText string) ([]driver.Node, err
 	return ns, nil
 }
 
-func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
+func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
 	i.result = driver.NewInspectResults()
 
 	if sql == "" {
@@ -356,7 +357,7 @@ func (i *Inspect) Audit(ctx context.Context, sql string) (*driver.AuditResult, e
 	return i.result, nil
 }
 
-func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
 	if i.IsOfflineAudit() {
 		return "", "", nil
 	}
@@ -379,11 +380,11 @@ func (i *Inspect) GenRollbackSQL(ctx context.Context, sql string) (string, strin
 	return rollback, reason, nil
 }
 
-func (i *Inspect) Close(ctx context.Context) {
+func (i *MysqlDriverImpl) Close(ctx context.Context) {
 	i.closeDbConn()
 }
 
-func (i *Inspect) Ping(ctx context.Context) error {
+func (i *MysqlDriverImpl) Ping(ctx context.Context) error {
 	if i.IsOfflineAudit() {
 		return nil
 	}
@@ -395,7 +396,7 @@ func (i *Inspect) Ping(ctx context.Context) error {
 	return conn.Db.Ping()
 }
 
-func (i *Inspect) Schemas(ctx context.Context) ([]string, error) {
+func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
 	}
@@ -417,11 +418,11 @@ type Config struct {
 	compositeIndexMaxColumn    int
 }
 
-func (i *Inspect) Context() *session.Context {
+func (i *MysqlDriverImpl) Context() *session.Context {
 	return i.Ctx
 }
 
-func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
+func (i *MysqlDriverImpl) ParseSql(sql string) ([]ast.Node, error) {
 	stmts, err := util.ParseSql(sql)
 	if err != nil {
 		i.Logger().Errorf("parse sql failed, error: %v, sql: %s", err, sql)
@@ -437,12 +438,12 @@ func (i *Inspect) ParseSql(sql string) ([]ast.Node, error) {
 	return nodes, nil
 }
 
-func (i *Inspect) Logger() *logrus.Entry {
+func (i *MysqlDriverImpl) Logger() *logrus.Entry {
 	return i.log
 }
 
 // getDbConn get db conn and just connect once.
-func (i *Inspect) getDbConn() (*executor.Executor, error) {
+func (i *MysqlDriverImpl) getDbConn() (*executor.Executor, error) {
 	if i.isConnected {
 		return i.dbConn, nil
 	}
@@ -455,7 +456,7 @@ func (i *Inspect) getDbConn() (*executor.Executor, error) {
 }
 
 // closeDbConn close db conn and just close once.
-func (i *Inspect) closeDbConn() {
+func (i *MysqlDriverImpl) closeDbConn() {
 	if i.isConnected {
 		i.dbConn.Db.Close()
 		i.isConnected = false
@@ -463,7 +464,7 @@ func (i *Inspect) closeDbConn() {
 }
 
 // getTableName get table name from TableName ast.
-func (i *Inspect) getTableName(stmt *ast.TableName) string {
+func (i *MysqlDriverImpl) getTableName(stmt *ast.TableName) string {
 	schema := i.Ctx.GetSchemaName(stmt)
 	if schema == "" {
 		return stmt.Name.String()
@@ -472,16 +473,46 @@ func (i *Inspect) getTableName(stmt *ast.TableName) string {
 }
 
 // getTableNameWithQuote get table name with quote.
-func (i *Inspect) getTableNameWithQuote(stmt *ast.TableName) string {
+func (i *MysqlDriverImpl) getTableNameWithQuote(stmt *ast.TableName) string {
 	name := strings.Replace(i.getTableName(stmt), ".", "`.`", -1)
 	return fmt.Sprintf("`%s`", name)
 }
 
 // getPrimaryKey get table's primary key.
-func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
+func (i *MysqlDriverImpl) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{}, bool, error) {
 	pkColumnsName, hasPk := util.GetPrimaryKey(stmt)
 	if !hasPk {
 		return pkColumnsName, hasPk, nil
 	}
 	return pkColumnsName, hasPk, nil
+}
+
+type DriverManager struct {
+	inspect *MysqlDriverImpl
+}
+
+func (d *DriverManager) GetAuditDriver() (driver.Driver, error) {
+	return d.inspect, nil
+}
+
+func (d *DriverManager) GetSQLQueryDriver() (driver.SQLQueryDriver, error) {
+	return d.getSQLQueryDriver()
+}
+
+func (d *DriverManager) GetAnalysisDriver() (driver.AnalysisDriver, error) {
+	return d.getAnalysisDriver()
+}
+
+func (d *DriverManager) Close(ctx context.Context) {
+	d.inspect.Close(ctx)
+}
+
+func NewDriverManagerFunc(log *logrus.Entry, dbType string, config *driver.Config, client *driver.PluginClient) (driver.DriverManager, error) {
+	inspect, err := NewInspect(log, config)
+	if err != nil {
+		return nil, err
+	}
+	return &DriverManager{
+		inspect: inspect,
+	}, nil
 }

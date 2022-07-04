@@ -99,11 +99,15 @@ func ExecuteWorkflow(workflow *model.Workflow, userId uint) error {
 		return errors.New(errors.LoadDriverFail, err)
 	}
 
-	d, err := driver.NewDriver(log.NewEntry(), task.Instance.DbType, cfg)
+	drvMgr, err := driver.NewDriverManger(log.NewEntry(), task.DBType, cfg)
 	if err != nil {
 		return errors.New(errors.LoadDriverFail, err)
 	}
-	defer d.Close(context.TODO())
+	defer drvMgr.Close(context.TODO())
+	d, err := drvMgr.GetAuditDriver()
+	if err != nil {
+		return errors.New(errors.LoadDriverFail, err)
+	}
 	if err := d.Ping(context.TODO()); err != nil {
 		return errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
