@@ -64,50 +64,6 @@ func (p *PluginServer) AddPlugin(pluginName string, pluginVersion int, plugin go
 	p.mutex.Unlock()
 }
 
-// InitPlugins init plugins at plugins directory. It should be called on host process.
-
-func InitPlugins(pluginDir string) error {
-	if pluginDir == "" {
-		return nil
-	}
-
-	// read plugin file
-	var plugins []os.FileInfo
-	if err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return errors.Wrap(err, "init plugin")
-		}
-
-		if info.IsDir() || info.Mode()&0111 == 0 {
-			return nil
-		}
-		plugins = append(plugins, info)
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	// register plugin
-	for _, p := range plugins {
-		binaryPath := filepath.Join(pluginDir, p.Name())
-
-		// check plugin
-		var client PluginClient
-		client = newClientFromFile(binaryPath)
-		if !testConnClient(client) {
-			client = newOldClientFromFile(binaryPath)
-			if !testConnClient(client) {
-				return fmt.Errorf("unable to load plugin: %v", binaryPath)
-			}
-		}
-		if err := RegisterDriverFromClient(client); err != nil {
-			return err
-		}
-
-	}
-	return nil
-}
-
 var handshakeConfig = goPlugin.HandshakeConfig{
 	ProtocolVersion:  1,
 	MagicCookieKey:   "BASIC_PLUGIN",

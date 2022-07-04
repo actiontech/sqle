@@ -27,7 +27,8 @@ func init() {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
 
-	driver.RegisterAuditDriver(driver.DriverTypeMySQL, NewInspect, allRules, params.Params{})
+	driver.RegisterAuditDriver(driver.DriverTypeMySQL, allRules, params.Params{})
+	driver.RegisterDriverManger(nil, driver.DriverTypeMySQL, NewDriverManagerFunc)
 
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
@@ -484,4 +485,34 @@ func (i *Inspect) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]struct{},
 		return pkColumnsName, hasPk, nil
 	}
 	return pkColumnsName, hasPk, nil
+}
+
+type DriverManager struct {
+	inspect *MysqlDriverImpl
+}
+
+func (d *DriverManager) GetAuditDriver() (driver.Driver, error) {
+	return d.inspect, nil
+}
+
+func (d *DriverManager) GetSQLQueryDriver() (driver.SQLQueryDriver, error) {
+	return d.getSQLQueryDriver()
+}
+
+func (d *DriverManager) GetAnalysisDriver() (driver.AnalysisDriver, error) {
+	return d.getAnalysisDriver()
+}
+
+func (d *DriverManager) Close(ctx context.Context) {
+	d.inspect.Close(ctx)
+}
+
+func NewDriverManagerFunc(log *logrus.Entry, dbType string, config *driver.Config, client *driver.PluginClient) (driver.DriverManager, error) {
+	inspect, err := NewInspect(log, config)
+	if err != nil {
+		return nil, err
+	}
+	return &DriverManager{
+		inspect: inspect,
+	}, nil
 }

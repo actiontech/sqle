@@ -18,9 +18,9 @@ import (
 )
 
 var (
-	// drivers store instantiate handlers for MySQL or gRPC plugin.
-	drivers   = make(map[string]handler)
-	driversMu sync.RWMutex
+	// auditDrivers store instantiate handlers for MySQL or gRPC plugin.
+	auditDrivers = make(map[string]struct{})
+	driversMu    sync.RWMutex
 
 	// rules store audit rules for each driver.
 	rules   map[string][]*Rule
@@ -121,12 +121,6 @@ type Rule struct {
 //	return value
 //}
 
-// Config define the configuration for driver.
-type Config struct {
-	DSN   *DSN
-	Rules []*Rule
-}
-
 // NewConfig return a config for driver.
 //
 // 1. dsn is nil, rules is not nil. Use drive to do Offline Audit.
@@ -143,21 +137,18 @@ func NewConfig(dsn *DSN, rules []*Rule) (*Config, error) {
 	}, nil
 }
 
-// handler is a template which Driver plugin should provide such function signature.
-type handler func(log *logrus.Entry, c *Config) (Driver, error)
-
 // RegisterAuditDriver like sql.RegisterAuditDriver.
 //
 // RegisterAuditDriver makes a database driver available by the provided driver name.
 // Driver's initialize handler and audit rules register by RegisterAuditDriver.
-func RegisterAuditDriver(name string, h handler, rs []*Rule, ap params.Params) {
-	_, exist := drivers[name]
+func RegisterAuditDriver(name string, rs []*Rule, ap params.Params) {
+	_, exist := auditDrivers[name]
 	if exist {
 		panic("duplicated driver name")
 	}
 
 	driversMu.Lock()
-	drivers[name] = h
+	auditDrivers[name] = struct{}{}
 	driversMu.Unlock()
 
 	rulesMu.Lock()
@@ -181,19 +172,6 @@ type DriverNotSupportedError struct {
 
 func (e *DriverNotSupportedError) Error() string {
 	return fmt.Sprintf("driver type %v is not supported", e.DriverTyp)
-}
-
-// NewDriver return a new instantiated Driver.
-func NewDriver(log *logrus.Entry, dbType string, cfg *Config) (Driver, error) {
-	driversMu.RLock()
-	defer driversMu.RUnlock()
-
-	d, exist := drivers[dbType]
-	if !exist {
-		return nil, fmt.Errorf("driver type %v is not supported", dbType)
-	}
-
-	return d(log, cfg)
 }
 
 func AllRules() map[string][]*Rule {
@@ -522,36 +500,23 @@ func convertRuleFromDriverToProto(rule *Rule) *proto.Rule {
 	}
 }
 
-func getServerHandle(client PluginClient, closeCh <-chan struct{}) (proto.DriverClient, error) {
-	gRPCClient, err := client.Client()
+func registerAuditDriver(gRPCClient goPlugin.ClientProtocol) (pluginName string, drvClient proto.DriverClient, err error) {
+	rawI, err := gRPCClient.Dispense(PluginNameAuditDriver)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	go func() {
-		<-closeCh
-		client.Kill()
-	}()
-	rawI, err := gRPCClient.Dispense(PluginNameDriver)
-	if err != nil {
-		return nil, err
-	}
-	// srv can only be proto.DriverClient
+	// client can only be proto.DriverClient
 	//nolint:forcetypeassert
-	srv := rawI.(proto.DriverClient)
+	client := rawI.(proto.DriverClient)
 
-	return srv, nil
-}
-
-func registerAuditDriver(client PluginClient) (pluginName string, err error) {
-	closeCh := make(chan struct{})
-	srv, err := getServerHandle(client, closeCh)
+	pluginMeta, err := client.Metas(context.TODO(), &proto.Empty{})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	pluginMeta, err := srv.Metas(context.TODO(), &proto.Empty{})
-	close(closeCh)
+	// init audit driver, so that we can use Close to inform all plugins with the same progress to recycle resource
+	_, err = client.Init(context.TODO(), &proto.InitRequest{})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// driverRules get from plugin when plugin initialize.
@@ -560,49 +525,11 @@ func registerAuditDriver(client PluginClient) (pluginName string, err error) {
 		driverRules = append(driverRules, convertRuleFromProtoToDriver(rule))
 	}
 
-	handler := func(log *logrus.Entry, config *Config) (Driver, error) {
-		pluginCloseCh := make(chan struct{})
-		srv, err := getServerHandle(client, pluginCloseCh)
-		if err != nil {
-			return nil, err
-		}
-
-		// protoRules send to plugin for Audit.
-		var protoRules []*proto.Rule
-		for _, rule := range config.Rules {
-			protoRules = append(protoRules, convertRuleFromDriverToProto(rule))
-		}
-
-		initRequest := &proto.InitRequest{
-			Rules: protoRules,
-		}
-		if config.DSN != nil {
-			initRequest.Dsn = &proto.DSN{
-				Host:             config.DSN.Host,
-				Port:             config.DSN.Port,
-				User:             config.DSN.User,
-				Password:         config.DSN.Password,
-				AdditionalParams: proto.ConvertParamToProtoParam(config.DSN.AdditionalParams),
-
-				// database is to open.
-				Database: config.DSN.DatabaseName,
-			}
-		}
-
-		_, err = srv.Init(context.TODO(), initRequest)
-		if err != nil {
-			return nil, err
-		}
-
-		return &driverPluginClient{srv, pluginCloseCh}, nil
-
-	}
-
-	RegisterAuditDriver(pluginMeta.Name, handler, driverRules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()))
+	RegisterAuditDriver(pluginMeta.Name, driverRules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()))
 
 	log.Logger().WithFields(logrus.Fields{
 		"plugin_name": pluginMeta.Name,
-		"plugin_type": PluginNameDriver,
+		"plugin_type": PluginNameAuditDriver,
 	}).Infoln("plugin inited")
-	return pluginMeta.Name, nil
+	return pluginMeta.Name, client, nil
 }

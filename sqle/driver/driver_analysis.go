@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-
-	"github.com/sirupsen/logrus"
 )
 
 // AnalysisDriver is a driver for SQL analysis and getting table metadata
@@ -103,35 +101,22 @@ type ExplainResult struct {
 	ClassicResult ExplainClassicResult
 }
 
-func NewAnalysisDriver(log *logrus.Entry, dbType string, cfg *DSN) (AnalysisDriver, error) {
-	analysisDriverMu.RLock()
-	defer analysisDriverMu.RUnlock()
-	d, exist := analysisDrivers[dbType]
-	if !exist {
-		return nil, fmt.Errorf("driver type %v is not supported", dbType)
-	}
-	return d(log, cfg)
-}
-
 var analysisDriverMu = &sync.RWMutex{}
-var analysisDrivers = make(map[string]analysisHandler)
-
-// analysisHandler is a template which AnalysisDriver plugin should provide such function signature.
-type analysisHandler func(log *logrus.Entry, c *DSN) (AnalysisDriver, error)
+var analysisDrivers = make(map[string]struct{})
 
 // RegisterAnalysisDriver like sql.RegisterAuditDriver.
 //
 // RegisterAnalysisDriver makes a database driver available by the provided driver name.
 // RegisterAnalysisDriver's initialize handler registered by RegisterAnalysisDriver.
-func RegisterAnalysisDriver(name string, h analysisHandler) {
+func RegisterAnalysisDriver(name string) {
 	analysisDriverMu.RLock()
 	_, exist := analysisDrivers[name]
 	analysisDriverMu.RUnlock()
 	if exist {
-		panic("duplicated driver name")
+		panic(fmt.Sprintf("duplicated driver name %v", name))
 	}
 
 	analysisDriverMu.Lock()
-	analysisDrivers[name] = h
+	analysisDrivers[name] = struct{}{}
 	analysisDriverMu.Unlock()
 }
