@@ -55,7 +55,7 @@ func (q *QueryAdaptor) GeneratePlugin() goPlugin.Plugin {
 
 		q.dsn = dsn
 		di := &pluginImpl{
-			q: q,
+			queryAdaptor: q,
 		}
 		if q.dsn == nil {
 			pluginImpls[driver.PluginNameQueryDriver] = di

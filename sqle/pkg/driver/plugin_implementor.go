@@ -20,8 +20,8 @@ var pluginImpls = make(map[string]*pluginImpl)
 var pluginImplsMu = &sync.Mutex{}
 
 type pluginImpl struct {
-	a               *AuditAdaptor
-	q               *QueryAdaptor
+	auditAdaptor    *AuditAdaptor
+	queryAdaptor    *QueryAdaptor
 	analysisAdaptor *AnalysisAdaptor
 	db              *sql.DB
 	conn            *sql.Conn
@@ -31,13 +31,13 @@ func (p *pluginImpl) Close(ctx context.Context) {
 	for name, pluginImpl := range pluginImpls {
 		if pluginImpl.conn != nil {
 			if err := pluginImpl.conn.Close(); err != nil {
-				pluginImpl.a.l.Error("failed to close connection in driver adaptor", "err", err, "plugin_name", name)
+				pluginImpl.auditAdaptor.l.Error("failed to close connection in driver adaptor", "err", err, "plugin_name", name)
 			}
 		}
 
 		if pluginImpl.db != nil {
 			if err := pluginImpl.db.Close(); err != nil {
-				pluginImpl.a.l.Error("failed to close database in driver adaptor", "err", err, "plugin_name", name)
+				pluginImpl.auditAdaptor.l.Error("failed to close database in driver adaptor", "err", err, "plugin_name", name)
 			}
 		}
 
@@ -101,7 +101,7 @@ func (p *pluginImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 }
 
 func (p *pluginImpl) Schemas(ctx context.Context) ([]string, error) {
-	rows, err := p.conn.QueryContext(ctx, p.a.dt.ShowDatabaseSQL())
+	rows, err := p.conn.QueryContext(ctx, p.auditAdaptor.dt.ShowDatabaseSQL())
 	if err != nil {
 		return nil, errors.Wrap(err, "query database in driver adaptor")
 	}
@@ -157,16 +157,16 @@ func classifySQL(sql string) (sqlType string) {
 func (p *pluginImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
 	var err error
 	var ast interface{}
-	if p.a.ao.sqlParser != nil {
-		ast, err = p.a.ao.sqlParser(sql)
+	if p.auditAdaptor.ao.sqlParser != nil {
+		ast, err = p.auditAdaptor.ao.sqlParser(sql)
 		if err != nil {
 			return nil, errors.Wrap(err, "parse sql")
 		}
 	}
 
 	result := driver.NewInspectResults()
-	for _, rule := range p.a.cfg.Rules {
-		handler, ok := p.a.ruleToRawHandler[rule.Name]
+	for _, rule := range p.auditAdaptor.cfg.Rules {
+		handler, ok := p.auditAdaptor.ruleToRawHandler[rule.Name]
 		if ok {
 			msg, err := handler(ctx, rule, sql)
 			if err != nil {
@@ -174,7 +174,7 @@ func (p *pluginImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult
 			}
 			result.Add(rule.Level, msg)
 		} else {
-			handler, ok := p.a.ruleToASTHandler[rule.Name]
+			handler, ok := p.auditAdaptor.ruleToASTHandler[rule.Name]
 			if ok {
 				msg, err := handler(ctx, rule, ast)
 				if err != nil {
@@ -193,8 +193,8 @@ func (p *pluginImpl) GenRollbackSQL(ctx context.Context, sql string) (string, st
 }
 
 func (p *pluginImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
-	if p.q.queryPrepare != nil {
-		return p.q.queryPrepare(ctx, sql, conf)
+	if p.queryAdaptor.queryPrepare != nil {
+		return p.queryAdaptor.queryPrepare(ctx, sql, conf)
 	}
 	return &driver.QueryPrepareResult{
 		NewSQL:    sql,
@@ -204,8 +204,8 @@ func (p *pluginImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.
 }
 
 func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.QueryConf) (*driver.QueryResult, error) {
-	if p.q.query != nil {
-		return p.q.query(ctx, query, conf)
+	if p.queryAdaptor.query != nil {
+		return p.queryAdaptor.query(ctx, query, conf)
 	}
 
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(conf.TimeOutSecond)*time.Second)

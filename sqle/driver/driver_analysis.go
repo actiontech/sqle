@@ -46,17 +46,17 @@ type AnalysisInfoHead struct {
 }
 
 // AnalysisInfoInTableFormat
-// the field Column represents the column name of a table
+// the field Columns represents the column name of a table
 // the field Rows represents the data of the table
 // their relationship is as follows
 /*
-	| Column[0]  | Column[1]  | Column[2]  |
+	| Columns[0]  | Columns[1]  | Columns[2]  |
 	| Rows[0][0] | Rows[0][1] | Rows[0][2] |
 	| Rows[1][0] | Rows[1][1] | Rows[1][2] |
 */
 type AnalysisInfoInTableFormat struct {
-	Column []AnalysisInfoHead
-	Rows   [][]string
+	Columns []AnalysisInfoHead
+	Rows    [][]string
 }
 
 type GetTableMetaByTableNameConf struct {
@@ -178,13 +178,13 @@ func (a *analysisDriverImpl) GetTableMetaByTableName(ctx context.Context, conf *
 		Schema: resTableMeta.GetSchema(),
 		ColumnsInfo: ColumnsInfo{
 			AnalysisInfoInTableFormat{
-				Column: ColumnsInfoColumns,
-				Rows:   ColumnsInfoRows,
+				Columns: ColumnsInfoColumns,
+				Rows:    ColumnsInfoRows,
 			}},
 		IndexesInfo: IndexesInfo{
 			AnalysisInfoInTableFormat{
-				Column: IndexesInfoColumns,
-				Rows:   IndexesInfoRows,
+				Columns: IndexesInfoColumns,
+				Rows:    IndexesInfoRows,
 			},
 		},
 		CreateTableSQL: resTableMeta.GetCreateTableSQL(),
@@ -230,13 +230,13 @@ func (a *analysisDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *GetTab
 			Schema: resTableMeta.GetSchema(),
 			ColumnsInfo: ColumnsInfo{
 				AnalysisInfoInTableFormat{
-					Column: ColumnsInfoColumns,
-					Rows:   ColumnsInfoRows,
+					Columns: ColumnsInfoColumns,
+					Rows:    ColumnsInfoRows,
 				}},
 			IndexesInfo: IndexesInfo{
 				AnalysisInfoInTableFormat{
-					Column: IndexesInfoColumns,
-					Rows:   IndexesInfoRows,
+					Columns: IndexesInfoColumns,
+					Rows:    IndexesInfoRows,
 				},
 			},
 			CreateTableSQL: resTableMeta.GetCreateTableSQL(),
@@ -262,8 +262,8 @@ func (a *analysisDriverImpl) Explain(ctx context.Context, conf *ExplainConf) (*E
 	columns, rows := a.convertAnalysisInfoFromProtoToSqle(res.ClassicResult.AnalysisInfoInTableFormat)
 	return &ExplainResult{
 		ClassicResult: ExplainClassicResult{AnalysisInfoInTableFormat{
-			Column: columns,
-			Rows:   rows,
+			Columns: columns,
+			Rows:    rows,
 		}},
 	}, nil
 }

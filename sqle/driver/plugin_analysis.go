@@ -85,8 +85,8 @@ func (a *analysisDriverGRPCServer) GetTableMetaByTableName(ctx context.Context, 
 }
 
 func (a *analysisDriverGRPCServer) convertTableFormatInfoToProto(analysisInfo AnalysisInfoInTableFormat) (columns []*proto.AnalysisInfoHead, rows []*proto.Row) {
-	columns = make([]*proto.AnalysisInfoHead, len(analysisInfo.Column))
-	for i, c := range analysisInfo.Column {
+	columns = make([]*proto.AnalysisInfoHead, len(analysisInfo.Columns))
+	for i, c := range analysisInfo.Columns {
 		columns[i] = &proto.AnalysisInfoHead{
 			Name: c.Name,
 			Desc: c.Desc,

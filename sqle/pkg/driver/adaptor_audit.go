@@ -108,7 +108,7 @@ func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 
 		a.cfg = cfg
 
-		di := &pluginImpl{a: a}
+		di := &pluginImpl{auditAdaptor: a}
 
 		if cfg.DSN == nil {
 			pluginImpls[driver.PluginNameAuditDriver] = di
