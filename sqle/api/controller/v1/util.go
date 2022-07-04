@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database string) (driver.Driver, error) {
+func newDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, database string) (driver.DriverManager, error) {
 	if inst == nil {
 		return nil, errors.Errorf("instance is nil")
 	}
@@ -22,11 +22,11 @@ func newDriverWithoutAudit(l *logrus.Entry, inst *model.Instance, database strin
 		return nil, errors.Wrap(err, "new driver without audit")
 	}
 
-	return driver.NewDriver(l, inst.DbType, cfg)
+	return driver.NewDriverManger(l, inst.DbType, cfg)
 }
 
-func newDriverWithoutCfg(l *logrus.Entry, dbType string) (driver.Driver, error) {
-	return driver.NewDriver(l, dbType, &driver.Config{})
+func newDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.DriverManager, error) {
+	return driver.NewDriverManger(l, dbType, nil)
 }
 
 func newDSN(instance *model.Instance, database string) (*driver.DSN, error) {

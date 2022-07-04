@@ -142,11 +142,16 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	d, err := newDriverWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer d.Close(context.TODO())
+	defer drvMgr.Close(context.TODO())
+
+	d, err := drvMgr.GetAuditDriver()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	if err := d.Ping(context.TODO()); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
