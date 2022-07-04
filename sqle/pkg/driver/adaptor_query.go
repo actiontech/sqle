@@ -4,10 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"os"
-	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/hashicorp/go-hclog"
 	goPlugin "github.com/hashicorp/go-plugin"
@@ -53,11 +51,16 @@ func (q *QueryAdaptor) GeneratePlugin() goPlugin.Plugin {
 		}
 	}()
 	newDriver := func(dsn *driver.DSN) driver.SQLQueryDriver {
+		if p, exist := pluginImpls[driver.PluginNameQueryDriver]; exist {
+			return p
+		}
+
 		q.dsn = dsn
 		di := &pluginImpl{
 			q: q,
 		}
 		if q.dsn == nil {
+			pluginImpls[driver.PluginNameQueryDriver] = di
 			return di
 		}
 		driverName, dsnDetail := q.dt.Dialect(dsn)
@@ -75,79 +78,8 @@ func (q *QueryAdaptor) GeneratePlugin() goPlugin.Plugin {
 
 		di.db = db
 		di.conn = conn
+		pluginImpls[driver.PluginNameQueryDriver] = di
 		return di
 	}
 	return driver.NewQueryDriverPlugin(newDriver)
-}
-
-type queryDriverImpl struct {
-	q    *QueryAdaptor
-	db   *sql.DB
-	conn *sql.Conn
-}
-
-func (q *queryDriverImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
-	if q.q.queryPrepare != nil {
-		return q.q.queryPrepare(ctx, sql, conf)
-	}
-	return &driver.QueryPrepareResult{
-		NewSQL:    sql,
-		ErrorType: driver.ErrorTypeNotError,
-		Error:     "",
-	}, nil
-}
-
-func (q *queryDriverImpl) Query(ctx context.Context, query string, conf *driver.QueryConf) (*driver.QueryResult, error) {
-	if q.q.query != nil {
-		return q.q.query(ctx, query, conf)
-	}
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(conf.TimeOutSecond)*time.Second)
-	defer cancel()
-	rows, err := q.conn.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	result := &driver.QueryResult{
-		Column: params.Params{},
-		Rows:   []*driver.QueryResultRow{},
-	}
-	columns, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-	for _, column := range columns {
-		result.Column = append(result.Column, &params.Param{
-			Key:   column,
-			Value: column,
-			Desc:  column,
-		})
-	}
-
-	for rows.Next() {
-		buf := make([]interface{}, len(columns))
-		data := make([]sql.NullString, len(columns))
-		for i := range buf {
-			buf[i] = &data[i]
-		}
-		if err := rows.Scan(buf...); err != nil {
-			return nil, err
-		}
-		value := &driver.QueryResultRow{
-			Values: []*driver.QueryResultValue{},
-		}
-		for i := 0; i < len(columns); i++ {
-			value.Values = append(value.Values, &driver.QueryResultValue{Value: data[i].String})
-		}
-		result.Rows = append(result.Rows, value)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (q *queryDriverImpl) Close(ctx context.Context) {
-	// Close does not need to be implemented at the Server for the time being
 }
