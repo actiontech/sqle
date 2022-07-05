@@ -42,7 +42,7 @@ type AuditPlanSQLV2 struct {
 	AuditPlanID    uint   `json:"audit_plan_id" gorm:"not null"`
 	Fingerprint    string `json:"fingerprint" gorm:"type:text;not null"`
 	FingerprintMD5 string `json:"fingerprint_md5" gorm:"column:fingerprint_md5;not null"`
-	SQLContent     string `json:"sql" gorm:"type:text;not null"`
+	SQLContent     string `json:"sql" gorm:"type:mediumtext;not null"`
 	Info           JSON   `gorm:"type:json"`
 }
 
