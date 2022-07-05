@@ -68,14 +68,14 @@ func convertExplainAndMetaDataToRes(explainResultInput *driver.ExplainResult, ex
 		SQLExplain: SQLExplain{
 			ClassicResult: ExplainClassicResult{
 				Rows: make([]map[string]string, len(explainResult.ClassicResult.Rows)),
-				Head: make([]TableMetaItemHeadResV1, len(explainResult.ClassicResult.Column)),
+				Head: make([]TableMetaItemHeadResV1, len(explainResult.ClassicResult.Columns)),
 			},
 		},
 		TableMetas: make([]TableMeta, len(metaDataResult.TableMetas)),
 	}
 
 	explainResItemV1 := analysisDataResItemV1.SQLExplain.ClassicResult
-	for i, column := range explainResult.ClassicResult.Column {
+	for i, column := range explainResult.ClassicResult.Columns {
 		explainResItemV1.Head[i].FieldName = column.Name
 		explainResItemV1.Head[i].Desc = column.Desc
 	}
@@ -83,7 +83,7 @@ func convertExplainAndMetaDataToRes(explainResultInput *driver.ExplainResult, ex
 	for i, rows := range explainResult.ClassicResult.Rows {
 		explainResItemV1.Rows[i] = make(map[string]string)
 		for k, row := range rows {
-			columnName := explainResult.ClassicResult.Column[k].Name
+			columnName := explainResult.ClassicResult.Columns[k].Name
 			explainResItemV1.Rows[i][columnName] = row
 		}
 	}
@@ -97,15 +97,15 @@ func convertExplainAndMetaDataToRes(explainResultInput *driver.ExplainResult, ex
 
 		analysisDataResItemV1.TableMetas[i].Columns = TableColumns{
 			Rows: make([]map[string]string, len(tableMetaColumnsInfo.Rows)),
-			Head: make([]TableMetaItemHeadResV1, len(tableMetaColumnsInfo.Column)),
+			Head: make([]TableMetaItemHeadResV1, len(tableMetaColumnsInfo.Columns)),
 		}
 		analysisDataResItemV1.TableMetas[i].Indexes = TableIndexes{
 			Rows: make([]map[string]string, len(tableMetaIndexInfo.Rows)),
-			Head: make([]TableMetaItemHeadResV1, len(tableMetaIndexInfo.Column)),
+			Head: make([]TableMetaItemHeadResV1, len(tableMetaIndexInfo.Columns)),
 		}
 
 		tableMetaColumnRes := analysisDataResItemV1.TableMetas[i].Columns
-		for i2, column := range tableMetaColumnsInfo.Column {
+		for i2, column := range tableMetaColumnsInfo.Columns {
 			tableMetaColumnRes.Head[i2].FieldName = column.Name
 			tableMetaColumnRes.Head[i2].Desc = column.Desc
 		}
@@ -113,13 +113,13 @@ func convertExplainAndMetaDataToRes(explainResultInput *driver.ExplainResult, ex
 		for i2, rows := range tableMetaColumnsInfo.Rows {
 			tableMetaColumnRes.Rows[i2] = make(map[string]string)
 			for k, row := range rows {
-				columnName := tableMetaColumnsInfo.Column[k].Name
+				columnName := tableMetaColumnsInfo.Columns[k].Name
 				tableMetaColumnRes.Rows[i2][columnName] = row
 			}
 		}
 
 		tableMetaIndexRes := analysisDataResItemV1.TableMetas[i].Indexes
-		for i2, column := range tableMetaIndexInfo.Column {
+		for i2, column := range tableMetaIndexInfo.Columns {
 			tableMetaIndexRes.Head[i2].FieldName = column.Name
 			tableMetaIndexRes.Head[i2].Desc = column.Desc
 		}
@@ -127,7 +127,7 @@ func convertExplainAndMetaDataToRes(explainResultInput *driver.ExplainResult, ex
 		for i2, rows := range tableMetaIndexInfo.Rows {
 			tableMetaIndexRes.Rows[i2] = make(map[string]string)
 			for k, row := range rows {
-				columnName := tableMetaIndexInfo.Column[k].Name
+				columnName := tableMetaIndexInfo.Columns[k].Name
 				tableMetaIndexRes.Rows[i2][columnName] = row
 			}
 		}

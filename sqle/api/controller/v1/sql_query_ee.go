@@ -464,10 +464,10 @@ func getSQLExplain(c echo.Context) error {
 func convertExplainResultsToRes(explainResult *driver.ExplainResult) ExplainClassicResult {
 	explainClassicResult := ExplainClassicResult{
 		Rows: make([]map[string]string, len(explainResult.ClassicResult.Rows)),
-		Head: make([]TableMetaItemHeadResV1, len(explainResult.ClassicResult.Column)),
+		Head: make([]TableMetaItemHeadResV1, len(explainResult.ClassicResult.Columns)),
 	}
 
-	for i, column := range explainResult.ClassicResult.Column {
+	for i, column := range explainResult.ClassicResult.Columns {
 		explainClassicResult.Head[i].FieldName = column.Name
 		explainClassicResult.Head[i].Desc = column.Desc
 	}
@@ -475,7 +475,7 @@ func convertExplainResultsToRes(explainResult *driver.ExplainResult) ExplainClas
 	for k, rows := range explainResult.ClassicResult.Rows {
 		explainClassicResult.Rows[k] = make(map[string]string)
 		for i, row := range rows {
-			columnName := explainResult.ClassicResult.Column[i].Name
+			columnName := explainResult.ClassicResult.Columns[i].Name
 			explainClassicResult.Rows[k][columnName] = row
 		}
 	}
