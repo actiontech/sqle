@@ -26,7 +26,7 @@ func newDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 }
 
 func newDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.DriverManager, error) {
-	return driver.NewDriverManger(l, dbType, nil)
+	return driver.NewDriverManger(l, dbType, &driver.Config{})
 }
 
 func newDSN(instance *model.Instance, database string) (*driver.DSN, error) {
