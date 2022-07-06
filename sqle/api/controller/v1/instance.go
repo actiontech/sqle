@@ -754,13 +754,13 @@ func newGetInstanceConnectableResV1(err error) GetInstanceConnectableResV1 {
 func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
 	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
 	}
 	defer drvMgr.Close(context.TODO())
 
 	d, err := drvMgr.GetAuditDriver()
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
 	}
 
 	if err := d.Ping(context.TODO()); err != nil {
