@@ -162,6 +162,7 @@ func (d *auditDriverGRPCServer) Metas(ctx context.Context, req *proto.Empty) (*p
 		Name:             d.r.Name(),
 		Rules:            protoRules,
 		AdditionalParams: proto.ConvertParamToProtoParam(d.r.AdditionalParams()),
+		Version:          DefaultPluginVersion,
 	}, nil
 }
 
