@@ -501,10 +501,10 @@ func convertRuleFromDriverToProto(rule *Rule) *proto.Rule {
 	}
 }
 
-func registerAuditDriver(gRPCClient goPlugin.ClientProtocol) (pluginName string, drvClient proto.DriverClient, err error) {
+func registerAuditDriver(gRPCClient goPlugin.ClientProtocol) (pluginName string, pluginVersion int32, drvClient proto.DriverClient, err error) {
 	rawI, err := gRPCClient.Dispense(PluginNameAuditDriver)
 	if err != nil {
-		return "", nil, err
+		return "", 0, nil, err
 	}
 	// client can only be proto.DriverClient
 	//nolint:forcetypeassert
@@ -512,12 +512,12 @@ func registerAuditDriver(gRPCClient goPlugin.ClientProtocol) (pluginName string,
 
 	pluginMeta, err := client.Metas(context.TODO(), &proto.Empty{})
 	if err != nil {
-		return "", nil, err
+		return "", 0, nil, err
 	}
 	// init audit driver, so that we can use Close to inform all plugins with the same progress to recycle resource
 	_, err = client.Init(context.TODO(), &proto.InitRequest{})
 	if err != nil {
-		return "", nil, err
+		return "", 0, nil, err
 	}
 
 	// driverRules get from plugin when plugin initialize.
@@ -532,5 +532,5 @@ func registerAuditDriver(gRPCClient goPlugin.ClientProtocol) (pluginName string,
 		"plugin_name": pluginMeta.Name,
 		"plugin_type": PluginNameAuditDriver,
 	}).Infoln("plugin inited")
-	return pluginMeta.Name, client, nil
+	return pluginMeta.Name, pluginMeta.GetVersion(), client, nil
 }
