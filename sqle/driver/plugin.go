@@ -10,6 +10,11 @@ import (
 var ErrSQLIsNotSupported = errors.New("SQL is not supported")
 
 const (
+	// grpc error code
+	grpcErrSQLIsNotSupported = 1000
+)
+
+const (
 	DefaultPluginVersion = 1
 )
 

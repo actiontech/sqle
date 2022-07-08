@@ -10,6 +10,7 @@ import (
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/status"
 )
 
 // AnalysisDriver is a driver for SQL analysis and getting table metadata
@@ -216,7 +217,9 @@ func (a *analysisDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *GetTab
 		Sql: conf.Sql,
 	}
 	res, err := a.plugin.GetTableMetaBySQL(ctx, req)
-	if err != nil {
+	if err != nil && status.Code(err) == grpcErrSQLIsNotSupported {
+		return nil, ErrSQLIsNotSupported
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -255,7 +258,9 @@ func (a *analysisDriverImpl) Explain(ctx context.Context, conf *ExplainConf) (*E
 		Sql: conf.Sql,
 	}
 	res, err := a.plugin.Explain(ctx, req)
-	if err != nil {
+	if err != nil && status.Code(err) == grpcErrSQLIsNotSupported {
+		return nil, ErrSQLIsNotSupported
+	} else if err != nil {
 		return nil, err
 	}
 
