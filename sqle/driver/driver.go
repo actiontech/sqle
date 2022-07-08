@@ -62,7 +62,7 @@ func (p *PluginClient) RegisterDrivers(c *PluginClient) (pluginName string, err 
 		return "", err
 	}
 
-	pluginName, drvClient, err := registerAuditDriver(gRPCClient)
+	pluginName, version, drvClient, err := registerAuditDriver(gRPCClient)
 	if err != nil {
 		return "", err
 	}
@@ -80,10 +80,14 @@ func (p *PluginClient) RegisterDrivers(c *PluginClient) (pluginName string, err 
 			"plugin_type": PluginNameQueryDriver,
 		}).Infof("plugin not exist or failed to load. err: %v", err)
 	}
-	
-	_, err = drvClient.Close(context.TODO(), &proto.Empty{})
-	if err != nil {
-		log.Logger().Errorf("gracefully close plugins failed, will force kill the sub progress. err: %v", err)
+
+	// to be compatible with old plugins
+	// the old plugin will panic if it call close() here
+	if version >= DefaultPluginVersion {
+		_, err = drvClient.Close(context.TODO(), &proto.Empty{})
+		if err != nil {
+			log.Logger().Errorf("gracefully close plugins failed, will force kill the sub progress. err: %v", err)
+		}
 	}
 	c.Kill()
 	return pluginName, nil

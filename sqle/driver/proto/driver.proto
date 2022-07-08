@@ -116,6 +116,7 @@ message MetasResponse {
   string name = 1;
   repeated Rule rules = 2;
   repeated Param additionalParams = 3;
+  int32 version = 4;
 }
 
 
