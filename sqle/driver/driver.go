@@ -83,7 +83,7 @@ func (p *PluginClient) RegisterDrivers(c *PluginClient) (pluginName string, err 
 
 	// to be compatible with old plugins
 	// the old plugin will panic if it call close() here
-	if version > 0 {
+	if version >= DefaultPluginVersion {
 		_, err = drvClient.Close(context.TODO(), &proto.Empty{})
 		if err != nil {
 			log.Logger().Errorf("gracefully close plugins failed, will force kill the sub progress. err: %v", err)
