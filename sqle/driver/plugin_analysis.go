@@ -7,6 +7,7 @@ import (
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 // queryDriverPlugin use for hide gRPC detail.
@@ -69,12 +70,12 @@ func (a *analysisDriverGRPCServer) GetTableMetaByTableName(ctx context.Context, 
 		ColumnsInfo: &proto.ColumnsInfo{
 			AnalysisInfoInTableFormat: &proto.AnalysisInfoInTableFormat{
 				Columns: columnInfoColumns,
-				Rows:   columnInfoRows,
+				Rows:    columnInfoRows,
 			}},
 		IndexesInfo: &proto.IndexesInfo{
 			AnalysisInfoInTableFormat: &proto.AnalysisInfoInTableFormat{
 				Columns: indexInfoColumns,
-				Rows:   indexInfoRows,
+				Rows:    indexInfoRows,
 			}},
 		CreateTableSQL: res.TableMeta.CreateTableSQL,
 	}
@@ -107,7 +108,9 @@ func (a *analysisDriverGRPCServer) GetTableMetaBySQL(ctx context.Context, req *p
 		Sql: req.Sql,
 	}
 	res, err := a.impl.GetTableMetaBySQL(ctx, conf)
-	if err != nil {
+	if err != nil && err == ErrSQLIsNotSupported {
+		return &proto.GetTableMetaBySQLResponse{}, status.Error(grpcErrSQLIsNotSupported, err.Error())
+	} else if err != nil {
 		return &proto.GetTableMetaBySQLResponse{}, err
 	}
 
@@ -121,12 +124,12 @@ func (a *analysisDriverGRPCServer) GetTableMetaBySQL(ctx context.Context, req *p
 			ColumnsInfo: &proto.ColumnsInfo{
 				AnalysisInfoInTableFormat: &proto.AnalysisInfoInTableFormat{
 					Columns: columnInfoColumns,
-					Rows:   columnInfoRows,
+					Rows:    columnInfoRows,
 				}},
 			IndexesInfo: &proto.IndexesInfo{
 				AnalysisInfoInTableFormat: &proto.AnalysisInfoInTableFormat{
 					Columns: indexInfoColumns,
-					Rows:   indexInfoRows,
+					Rows:    indexInfoRows,
 				}},
 			CreateTableSQL: table.CreateTableSQL,
 			ErrMessage:     table.Message,
@@ -144,7 +147,9 @@ func (a *analysisDriverGRPCServer) Explain(ctx context.Context, req *proto.Expla
 		Sql: req.Sql,
 	}
 	res, err := a.impl.Explain(ctx, conf)
-	if err != nil {
+	if err != nil && err == ErrSQLIsNotSupported {
+		return &proto.ExplainResponse{}, status.Error(grpcErrSQLIsNotSupported, err.Error())
+	} else if err != nil {
 		return &proto.ExplainResponse{}, err
 	}
 
@@ -152,7 +157,7 @@ func (a *analysisDriverGRPCServer) Explain(ctx context.Context, req *proto.Expla
 	classicRes := &proto.ExplainClassicResult{
 		AnalysisInfoInTableFormat: &proto.AnalysisInfoInTableFormat{
 			Columns: columns,
-			Rows:   rows,
+			Rows:    rows,
 		}}
 
 	resp := &proto.ExplainResponse{
