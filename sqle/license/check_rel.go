@@ -201,7 +201,7 @@ func Check(c echo.Context) (bool, error) {
 func InitChecker(license string, workDurationHour int) error {
 	info, err := CollectHardwareInfo()
 	if err != nil {
-		return err
+		return fmt.Errorf("collect hardware info error: %v", err)
 	}
 
 	std.mutex.Lock()

@@ -28,14 +28,14 @@ func CollectHardwareInfo() (string, error) {
 
 	bootDevUuid, err := getBootDevUuid()
 	if nil != err {
-		return "", err
+		return "", fmt.Errorf("getBootDevUuid(): %v", err)
 	}
 
 	keys = append(keys, bootDevUuid)
 
 	netInterfaces, err := net.Interfaces()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("net.Interfaces(): %v", err)
 	}
 
 	var macs []string
@@ -58,7 +58,7 @@ func CollectHardwareInfo() (string, error) {
 func getBootDevUuid() (string, error) {
 	mounts, err := mountinfo.GetMounts(nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get mounts: %v", err)
 	}
 
 	for _, mount := range mounts {
@@ -71,12 +71,12 @@ func getBootDevUuid() (string, error) {
 		if mount.Mountpoint == "/" {
 			deviceNumberFromMount, err := getDeviceNumber(mount.Source)
 			if err != nil {
-				return "", err
+				return "", fmt.Errorf("getDeviceNumber(%s): %v", mount.Source, err)
 			}
 
 			dirContents, err := ioutil.ReadDir(uuidDirectory)
 			if err != nil {
-				return "", err
+				return "", fmt.Errorf("ioutil.ReadDir(%s): %v", uuidDirectory, err)
 			}
 
 			for _, fileInfo := range dirContents {
@@ -88,7 +88,7 @@ func getBootDevUuid() (string, error) {
 				uuidSymlinkPath := filepath.Join(uuidDirectory, uuid)
 				deviceNumberFromUUID, err := getDeviceNumber(uuidSymlinkPath)
 				if err != nil {
-					return "", err
+					return "", fmt.Errorf("getDeviceNumber(%s): %v", uuidSymlinkPath, err)
 				}
 
 				if deviceNumberFromMount == deviceNumberFromUUID {
@@ -111,7 +111,7 @@ func (num DeviceNumber) String() string {
 func getDeviceNumber(path string) (DeviceNumber, error) {
 	var stat unix.Stat_t
 	if err := unix.Stat(path, &stat); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("unix.Stat(%s): %v", path, err)
 	}
 	return DeviceNumber(stat.Rdev), nil
 }
