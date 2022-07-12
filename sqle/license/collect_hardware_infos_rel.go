@@ -7,18 +7,20 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"os/exec"
-	"regexp"
+	"net"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/moby/sys/mountinfo"
+	"golang.org/x/sys/unix"
 )
 
 var (
-	dockerDevReg = regexp.MustCompile("([^\\s]+) on /etc/hostname type")
-	devReg       = regexp.MustCompile("(/[^\\s]+) on / type")
-	blkidReg     = regexp.MustCompile("UUID=\"([^ ]+)\"")
-	macsReg      = regexp.MustCompile("link/ether ([^ ]+)")
-	encoding     = base64.NewEncoding("012345ghijklmnopq6789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefrstuvwxyz_~")
+	encoding = base64.NewEncoding("012345ghijklmnopq6789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefrstuvwxyz_~")
+	// Location to perform UUID lookup
+	uuidDirectory = "/dev/disk/by-uuid"
 )
 
 func CollectHardwareInfo() (string, error) {
@@ -26,25 +28,24 @@ func CollectHardwareInfo() (string, error) {
 
 	bootDevUuid, err := getBootDevUuid()
 	if nil != err {
-		return "", err
+		return "", fmt.Errorf("getBootDevUuid(): %v", err)
 	}
 
 	keys = append(keys, bootDevUuid)
 
-	//ifconfig macs
-	output, err := cmd("ip addr")
-	if nil != err {
-		return "", err
+	netInterfaces, err := net.Interfaces()
+	if err != nil {
+		return "", fmt.Errorf("net.Interfaces(): %v", err)
 	}
-	ipaddrs := macsReg.FindAllStringSubmatch(output, -1)
-	macs := make([]string, 0, len(ipaddrs))
-	for _, ipaddr := range ipaddrs {
-		if len(ipaddr) < 1 {
-			continue
+
+	var macs []string
+	for _, netInterface := range netInterfaces {
+		macAddr := netInterface.HardwareAddr.String()
+		if macAddr != "" {
+			macs = append(macs, "HWaddr "+strings.ToUpper(macAddr))
 		}
-		// be compatible with early version license
-		macs = append(macs, "HWaddr "+strings.ToUpper(ipaddr[1]))
 	}
+
 	sort.Strings(macs)
 	for _, mac := range macs {
 		keys = append(keys, mac)
@@ -55,58 +56,62 @@ func CollectHardwareInfo() (string, error) {
 }
 
 func getBootDevUuid() (string, error) {
-	bootDevUuid := ""
-	output, err := cmd("mount -l")
-	if nil != err {
-		return "", err
-	}
-	matches := dockerDevReg.FindStringSubmatch(output)
-	if nil != matches {
-		return " ", nil // ignore docker
-	}
-	matches = devReg.FindStringSubmatch(output)
-	if nil == matches {
-		return "", fmt.Errorf("show \"/\" mount got empty")
+	mounts, err := mountinfo.GetMounts(nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to get mounts: %v", err)
 	}
 
-	bootDev := matches[1]
-	output, err = cmd(fmt.Sprintf("blkid %v", bootDev))
-	if nil != err {
-		return "", err
+	for _, mount := range mounts {
+		if mount.Mountpoint == "/etc/hostname" {
+			return "", nil // ignore docker
+		}
 	}
-	matches = blkidReg.FindStringSubmatch(output)
-	if nil == matches {
-		return "", fmt.Errorf("read root DEV uuid got empty")
+
+	for _, mount := range mounts {
+		if mount.Mountpoint == "/" {
+			deviceNumberFromMount, err := getDeviceNumber(mount.Source)
+			if err != nil {
+				return "", fmt.Errorf("getDeviceNumber(%s): %v", mount.Source, err)
+			}
+
+			dirContents, err := ioutil.ReadDir(uuidDirectory)
+			if err != nil {
+				return "", fmt.Errorf("ioutil.ReadDir(%s): %v", uuidDirectory, err)
+			}
+
+			for _, fileInfo := range dirContents {
+				if fileInfo.Mode()&os.ModeSymlink != os.ModeSymlink {
+					continue // ignore non-symlink
+				}
+
+				uuid := fileInfo.Name()
+				uuidSymlinkPath := filepath.Join(uuidDirectory, uuid)
+				deviceNumberFromUUID, err := getDeviceNumber(uuidSymlinkPath)
+				if err != nil {
+					return "", fmt.Errorf("getDeviceNumber(%s): %v", uuidSymlinkPath, err)
+				}
+
+				if deviceNumberFromMount == deviceNumberFromUUID {
+					return uuid, nil
+				}
+			}
+		}
 	}
-	bootDevUuid = matches[1]
-	return bootDevUuid, nil
+
+	return "", fmt.Errorf("\"/\" mount or uuid is empty")
 }
 
-func cmd(str string) (string, error) {
-	cmd := exec.Command("bash", "--noprofile", "--norc", "-c", str)
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return "", err
-	}
-	defer stdout.Close()
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return "", err
-	}
-	defer stderr.Close()
+// DeviceNumber represents a combined major:minor device number.
+type DeviceNumber uint64
 
-	if err = cmd.Start(); err != nil {
-		return "", err
-	}
+func (num DeviceNumber) String() string {
+	return fmt.Sprintf("%d:%d", unix.Major(uint64(num)), unix.Minor(uint64(num)))
+}
 
-	errBytes, err := ioutil.ReadAll(stderr)
-	if err != nil {
-		return "", err
+func getDeviceNumber(path string) (DeviceNumber, error) {
+	var stat unix.Stat_t
+	if err := unix.Stat(path, &stat); err != nil {
+		return 0, fmt.Errorf("unix.Stat(%s): %v", path, err)
 	}
-	if len(errBytes) > 0 {
-		return "", fmt.Errorf((string(errBytes)))
-	}
-
-	opBytes, err := ioutil.ReadAll(stdout)
-	return string(opBytes), err
+	return DeviceNumber(stat.Rdev), nil
 }
