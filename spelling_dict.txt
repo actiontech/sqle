@@ -262,3 +262,10 @@ zabcdefrstuvwxyz
 zerofill
 analysing
 impls
+moby
+mountinfo
+mountpoint
+ModeSymlink
+symlink
+uuidSymlinkPath
+rdev
