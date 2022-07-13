@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -679,6 +680,7 @@ type AuditPlanSQLReqV1 struct {
 	Counter              string `json:"audit_plan_sql_counter" form:"audit_plan_sql_counter" example:"6" valid:"required"`
 	LastReceiveText      string `json:"audit_plan_sql_last_receive_text" form:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
 	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" form:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
+	Schema               string `json:"audit_plan_sql_schema" from:"audit_plan_sql_schema" example:"db1"`
 }
 
 // @Summary 全量同步SQL到审核计划
@@ -801,6 +803,7 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		info := map[string]interface{}{
 			"counter":                counter,
 			"last_receive_timestamp": reqSQL.LastReceiveTimestamp,
+			server.AuditSchema:       reqSQL.Schema,
 		}
 		sqls[i] = &auditplan.SQL{
 			Fingerprint: fp,

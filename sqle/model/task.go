@@ -87,6 +87,7 @@ type BaseSQL struct {
 	RowAffects      int64  `json:"row_affects"`
 	ExecStatus      string `json:"exec_status" gorm:"default:\"initialized\""`
 	ExecResult      string `json:"exec_result" gorm:"type:text"`
+	Schema          string `json:"schema"`
 }
 
 func (s *BaseSQL) GetExecStatusDesc() string {
