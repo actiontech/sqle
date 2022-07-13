@@ -20,6 +20,7 @@ const (
 	TypeMySQLMybatis    = "mysql_mybatis"
 	TypeMySQLSchemaMeta = "mysql_schema_meta"
 	TypeOracleTopSQL    = "oracle_top_sql"
+	TypeTiDBAuditLog    = "tidb_audit_log"
 	TypeAllAppExtract   = "all_app_extract"
 )
 
@@ -27,6 +28,7 @@ const (
 	InstanceTypeAll    = ""
 	InstanceTypeMySQL  = "mysql"
 	InstanceTypeOracle = "Oracle"
+	InstanceTypeTiDB   = "TiDB"
 )
 
 const (
@@ -97,6 +99,11 @@ var Metas = []Meta{
 		Type:         TypeAllAppExtract,
 		Desc:         "应用程序SQL抓取",
 		InstanceType: InstanceTypeAll,
+	},
+	{
+		Type:         TypeTiDBAuditLog,
+		Desc:         "TiDB审计日志",
+		InstanceType: InstanceTypeTiDB,
 	},
 }
 
