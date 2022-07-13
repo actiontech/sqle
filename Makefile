@@ -69,8 +69,12 @@ test: swagger
 clean:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
 
-install: swagger
+install: install_sqled install_scannerd
+
+install_sqled: swagger
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
+
+install_scannerd:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/scannerd ./$(PROJECT_NAME)/cmd/scannerd
 
 swagger:
@@ -117,6 +121,12 @@ docker_clean:
 
 docker_install:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install $(MAKEFLAGS)"
+
+docker_install_sqled:
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install_sqled $(MAKEFLAGS)"
+
+docker_install_scannerd:
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install_scannerd $(MAKEFLAGS)"
 
 
 docker_rpm: docker_install
