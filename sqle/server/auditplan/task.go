@@ -1,10 +1,12 @@
 package auditplan
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,6 +19,9 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
+	"github.com/pingcap/parser"
+	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,6 +55,8 @@ func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 		return NewSchemaMetaTask(entry, ap)
 	case TypeOracleTopSQL:
 		return NewOracleTopSQLTask(entry, ap)
+	case TypeTiDBAuditLog:
+		return NewTiDBAuditLogTask(entry, ap)
 	default:
 		return NewDefaultTask(entry, ap)
 	}
@@ -554,4 +561,140 @@ func (at *OracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[
 		})
 	}
 	return heads, rows, count, nil
+}
+
+type TiDBAuditLogTask struct {
+	*DefaultTask
+}
+
+func NewTiDBAuditLogTask(entry *logrus.Entry, ap *model.AuditPlan) *TiDBAuditLogTask {
+	return &TiDBAuditLogTask{NewDefaultTask(entry, ap)}
+}
+
+func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
+	var task *model.Task
+	if at.ap.InstanceName == "" {
+		task = &model.Task{
+			DBType: at.ap.DBType,
+		}
+	} else {
+		instance, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+		if err != nil {
+			return nil, err
+		}
+		task = &model.Task{
+			Instance: instance,
+			Schema:   at.ap.InstanceDatabase,
+			DBType:   at.ap.DBType,
+		}
+	}
+
+	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(auditPlanSQLs) == 0 {
+		return nil, errNoSQLInAuditPlan
+	}
+
+	for i, sql := range auditPlanSQLs {
+		schema := ""
+		info, _ := sql.Info.OriginValue()
+		if schemaStr, ok := info[server.AuditSchema].(string); ok {
+			schema = schemaStr
+		}
+
+		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(i),
+				Content: sql.SQLContent,
+				Schema:  schema,
+			},
+		})
+	}
+
+	err = server.HookAudit(at.logger, task, &TiDBAuditHook{})
+	if err != nil {
+		return nil, err
+	}
+
+	auditPlanReport := &model.AuditPlanReportV2{
+		AuditPlanID: at.ap.ID,
+		PassRate:    task.PassRate,
+		Score:       task.Score,
+		AuditLevel:  task.AuditLevel,
+	}
+	for i, executeSQL := range task.ExecuteSQLs {
+		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
+			SQL:         executeSQL.Content,
+			Number:      uint(i + 1),
+			AuditResult: executeSQL.AuditResult,
+		})
+	}
+	err = at.persist.Save(auditPlanReport)
+	if err != nil {
+		return nil, err
+	}
+	return auditPlanReport, nil
+}
+
+// 审核前填充上缺失的schema, 审核后还原被审核SQL, 并添加注释说明sql在哪个库执行的
+type TiDBAuditHook struct {
+	orginalSQL string
+}
+
+func (t *TiDBAuditHook) BeforeAudit(sql *model.ExecuteSQL) {
+	if sql.Schema == "" {
+		return
+	}
+	t.orginalSQL = sql.Content
+	newSQL, err := tidbCompletionSchema(sql.Content, sql.Schema)
+	if err != nil {
+		return
+	}
+	sql.Content = newSQL
+}
+
+func (t *TiDBAuditHook) AfterAudit(sql *model.ExecuteSQL) {
+	if sql.Schema == "" {
+		return
+	}
+	sql.Content = fmt.Sprintf("%v -- current schema: %v", t.orginalSQL, sql.Schema)
+}
+
+// 填充sql缺失的schema
+func tidbCompletionSchema(sql, schema string) (string, error) {
+	stmts, _, err := parser.New().PerfectParse(sql, "", "")
+	if err != nil {
+		return "", err
+	}
+	if len(stmts) != 1 {
+		return "", parser.ErrSyntax
+	}
+
+	stmts[0].Accept(&completionSchemaVisitor{schema: schema})
+	buf := new(bytes.Buffer)
+	restoreCtx := format.NewRestoreCtx(0, buf)
+	err = stmts[0].Restore(restoreCtx)
+	return buf.String(), err
+}
+
+// completionSchemaVisitor implements ast.Visitor interface.
+type completionSchemaVisitor struct {
+	schema string
+}
+
+func (g *completionSchemaVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+	if stmt, ok := n.(*ast.TableName); ok {
+		if stmt.Schema.L == "" {
+			stmt.Schema.L = strings.ToLower(g.schema)
+			stmt.Schema.O = g.schema
+		}
+	}
+	return n, false
+}
+
+func (g *completionSchemaVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
 }
