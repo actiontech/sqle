@@ -8,6 +8,7 @@ type SQL struct {
 	Fingerprint string
 	RawText     string
 	Counter     int
+	Schema      string
 }
 
 // Scanner is a interface for all Scanners.

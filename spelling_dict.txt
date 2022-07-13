@@ -269,3 +269,12 @@ ModeSymlink
 symlink
 uuidSymlinkPath
 rdev
+tidbauditlog
+lexer
+lexmachine
+timtadh
+equalf
+gconv
+gogf
+structor
+sbtest
