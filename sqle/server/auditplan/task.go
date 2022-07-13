@@ -641,14 +641,14 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 
 // 审核前填充上缺失的schema, 审核后还原被审核SQL, 并添加注释说明sql在哪个库执行的
 type TiDBAuditHook struct {
-	orginalSQL string
+	originalSQL string
 }
 
 func (t *TiDBAuditHook) BeforeAudit(sql *model.ExecuteSQL) {
 	if sql.Schema == "" {
 		return
 	}
-	t.orginalSQL = sql.Content
+	t.originalSQL = sql.Content
 	newSQL, err := tidbCompletionSchema(sql.Content, sql.Schema)
 	if err != nil {
 		return
@@ -660,7 +660,7 @@ func (t *TiDBAuditHook) AfterAudit(sql *model.ExecuteSQL) {
 	if sql.Schema == "" {
 		return
 	}
-	sql.Content = fmt.Sprintf("%v -- current schema: %v", t.orginalSQL, sql.Schema)
+	sql.Content = fmt.Sprintf("%v -- current schema: %v", t.originalSQL, sql.Schema)
 }
 
 // 填充sql缺失的schema
