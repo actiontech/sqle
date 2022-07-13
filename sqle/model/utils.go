@@ -393,6 +393,11 @@ func (r RowList) Value() (sqlDriver.Value, error) {
 
 type JSON json.RawMessage
 
+func (j JSON) OriginValue() (map[string]interface{}, error) {
+	mp := map[string]interface{}{}
+	return mp, json.Unmarshal(j, &mp)
+}
+
 // Value impl sql.driver.Valuer interface
 func (j JSON) Value() (sqlDriver.Value, error) {
 	if len(j) == 0 {
