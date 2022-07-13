@@ -10,8 +10,8 @@ import (
 	goPlugin "github.com/hashicorp/go-plugin"
 )
 
-type SQLQueryPrepareFunc func(ctx context.Context, sql string, conf *driver.QueryPrepareConf, dbConf dbConf) (*driver.QueryPrepareResult, error)
-type SQLQueryFunc func(ctx context.Context, sql string, conf *driver.QueryConf, dbConf dbConf) (*driver.QueryResult, error)
+type SQLQueryPrepareFunc func(ctx context.Context, sql string, conf *driver.QueryPrepareConf, dbConf DbConf) (*driver.QueryPrepareResult, error)
+type SQLQueryFunc func(ctx context.Context, sql string, conf *driver.QueryConf, dbConf DbConf) (*driver.QueryResult, error)
 
 type QueryAdaptor struct {
 	l hclog.Logger
