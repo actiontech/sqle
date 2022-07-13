@@ -194,7 +194,10 @@ func (p *pluginImpl) GenRollbackSQL(ctx context.Context, sql string) (string, st
 
 func (p *pluginImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
 	if p.queryAdaptor.queryPrepare != nil {
-		return p.queryAdaptor.queryPrepare(ctx, sql, conf)
+		return p.queryAdaptor.queryPrepare(ctx, sql, conf, dbConf{
+			Db:   p.db,
+			Conn: p.conn,
+		})
 	}
 	return &driver.QueryPrepareResult{
 		NewSQL:    sql,
@@ -205,7 +208,10 @@ func (p *pluginImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.
 
 func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.QueryConf) (*driver.QueryResult, error) {
 	if p.queryAdaptor.query != nil {
-		return p.queryAdaptor.query(ctx, query, conf)
+		return p.queryAdaptor.query(ctx, query, conf, dbConf{
+			Db:   p.db,
+			Conn: p.conn,
+		})
 	}
 
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(conf.TimeOutSecond)*time.Second)
@@ -256,28 +262,40 @@ func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.Query
 
 func (p *pluginImpl) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
 	if p.analysisAdaptor.listTablesInSchemaFunc != nil {
-		return p.analysisAdaptor.listTablesInSchemaFunc(ctx, conf)
+		return p.analysisAdaptor.listTablesInSchemaFunc(ctx, conf, dbConf{
+			Db:   p.db,
+			Conn: p.conn,
+		})
 	}
 
 	return &driver.ListTablesInSchemaResult{}, nil
 }
 func (p *pluginImpl) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
 	if p.analysisAdaptor.getTableMetaByTableNameFunc != nil {
-		return p.analysisAdaptor.getTableMetaByTableNameFunc(ctx, conf)
+		return p.analysisAdaptor.getTableMetaByTableNameFunc(ctx, conf, dbConf{
+			Db:   p.db,
+			Conn: p.conn,
+		})
 	}
 
 	return &driver.GetTableMetaByTableNameResult{}, nil
 }
 func (p *pluginImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
 	if p.analysisAdaptor.getTableMetaBySQLFunc != nil {
-		return p.analysisAdaptor.getTableMetaBySQLFunc(ctx, conf)
+		return p.analysisAdaptor.getTableMetaBySQLFunc(ctx, conf, dbConf{
+			Db:   p.db,
+			Conn: p.conn,
+		})
 	}
 
 	return &driver.GetTableMetaBySQLResult{}, nil
 }
 func (p *pluginImpl) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
 	if p.analysisAdaptor.explainFunc != nil {
-		return p.analysisAdaptor.explainFunc(ctx, conf)
+		return p.analysisAdaptor.explainFunc(ctx, conf, dbConf{
+			Db:   p.db,
+			Conn: p.conn,
+		})
 	}
 
 	return &driver.ExplainResult{}, nil

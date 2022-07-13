@@ -12,10 +12,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ListTablesInSchemaFunc func(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error)
-type GetTableMetaByTableNameFunc func(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error)
-type GetTableMetaBySQLFunc func(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error)
-type ExplainFunc func(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error)
+type ListTablesInSchemaFunc func(ctx context.Context, conf *driver.ListTablesInSchemaConf, dbConf dbConf) (*driver.ListTablesInSchemaResult, error)
+type GetTableMetaByTableNameFunc func(ctx context.Context, conf *driver.GetTableMetaByTableNameConf, dbConf dbConf) (*driver.GetTableMetaByTableNameResult, error)
+type GetTableMetaBySQLFunc func(ctx context.Context, conf *driver.GetTableMetaBySQLConf, dbConf dbConf) (*driver.GetTableMetaBySQLResult, error)
+type ExplainFunc func(ctx context.Context, conf *driver.ExplainConf, dbConf dbConf) (*driver.ExplainResult, error)
+
+type dbConf struct {
+	Db   *sql.DB
+	Conn *sql.Conn
+}
 
 type AnalysisAdaptor struct {
 	l hclog.Logger
