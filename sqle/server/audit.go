@@ -14,6 +14,10 @@ import (
 )
 
 func Audit(l *logrus.Entry, task *model.Task) (err error) {
+	return HookAudit(l, task, &EmptyAuditHook{})
+}
+
+func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook) (err error) {
 	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType)
 	if err != nil {
 		return err
@@ -24,10 +28,27 @@ func Audit(l *logrus.Entry, task *model.Task) (err error) {
 	if err != nil {
 		return err
 	}
-	return audit(l, task, d)
+	return hookAudit(l, task, d, hook)
 }
 
+const AuditSchema = "AuditSchema"
+
 func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
+	return hookAudit(l, task, d, &EmptyAuditHook{})
+}
+
+type AuditHook interface {
+	BeforeAudit(sql *model.ExecuteSQL)
+	AfterAudit(sql *model.ExecuteSQL)
+}
+
+type EmptyAuditHook struct{}
+
+func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
+
+func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
+
+func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHook) (err error) {
 	st := model.GetStorage()
 
 	whitelist, _, err := st.GetSqlWhitelist(0, 0)
@@ -68,11 +89,13 @@ func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 		if whitelistMatch {
 			result.Add(driver.RuleLevelNormal, "白名单")
 		} else {
+			hook.BeforeAudit(executeSQL)
 			result, err = d.Audit(context.TODO(), executeSQL.Content)
 			if err != nil {
 				return err
 			}
 		}
+		hook.AfterAudit(executeSQL)
 		executeSQL.AuditStatus = model.SQLAuditStatusFinished
 		executeSQL.AuditLevel = string(result.Level())
 		executeSQL.AuditResult = result.Message()
