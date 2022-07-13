@@ -1,0 +1,36 @@
+Regex : Alternation
+
+Alternation : AtomicOps Alternation'
+
+Alternation' : '|' AtomicOps Alternation'
+             | e
+
+AtomicOps : AtomicOp AtomicOps
+          | e
+
+AtomicOp : Atomic
+         | Atomic Op
+
+Atomic : Concat
+       | Group
+
+Op : '+'
+   | '*'
+   | '?'
+
+Group : '(' Alternation ')'
+
+Concat : Char Concat
+       | e
+
+Char : CHAR
+     | CharRange
+
+CharRange : '[' RangeInner ']'
+          | '[' '^' RangeInner ']'
+
+RangeInner : RangeComponent RangeInner
+           | e
+
+RangeComponent : CHAR
+               | CHAR '-' CHAR

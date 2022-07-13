@@ -1,0 +1,16 @@
+## 0.2.1
+
+-   Fixed regression bugs in new DFA backend
+
+## 0.2.0
+
+-   Added DFA backend
+-   Improved documentation
+-   Fixed lint issues
+
+## 0.1.1
+
+-   Improved regex parser
+-   Added documentation
+
+## 0.1.0 initial release
