@@ -276,7 +276,7 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 
 func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	result, err := c.Db.Query(fmt.Sprintf(
-		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE=\"BASE TABLE\"", schema))
+		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE in (\"BASE TABLE\",\"SYSTEM VIEW\")", schema))
 	if err != nil {
 		return nil, err
 	}
