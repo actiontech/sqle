@@ -137,6 +137,7 @@ func NewContext(parent *Context, opts ...contextOption) *Context {
 func WithExecutor(e *executor.Executor) contextOption {
 	return func(ctx *Context) {
 		ctx.e = e
+		e.SetLowerCaseTableNames(ctx.IsLowerCaseTableName())
 	}
 }
 
@@ -403,7 +404,7 @@ func (c *Context) IsSchemaExist(schemaName string) (bool, error) {
 			return false, nil
 		}
 
-		schemas, err := c.e.ShowDatabases(false, c.IsLowerCaseTableName())
+		schemas, err := c.e.ShowDatabases(false)
 		if err != nil {
 			return false, err
 		}
@@ -442,7 +443,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 			return false, nil
 		}
 
-		tables, err := c.e.ShowSchemaTables(schemaName, c.IsLowerCaseTableName())
+		tables, err := c.e.ShowSchemaTables(schemaName)
 		if err != nil {
 			return false, err
 		}
@@ -680,7 +681,7 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 		if c.e == nil {
 			return 0, nil
 		}
-		size, err := c.e.ShowTableSizeMB(c.GetSchemaName(stmt), stmt.Name.String(), c.IsLowerCaseTableName())
+		size, err := c.e.ShowTableSizeMB(c.GetSchemaName(stmt), stmt.Name.String())
 		if err != nil {
 			return 0, err
 		}
@@ -722,7 +723,12 @@ func (c *Context) GetTableRowCount(tn *ast.TableName) (int, error) {
 		if c.e == nil {
 			return 0, nil
 		}
-		records, err := c.e.Db.Query(fmt.Sprintf("show table status from %s where %s = '%s'", c.GetSchemaName(tn), executor.LowercaseColumn("name", c.IsLowerCaseTableName()), tn.Name.String()))
+		query := fmt.Sprintf("show table status from %s where name = '%s'", c.GetSchemaName(tn), tn.Name.String())
+		if c.IsLowerCaseTableName() {
+			query = fmt.Sprintf("show table status from %s where lower(name) = '%s'", c.GetSchemaName(tn), tn.Name.L)
+		}
+
+		records, err := c.e.Db.Query(query)
 		if err != nil {
 			return 0, errors.Wrap(err, "get table row count error")
 		}
