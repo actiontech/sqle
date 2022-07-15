@@ -404,7 +404,7 @@ func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return conn.ShowDatabases(true, i.Ctx.IsLowerCaseTableName())
+	return conn.ShowDatabases(true)
 }
 
 type Config struct {
