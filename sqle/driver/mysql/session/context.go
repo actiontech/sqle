@@ -159,7 +159,11 @@ func (c *Context) loadSchemas(schemas []string) {
 	if c.hasLoadSchemas() {
 		return
 	}
+	isLowerCaseTableName := c.IsLowerCaseTableName()
 	for _, schema := range schemas {
+		if isLowerCaseTableName {
+			schema = strings.ToLower(schema)
+		}
 		c.schemas[schema] = &SchemaInfo{}
 	}
 	c.setSchemasLoad()
@@ -232,7 +236,11 @@ func (c *Context) loadTables(schemaName string, tablesName []string) {
 		return
 	}
 	schema.Tables = map[string]*TableInfo{}
+	isLowerCaseTableName := c.IsLowerCaseTableName()
 	for _, name := range tablesName {
+		if isLowerCaseTableName {
+			name = strings.ToLower(name)
+		}
 		schema.Tables[name] = &TableInfo{
 			isLoad:      true,
 			AlterTables: []*ast.AlterTableStmt{},
