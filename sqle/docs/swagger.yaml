@@ -118,6 +118,9 @@ definitions:
       audit_plan_sql_last_receive_timestamp:
         example: RFC3339
         type: string
+      audit_plan_sql_schema:
+        example: db1
+        type: string
     type: object
   v1.AuditPlanSQLResV1:
     properties:
