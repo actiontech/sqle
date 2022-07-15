@@ -137,6 +137,7 @@ func NewContext(parent *Context, opts ...contextOption) *Context {
 func WithExecutor(e *executor.Executor) contextOption {
 	return func(ctx *Context) {
 		ctx.e = e
+		e.SetLowerCaseTableNames(ctx.IsLowerCaseTableName())
 	}
 }
 
@@ -159,7 +160,11 @@ func (c *Context) loadSchemas(schemas []string) {
 	if c.hasLoadSchemas() {
 		return
 	}
+	isLowerCaseTableName := c.IsLowerCaseTableName()
 	for _, schema := range schemas {
+		if isLowerCaseTableName {
+			schema = strings.ToLower(schema)
+		}
 		c.schemas[schema] = &SchemaInfo{}
 	}
 	c.setSchemasLoad()
@@ -170,7 +175,7 @@ func (c *Context) Schemas() map[string]*SchemaInfo {
 	return c.schemas
 }
 
-func (c *Context) isLowerCaseTableName() bool {
+func (c *Context) IsLowerCaseTableName() bool {
 	lowerCaseTableNames, err := c.GetSystemVariable(SysVarLowerCaseTableNames)
 	if err != nil {
 		log.NewEntry().Errorf("fail to load system variable lower_case_table_names, error: %v", err)
@@ -181,7 +186,7 @@ func (c *Context) isLowerCaseTableName() bool {
 }
 
 func (c *Context) getSchema(schemaName string) (*SchemaInfo, bool) {
-	if c.isLowerCaseTableName() {
+	if c.IsLowerCaseTableName() {
 		schemaName = strings.ToLower(schemaName)
 	}
 	schema, has := c.schemas[schemaName]
@@ -197,7 +202,7 @@ func (c *Context) addSchema(name string) {
 	if c.hasSchema(name) {
 		return
 	}
-	if c.isLowerCaseTableName() {
+	if c.IsLowerCaseTableName() {
 		name = strings.ToLower(name)
 	}
 	c.schemas[name] = &SchemaInfo{
@@ -206,7 +211,7 @@ func (c *Context) addSchema(name string) {
 }
 
 func (c *Context) delSchema(name string) {
-	if c.isLowerCaseTableName() {
+	if c.IsLowerCaseTableName() {
 		name = strings.ToLower(name)
 	}
 	delete(c.schemas, name)
@@ -232,7 +237,11 @@ func (c *Context) loadTables(schemaName string, tablesName []string) {
 		return
 	}
 	schema.Tables = map[string]*TableInfo{}
+	isLowerCaseTableName := c.IsLowerCaseTableName()
 	for _, name := range tablesName {
+		if isLowerCaseTableName {
+			name = strings.ToLower(name)
+		}
 		schema.Tables[name] = &TableInfo{
 			isLoad:      true,
 			AlterTables: []*ast.AlterTableStmt{},
@@ -248,7 +257,7 @@ func (c *Context) getTable(schemaName, tableName string) (*TableInfo, bool) {
 	if !c.hasLoadTables(schemaName) {
 		return nil, false
 	}
-	if c.isLowerCaseTableName() {
+	if c.IsLowerCaseTableName() {
 		tableName = strings.ToLower(tableName)
 	}
 	table, tableExist := schema.Tables[tableName]
@@ -268,7 +277,7 @@ func (c *Context) addTable(schemaName, tableName string, table *TableInfo) {
 	if !c.hasLoadTables(schemaName) {
 		return
 	}
-	if c.isLowerCaseTableName() {
+	if c.IsLowerCaseTableName() {
 		tableName = strings.ToLower(tableName)
 	}
 	schema.Tables[tableName] = table
@@ -279,14 +288,14 @@ func (c *Context) delTable(schemaName, tableName string) {
 	if !exist {
 		return
 	}
-	if c.isLowerCaseTableName() {
+	if c.IsLowerCaseTableName() {
 		tableName = strings.ToLower(tableName)
 	}
 	delete(schema.Tables, tableName)
 }
 
 func (c *Context) SetCurrentSchema(schema string) {
-	if c.isLowerCaseTableName() {
+	if c.IsLowerCaseTableName() {
 		schema = strings.ToLower(schema)
 	}
 	c.currentSchema = schema
@@ -714,7 +723,12 @@ func (c *Context) GetTableRowCount(tn *ast.TableName) (int, error) {
 		if c.e == nil {
 			return 0, nil
 		}
-		records, err := c.e.Db.Query(fmt.Sprintf("show table status from %s where name = '%s'", c.GetSchemaName(tn), tn.Name.String()))
+		query := fmt.Sprintf("show table status from %s where name = '%s'", c.GetSchemaName(tn), tn.Name.String())
+		if c.IsLowerCaseTableName() {
+			query = fmt.Sprintf("show table status from %s where lower(name) = '%s'", c.GetSchemaName(tn), tn.Name.L)
+		}
+
+		records, err := c.e.Db.Query(query)
 		if err != nil {
 			return 0, errors.Wrap(err, "get table row count error")
 		}
