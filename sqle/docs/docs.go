@@ -4715,6 +4715,10 @@ var doc = `{
                 "audit_plan_sql_last_receive_timestamp": {
                     "type": "string",
                     "example": "RFC3339"
+                },
+                "audit_plan_sql_schema": {
+                    "type": "string",
+                    "example": "db1"
                 }
             }
         },
