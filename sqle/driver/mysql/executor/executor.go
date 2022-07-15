@@ -248,10 +248,17 @@ func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
 	}
 }
 
-func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
+func LowercaseColumn(column string, toLower bool) string {
+	if toLower {
+		return fmt.Sprintf("lower(%s)", column)
+	}
+	return column
+}
+
+func (c *Executor) ShowDatabases(ignoreSysDatabase bool, ignoreSchemaCase bool) ([]string, error) {
 	var query string
 	if ignoreSysDatabase {
-		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
+		query = "show databases where " + LowercaseColumn(`Database`, ignoreSchemaCase) + " not in ('information_schema','performance_schema','mysql','sys')"
 	} else {
 		query = "show databases"
 	}
@@ -274,9 +281,9 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 	return dbs, nil
 }
 
-func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
+func (c *Executor) ShowSchemaTables(schema string, ignoreSchemaCase bool) ([]string, error) {
 	result, err := c.Db.Query(fmt.Sprintf(
-		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE in (\"BASE TABLE\",\"SYSTEM VIEW\")", schema))
+		"select TABLE_NAME from information_schema.tables where %s=\"%s\" and TABLE_TYPE in (\"BASE TABLE\",\"SYSTEM VIEW\")", LowercaseColumn("table_schema", ignoreSchemaCase), schema))
 	if err != nil {
 		return nil, err
 	}
@@ -295,9 +302,9 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	return tables, nil
 }
 
-func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
+func (c *Executor) ShowSchemaViews(schema string, ignoreSchemaCase bool) ([]string, error) {
 	result, err := c.Db.Query(fmt.Sprintf(
-		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE=\"VIEW\"", schema))
+		"select TABLE_NAME from information_schema.tables where %s=\"%s\" and TABLE_TYPE=\"VIEW\"", LowercaseColumn("table_schema", ignoreSchemaCase), schema))
 	if err != nil {
 		return nil, err
 	}
@@ -440,9 +447,9 @@ func (c *Executor) FetchMasterBinlogPos() (string, int64, error) {
 	return file, pos, nil
 }
 
-func (c *Executor) ShowTableSizeMB(schema, table string) (float64, error) {
+func (c *Executor) ShowTableSizeMB(schema, table string, ignoreSchemaCase bool) (float64, error) {
 	sql := fmt.Sprintf(`select (DATA_LENGTH + INDEX_LENGTH)/1024/1024 as Size from information_schema.tables 
-where table_schema = '%s' and table_name = '%s'`, schema, table)
+where %s = '%s' and %s = '%s'`, LowercaseColumn("table_schema", ignoreSchemaCase), schema, LowercaseColumn("table_name", ignoreSchemaCase), table)
 	result, err := c.Db.Query(sql)
 	if err != nil {
 		return 0, err
@@ -489,8 +496,8 @@ type TableColumnsInfo struct {
 	ColumnComment    string
 }
 
-func (c *Executor) GetTableColumnsInfo(schema, tableName string) ([]*TableColumnsInfo, error) {
-	records, err := c.Db.Query("SELECT COLUMN_NAME, COLUMN_TYPE, CHARACTER_SET_NAME, IS_NULLABLE, COLUMN_KEY, COLUMN_DEFAULT, EXTRA, COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=?", schema, tableName)
+func (c *Executor) GetTableColumnsInfo(schema, tableName string, ignoreSchemaCase bool) ([]*TableColumnsInfo, error) {
+	records, err := c.Db.Query("SELECT COLUMN_NAME, COLUMN_TYPE, CHARACTER_SET_NAME, IS_NULLABLE, COLUMN_KEY, COLUMN_DEFAULT, EXTRA, COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE "+LowercaseColumn("TABLE_SCHEMA", ignoreSchemaCase)+"=? AND "+LowercaseColumn("TABLE_NAME", ignoreSchemaCase)+"=?", schema, tableName)
 	if err != nil {
 		return nil, err
 	}

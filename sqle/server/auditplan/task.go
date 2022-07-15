@@ -351,14 +351,14 @@ func (at *SchemaMetaTask) collectorDo() {
 	}
 	defer db.Db.Close()
 
-	tables, err := db.ShowSchemaTables(at.ap.InstanceDatabase)
+	tables, err := db.ShowSchemaTables(at.ap.InstanceDatabase, false)
 	if err != nil {
 		at.logger.Errorf("get schema table fail, error: %v", err)
 		return
 	}
 	var views []string
 	if at.ap.Params.GetParam("collect_view").Bool() {
-		views, err = db.ShowSchemaViews(at.ap.InstanceDatabase)
+		views, err = db.ShowSchemaViews(at.ap.InstanceDatabase, false)
 		if err != nil {
 			at.logger.Errorf("get schema view fail, error: %v", err)
 			return
