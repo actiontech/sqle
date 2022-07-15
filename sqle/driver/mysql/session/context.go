@@ -531,10 +531,26 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	}
 	createStmt, err := util.ParseCreateTableStmt(createTableSql)
 	if err != nil {
-		return nil, exist, err
+		//todo to be compatible with OceanBase-MySQL-Mode
+		log.Logger().Warnf("parse create table stmt failed. try to parse it as OB-MySQL-Mode. err:%v", err)
+		createStmt, err = c.parseObMysqlCreateTableSql(createTableSql)
+		if err != nil {
+			return nil, exist, err
+		}
 	}
 	info.OriginalTable = createStmt
 	return createStmt, exist, nil
+}
+
+func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.CreateTableStmt, error) {
+	// 右括号后边是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options。为了能解析，临时处理方案是把options都截掉
+	index := strings.LastIndex(createTableSql, ")")
+	if index == -1 {
+		return nil, fmt.Errorf("convert OB MySQL create table sql failed")
+	}
+
+	obMysqlCreateTableSql := createTableSql[0 : index+1]
+	return util.ParseCreateTableStmt(obMysqlCreateTableSql)
 }
 
 // GetCollationDatabase get collation database.
