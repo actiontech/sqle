@@ -8,6 +8,7 @@ import (
 
 type InstanceDetail struct {
 	Name                 string         `json:"name"`
+	DbType               string         `json:"db_type"`
 	Desc                 string         `json:"desc"`
 	Host                 string         `json:"db_host"`
 	Port                 string         `json:"db_port"`
@@ -19,7 +20,7 @@ type InstanceDetail struct {
 	SqlQueryConfig       SqlQueryConfig `json:"sql_query_config"`
 }
 
-var instancesQueryTpl = `SELECT inst.name, inst.desc, inst.db_host,
+var instancesQueryTpl = `SELECT inst.name, inst.db_type, inst.desc, inst.db_host,
 inst.db_port, inst.db_user, inst.maintenance_period, inst.sql_query_config, wt.name AS workflow_template_name,
 GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names,
 GROUP_CONCAT(DISTINCT COALESCE(rt.name,'')) AS rule_template_names
