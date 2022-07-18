@@ -2634,6 +2634,60 @@ definitions:
           type: string
         type: array
     type: object
+  v3.GetRolesResV3:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v3.RoleResV3'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v3.Instance:
+    properties:
+      db_type:
+        type: string
+      name:
+        type: string
+    type: object
+  v3.Operation:
+    properties:
+      op_code:
+        type: integer
+      op_desc:
+        type: string
+    type: object
+  v3.RoleResV3:
+    properties:
+      instance_list:
+        items:
+          $ref: '#/definitions/v3.Instance'
+        type: array
+      is_disabled:
+        type: boolean
+      operation_list:
+        items:
+          $ref: '#/definitions/v3.Operation'
+        type: array
+      role_desc:
+        type: string
+      role_name:
+        type: string
+      user_group_name_list:
+        items:
+          type: string
+        type: array
+      user_name_list:
+        items:
+          type: string
+        type: array
+    type: object
 info:
   contact: {}
   description: This is a sample server for dev.
@@ -5516,6 +5570,45 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新角色信息
+      tags:
+      - role
+  /v3/roles:
+    get:
+      consumes:
+      - application/json
+      description: get role list
+      operationId: getRoleListV3
+      parameters:
+      - description: filter role name
+        in: query
+        name: filter_role_name
+        type: string
+      - description: filter user name
+        in: query
+        name: filter_user_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v3.GetRolesResV3'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取角色列表
       tags:
       - role
 securityDefinitions:

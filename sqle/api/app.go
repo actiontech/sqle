@@ -8,6 +8,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
+	v3 "github.com/actiontech/sqle/sqle/api/controller/v3"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	"github.com/actiontech/sqle/sqle/config"
 	_ "github.com/actiontech/sqle/sqle/docs"
@@ -25,6 +26,7 @@ import (
 const (
 	apiV1 = "v1"
 	apiV2 = "v2"
+	apiV3 = "v3"
 )
 
 // @title Sqle API Docs
@@ -75,6 +77,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
 	v2Router := e.Group(apiV2)
 	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
+	v3Router := e.Group(apiV3)
+	v3Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
 
 	// v1 admin api, just admin user can access.
 	{
@@ -95,7 +99,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// role
 		v1Router.GET("/roles", DeprecatedBy(apiV2), AdminUserAllowed())
-		v2Router.GET("/roles", v2.GetRoles, AdminUserAllowed())
+		v2Router.GET("/roles", DeprecatedBy(apiV3), AdminUserAllowed())
+		v3Router.GET("/roles", v3.GetRolesV3, AdminUserAllowed())
 		v1Router.GET("/role_tips", v1.GetRoleTips, AdminUserAllowed())
 		v1Router.POST("/roles", DeprecatedBy(apiV2), AdminUserAllowed())
 		v2Router.POST("/roles", v2.CreateRole, AdminUserAllowed())

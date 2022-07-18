@@ -4529,6 +4529,67 @@
                     }
                 }
             }
+        },
+        "/v3/roles": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get role list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "role"
+                ],
+                "summary": "获取角色列表",
+                "operationId": "getRoleListV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter role name",
+                        "name": "filter_role_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter user name",
+                        "name": "filter_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v3.GetRolesResV3"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -8393,6 +8454,88 @@
                     }
                 },
                 "role_desc": {
+                    "type": "string"
+                },
+                "user_group_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v3.GetRolesResV3": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v3.RoleResV3"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v3.Instance": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v3.Operation": {
+            "type": "object",
+            "properties": {
+                "op_code": {
+                    "type": "integer"
+                },
+                "op_desc": {
+                    "type": "string"
+                }
+            }
+        },
+        "v3.RoleResV3": {
+            "type": "object",
+            "properties": {
+                "instance_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v3.Instance"
+                    }
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "operation_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v3.Operation"
+                    }
+                },
+                "role_desc": {
+                    "type": "string"
+                },
+                "role_name": {
                     "type": "string"
                 },
                 "user_group_name_list": {
