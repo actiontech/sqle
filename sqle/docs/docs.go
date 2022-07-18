@@ -25,6 +25,40 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/audit/direct_audit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql",
+                "tags": [
+                    "audit"
+                ],
+                "summary": "直接审核SQL",
+                "operationId": "directAuditV1",
+                "parameters": [
+                    {
+                        "description": "sqls that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plan_metas": {
             "get": {
                 "security": [
@@ -4743,6 +4777,59 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditResDataV1": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error",
+                        ""
+                    ]
+                },
+                "instance_type": {
+                    "type": "string"
+                },
+                "pass_rate": {
+                    "type": "number"
+                },
+                "result_total_num": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "sql_results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditSQLResV1"
+                    }
+                }
+            }
+        },
+        "v1.AuditSQLResV1": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
+                "audit_result": {
+                    "type": "string"
+                },
+                "exec_sql": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "rollback_sql": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
@@ -5225,6 +5312,47 @@ var doc = `{
                 "workflow_statistics": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStatisticsResV1"
+                }
+            }
+        },
+        "v1.DirectAuditReqV1": {
+            "type": "object",
+            "properties": {
+                "audit_type": {
+                    "description": "动态审核会同时使用静态审核和动态审核的规则",
+                    "type": "string",
+                    "default": "static",
+                    "enum": [
+                        "static",
+                        "dynamic"
+                    ]
+                },
+                "instance_type": {
+                    "description": "实例类型可以是包括\"/\"在内的任何字符串, 不适合放到URI里面",
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "sqls": {
+                    "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
+                    "type": "string",
+                    "example": "select * from t1; select * from t2;"
+                }
+            }
+        },
+        "v1.DirectAuditResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
