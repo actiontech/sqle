@@ -4818,9 +4818,6 @@ var doc = `{
                 },
                 "number": {
                     "type": "integer"
-                },
-                "rollback_sql": {
-                    "type": "string"
                 }
             }
         },
@@ -5313,7 +5310,6 @@ var doc = `{
             "type": "object",
             "properties": {
                 "instance_type": {
-                    "description": "实例类型可以是包括\"/\"在内的任何字符串, 当用户阅读未转义URL时可能会产生歧义",
                     "type": "string",
                     "example": "mysql"
                 },
