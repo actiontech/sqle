@@ -25,40 +25,6 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/audit/direct_audit": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Direct audit sql",
-                "tags": [
-                    "audit"
-                ],
-                "summary": "直接审核SQL",
-                "operationId": "directAuditV1",
-                "parameters": [
-                    {
-                        "description": "sqls that should be audited",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.DirectAuditReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.DirectAuditResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/audit_plan_metas": {
             "get": {
                 "security": [
@@ -2533,6 +2499,40 @@ var doc = `{
                 }
             }
         },
+        "/v1/sql_audit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql",
+                "tags": [
+                    "sql_audit"
+                ],
+                "summary": "直接审核SQL",
+                "operationId": "directAuditV1",
+                "parameters": [
+                    {
+                        "description": "sqls that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sql_query/explain/{instance_name}/": {
             "post": {
                 "security": [
@@ -4790,14 +4790,8 @@ var doc = `{
                         ""
                     ]
                 },
-                "instance_type": {
-                    "type": "string"
-                },
                 "pass_rate": {
                     "type": "number"
-                },
-                "result_total_num": {
-                    "type": "integer"
                 },
                 "score": {
                     "type": "integer"
@@ -5318,21 +5312,12 @@ var doc = `{
         "v1.DirectAuditReqV1": {
             "type": "object",
             "properties": {
-                "audit_type": {
-                    "description": "动态审核会同时使用静态审核和动态审核的规则",
-                    "type": "string",
-                    "default": "static",
-                    "enum": [
-                        "static",
-                        "dynamic"
-                    ]
-                },
                 "instance_type": {
-                    "description": "实例类型可以是包括\"/\"在内的任何字符串, 不适合放到URI里面",
+                    "description": "实例类型可以是包括\"/\"在内的任何字符串, 当用户阅读未转义URL时可能会产生歧义",
                     "type": "string",
                     "example": "mysql"
                 },
-                "sqls": {
+                "sql_content": {
                     "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
                     "type": "string",
                     "example": "select * from t1; select * from t2;"
