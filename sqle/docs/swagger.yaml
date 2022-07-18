@@ -147,12 +147,8 @@ definitions:
         - error
         - ""
         type: string
-      instance_type:
-        type: string
       pass_rate:
         type: number
-      result_total_num:
-        type: integer
       score:
         type: integer
       sql_results:
@@ -507,18 +503,11 @@ definitions:
     type: object
   v1.DirectAuditReqV1:
     properties:
-      audit_type:
-        default: static
-        description: 动态审核会同时使用静态审核和动态审核的规则
-        enum:
-        - static
-        - dynamic
-        type: string
       instance_type:
-        description: 实例类型可以是包括"/"在内的任何字符串, 不适合放到URI里面
+        description: 实例类型可以是包括"/"在内的任何字符串, 当用户阅读未转义URL时可能会产生歧义
         example: mysql
         type: string
-      sqls:
+      sql_content:
         description: 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
         example: select * from t1; select * from t2;
         type: string
@@ -2705,27 +2694,6 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
-  /v1/audit/direct_audit:
-    post:
-      description: Direct audit sql
-      operationId: directAuditV1
-      parameters:
-      - description: sqls that should be audited
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/v1.DirectAuditReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.DirectAuditResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 直接审核SQL
-      tags:
-      - audit
   /v1/audit_plan_metas:
     get:
       description: get audit plan metas
@@ -4290,6 +4258,27 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
+  /v1/sql_audit:
+    post:
+      description: Direct audit sql
+      operationId: directAuditV1
+      parameters:
+      - description: sqls that should be audited
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DirectAuditReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.DirectAuditResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 直接审核SQL
+      tags:
+      - sql_audit
   /v1/sql_query/explain/{instance_name}/:
     post:
       consumes:
