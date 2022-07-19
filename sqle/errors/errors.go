@@ -38,6 +38,9 @@ const (
 	FeatureNotImplemented ErrorCode = 7001
 
 	SQLAnalysisSQLIsNotSupported ErrorCode = 8001
+
+	// 需要隐藏所有错误细节或不确定时使用
+	GenericError ErrorCode = 9999
 )
 
 var (

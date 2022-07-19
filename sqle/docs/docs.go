@@ -2499,6 +2499,40 @@ var doc = `{
                 }
             }
         },
+        "/v1/sql_audit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql",
+                "tags": [
+                    "sql_audit"
+                ],
+                "summary": "直接审核SQL",
+                "operationId": "directAuditV1",
+                "parameters": [
+                    {
+                        "description": "sqls that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sql_query/explain/{instance_name}/": {
             "post": {
                 "security": [
@@ -3884,6 +3918,18 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter task execute start time from",
+                        "name": "filter_task_execute_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter task execute start time to",
+                        "name": "filter_task_execute_start_time_to",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -4743,6 +4789,50 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditResDataV1": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error",
+                        ""
+                    ]
+                },
+                "pass_rate": {
+                    "type": "number"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "sql_results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditSQLResV1"
+                    }
+                }
+            }
+        },
+        "v1.AuditSQLResV1": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
+                "audit_result": {
+                    "type": "string"
+                },
+                "exec_sql": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
@@ -4760,6 +4850,9 @@ var doc = `{
                     "type": "string"
                 },
                 "exec_start_time": {
+                    "type": "string"
+                },
+                "instance_db_type": {
                     "type": "string"
                 },
                 "instance_name": {
@@ -5225,6 +5318,37 @@ var doc = `{
                 "workflow_statistics": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStatisticsResV1"
+                }
+            }
+        },
+        "v1.DirectAuditReqV1": {
+            "type": "object",
+            "properties": {
+                "instance_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "sql_content": {
+                    "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
+                    "type": "string",
+                    "example": "select * from t1; select * from t2;"
+                }
+            }
+        },
+        "v1.DirectAuditResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -8074,6 +8198,12 @@ var doc = `{
         "v1.WorkflowStatisticsResV1": {
             "type": "object",
             "properties": {
+                "my_need_execute_workflow_number": {
+                    "type": "integer"
+                },
+                "my_need_review_workflow_number": {
+                    "type": "integer"
+                },
                 "my_on_process_workflow_number": {
                     "type": "integer"
                 },
