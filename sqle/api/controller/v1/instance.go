@@ -695,10 +695,11 @@ func GetInstances(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instancesReq := []InstanceResV1{}
+	instancesRes := []InstanceResV1{}
 	for _, instance := range instances {
 		instanceReq := InstanceResV1{
 			Name:                 instance.Name,
+			DBType:               instance.DbType,
 			Host:                 instance.Host,
 			Port:                 instance.Port,
 			User:                 instance.User,
@@ -714,11 +715,11 @@ func GetInstances(c echo.Context) error {
 				AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
 			},
 		}
-		instancesReq = append(instancesReq, instanceReq)
+		instancesRes = append(instancesRes, instanceReq)
 	}
 	return c.JSON(http.StatusOK, &GetInstancesResV1{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      instancesReq,
+		Data:      instancesRes,
 		TotalNums: count,
 	})
 }
