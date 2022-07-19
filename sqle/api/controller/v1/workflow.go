@@ -946,6 +946,8 @@ func GetWorkflows(c echo.Context) error {
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
 		"current_user_id":                        user.ID,
 		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
+		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
+		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
 		"limit":                                  req.PageSize,
 		"offset":                                 offset,
 	}
