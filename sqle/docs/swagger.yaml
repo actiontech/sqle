@@ -2399,6 +2399,10 @@ definitions:
     type: object
   v1.WorkflowStatisticsResV1:
     properties:
+      my_need_execute_workflow_number:
+        type: integer
+      my_need_review_workflow_number:
+        type: integer
       my_on_process_workflow_number:
         type: integer
       my_rejected_workflow_number:
@@ -5089,6 +5093,14 @@ paths:
       - description: filter instance name
         in: query
         name: filter_task_instance_name
+        type: string
+      - description: filter task execute start time from
+        in: query
+        name: filter_task_execute_start_time_from
+        type: string
+      - description: filter task execute start time to
+        in: query
+        name: filter_task_execute_start_time_to
         type: string
       - description: page index
         in: query
