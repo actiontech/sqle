@@ -94,6 +94,14 @@ AND w.created_at > :filter_create_time_from
 AND w.created_at < :filter_create_time_to
 {{- end }}
 
+{{- if .filter_task_execute_start_time_from }}
+AND tasks.exec_start_at > :filter_task_execute_start_time_from
+{{- end }}
+
+{{- if .filter_task_execute_start_time_to }}
+AND tasks.exec_start_at < :filter_task_execute_start_time_to
+{{- end }}
+
 {{- if .filter_create_user_name }}
 AND create_user.login_name = :filter_create_user_name
 {{- end }}
