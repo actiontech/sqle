@@ -59,6 +59,26 @@ func Dashboard(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	myNeedReviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_status":            model.WorkflowStatusRunning,
+		"filter_current_step_type": model.WorkflowStepTypeSQLReview,
+		"filter_create_user_name":  user.Name,
+		"check_user_can_access":    false,
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	myNeedExecuteNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_status":            model.WorkflowStatusRunning,
+		"filter_current_step_type": model.WorkflowStepTypeSQLExecute,
+		"filter_create_user_name":  user.Name,
+		"check_user_can_access":    false,
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	reviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
 		"filter_status":                          model.WorkflowStatusRunning,
 		"filter_current_step_type":               model.WorkflowStepTypeSQLReview,
@@ -79,10 +99,12 @@ func Dashboard(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	workflowStatisticsRes := &WorkflowStatisticsResV1{
-		MyWorkflowNumber:         createdNumber,
-		MyRejectedWorkflowNumber: rejectedNumber,
-		NeedMeReviewNumber:       reviewNumber,
-		NeedMeExecuteNumber:      executeNumber,
+		MyWorkflowNumber:            createdNumber,
+		MyRejectedWorkflowNumber:    rejectedNumber,
+		MyNeedReviewWorkflowNumber:  myNeedReviewNumber,
+		MyNeedExecuteWorkflowNumber: myNeedExecuteNumber,
+		NeedMeReviewNumber:          reviewNumber,
+		NeedMeExecuteNumber:         executeNumber,
 	}
 	return c.JSON(http.StatusOK, &GetDashboardResV1{
 		BaseRes: controller.NewBaseReq(nil),
