@@ -36,6 +36,7 @@ type GetAuditTaskResV1 struct {
 type AuditTaskResV1 struct {
 	Id             uint       `json:"task_id"`
 	InstanceName   string     `json:"instance_name"`
+	InstanceDbType string     `json:"instance_db_type"`
 	InstanceSchema string     `json:"instance_schema" example:"db1"`
 	AuditLevel     string     `json:"audit_level" enums:"normal,notice,warn,error,"`
 	Score          int32      `json:"score"`
@@ -50,6 +51,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 	return &AuditTaskResV1{
 		Id:             task.ID,
 		InstanceName:   task.InstanceName(),
+		InstanceDbType: task.DBType,
 		InstanceSchema: task.Schema,
 		AuditLevel:     task.AuditLevel,
 		Score:          task.Score,

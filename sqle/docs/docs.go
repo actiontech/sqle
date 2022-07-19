@@ -4840,6 +4840,9 @@ var doc = `{
                 "exec_start_time": {
                     "type": "string"
                 },
+                "instance_db_type": {
+                    "type": "string"
+                },
                 "instance_name": {
                     "type": "string"
                 },
