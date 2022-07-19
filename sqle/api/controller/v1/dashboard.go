@@ -18,10 +18,12 @@ type DashboardResV1 struct {
 }
 
 type WorkflowStatisticsResV1 struct {
-	MyWorkflowNumber         uint64 `json:"my_on_process_workflow_number"`
-	MyRejectedWorkflowNumber uint64 `json:"my_rejected_workflow_number"`
-	NeedMeReviewNumber       uint64 `json:"need_me_to_review_workflow_number"`
-	NeedMeExecuteNumber      uint64 `json:"need_me_to_execute_workflow_number"`
+	MyWorkflowNumber            uint64 `json:"my_on_process_workflow_number"`
+	MyRejectedWorkflowNumber    uint64 `json:"my_rejected_workflow_number"`
+	MyNeedReviewWorkflowNumber  uint64 `json:"my_need_review_workflow_number"`
+	MyNeedExecuteWorkflowNumber uint64 `json:"my_need_execute_workflow_number"`
+	NeedMeReviewNumber          uint64 `json:"need_me_to_review_workflow_number"`
+	NeedMeExecuteNumber         uint64 `json:"need_me_to_execute_workflow_number"`
 }
 
 // @Summary 获取 dashboard 信息

@@ -845,6 +845,8 @@ type GetWorkflowsReqV1 struct {
 	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=on_process rejected canceled exec_scheduled executing exec_failed finished"`
 	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
 	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	FilterTaskExecuteStartTimeFrom    string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
+	FilterTaskExecuteStartTimeTo      string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
@@ -884,6 +886,8 @@ type WorkflowDetailResV1 struct {
 // @Param filter_status query string false "filter workflow status" Enums(on_process, rejected, canceled, exec_scheduled, executing, exec_failed, finished)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
 // @Param filter_task_instance_name query string false "filter instance name"
+// @Param filter_task_execute_start_time_from query string false "filter task execute start time from"
+// @Param filter_task_execute_start_time_to query string false "filter task execute start time to"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1
