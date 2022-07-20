@@ -33,6 +33,10 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook) (err error) {
 
 const AuditSchema = "AuditSchema"
 
+func AuditByDriver(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
+	return audit(l, task, d)
+}
+
 func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 	return hookAudit(l, task, d, &EmptyAuditHook{})
 }

@@ -460,6 +460,10 @@ ExecSQLs:
 	return execErr
 }
 
+func NewDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string) (driver.DriverManager, error) {
+	return newDriverManagerWithAudit(l, inst, database, dbType)
+}
+
 func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string) (driver.DriverManager, error) {
 	if inst == nil && dbType == "" {
 		return nil, xerrors.Errorf("instance is nil and dbType is nil")
