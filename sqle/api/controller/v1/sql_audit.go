@@ -1,9 +1,17 @@
 package v1
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -43,5 +51,75 @@ var ErrDirectAudit = errors.New(errors.GenericError, fmt.Errorf("audit failed, p
 // @Success 200 {object} v1.DirectAuditResV1
 // @router /v1/sql_audit [post]
 func DirectAudit(c echo.Context) error {
-	return ErrDirectAudit
+	req := new(DirectAuditReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
+
+	manager, err := server.NewDriverManagerWithAudit(l, nil, "", req.InstanceType)
+	if err != nil {
+		l.Errorf("init driver manager failed: %v", err)
+		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
+	}
+	defer manager.Close(context.TODO())
+
+	auditDriver, err := manager.GetAuditDriver()
+	if err != nil {
+		l.Errorf("init audit driver failed: %v", err)
+		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
+	}
+
+	task, err := convertSQLsToTask(req.SQLContent, auditDriver)
+	if err != nil {
+		l.Errorf("parse sqls failed: %v", err)
+		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
+	}
+
+	err = server.AuditByDriver(l, task, auditDriver)
+	if err != nil {
+		l.Errorf("audit sqls failed: %v", err)
+		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
+	}
+
+	return c.JSON(http.StatusOK, DirectAuditResV1{
+		BaseRes: controller.BaseRes{},
+		Data:    convertTaskResultToAuditResV1(task),
+	})
+}
+
+func convertSQLsToTask(sql string, auditDriver driver.Driver) (*model.Task, error) {
+	task := &model.Task{}
+	nodes, err := auditDriver.Parse(context.TODO(), sql)
+	if err != nil {
+		return nil, err
+	}
+	for n, node := range nodes {
+		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(n + 1),
+				Content: node.Text,
+			},
+		})
+	}
+	return task, nil
+}
+
+func convertTaskResultToAuditResV1(task *model.Task) *AuditResDataV1 {
+	results := make([]AuditSQLResV1, len(task.ExecuteSQLs))
+	for i, sql := range task.ExecuteSQLs {
+		results[i] = AuditSQLResV1{
+			Number:      sql.Number,
+			ExecSQL:     sql.Content,
+			AuditResult: sql.AuditResult,
+			AuditLevel:  sql.AuditLevel,
+		}
+	}
+	return &AuditResDataV1{
+		AuditLevel: task.AuditLevel,
+		Score:      task.Score,
+		PassRate:   task.PassRate,
+		SQLResults: results,
+	}
 }
