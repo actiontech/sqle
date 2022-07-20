@@ -1,12 +1,10 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -58,26 +56,7 @@ func DirectAudit(c echo.Context) error {
 
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
-	manager, err := server.NewDriverManagerWithAudit(l, nil, "", req.InstanceType)
-	if err != nil {
-		l.Errorf("init driver manager failed: %v", err)
-		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
-	}
-	defer manager.Close(context.TODO())
-
-	auditDriver, err := manager.GetAuditDriver()
-	if err != nil {
-		l.Errorf("init audit driver failed: %v", err)
-		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
-	}
-
-	task, err := convertSQLsToTask(req.SQLContent, auditDriver)
-	if err != nil {
-		l.Errorf("parse sqls failed: %v", err)
-		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
-	}
-
-	err = server.AuditByDriver(l, task, auditDriver)
+	task, err := server.AuditSQLByDBType(l, req.SQLContent, req.InstanceType)
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
@@ -87,23 +66,6 @@ func DirectAudit(c echo.Context) error {
 		BaseRes: controller.BaseRes{},
 		Data:    convertTaskResultToAuditResV1(task),
 	})
-}
-
-func convertSQLsToTask(sql string, auditDriver driver.Driver) (*model.Task, error) {
-	task := &model.Task{}
-	nodes, err := auditDriver.Parse(context.TODO(), sql)
-	if err != nil {
-		return nil, err
-	}
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-			},
-		})
-	}
-	return task, nil
 }
 
 func convertTaskResultToAuditResV1(task *model.Task) *AuditResDataV1 {
