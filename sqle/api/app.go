@@ -239,6 +239,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/sql_query/results/:query_id/", v1.GetSQLResult)
 	v1Router.POST("/sql_query/explain/:instance_name/", v1.GetSQLExplain)
 
+	// sql audit
+	v1Router.POST("/sql_audit", v1.DirectAudit)
+
 	// UI
 	e.File("/", "ui/index.html")
 	e.Static("/static", "ui/static")

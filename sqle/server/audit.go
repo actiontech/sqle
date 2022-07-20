@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pkg/errors"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,6 +33,45 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook) (err error) {
 }
 
 const AuditSchema = "AuditSchema"
+
+func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string) (*model.Task, error) {
+	manager, err := newDriverManagerWithAudit(l, nil, "", dbType)
+	if err != nil {
+		return nil, err
+	}
+	defer manager.Close(context.TODO())
+
+	auditDriver, err := manager.GetAuditDriver()
+	if err != nil {
+		return nil, err
+	}
+	return AuditSQLByDriver(l, sql, auditDriver)
+}
+
+func AuditSQLByDriver(l *logrus.Entry, sql string, d driver.Driver) (*model.Task, error) {
+	task, err := convertSQLsToTask(sql, d)
+	if err != nil {
+		return nil, err
+	}
+	return task, audit(l, task, d)
+}
+
+func convertSQLsToTask(sql string, auditDriver driver.Driver) (*model.Task, error) {
+	task := &model.Task{}
+	nodes, err := auditDriver.Parse(context.TODO(), sql)
+	if err != nil {
+		return nil, err
+	}
+	for n, node := range nodes {
+		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(n + 1),
+				Content: node.Text,
+			},
+		})
+	}
+	return task, nil
+}
 
 func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
 	return hookAudit(l, task, d, &EmptyAuditHook{})
