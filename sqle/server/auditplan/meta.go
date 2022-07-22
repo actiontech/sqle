@@ -50,7 +50,7 @@ var Metas = []Meta{
 			{
 				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
 				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "60",
+				Value: "0",
 				Type:  params.ParamTypeInt,
 			},
 		},
@@ -117,7 +117,7 @@ var Metas = []Meta{
 			{
 				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
 				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "60",
+				Value: "0",
 				Type:  params.ParamTypeInt,
 			},
 		},
