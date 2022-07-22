@@ -6,7 +6,9 @@ package tidb_audit_log
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -46,6 +48,30 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*AuditLog, error) 
 	}, nil
 }
 
+func (s *AuditLog) parseLine(line string) (sql *TiDBAuditLog, schema string, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			var buf [4096]byte
+			n := runtime.Stack(buf[:], false)
+			fmt.Printf("parse log panic, error: %v | stack: %v", e, string(buf[:n]))
+			err = errors.New("panic")
+		}
+	}()
+
+	sql, err = s.parser.Parse(line)
+	if err != nil {
+		s.l.Errorf("Malformed log, skip parsing: %v", line)
+		return sql, "", err
+	}
+	schema, err = GetMissingSchema(sql.SQLText, sql.Databases)
+	if err != nil {
+		s.l.Warnf("sql execution location not found: %v", line)
+		return sql, schema, err
+	}
+	return sql, schema, nil
+
+}
+
 func (s *AuditLog) Run(ctx context.Context) error {
 	reader, err := scanners.NewContinuousFileReader(s.logFilePath, logrus.WithField("filename", s.logFilePath), true)
 	if err != nil {
@@ -64,16 +90,11 @@ func (s *AuditLog) Run(ctx context.Context) error {
 				return
 			}
 
-			sql, err := s.parser.Parse(line)
+			sql, schema, err := s.parseLine(line)
 			if err != nil {
-				s.l.Errorf("Malformed log, skip parsing: %v", line)
 				continue
 			}
-			schema, err := GetMissingSchema(sql.SQLText, sql.Databases)
-			if err != nil {
-				s.l.Warnf("sql execution location not found: %v", line)
-				continue
-			}
+
 			sqls <- &scanners.SQL{
 				RawText: sql.SQLText,
 				Schema:  schema,
