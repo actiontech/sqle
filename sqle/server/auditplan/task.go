@@ -635,7 +635,16 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 		return nil, errNoSQLInAuditPlan
 	}
 
-	for i, sql := range auditPlanSQLs {
+	filteredSqls, err := filterSQLsByPeriod(at.ap.Params, auditPlanSQLs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(filteredSqls) == 0 {
+		return nil, errNoSQLNeedToBeAudited
+	}
+
+	for i, sql := range filteredSqls {
 		schema := ""
 		info, _ := sql.Info.OriginValue()
 		if schemaStr, ok := info[server.AuditSchema].(string); ok {

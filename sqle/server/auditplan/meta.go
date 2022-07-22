@@ -113,6 +113,14 @@ var Metas = []Meta{
 		Type:         TypeTiDBAuditLog,
 		Desc:         "TiDB审计日志",
 		InstanceType: InstanceTypeTiDB,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+		},
 	},
 }
 
