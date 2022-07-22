@@ -4,6 +4,7 @@
 package tidb_audit_log
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -104,6 +105,9 @@ func (l *lexerParser) parse(tokens []*lexmachine.Token, line string, log *TiDBAu
 					stopIndex = j
 					break
 				}
+			}
+			if stopIndex == 0 {
+				return errors.New("could not match end symbol")
 			}
 			err = l.assembleKV(tokens[startIndex:stopIndex+1], line, log)
 			if err != nil {
