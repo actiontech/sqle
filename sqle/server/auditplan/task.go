@@ -142,15 +142,8 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 }
 
 func filterSQLsByPeriod(params params.Params, sqls []*model.AuditPlanSQLV2) (filteredSqls []*model.AuditPlanSQLV2, err error) {
-	param := params.GetParam(paramKeyAuditSQLsScrappedInLastPeriodMinute)
-	if param == nil {
-		return sqls, nil
-	}
-	period, err := strconv.Atoi(param.Value)
-	if err != nil {
-		return nil, fmt.Errorf("parse audit_sqls_scrapped_in_last_period_minute failed. value=%v err=%v", param.Value, err)
-	}
-	if period == 0 {
+	period := params.GetParam(paramKeyAuditSQLsScrappedInLastPeriodMinute).Int()
+	if period <= 0 {
 		return sqls, nil
 	}
 
@@ -158,7 +151,15 @@ func filterSQLsByPeriod(params params.Params, sqls []*model.AuditPlanSQLV2) (fil
 	minus := -1
 	startTime := t.Add(time.Minute * time.Duration(minus*period))
 	for _, sql := range sqls {
-		if sql.CreatedAt.Before(startTime) {
+		var info = struct {
+			LastReceiveTimestamp time.Time `json:"last_receive_timestamp"`
+		}{}
+		err := json.Unmarshal(sql.Info, &info)
+		if err != nil {
+			return nil, fmt.Errorf("parse last_receive_timestamp failed: %v", err)
+		}
+
+		if info.LastReceiveTimestamp.Before(startTime) {
 			continue
 		}
 		newSql := *sql
