@@ -32,7 +32,8 @@ const (
 )
 
 const (
-	paramKeyCollectIntervalMinute = "collect_interval_minute"
+	paramKeyCollectIntervalMinute               = "collect_interval_minute"
+	paramKeyAuditSQLsScrappedInLastPeriodMinute = "audit_sqls_scrapped_in_last_period_minute"
 )
 
 var Metas = []Meta{
@@ -45,6 +46,14 @@ var Metas = []Meta{
 		Type:         TypeMySQLSlowLog,
 		Desc:         "慢日志",
 		InstanceType: InstanceTypeMySQL,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+		},
 	},
 	{
 		Type:         TypeMySQLMybatis,
@@ -104,6 +113,14 @@ var Metas = []Meta{
 		Type:         TypeTiDBAuditLog,
 		Desc:         "TiDB审计日志",
 		InstanceType: InstanceTypeTiDB,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+		},
 	},
 }
 

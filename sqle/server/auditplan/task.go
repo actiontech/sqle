@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -26,6 +27,7 @@ import (
 )
 
 var errNoSQLInAuditPlan = errors.New(errors.DataConflict, fmt.Errorf("there is no SQLs in audit plan"))
+var errNoSQLNeedToBeAudited = errors.New(errors.DataConflict, fmt.Errorf("there is no SQLs need to be audited in audit plan"))
 
 type Task interface {
 	Start() error
@@ -96,7 +98,16 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 		return nil, errNoSQLInAuditPlan
 	}
 
-	for i, sql := range auditPlanSQLs {
+	filteredSqls, err := filterSQLsByPeriod(at.ap.Params, auditPlanSQLs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(filteredSqls) == 0 {
+		return nil, errNoSQLNeedToBeAudited
+	}
+
+	for i, sql := range filteredSqls {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(i),
@@ -128,6 +139,33 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 		return nil, err
 	}
 	return auditPlanReport, nil
+}
+
+func filterSQLsByPeriod(params params.Params, sqls []*model.AuditPlanSQLV2) (filteredSqls []*model.AuditPlanSQLV2, err error) {
+	period := params.GetParam(paramKeyAuditSQLsScrappedInLastPeriodMinute).Int()
+	if period <= 0 {
+		return sqls, nil
+	}
+
+	t := time.Now()
+	minus := -1
+	startTime := t.Add(time.Minute * time.Duration(minus*period))
+	for _, sql := range sqls {
+		var info = struct {
+			LastReceiveTimestamp time.Time `json:"last_receive_timestamp"`
+		}{}
+		err := json.Unmarshal(sql.Info, &info)
+		if err != nil {
+			return nil, fmt.Errorf("parse last_receive_timestamp failed: %v", err)
+		}
+
+		if info.LastReceiveTimestamp.Before(startTime) {
+			continue
+		}
+		newSql := *sql
+		filteredSqls = append(filteredSqls, &newSql)
+	}
+	return filteredSqls, nil
 }
 
 type sqlCollector struct {
@@ -598,7 +636,16 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 		return nil, errNoSQLInAuditPlan
 	}
 
-	for i, sql := range auditPlanSQLs {
+	filteredSqls, err := filterSQLsByPeriod(at.ap.Params, auditPlanSQLs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(filteredSqls) == 0 {
+		return nil, errNoSQLNeedToBeAudited
+	}
+
+	for i, sql := range filteredSqls {
 		schema := ""
 		info, _ := sql.Info.OriginValue()
 		if schemaStr, ok := info[server.AuditSchema].(string); ok {
