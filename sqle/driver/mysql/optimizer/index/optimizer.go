@@ -582,16 +582,26 @@ func restoreSelectStmt(ss *ast.SelectStmt) (string, error) {
 	return buf.String(), nil
 }
 
-func extractTableNameFromAST(ss *ast.SelectStmt, tbl string) *ast.TableName {
-	v := util.TableNameExtractor{TableNames: make(map[string]*ast.TableName)}
-	ss.Accept(&v)
-
-	for _, t := range v.TableNames {
-		if t.Name.O == tbl {
-			return t
-		}
+func extractTableNameFromAST(ss *ast.SelectStmt, tbl string) (*ast.TableName, error) {
+	if ss == nil || ss.From == nil {
+		return nil, errors.New("select statement is nil or from is nil")
 	}
-	return nil
+
+	tableSource, ok := ss.From.TableRefs.Left.(*ast.TableSource)
+	if !ok {
+		return nil, fmt.Errorf("table source is not table source")
+	}
+
+	tableName, ok := tableSource.Source.(*ast.TableName)
+	if !ok {
+		return nil, fmt.Errorf("table source is not table name")
+	}
+
+	if tableName.Name.O == tbl || tableSource.AsName.O == tbl {
+		return tableName, nil
+	}
+
+	return nil, fmt.Errorf("table %s not found in select statement", tbl)
 }
 
 func getTableNameFromSingleSelect(ss *ast.SelectStmt) string {
