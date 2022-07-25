@@ -63,8 +63,7 @@ type Optimizer struct {
 	l *logrus.Entry
 
 	// tables key is table name, use to match in execution plan.
-	tables             map[string]*tableInSelect
-	tableNameExtractor util.TableNameExtractor
+	tables map[string]*tableInSelect
 
 	// optimizer options:
 	calculateCardinalityMaxRow int
@@ -172,10 +171,6 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 //   2. single select on multiple tables, such join
 //   3. multi select on multiple tables, such subqueries
 func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
-	tne := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
-	ss.Accept(&tne)
-	o.tableNameExtractor = tne
-
 	visitor := util.SelectStmtExtractor{}
 	ss.Accept(&visitor)
 
@@ -278,8 +273,9 @@ func (o *Optimizer) optimizeSingleTable(ctx context.Context, tbl string, ss *ast
 		if err != nil {
 			return nil, errors.Wrap(err, "get table row count when optimize")
 		}
+
 		if rowCount < o.calculateCardinalityMaxRow {
-			optimizeResult.IndexedColumns, err = o.sortColumnsByCardinality(tbl, optimizeResult.IndexedColumns)
+			optimizeResult.IndexedColumns, err = o.sortColumnsByCardinality(tableNameFromAST, optimizeResult.IndexedColumns)
 			if err != nil {
 				return nil, err
 			}
@@ -454,16 +450,9 @@ func (c cardinalities) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
-func (o *Optimizer) sortColumnsByCardinality(tbl string, indexedColumns []string) (sortedColumns []string, err error) {
-	var tn *ast.TableName
-	for tableName, currTN := range o.tableNameExtractor.TableNames {
-		if tableName == tbl {
-			tn = currTN
-			break
-		}
-	}
+func (o *Optimizer) sortColumnsByCardinality(tn *ast.TableName, indexedColumns []string) (sortedColumns []string, err error) {
 	if tn == nil {
-		return nil, errors.Errorf("table %s not found when sort columns by cardinality", tbl)
+		return nil, errors.New("table ast not found when sort columns by cardinality")
 	}
 
 	cardinalitySlice := make(cardinalities, len(indexedColumns))
@@ -478,13 +467,14 @@ func (o *Optimizer) sortColumnsByCardinality(tbl string, indexedColumns []string
 		}
 	}
 
-	o.l.Debugf("table %s column cardinalities(before sort): %+v", tbl, cardinalitySlice)
+	o.l.Debugf("table %s column cardinalities(before sort): %+v", tn.Name, cardinalitySlice)
 	sort.Sort(cardinalitySlice)
-	o.l.Debugf("table %s column cardinalities(after sort): %+v", tbl, cardinalitySlice)
+	o.l.Debugf("table %s column cardinalities(after sort): %+v", tn.Name, cardinalitySlice)
 
 	for _, c := range cardinalitySlice {
 		sortedColumns = append(sortedColumns, c.columnName)
 	}
+
 	return sortedColumns, nil
 }
 
