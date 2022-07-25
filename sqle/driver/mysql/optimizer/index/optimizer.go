@@ -269,7 +269,12 @@ func (o *Optimizer) optimizeSingleTable(ctx context.Context, tbl string, ss *ast
 	o.l.Infof("table:%s, indexed columns:%v, reason:%s", optimizeResult.TableName, optimizeResult.IndexedColumns, optimizeResult.Reason)
 
 	if len(optimizeResult.IndexedColumns) > 1 {
-		rowCount, err := o.GetTableRowCount(extractTableNameFromAST(ss, tbl))
+		tableNameFromAST, err := extractTableNameFromAST(ss, tbl)
+		if err != nil {
+			return nil, errors.Wrap(err, "extract table name from AST")
+		}
+
+		rowCount, err := o.GetTableRowCount(tableNameFromAST)
 		if err != nil {
 			return nil, errors.Wrap(err, "get table row count when optimize")
 		}
@@ -519,7 +524,12 @@ func (o *Optimizer) needIndex(tbl string, columns ...string) (bool, error) {
 		return false, fmt.Errorf("table %s do not have select statement when check index", tbl)
 	}
 
-	cts, exist, err := o.GetCreateTableStmt(extractTableNameFromAST(table.singleTableSel, tbl))
+	tableNameFromAST, err := extractTableNameFromAST(table.singleTableSel, tbl)
+	if err != nil {
+		return false, fmt.Errorf("extract table name from AST failed when check index: %v", err)
+	}
+
+	cts, exist, err := o.GetCreateTableStmt(tableNameFromAST)
 	if err != nil {
 		return false, errors.Wrap(err, "get create table statement when check index")
 	}
