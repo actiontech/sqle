@@ -216,6 +216,8 @@ func ScanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode
 			ScanWhereStmt(fn, x.Expr, x.Pattern)
 		case *ast.RowExpr:
 			ScanWhereStmt(fn, x.Values...)
+		case *ast.ParenthesesExpr:
+			ScanWhereStmt(fn, x.Expr)
 		}
 	}
 }
