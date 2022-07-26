@@ -319,6 +319,34 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "v2"}, ""}},
 		},
+		// issue:690 https://github.com/actiontech/sqle/issues/690
+		{
+			"select id , v2 from EXIST_TB_5 where (v1 = '1')",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "10000000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "id", "v2"}, ""}},
+		},
+		{
+			"select id from EXIST_TB_5 where (v1 = '1') and (v2 = '2')",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "10000000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "v2", "id"}, ""}},
+		},
+		{
+			"select id from EXIST_TB_5 where (v1 = '1' and v2 = '2')",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "10000000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "v2", "id"}, ""}},
+		},
 	}
 
 	for i, tt := range optimizerTests {
