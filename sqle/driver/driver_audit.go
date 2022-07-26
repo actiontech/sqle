@@ -38,7 +38,7 @@ const (
 )
 
 const (
-	DriverTypeMySQL      = "mysql"
+	DriverTypeMySQL      = "MySQL"
 	DriverTypePostgreSQL = "PostgreSQL"
 	DriverTypeTiDB       = "TiDB"
 )
