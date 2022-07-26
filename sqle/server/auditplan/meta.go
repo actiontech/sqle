@@ -26,7 +26,7 @@ const (
 
 const (
 	InstanceTypeAll    = ""
-	InstanceTypeMySQL  = "mysql"
+	InstanceTypeMySQL  = "MySQL"
 	InstanceTypeOracle = "Oracle"
 	InstanceTypeTiDB   = "TiDB"
 )
