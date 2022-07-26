@@ -286,7 +286,69 @@ func TestOptimizer_Optimize(t *testing.T) {
 			nil,
 			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1"}, ""}},
 		},
+		{
+			"select v1,v2 from EXIST_TB_5 as tb5 where v2 = '1'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "tb5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "1000"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"100"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"100"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v2", "v1"}, ""}},
+		},
+		{
+			"select v2 from EXIST_TB_5 as tb5 where v1 = '1'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "tb5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "100000"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"100"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"1000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v2", "v1"}, ""}},
+		},
+		{
+			"select v2 from EXIST_TB_5 as tb5 where v1 = '1'",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "tb5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "100000"}}},
+				{"select count(distinct `v1`)", [][]string{cardinalityHead, {"10000"}}},
+				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"100"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "v2"}, ""}},
+		},
+		// issue:690 https://github.com/actiontech/sqle/issues/690
+		{
+			"select id , v2 from EXIST_TB_5 where (v1 = '1')",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "10000000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "id", "v2"}, ""}},
+		},
+		{
+			"select id from EXIST_TB_5 where (v1 = '1') and (v2 = '2')",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "10000000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "v2", "id"}, ""}},
+		},
+		{
+			"select id from EXIST_TB_5 where (v1 = '1' and v2 = '2')",
+			[]databaseMock{
+				{"EXPLAIN", [][]string{explainHead, {"1", "EXIST_TB_5", executor.ExplainRecordAccessTypeAll}}},
+				{"show table status", [][]string{showTableStatusHead, {"EXIST_TB_5", "10000000"}}},
+			},
+			nil,
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v1", "v2", "id"}, ""}},
+		},
 	}
+
 	for i, tt := range optimizerTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			ss, err := parser.New().ParseOneStmt(tt.SQL, "", "")

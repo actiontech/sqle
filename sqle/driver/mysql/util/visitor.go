@@ -114,3 +114,19 @@ func (se *SelectStmtExtractor) Enter(in ast.Node) (node ast.Node, skipChildren b
 func (se *SelectStmtExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }
+
+type TableSourceExtractor struct {
+	TableSources map[string] /*origin table name without database name*/ *ast.TableSource
+}
+
+func (ts *TableSourceExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.TableSource:
+		ts.TableSources[(stmt.Source).(*ast.TableName).Name.O] = stmt
+	}
+	return in, false
+}
+
+func (ts *TableSourceExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
