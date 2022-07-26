@@ -583,16 +583,18 @@ func restoreSelectStmt(ss *ast.SelectStmt) (string, error) {
 }
 
 func extractTableNameFromAST(ss *ast.SelectStmt, tbl string) (*ast.TableName, error) {
-	sourceExtractor := util.TableSourceExtractor{}
+	sourceExtractor := util.TableSourceExtractor{TableSources: map[string]*ast.TableSource{}}
 	ss.Accept(&sourceExtractor)
 
-	tableName, ok := (sourceExtractor.TableSource.Source).(*ast.TableName)
-	if !ok {
-		return nil, errors.New("tableName not found")
-	}
+	for _, ts := range sourceExtractor.TableSources {
+		tableName, ok := (ts.Source).(*ast.TableName)
+		if !ok {
+			return nil, errors.New("tableName not found")
+		}
 
-	if tableName.Name.O == tbl || tbl == sourceExtractor.TableSource.AsName.O {
-		return tableName, nil
+		if tableName.Name.O == tbl || tbl == ts.AsName.O {
+			return tableName, nil
+		}
 	}
 
 	return nil, fmt.Errorf("table %s not found in select statement", tbl)
