@@ -116,13 +116,13 @@ func (se *SelectStmtExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
 }
 
 type TableSourceExtractor struct {
-	TableSource *ast.TableSource
+	TableSources map[string] /*origin table name without database name*/ *ast.TableSource
 }
 
 func (ts *TableSourceExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	switch stmt := in.(type) {
 	case *ast.TableSource:
-		ts.TableSource = stmt
+		ts.TableSources[(stmt.Source).(*ast.TableName).Name.O] = stmt
 	}
 	return in, false
 }
