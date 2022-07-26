@@ -1060,6 +1060,19 @@ func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "delete: no where condition(4)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=1 and exist_tb_1.id=exist_tb_1.id;",
 		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
+
+	// issue:691 https://github.com/actiontech/sqle/issues/691
+	runDefaultRulesInspectCase(t, "where with () condition(1)", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1 where (id = 1);",
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "where with () condition(2)", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1 where (id = 1 and v1 = '2');",
+		newTestResult())
+
+	runDefaultRulesInspectCase(t, "where with () condition(3)", DefaultMysqlInspect(),
+		"delete from exist_db.exist_tb_1 where (id = 1) and (v1 = '2');",
+		newTestResult())
 }
 
 func TestCheckWhereInvalid_FP(t *testing.T) {
