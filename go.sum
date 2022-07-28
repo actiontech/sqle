@@ -101,6 +101,8 @@ github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220601071856-7364d5abb0a3 
 github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220601071856-7364d5abb0a3/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
 github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220630083757-ba839f451925 h1:ks5Z//TVKaYTUDT7mSa6j2omJiBU9dWIgbgYvV7ijoQ=
 github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220630083757-ba839f451925/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
+github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220728081924-8483c9ff0a98 h1:wQKAwTHt0Beelc7BYDEs/W6pd7smBkPABOritq7jMps=
+github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220728081924-8483c9ff0a98/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
 github.com/agiledragon/gomonkey v2.0.2+incompatible h1:eXKi9/piiC3cjJD1658mEE2o3NjkJ5vDLgYjCQu0Xlw=
 github.com/agiledragon/gomonkey v2.0.2+incompatible/go.mod h1:2NGfXu1a80LLr2cmWXGBDaHEjb1idR6+FVlX5T3D9hw=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
