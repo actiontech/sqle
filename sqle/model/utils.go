@@ -222,6 +222,7 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 				RuleName:       modelRule.Name,
 				RuleLevel:      modelRule.Level,
 				RuleParams:     modelRule.Params,
+				RuleDBType:     dbType,
 			})
 		}
 		if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
