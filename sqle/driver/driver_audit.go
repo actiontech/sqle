@@ -305,13 +305,14 @@ func (rs *AuditResult) Level() RuleLevel {
 }
 
 func (rs *AuditResult) Message() string {
-	repeatCheck := map[string]RuleLevel{}
+	repeatCheck := map[string]struct{}{}
 	messages := []string{}
 	for _, result := range rs.results {
-		if r, ok := repeatCheck[result.message]; ok && r == result.level {
+		token := result.message + string(result.level)
+		if _, ok := repeatCheck[token]; ok {
 			continue
 		}
-		repeatCheck[result.message] = result.level
+		repeatCheck[token] = struct{}{}
 
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
