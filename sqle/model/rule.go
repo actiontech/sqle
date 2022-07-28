@@ -58,6 +58,7 @@ type RuleTemplateRule struct {
 	RuleName       string        `json:"name" gorm:"primary_key;"`
 	RuleLevel      string        `json:"level" gorm:"column:level;"`
 	RuleParams     params.Params `json:"value" gorm:"column:rule_params;type:varchar(1000)"`
+	RuleDBType     string        `json:"rule_db_type" gorm:"column:db_type; not null;"`
 
 	Rule *Rule `json:"-" gorm:"foreignkey:Name,DBType;association_foreignkey:RuleName,RuleDBType"`
 }
@@ -72,6 +73,7 @@ func NewRuleTemplateRule(t *RuleTemplate, r *Rule) RuleTemplateRule {
 		RuleName:       r.Name,
 		RuleLevel:      r.Level,
 		RuleParams:     r.Params,
+		RuleDBType:     r.DBType,
 	}
 }
 
