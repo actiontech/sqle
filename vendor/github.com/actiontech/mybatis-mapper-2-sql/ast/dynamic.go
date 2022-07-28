@@ -92,11 +92,11 @@ func (n *ChooseNode) GetStmt(ctx *Context) (string, error) {
 	// https://github.com/actiontech/sqle/issues/639
 	// otherwise can be not defined. so ChooseNode -> Otherwise may be nil.
 	/*
-	<choose>
-		<when test="state == 1">
-			where name = #{name1}
-		</when>
-	</choose>
+		<choose>
+			<when test="state == 1">
+				where name = #{name1}
+			</when>
+		</choose>
 	*/
 	if n.Otherwise != nil {
 		data, err := n.Otherwise.GetStmt(ctx)
@@ -178,6 +178,7 @@ type TrimNode struct {
 	*ChildrenNode
 	Name            string
 	Prefix          string
+	Suffix          string
 	PrefixOverrides []string
 	SuffixOverrides []string
 }
@@ -201,6 +202,9 @@ func (n *TrimNode) Scan(start *xml.StartElement) error {
 		for _, attr := range start.Attr {
 			if attr.Name.Local == "prefix" {
 				n.Prefix = attr.Value
+			}
+			if attr.Name.Local == "suffix" {
+				n.Suffix = attr.Value
 			}
 			if attr.Name.Local == "prefixOverrides" {
 				n.PrefixOverrides = strings.Split(attr.Value, "|")
@@ -233,6 +237,7 @@ func (n *TrimNode) GetStmt(ctx *Context) (string, error) {
 	buff.WriteString(n.Prefix)
 	buff.WriteString(" ")
 	buff.WriteString(body)
+	buff.WriteString(n.Suffix)
 	return buff.String(), nil
 }
 
