@@ -414,7 +414,7 @@ func (at *SchemaMetaTask) collectorDo() {
 	for _, view := range views {
 		sql, err := db.ShowCreateView(utils.SupplementalQuotationMarks(view))
 		if err != nil {
-			at.logger.Errorf("show create table fail, error: %v", err)
+			at.logger.Errorf("show create view fail, error: %v", err)
 			return
 		}
 		sqls = append(sqls, sql)
