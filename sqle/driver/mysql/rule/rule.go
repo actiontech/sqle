@@ -2855,6 +2855,7 @@ func checkDecimalTypeColumn(ctx *session.Context, rule driver.Rule, res *driver.
 		for _, col := range stmt.Cols {
 			if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
 				addResult(res, rule, DDLCheckDecimalTypeColumn)
+				return nil
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -2862,6 +2863,7 @@ func checkDecimalTypeColumn(ctx *session.Context, rule driver.Rule, res *driver.
 			for _, col := range spec.NewColumns {
 				if col.Tp != nil && (col.Tp.Tp == mysql.TypeFloat || col.Tp.Tp == mysql.TypeDouble) {
 					addResult(res, rule, DDLCheckDecimalTypeColumn)
+					return nil
 				}
 			}
 		}
