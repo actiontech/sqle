@@ -44,7 +44,7 @@ require (
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
-	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3 // indirect
+	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
 	github.com/pkg/errors v0.9.1
