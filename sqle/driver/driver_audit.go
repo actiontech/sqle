@@ -305,8 +305,14 @@ func (rs *AuditResult) Level() RuleLevel {
 }
 
 func (rs *AuditResult) Message() string {
-	messages := make([]string, len(rs.results))
-	for n, result := range rs.results {
+	repeatCheck := map[string]RuleLevel{}
+	messages := []string{}
+	for _, result := range rs.results {
+		if r, ok := repeatCheck[result.message]; ok && r == result.level {
+			continue
+		}
+		repeatCheck[result.message] = result.level
+
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
 			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, "osc"),
@@ -316,7 +322,7 @@ func (rs *AuditResult) Message() string {
 		} else {
 			message = fmt.Sprintf("[%s]%s", result.level, result.message)
 		}
-		messages[n] = message
+		messages = append(messages, message)
 	}
 	return strings.Join(messages, "\n")
 }
