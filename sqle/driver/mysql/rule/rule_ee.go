@@ -8,6 +8,7 @@ package rule
 */
 
 import (
+	"github.com/pingcap/tidb/types"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -557,24 +558,34 @@ func mysqlDML4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 }
 
 func mysqlDML5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if where := getWhereExpr(node); where != nil {
-		trigger := false
-		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
-			switch pattern := expr.(type) {
-			case *parserDriver.ValueExpr:
-				datum := pattern.Datum.GetString()
-				if strings.HasPrefix(datum, " ") || strings.HasSuffix(datum, " ") {
-					trigger = true
-					return true
-				}
-			}
-			return false
-		}, where)
-		if trigger {
-			addResult(res, rule, rule.Name)
-		}
+	visitor := &mysqlDML5Visitor{}
+	node.Accept(visitor)
+	if visitor.HasPrefixOrSuffixSpace {
+		addResult(res, rule, rule.Name)
 	}
 	return nil
+}
+
+type mysqlDML5Visitor struct {
+	HasPrefixOrSuffixSpace bool
+}
+
+func (g *mysqlDML5Visitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+	if g.HasPrefixOrSuffixSpace {
+		return n, false
+	}
+
+	if stmt, ok := n.(*parserDriver.ValueExpr); ok && stmt.Datum.Kind() == types.KindString {
+		if strings.HasPrefix(stmt.GetDatumString(), " ") || strings.HasSuffix(stmt.GetDatumString(), " ") {
+			g.HasPrefixOrSuffixSpace = true
+		}
+	}
+
+	return n, false
+}
+
+func (g *mysqlDML5Visitor) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
 }
 
 func mysqlDDL5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
