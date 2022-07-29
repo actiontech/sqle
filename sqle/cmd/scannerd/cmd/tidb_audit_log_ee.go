@@ -6,15 +6,13 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
-
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/tidb_audit_log"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var (
@@ -29,7 +27,7 @@ var (
 				APName:       rootCmdFlags.auditPlanName,
 			}
 			log := logrus.WithField("scanner", "tidb-audit-log")
-			client := scanner.NewSQLEClient(time.Second, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
+			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
 			scanner, err := tidb_audit_log.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))
