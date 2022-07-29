@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/tidb_audit_log"
@@ -29,7 +28,7 @@ var (
 				APName:       rootCmdFlags.auditPlanName,
 			}
 			log := logrus.WithField("scanner", "tidb-audit-log")
-			client := scanner.NewSQLEClient(time.Second, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
+			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
 			scanner, err := tidb_audit_log.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))
