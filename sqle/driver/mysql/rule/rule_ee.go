@@ -8,7 +8,6 @@ package rule
 */
 
 import (
-	"github.com/pingcap/tidb/types"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/tidb/types"
 	parserDriver "github.com/pingcap/tidb/types/parser_driver"
 )
 
