@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/mybatis"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
+
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -28,7 +28,7 @@ var (
 				SkipErrorQuery: skipErrorQuery,
 			}
 			log := logrus.WithField("scanner", "mybatis")
-			client := scanner.NewSQLEClient(time.Second, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
+			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
 			scanner, err := mybatis.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))
