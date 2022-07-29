@@ -155,7 +155,8 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 }
 
 const (
-	defaultTimeout = time.Second * 10
+	DefaultTimeout     = time.Second * 10
+	RecommendedTimeout = time.Second * 60
 )
 
 // client is a wrap of http.Client
@@ -166,7 +167,7 @@ type client struct {
 // newClient returns a new HTTP client with timeout and HTTPS support
 func newClient(timeout time.Duration, tlsCfg *tls.Config) *client {
 	if timeout < time.Second {
-		timeout = defaultTimeout
+		timeout = DefaultTimeout
 	}
 	tp := &http.Transport{
 		TLSClientConfig: tlsCfg,
