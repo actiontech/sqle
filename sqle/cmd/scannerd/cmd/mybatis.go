@@ -28,7 +28,7 @@ var (
 				SkipErrorQuery: skipErrorQuery,
 			}
 			log := logrus.WithField("scanner", "mybatis")
-			client := scanner.NewSQLEClient(scanner.RecommendedTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
+			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
 			scanner, err := mybatis.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))
