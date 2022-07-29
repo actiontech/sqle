@@ -3,13 +3,15 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/slowquery"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
+
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
