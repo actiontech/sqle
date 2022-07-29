@@ -155,8 +155,7 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 }
 
 const (
-	DefaultTimeout     = time.Second * 10
-	RecommendedTimeout = time.Second * 60
+	DefaultTimeout = time.Second * 10
 )
 
 // client is a wrap of http.Client
