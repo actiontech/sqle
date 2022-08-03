@@ -118,10 +118,23 @@ const (
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 )
 
+type RuleHandlerInput struct {
+	Ctx  *session.Context
+	Rule driver.Rule
+	Res  *driver.AuditResult
+	Node ast.Node
+
+	require AdditionalRequire
+}
+
+type AdditionalRequire struct{}
+
+type RuleHandlerFunc func(input *RuleHandlerInput) error
+
 type RuleHandler struct {
 	Rule                 driver.Rule
 	Message              string
-	Func                 func(*session.Context, driver.Rule, *driver.AuditResult, ast.Node) error
+	Func                 RuleHandlerFunc
 	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
 }
