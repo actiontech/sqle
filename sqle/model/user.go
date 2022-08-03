@@ -268,11 +268,14 @@ WHERE users.id = ? AND wr.status = ? AND ws.state = ?;`
 }
 
 func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
-	copyUser := *user
-	// 1 WorkflowTemplate to many WorkflowStepTemplates (delete: set NULL=set WorkflowStepTemplate.WorkflowTemplateId = NULL)
-	// Many Users to many WorkflowStepTemplates
-	err := s.db.Model(&copyUser).Preload("WorkflowStepTemplates", "workflow_template_id IS NOT NULL").Find(&copyUser).Error
-	return len(copyUser.WorkflowStepTemplates) > 0, errors.New(errors.ConnectStorageError, err)
+	count := 0
+	err := s.db.Table("workflow_templates").
+		Joins("join workflow_step_templates on workflow_templates.id = workflow_step_templates.workflow_template_id").
+		Joins("join workflow_step_user on workflow_step_templates.id = workflow_step_user.workflow_step_id").
+		Where("workflow_templates.deleted_at is null").
+		Where("workflow_step_user.user_id = ?", user.ID).
+		Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
 // NOTE: parameter: roles([]*Users) and userGroups([]*Role) need to be distinguished as nil or zero length slice.
