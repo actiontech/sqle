@@ -304,7 +304,14 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		if i.IsOfflineAudit() && !handler.IsAllowOfflineRule(nodes[0]) {
 			continue
 		}
-		if err := handler.Func(i.Ctx, *rule, i.result, nodes[0]); err != nil {
+		input := &rulepkg.RuleHandlerInput{
+			Ctx:  i.Ctx,
+			Rule: *rule,
+			Res:  i.result,
+			Node: nodes[0],
+		}
+
+		if err := handler.Func(input); err != nil {
 			return nil, err
 		}
 	}
