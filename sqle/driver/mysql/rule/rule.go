@@ -128,11 +128,7 @@ type RuleHandlerInput struct {
 	Rule driver.Rule
 	Res  *driver.AuditResult
 	Node ast.Node
-
-	require AdditionalRequire
 }
-
-type AdditionalRequire struct{}
 
 type RuleHandlerFunc func(input *RuleHandlerInput) error
 
