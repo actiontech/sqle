@@ -875,6 +875,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetInstancesTypePercentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.InstancesTypePercentV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetLDAPConfigurationResV1:
     properties:
       code:
@@ -898,6 +910,18 @@ definitions:
         items:
           $ref: '#/definitions/v1.LicenseItem'
         type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetLicenseUsageResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.LicenseUsageV1'
+        type: object
       message:
         example: ok
         type: string
@@ -1207,6 +1231,116 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetTaskCountsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskCountsV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskCreatedCountsEachDayResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskCreatedCountsEachDayV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskDurationOfWaitingForAuditResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskStageDuration'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskDurationOfWaitingForExecutionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskStageDuration'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskPassPercentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskPassPercentV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskRejectedPercentGroupByCreatorResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.TaskRejectedPercentGroupByCreator'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskRejectedPercentGroupByInstanceResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.TaskRejectedPercentGroupByInstance'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskStatusPercentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskStatusPercentV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTasksPercentCountedByInstanceTypeResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TasksPercentCountedByInstanceTypeV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetUserDetailResV1:
     properties:
       code:
@@ -1474,6 +1608,22 @@ definitions:
       instance_type:
         type: string
     type: object
+  v1.InstanceTypePercent:
+    properties:
+      percent:
+        type: integer
+      type:
+        type: string
+    type: object
+  v1.InstancesTypePercentV1:
+    properties:
+      instance_total_num:
+        type: integer
+      instance_type_percents:
+        items:
+          $ref: '#/definitions/v1.InstanceTypePercent'
+        type: array
+    type: object
   v1.LDAPConfigurationReqV1:
     properties:
       enable_ldap:
@@ -1522,6 +1672,29 @@ definitions:
         type: string
       name:
         type: string
+    type: object
+  v1.LicenseUsageItem:
+    properties:
+      is_limited:
+        type: boolean
+      limit:
+        type: integer
+      resource_type:
+        type: string
+      resource_type_desc:
+        type: string
+      used:
+        type: integer
+    type: object
+  v1.LicenseUsageV1:
+    properties:
+      instances_usage:
+        items:
+          $ref: '#/definitions/v1.LicenseUsageItem'
+        type: array
+      users_usage:
+        $ref: '#/definitions/v1.LicenseUsageItem'
+        type: object
     type: object
   v1.ListTableBySchemaResV1:
     properties:
@@ -1902,6 +2075,89 @@ definitions:
         type: string
       field_name:
         type: string
+    type: object
+  v1.TaskCountsV1:
+    properties:
+      today_count:
+        type: integer
+      total:
+        type: integer
+    type: object
+  v1.TaskCreatedCountsEachDayItem:
+    properties:
+      date:
+        example: "2022-08-24"
+        type: string
+      value:
+        type: integer
+    type: object
+  v1.TaskCreatedCountsEachDayV1:
+    properties:
+      samples:
+        items:
+          $ref: '#/definitions/v1.TaskCreatedCountsEachDayItem'
+        type: array
+    type: object
+  v1.TaskPassPercentV1:
+    properties:
+      audit_pass_percent:
+        type: integer
+      execution_success_percent:
+        type: integer
+    type: object
+  v1.TaskRejectedPercentGroupByCreator:
+    properties:
+      creator:
+        type: string
+      rejected_percent:
+        type: integer
+      task_total_num:
+        type: integer
+    type: object
+  v1.TaskRejectedPercentGroupByInstance:
+    properties:
+      instance_name:
+        type: string
+      rejected_percent:
+        type: integer
+      task_total_num:
+        type: integer
+    type: object
+  v1.TaskStageDuration:
+    properties:
+      minutes:
+        type: integer
+    type: object
+  v1.TaskStatusPercentV1:
+    properties:
+      closed_percent:
+        type: integer
+      executing_percent:
+        type: integer
+      execution_success_percent:
+        type: integer
+      rejected_percent:
+        type: integer
+      waiting_for_audit_percent:
+        type: integer
+      waiting_for_execution_percent:
+        type: integer
+    type: object
+  v1.TasksPercentCountedByInstanceType:
+    properties:
+      instance_type:
+        type: string
+      percent:
+        type: integer
+    type: object
+  v1.TasksPercentCountedByInstanceTypeV1:
+    properties:
+      task_percents:
+        items:
+          $ref: '#/definitions/v1.TasksPercentCountedByInstanceType'
+        type: array
+      task_total_num:
+        type: integer
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
@@ -4400,6 +4656,185 @@ paths:
       summary: 获取SQL查询结果
       tags:
       - sql_query
+  /v1/statistic/instances/type_percent:
+    get:
+      description: get database instances' types percent
+      operationId: getInstancesTypePercentV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstancesTypePercentResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据源类型百分比
+      tags:
+      - statistic
+  /v1/statistic/license/usage:
+    get:
+      description: get usage of license
+      operationId: getLicenseUsageV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetLicenseUsageResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取License使用情况
+      tags:
+      - statistic
+  /v1/statistic/task/rejected_percent_group_by_creator:
+    get:
+      description: get task rejected percent group by creator. The result will be
+        sorted by rejected percent in descending order
+      operationId: getTaskRejectedPercentGroupByCreatorV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskRejectedPercentGroupByCreatorResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各个用户提交的工单驳回率，按驳回率降序排列
+      tags:
+      - statistic
+  /v1/statistic/task/rejected_percent_group_by_instance:
+    get:
+      description: get task rejected percent group by instance. The result will be
+        sorted by rejected percent in descending order
+      operationId: getTaskRejectedPercentGroupByInstanceV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskRejectedPercentGroupByInstanceResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各个数据源相关的工单驳回率，按驳回率降序排列
+      tags:
+      - statistic
+  /v1/statistic/tasks/counts:
+    get:
+      description: get task counts
+      operationId: getTaskCountV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskCountsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单数量统计数据
+      tags:
+      - statistic
+  /v1/statistic/tasks/duration_of_waiting_for_audit:
+    get:
+      description: get duration from task being created to audited
+      operationId: getTaskDurationOfWaitingForAuditV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskDurationOfWaitingForAuditResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单从创建到审核结束的平均时长
+      tags:
+      - statistic
+  /v1/statistic/tasks/duration_of_waiting_for_execution:
+    get:
+      description: get duration from task being created to executed
+      operationId: getTaskDurationOfWaitingForExecutionV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskDurationOfWaitingForExecutionResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单各从审核完毕到执行上线的平均时长
+      tags:
+      - statistic
+  /v1/statistic/tasks/each_day_counts:
+    get:
+      description: get counts of created task each day
+      operationId: getTaskCreatedCountEachDayV1
+      parameters:
+      - description: filter date from.(format:yyyy-mm-dd)
+        in: query
+        name: filter_date_from
+        required: true
+        type: string
+      - description: filter date to.(format:yyyy-mm-dd)
+        in: query
+        name: filter_date_to
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskCreatedCountsEachDayResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取每天工单创建数量
+      tags:
+      - statistic
+  /v1/statistic/tasks/instance_type_percent:
+    get:
+      description: get tasks percent counted by instance type
+      operationId: getTasksPercentCountedByInstanceTypeV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTasksPercentCountedByInstanceTypeResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取按数据源类型统计的工单百分比
+      tags:
+      - statistic
+  /v1/statistic/tasks/pass_percent:
+    get:
+      description: get task pass percent
+      operationId: getTaskPassPercentV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskPassPercentResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单通过率
+      tags:
+      - statistic
+  /v1/statistic/tasks/status_percent:
+    get:
+      description: get percent of task status
+      operationId: getTaskStatusPercentV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskStatusPercentResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单状态百分比
+      tags:
+      - statistic
   /v1/tasks/audits:
     post:
       consumes:
