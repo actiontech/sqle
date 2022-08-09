@@ -2717,6 +2717,293 @@ var doc = `{
                 }
             }
         },
+        "/v1/statistic/instances/type_percent": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get database instances' types percent",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取数据源类型百分比",
+                "operationId": "getInstancesTypePercentV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstancesTypePercentResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/license/usage": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get usage of license",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取License使用情况",
+                "operationId": "getLicenseUsageV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetLicenseUsageResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/task/rejected_percent_group_by_creator": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get task rejected percent group by creator. The result will be sorted by rejected percent in descending order",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各个用户提交的工单驳回率，按驳回率降序排列",
+                "operationId": "getTaskRejectedPercentGroupByCreatorV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "the limit of result item number",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskRejectedPercentGroupByCreatorResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/task/rejected_percent_group_by_instance": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get task rejected percent group by instance. The result will be sorted by rejected percent in descending order",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各个数据源相关的工单驳回率，按驳回率降序排列",
+                "operationId": "getTaskRejectedPercentGroupByInstanceV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "the limit of result item number",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskRejectedPercentGroupByInstanceResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/counts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get task counts",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单数量统计数据",
+                "operationId": "getTaskCountV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskCountsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/duration_of_waiting_for_audit": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get duration from task being created to audited",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单从创建到审核结束的平均时长",
+                "operationId": "getTaskDurationOfWaitingForAuditV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskDurationOfWaitingForAuditResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/duration_of_waiting_for_execution": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get duration from task being created to executed",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单各从审核完毕到执行上线的平均时长",
+                "operationId": "getTaskDurationOfWaitingForExecutionV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskDurationOfWaitingForExecutionResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/each_day_counts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get counts of created task each day",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取每天工单创建数量",
+                "operationId": "getTaskCreatedCountEachDayV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter date from.(format:yyyy-mm-dd)",
+                        "name": "filter_date_from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter date to.(format:yyyy-mm-dd)",
+                        "name": "filter_date_to",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskCreatedCountsEachDayResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/instance_type_percent": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get tasks percent counted by instance type",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取按数据源类型统计的工单百分比",
+                "operationId": "getTasksPercentCountedByInstanceTypeV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTasksPercentCountedByInstanceTypeResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/pass_percent": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get task pass percent",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单通过率",
+                "operationId": "getTaskPassPercentV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskPassPercentResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/status_percent": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get percent of task status",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单状态百分比",
+                "operationId": "getTaskStatusPercentV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskStatusPercentResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tasks/audits": {
             "post": {
                 "security": [
@@ -5863,6 +6150,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetInstancesTypePercentResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.InstancesTypePercentV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetLDAPConfigurationResV1": {
             "type": "object",
             "properties": {
@@ -5895,6 +6199,23 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.LicenseItem"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetLicenseUsageResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.LicenseUsageV1"
                 },
                 "message": {
                     "type": "string",
@@ -6348,6 +6669,163 @@ var doc = `{
                 }
             }
         },
+        "v1.GetTaskCountsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskCountsV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskCreatedCountsEachDayResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskCreatedCountsEachDayV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskDurationOfWaitingForAuditResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskStageDuration"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskDurationOfWaitingForExecutionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskStageDuration"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskPassPercentResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskPassPercentV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskRejectedPercentGroupByCreatorResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TaskRejectedPercentGroupByCreator"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskRejectedPercentGroupByInstanceResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TaskRejectedPercentGroupByInstance"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskStatusPercentResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskStatusPercentV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTasksPercentCountedByInstanceTypeResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TasksPercentCountedByInstanceTypeV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetUserDetailResV1": {
             "type": "object",
             "properties": {
@@ -6738,6 +7216,31 @@ var doc = `{
                 }
             }
         },
+        "v1.InstanceTypePercent": {
+            "type": "object",
+            "properties": {
+                "percent": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.InstancesTypePercentV1": {
+            "type": "object",
+            "properties": {
+                "instance_total_num": {
+                    "type": "integer"
+                },
+                "instance_type_percents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceTypePercent"
+                    }
+                }
+            }
+        },
         "v1.LDAPConfigurationReqV1": {
             "type": "object",
             "properties": {
@@ -6810,6 +7313,41 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.LicenseUsageItem": {
+            "type": "object",
+            "properties": {
+                "is_limited": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "resource_type": {
+                    "type": "string"
+                },
+                "resource_type_desc": {
+                    "type": "string"
+                },
+                "used": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.LicenseUsageV1": {
+            "type": "object",
+            "properties": {
+                "instances_usage": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.LicenseUsageItem"
+                    }
+                },
+                "users_usage": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.LicenseUsageItem"
                 }
             }
         },
@@ -7379,6 +7917,135 @@ var doc = `{
                 },
                 "field_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.TaskCountsV1": {
+            "type": "object",
+            "properties": {
+                "today_count": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TaskCreatedCountsEachDayItem": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2022-08-24"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TaskCreatedCountsEachDayV1": {
+            "type": "object",
+            "properties": {
+                "samples": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TaskCreatedCountsEachDayItem"
+                    }
+                }
+            }
+        },
+        "v1.TaskPassPercentV1": {
+            "type": "object",
+            "properties": {
+                "audit_pass_percent": {
+                    "type": "integer"
+                },
+                "execution_success_percent": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TaskRejectedPercentGroupByCreator": {
+            "type": "object",
+            "properties": {
+                "creator": {
+                    "type": "string"
+                },
+                "rejected_percent": {
+                    "type": "integer"
+                },
+                "task_total_num": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TaskRejectedPercentGroupByInstance": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "rejected_percent": {
+                    "type": "integer"
+                },
+                "task_total_num": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TaskStageDuration": {
+            "type": "object",
+            "properties": {
+                "minutes": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TaskStatusPercentV1": {
+            "type": "object",
+            "properties": {
+                "closed_percent": {
+                    "type": "integer"
+                },
+                "executing_percent": {
+                    "type": "integer"
+                },
+                "execution_success_percent": {
+                    "type": "integer"
+                },
+                "rejected_percent": {
+                    "type": "integer"
+                },
+                "waiting_for_audit_percent": {
+                    "type": "integer"
+                },
+                "waiting_for_execution_percent": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TasksPercentCountedByInstanceType": {
+            "type": "object",
+            "properties": {
+                "instance_type": {
+                    "type": "string"
+                },
+                "percent": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TasksPercentCountedByInstanceTypeV1": {
+            "type": "object",
+            "properties": {
+                "task_percents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TasksPercentCountedByInstanceType"
+                    }
+                },
+                "task_total_num": {
+                    "type": "integer"
                 }
             }
         },
