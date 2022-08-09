@@ -737,6 +737,7 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	tables := []*ast.TableName{}
 	tableAlias := map[*ast.TableName]string{}
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
+	var hasSelectStmtTableSource bool
 	for _, tableSource := range tableSources {
 		switch source := tableSource.Source.(type) {
 		case *ast.TableName:
@@ -746,7 +747,9 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 			if alias != "" {
 				tableAlias[table] = alias
 			}
-		case *ast.SelectStmt, *ast.UnionStmt:
+		case *ast.SelectStmt:
+			hasSelectStmtTableSource = true
+		case *ast.UnionStmt:
 			continue
 		}
 	}
@@ -798,6 +801,12 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 			return err
 		}
 		tc.Add(schemaName, tableName, createStmt)
+	}
+
+	// https://github.com/actiontech/sqle/issues/708
+	// If the updated table contains subquery, do not check fields in set and where clause.
+	if hasSelectStmtTableSource {
+		return nil
 	}
 
 	needExistColsName := []string{}
