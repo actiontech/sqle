@@ -66,8 +66,8 @@ func GetTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 }
 
 type TaskPassPercentV1 struct {
-	AuditPassPercent        uint `json:"audit_pass_percent"`
-	ExecutionSuccessPercent uint `json:"execution_success_percent"`
+	AuditPassPercent        float64 `json:"audit_pass_percent"`
+	ExecutionSuccessPercent float64 `json:"execution_success_percent"`
 }
 
 type GetTaskPassPercentResV1 struct {
@@ -116,12 +116,12 @@ func GetTaskCreatedCountsEachDayV1(c echo.Context) error {
 }
 
 type TaskStatusPercentV1 struct {
-	ExecutionSuccessPercent    uint `json:"execution_success_percent"`
-	ExecutingPercent           uint `json:"executing_percent"`
-	WaitingForExecutionPercent uint `json:"waiting_for_execution_percent"`
-	RejectedPercent            uint `json:"rejected_percent"`
-	WaitingForAuditPercent     uint `json:"waiting_for_audit_percent"`
-	ClosedPercent              uint `json:"closed_percent"`
+	ExecutionSuccessPercent    float64 `json:"execution_success_percent"`
+	ExecutingPercent           float64 `json:"executing_percent"`
+	WaitingForExecutionPercent float64 `json:"waiting_for_execution_percent"`
+	RejectedPercent            float64 `json:"rejected_percent"`
+	WaitingForAuditPercent     float64 `json:"waiting_for_audit_percent"`
+	ClosedPercent              float64 `json:"closed_percent"`
 }
 
 type GetTaskStatusPercentResV1 struct {
@@ -143,7 +143,7 @@ func GetTaskStatusPercentV1(c echo.Context) error {
 
 type TasksPercentCountedByInstanceType struct {
 	InstanceType string `json:"instance_type"`
-	Percent      uint   `json:"percent"`
+	Percent      float64   `json:"percent"`
 }
 
 type TasksPercentCountedByInstanceTypeV1 struct {
@@ -171,7 +171,7 @@ func GetTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
 type TaskRejectedPercentGroupByCreator struct {
 	Creator         string `json:"creator"`
 	TaskTotalNum    uint   `json:"task_total_num"`
-	RejectedPercent uint   `json:"rejected_percent"`
+	RejectedPercent float64   `json:"rejected_percent"`
 }
 
 type GetTaskRejectedPercentGroupByCreatorResV1 struct {
@@ -195,7 +195,7 @@ func GetTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 type TaskRejectedPercentGroupByInstance struct {
 	InstanceName    string `json:"instance_name"`
 	TaskTotalNum    uint   `json:"task_total_num"`
-	RejectedPercent uint   `json:"rejected_percent"`
+	RejectedPercent float64   `json:"rejected_percent"`
 }
 
 type GetTaskRejectedPercentGroupByInstanceResV1 struct {
@@ -218,7 +218,7 @@ func GetTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
 
 type InstanceTypePercent struct {
 	Type    string `json:"type"`
-	Percent uint   `json:"percent"`
+	Percent float64   `json:"percent"`
 }
 
 type InstancesTypePercentV1 struct {

@@ -7204,7 +7204,7 @@
             "type": "object",
             "properties": {
                 "percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "type": {
                     "type": "string"
@@ -7942,10 +7942,10 @@
             "type": "object",
             "properties": {
                 "audit_pass_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "execution_success_percent": {
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
@@ -7956,7 +7956,7 @@
                     "type": "string"
                 },
                 "rejected_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "task_total_num": {
                     "type": "integer"
@@ -7970,7 +7970,7 @@
                     "type": "string"
                 },
                 "rejected_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "task_total_num": {
                     "type": "integer"
@@ -7989,22 +7989,22 @@
             "type": "object",
             "properties": {
                 "closed_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "executing_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "execution_success_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "rejected_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "waiting_for_audit_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "waiting_for_execution_percent": {
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
@@ -8015,7 +8015,7 @@
                     "type": "string"
                 },
                 "percent": {
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
