@@ -1690,6 +1690,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.LicenseUsageItem'
         type: array
+      isLimited:
+        type: boolean
       users_usage:
         $ref: '#/definitions/v1.LicenseUsageItem'
         type: object
