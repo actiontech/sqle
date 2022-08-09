@@ -7220,7 +7220,7 @@ var doc = `{
             "type": "object",
             "properties": {
                 "percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "type": {
                     "type": "string"
@@ -7958,10 +7958,10 @@ var doc = `{
             "type": "object",
             "properties": {
                 "audit_pass_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "execution_success_percent": {
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
@@ -7972,7 +7972,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rejected_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "task_total_num": {
                     "type": "integer"
@@ -7986,7 +7986,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rejected_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "task_total_num": {
                     "type": "integer"
@@ -8005,22 +8005,22 @@ var doc = `{
             "type": "object",
             "properties": {
                 "closed_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "executing_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "execution_success_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "rejected_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "waiting_for_audit_percent": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "waiting_for_execution_percent": {
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
@@ -8031,7 +8031,7 @@ var doc = `{
                     "type": "string"
                 },
                 "percent": {
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
