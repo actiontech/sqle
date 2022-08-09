@@ -27,25 +27,41 @@ func GetTaskCountsV1(c echo.Context) error {
 	return nil
 }
 
-type AverageDurationsV1 struct {
-	AuditDurationMinutes     uint `json:"audit_duration_minutes"`
-	ExecutionDurationMinutes uint `json:"execution_duration_minutes"`
+type TaskStageDuration struct {
+	Minutes uint `json:"minutes"`
 }
 
-type GetAverageOfTaskStageDurationsResV1 struct {
+type GetTaskDurationOfWaitingForAuditResV1 struct {
 	controller.BaseRes
-	Data *AverageDurationsV1 `json:"data"`
+	Data *TaskStageDuration `json:"data"`
 }
 
-// GetAverageOfTaskStageDurationsV1
-// @Summary 获取工单各阶段平均经历的时长
-// @Description get average of durations of task's stages
+// GetTaskDurationOfWaitingForAuditV1
+// @Summary 获取工单从创建到审核结束的时长
+// @Description get duration from task being created to audited
 // @Tags statistic
-// @Id getAverageOfTaskStageDurationsV1
+// @Id getTaskDurationOfWaitingForAuditV1
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.GetAverageOfTaskStageDurationsResV1
-// @router /v1/statistic/tasks/stage_durations [get]
-func GetAverageOfTaskStageDurationsV1(c echo.Context) error {
+// @Success 200 {object} v1.GetTaskDurationOfWaitingForAuditResV1
+// @router /v1/statistic/tasks/duration_of_waiting_for_audit [get]
+func GetTaskDurationOfWaitingForAuditV1(c echo.Context) error {
+	return nil
+}
+
+type GetTaskDurationOfWaitingForExecutionResV1 struct {
+	controller.BaseRes
+	Data *TaskStageDuration `json:"data"`
+}
+
+// GetTaskDurationOfWaitingForExecutionV1
+// @Summary 获取工单各从审核完毕到执行上线的时长
+// @Description get duration from task being created to executed
+// @Tags statistic
+// @Id getTaskDurationOfWaitingForExecutionV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetTaskDurationOfWaitingForExecutionResV1
+// @router /v1/statistic/tasks/duration_of_waiting_for_execution [get]
+func GetTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 	return nil
 }
 

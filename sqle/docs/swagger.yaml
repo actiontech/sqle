@@ -248,13 +248,6 @@ definitions:
       value:
         type: string
     type: object
-  v1.AverageDurationsV1:
-    properties:
-      audit_duration_minutes:
-        type: integer
-      execution_duration_minutes:
-        type: integer
-    type: object
   v1.BatchCancelWorkflowsReqV1:
     properties:
       workflow_ids:
@@ -746,18 +739,6 @@ definitions:
         type: string
       total_nums:
         type: integer
-    type: object
-  v1.GetAverageOfTaskStageDurationsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.AverageDurationsV1'
-        type: object
-      message:
-        example: ok
-        type: string
     type: object
   v1.GetDashboardResV1:
     properties:
@@ -1269,6 +1250,30 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.TaskCreatedCountsEachDayV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskDurationOfWaitingForAuditResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskStageDuration'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetTaskDurationOfWaitingForExecutionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TaskStageDuration'
         type: object
       message:
         example: ok
@@ -2102,6 +2107,11 @@ definitions:
       rejected_percent:
         type: integer
       task_total_num:
+        type: integer
+    type: object
+  v1.TaskStageDuration:
+    properties:
+      minutes:
         type: integer
     type: object
   v1.TaskStatusPercentV1:
@@ -4716,6 +4726,34 @@ paths:
       summary: 获取工单数量统计数据
       tags:
       - statistic
+  /v1/statistic/tasks/duration_of_waiting_for_audit:
+    get:
+      description: get duration from task being created to audited
+      operationId: getTaskDurationOfWaitingForAuditV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskDurationOfWaitingForAuditResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单从创建到审核结束的时长
+      tags:
+      - statistic
+  /v1/statistic/tasks/duration_of_waiting_for_execution:
+    get:
+      description: get duration from task being created to executed
+      operationId: getTaskDurationOfWaitingForExecutionV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTaskDurationOfWaitingForExecutionResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单各从审核完毕到执行上线的时长
+      tags:
+      - statistic
   /v1/statistic/tasks/each_day_counts:
     get:
       description: get counts of created task each day
@@ -4767,20 +4805,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取工单通过率
-      tags:
-      - statistic
-  /v1/statistic/tasks/stage_durations:
-    get:
-      description: get average of durations of task's stages
-      operationId: getAverageOfTaskStageDurationsV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAverageOfTaskStageDurationsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取工单各阶段平均经历的时长
       tags:
       - statistic
   /v1/statistic/tasks/status_percent:
