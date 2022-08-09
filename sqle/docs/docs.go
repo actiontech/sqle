@@ -2861,7 +2861,7 @@ var doc = `{
                 "tags": [
                     "statistic"
                 ],
-                "summary": "获取工单从创建到审核结束的时长",
+                "summary": "获取工单从创建到审核结束的平均时长",
                 "operationId": "getTaskDurationOfWaitingForAuditV1",
                 "responses": {
                     "200": {
@@ -2884,7 +2884,7 @@ var doc = `{
                 "tags": [
                     "statistic"
                 ],
-                "summary": "获取工单各从审核完毕到执行上线的时长",
+                "summary": "获取工单各从审核完毕到执行上线的平均时长",
                 "operationId": "getTaskDurationOfWaitingForExecutionV1",
                 "responses": {
                     "200": {
@@ -7316,17 +7316,35 @@ var doc = `{
                 }
             }
         },
+        "v1.LicenseUsageItem": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "resource_type": {
+                    "type": "string"
+                },
+                "resource_type_desc": {
+                    "type": "string"
+                },
+                "used": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.LicenseUsageV1": {
             "type": "object",
             "properties": {
-                "used_instances_percents": {
+                "instances_usage": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.InstanceTypePercent"
+                        "$ref": "#/definitions/v1.LicenseUsageItem"
                     }
                 },
-                "used_users_percent": {
-                    "type": "integer"
+                "users_usage": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.LicenseUsageItem"
                 }
             }
         },
