@@ -28,3 +28,7 @@ func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
+
+func getTaskCounts(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}
