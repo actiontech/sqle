@@ -37,7 +37,7 @@ type GetTaskDurationOfWaitingForAuditResV1 struct {
 }
 
 // GetTaskDurationOfWaitingForAuditV1
-// @Summary 获取工单从创建到审核结束的时长
+// @Summary 获取工单从创建到审核结束的平均时长
 // @Description get duration from task being created to audited
 // @Tags statistic
 // @Id getTaskDurationOfWaitingForAuditV1
@@ -54,7 +54,7 @@ type GetTaskDurationOfWaitingForExecutionResV1 struct {
 }
 
 // GetTaskDurationOfWaitingForExecutionV1
-// @Summary 获取工单各从审核完毕到执行上线的时长
+// @Summary 获取工单各从审核完毕到执行上线的平均时长
 // @Description get duration from task being created to executed
 // @Tags statistic
 // @Id getTaskDurationOfWaitingForExecutionV1
@@ -243,9 +243,16 @@ func GetInstancesTypePercentV1(c echo.Context) error {
 	return nil
 }
 
+type LicenseUsageItem struct {
+	ResourceType     string `json:"resource_type"`
+	ResourceTypeDesc string `json:"resource_type_desc"`
+	Used             uint   `json:"used"`
+	Limit            uint   `json:"limit"`
+}
+
 type LicenseUsageV1 struct {
-	UsedUsersPercent      uint                  `json:"used_users_percent"`
-	UsedInstancesPercents []InstanceTypePercent `json:"used_instances_percents"`
+	UsersUsage     LicenseUsageItem   `json:"users_usage"`
+	InstancesUsage []LicenseUsageItem `json:"instances_usage"`
 }
 
 type GetLicenseUsageResV1 struct {

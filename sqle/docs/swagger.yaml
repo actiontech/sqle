@@ -1673,14 +1673,26 @@ definitions:
       name:
         type: string
     type: object
+  v1.LicenseUsageItem:
+    properties:
+      limit:
+        type: integer
+      resource_type:
+        type: string
+      resource_type_desc:
+        type: string
+      used:
+        type: integer
+    type: object
   v1.LicenseUsageV1:
     properties:
-      used_instances_percents:
+      instances_usage:
         items:
-          $ref: '#/definitions/v1.InstanceTypePercent'
+          $ref: '#/definitions/v1.LicenseUsageItem'
         type: array
-      used_users_percent:
-        type: integer
+      users_usage:
+        $ref: '#/definitions/v1.LicenseUsageItem'
+        type: object
     type: object
   v1.ListTableBySchemaResV1:
     properties:
@@ -4737,7 +4749,7 @@ paths:
             $ref: '#/definitions/v1.GetTaskDurationOfWaitingForAuditResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取工单从创建到审核结束的时长
+      summary: 获取工单从创建到审核结束的平均时长
       tags:
       - statistic
   /v1/statistic/tasks/duration_of_waiting_for_execution:
@@ -4751,7 +4763,7 @@ paths:
             $ref: '#/definitions/v1.GetTaskDurationOfWaitingForExecutionResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取工单各从审核完毕到执行上线的时长
+      summary: 获取工单各从审核完毕到执行上线的平均时长
       tags:
       - statistic
   /v1/statistic/tasks/each_day_counts:
