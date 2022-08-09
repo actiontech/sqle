@@ -7342,6 +7342,9 @@ var doc = `{
                         "$ref": "#/definitions/v1.LicenseUsageItem"
                     }
                 },
+                "isLimited": {
+                    "type": "boolean"
+                },
                 "users_usage": {
                     "type": "object",
                     "$ref": "#/definitions/v1.LicenseUsageItem"

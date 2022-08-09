@@ -246,11 +246,12 @@ func GetInstancesTypePercentV1(c echo.Context) error {
 type LicenseUsageItem struct {
 	ResourceType     string `json:"resource_type"`
 	ResourceTypeDesc string `json:"resource_type_desc"`
-	Used             int    `json:"used"`
-	Limit            int    `json:"limit"`
+	Used             uint   `json:"used"`
+	Limit            uint   `json:"limit"`
 }
 
 type LicenseUsageV1 struct {
+	IsLimited      bool
 	UsersUsage     LicenseUsageItem   `json:"users_usage"`
 	InstancesUsage []LicenseUsageItem `json:"instances_usage"`
 }
