@@ -2850,6 +2850,52 @@ var doc = `{
                 }
             }
         },
+        "/v1/statistic/tasks/duration_of_waiting_for_audit": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get duration from task being created to audited",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单从创建到审核结束的时长",
+                "operationId": "getTaskDurationOfWaitingForAuditV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskDurationOfWaitingForAuditResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/duration_of_waiting_for_execution": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get duration from task being created to executed",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单各从审核完毕到执行上线的时长",
+                "operationId": "getTaskDurationOfWaitingForExecutionV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskDurationOfWaitingForExecutionResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/tasks/each_day_counts": {
             "get": {
                 "security": [
@@ -2930,29 +2976,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTaskPassPercentResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/statistic/tasks/stage_durations": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get average of durations of task's stages",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取工单各阶段平均经历的时长",
-                "operationId": "getAverageOfTaskStageDurationsV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAverageOfTaskStageDurationsResV1"
                         }
                     }
                 }
@@ -5214,17 +5237,6 @@ var doc = `{
                 }
             }
         },
-        "v1.AverageDurationsV1": {
-            "type": "object",
-            "properties": {
-                "audit_duration_minutes": {
-                    "type": "integer"
-                },
-                "execution_duration_minutes": {
-                    "type": "integer"
-                }
-            }
-        },
         "v1.BatchCancelWorkflowsReqV1": {
             "type": "object",
             "properties": {
@@ -5942,23 +5954,6 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
-                }
-            }
-        },
-        "v1.GetAverageOfTaskStageDurationsResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.AverageDurationsV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
@@ -6701,6 +6696,40 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TaskCreatedCountsEachDayV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskDurationOfWaitingForAuditResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskStageDuration"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetTaskDurationOfWaitingForExecutionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskStageDuration"
                 },
                 "message": {
                     "type": "string",
@@ -7939,6 +7968,14 @@ var doc = `{
                     "type": "integer"
                 },
                 "task_total_num": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.TaskStageDuration": {
+            "type": "object",
+            "properties": {
+                "minutes": {
                     "type": "integer"
                 }
             }
