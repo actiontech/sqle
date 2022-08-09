@@ -248,10 +248,10 @@ type LicenseUsageItem struct {
 	ResourceTypeDesc string `json:"resource_type_desc"`
 	Used             uint   `json:"used"`
 	Limit            uint   `json:"limit"`
+	IsLimited        bool   `json:"is_limited"`
 }
 
 type LicenseUsageV1 struct {
-	IsLimited      bool
 	UsersUsage     LicenseUsageItem   `json:"users_usage"`
 	InstancesUsage []LicenseUsageItem `json:"instances_usage"`
 }

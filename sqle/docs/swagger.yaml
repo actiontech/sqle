@@ -1675,6 +1675,8 @@ definitions:
     type: object
   v1.LicenseUsageItem:
     properties:
+      is_limited:
+        type: boolean
       limit:
         type: integer
       resource_type:
@@ -1690,8 +1692,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.LicenseUsageItem'
         type: array
-      isLimited:
-        type: boolean
       users_usage:
         $ref: '#/definitions/v1.LicenseUsageItem'
         type: object

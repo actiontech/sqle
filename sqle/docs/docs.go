@@ -7319,6 +7319,9 @@ var doc = `{
         "v1.LicenseUsageItem": {
             "type": "object",
             "properties": {
+                "is_limited": {
+                    "type": "boolean"
+                },
                 "limit": {
                     "type": "integer"
                 },
@@ -7341,9 +7344,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.LicenseUsageItem"
                     }
-                },
-                "isLimited": {
-                    "type": "boolean"
                 },
                 "users_usage": {
                     "type": "object",

@@ -7303,6 +7303,9 @@
         "v1.LicenseUsageItem": {
             "type": "object",
             "properties": {
+                "is_limited": {
+                    "type": "boolean"
+                },
                 "limit": {
                     "type": "integer"
                 },
@@ -7325,9 +7328,6 @@
                     "items": {
                         "$ref": "#/definitions/v1.LicenseUsageItem"
                     }
-                },
-                "isLimited": {
-                    "type": "boolean"
                 },
                 "users_usage": {
                     "type": "object",
