@@ -747,7 +747,7 @@ definitions:
       total_nums:
         type: integer
     type: object
-  v1.GetAverageOfTaskDurationsResV1:
+  v1.GetAverageOfTaskStageDurationsResV1:
     properties:
       code:
         example: 0
@@ -1603,14 +1603,21 @@ definitions:
       instance_type:
         type: string
     type: object
+  v1.InstanceTypePercent:
+    properties:
+      percent:
+        type: integer
+      type:
+        type: string
+    type: object
   v1.InstancesTypePercentV1:
     properties:
       instance_total_num:
         type: integer
-      instance_type_to_percent:
-        additionalProperties:
-          type: integer
-        type: object
+      instance_type_percents:
+        items:
+          $ref: '#/definitions/v1.InstanceTypePercent'
+        type: array
     type: object
   v1.LDAPConfigurationReqV1:
     properties:
@@ -1663,8 +1670,10 @@ definitions:
     type: object
   v1.LicenseUsageV1:
     properties:
-      used_instances_percent:
-        type: integer
+      used_instances_percents:
+        items:
+          $ref: '#/definitions/v1.InstanceTypePercent'
+        type: array
       used_users_percent:
         type: integer
     type: object
@@ -2055,18 +2064,26 @@ definitions:
       total:
         type: integer
     type: object
+  v1.TaskCreatedCountsEachDayItem:
+    properties:
+      date:
+        example: "2022-08-24"
+        type: string
+      value:
+        type: integer
+    type: object
   v1.TaskCreatedCountsEachDayV1:
     properties:
       samples:
         items:
-          type: integer
+          $ref: '#/definitions/v1.TaskCreatedCountsEachDayItem'
         type: array
     type: object
   v1.TaskPassPercentV1:
     properties:
-      audit_pass_rate:
+      audit_pass_percent:
         type: integer
-      execution_success_rate:
+      execution_success_percent:
         type: integer
     type: object
   v1.TaskRejectedPercentGroupByCreator:
@@ -2102,12 +2119,19 @@ definitions:
       waiting_for_execution_percent:
         type: integer
     type: object
+  v1.TasksPercentCountedByInstanceType:
+    properties:
+      instance_type:
+        type: string
+      percent:
+        type: integer
+    type: object
   v1.TasksPercentCountedByInstanceTypeV1:
     properties:
-      instance_type_to_percent:
-        additionalProperties:
-          type: integer
-        type: object
+      task_percents:
+        items:
+          $ref: '#/definitions/v1.TasksPercentCountedByInstanceType'
+        type: array
       task_total_num:
         type: integer
     type: object
@@ -4678,20 +4702,6 @@ paths:
       summary: 获取各个数据源相关的工单驳回率，按驳回率降序排列
       tags:
       - statistic
-  /v1/statistic/tasks/average_durations:
-    get:
-      description: get average of durations of task's stages
-      operationId: getAverageOfTaskDurationsV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAverageOfTaskDurationsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取工单各阶段平均经历的时长
-      tags:
-      - statistic
   /v1/statistic/tasks/counts:
     get:
       description: get task counts
@@ -4757,6 +4767,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取工单通过率
+      tags:
+      - statistic
+  /v1/statistic/tasks/stage_durations:
+    get:
+      description: get average of durations of task's stages
+      operationId: getAverageOfTaskStageDurationsV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAverageOfTaskStageDurationsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单各阶段平均经历的时长
       tags:
       - statistic
   /v1/statistic/tasks/status_percent:

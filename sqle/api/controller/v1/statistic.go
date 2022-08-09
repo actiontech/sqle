@@ -71,8 +71,13 @@ func GetTaskPassPercentV1(c echo.Context) error {
 	return nil
 }
 
+type TaskCreatedCountsEachDayItem struct {
+	Date  string `json:"date" example:"2022-08-24"`
+	Value uint   `json:"value"`
+}
+
 type TaskCreatedCountsEachDayV1 struct {
-	Samples []uint `json:"samples"`
+	Samples []TaskCreatedCountsEachDayItem `json:"samples"`
 }
 
 type GetTaskCreatedCountsEachDayResV1 struct {
@@ -120,9 +125,14 @@ func GetTaskStatusPercentV1(c echo.Context) error {
 	return nil
 }
 
+type TasksPercentCountedByInstanceType struct {
+	InstanceType string `json:"instance_type"`
+	Percent      uint   `json:"percent"`
+}
+
 type TasksPercentCountedByInstanceTypeV1 struct {
-	InstanceTypeToPercent map[string]uint `json:"instance_type_to_percent"`
-	TaskTotalNum          uint            `json:"task_total_num"`
+	TaskPercents []TasksPercentCountedByInstanceType `json:"task_percents"`
+	TaskTotalNum uint                                `json:"task_total_num"`
 }
 
 type GetTasksPercentCountedByInstanceTypeResV1 struct {
@@ -190,9 +200,14 @@ func GetTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
 	return nil
 }
 
+type InstanceTypePercent struct {
+	Type    string `json:"type"`
+	Percent uint   `json:"percent"`
+}
+
 type InstancesTypePercentV1 struct {
-	InstanceTypeToPercent map[string]uint `json:"instance_type_to_percent"`
-	InstanceTotalNum      uint            `json:"instance_total_num"`
+	InstanceTypePercents []InstanceTypePercent `json:"instance_type_percents"`
+	InstanceTotalNum     uint                  `json:"instance_total_num"`
 }
 
 type GetInstancesTypePercentResV1 struct {
@@ -213,8 +228,8 @@ func GetInstancesTypePercentV1(c echo.Context) error {
 }
 
 type LicenseUsageV1 struct {
-	UsedUsersPercent     uint `json:"used_users_percent"`
-	UsedInstancesPercent uint `json:"used_instances_percent"`
+	UsedUsersPercent      uint                  `json:"used_users_percent"`
+	UsedInstancesPercents []InstanceTypePercent `json:"used_instances_percents"`
 }
 
 type GetLicenseUsageResV1 struct {

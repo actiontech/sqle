@@ -2827,29 +2827,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/statistic/tasks/average_durations": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get average of durations of task's stages",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取工单各阶段平均经历的时长",
-                "operationId": "getAverageOfTaskDurationsV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAverageOfTaskDurationsResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/statistic/tasks/counts": {
             "get": {
                 "security": [
@@ -2953,6 +2930,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTaskPassPercentResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/statistic/tasks/stage_durations": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get average of durations of task's stages",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单各阶段平均经历的时长",
+                "operationId": "getAverageOfTaskStageDurationsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAverageOfTaskStageDurationsResV1"
                         }
                     }
                 }
@@ -5945,7 +5945,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetAverageOfTaskDurationsResV1": {
+        "v1.GetAverageOfTaskStageDurationsResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -7187,16 +7187,27 @@ var doc = `{
                 }
             }
         },
+        "v1.InstanceTypePercent": {
+            "type": "object",
+            "properties": {
+                "percent": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.InstancesTypePercentV1": {
             "type": "object",
             "properties": {
                 "instance_total_num": {
                     "type": "integer"
                 },
-                "instance_type_to_percent": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
+                "instance_type_percents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceTypePercent"
                     }
                 }
             }
@@ -7279,8 +7290,11 @@ var doc = `{
         "v1.LicenseUsageV1": {
             "type": "object",
             "properties": {
-                "used_instances_percent": {
-                    "type": "integer"
+                "used_instances_percents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceTypePercent"
+                    }
                 },
                 "used_users_percent": {
                     "type": "integer"
@@ -7867,13 +7881,25 @@ var doc = `{
                 }
             }
         },
+        "v1.TaskCreatedCountsEachDayItem": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2022-08-24"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.TaskCreatedCountsEachDayV1": {
             "type": "object",
             "properties": {
                 "samples": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "$ref": "#/definitions/v1.TaskCreatedCountsEachDayItem"
                     }
                 }
             }
@@ -7881,10 +7907,10 @@ var doc = `{
         "v1.TaskPassPercentV1": {
             "type": "object",
             "properties": {
-                "audit_pass_rate": {
+                "audit_pass_percent": {
                     "type": "integer"
                 },
-                "execution_success_rate": {
+                "execution_success_percent": {
                     "type": "integer"
                 }
             }
@@ -7940,13 +7966,24 @@ var doc = `{
                 }
             }
         },
+        "v1.TasksPercentCountedByInstanceType": {
+            "type": "object",
+            "properties": {
+                "instance_type": {
+                    "type": "string"
+                },
+                "percent": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.TasksPercentCountedByInstanceTypeV1": {
             "type": "object",
             "properties": {
-                "instance_type_to_percent": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
+                "task_percents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TasksPercentCountedByInstanceType"
                     }
                 },
                 "task_total_num": {
