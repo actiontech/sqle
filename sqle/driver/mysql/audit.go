@@ -113,11 +113,7 @@ create table ...
 ------------------------------------------------------------------
 1. schema must exist;
 2. table can't exist if SQL has not "IF NOT EXISTS";
-3. column name can't duplicated;
-4. primary key can only be set once;
-5. index name can't be duplicated;
-6. index column must exist;
-7. index column can't duplicated, "index idx_1(id,id)" is invalid
+3. offline check must pass
 ------------------------------------------------------------------
 */
 func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
@@ -148,6 +144,21 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 			}
 		}
 	}
+	return i.checkInvalidCreateTableOffline(stmt)
+}
+
+/*
+------------------------------------------------------------------
+create table ...
+------------------------------------------------------------------
+1. column name can't duplicated;
+2. primary key can only be set once;
+3. index name can't be duplicated;
+4. index column must exist;
+5. index column can't duplicated, "index idx_1(id,id)" is invalid
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableStmt) error {
 	colsName := []string{}
 	colsNameMap := map[string]struct{}{}
 	pkCounter := 0
