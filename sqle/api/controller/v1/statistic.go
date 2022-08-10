@@ -45,7 +45,7 @@ type GetTaskDurationOfWaitingForAuditResV1 struct {
 // @Success 200 {object} v1.GetTaskDurationOfWaitingForAuditResV1
 // @router /v1/statistic/tasks/duration_of_waiting_for_audit [get]
 func GetTaskDurationOfWaitingForAuditV1(c echo.Context) error {
-	return nil
+	return getTaskDurationOfWaitingForAuditV1(c)
 }
 
 type GetTaskDurationOfWaitingForExecutionResV1 struct {
@@ -62,7 +62,7 @@ type GetTaskDurationOfWaitingForExecutionResV1 struct {
 // @Success 200 {object} v1.GetTaskDurationOfWaitingForExecutionResV1
 // @router /v1/statistic/tasks/duration_of_waiting_for_execution [get]
 func GetTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
-	return nil
+	return getTaskDurationOfWaitingForExecutionV1(c)
 }
 
 type TaskPassPercentV1 struct {
@@ -84,7 +84,7 @@ type GetTaskPassPercentResV1 struct {
 // @Success 200 {object} v1.GetTaskPassPercentResV1
 // @router /v1/statistic/tasks/pass_percent [get]
 func GetTaskPassPercentV1(c echo.Context) error {
-	return nil
+	return getTaskPassPercentV1(c)
 }
 
 type TaskCreatedCountsEachDayItem struct {
