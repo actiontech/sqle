@@ -84,7 +84,7 @@ type GetTaskPassPercentResV1 struct {
 // @Success 200 {object} v1.GetTaskPassPercentResV1
 // @router /v1/statistic/tasks/pass_percent [get]
 func GetTaskPassPercentV1(c echo.Context) error {
-	return nil
+	return getTaskPassPercentV1(c)
 }
 
 type TaskCreatedCountsEachDayItem struct {
