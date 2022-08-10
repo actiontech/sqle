@@ -26,10 +26,9 @@ const (
 )
 
 func getLicense(c echo.Context) error {
-	s := model.GetStorage()
-	l, exist, err := s.GetLicense()
+	permission, collectedInfosContent, content, exist, err := parseLicense(c)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return err
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, GetLicenseResV1{
@@ -37,19 +36,31 @@ func getLicense(c echo.Context) error {
 		})
 	}
 
-	permission, collectedInfosContent, err := license.DecodeLicense(l.Content)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
-	}
-
 	items := generateLicenseItems(permission, collectedInfosContent)
 
 	return c.JSON(http.StatusOK, GetLicenseResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Content: l.Content,
+		Content: content,
 		License: items,
 	})
 
+}
+
+func parseLicense(c echo.Context) (permission *license.LicensePermission, collectedInfosContent, content string, exist bool, err error) {
+	s := model.GetStorage()
+	l, exist, err := s.GetLicense()
+	if err != nil {
+		return nil, "", "", false, controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return nil, "", "", false, nil
+	}
+
+	permission, collectedInfosContent, err = license.DecodeLicense(l.Content)
+	if err != nil {
+		return nil, "", "", false, controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
+	}
+	return permission, collectedInfosContent, l.Content, exist, nil
 }
 
 func getSQLELicenseInfo(c echo.Context) error {
