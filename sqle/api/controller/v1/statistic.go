@@ -168,6 +168,10 @@ func GetTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
 	return nil
 }
 
+type GetTaskRejectedPercentGroupByCreatorReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
+}
+
 type TaskRejectedPercentGroupByCreator struct {
 	Creator         string  `json:"creator"`
 	TaskTotalNum    uint    `json:"task_total_num"`
