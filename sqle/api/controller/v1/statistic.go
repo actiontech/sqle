@@ -196,6 +196,10 @@ func GetTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 	return getTaskRejectedPercentGroupByCreatorV1(c)
 }
 
+type GetTaskRejectedPercentGroupByInstanceReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
+}
+
 type TaskRejectedPercentGroupByInstance struct {
 	InstanceName    string  `json:"instance_name"`
 	TaskTotalNum    uint    `json:"task_total_num"`
