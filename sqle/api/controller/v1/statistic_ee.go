@@ -74,10 +74,6 @@ func getTaskPassPercentV1(c echo.Context) error {
 	return nil
 }
 
-func getLicenseUsageV1(c echo.Context) error {
-	return nil
-}
-
 func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 	return nil
 }
