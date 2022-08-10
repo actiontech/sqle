@@ -62,6 +62,18 @@ func getInstancesTypePercentV1(c echo.Context) error {
 	})
 }
 
+func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
+	return nil
+}
+
+func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
+	return nil
+}
+
+func getTaskPassPercentV1(c echo.Context) error {
+	return nil
+}
+
 func getLicenseUsageV1(c echo.Context) error {
 	return nil
 }
