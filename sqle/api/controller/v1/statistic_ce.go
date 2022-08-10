@@ -36,3 +36,7 @@ func getTaskCounts(c echo.Context) error {
 func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
+
+func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}

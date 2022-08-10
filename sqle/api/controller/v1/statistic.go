@@ -62,7 +62,7 @@ type GetTaskDurationOfWaitingForExecutionResV1 struct {
 // @Success 200 {object} v1.GetTaskDurationOfWaitingForExecutionResV1
 // @router /v1/statistic/tasks/duration_of_waiting_for_execution [get]
 func GetTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
-	return nil
+	return getTaskDurationOfWaitingForExecutionV1(c)
 }
 
 type TaskPassPercentV1 struct {
