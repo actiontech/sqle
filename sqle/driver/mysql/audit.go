@@ -87,12 +87,24 @@ func (i *MysqlDriverImpl) CheckExplain(node ast.Node) error {
 
 }
 
-func (i *MysqlDriverImpl) CheckInvalidOffline(node ast.Node) error {
-	stmt, ok := node.(*ast.UnparsedStmt)
-	if ok {
-		return i.checkUnparsedStmt(stmt)
+	func (i *MysqlDriverImpl) CheckInvalidOffline(node ast.Node) error {
+		var err error
+		switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		err = i.checkInvalidCreateTableOffline(stmt)
+	case *ast.AlterTableStmt:
+		err = i.checkInvalidAlterTableOffline(stmt)
+	case *ast.CreateIndexStmt:
+		err = i.checkInvalidCreateIndexOffline(stmt)
+	case *ast.InsertStmt:
+		err = i.checkInvalidInsertOffline(stmt)
+	case *ast.UnparsedStmt:
+		err = i.checkUnparsedStmt(stmt)
 	}
-	return nil
+		if err != nil {
+		return fmt.Errorf(CheckInvalidErrorFormat, err)
+	}
+		return nil
 }
 
 /*
