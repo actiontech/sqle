@@ -24,7 +24,7 @@ type GetTaskCountsResV1 struct {
 // @Success 200 {object} v1.GetTaskCountsResV1
 // @router /v1/statistic/tasks/counts [get]
 func GetTaskCountsV1(c echo.Context) error {
-	return nil
+	return getTaskCounts(c)
 }
 
 type TaskStageDuration struct {
