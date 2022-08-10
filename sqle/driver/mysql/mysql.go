@@ -113,6 +113,12 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error)
 		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
 			inspect.cnf.dmlExplainPreCheckEnable = true
 		}
+		if rule.Name == rulepkg.ConfigBaseObjectCheckDisable {
+			inspect.cnf.isBaseObjectAuditOff = true
+		}
+		if rule.Name == rulepkg.ConfigContextDisable {
+			inspect.cnf.isContextOff = true
+		}
 	}
 
 	return inspect, nil
@@ -271,7 +277,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		return nil, err
 	}
 
-	if i.IsOfflineAudit() {
+	if i.IsOfflineAudit() || i.cnf.isBaseObjectAuditOff {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
 		err = i.CheckInvalid(nodes[0])
@@ -280,7 +286,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		return nil, err
 	}
 
-	if !i.result.HasResult() && i.cnf.dmlExplainPreCheckEnable {
+	if !i.result.HasResult() && i.cnf.dmlExplainPreCheckEnable && !i.cnf.isBaseObjectAuditOff {
 		if err = i.CheckExplain(nodes[0]); err != nil {
 			return nil, err
 		}
@@ -360,7 +366,11 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 	if oscCommandLine != "" {
 		i.result.Add(driver.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
-	i.Ctx.UpdateContext(nodes[0])
+
+	if !i.cnf.isContextOff {
+		i.Ctx.UpdateContext(nodes[0])
+	}
+
 	return i.result, nil
 }
 
@@ -423,6 +433,8 @@ type Config struct {
 	dmlExplainPreCheckEnable   bool
 	calculateCardinalityMaxRow int
 	compositeIndexMaxColumn    int
+	isContextOff               bool
+	isBaseObjectAuditOff       bool
 }
 
 func (i *MysqlDriverImpl) Context() *session.Context {

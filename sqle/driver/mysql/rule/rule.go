@@ -116,6 +116,8 @@ const (
 	ConfigDDLGhostMinSize          = "ddl_ghost_min_size"
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
+	ConfigBaseObjectCheckDisable   = "disable_base_object_check"
+	ConfigContextDisable           = "disable_context_disable"
 )
 
 type RuleHandlerInput struct {
@@ -325,6 +327,24 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		Func: nil,
+	},
+
+	{
+		Rule: driver.Rule{
+			Name:     ConfigBaseObjectCheckDisable,
+			Desc:     "关闭基础对象检查",
+			Level:    driver.RuleLevelNormal,
+			Category: RuleTypeGlobalConfig,
+		},
+	},
+
+	{
+		Rule: driver.Rule{
+			Name:     ConfigContextDisable,
+			Desc:     "关闭上下文关联检查",
+			Level:    driver.RuleLevelNormal,
+			Category: RuleTypeGlobalConfig,
+		},
 	},
 
 	// rule
