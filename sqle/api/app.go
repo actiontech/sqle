@@ -150,6 +150,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/configurations/oauth2", v1.GetOauth2Configuration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/oauth2", v1.UpdateOauth2Configuration, AdminUserAllowed())
 
+		// statistic
+		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, AdminUserAllowed())
+		v1Router.GET("/statistic/license/usage", v1.GetLicenseUsageV1, AdminUserAllowed())
+		v1Router.GET("/statistic/task/rejected_percent_group_by_creator", v1.GetTaskRejectedPercentGroupByCreatorV1, AdminUserAllowed())
+		v1Router.GET("/statistic/task/rejected_percent_group_by_instance", v1.GetTaskRejectedPercentGroupByInstanceV1, AdminUserAllowed())
+		v1Router.GET("/statistic/tasks/counts", v1.GetTaskCountsV1, AdminUserAllowed())
 	}
 
 	// user

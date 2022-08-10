@@ -24,7 +24,7 @@ type GetTaskCountsResV1 struct {
 // @Success 200 {object} v1.GetTaskCountsResV1
 // @router /v1/statistic/tasks/counts [get]
 func GetTaskCountsV1(c echo.Context) error {
-	return nil
+	return getTaskCounts(c)
 }
 
 type TaskStageDuration struct {
@@ -142,8 +142,8 @@ func GetTaskStatusPercentV1(c echo.Context) error {
 }
 
 type TasksPercentCountedByInstanceType struct {
-	InstanceType string `json:"instance_type"`
-	Percent      float64   `json:"percent"`
+	InstanceType string  `json:"instance_type"`
+	Percent      float64 `json:"percent"`
 }
 
 type TasksPercentCountedByInstanceTypeV1 struct {
@@ -169,9 +169,9 @@ func GetTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
 }
 
 type TaskRejectedPercentGroupByCreator struct {
-	Creator         string `json:"creator"`
-	TaskTotalNum    uint   `json:"task_total_num"`
-	RejectedPercent float64   `json:"rejected_percent"`
+	Creator         string  `json:"creator"`
+	TaskTotalNum    uint    `json:"task_total_num"`
+	RejectedPercent float64 `json:"rejected_percent"`
 }
 
 type GetTaskRejectedPercentGroupByCreatorResV1 struct {
@@ -189,13 +189,13 @@ type GetTaskRejectedPercentGroupByCreatorResV1 struct {
 // @Success 200 {object} v1.GetTaskRejectedPercentGroupByCreatorResV1
 // @router /v1/statistic/task/rejected_percent_group_by_creator [get]
 func GetTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
-	return nil
+	return getTaskRejectedPercentGroupByCreatorV1(c)
 }
 
 type TaskRejectedPercentGroupByInstance struct {
-	InstanceName    string `json:"instance_name"`
-	TaskTotalNum    uint   `json:"task_total_num"`
-	RejectedPercent float64   `json:"rejected_percent"`
+	InstanceName    string  `json:"instance_name"`
+	TaskTotalNum    uint    `json:"task_total_num"`
+	RejectedPercent float64 `json:"rejected_percent"`
 }
 
 type GetTaskRejectedPercentGroupByInstanceResV1 struct {
@@ -213,12 +213,12 @@ type GetTaskRejectedPercentGroupByInstanceResV1 struct {
 // @Success 200 {object} v1.GetTaskRejectedPercentGroupByInstanceResV1
 // @router /v1/statistic/task/rejected_percent_group_by_instance [get]
 func GetTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
-	return nil
+	return getTaskRejectedPercentGroupByInstanceV1(c)
 }
 
 type InstanceTypePercent struct {
-	Type    string `json:"type"`
-	Percent float64   `json:"percent"`
+	Type    string  `json:"type"`
+	Percent float64 `json:"percent"`
 }
 
 type InstancesTypePercentV1 struct {
@@ -240,7 +240,7 @@ type GetInstancesTypePercentResV1 struct {
 // @Success 200 {object} v1.GetInstancesTypePercentResV1
 // @router /v1/statistic/instances/type_percent [get]
 func GetInstancesTypePercentV1(c echo.Context) error {
-	return nil
+	return getInstancesTypePercentV1(c)
 }
 
 type LicenseUsageItem struct {
@@ -270,5 +270,5 @@ type GetLicenseUsageResV1 struct {
 // @Success 200 {object} v1.GetLicenseUsageResV1
 // @router /v1/statistic/license/usage [get]
 func GetLicenseUsageV1(c echo.Context) error {
-	return nil
+	return getLicenseUsageV1(c)
 }

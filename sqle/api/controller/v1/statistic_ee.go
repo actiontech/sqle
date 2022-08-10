@@ -12,6 +12,27 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func getTaskCounts(c echo.Context) error {
+	s := model.GetStorage()
+	total, err := s.GetTaskCounts()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	todayCount, err := s.GetTaskCountsToday()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetTaskCountsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TaskCountsV1{
+			Total:      uint(total),
+			TodayCount: uint(todayCount),
+		},
+	})
+}
+
 func getInstancesTypePercentV1(c echo.Context) error {
 	s := model.GetStorage()
 
@@ -50,9 +71,5 @@ func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 }
 
 func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
-	return nil
-}
-
-func getTaskCounts(c echo.Context) error {
 	return nil
 }
