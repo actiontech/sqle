@@ -28,7 +28,7 @@ const (
 func getLicense(c echo.Context) error {
 	permission, collectedInfosContent, content, exist, err := parseLicense(c)
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, GetLicenseResV1{
@@ -50,7 +50,7 @@ func parseLicense(c echo.Context) (permission *license.LicensePermission, collec
 	s := model.GetStorage()
 	l, exist, err := s.GetLicense()
 	if err != nil {
-		return nil, "", "", false, controller.JSONBaseErrorReq(c, err)
+		return nil, "", "", false, err
 	}
 	if !exist {
 		return nil, "", "", false, nil
@@ -58,7 +58,7 @@ func parseLicense(c echo.Context) (permission *license.LicensePermission, collec
 
 	permission, collectedInfosContent, err = license.DecodeLicense(l.Content)
 	if err != nil {
-		return nil, "", "", false, controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
+		return nil, "", "", false, errors.New(errors.DataInvalid, license.ErrInvalidLicense)
 	}
 	return permission, collectedInfosContent, l.Content, exist, nil
 }

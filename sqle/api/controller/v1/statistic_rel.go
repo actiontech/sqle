@@ -15,7 +15,7 @@ import (
 func getLicenseUsageV1(c echo.Context) error {
 	permission, _, _, exist, err := parseLicense(c)
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return c.JSON(http.StatusOK, &GetLicenseUsageResV1{
