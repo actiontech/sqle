@@ -40,3 +40,19 @@ func getInstancesTypePercentV1(c echo.Context) error {
 		},
 	})
 }
+
+func getLicenseUsageV1(c echo.Context) error {
+	return nil
+}
+
+func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
+	return nil
+}
+
+func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
+	return nil
+}
+
+func getTaskCounts(c echo.Context) error {
+	return nil
+}
