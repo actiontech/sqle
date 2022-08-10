@@ -40,3 +40,7 @@ func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
 func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
+
+func getTaskPassPercentV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}
