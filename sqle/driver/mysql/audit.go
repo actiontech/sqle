@@ -758,7 +758,8 @@ insert into ... values ...
 1. schema must exist;
 2. table must exist;
 3. column must exist;
-4. value length must match column length.
+4. insert column can't duplicated;
+5. value length must match column length.
 ------------------------------------------------------------------
 */
 func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
@@ -819,6 +820,41 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 	}
 
 	if stmt.Lists != nil {
+		for _, list := range stmt.Lists {
+			if len(list) != len(insertColsName) {
+				i.result.Add(driver.RuleLevelError, ColumnsValuesNotMatchMessage)
+				break
+			}
+		}
+	}
+	return nil
+}
+
+/*
+------------------------------------------------------------------
+insert into ... values ...
+------------------------------------------------------------------
+1. insert column can't duplicated;
+2. value length must match column length.
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidInsertOffline(stmt *ast.InsertStmt) error {
+	insertColsName := []string{}
+	if stmt.Columns != nil {
+		for _, col := range stmt.Columns {
+			insertColsName = append(insertColsName, col.Name.L)
+		}
+
+	} else if stmt.Setlist != nil {
+		for _, set := range stmt.Setlist {
+			insertColsName = append(insertColsName, set.Column.Name.L)
+		}
+	}
+	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
+		i.result.Add(driver.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
+	}
+
+	if stmt.Lists != nil && len(insertColsName) > 0 {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
 				i.result.Add(driver.RuleLevelError, ColumnsValuesNotMatchMessage)
