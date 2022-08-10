@@ -381,8 +381,11 @@ GROUP BY instances.id
 `
 	dbTypeCond := getDbTypeQueryCond(dbType)
 	query = fmt.Sprintf(query, dbTypeCond, dbTypeCond)
-
-	err = s.db.Raw(query, user.ID, opCode, user.ID, opCode).Scan(&instances).Error
+	if dbType == "" {
+		err = s.db.Raw(query, user.ID, opCode, user.ID, opCode).Scan(&instances).Error
+	} else {
+		err = s.db.Raw(query, dbType, user.ID, opCode, dbType, user.ID, opCode).Scan(&instances).Error
+	}
 	return instances, errors.ConnectStorageErrWrapper(err)
 }
 
