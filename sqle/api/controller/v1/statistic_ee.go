@@ -5,6 +5,7 @@ package v1
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -74,8 +75,93 @@ func getTaskPassPercentV1(c echo.Context) error {
 	return nil
 }
 
+type CreatorRejectedPercent struct {
+	Creator         string
+	TaskTotalNum    uint
+	RejectedPercent float64
+}
+
+type CreatorRejectedPercents []CreatorRejectedPercent
+
+func (c CreatorRejectedPercents) Len() int {
+	return len(c)
+}
+func (c CreatorRejectedPercents) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+func (c CreatorRejectedPercents) Less(i, j int) bool {
+	return c[j].RejectedPercent < c[i].RejectedPercent
+}
+
 func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
-	return nil
+	req := new(GetTaskRejectedPercentGroupByCreatorReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+	users, err := s.GetAllUserTip()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var percents []CreatorRejectedPercent
+	for _, user := range users {
+		rejected, err := s.GetWorkflowCountByReq(map[string]interface{}{
+			"filter_create_user_name": user.Name,
+			"filter_status":           model.WorkflowStatusReject,
+		})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		if rejected == 0 {
+			continue
+		}
+
+		total, err := s.GetWorkflowCountByReq(map[string]interface{}{
+			"filter_create_user_name": user.Name,
+		})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		percent := float64(rejected) / float64(total) * 100
+		percents = append(percents, CreatorRejectedPercent{
+			Creator:         user.Name,
+			TaskTotalNum:    uint(total),
+			RejectedPercent: percent,
+		})
+	}
+
+	if percents == nil {
+		return c.JSON(http.StatusOK, &GetTaskRejectedPercentGroupByCreatorResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    nil,
+		})
+	}
+
+	sort.Sort(CreatorRejectedPercents(percents))
+
+	actualPercentsCount := uint(len(percents))
+	resItemCount := req.Limit
+	if req.Limit > actualPercentsCount {
+		resItemCount = actualPercentsCount
+	}
+
+	percentsRes := make([]*TaskRejectedPercentGroupByCreator, resItemCount)
+	for i := 0; i < int(resItemCount); i++ {
+		percentsRes[i] = &TaskRejectedPercentGroupByCreator{
+			Creator:         percents[i].Creator,
+			TaskTotalNum:    percents[i].TaskTotalNum,
+			RejectedPercent: percents[i].RejectedPercent,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetTaskRejectedPercentGroupByCreatorResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    percentsRes,
+	})
 }
 
 func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
