@@ -340,36 +340,47 @@ func getTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	s := model.GetStorage()
-	tasks, _, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
+	tasks, total, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows failed: %v", err))
 	}
 
-	dbTypeToTaskCount := make(map[string]uint)
-	var total uint
+	type taskCount struct {
+		dbType string
+		count  uint
+	}
+	var taskCounts []*taskCount
 	for _, task := range tasks {
-		total++
-		if count, ok := dbTypeToTaskCount[task.TaskInstanceType.String]; ok {
-			dbTypeToTaskCount[task.TaskInstanceType.String] = count + 1
-		} else {
-			dbTypeToTaskCount[task.TaskInstanceType.String] = 1
+		found := false
+		for _, count := range taskCounts {
+			if count.dbType == task.TaskInstanceType.String {
+				count.count += 1
+				found = true
+				break
+			}
+		}
+		if !found {
+			taskCounts = append(taskCounts, &taskCount{
+				dbType: task.TaskInstanceType.String,
+				count:  1,
+			})
 		}
 	}
 
-	var percents []TasksPercentCountedByInstanceType
-	for dbType, count := range dbTypeToTaskCount {
-		percents = append(percents, TasksPercentCountedByInstanceType{
-			InstanceType: dbType,
-			Percent:      float64(count) / float64(total) * 100,
-			Count:        count,
-		})
+	percents := make([]TasksPercentCountedByInstanceType, len(taskCounts))
+	for i, count := range taskCounts {
+		percents[i] = TasksPercentCountedByInstanceType{
+			InstanceType: count.dbType,
+			Percent:      float64(count.count) / float64(total) * 100,
+			Count:        count.count,
+		}
 	}
 
 	return c.JSON(http.StatusOK, &GetTasksPercentCountedByInstanceTypeResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &TasksPercentCountedByInstanceTypeV1{
 			TaskPercents: percents,
-			TaskTotalNum: total,
+			TaskTotalNum: uint(total),
 		},
 	})
 }
