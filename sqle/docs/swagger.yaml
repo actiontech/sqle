@@ -1317,13 +1317,13 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetTaskStatusPercentResV1:
+  v1.GetTaskStatusCountResV1:
     properties:
       code:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v1.TaskStatusPercentV1'
+        $ref: '#/definitions/v1.TaskStatusCountV1'
         type: object
       message:
         example: ok
@@ -2130,20 +2130,22 @@ definitions:
       minutes:
         type: integer
     type: object
-  v1.TaskStatusPercentV1:
+  v1.TaskStatusCountV1:
     properties:
-      closed_percent:
-        type: number
-      executing_percent:
-        type: number
-      execution_success_percent:
-        type: number
-      rejected_percent:
-        type: number
-      waiting_for_audit_percent:
-        type: number
-      waiting_for_execution_percent:
-        type: number
+      closed_count:
+        type: integer
+      executing_count:
+        type: integer
+      executing_failed_count:
+        type: integer
+      execution_success_count:
+        type: integer
+      rejected_count:
+        type: integer
+      waiting_for_audit_count:
+        type: integer
+      waiting_for_execution_count:
+        type: integer
     type: object
   v1.TasksPercentCountedByInstanceType:
     properties:
@@ -4825,18 +4827,18 @@ paths:
       summary: 获取工单通过率
       tags:
       - statistic
-  /v1/statistic/tasks/status_percent:
+  /v1/statistic/tasks/status_count:
     get:
-      description: get percent of task status
-      operationId: getTaskStatusPercentV1
+      description: get count of task status
+      operationId: getTaskStatusCountV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskStatusPercentResV1'
+            $ref: '#/definitions/v1.GetTaskStatusCountResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取工单状态百分比
+      summary: 获取各种状态工单的数量
       tags:
       - statistic
   /v1/tasks/audits:
