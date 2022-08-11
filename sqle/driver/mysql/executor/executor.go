@@ -291,12 +291,12 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 
 func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	query := fmt.Sprintf(
-		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE in (\"BASE TABLE\",\"SYSTEM VIEW\")", schema)
+		"select TABLE_NAME from information_schema.tables where table_schema='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
 
 	if c.IsLowerCaseTableNames() {
 		schema = strings.ToLower(schema)
 		query = fmt.Sprintf(
-			"select TABLE_NAME from information_schema.tables where lower(table_schema)=\"%s\" and TABLE_TYPE in (\"BASE TABLE\",\"SYSTEM VIEW\")", schema)
+			"select TABLE_NAME from information_schema.tables where lower(table_schema)='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
 
 	}
 	result, err := c.Db.Query(query)
@@ -320,13 +320,13 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 
 func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
 	query := fmt.Sprintf(
-		"select TABLE_NAME from information_schema.tables where table_schema=\"%s\" and TABLE_TYPE=\"VIEW\"", schema)
+		"select TABLE_NAME from information_schema.tables where table_schema='%s' and TABLE_TYPE='VIEW'", schema)
 
 	if c.IsLowerCaseTableNames() {
 		schema = strings.ToLower(schema)
 
 		query = fmt.Sprintf(
-			"select TABLE_NAME from information_schema.tables where lower(table_schema)=\"%s\" and TABLE_TYPE=\"VIEW\"", schema)
+			"select TABLE_NAME from information_schema.tables where lower(table_schema)='%s' and TABLE_TYPE='VIEW'", schema)
 	}
 
 	result, err := c.Db.Query(query)
