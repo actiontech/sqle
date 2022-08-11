@@ -2981,24 +2981,24 @@ var doc = `{
                 }
             }
         },
-        "/v1/statistic/tasks/status_percent": {
+        "/v1/statistic/tasks/status_count": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get percent of task status",
+                "description": "get count of task status",
                 "tags": [
                     "statistic"
                 ],
-                "summary": "获取工单状态百分比",
-                "operationId": "getTaskStatusPercentV1",
+                "summary": "获取各种状态工单的数量",
+                "operationId": "getTaskStatusCountV1",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetTaskStatusPercentResV1"
+                            "$ref": "#/definitions/v1.GetTaskStatusCountResV1"
                         }
                     }
                 }
@@ -6792,7 +6792,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetTaskStatusPercentResV1": {
+        "v1.GetTaskStatusCountResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -6801,7 +6801,7 @@ var doc = `{
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.TaskStatusPercentV1"
+                    "$ref": "#/definitions/v1.TaskStatusCountV1"
                 },
                 "message": {
                     "type": "string",
@@ -8004,26 +8004,26 @@ var doc = `{
                 }
             }
         },
-        "v1.TaskStatusPercentV1": {
+        "v1.TaskStatusCountV1": {
             "type": "object",
             "properties": {
-                "closed_percent": {
-                    "type": "number"
+                "closed_count": {
+                    "type": "integer"
                 },
-                "executing_percent": {
-                    "type": "number"
+                "executing_count": {
+                    "type": "integer"
                 },
-                "execution_success_percent": {
-                    "type": "number"
+                "execution_success_count": {
+                    "type": "integer"
                 },
-                "rejected_percent": {
-                    "type": "number"
+                "rejected_count": {
+                    "type": "integer"
                 },
-                "waiting_for_audit_percent": {
-                    "type": "number"
+                "waiting_for_audit_count": {
+                    "type": "integer"
                 },
-                "waiting_for_execution_percent": {
-                    "type": "number"
+                "waiting_for_execution_count": {
+                    "type": "integer"
                 }
             }
         },
