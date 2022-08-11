@@ -350,21 +350,18 @@ func getTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
 		count  uint
 	}
 	var taskCounts []*taskCount
+loop:
 	for _, task := range tasks {
-		found := false
 		for _, count := range taskCounts {
 			if count.dbType == task.TaskInstanceType.String {
 				count.count += 1
-				found = true
-				break
+				continue loop
 			}
 		}
-		if !found {
-			taskCounts = append(taskCounts, &taskCount{
-				dbType: task.TaskInstanceType.String,
-				count:  1,
-			})
-		}
+		taskCounts = append(taskCounts, &taskCount{
+			dbType: task.TaskInstanceType.String,
+			count:  1,
+		})
 	}
 
 	percents := make([]TasksPercentCountedByInstanceType, len(taskCounts))
