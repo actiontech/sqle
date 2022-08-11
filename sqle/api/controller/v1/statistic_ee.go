@@ -352,7 +352,7 @@ func getTaskStatusCountV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	rejectedCount, err := s.GetWorkflowCountByRecordStatus([]string{model.WorkflowStepStateReject})
+	rejectedCount, err := s.GetWorkflowCountByStatus([]string{model.WorkflowStatusReject})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
