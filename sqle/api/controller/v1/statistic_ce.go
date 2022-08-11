@@ -44,3 +44,7 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 func getTaskPassPercentV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
+
+func getTaskCreatedCountsEachDayV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}

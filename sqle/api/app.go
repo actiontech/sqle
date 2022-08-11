@@ -159,6 +159,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/statistic/tasks/duration_of_waiting_for_audit", v1.GetTaskDurationOfWaitingForAuditV1, AdminUserAllowed())
 		v1Router.GET("/statistic/tasks/duration_of_waiting_for_execution", v1.GetTaskDurationOfWaitingForExecutionV1, AdminUserAllowed())
 		v1Router.GET("/statistic/tasks/pass_percent", v1.GetTaskPassPercentV1, AdminUserAllowed())
+		v1Router.GET("/statistic/tasks/each_day_counts", v1.GetTaskCreatedCountsEachDayV1, AdminUserAllowed())
 	}
 
 	// user
