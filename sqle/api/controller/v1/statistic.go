@@ -149,6 +149,7 @@ func GetTaskStatusPercentV1(c echo.Context) error {
 type TasksPercentCountedByInstanceType struct {
 	InstanceType string  `json:"instance_type"`
 	Percent      float64 `json:"percent"`
+	Count        uint    `json:"count"`
 }
 
 type TasksPercentCountedByInstanceTypeV1 struct {
@@ -170,7 +171,7 @@ type GetTasksPercentCountedByInstanceTypeResV1 struct {
 // @Success 200 {object} v1.GetTasksPercentCountedByInstanceTypeResV1
 // @router /v1/statistic/tasks/instance_type_percent [get]
 func GetTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
-	return nil
+	return getTasksPercentCountedByInstanceTypeV1(c)
 }
 
 type GetTaskRejectedPercentGroupByCreatorReqV1 struct {

@@ -2147,6 +2147,8 @@ definitions:
     type: object
   v1.TasksPercentCountedByInstanceType:
     properties:
+      count:
+        type: integer
       instance_type:
         type: string
       percent:

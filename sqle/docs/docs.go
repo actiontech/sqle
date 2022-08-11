@@ -8030,6 +8030,9 @@ var doc = `{
         "v1.TasksPercentCountedByInstanceType": {
             "type": "object",
             "properties": {
+                "count": {
+                    "type": "integer"
+                },
                 "instance_type": {
                     "type": "string"
                 },
