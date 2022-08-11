@@ -53,6 +53,7 @@ func getInstancesTypePercentV1(c echo.Context) error {
 		percents[i] = InstanceTypePercent{
 			Type:    count.DBType,
 			Percent: float64(count.Count) / float64(total) * 100,
+			Count:   uint(count.Count),
 		}
 	}
 
