@@ -333,3 +333,43 @@ func getTaskCreatedCountsEachDayV1(c echo.Context) error {
 		},
 	})
 }
+
+func getTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	tasks, _, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows failed: %v", err))
+	}
+
+	dbTypeToTaskCount := make(map[string]uint)
+	var total uint
+	for _, task := range tasks {
+		total++
+		if count, ok := dbTypeToTaskCount[task.TaskInstanceType.String]; ok {
+			dbTypeToTaskCount[task.TaskInstanceType.String] = count + 1
+		} else {
+			dbTypeToTaskCount[task.TaskInstanceType.String] = 1
+		}
+	}
+
+	var percents []TasksPercentCountedByInstanceType
+	for dbType, count := range dbTypeToTaskCount {
+		percents = append(percents, TasksPercentCountedByInstanceType{
+			InstanceType: dbType,
+			Percent:      float64(count) / float64(total) * 100,
+			Count:        count,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetTasksPercentCountedByInstanceTypeResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TasksPercentCountedByInstanceTypeV1{
+			TaskPercents: percents,
+			TaskTotalNum: total,
+		},
+	})
+}
