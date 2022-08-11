@@ -63,7 +63,32 @@ func getInstancesTypePercentV1(c echo.Context) error {
 }
 
 func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+
+	workFlowStepIdsHasAudit, err := s.GetWorkFlowStepIdsHasAudit()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	orderCount := len(workFlowStepIdsHasAudit)
+	if orderCount == 0 {
+		return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForAuditResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    &TaskStageDuration{Minutes: 0},
+		})
+	}
+
+	durationMin, err := s.GetDurationMinHasAudit(workFlowStepIdsHasAudit)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	averageMin := durationMin / orderCount
+
+	return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForAuditResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    &TaskStageDuration{Minutes: uint(averageMin)},
+	})
 }
 
 func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
