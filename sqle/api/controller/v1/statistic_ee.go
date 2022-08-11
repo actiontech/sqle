@@ -4,8 +4,10 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -250,5 +252,58 @@ func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetTaskRejectedPercentGroupByInstanceResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    percentsRes,
+	})
+}
+
+func getTaskCreatedCountsEachDayV1(c echo.Context) error {
+	req := new(GetTaskCreatedCountsEachDayReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	// parse date string
+	loc, err := time.LoadLocation("Local")
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	dateFrom, err := time.ParseInLocation("2006-01-02", req.FilterDateFrom, loc)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("parse dateFrom failed: %v", err))
+	}
+	dateTo, err := time.ParseInLocation("2006-01-02", req.FilterDateTo, loc)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("parse dateTo failed: %v", err))
+	}
+	dateTo = dateTo.AddDate(0, 0, 1) // 假设接口要查询第1天(date from)到第3天(date to)的趋势，那么第3天的工单创建数量是第3天0点到第4天0点之间的数量。实际需要查询的是第1天0点到第4天0点的数据
+
+	var datePoints []time.Time
+	currentDate := dateFrom
+	for !currentDate.After(dateTo) {
+		datePoints = append(datePoints, currentDate)
+		currentDate = currentDate.AddDate(0, 0, 1)
+	}
+
+	var samples []TaskCreatedCountsEachDayItem
+	s := model.GetStorage()
+	for i, j := 0, 1; j < len(datePoints); i, j = i+1, j+1 {
+		filter := map[string]interface{}{
+			"filter_create_time_from": datePoints[i],
+			"filter_create_time_to":   datePoints[j],
+		}
+		count, err := s.GetWorkflowCountByReq(filter)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("get work flow count failed: %v", err))
+		}
+		samples = append(samples, TaskCreatedCountsEachDayItem{
+			Date:  datePoints[i].Format("2006-01-02"),
+			Value: uint(count),
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetTaskCreatedCountsEachDayResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TaskCreatedCountsEachDayV1{
+			Samples: samples,
+		},
 	})
 }
