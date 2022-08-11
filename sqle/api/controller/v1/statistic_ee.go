@@ -96,7 +96,37 @@ func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
 }
 
 func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+
+	stepsHasAudits, err := s.GetWorkFlowStepsByIndexAndState(1, model.WorkflowStepStateApprove)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	stepsHasOnlines, err := s.GetWorkFlowStepsByIndexAndState(0, model.WorkflowStepStateApprove)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var durationMin float64
+	var count int
+	for _, stepsHasOnline := range stepsHasOnlines {
+		for _, stepsHasAudit := range stepsHasAudits {
+			if stepsHasAudit.WorkflowId == stepsHasOnline.WorkflowId {
+				count++
+				durationMin += stepsHasOnline.OperateAt.Sub(*stepsHasAudit.OperateAt).Minutes()
+			}
+		}
+	}
+
+	averageOnlineMin := int(durationMin) / count
+
+	return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForExecutionResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TaskStageDuration{
+			Minutes: uint(averageOnlineMin),
+		},
+	})
 }
 
 func getTaskPassPercentV1(c echo.Context) error {
