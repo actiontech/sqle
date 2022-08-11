@@ -168,6 +168,10 @@ func GetTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
 	return nil
 }
 
+type GetTaskRejectedPercentGroupByCreatorReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
+}
+
 type TaskRejectedPercentGroupByCreator struct {
 	Creator         string  `json:"creator"`
 	TaskTotalNum    uint    `json:"task_total_num"`
@@ -190,6 +194,10 @@ type GetTaskRejectedPercentGroupByCreatorResV1 struct {
 // @router /v1/statistic/task/rejected_percent_group_by_creator [get]
 func GetTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 	return getTaskRejectedPercentGroupByCreatorV1(c)
+}
+
+type GetTaskRejectedPercentGroupByInstanceReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
 }
 
 type TaskRejectedPercentGroupByInstance struct {
