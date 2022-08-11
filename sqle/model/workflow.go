@@ -695,20 +695,6 @@ func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
 	return count, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowCountByRecordStatus(status []string) (int, error) {
-	if len(status) == 0 {
-		return 0, nil
-	}
-
-	var count int
-	err := s.db.Table("workflows").
-		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
-		Where("workflow_records.status in (?)", status).
-		Count(&count).Error
-
-	return count, errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) GetWorkflowCountByStatus(status []string) (int, error) {
 	if len(status) == 0 {
 		return 0, nil
