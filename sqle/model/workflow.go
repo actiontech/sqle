@@ -633,3 +633,47 @@ LIMIT 1`
 	}
 	return instance, err
 }
+
+// GetWorkFlowStepIdsHasAudit 返回走完所有审核流程的workflow_steps的id
+// 返回以workflow_record_id为分组的倒数第二条记录的workflow_steps.id
+// 如果存在多个工单审核流程，workflow_record_id为分组的倒数第二条记录仍然是判断审核流程是否结束的依据
+// 如果不存在工单审核流程，LIMIT 1 offset 1 会将workflow过滤掉
+// 每个workflow_record_id对应一个workflows表中的一条记录，返回的id数组可以作为工单数量统计的依据
+func (s *Storage) GetWorkFlowStepIdsHasAudit() ([]uint, error) {
+	query := `SELECT id
+FROM workflow_steps a
+WHERE a.id =
+      (SELECT id
+       FROM workflow_steps
+       WHERE workflow_id = a.workflow_id
+       ORDER BY id desc
+       LIMIT 1 offset 1)
+  and a.state = 'approved'`
+
+	workflowSteps := []*WorkflowStep{}
+	err := s.db.Raw(query).Scan(&workflowSteps).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	ids := make([]uint, 0)
+	for _, workflowStep := range workflowSteps {
+		ids = append(ids, workflowStep.ID)
+	}
+
+	return ids, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
+	type minStruct struct {
+		Min int `json:"min"`
+	}
+
+	var result minStruct
+	err := s.db.Model(&Workflow{}).
+		Select("sum(timestampdiff(minute, workflows.created_at, workflow_steps.operate_at)) as min").
+		Joins("LEFT JOIN workflow_steps ON workflow_steps.workflow_record_id = workflows.workflow_record_id").
+		Where("workflow_steps.id IN (?)", ids).Scan(&result).Error
+
+	return result.Min, errors.ConnectStorageErrWrapper(err)
+}
