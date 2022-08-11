@@ -677,3 +677,42 @@ func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
 
 	return result.Min, errors.ConnectStorageErrWrapper(err)
 }
+
+// GetApprovedWorkflowCount 将会返回未被回收且审核流程全部通过的工单数, 包括上线成功(失败)的工单和等待上线的工单, 不包括关闭的工单
+func (s *Storage) GetApprovedWorkflowCount() (int, error) {
+	query := `
+	select count(1) as count
+from workflows 
+left join workflow_records on workflows.workflow_record_id = workflow_records.id
+left join workflow_steps on workflow_records.current_workflow_step_id = workflow_steps.id 
+left join workflow_step_templates on workflow_steps.workflow_step_template_id = workflow_step_templates.id 
+where 
+workflow_records.status = 'finished'
+or
+workflow_step_templates.type = 'sql_execute';
+`
+	var count = struct {
+		Count int `json:"count"`
+	}{}
+	return count.Count, errors.New(errors.ConnectStorageError, s.db.Raw(query).Scan(&count).Error)
+}
+
+func (s *Storage) GetAllWorkflowCount() (int, error) {
+	var count int
+	return count, errors.New(errors.ConnectStorageError, s.db.Model(&Workflow{}).Count(&count).Error)
+}
+
+func (s *Storage) GetWorkflowCountByTaskStatus(status []string) (int, error) {
+	if len(status) == 0 {
+		return 0, nil
+	}
+
+	var count int
+	err := s.db.Table("workflows").
+		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
+		Joins("left join tasks on workflow_records.task_id = tasks.id").
+		Where("tasks.status in (?)", status).
+		Count(&count).Error
+
+	return count, errors.New(errors.ConnectStorageError, err)
+}

@@ -100,7 +100,48 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 }
 
 func getTaskPassPercentV1(c echo.Context) error {
-	return nil
+	auditPassPercent, err := getAuditPassPercent()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	executionSuccessPercent, err := getExecutionSuccessPercent()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetTaskPassPercentResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TaskPassPercentV1{
+			AuditPassPercent:        auditPassPercent * 100,
+			ExecutionSuccessPercent: executionSuccessPercent * 100,
+		},
+	})
+}
+
+func getAuditPassPercent() (float64, error) {
+	s := model.GetStorage()
+	passCount, err := s.GetApprovedWorkflowCount()
+	if err != nil {
+		return 0, err
+	}
+	allCount, err := s.GetAllWorkflowCount()
+	if allCount == 0 {
+		return 0, nil
+	}
+	return float64(passCount) / float64(allCount), err
+}
+
+func getExecutionSuccessPercent() (float64, error) {
+	s := model.GetStorage()
+	successCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
+	if err != nil {
+		return 0, err
+	}
+	allCount, err := s.GetAllWorkflowCount()
+	if allCount == 0 {
+		return 0, nil
+	}
+	return float64(successCount) / float64(allCount), err
 }
 
 type CreatorRejectedPercent struct {
@@ -330,6 +371,51 @@ func getTaskCreatedCountsEachDayV1(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &TaskCreatedCountsEachDayV1{
 			Samples: samples,
+		},
+	})
+}
+
+func getTaskStatusCountV1(c echo.Context) error {
+	s := model.GetStorage()
+	executionSuccessCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	executingCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuting})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	executingFailedCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	waitingForExecutionCount, err := s.GetWorkflowCountByStepType([]string{model.WorkflowStepTypeSQLExecute})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	rejectedCount, err := s.GetWorkflowCountByStatus([]string{model.WorkflowStatusReject})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	waitingForAuditCount, err := s.GetWorkflowCountByStepType([]string{model.WorkflowStepTypeSQLReview})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	closedCount, err := s.GetWorkflowCountByStatus([]string{model.WorkflowStatusCancel})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetTaskStatusCountResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TaskStatusCountV1{
+			ExecutionSuccessCount:    executionSuccessCount,
+			ExecutingCount:           executingCount,
+			ExecutingFailedCount:     executingFailedCount,
+			WaitingForExecutionCount: waitingForExecutionCount,
+			RejectedCount:            rejectedCount,
+			WaitingForAuditCount:     waitingForAuditCount,
+			ClosedCount:              closedCount,
 		},
 	})
 }
