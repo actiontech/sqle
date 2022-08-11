@@ -678,8 +678,8 @@ func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
 	return result.Min, errors.ConnectStorageErrWrapper(err)
 }
 
-// GetWorkFlowStepsByIndex 返回以workflow_id为分组且审核状态为approved的倒数第index个记录
-func (s *Storage) GetWorkFlowStepsByIndex(index int) ([]*WorkflowStep, error) {
+// GetWorkFlowStepsByIndexAndState 返回以workflow_id为分组的倒数第index个记录
+func (s *Storage) GetWorkFlowStepsByIndexAndState(index int, state string) ([]*WorkflowStep, error) {
 	query := fmt.Sprintf(`SELECT *
 FROM workflow_steps a
 WHERE a.id =
@@ -688,7 +688,7 @@ WHERE a.id =
        WHERE workflow_id = a.workflow_id
        ORDER BY id desc
        limit 1 offset %d)
-  and a.state = 'approved';`, index)
+  and a.state = '%s';`, index, state)
 
 	workflowSteps := make([]*WorkflowStep, 0)
 	return workflowSteps, s.db.Raw(query).Scan(&workflowSteps).Error
