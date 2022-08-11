@@ -72,7 +72,42 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 }
 
 func getTaskPassPercentV1(c echo.Context) error {
-	return nil
+	auditPassPercent, err := getAuditPassPercent()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	executionSuccessPercent, err := getExecutionSuccessPercent()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetTaskPassPercentResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TaskPassPercentV1{
+			AuditPassPercent:        auditPassPercent * 100,
+			ExecutionSuccessPercent: executionSuccessPercent * 100,
+		},
+	})
+}
+
+func getAuditPassPercent() (float64, error) {
+	s := model.GetStorage()
+	passCount, err := s.GetApprovedWorkflowCount()
+	if err != nil {
+		return 0, err
+	}
+	allCount, err := s.GetAllWorkflowCount()
+	return float64(passCount) / float64(allCount), err
+}
+
+func getExecutionSuccessPercent() (float64, error) {
+	s := model.GetStorage()
+	successCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
+	if err != nil {
+		return 0, err
+	}
+	allCount, err := s.GetAllWorkflowCount()
+	return float64(successCount) / float64(allCount), err
 }
 
 type CreatorRejectedPercent struct {
