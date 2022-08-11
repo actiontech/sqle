@@ -7219,6 +7219,9 @@ var doc = `{
         "v1.InstanceTypePercent": {
             "type": "object",
             "properties": {
+                "count": {
+                    "type": "integer"
+                },
                 "percent": {
                     "type": "number"
                 },
