@@ -663,3 +663,17 @@ WHERE a.id =
 
 	return ids, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
+	type minStruct struct {
+		Min int `json:"min"`
+	}
+
+	var result minStruct
+	err := s.db.Model(&Workflow{}).
+		Select("sum(timestampdiff(minute, workflows.created_at, workflow_steps.operate_at)) as min").
+		Joins("LEFT JOIN workflow_steps ON workflow_steps.workflow_record_id = workflows.workflow_record_id").
+		Where("workflow_steps.id IN (?)", ids).Scan(&result).Error
+
+	return result.Min, errors.ConnectStorageErrWrapper(err)
+}
