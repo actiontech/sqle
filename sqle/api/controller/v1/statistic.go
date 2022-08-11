@@ -232,6 +232,7 @@ func GetTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
 type InstanceTypePercent struct {
 	Type    string  `json:"type"`
 	Percent float64 `json:"percent"`
+	Count   uint    `json:"count"`
 }
 
 type InstancesTypePercentV1 struct {
