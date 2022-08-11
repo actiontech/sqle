@@ -161,6 +161,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/statistic/tasks/pass_percent", v1.GetTaskPassPercentV1, AdminUserAllowed())
 		v1Router.GET("/statistic/tasks/each_day_counts", v1.GetTaskCreatedCountsEachDayV1, AdminUserAllowed())
 		v1Router.GET("/statistic/tasks/status_count", v1.GetTaskStatusCountV1, AdminUserAllowed())
+		v1Router.GET("/statistic/tasks/instance_type_percent", v1.GetTasksPercentCountedByInstanceTypeV1, AdminUserAllowed())
 	}
 
 	// user

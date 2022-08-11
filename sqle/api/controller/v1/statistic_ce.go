@@ -52,3 +52,7 @@ func getTaskCreatedCountsEachDayV1(c echo.Context) error {
 func getTaskStatusCountV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
+
+func getTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}

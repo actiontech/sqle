@@ -14,6 +14,7 @@ type WorkflowListDetail struct {
 	TaskPassRate            float64        `json:"task_pass_rate"`
 	TaskScore               sql.NullInt32  `json:"task_score"`
 	TaskInstance            sql.NullString `json:"task_instance_name"`
+	TaskInstanceType        sql.NullString `json:"task_instance_type"`
 	TaskInstanceDeletedAt   *time.Time     `json:"task_instance_deleted_at"`
 	TaskInstanceSchema      string         `json:"task_instance_schema"`
 	TaskStatus              string         `json:"task_status"`
@@ -28,7 +29,7 @@ type WorkflowListDetail struct {
 
 var workflowsQueryTpl = `SELECT w.id AS workflow_id, w.subject, w.desc, wr.status,
 tasks.status AS task_status, tasks.pass_rate AS task_pass_rate, tasks.score AS task_score, tasks.instance_schema AS task_instance_schema,
-inst.name AS task_instance_name, inst.deleted_at AS task_instance_deleted_at,
+inst.name AS task_instance_name, inst.db_type AS task_instance_type, inst.deleted_at AS task_instance_deleted_at,
 create_user.login_name AS create_user_name, create_user.deleted_at AS create_user_deleted_at,
 w.created_at AS create_time, curr_wst.type AS current_step_type, 
 GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name,'')) AS current_step_assignee_user_name_list,
