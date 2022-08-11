@@ -678,6 +678,21 @@ func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
 	return result.Min, errors.ConnectStorageErrWrapper(err)
 }
 
+// GetWorkFlowStepsByIndex 返回以workflow_id为分组且审核状态为approved的倒数第index个记录
+func (s *Storage) GetWorkFlowStepsByIndex(index int) ([]*WorkflowStep, error) {
+	query := fmt.Sprintf(`SELECT *
+FROM workflow_steps a
+WHERE a.id =
+      (SELECT id
+       FROM workflow_steps
+       WHERE workflow_id = a.workflow_id
+       ORDER BY id desc
+       limit 1 offset %d)
+  and a.state = 'approved';`, index)
+
+	workflowSteps := make([]*WorkflowStep, 0)
+	return workflowSteps, s.db.Raw(query).Scan(&workflowSteps).Error
+}
 
 func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
 	if len(stepTypes) == 0 {
