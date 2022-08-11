@@ -645,7 +645,7 @@ FROM workflow_steps a
 WHERE a.id =
       (SELECT id
        FROM workflow_steps
-       WHERE workflow_record_id = a.workflow_record_id
+       WHERE workflow_id = a.workflow_id
        ORDER BY id desc
        LIMIT 1 offset 1)
   and a.state = 'approved'`
