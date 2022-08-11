@@ -1610,6 +1610,8 @@ definitions:
     type: object
   v1.InstanceTypePercent:
     properties:
+      count:
+        type: integer
       percent:
         type: number
       type:
