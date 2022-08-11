@@ -374,3 +374,48 @@ func getTaskCreatedCountsEachDayV1(c echo.Context) error {
 		},
 	})
 }
+
+func getTaskStatusCountV1(c echo.Context) error {
+	s := model.GetStorage()
+	executionSuccessCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	executingCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuting})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	executingFailedCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	waitingForExecutionCount, err := s.GetWorkflowCountByStepType([]string{model.WorkflowStepTypeSQLExecute})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	rejectedCount, err := s.GetWorkflowCountByStatus([]string{model.WorkflowStatusReject})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	waitingForAuditCount, err := s.GetWorkflowCountByStepType([]string{model.WorkflowStepTypeSQLReview})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	closedCount, err := s.GetWorkflowCountByStatus([]string{model.WorkflowStatusCancel})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetTaskStatusCountResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TaskStatusCountV1{
+			ExecutionSuccessCount:    executionSuccessCount,
+			ExecutingCount:           executingCount,
+			ExecutingFailedCount:     executingFailedCount,
+			WaitingForExecutionCount: waitingForExecutionCount,
+			RejectedCount:            rejectedCount,
+			WaitingForAuditCount:     waitingForAuditCount,
+			ClosedCount:              closedCount,
+		},
+	})
+}
