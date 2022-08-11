@@ -419,3 +419,51 @@ func getTaskStatusCountV1(c echo.Context) error {
 		},
 	})
 }
+
+func getTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	tasks, total, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows failed: %v", err))
+	}
+
+	type taskCount struct {
+		dbType string
+		count  uint
+	}
+	var taskCounts []*taskCount
+loop:
+	for _, task := range tasks {
+		for _, count := range taskCounts {
+			if count.dbType == task.TaskInstanceType.String {
+				count.count += 1
+				continue loop
+			}
+		}
+		taskCounts = append(taskCounts, &taskCount{
+			dbType: task.TaskInstanceType.String,
+			count:  1,
+		})
+	}
+
+	percents := make([]TasksPercentCountedByInstanceType, len(taskCounts))
+	for i, count := range taskCounts {
+		percents[i] = TasksPercentCountedByInstanceType{
+			InstanceType: count.dbType,
+			Percent:      float64(count.count) / float64(total) * 100,
+			Count:        count.count,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetTasksPercentCountedByInstanceTypeResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &TasksPercentCountedByInstanceTypeV1{
+			TaskPercents: percents,
+			TaskTotalNum: uint(total),
+		},
+	})
+}
