@@ -120,30 +120,30 @@ func GetTaskCreatedCountsEachDayV1(c echo.Context) error {
 	return getTaskCreatedCountsEachDayV1(c)
 }
 
-type TaskStatusPercentV1 struct {
-	ExecutionSuccessPercent    float64 `json:"execution_success_percent"`
-	ExecutingPercent           float64 `json:"executing_percent"`
-	WaitingForExecutionPercent float64 `json:"waiting_for_execution_percent"`
-	RejectedPercent            float64 `json:"rejected_percent"`
-	WaitingForAuditPercent     float64 `json:"waiting_for_audit_percent"`
-	ClosedPercent              float64 `json:"closed_percent"`
+type TaskStatusCountV1 struct {
+	ExecutionSuccessCount    int `json:"execution_success_count"`
+	ExecutingCount           int `json:"executing_count"`
+	WaitingForExecutionCount int `json:"waiting_for_execution_count"`
+	RejectedCount            int `json:"rejected_count"`
+	WaitingForAuditCount     int `json:"waiting_for_audit_count"`
+	ClosedCount              int `json:"closed_count"`
 }
 
-type GetTaskStatusPercentResV1 struct {
+type GetTaskStatusCountResV1 struct {
 	controller.BaseRes
-	Data *TaskStatusPercentV1 `json:"data"`
+	Data *TaskStatusCountV1 `json:"data"`
 }
 
 // GetTaskStatusPercentV1
-// @Summary 获取工单状态百分比
-// @Description get percent of task status
+// @Summary 获取各种状态工单的数量
+// @Description get count of task status
 // @Tags statistic
-// @Id getTaskStatusPercentV1
+// @Id getTaskStatusCountV1
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.GetTaskStatusPercentResV1
-// @router /v1/statistic/tasks/status_percent [get]
-func GetTaskStatusPercentV1(c echo.Context) error {
-	return nil
+// @Success 200 {object} v1.GetTaskStatusCountResV1
+// @router /v1/statistic/tasks/status_count [get]
+func GetTaskStatusCountV1(c echo.Context) error {
+	return getTaskStatusCountV1(c)
 }
 
 type TasksPercentCountedByInstanceType struct {
