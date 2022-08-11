@@ -87,6 +87,11 @@ func GetTaskPassPercentV1(c echo.Context) error {
 	return getTaskPassPercentV1(c)
 }
 
+type GetTaskCreatedCountsEachDayReqV1 struct {
+	FilterDateFrom string `json:"filter_date_from" query:"filter_date_from" valid:"required"`
+	FilterDateTo   string `json:"filter_date_to" query:"filter_date_to" valid:"required"`
+}
+
 type TaskCreatedCountsEachDayItem struct {
 	Date  string `json:"date" example:"2022-08-24"`
 	Value uint   `json:"value"`
@@ -112,7 +117,7 @@ type GetTaskCreatedCountsEachDayResV1 struct {
 // @Success 200 {object} v1.GetTaskCreatedCountsEachDayResV1
 // @router /v1/statistic/tasks/each_day_counts [get]
 func GetTaskCreatedCountsEachDayV1(c echo.Context) error {
-	return nil
+	return getTaskCreatedCountsEachDayV1(c)
 }
 
 type TaskStatusPercentV1 struct {
