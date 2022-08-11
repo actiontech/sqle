@@ -8013,6 +8013,9 @@ var doc = `{
                 "executing_count": {
                     "type": "integer"
                 },
+                "executing_failed_count": {
+                    "type": "integer"
+                },
                 "execution_success_count": {
                     "type": "integer"
                 },
