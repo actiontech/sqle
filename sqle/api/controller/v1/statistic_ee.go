@@ -22,7 +22,10 @@ func getTaskCounts(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	todayCount, err := s.GetTaskCountsToday()
+	t := time.Now()
+	zeroClockToday := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+
+	todayCount, err := s.GetWorkFlowCountBetweenStartTimeAndEndTime(zeroClockToday, time.Now())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -139,11 +142,11 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 }
 
 func getAllExecutedSuccessWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsBO, error) {
-	return s.GetWorkFlowStepsByIndexAndState(0, model.WorkflowStepStateApprove)
+	return s.GetWorkFlowReverseStepsByIndexAndState(0, model.WorkflowStepStateApprove)
 }
 
 func getAllFinalAuditedPassWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsBO, error) {
-	return s.GetWorkFlowStepsByIndexAndState(1, model.WorkflowStepStateApprove)
+	return s.GetWorkFlowReverseStepsByIndexAndState(1, model.WorkflowStepStateApprove)
 }
 
 func getTaskPassPercentV1(c echo.Context) error {
