@@ -98,11 +98,13 @@ func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
 func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 	s := model.GetStorage()
 
+	// 获取所有最后一位审核人审核通过的WorkStep
 	stepsHasAudits, err := getAllFinalAuditedPassWorkStepBO(s)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// 获取所有上线成功的WorkStep
 	stepsHasOnlines, err := getAllExecutedSuccessWorkStepBO(s)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
