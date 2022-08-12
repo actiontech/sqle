@@ -678,6 +678,7 @@ func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
 	return result.Min, errors.ConnectStorageErrWrapper(err)
 }
 
+// WorkFlowStepsBO BO是business object的缩写，表示业务对象
 type WorkFlowStepsBO struct {
 	ID         uint
 	OperateAt  *time.Time
