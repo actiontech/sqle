@@ -770,8 +770,7 @@ func (s *Storage) GetWorkflowCountByTaskStatus(status []string) (int, error) {
 	return count, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetTodayWorkflowCount() (int64, error) {
+func (s *Storage) GetWorkFlowCountBetweenStartTimeAndEndTime(startTime, endTime time.Time) (int64, error) {
 	var count int64
-	zeroClockToday := time.Now().Format("2006-01-02")
-	return count, s.db.Model(&Workflow{}).Where("created_at >= ?", zeroClockToday).Count(&count).Error
+	return count, s.db.Model(&Workflow{}).Where("created_at BETWEEN ? and ?", startTime, endTime).Count(&count).Error
 }
