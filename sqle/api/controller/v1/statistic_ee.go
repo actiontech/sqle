@@ -22,7 +22,10 @@ func getTaskCounts(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	todayCount, err := s.GetTodayWorkflowCount()
+	t := time.Now()
+	zeroClockToday := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+
+	todayCount, err := s.GetWorkFlowCountBetweenStartTimeAndEndTime(zeroClockToday, time.Now())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
