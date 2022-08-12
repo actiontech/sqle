@@ -678,9 +678,15 @@ func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
 	return result.Min, errors.ConnectStorageErrWrapper(err)
 }
 
+type WorkFlowStepsBO struct {
+	ID         uint
+	OperateAt  *time.Time
+	WorkflowId uint
+}
+
 // GetWorkFlowStepsByIndexAndState 返回以workflow_id为分组的倒数第index个记录
-func (s *Storage) GetWorkFlowStepsByIndexAndState(index int, state string) ([]*WorkflowStep, error) {
-	query := fmt.Sprintf(`SELECT *
+func (s *Storage) GetWorkFlowStepsByIndexAndState(index int, state string) ([]*WorkFlowStepsBO, error) {
+	query := fmt.Sprintf(`SELECT id,operate_at,workflow_id
 FROM workflow_steps a
 WHERE a.id =
       (SELECT id
@@ -690,8 +696,8 @@ WHERE a.id =
        limit 1 offset %d)
   and a.state = '%s';`, index, state)
 
-	workflowSteps := make([]*WorkflowStep, 0)
-	return workflowSteps, s.db.Raw(query).Scan(&workflowSteps).Error
+	workflowStepsBO := make([]*WorkFlowStepsBO, 0)
+	return workflowStepsBO, s.db.Raw(query).Scan(&workflowStepsBO).Error
 }
 
 func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
