@@ -685,8 +685,8 @@ type WorkFlowStepsBO struct {
 	WorkflowId uint
 }
 
-// GetWorkFlowStepsByIndexAndState 返回以workflow_id为分组的倒数第index个记录
-func (s *Storage) GetWorkFlowStepsByIndexAndState(index int, state string) ([]*WorkFlowStepsBO, error) {
+// GetWorkFlowReverseStepsByIndexAndState 返回以workflow_id为分组的倒数第index个记录
+func (s *Storage) GetWorkFlowReverseStepsByIndexAndState(index int, state string) ([]*WorkFlowStepsBO, error) {
 	query := fmt.Sprintf(`SELECT id,operate_at,workflow_id
 FROM workflow_steps a
 WHERE a.id =
@@ -768,4 +768,9 @@ func (s *Storage) GetWorkflowCountByTaskStatus(status []string) (int, error) {
 		Count(&count).Error
 
 	return count, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetWorkFlowCountBetweenStartTimeAndEndTime(startTime, endTime time.Time) (int64, error) {
+	var count int64
+	return count, s.db.Model(&Workflow{}).Where("created_at BETWEEN ? and ?", startTime, endTime).Count(&count).Error
 }
