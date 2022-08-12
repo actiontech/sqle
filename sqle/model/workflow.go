@@ -583,8 +583,8 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflows.created_at < ? "+
-			"AND (workflow_records.status = \"finished\" "+
-			"OR workflow_records.status = \"canceled\" "+
+			"AND (workflow_records.status = 'finished' "+
+			"OR workflow_records.status = 'canceled' "+
 			"OR workflow_records.status IS NULL)", start).
 		Scan(&workflows).Error
 	return workflows, errors.New(errors.ConnectStorageError, err)
@@ -596,7 +596,7 @@ func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflow_records.scheduled_at IS NOT NULL "+
 			"AND workflow_records.scheduled_at <= ? "+
-			"AND workflow_records.status = \"on_process\"", time.Now()).
+			"AND workflow_records.status = 'on_process'", time.Now()).
 		Scan(&workflows).Error
 	return workflows, errors.New(errors.ConnectStorageError, err)
 }
@@ -678,6 +678,28 @@ func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
 	return result.Min, errors.ConnectStorageErrWrapper(err)
 }
 
+// WorkFlowStepsBO BO是business object的缩写，表示业务对象
+type WorkFlowStepsBO struct {
+	ID         uint
+	OperateAt  *time.Time
+	WorkflowId uint
+}
+
+// GetWorkFlowStepsByIndexAndState 返回以workflow_id为分组的倒数第index个记录
+func (s *Storage) GetWorkFlowStepsByIndexAndState(index int, state string) ([]*WorkFlowStepsBO, error) {
+	query := fmt.Sprintf(`SELECT id,operate_at,workflow_id
+FROM workflow_steps a
+WHERE a.id =
+      (SELECT id
+       FROM workflow_steps
+       WHERE workflow_id = a.workflow_id
+       ORDER BY id desc
+       limit 1 offset %d)
+  and a.state = '%s';`, index, state)
+
+	workflowStepsBO := make([]*WorkFlowStepsBO, 0)
+	return workflowStepsBO, s.db.Raw(query).Scan(&workflowStepsBO).Error
+}
 
 func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
 	if len(stepTypes) == 0 {
