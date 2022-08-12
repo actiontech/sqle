@@ -142,11 +142,11 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 }
 
 func getAllExecutedSuccessWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsBO, error) {
-	return s.GetWorkFlowStepsByIndexAndState(0, model.WorkflowStepStateApprove)
+	return s.GetWorkFlowReverseStepsByIndexAndState(0, model.WorkflowStepStateApprove)
 }
 
 func getAllFinalAuditedPassWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsBO, error) {
-	return s.GetWorkFlowStepsByIndexAndState(1, model.WorkflowStepStateApprove)
+	return s.GetWorkFlowReverseStepsByIndexAndState(1, model.WorkflowStepStateApprove)
 }
 
 func getTaskPassPercentV1(c echo.Context) error {
