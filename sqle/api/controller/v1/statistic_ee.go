@@ -98,12 +98,12 @@ func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
 func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 	s := model.GetStorage()
 
-	stepsHasAudits, err := s.GetWorkFlowStepsByIndexAndState(1, model.WorkflowStepStateApprove)
+	stepsHasAudits, err := getAllFinalAuditedPassWorkStepBO(s)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	stepsHasOnlines, err := s.GetWorkFlowStepsByIndexAndState(0, model.WorkflowStepStateApprove)
+	stepsHasOnlines, err := getAllExecutedSuccessWorkStepBO(s)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -134,6 +134,14 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 			Minutes: uint(averageOnlineMin),
 		},
 	})
+}
+
+func getAllExecutedSuccessWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsBO, error) {
+	return s.GetWorkFlowStepsByIndexAndState(0, model.WorkflowStepStateApprove)
+}
+
+func getAllFinalAuditedPassWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsBO, error) {
+	return s.GetWorkFlowStepsByIndexAndState(1, model.WorkflowStepStateApprove)
 }
 
 func getTaskPassPercentV1(c echo.Context) error {
