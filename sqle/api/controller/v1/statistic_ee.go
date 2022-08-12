@@ -17,7 +17,7 @@ import (
 
 func getTaskCounts(c echo.Context) error {
 	s := model.GetStorage()
-	total, err := s.GetTaskCounts()
+	total, err := s.GetAllWorkflowCount()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
