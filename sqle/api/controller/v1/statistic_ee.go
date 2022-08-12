@@ -119,6 +119,13 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 		}
 	}
 
+	if count == 0 {
+		return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForExecutionResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    &TaskStageDuration{Minutes: 0},
+		})
+	}
+
 	averageOnlineMin := int(durationMin) / count
 
 	return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForExecutionResV1{
