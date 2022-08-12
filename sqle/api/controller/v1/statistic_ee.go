@@ -22,7 +22,7 @@ func getTaskCounts(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	todayCount, err := s.GetTaskCountsToday()
+	todayCount, err := s.GetTodayWorkflowCount()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
