@@ -445,14 +445,3 @@ func (s *Storage) GetTaskSQLCountByTaskID(taskId uint) (int64, error) {
 	var count int64
 	return count, s.db.Model(&ExecuteSQL{}).Where("task_id = ?", taskId).Count(&count).Error
 }
-
-func (s *Storage) GetTaskCounts() (int64, error) {
-	var count int64
-	return count, s.db.Model(&Task{}).Count(&count).Error
-}
-
-func (s *Storage) GetTaskCountsToday() (int64, error) {
-	var count int64
-	zeroClockToday := time.Now().Format("2006-01-02")
-	return count, s.db.Model(&Task{}).Where("created_at > ?", zeroClockToday).Count(&count).Error
-}
