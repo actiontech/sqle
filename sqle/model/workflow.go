@@ -640,28 +640,17 @@ LIMIT 1`
 // 如果不存在工单审核流程，LIMIT 1 offset 1 会将workflow过滤掉
 // 每个workflow_record_id对应一个workflows表中的一条记录，返回的id数组可以作为工单数量统计的依据
 func (s *Storage) GetWorkFlowStepIdsHasAudit() ([]uint, error) {
-	query := `SELECT id
-FROM workflow_steps a
-WHERE a.id =
-      (SELECT id
-       FROM workflow_steps
-       WHERE workflow_id = a.workflow_id
-       ORDER BY id desc
-       LIMIT 1 offset 1)
-  and a.state = 'approved'`
-
-	workflowSteps := []*WorkflowStep{}
-	err := s.db.Raw(query).Scan(&workflowSteps).Error
+	workFlowStepsByIndexAndState, err := s.GetWorkFlowReverseStepsByIndexAndState(1, WorkflowStepStateApprove)
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
 
 	ids := make([]uint, 0)
-	for _, workflowStep := range workflowSteps {
+	for _, workflowStep := range workFlowStepsByIndexAndState {
 		ids = append(ids, workflowStep.ID)
 	}
 
-	return ids, errors.ConnectStorageErrWrapper(err)
+	return ids, nil
 }
 
 func (s *Storage) GetDurationMinHasAudit(ids []uint) (int, error) {
