@@ -21,38 +21,38 @@ func getLicenseUsageV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
+func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
+func getWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskCounts(c echo.Context) error {
+func getWorkflowCounts(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
+func getWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
+func getWorkflowDurationOfWaitingForExecutionV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskPassPercentV1(c echo.Context) error {
+func getWorkflowPassPercentV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskCreatedCountsEachDayV1(c echo.Context) error {
+func getWorkflowCreatedCountsEachDayV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTaskStatusCountV1(c echo.Context) error {
+func getWorkflowStatusCountV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
+func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
