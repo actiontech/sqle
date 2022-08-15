@@ -861,7 +861,7 @@ delete from ... where ...
 */
 func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 	tables := make([]*ast.TableName, 0)
-	tableAlias := make(map[*ast.TableName]string, 0)
+	tableAlias := make(map[*ast.TableName]string)
 	var hasSelectStmtTableSource bool
 
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
