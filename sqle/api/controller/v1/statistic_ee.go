@@ -15,7 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func getTaskCounts(c echo.Context) error {
+func getWorkflowCounts(c echo.Context) error {
 	s := model.GetStorage()
 	total, err := s.GetAllWorkflowCount()
 	if err != nil {
@@ -30,9 +30,9 @@ func getTaskCounts(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetTaskCountsResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowCountsResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: &TaskCountsV1{
+		Data: &WorkflowCountsV1{
 			Total:      uint(total),
 			TodayCount: uint(todayCount),
 		},
@@ -69,7 +69,7 @@ func getInstancesTypePercentV1(c echo.Context) error {
 	})
 }
 
-func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
+func getWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 	s := model.GetStorage()
 
 	workFlowStepIdsHasAudit, err := s.GetWorkFlowStepIdsHasAudit()
@@ -79,9 +79,9 @@ func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
 
 	orderCount := len(workFlowStepIdsHasAudit)
 	if orderCount == 0 {
-		return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForAuditResV1{
+		return c.JSON(http.StatusOK, &GetWorkflowDurationOfWaitingForAuditResV1{
 			BaseRes: controller.NewBaseReq(nil),
-			Data:    &TaskStageDuration{Minutes: 0},
+			Data:    &WorkflowStageDuration{Minutes: 0},
 		})
 	}
 
@@ -92,13 +92,13 @@ func getTaskDurationOfWaitingForAuditV1(c echo.Context) error {
 
 	averageMin := durationMin / orderCount
 
-	return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForAuditResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowDurationOfWaitingForAuditResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    &TaskStageDuration{Minutes: uint(averageMin)},
+		Data:    &WorkflowStageDuration{Minutes: uint(averageMin)},
 	})
 }
 
-func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
+func getWorkflowDurationOfWaitingForExecutionV1(c echo.Context) error {
 	s := model.GetStorage()
 
 	// 获取所有最后一位审核人审核通过的WorkStep
@@ -125,17 +125,17 @@ func getTaskDurationOfWaitingForExecutionV1(c echo.Context) error {
 	}
 
 	if count == 0 {
-		return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForExecutionResV1{
+		return c.JSON(http.StatusOK, &GetWorkflowDurationOfWaitingForExecutionResV1{
 			BaseRes: controller.NewBaseReq(nil),
-			Data:    &TaskStageDuration{Minutes: 0},
+			Data:    &WorkflowStageDuration{Minutes: 0},
 		})
 	}
 
 	averageOnlineMin := int(durationMin) / count
 
-	return c.JSON(http.StatusOK, &GetTaskDurationOfWaitingForExecutionResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowDurationOfWaitingForExecutionResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: &TaskStageDuration{
+		Data: &WorkflowStageDuration{
 			Minutes: uint(averageOnlineMin),
 		},
 	})
@@ -149,7 +149,7 @@ func getAllFinalAuditedPassWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsB
 	return s.GetWorkFlowReverseStepsByIndexAndState(1, model.WorkflowStepStateApprove)
 }
 
-func getTaskPassPercentV1(c echo.Context) error {
+func getWorkflowPassPercentV1(c echo.Context) error {
 	auditPassPercent, err := getAuditPassPercent()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -159,9 +159,9 @@ func getTaskPassPercentV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetTaskPassPercentResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowPassPercentResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: &TaskPassPercentV1{
+		Data: &WorkflowPassPercentV1{
 			AuditPassPercent:        auditPassPercent * 100,
 			ExecutionSuccessPercent: executionSuccessPercent * 100,
 		},
@@ -196,7 +196,7 @@ func getExecutionSuccessPercent() (float64, error) {
 
 type CreatorRejectedPercent struct {
 	Creator         string
-	TaskTotalNum    uint
+	WorkflowTotalNum    uint
 	RejectedPercent float64
 }
 
@@ -212,8 +212,8 @@ func (c CreatorRejectedPercents) Less(i, j int) bool {
 	return c[j].RejectedPercent < c[i].RejectedPercent
 }
 
-func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
-	req := new(GetTaskRejectedPercentGroupByCreatorReqV1)
+func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
+	req := new(GetWorkflowRejectedPercentGroupByCreatorReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -248,13 +248,13 @@ func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 		percent := float64(rejected) / float64(total) * 100
 		percents = append(percents, CreatorRejectedPercent{
 			Creator:         user.Name,
-			TaskTotalNum:    uint(total),
+			WorkflowTotalNum:    uint(total),
 			RejectedPercent: percent,
 		})
 	}
 
 	if percents == nil {
-		return c.JSON(http.StatusOK, &GetTaskRejectedPercentGroupByCreatorResV1{
+		return c.JSON(http.StatusOK, &GetWorkflowRejectedPercentGroupByCreatorResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data:    nil,
 		})
@@ -268,16 +268,16 @@ func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 		resItemCount = actualPercentsCount
 	}
 
-	percentsRes := make([]*TaskRejectedPercentGroupByCreator, resItemCount)
+	percentsRes := make([]*WorkflowRejectedPercentGroupByCreator, resItemCount)
 	for i := 0; i < int(resItemCount); i++ {
-		percentsRes[i] = &TaskRejectedPercentGroupByCreator{
-			Creator:         percents[i].Creator,
-			TaskTotalNum:    percents[i].TaskTotalNum,
-			RejectedPercent: percents[i].RejectedPercent,
+		percentsRes[i] = &WorkflowRejectedPercentGroupByCreator{
+			Creator:          percents[i].Creator,
+			WorkflowTotalNum: percents[i].WorkflowTotalNum,
+			RejectedPercent:  percents[i].RejectedPercent,
 		}
 	}
 
-	return c.JSON(http.StatusOK, &GetTaskRejectedPercentGroupByCreatorResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowRejectedPercentGroupByCreatorResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    percentsRes,
 	})
@@ -285,7 +285,7 @@ func getTaskRejectedPercentGroupByCreatorV1(c echo.Context) error {
 
 type InstanceRejectedPercent struct {
 	InstanceName    string
-	TaskTotalNum    uint
+	WorkflowTotalNum    uint
 	RejectedPercent float64
 }
 
@@ -301,8 +301,8 @@ func (c InstanceRejectedPercents) Less(i, j int) bool {
 	return c[j].RejectedPercent < c[i].RejectedPercent
 }
 
-func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
-	req := new(GetTaskRejectedPercentGroupByInstanceReqV1)
+func getWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
+	req := new(GetWorkflowRejectedPercentGroupByInstanceReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -337,13 +337,13 @@ func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
 		percent := float64(rejected) / float64(total) * 100
 		percents = append(percents, InstanceRejectedPercent{
 			InstanceName:    inst.Name,
-			TaskTotalNum:    uint(total),
+			WorkflowTotalNum:    uint(total),
 			RejectedPercent: percent,
 		})
 	}
 
 	if percents == nil {
-		return c.JSON(http.StatusOK, &GetTaskRejectedPercentGroupByCreatorResV1{
+		return c.JSON(http.StatusOK, &GetWorkflowRejectedPercentGroupByCreatorResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data:    nil,
 		})
@@ -357,23 +357,23 @@ func getTaskRejectedPercentGroupByInstanceV1(c echo.Context) error {
 		resItemCount = actualPercentsCount
 	}
 
-	percentsRes := make([]*TaskRejectedPercentGroupByInstance, resItemCount)
+	percentsRes := make([]*WorkflowRejectedPercentGroupByInstance, resItemCount)
 	for i := 0; i < int(resItemCount); i++ {
-		percentsRes[i] = &TaskRejectedPercentGroupByInstance{
+		percentsRes[i] = &WorkflowRejectedPercentGroupByInstance{
 			InstanceName:    percents[i].InstanceName,
-			TaskTotalNum:    percents[i].TaskTotalNum,
+			WorkflowTotalNum:    percents[i].WorkflowTotalNum,
 			RejectedPercent: percents[i].RejectedPercent,
 		}
 	}
 
-	return c.JSON(http.StatusOK, &GetTaskRejectedPercentGroupByInstanceResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowRejectedPercentGroupByInstanceResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    percentsRes,
 	})
 }
 
-func getTaskCreatedCountsEachDayV1(c echo.Context) error {
-	req := new(GetTaskCreatedCountsEachDayReqV1)
+func getWorkflowCreatedCountsEachDayV1(c echo.Context) error {
+	req := new(GetWorkflowCreatedCountsEachDayReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func getTaskCreatedCountsEachDayV1(c echo.Context) error {
 		currentDate = currentDate.AddDate(0, 0, 1)
 	}
 
-	var samples []TaskCreatedCountsEachDayItem
+	var samples []WorkflowCreatedCountsEachDayItem
 	s := model.GetStorage()
 	for i, j := 0, 1; j < len(datePoints); i, j = i+1, j+1 {
 		filter := map[string]interface{}{
@@ -411,21 +411,21 @@ func getTaskCreatedCountsEachDayV1(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("get work flow count failed: %v", err))
 		}
-		samples = append(samples, TaskCreatedCountsEachDayItem{
+		samples = append(samples, WorkflowCreatedCountsEachDayItem{
 			Date:  datePoints[i].Format("2006-01-02"),
 			Value: uint(count),
 		})
 	}
 
-	return c.JSON(http.StatusOK, &GetTaskCreatedCountsEachDayResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowCreatedCountsEachDayResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: &TaskCreatedCountsEachDayV1{
+		Data: &WorkflowCreatedCountsEachDayV1{
 			Samples: samples,
 		},
 	})
 }
 
-func getTaskStatusCountV1(c echo.Context) error {
+func getWorkflowStatusCountV1(c echo.Context) error {
 	s := model.GetStorage()
 	executionSuccessCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
 	if err != nil {
@@ -456,9 +456,9 @@ func getTaskStatusCountV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetTaskStatusCountResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowStatusCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: &TaskStatusCountV1{
+		Data: &WorkflowStatusCountV1{
 			ExecutionSuccessCount:    executionSuccessCount,
 			ExecutingCount:           executingCount,
 			ExecutingFailedCount:     executingFailedCount,
@@ -470,7 +470,7 @@ func getTaskStatusCountV1(c echo.Context) error {
 	})
 }
 
-func getTasksPercentCountedByInstanceTypeV1(c echo.Context) error {
+func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -500,20 +500,20 @@ loop:
 		})
 	}
 
-	percents := make([]TasksPercentCountedByInstanceType, len(taskCounts))
+	percents := make([]WorkflowPercentCountedByInstanceType, len(taskCounts))
 	for i, count := range taskCounts {
-		percents[i] = TasksPercentCountedByInstanceType{
+		percents[i] = WorkflowPercentCountedByInstanceType{
 			InstanceType: count.dbType,
 			Percent:      float64(count.count) / float64(total) * 100,
 			Count:        count.count,
 		}
 	}
 
-	return c.JSON(http.StatusOK, &GetTasksPercentCountedByInstanceTypeResV1{
+	return c.JSON(http.StatusOK, &GetWorkflowPercentCountedByInstanceTypeResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: &TasksPercentCountedByInstanceTypeV1{
-			TaskPercents: percents,
-			TaskTotalNum: uint(total),
+		Data: &WorkflowPercentCountedByInstanceTypeV1{
+			WorkflowPercents: percents,
+			WorkflowTotalNum: uint(total),
 		},
 	})
 }
