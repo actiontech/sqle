@@ -1231,116 +1231,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetTaskCountsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskCountsV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskCreatedCountsEachDayResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskCreatedCountsEachDayV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskDurationOfWaitingForAuditResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskStageDuration'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskDurationOfWaitingForExecutionResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskStageDuration'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskPassPercentResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskPassPercentV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskRejectedPercentGroupByCreatorResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.TaskRejectedPercentGroupByCreator'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskRejectedPercentGroupByInstanceResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.TaskRejectedPercentGroupByInstance'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTaskStatusCountResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskStatusCountV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetTasksPercentCountedByInstanceTypeResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TasksPercentCountedByInstanceTypeV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetUserDetailResV1:
     properties:
       code:
@@ -1433,6 +1323,104 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetWorkflowCountsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowCountsV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowCreatedCountsEachDayResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowCreatedCountsEachDayV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowDurationOfWaitingForAuditResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowStageDuration'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowDurationOfWaitingForExecutionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowStageDuration'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowPassPercentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowPassPercentV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowPercentCountedByInstanceTypeResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowPercentCountedByInstanceTypeV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowRejectedPercentGroupByCreatorResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.WorkflowRejectedPercentGroupByCreator'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowRejectedPercentGroupByInstanceResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.WorkflowRejectedPercentGroupByInstance'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowResV1:
     properties:
       code:
@@ -1440,6 +1428,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.WorkflowResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowStatusCountResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowStatusCountV1'
         type: object
       message:
         example: ok
@@ -2078,93 +2078,6 @@ definitions:
       field_name:
         type: string
     type: object
-  v1.TaskCountsV1:
-    properties:
-      today_count:
-        type: integer
-      total:
-        type: integer
-    type: object
-  v1.TaskCreatedCountsEachDayItem:
-    properties:
-      date:
-        example: "2022-08-24"
-        type: string
-      value:
-        type: integer
-    type: object
-  v1.TaskCreatedCountsEachDayV1:
-    properties:
-      samples:
-        items:
-          $ref: '#/definitions/v1.TaskCreatedCountsEachDayItem'
-        type: array
-    type: object
-  v1.TaskPassPercentV1:
-    properties:
-      audit_pass_percent:
-        type: number
-      execution_success_percent:
-        type: number
-    type: object
-  v1.TaskRejectedPercentGroupByCreator:
-    properties:
-      creator:
-        type: string
-      rejected_percent:
-        type: number
-      task_total_num:
-        type: integer
-    type: object
-  v1.TaskRejectedPercentGroupByInstance:
-    properties:
-      instance_name:
-        type: string
-      rejected_percent:
-        type: number
-      task_total_num:
-        type: integer
-    type: object
-  v1.TaskStageDuration:
-    properties:
-      minutes:
-        type: integer
-    type: object
-  v1.TaskStatusCountV1:
-    properties:
-      closed_count:
-        type: integer
-      executing_count:
-        type: integer
-      executing_failed_count:
-        type: integer
-      execution_success_count:
-        type: integer
-      rejected_count:
-        type: integer
-      waiting_for_audit_count:
-        type: integer
-      waiting_for_execution_count:
-        type: integer
-    type: object
-  v1.TasksPercentCountedByInstanceType:
-    properties:
-      count:
-        type: integer
-      instance_type:
-        type: string
-      percent:
-        type: number
-    type: object
-  v1.TasksPercentCountedByInstanceTypeV1:
-    properties:
-      task_percents:
-        items:
-          $ref: '#/definitions/v1.TasksPercentCountedByInstanceType'
-        type: array
-      task_total_num:
-        type: integer
-    type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
       is_notify_send_normal:
@@ -2622,6 +2535,28 @@ definitions:
       type:
         type: string
     type: object
+  v1.WorkflowCountsV1:
+    properties:
+      today_count:
+        type: integer
+      total:
+        type: integer
+    type: object
+  v1.WorkflowCreatedCountsEachDayItem:
+    properties:
+      date:
+        example: "2022-08-24"
+        type: string
+      value:
+        type: integer
+    type: object
+  v1.WorkflowCreatedCountsEachDayV1:
+    properties:
+      samples:
+        items:
+          $ref: '#/definitions/v1.WorkflowCreatedCountsEachDayItem'
+        type: array
+    type: object
   v1.WorkflowDetailResV1:
     properties:
       create_time:
@@ -2664,6 +2599,31 @@ definitions:
       workflow_id:
         type: integer
     type: object
+  v1.WorkflowPassPercentV1:
+    properties:
+      audit_pass_percent:
+        type: number
+      execution_success_percent:
+        type: number
+    type: object
+  v1.WorkflowPercentCountedByInstanceType:
+    properties:
+      count:
+        type: integer
+      instance_type:
+        type: string
+      percent:
+        type: number
+    type: object
+  v1.WorkflowPercentCountedByInstanceTypeV1:
+    properties:
+      workflow_percents:
+        items:
+          $ref: '#/definitions/v1.WorkflowPercentCountedByInstanceType'
+        type: array
+      workflow_total_num:
+        type: integer
+    type: object
   v1.WorkflowRecordResV1:
     properties:
       current_step_number:
@@ -2689,6 +2649,24 @@ definitions:
           $ref: '#/definitions/v1.WorkflowStepResV1'
         type: array
     type: object
+  v1.WorkflowRejectedPercentGroupByCreator:
+    properties:
+      creator:
+        type: string
+      rejected_percent:
+        type: number
+      workflow_total_num:
+        type: integer
+    type: object
+  v1.WorkflowRejectedPercentGroupByInstance:
+    properties:
+      instance_name:
+        type: string
+      rejected_percent:
+        type: number
+      workflow_total_num:
+        type: integer
+    type: object
   v1.WorkflowResV1:
     properties:
       create_time:
@@ -2713,6 +2691,11 @@ definitions:
       workflow_id:
         type: integer
     type: object
+  v1.WorkflowStageDuration:
+    properties:
+      minutes:
+        type: integer
+    type: object
   v1.WorkflowStatisticsResV1:
     properties:
       my_need_execute_workflow_number:
@@ -2726,6 +2709,23 @@ definitions:
       need_me_to_execute_workflow_number:
         type: integer
       need_me_to_review_workflow_number:
+        type: integer
+    type: object
+  v1.WorkflowStatusCountV1:
+    properties:
+      closed_count:
+        type: integer
+      executing_count:
+        type: integer
+      executing_failed_count:
+        type: integer
+      execution_success_count:
+        type: integer
+      rejected_count:
+        type: integer
+      waiting_for_audit_count:
+        type: integer
+      waiting_for_execution_count:
         type: integer
     type: object
   v1.WorkflowStepResV1:
@@ -4690,94 +4690,52 @@ paths:
       summary: 获取License使用情况
       tags:
       - statistic
-  /v1/statistic/task/rejected_percent_group_by_creator:
+  /v1/statistic/workflows/counts:
     get:
-      description: get task rejected percent group by creator. The result will be
-        sorted by rejected percent in descending order
-      operationId: getTaskRejectedPercentGroupByCreatorV1
-      parameters:
-      - description: the limit of result item number
-        in: query
-        name: limit
-        required: true
-        type: integer
+      description: get workflow counts
+      operationId: getWorkflowCountV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskRejectedPercentGroupByCreatorResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取各个用户提交的工单驳回率，按驳回率降序排列
-      tags:
-      - statistic
-  /v1/statistic/task/rejected_percent_group_by_instance:
-    get:
-      description: get task rejected percent group by instance. The result will be
-        sorted by rejected percent in descending order
-      operationId: getTaskRejectedPercentGroupByInstanceV1
-      parameters:
-      - description: the limit of result item number
-        in: query
-        name: limit
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTaskRejectedPercentGroupByInstanceResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取各个数据源相关的工单驳回率，按驳回率降序排列
-      tags:
-      - statistic
-  /v1/statistic/tasks/counts:
-    get:
-      description: get task counts
-      operationId: getTaskCountV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTaskCountsResV1'
+            $ref: '#/definitions/v1.GetWorkflowCountsResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取工单数量统计数据
       tags:
       - statistic
-  /v1/statistic/tasks/duration_of_waiting_for_audit:
+  /v1/statistic/workflows/duration_of_waiting_for_audit:
     get:
-      description: get duration from task being created to audited
-      operationId: getTaskDurationOfWaitingForAuditV1
+      description: get duration from workflow being created to audited
+      operationId: getWorkflowDurationOfWaitingForAuditV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskDurationOfWaitingForAuditResV1'
+            $ref: '#/definitions/v1.GetWorkflowDurationOfWaitingForAuditResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取工单从创建到审核结束的平均时长
       tags:
       - statistic
-  /v1/statistic/tasks/duration_of_waiting_for_execution:
+  /v1/statistic/workflows/duration_of_waiting_for_execution:
     get:
-      description: get duration from task being created to executed
-      operationId: getTaskDurationOfWaitingForExecutionV1
+      description: get duration from workflow being created to executed
+      operationId: getWorkflowDurationOfWaitingForExecutionV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskDurationOfWaitingForExecutionResV1'
+            $ref: '#/definitions/v1.GetWorkflowDurationOfWaitingForExecutionResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取工单各从审核完毕到执行上线的平均时长
       tags:
       - statistic
-  /v1/statistic/tasks/each_day_counts:
+  /v1/statistic/workflows/each_day_counts:
     get:
-      description: get counts of created task each day
-      operationId: getTaskCreatedCountEachDayV1
+      description: get counts of created workflow each day
+      operationId: getWorkflowCreatedCountEachDayV1
       parameters:
       - description: filter date from.(format:yyyy-mm-dd)
         in: query
@@ -4793,49 +4751,91 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskCreatedCountsEachDayResV1'
+            $ref: '#/definitions/v1.GetWorkflowCreatedCountsEachDayResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取每天工单创建数量
       tags:
       - statistic
-  /v1/statistic/tasks/instance_type_percent:
+  /v1/statistic/workflows/instance_type_percent:
     get:
-      description: get tasks percent counted by instance type
-      operationId: getTasksPercentCountedByInstanceTypeV1
+      description: get workflows percent counted by instance type
+      operationId: getWorkflowPercentCountedByInstanceTypeV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTasksPercentCountedByInstanceTypeResV1'
+            $ref: '#/definitions/v1.GetWorkflowPercentCountedByInstanceTypeResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取按数据源类型统计的工单百分比
       tags:
       - statistic
-  /v1/statistic/tasks/pass_percent:
+  /v1/statistic/workflows/pass_percent:
     get:
-      description: get task pass percent
-      operationId: getTaskPassPercentV1
+      description: get workflow pass percent
+      operationId: getWorkflowPassPercentV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskPassPercentResV1'
+            $ref: '#/definitions/v1.GetWorkflowPassPercentResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取工单通过率
       tags:
       - statistic
-  /v1/statistic/tasks/status_count:
+  /v1/statistic/workflows/rejected_percent_group_by_creator:
     get:
-      description: get count of task status
-      operationId: getTaskStatusCountV1
+      description: get workflows rejected percent group by creator. The result will
+        be sorted by rejected percent in descending order
+      operationId: getWorkflowRejectedPercentGroupByCreatorV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetTaskStatusCountResV1'
+            $ref: '#/definitions/v1.GetWorkflowRejectedPercentGroupByCreatorResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各个用户提交的工单驳回率，按驳回率降序排列
+      tags:
+      - statistic
+  /v1/statistic/workflows/rejected_percent_group_by_instance:
+    get:
+      description: get workflow rejected percent group by instance. The result will
+        be sorted by rejected percent in descending order
+      operationId: getWorkflowRejectedPercentGroupByInstanceV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowRejectedPercentGroupByInstanceResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各个数据源相关的工单驳回率，按驳回率降序排列
+      tags:
+      - statistic
+  /v1/statistic/workflows/status_count:
+    get:
+      description: get count of workflow status
+      operationId: getWorkflowStatusCountV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowStatusCountResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取各种状态工单的数量
