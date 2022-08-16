@@ -412,11 +412,11 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLDisableAlterFieldUseFirstAndAfter,
-			Desc:     "alter字段禁止使用first,after",
+			Desc:     "alter表字段禁止使用first,after",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message:      "alter字段禁止使用first,after",
+		Message:      "alter表字段禁止使用first,after",
 		AllowOffline: true,
 		Func:         disableAlterUseFirstAndAfter,
 	},
