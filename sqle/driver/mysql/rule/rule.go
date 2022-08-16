@@ -82,6 +82,7 @@ const (
 	DDLCheckTableSize                           = "ddl_check_table_size"
 	DDLCheckIndexTooMany                        = "ddl_check_index_too_many"
 	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
+	DDLDisableTypeTimestamp                     = "ddl_disable_type_timestamp"
 )
 
 // inspector DML rules
@@ -1132,6 +1133,48 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         checkCreateProcedure,
 	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLDisableTypeTimestamp,
+			Desc:     "禁止使用TIMESTAMP字段",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "禁止使用TIMESTAMP字段",
+		AllowOffline: true,
+		Func:         disableUseTypeTimestampField,
+	},
+}
+
+func disableUseTypeTimestampField(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Tp.Tp == mysql.TypeTimestamp {
+				addResult(result, rule, DDLDisableTypeTimestamp)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		specs := util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
+			ast.AlterTableChangeColumn)
+		for _, spec := range specs {
+			for _, newColumn := range spec.NewColumns {
+				if newColumn.Tp.Tp == mysql.TypeTimestamp {
+					addResult(result, rule, DDLDisableTypeTimestamp)
+					return nil
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func init() {
