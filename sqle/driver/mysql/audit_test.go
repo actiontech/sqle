@@ -3402,6 +3402,29 @@ func Test_DDL_CHECK_PK_NAME(t *testing.T) {
 	}
 }
 
+func Test_DDLDisableAlterFieldUseFirstAndAfter(t *testing.T) {
+	for _, sql := range []string{
+		`alter table exist_db.exist_tb_2 Add column id_next int`,
+		`alter table exist_db.exist_tb_2 change column v1 v1_next varchar(10)`,
+		`alter table exist_db.exist_tb_2 modify column v1 varchar(10)`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLDisableAlterFieldUseFirstAndAfter].Rule, t, "",
+			DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+	for _, sql := range []string{
+		`alter table exist_db.exist_tb_2 Add column id_next int after id`,
+		`alter table exist_db.exist_tb_2 Add column id_next int first`,
+		`alter table exist_db.exist_tb_2 change column id id_next int first`,
+		`alter table exist_db.exist_tb_2 change column id id_next int after v1`,
+		`alter table exist_db.exist_tb_2 modify column id varchar(3) first`,
+		`alter table exist_db.exist_tb_2 modify column id varchar(3) after v1`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLDisableAlterFieldUseFirstAndAfter].Rule, t, "",
+			DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLDisableAlterFieldUseFirstAndAfter))
+	}
+}
+
 func Test_PerfectParse(t *testing.T) {
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckWhereIsInvalid].Rule, t, "", DefaultMysqlInspect(), `
 SELECT * FROM exist_db.exist_tb_1;
