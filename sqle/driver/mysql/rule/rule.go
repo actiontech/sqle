@@ -68,6 +68,7 @@ const (
 	DDLCheckIndexesExistBeforeCreateConstraints = "ddl_check_indexes_exist_before_creat_constraints"
 	DDLCheckDatabaseCollation                   = "ddl_check_collation_database"
 	DDLCheckDecimalTypeColumn                   = "ddl_check_decimal_type_column"
+	DDLCheckBigintInsteadOfDecimal              = "ddl_check_bigint_instead_of_decimal"
 	DDLCheckDatabaseSuffix                      = "ddl_check_database_suffix"
 	DDLCheckPKName                              = "ddl_check_pk_name"
 	DDLCheckTransactionIsolationLevel           = "ddl_check_transaction_isolation_level"
@@ -881,6 +882,17 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
+			Name:     DDLCheckBigintInsteadOfDecimal,
+			Desc:     "建议用BIGINT类型代替DECIMAL",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "建议列%s用BIGINT类型代替DECIMAL",
+		Func:         checkBigintInsteadOfDecimal,
+		AllowOffline: true,
+	},
+	{
+		Rule: driver.Rule{
 			Name:  DMLCheckNeedlessFunc,
 			Desc:  "避免使用不必要的内置函数",
 			Level: driver.RuleLevelNotice,
@@ -1144,6 +1156,48 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         checkCreateProcedure,
 	},
+}
+
+func checkBigintInsteadOfDecimal(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Tp == nil {
+				continue
+			}
+			if col.Tp.Tp == mysql.TypeNewDecimal {
+				addResult(result, rule, DDLCheckBigintInsteadOfDecimal, col.Name.Name.O)
+			}
+		}
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		specs := util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
+			ast.AlterTableChangeColumn)
+
+		for _, spec := range specs {
+			if spec.NewColumns == nil {
+				continue
+			}
+			for _, col := range spec.NewColumns {
+				if col.Tp == nil {
+					continue
+				}
+				if col.Tp.Tp == mysql.TypeNewDecimal {
+					addResult(result, rule, DDLCheckBigintInsteadOfDecimal, col.Name.Name.O)
+					return nil
+				}
+			}
+		}
+	default:
+		return nil
+	}
+
+	return nil
 }
 
 func disableAlterUseFirstAndAfter(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
