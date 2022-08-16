@@ -82,6 +82,7 @@ const (
 	DDLCheckTableSize                           = "ddl_check_table_size"
 	DDLCheckIndexTooMany                        = "ddl_check_index_too_many"
 	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
+	DDLDisableAlterFieldUseFirstAndAfter        = "ddl_disable_alter_field_use_first_and_after"
 )
 
 // inspector DML rules
@@ -407,6 +408,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "禁止使用外键",
 		AllowOffline: true,
 		Func:         checkForeignKey,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLDisableAlterFieldUseFirstAndAfter,
+			Desc:     "alter表字段禁止使用first,after",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "alter表字段禁止使用first,after",
+		AllowOffline: true,
+		Func:         disableAlterUseFirstAndAfter,
 	},
 	{
 		Rule: driver.Rule{
@@ -1132,6 +1144,25 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         checkCreateProcedure,
 	},
+}
+
+func disableAlterUseFirstAndAfter(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	switch stmt := node.(type) {
+	case *ast.AlterTableStmt:
+		specs := util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
+			ast.AlterTableChangeColumn)
+
+		for _, spec := range specs {
+			if spec.Position == nil {
+				continue
+			}
+			if spec.Position.Tp == ast.ColumnPositionFirst || spec.Position.Tp == ast.ColumnPositionAfter {
+				addResult(result, rule, DDLDisableAlterFieldUseFirstAndAfter)
+			}
+		}
+	}
+
+	return nil
 }
 
 func init() {
