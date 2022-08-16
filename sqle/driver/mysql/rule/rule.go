@@ -1196,6 +1196,9 @@ func disableAlterUseFirstAndAfter(_ *session.Context, rule driver.Rule, result *
 			ast.AlterTableChangeColumn)
 
 		for _, spec := range specs {
+			if spec.Position == nil {
+				continue
+			}
 			if spec.Position.Tp == ast.ColumnPositionFirst || spec.Position.Tp == ast.ColumnPositionAfter {
 				addResult(result, rule, DDLDisableAlterFieldUseFirstAndAfter)
 			}
