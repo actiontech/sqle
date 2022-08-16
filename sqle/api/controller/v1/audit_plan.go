@@ -110,6 +110,7 @@ type CreateAuditPlanReqV1 struct {
 	InstanceType     string                `json:"audit_plan_instance_type" form:"audit_plan_instance_type" example:"mysql" valid:"required"`
 	InstanceName     string                `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
 	InstanceDatabase string                `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
+	RuleTemplateName string                `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
 	Type             string                `json:"audit_plan_type" form:"audit_plan_type" example:"slow log"`
 	Params           []AuditPlanParamReqV1 `json:"audit_plan_params" valid:"dive,required"`
 }
@@ -310,6 +311,7 @@ type UpdateAuditPlanReqV1 struct {
 	Cron             *string               `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"omitempty,cron"`
 	InstanceName     *string               `json:"audit_plan_instance_name" form:"audit_plan_instance_name" example:"test_mysql"`
 	InstanceDatabase *string               `json:"audit_plan_instance_database" form:"audit_plan_instance_database" example:"app1"`
+	RuleTemplateName *string               `json:"rule_template_name" form:"rule_template_name" example:"default_MySQL"`
 	Params           []AuditPlanParamReqV1 `json:"audit_plan_params" valid:"dive,required"`
 }
 
@@ -389,6 +391,7 @@ type AuditPlanResV1 struct {
 	Token            string          `json:"audit_plan_token" example:"it's a JWT Token for scanner"`
 	InstanceName     string          `json:"audit_plan_instance_name" example:"test_mysql"`
 	InstanceDatabase string          `json:"audit_plan_instance_database" example:"app1"`
+	RuleTemplateName string          `json:"rule_template_name" example:"default_MySQL"`
 	Meta             AuditPlanMetaV1 `json:"audit_plan_meta"`
 }
 

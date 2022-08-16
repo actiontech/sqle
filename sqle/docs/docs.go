@@ -5027,6 +5027,10 @@ var doc = `{
                 "audit_plan_token": {
                     "type": "string",
                     "example": "it's a JWT Token for scanner"
+                },
+                "rule_template_name": {
+                    "type": "string",
+                    "example": "default_MySQL"
                 }
             }
         },
@@ -5358,6 +5362,10 @@ var doc = `{
                 "audit_plan_type": {
                     "type": "string",
                     "example": "slow log"
+                },
+                "rule_template_name": {
+                    "type": "string",
+                    "example": "default_MySQL"
                 }
             }
         },
@@ -8113,6 +8121,10 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.AuditPlanParamReqV1"
                     }
+                },
+                "rule_template_name": {
+                    "type": "string",
+                    "example": "default_MySQL"
                 }
             }
         },
