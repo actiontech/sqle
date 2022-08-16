@@ -103,6 +103,9 @@ definitions:
       audit_plan_token:
         example: it's a JWT Token for scanner
         type: string
+      rule_template_name:
+        example: default_MySQL
+        type: string
     type: object
   v1.AuditPlanSQLReqV1:
     properties:
@@ -330,6 +333,9 @@ definitions:
         type: array
       audit_plan_type:
         example: slow log
+        type: string
+      rule_template_name:
+        example: default_MySQL
         type: string
     type: object
   v1.CreateAuditWhitelistReqV1:
@@ -2208,6 +2214,9 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditPlanParamReqV1'
         type: array
+      rule_template_name:
+        example: default_MySQL
+        type: string
     type: object
   v1.UpdateAuditTaskSQLsReqV1:
     properties:
