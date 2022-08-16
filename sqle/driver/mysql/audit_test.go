@@ -1969,14 +1969,16 @@ v1 timestamp COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).
+			addResult(rulepkg.DDLDisableTypeTimestamp),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).
+			addResult(rulepkg.DDLDisableTypeTimestamp),
 	)
 }
 
@@ -4034,4 +4036,43 @@ func TestInspect_CheckColumn(t *testing.T) {
 	UPDATE exist_db.exist_tb_1 SET V1 = 1 WHERE ID = 1;
 	`,
 		newTestResult())
+}
+
+func Test_DDLDisableTypeTimestamp(t *testing.T) {
+	for _, sql := range []string{
+		`create table workflow_step_templates
+		(
+		   id                     int unsigned auto_increment
+		       primary key,
+		   created_at             datetime default CURRENT_TIMESTAMP null,
+		   deleted_at             timestamp                           null
+		);`,
+		`alter table exist_tb_1
+		   add column test_create_time timestamp;`,
+		`alter table exist_tb_1
+    modify column test_create_time timestamp;`,
+		`alter table exist_tb_1
+    change column v2 test_create_time timestamp;`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLDisableTypeTimestamp].Rule, t, "",
+			DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLDisableTypeTimestamp))
+	}
+
+	for _, sql := range []string{
+		`create table workflow_step_templates
+		(
+		   id                     int unsigned auto_increment
+		       primary key,
+		   created_at             datetime default CURRENT_TIMESTAMP null
+		);`,
+		`alter table exist_tb_1
+		   add column test_create_time datetime;`,
+		`alter table exist_tb_1
+    modify column test_create_time date;`,
+		`alter table exist_tb_1
+    change column v2 test_create_time date;`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLDisableTypeTimestamp].Rule, t, "",
+			DefaultMysqlInspect(), sql, newTestResult())
+	}
 }
