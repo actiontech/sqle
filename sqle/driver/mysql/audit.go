@@ -737,6 +737,7 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	tables := []*ast.TableName{}
 	tableAlias := map[*ast.TableName]string{}
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
+	var hasSelectStmtTableSource bool
 	for _, tableSource := range tableSources {
 		switch source := tableSource.Source.(type) {
 		case *ast.TableName:
@@ -746,7 +747,9 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 			if alias != "" {
 				tableAlias[table] = alias
 			}
-		case *ast.SelectStmt, *ast.UnionStmt:
+		case *ast.SelectStmt:
+			hasSelectStmtTableSource = true
+		case *ast.UnionStmt:
 			continue
 		}
 	}
@@ -800,6 +803,12 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		tc.Add(schemaName, tableName, createStmt)
 	}
 
+	// https://github.com/actiontech/sqle/issues/708
+	// If the updated table contains subquery, do not check fields in set and where clause.
+	if hasSelectStmtTableSource {
+		return nil
+	}
+
 	needExistColsName := []string{}
 	ambiguousColsName := []string{}
 	for _, list := range stmt.List {
@@ -851,7 +860,27 @@ delete from ... where ...
 ------------------------------------------------------------------
 */
 func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
-	tables := util.GetTables(stmt.TableRefs.TableRefs)
+	tables := make([]*ast.TableName, 0)
+	tableAlias := make(map[*ast.TableName]string)
+	var hasSelectStmtTableSource bool
+
+	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
+	for _, tableSource := range tableSources {
+		switch source := tableSource.Source.(type) {
+		case *ast.TableName:
+			table := source
+			tables = append(tables, table)
+			alias := tableSource.AsName.String()
+			if alias != "" {
+				tableAlias[table] = alias
+			}
+		case *ast.SelectStmt:
+			hasSelectStmtTableSource = true
+		case *ast.UnionStmt:
+			continue
+		}
+	}
+
 	needExistsSchemasName := []string{}
 	needExistsTablesName := []string{}
 	for _, table := range tables {
@@ -891,11 +920,20 @@ func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 			schemaName = i.Ctx.CurrentSchema()
 		}
 		tableName := table.Name.String()
+		if alias, ok := tableAlias[table]; ok {
+			tableName = alias
+		}
 		createStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 		if err != nil || !exist {
 			return err
 		}
 		tc.Add(schemaName, tableName, createStmt)
+	}
+
+	// https://github.com/actiontech/sqle/issues/708
+	// If the updated table contains subquery, do not check fields in set and where clause.
+	if hasSelectStmtTableSource {
+		return nil
 	}
 
 	needExistColsName := []string{}
