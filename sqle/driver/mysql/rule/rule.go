@@ -1159,6 +1159,7 @@ var RuleHandlers = []RuleHandler{
 }
 
 func checkBigintInsteadOfDecimal(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	var columnNames []string
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
@@ -1169,7 +1170,7 @@ func checkBigintInsteadOfDecimal(_ *session.Context, rule driver.Rule, result *d
 				continue
 			}
 			if col.Tp.Tp == mysql.TypeNewDecimal {
-				addResult(result, rule, DDLCheckBigintInsteadOfDecimal, col.Name.Name.O)
+				columnNames = append(columnNames, col.Name.Name.O)
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -1188,13 +1189,16 @@ func checkBigintInsteadOfDecimal(_ *session.Context, rule driver.Rule, result *d
 					continue
 				}
 				if col.Tp.Tp == mysql.TypeNewDecimal {
-					addResult(result, rule, DDLCheckBigintInsteadOfDecimal, col.Name.Name.O)
-					return nil
+					columnNames = append(columnNames, col.Name.Name.O)
 				}
 			}
 		}
 	default:
 		return nil
+	}
+
+	if len(columnNames) > 0 {
+		addResult(result, rule, DDLCheckBigintInsteadOfDecimal, strings.Join(columnNames, ","))
 	}
 
 	return nil
