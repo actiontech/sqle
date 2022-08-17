@@ -241,7 +241,7 @@ func CreateAuditPlan(c echo.Context) error {
 
 	// check rule template name
 	if req.RuleTemplateName != "" {
-		exist, err = s.GetRuleTemplateExist(req.RuleTemplateName)
+		exist, err = s.IsRuleTemplateExist(req.RuleTemplateName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -394,7 +394,7 @@ func UpdateAuditPlan(c echo.Context) error {
 		updateAttr["instance_database"] = *req.InstanceDatabase
 	}
 	if req.RuleTemplateName != nil {
-		exist, err = storage.GetRuleTemplateExist(*req.RuleTemplateName)
+		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
