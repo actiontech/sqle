@@ -82,20 +82,6 @@ func NewMockContext(e *executor.Executor) *Context {
 	}
 }
 
-func NewEmptyMockContext(e *executor.Executor) *Context {
-	return &Context{
-		e:             e,
-		currentSchema: "exist_db",
-		schemaHasLoad: true,
-		executionPlan: map[string][]*executor.ExplainRecord{},
-		sysVars: map[string]string{
-			"lower_case_table_names": "0",
-		},
-		schemas:        map[string]*SchemaInfo{},
-		historySqlInfo: &HistorySQLInfo{},
-	}
-}
-
 func NewMockContextForTestLowerCaseTableNameOpen(e *executor.Executor) *Context {
 	return &Context{
 		e:             e,

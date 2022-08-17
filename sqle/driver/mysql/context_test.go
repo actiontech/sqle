@@ -6,9 +6,6 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
-	"github.com/actiontech/sqle/sqle/log"
-
-	"github.com/sirupsen/logrus"
 )
 
 func TestContext(t *testing.T) {
@@ -180,64 +177,6 @@ insert into not_exist_tb_1 (id,v2,v3) values (1,"1","1");
 `,
 		newTestResult(),
 	)
-}
-
-func DefaultMysqlDisableContextInspect() *MysqlDriverImpl {
-	log.Logger().SetLevel(logrus.ErrorLevel)
-	return &MysqlDriverImpl{
-		log: log.NewEntry(),
-		inst: &driver.DSN{
-			Host:         "127.0.0.1",
-			Port:         "3306",
-			User:         "root",
-			Password:     "123456",
-			DatabaseName: "mysql",
-		},
-		Ctx: session.NewEmptyMockContext(nil),
-		cnf: &Config{
-			DDLOSCMinSize:      16,
-			DDLGhostMinSize:    -1,
-			DMLRollbackMaxRows: 1000,
-			isContextOff:       true,
-		},
-	}
-}
-
-func TestContextDisable(t *testing.T) {
-	runDefaultRulesInspectCase(t, "building a schema does not impress the sql behind", DefaultMysqlDisableContextInspect(),
-		`
-create database exist_db default character set utf8mb4;
-use exist_db;
-`,
-		newTestResult(),
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "exist_db"))
-
-	i := DefaultMysqlInspect()
-	i.cnf.isContextOff = true
-	runDefaultRulesInspectCase(t, "deleting the schema does not affect the subsequent sql", i,
-		`
-drop database exist_db;
-use exist_db
-`,
-		newTestResult().add(driver.RuleLevelError, "禁止除索引外的drop操作"),
-		newTestResult())
-
-	runDefaultRulesInspectCase(t, "creating a table does not affect the subsequent sql", i,
-		`
-create table if not exists t1 (id bigint unsigned PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT "unit test") ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
-select name from t1 where id = 1;
-`,
-		newTestResult(),
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.t1"))
-
-	runDefaultRulesInspectCase(t, "deleting a table does not affect the subsequent sql", i,
-		`
-drop table exist_tb_1;
-select id from exist_tb_1 where id =1;
-`,
-		newTestResult().add(driver.RuleLevelError, "禁止除索引外的drop操作"),
-		newTestResult())
-
 }
 
 // TODO: Add more test for relation audit, like create a database and create a table in it.
