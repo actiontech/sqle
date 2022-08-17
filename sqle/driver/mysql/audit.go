@@ -458,6 +458,68 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 
 /*
 ------------------------------------------------------------------
+alter table ...
+------------------------------------------------------------------
+1. add/update pk, pk can only be set once;
+2. index column can't duplicated.
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt) error {
+	// check pk can only be set once
+	hasPk := false
+
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
+		for _, col := range spec.NewColumns {
+			if hasPk && util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+				i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+			} else {
+				hasPk = true
+			}
+		}
+	}
+
+	// check index name can't be duplicated and index column can't duplicated
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		switch spec.Constraint.Tp {
+		case ast.ConstraintPrimaryKey:
+			if hasPk {
+				// primary key has exist, can not add primary key
+				i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+			} else {
+				hasPk = true
+			}
+			names := []string{}
+			for _, col := range spec.Constraint.Keys {
+				colName := col.Column.Name.L
+				names = append(names, colName)
+			}
+			duplicateColumn := utils.GetDuplicate(names)
+			if len(duplicateColumn) > 0 {
+				i.result.Add(driver.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+					strings.Join(duplicateColumn, ","))
+			}
+		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
+			indexName := strings.ToLower(spec.Constraint.Name)
+			if indexName == "" {
+				indexName = "(匿名)"
+			}
+			names := []string{}
+			for _, col := range spec.Constraint.Keys {
+				colName := col.Column.Name.L
+				names = append(names, colName)
+			}
+			duplicateColumn := utils.GetDuplicate(names)
+			if len(duplicateColumn) > 0 {
+				i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
+					strings.Join(duplicateColumn, ","))
+			}
+		}
+	}
+	return nil
+}
+
+/*
+------------------------------------------------------------------
 drop table ...
 ------------------------------------------------------------------
 1. schema must exist;
