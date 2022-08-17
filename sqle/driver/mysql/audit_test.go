@@ -2261,6 +2261,19 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?),(?,?,?),(?,?,?
 	)
 }
 
+func Test_DMLCheckSelectWithOrderBy(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectWithOrderBy].Rule, t, "",
+		DefaultMysqlInspect(), `select id from exist_db.exist_tb_1 where v1 = '1' order by id`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectWithOrderBy].Rule, t, "",
+		DefaultMysqlInspect(), `select id from exist_db.exist_tb_1 where v1 = '1' order by ?`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectWithOrderBy].Rule, t, "",
+		DefaultMysqlInspect(), `select id from exist_db.exist_tb_1 where v1 = '1'`, newTestResult())
+}
+
 func TestCheckPkProhibitAutoIncrement(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckPKProhibitAutoIncrement].Rule
 	runSingleRuleInspectCase(rule, t, "create_table: primary key not auto increment", DefaultMysqlInspect(),
