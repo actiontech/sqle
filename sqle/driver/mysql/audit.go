@@ -689,6 +689,27 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 
 /*
 ------------------------------------------------------------------
+create index ...
+------------------------------------------------------------------
+1. index column name can't be duplicated.
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidCreateIndexOffline(stmt *ast.CreateIndexStmt) error {
+	keyColsName := []string{}
+	for _, col := range stmt.IndexPartSpecifications {
+		colName := col.Column.Name.L
+		keyColsName = append(keyColsName, colName)
+	}
+	duplicateName := utils.GetDuplicate(keyColsName)
+	if len(duplicateName) > 0 {
+		i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
+			strings.Join(duplicateName, ","))
+	}
+	return nil
+}
+
+/*
+------------------------------------------------------------------
 drop index ...
 ------------------------------------------------------------------
 1. schema must exist;
