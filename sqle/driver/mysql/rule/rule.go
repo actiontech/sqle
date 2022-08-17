@@ -1161,7 +1161,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name:     DDLDisableTypeTimestamp,
 			Desc:     "禁止使用TIMESTAMP字段",
-			Level:    driver.RuleLevelError,
+			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
 		Message:      "禁止使用TIMESTAMP字段",
