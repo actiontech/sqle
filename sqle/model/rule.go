@@ -281,7 +281,7 @@ func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[s
 	return existRules, nil
 }
 
-func (s *Storage) GetRuleTemplateExist(ruleTemplateName string) (bool, error) {
+func (s *Storage) IsRuleTemplateExist(ruleTemplateName string) (bool, error) {
 	var count int
 	err := s.db.Table("rule_templates").Where("name = ?", ruleTemplateName).Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
