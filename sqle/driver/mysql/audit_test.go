@@ -3425,6 +3425,37 @@ func Test_DDLDisableAlterFieldUseFirstAndAfter(t *testing.T) {
 	}
 }
 
+func Test_DDLCheckBigintInsteadOfDecimal(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckBigintInsteadOfDecimal].Rule
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"create table t1(id_next decimal(10,2),id int,total_money decimal)",
+		newTestResult().addResult(rulepkg.DDLCheckBigintInsteadOfDecimal, "id_next,total_money"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"create table t1(total_money decimal,remain_money decimal,id int)",
+		newTestResult().addResult(rulepkg.DDLCheckBigintInsteadOfDecimal, "total_money,remain_money"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(), "create table t1(remain_money bigint)",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"alter table exist_db.exist_tb_2 modify column total_money decimal",
+		newTestResult().addResult(rulepkg.DDLCheckBigintInsteadOfDecimal, "total_money"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"alter table exist_db.exist_tb_2 modify column total_money bigint",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"alter table exist_db.exist_tb_2 add column remain_money decimal",
+		newTestResult().addResult(rulepkg.DDLCheckBigintInsteadOfDecimal, "remain_money"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"alter table exist_db.exist_tb_2 change column id old_money decimal",
+		newTestResult().addResult(rulepkg.DDLCheckBigintInsteadOfDecimal, "old_money"))
+}
+
 func Test_PerfectParse(t *testing.T) {
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckWhereIsInvalid].Rule, t, "", DefaultMysqlInspect(), `
 SELECT * FROM exist_db.exist_tb_1;
