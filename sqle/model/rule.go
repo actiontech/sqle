@@ -96,7 +96,7 @@ func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, er
 
 func (s *Storage) GetRuleTemplatesByInstanceName(name string) (*RuleTemplate, error) {
 	t := &RuleTemplate{}
-	err := s.db.Debug().Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
+	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
 		Joins("JOIN `instances` ON `instance_rule_template`.`instance_id` = `instances`.`id`").
 		Where("`instances`.`name` = ?", name).Find(t).Error
 	return t, errors.New(errors.ConnectStorageError, err)
