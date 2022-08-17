@@ -94,6 +94,14 @@ func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, er
 	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetRuleTemplatesByInstanceName(name string) (*RuleTemplate, error) {
+	t := &RuleTemplate{}
+	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
+		Joins("JOIN `instances` ON `instance_rule_template`.`instance_id` = `instances`.`id`").
+		Where("`instances`.`name` = ?", name).Find(t).Error
+	return t, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]*Rule, error) {
 	tpl, exist, err := s.GetRuleTemplateDetailByName(name)
 	if !exist {
@@ -271,4 +279,10 @@ func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[s
 			fmt.Errorf("rule %s not exist", strings.Join(notExistRuleNames, ", ")))
 	}
 	return existRules, nil
+}
+
+func (s *Storage) IsRuleTemplateExist(ruleTemplateName string) (bool, error) {
+	var count int
+	err := s.db.Table("rule_templates").Where("name = ?", ruleTemplateName).Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
 }

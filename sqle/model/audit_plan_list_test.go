@@ -23,9 +23,9 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
-	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token, audit_plans.instance_name, audit_plans.instance_database, audit_plans.type, audit_plans.params %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs(1, "mysql", 100, 10).WillReturnRows(sqlmock.NewRows([]string{"name", "cron_expression", "db_type", "token", "instance_name", "instance_database", "type", "params"}).
-		AddRow("audit_plan_1", "* */2 * * *", "mysql", "fake token", "inst_1", "db_1", "", nil))
+	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token, audit_plans.instance_name, audit_plans.instance_database, audit_plans.rule_template_name, audit_plans.type, audit_plans.params %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
+		ExpectQuery().WithArgs(1, "mysql", 100, 10).WillReturnRows(sqlmock.NewRows([]string{"name", "cron_expression", "db_type", "token", "instance_name", "instance_database", "rule_template_name", "type", "params"}).
+		AddRow("audit_plan_1", "* */2 * * *", "mysql", "fake token", "inst_1", "template_1", "db_1", "", nil))
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
 		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{
 		"COUNT(*)",
@@ -54,12 +54,12 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`
-	SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token, audit_plans.instance_name, audit_plans.instance_database, audit_plans.type, audit_plans.params
+	SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token, audit_plans.instance_name, audit_plans.instance_database, audit_plans.rule_template_name, audit_plans.type, audit_plans.params
 	%v
 	LIMIT ? OFFSET ?`, tableAndRowOfSQL1)).
 		ExpectQuery().WithArgs(100, 10).WillReturnRows(sqlmock.NewRows([]string{
-		"name", "cron_expression", "db_type", "token", "instance_name", "instance_database", "type", "params",
-	}).AddRow("audit_plan_1", "* */2 * * *", "mysql", "fake token", "inst_1", "db_1", "", nil))
+		"name", "cron_expression", "db_type", "token", "instance_name", "instance_database", "rule_template_name", "type", "params",
+	}).AddRow("audit_plan_1", "* */2 * * *", "mysql", "fake token", "inst_1", "template_1", "db_1", "", nil))
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL1)).
 		ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
 	nameFields = map[string]interface{}{
