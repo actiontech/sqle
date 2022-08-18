@@ -22,6 +22,8 @@ create table if not exists not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 alter table not_exist_tb_1 rename as not_exist_tb_2;
@@ -52,6 +54,8 @@ alter table not_exist_tb_1 drop column v1;
 	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 	v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+    update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	alter table not_exist_tb_1 drop column v1;
@@ -126,6 +130,8 @@ create table if not exists not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
