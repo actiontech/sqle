@@ -1217,6 +1217,8 @@ func checkFieldCreateAndUpdateTime(_ *session.Context, rule driver.Rule, result 
 				hasUpdateTimeField = true
 			}
 		}
+	default:
+		return nil
 	}
 
 	if !hasCreateTimeField || !hasUpdateTimeField {
