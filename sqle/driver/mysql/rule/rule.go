@@ -757,7 +757,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DMLCheckInQueryNumber,
-			Desc:     "where条件内in语句中的条件不能超过阈值",
+			Desc:     "where条件内in语句中的参数个数不能超过阈值",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 			Params: params.Params{
