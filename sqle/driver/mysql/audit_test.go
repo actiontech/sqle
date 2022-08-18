@@ -3285,6 +3285,27 @@ func Test_CheckExplain_ShouldNotError(t *testing.T) {
 	assert.NoError(t, handler.ExpectationsWereMet())
 }
 
+func Test_DMLCheckInQueryLimit(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckInQueryNumber].Rule
+	paramValue := "5"
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, paramValue)
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (1,2,3,4,5,6)",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 6, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (1,2,3,4,5)", newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"delete from exist_tb_1 where id in (1,2,3,4,5,6,7,8)",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 8, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"update exist_tb_1 set v1 = 'v1_next' where id in (1,2,3,4,5,6,7)",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+}
+
 func TestCheckIndexOption(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexOption].Rule
 	e, handler, err := executor.NewMockExecutor()
