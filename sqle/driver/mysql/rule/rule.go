@@ -85,6 +85,7 @@ const (
 	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
 	DDLDisableTypeTimestamp                     = "ddl_disable_type_timestamp"
 	DDLDisableAlterFieldUseFirstAndAfter        = "ddl_disable_alter_field_use_first_and_after"
+	DDLCheckColumnCreateAndUpdateTime           = "ddl_check_column_create_and_update_time"
 )
 
 // inspector DML rules
@@ -422,6 +423,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "alter表字段禁止使用first,after",
 		AllowOffline: true,
 		Func:         disableAlterUseFirstAndAfter,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckColumnCreateAndUpdateTime,
+			Desc:     "建表DDL必须包含CREATE_TIME, UPDATE_TIME字段",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "建表DDL必须包含CREATE_TIME, UPDATE_TIME字段",
+		AllowOffline: true,
+		Func:         checkFieldCreateAndUpdateTime,
 	},
 	{
 		Rule: driver.Rule{
@@ -1188,6 +1200,30 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
+}
+
+func checkFieldCreateAndUpdateTime(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	var hasCreateTimeField, hasUpdateTimeField bool
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Name.Name.L == "create_time" {
+				hasCreateTimeField = true
+			}
+			if col.Name.Name.L == "update_time" {
+				hasUpdateTimeField = true
+			}
+		}
+	}
+
+	if !hasCreateTimeField || !hasUpdateTimeField {
+		addResult(result, rule, DDLCheckColumnCreateAndUpdateTime)
+	}
+
+	return nil
 }
 
 func checkInQueryLimit(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
