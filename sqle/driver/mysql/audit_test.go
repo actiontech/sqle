@@ -2262,16 +2262,25 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (?,?,?),(?,?,?),(?,?,?),(?,?,?
 }
 
 func Test_DMLCheckSelectWithOrderBy(t *testing.T) {
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectWithOrderBy].Rule, t, "",
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectWithOrderBy].Rule
+	runSingleRuleInspectCase(rule, t, "",
 		DefaultMysqlInspect(), `select id from exist_db.exist_tb_1 where v1 = '1' order by id`,
 		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
 
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectWithOrderBy].Rule, t, "",
+	runSingleRuleInspectCase(rule, t, "",
 		DefaultMysqlInspect(), `select id from exist_db.exist_tb_1 where v1 = '1' order by ?`,
 		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
 
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectWithOrderBy].Rule, t, "",
+	runSingleRuleInspectCase(rule, t, "",
 		DefaultMysqlInspect(), `select id from exist_db.exist_tb_1 where v1 = '1'`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select id from exist_db.exist_tb_1 where (select id from COLLATIONS order by id limit 1) = 1`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select id from exist_db.exist_tb_1 where (select id from COLLATIONS order by ? limit 1) = 1`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
 }
 
 func TestCheckPkProhibitAutoIncrement(t *testing.T) {
