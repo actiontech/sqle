@@ -2278,6 +2278,48 @@ select v1 from exist_db.exist_tb_1 where v2 = "3"
 	)
 }
 
+func Test_DDLCheckColumnCreateAndUpdateTime(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnCreateAndUpdateTime].Rule
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+create table table_10
+(
+    id          int primary key,
+    CREATe_TIME timestamp,
+    update_time timestamp,
+    name        varchar(255)
+)
+`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+create table table_10
+(
+    id          int primary key,
+    update_time timestamp
+)
+`, newTestResult().addResult(rulepkg.DDLCheckColumnCreateAndUpdateTime))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+create table table_10
+(
+    id          int primary key,
+    create_time timestamp
+)
+`, newTestResult().addResult(rulepkg.DDLCheckColumnCreateAndUpdateTime))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+create table table_10
+(
+    id          int primary key
+)
+`, newTestResult().addResult(rulepkg.DDLCheckColumnCreateAndUpdateTime))
+}
+
 func TestCheckWhereExistFunc_FP(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckWhereExistFunc].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist func", DefaultMysqlInspect(),
