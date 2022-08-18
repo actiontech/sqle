@@ -757,14 +757,14 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DMLCheckInQueryNumber,
-			Desc:     "in语句中的条件不能超过阈值",
+			Desc:     "where条件内in语句中的条件不能超过阈值",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1000",
-					Desc:  "in语句参数最大阈值",
+					Desc:  "in语句参数最大个数",
 					Type:  params.ParamTypeInt,
 				},
 			},
