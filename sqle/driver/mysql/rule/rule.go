@@ -95,6 +95,7 @@ const (
 	DMLDisableSelectAllColumn            = "dml_disable_select_all_column"
 	DMLCheckInsertColumnsExist           = "dml_check_insert_columns_exist"
 	DMLCheckBatchInsertListsMax          = "dml_check_batch_insert_lists_max"
+	DMLCheckInQueryNumber                = "dml_check_in_query_limit"
 	DMLCheckWhereExistFunc               = "dml_check_where_exist_func"
 	DMLCheckWhereExistNot                = "dml_check_where_exist_not"
 	DMLCheckWhereExistImplicitConversion = "dml_check_where_exist_implicit_conversion"
@@ -755,6 +756,25 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
+			Name:     DMLCheckInQueryNumber,
+			Desc:     "in语句中的条件不能超过阈值",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "1000",
+					Desc:  "in语句参数最大阈值",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message:      "in语句中的参数已有%v个，超过阙值%v",
+		AllowOffline: true,
+		Func:         checkInQueryLimit,
+	},
+	{
+		Rule: driver.Rule{
 			Name:     DDLCheckPKProhibitAutoIncrement,
 			Desc:     "主键禁止使用自增",
 			Level:    driver.RuleLevelWarn,
@@ -1168,6 +1188,29 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
+}
+
+func checkInQueryLimit(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	where := getWhereExpr(node)
+	if where == nil {
+		return nil
+	}
+
+	paramThresholdNumber := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+		switch stmt := expr.(type) {
+		case *ast.PatternInExpr:
+			inQueryParamActualNumber := len(stmt.List)
+			if inQueryParamActualNumber > paramThresholdNumber {
+				addResult(result, rule, DMLCheckInQueryNumber, inQueryParamActualNumber, paramThresholdNumber)
+			}
+			return true
+		}
+
+		return false
+	}, where)
+
+	return nil
 }
 
 func disableUseTypeTimestampField(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
