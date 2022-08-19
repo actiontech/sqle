@@ -86,6 +86,7 @@ const (
 	DDLDisableTypeTimestamp                     = "ddl_disable_type_timestamp"
 	DDLDisableAlterFieldUseFirstAndAfter        = "ddl_disable_alter_field_use_first_and_after"
 	DDLCheckCreateTimeColumn                    = "ddl_check_create_time_column"
+	DDLCheckUpdateTimeColumn                    = "ddl_check_update_time_column"
 )
 
 // inspector DML rules
@@ -494,6 +495,17 @@ var RuleHandlers = []RuleHandler{
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            checkIndex,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckUpdateTimeColumn,
+			Desc:     "建表DDL必须包含UPDATE_TIME字段且默认值为UPDATE_TIME",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+		AllowOffline: true,
+		Func:         checkFieldUpdateTime,
 	},
 	{
 		Rule: driver.Rule{
@@ -1306,6 +1318,77 @@ func checkInQueryLimit(input *RuleHandlerInput) error {
 	}, where)
 
 	return nil
+}
+
+func checkFieldUpdateTime(input *RuleHandlerInput) error {
+	var hasUpdateTimeAndDefaultValue bool
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Name.Name.L == "update_time" && hasDefaultValueUpdateTimeStamp(col.Options) {
+				hasUpdateTimeAndDefaultValue = true
+			}
+		}
+	default:
+		return nil
+	}
+
+	if !hasUpdateTimeAndDefaultValue {
+		addResult(input.Res, input.Rule, DDLCheckUpdateTimeColumn)
+	}
+
+	return nil
+}
+
+func hasDefaultValueUpdateTimeStamp(options []*ast.ColumnOption) bool {
+	var hasDefaultCurrentStamp, hasUpdateCurrentTimestamp bool
+	for _, option := range options {
+		if hasDefaultValueCurrentTimestamp(option) {
+			hasDefaultCurrentStamp = true
+		}
+		if hasUpdateValueCurrentTimestamp(option) {
+			hasUpdateCurrentTimestamp = true
+		}
+	}
+
+	if hasDefaultCurrentStamp && hasUpdateCurrentTimestamp {
+		return true
+	}
+
+	return false
+}
+
+func hasUpdateValueCurrentTimestamp(option *ast.ColumnOption) bool {
+	if option.Tp == ast.ColumnOptionOnUpdate {
+		funcCallExpr, ok := option.Expr.(*ast.FuncCallExpr)
+		if !ok {
+			return false
+		}
+
+		if funcCallExpr.FnName.L == "current_timestamp" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hasDefaultValueCurrentTimestamp(option *ast.ColumnOption) bool {
+	if option.Tp == ast.ColumnOptionDefaultValue {
+		funcCallExpr, ok := option.Expr.(*ast.FuncCallExpr)
+		if !ok {
+			return false
+		}
+
+		if funcCallExpr.FnName.L == "current_timestamp" {
+			return true
+		}
+	}
+
+	return false
 }
 
 func disableUseTypeTimestampField(input *RuleHandlerInput) error {
