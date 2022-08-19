@@ -113,6 +113,9 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error)
 		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
 			inspect.cnf.dmlExplainPreCheckEnable = true
 		}
+		if rule.Name == rulepkg.ConfigAfterEventEnable {
+			inspect.cnf.isAfterEvent = true
+		}
 	}
 
 	return inspect, nil
@@ -120,6 +123,10 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error)
 
 func (i *MysqlDriverImpl) IsOfflineAudit() bool {
 	return i.isOfflineAudit
+}
+
+func (i *MysqlDriverImpl) IsAfterEvent() bool {
+	return i.cnf.isAfterEvent
 }
 
 func (i *MysqlDriverImpl) executeByGhost(ctx context.Context, query string, isDryRun bool) (_driver.Result, error) {
@@ -271,7 +278,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		return nil, err
 	}
 
-	if i.IsOfflineAudit() {
+	if i.IsOfflineAudit() || i.IsAfterEvent() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
 		err = i.CheckInvalid(nodes[0])
@@ -304,6 +311,15 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		if i.IsOfflineAudit() && !handler.IsAllowOfflineRule(nodes[0]) {
 			continue
 		}
+		if i.cnf.isAfterEvent {
+			if handler.BeforeTheEvent {
+				continue
+			}
+			if handler.IsDisableAfterEventRule(nodes[0]) {
+				continue
+			}
+		}
+
 		input := &rulepkg.RuleHandlerInput{
 			Ctx:  i.Ctx,
 			Rule: *rule,
@@ -360,7 +376,11 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 	if oscCommandLine != "" {
 		i.result.Add(driver.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
-	i.Ctx.UpdateContext(nodes[0])
+
+	if !i.IsAfterEvent() {
+		i.Ctx.UpdateContext(nodes[0])
+	}
+
 	return i.result, nil
 }
 
@@ -423,6 +443,7 @@ type Config struct {
 	dmlExplainPreCheckEnable   bool
 	calculateCardinalityMaxRow int
 	compositeIndexMaxColumn    int
+	isAfterEvent               bool
 }
 
 func (i *MysqlDriverImpl) Context() *session.Context {
