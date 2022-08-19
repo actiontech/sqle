@@ -85,6 +85,7 @@ const (
 	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
 	DDLDisableTypeTimestamp                     = "ddl_disable_type_timestamp"
 	DDLDisableAlterFieldUseFirstAndAfter        = "ddl_disable_alter_field_use_first_and_after"
+	DDLCheckCreateTimeColumn                    = "ddl_check_create_time_column"
 )
 
 // inspector DML rules
@@ -422,6 +423,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "alter表字段禁止使用first,after",
 		AllowOffline: true,
 		Func:         disableAlterUseFirstAndAfter,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckCreateTimeColumn,
+			Desc:     "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
+		AllowOffline: true,
+		Func:         checkFieldCreateTime,
 	},
 	{
 		Rule: driver.Rule{
@@ -1188,6 +1200,45 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
+}
+
+func checkFieldCreateTime(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	var hasCreateTimeAndDefaultValue bool
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		for _, col := range stmt.Cols {
+			if col.Name.Name.L == "create_time" && hasDefaultValueCurrentTimeStamp(col.Options) {
+				hasCreateTimeAndDefaultValue = true
+			}
+		}
+	default:
+		return nil
+	}
+
+	if !hasCreateTimeAndDefaultValue {
+		addResult(result, rule, DDLCheckCreateTimeColumn)
+	}
+
+	return nil
+}
+
+func hasDefaultValueCurrentTimeStamp(options []*ast.ColumnOption) bool {
+	for _, option := range options {
+		if option.Tp == ast.ColumnOptionDefaultValue {
+			funcCallExpr, ok := option.Expr.(*ast.FuncCallExpr)
+			if !ok {
+				return false
+			}
+			if funcCallExpr.FnName.L == "current_timestamp" {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func checkInQueryLimit(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
