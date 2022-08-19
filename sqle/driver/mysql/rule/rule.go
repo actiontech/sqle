@@ -85,7 +85,7 @@ const (
 	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
 	DDLDisableTypeTimestamp                     = "ddl_disable_type_timestamp"
 	DDLDisableAlterFieldUseFirstAndAfter        = "ddl_disable_alter_field_use_first_and_after"
-	DDLCheckColumnCreateAndUpdateTime           = "ddl_check_column_create_and_update_time"
+	DDLCheckCreateTimeColumn                    = "ddl_check_create_time_column"
 )
 
 // inspector DML rules
@@ -426,14 +426,14 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnCreateAndUpdateTime,
-			Desc:     "建表DDL必须包含CREATE_TIME, UPDATE_TIME字段",
+			Name:     DDLCheckCreateTimeColumn,
+			Desc:     "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message:      "建表DDL必须包含CREATE_TIME, UPDATE_TIME字段",
+		Message:      "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
 		AllowOffline: true,
-		Func:         checkFieldCreateAndUpdateTime,
+		Func:         checkFieldCreateTime,
 	},
 	{
 		Rule: driver.Rule{
@@ -1202,30 +1202,43 @@ var RuleHandlers = []RuleHandler{
 	},
 }
 
-func checkFieldCreateAndUpdateTime(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
-	var hasCreateTimeField, hasUpdateTimeField bool
+func checkFieldCreateTime(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+	var hasCreateTimeAndDefaultValue bool
 	switch stmt := node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
 			return nil
 		}
 		for _, col := range stmt.Cols {
-			if col.Name.Name.L == "create_time" {
-				hasCreateTimeField = true
-			}
-			if col.Name.Name.L == "update_time" {
-				hasUpdateTimeField = true
+			if col.Name.Name.L == "create_time" && hasDefaultValueCurrentTimeStamp(col.Options) {
+				hasCreateTimeAndDefaultValue = true
 			}
 		}
 	default:
 		return nil
 	}
 
-	if !hasCreateTimeField || !hasUpdateTimeField {
-		addResult(result, rule, DDLCheckColumnCreateAndUpdateTime)
+	if !hasCreateTimeAndDefaultValue {
+		addResult(result, rule, DDLCheckCreateTimeColumn)
 	}
 
 	return nil
+}
+
+func hasDefaultValueCurrentTimeStamp(options []*ast.ColumnOption) bool {
+	for _, option := range options {
+		if option.Tp == ast.ColumnOptionDefaultValue {
+			funcCallExpr, ok := option.Expr.(*ast.FuncCallExpr)
+			if !ok {
+				return false
+			}
+			if funcCallExpr.FnName.L == "current_timestamp" {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func checkInQueryLimit(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
