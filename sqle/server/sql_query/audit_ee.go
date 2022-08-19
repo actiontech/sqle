@@ -29,7 +29,7 @@ func Audit(sqls []string, schema string, instance *model.Instance) error {
 	}
 
 	logger := log.NewEntry().WithField("type", "sql_query")
-	err := server.Audit(logger, task)
+	err := server.Audit(logger, task, "")
 	if err != nil {
 		return err
 	}
