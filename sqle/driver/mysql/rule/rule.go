@@ -428,7 +428,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name:     DDLCheckCreateTimeColumn,
 			Desc:     "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
-			Level:    driver.RuleLevelError,
+			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
 		Message:      "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
