@@ -88,9 +88,21 @@ func (i *MysqlDriverImpl) CheckExplain(node ast.Node) error {
 }
 
 func (i *MysqlDriverImpl) CheckInvalidOffline(node ast.Node) error {
-	stmt, ok := node.(*ast.UnparsedStmt)
-	if ok {
-		return i.checkUnparsedStmt(stmt)
+	var err error
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt:
+		err = i.checkInvalidCreateTableOffline(stmt)
+	case *ast.AlterTableStmt:
+		err = i.checkInvalidAlterTableOffline(stmt)
+	case *ast.CreateIndexStmt:
+		err = i.checkInvalidCreateIndexOffline(stmt)
+	case *ast.InsertStmt:
+		err = i.checkInvalidInsertOffline(stmt)
+	case *ast.UnparsedStmt:
+		err = i.checkUnparsedStmt(stmt)
+	}
+	if err != nil {
+		return fmt.Errorf(CheckInvalidErrorFormat, err)
 	}
 	return nil
 }
@@ -101,11 +113,7 @@ create table ...
 ------------------------------------------------------------------
 1. schema must exist;
 2. table can't exist if SQL has not "IF NOT EXISTS";
-3. column name can't duplicated;
-4. primary key can only be set once;
-5. index name can't be duplicated;
-6. index column must exist;
-7. index column can't duplicated, "index idx_1(id,id)" is invalid
+3. offline check must pass
 ------------------------------------------------------------------
 */
 func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) error {
@@ -136,6 +144,21 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 			}
 		}
 	}
+	return i.checkInvalidCreateTableOffline(stmt)
+}
+
+/*
+------------------------------------------------------------------
+create table ...
+------------------------------------------------------------------
+1. column name can't duplicated;
+2. primary key can only be set once;
+3. index name can't be duplicated;
+4. index column must exist;
+5. index column can't duplicated, "index idx_1(id,id)" is invalid
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableStmt) error {
 	colsName := []string{}
 	colsNameMap := map[string]struct{}{}
 	pkCounter := 0
@@ -435,6 +458,68 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 
 /*
 ------------------------------------------------------------------
+alter table ...
+------------------------------------------------------------------
+1. add/update pk, pk can only be set once;
+2. index column can't duplicated.
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt) error {
+	// check pk can only be set once
+	hasPk := false
+
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
+		for _, col := range spec.NewColumns {
+			if hasPk && util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+				i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+			} else {
+				hasPk = true
+			}
+		}
+	}
+
+	// check index name can't be duplicated and index column can't duplicated
+	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+		switch spec.Constraint.Tp {
+		case ast.ConstraintPrimaryKey:
+			if hasPk {
+				// primary key has exist, can not add primary key
+				i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+			} else {
+				hasPk = true
+			}
+			names := []string{}
+			for _, col := range spec.Constraint.Keys {
+				colName := col.Column.Name.L
+				names = append(names, colName)
+			}
+			duplicateColumn := utils.GetDuplicate(names)
+			if len(duplicateColumn) > 0 {
+				i.result.Add(driver.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+					strings.Join(duplicateColumn, ","))
+			}
+		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
+			indexName := strings.ToLower(spec.Constraint.Name)
+			if indexName == "" {
+				indexName = "(匿名)"
+			}
+			names := []string{}
+			for _, col := range spec.Constraint.Keys {
+				colName := col.Column.Name.L
+				names = append(names, colName)
+			}
+			duplicateColumn := utils.GetDuplicate(names)
+			if len(duplicateColumn) > 0 {
+				i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
+					strings.Join(duplicateColumn, ","))
+			}
+		}
+	}
+	return nil
+}
+
+/*
+------------------------------------------------------------------
 drop table ...
 ------------------------------------------------------------------
 1. schema must exist;
@@ -604,6 +689,27 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 
 /*
 ------------------------------------------------------------------
+create index ...
+------------------------------------------------------------------
+1. index column name can't be duplicated.
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidCreateIndexOffline(stmt *ast.CreateIndexStmt) error {
+	keyColsName := []string{}
+	for _, col := range stmt.IndexPartSpecifications {
+		colName := col.Column.Name.L
+		keyColsName = append(keyColsName, colName)
+	}
+	duplicateName := utils.GetDuplicate(keyColsName)
+	if len(duplicateName) > 0 {
+		i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
+			strings.Join(duplicateName, ","))
+	}
+	return nil
+}
+
+/*
+------------------------------------------------------------------
 drop index ...
 ------------------------------------------------------------------
 1. schema must exist;
@@ -652,7 +758,8 @@ insert into ... values ...
 1. schema must exist;
 2. table must exist;
 3. column must exist;
-4. value length must match column length.
+4. insert column can't duplicated;
+5. value length must match column length.
 ------------------------------------------------------------------
 */
 func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
@@ -713,6 +820,41 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 	}
 
 	if stmt.Lists != nil {
+		for _, list := range stmt.Lists {
+			if len(list) != len(insertColsName) {
+				i.result.Add(driver.RuleLevelError, ColumnsValuesNotMatchMessage)
+				break
+			}
+		}
+	}
+	return nil
+}
+
+/*
+------------------------------------------------------------------
+insert into ... values ...
+------------------------------------------------------------------
+1. insert column can't duplicated;
+2. value length must match column length.
+------------------------------------------------------------------
+*/
+func (i *MysqlDriverImpl) checkInvalidInsertOffline(stmt *ast.InsertStmt) error {
+	insertColsName := []string{}
+	if stmt.Columns != nil {
+		for _, col := range stmt.Columns {
+			insertColsName = append(insertColsName, col.Name.L)
+		}
+
+	} else if stmt.Setlist != nil {
+		for _, set := range stmt.Setlist {
+			insertColsName = append(insertColsName, set.Column.Name.L)
+		}
+	}
+	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
+		i.result.Add(driver.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
+	}
+
+	if stmt.Lists != nil && len(insertColsName) > 0 {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
 				i.result.Add(driver.RuleLevelError, ColumnsValuesNotMatchMessage)
