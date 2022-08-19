@@ -2380,15 +2380,14 @@ select v1 from exist_db.exist_tb_1 where v2 = "3"
 	)
 }
 
-func Test_DDLCheckColumnCreateAndUpdateTime(t *testing.T) {
-	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnCreateAndUpdateTime].Rule
+func Test_DDLCheckCreateTimeColumn(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTimeColumn].Rule
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`
 create table table_10
 (
     id          int primary key,
-    CREATe_TIME timestamp,
-    update_time timestamp,
+    CREATe_TIME timestamp not null default CURRENT_TIMESTAMP,
     name        varchar(255)
 )
 `,
@@ -2400,26 +2399,18 @@ create table table_10
 create table table_10
 (
     id          int primary key,
-    update_time timestamp
+    create_time timestamp
 )
-`, newTestResult().addResult(rulepkg.DDLCheckColumnCreateAndUpdateTime))
+`, newTestResult().addResult(rulepkg.DDLCheckCreateTimeColumn))
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`
 create table table_10
 (
     id          int primary key,
-    create_time timestamp
+    create_time timestamp default current_timestamp
 )
-`, newTestResult().addResult(rulepkg.DDLCheckColumnCreateAndUpdateTime))
-
-	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
-		`
-create table table_10
-(
-    id          int primary key
-)
-`, newTestResult().addResult(rulepkg.DDLCheckColumnCreateAndUpdateTime))
+`, newTestResult())
 }
 
 func TestCheckWhereExistFunc_FP(t *testing.T) {
