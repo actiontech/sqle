@@ -1,11 +1,11 @@
 package mysql
 
 import (
-	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"testing"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/log"
 
