@@ -2281,6 +2281,17 @@ func Test_DMLCheckSelectWithOrderBy(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`select id from exist_db.exist_tb_1 where (select id from COLLATIONS order by ? limit 1) = 1`,
 		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select id
+from (select * from exist_db.exist_tb_1 order by id limit 10) as test
+where id = 1;`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select (select count(*) from exist_db.exist_tb_1 order by id limit 10) as count 
+				from exist_db.exist_tb_1 where id = 1;`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
 }
 
 func TestCheckPkProhibitAutoIncrement(t *testing.T) {
