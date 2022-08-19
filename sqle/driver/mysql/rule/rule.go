@@ -121,6 +121,7 @@ const (
 	ConfigDDLGhostMinSize          = "ddl_ghost_min_size"
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
+	ConfigAfterEventEnable         = "after_event_enable"
 )
 
 type RuleHandlerInput struct {
@@ -128,6 +129,8 @@ type RuleHandlerInput struct {
 	Rule driver.Rule
 	Res  *driver.AuditResult
 	Node ast.Node
+
+	IsAfterEventEnable bool
 }
 
 type RuleHandlerFunc func(input *RuleHandlerInput) error
@@ -138,6 +141,10 @@ type RuleHandler struct {
 	Func                 RuleHandlerFunc
 	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
+	// 开始事后审核时将会跳过这个值为ture的规则
+	BeforeTheEvent bool
+	// 事后审核时将会跳过下方列表中的类型
+	DisableAfterEventStmt []ast.Node
 }
 
 // In order to reuse some code, some rules use the same rule handler.
@@ -165,6 +172,15 @@ func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
 		}
 	}
 	return true
+}
+
+func (rh *RuleHandler) IsDisableAfterEventRule(node ast.Node) bool {
+	for _, stmt := range rh.DisableAfterEventStmt {
+		if reflect.TypeOf(stmt) == reflect.TypeOf(node) {
+			return true
+		}
+	}
+	return false
 }
 
 var (
@@ -231,8 +247,9 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message: "执行DDL的表 %v 空间超过 %vMB",
-		Func:    checkDDLTableSize,
+		Message:        "执行DDL的表 %v 空间超过 %vMB",
+		BeforeTheEvent: true,
+		Func:           checkDDLTableSize,
 	}, {
 		Rule: driver.Rule{
 			Name:     DDLCheckIndexTooMany,
@@ -248,8 +265,9 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message: "字段 %v 上的索引数量超过%v个",
-		Func:    checkIndex,
+		Message:               "字段 %v 上的索引数量超过%v个",
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                  checkIndex,
 	},
 	{
 		Rule: driver.Rule{
@@ -267,9 +285,10 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeIndexOptimization,
 		},
-		Message:      "%v",
-		AllowOffline: true,
-		Func:         checkIndex,
+		Message:               "%v",
+		AllowOffline:          true,
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                  checkIndex,
 	},
 	{
 		Rule: driver.Rule{
@@ -310,6 +329,15 @@ var RuleHandlers = []RuleHandler{
 					Type:  params.ParamTypeInt,
 				},
 			},
+		},
+	},
+
+	{
+		Rule: driver.Rule{
+			Name: ConfigAfterEventEnable,
+			Desc:     "停用上线审核",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeGlobalConfig,
 		},
 	},
 
@@ -371,10 +399,11 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeIndexingConvention,
 		},
-		Message:              "表必须有主键",
-		AllowOffline:         true,
-		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
-		Func:                 checkPrimaryKey,
+		Message:               "表必须有主键",
+		AllowOffline:          true,
+		NotAllowOfflineStmts:  []ast.Node{&ast.AlterTableStmt{}},
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                  checkPrimaryKey,
 	},
 	{
 		Rule: driver.Rule{
@@ -383,10 +412,11 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeIndexingConvention,
 		},
-		Message:              "主键建议使用自增",
-		AllowOffline:         true,
-		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
-		Func:                 checkPrimaryKey,
+		Message:               "主键建议使用自增",
+		AllowOffline:          true,
+		NotAllowOfflineStmts:  []ast.Node{&ast.AlterTableStmt{}},
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                  checkPrimaryKey,
 	},
 	{
 		Rule: driver.Rule{
@@ -395,10 +425,11 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeIndexingConvention,
 		},
-		Message:              "主键建议使用 bigint 无符号类型，即 bigint unsigned",
-		AllowOffline:         true,
-		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
-		Func:                 checkPrimaryKey,
+		Message:               "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+		AllowOffline:          true,
+		NotAllowOfflineStmts:  []ast.Node{&ast.AlterTableStmt{}},
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                  checkPrimaryKey,
 	},
 	{
 		Rule: driver.Rule{
@@ -460,10 +491,11 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:              "索引个数建议不超过%v个",
-		AllowOffline:         true,
-		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:                 checkIndex,
+		Message:               "索引个数建议不超过%v个",
+		AllowOffline:          true,
+		NotAllowOfflineStmts:  []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                  checkIndex,
 	},
 	{
 		Rule: driver.Rule{
@@ -481,10 +513,11 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:              "复合索引的列数量不建议超过%v个",
-		AllowOffline:         true,
-		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:                 checkIndex,
+		Message:               "复合索引的列数量不建议超过%v个",
+		AllowOffline:          true,
+		NotAllowOfflineStmts:  []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                  checkIndex,
 	},
 	{
 		Rule: driver.Rule{
@@ -555,10 +588,11 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeIndexingConvention,
 		},
-		Message:              "禁止将blob类型的列加入索引",
-		AllowOffline:         true,
-		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
-		Func:                 disableAddIndexForColumnsTypeBlob,
+		Message:               "禁止将blob类型的列加入索引",
+		AllowOffline:          true,
+		NotAllowOfflineStmts:  []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                  disableAddIndexForColumnsTypeBlob,
 	},
 	{
 		Rule: driver.Rule{
@@ -578,9 +612,10 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeUsageSuggestion,
 		},
-		Message:      "已存在对该表的修改语句，建议合并成一个ALTER语句",
-		AllowOffline: false,
-		Func:         checkMergeAlterTable,
+		Message:        "已存在对该表的修改语句，建议合并成一个ALTER语句",
+		AllowOffline:   false,
+		BeforeTheEvent: true,
+		Func:           checkMergeAlterTable,
 	},
 	{
 		Rule: driver.Rule{
@@ -801,10 +836,11 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeIndexingConvention,
 		},
-		Message:              "主键禁止使用自增",
-		AllowOffline:         true,
-		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}},
-		Func:                 checkPrimaryKey,
+		Message:               "主键禁止使用自增",
+		AllowOffline:          true,
+		NotAllowOfflineStmts:  []ast.Node{&ast.AlterTableStmt{}},
+		DisableAfterEventStmt: []ast.Node{&ast.AlterTableStmt{}},
+		Func:                  checkPrimaryKey,
 	},
 	{
 		Rule: driver.Rule{
@@ -878,8 +914,9 @@ var RuleHandlers = []RuleHandler{
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeIndexingConvention,
 		},
-		Message: "建议创建约束前,先行创建索引",
-		Func:    checkIndexesExistBeforeCreatConstraints,
+		Message:        "建议创建约束前,先行创建索引",
+		BeforeTheEvent: true,
+		Func:           checkIndexesExistBeforeCreatConstraints,
 	},
 	{
 		Rule: driver.Rule{
