@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
@@ -384,8 +383,8 @@ func init() {
 	}
 }
 
-func mysqlDML1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML1(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		repeats := []string{}
 		fields := map[string]struct{}{}
@@ -408,7 +407,7 @@ func mysqlDML1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 			}
 		}
 		if len(repeats) > 0 {
-			addResult(res, rule, rule.Name, strings.Join(repeats, ","))
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(repeats, ","))
 		}
 		return nil
 	default:
@@ -416,13 +415,13 @@ func mysqlDML1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDDL1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL1(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			for _, option := range spec.Options {
 				if option.Tp == ast.TableOptionCharset {
-					addResult(res, rule, rule.Name)
+					addResult(input.Res, input.Rule, input.Rule.Name)
 					break
 				}
 			}
@@ -433,13 +432,13 @@ func mysqlDDL1(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDDL2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL2(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.AlterTableStmt:
 		if len(stmt.Specs) > 0 {
 			for _, spec := range stmt.Specs {
 				if spec.Tp == ast.AlterTableDropColumn {
-					addResult(res, rule, rule.Name)
+					addResult(input.Res, input.Rule, input.Rule.Name)
 					break
 				}
 			}
@@ -450,18 +449,18 @@ func mysqlDDL2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDDL3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL3(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.DropIndexStmt:
 		if strings.ToLower(stmt.IndexName) == "primary" {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		return nil
 	case *ast.AlterTableStmt:
 		if len(stmt.Specs) > 0 {
 			for _, spec := range stmt.Specs {
 				if spec.Tp == ast.AlterTableDropPrimaryKey {
-					addResult(res, rule, rule.Name)
+					addResult(input.Res, input.Rule, input.Rule.Name)
 					break
 				}
 			}
@@ -472,13 +471,13 @@ func mysqlDDL3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDDL4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL4(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.AlterTableStmt:
 		if len(stmt.Specs) > 0 {
 			for _, spec := range stmt.Specs {
 				if spec.Tp == ast.AlterTableDropForeignKey {
-					addResult(res, rule, rule.Name)
+					addResult(input.Res, input.Rule, input.Rule.Name)
 					break
 				}
 			}
@@ -489,8 +488,8 @@ func mysqlDDL4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDML2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if where := getWhereExpr(node); where != nil {
+func mysqlDML2(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch x := expr.(type) {
@@ -507,14 +506,14 @@ func mysqlDML2(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDML3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if where := getWhereExpr(node); where != nil {
+func mysqlDML3(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch x := expr.(type) {
@@ -533,14 +532,14 @@ func mysqlDML3(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDML4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if where := getWhereExpr(node); where != nil {
+func mysqlDML4(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch expr.(type) {
@@ -551,17 +550,17 @@ func mysqlDML4(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDML5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML5(input *RuleHandlerInput) error {
 	visitor := &mysqlDML5Visitor{}
-	node.Accept(visitor)
+	input.Node.Accept(visitor)
 	if visitor.HasPrefixOrSuffixSpace {
-		addResult(res, rule, rule.Name)
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
@@ -588,23 +587,23 @@ func (g *mysqlDML5Visitor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
 }
 
-func mysqlDDL5(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch node.(type) {
+func mysqlDDL5(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
 	case ast.DDLNode:
-		if strings.Contains(node.Text(), "“") {
-			addResult(res, rule, rule.Name)
+		if strings.Contains(input.Node.Text(), "“") {
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDML6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML6(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
 		if orderBy != nil {
 			if expr, ok := orderBy.Items[0].Expr.(*ast.FuncCallExpr); ok && expr.FnName.L == "rand" {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
 		}
 		return nil
@@ -613,13 +612,13 @@ func mysqlDML6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDML7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML7(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		groupBy := stmt.GroupBy
 		if groupBy != nil {
 			if _, ok := groupBy.Items[0].Expr.(*ast.PositionExpr); ok {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
 		}
 		return nil
@@ -628,8 +627,8 @@ func mysqlDML7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDML8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML8(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
 		if orderBy != nil {
@@ -639,7 +638,7 @@ func mysqlDML8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 					isDesc = item.Desc
 				}
 				if item.Desc != isDesc {
-					addResult(res, rule, rule.Name)
+					addResult(input.Res, input.Rule, input.Rule.Name)
 					break
 				}
 			}
@@ -650,11 +649,11 @@ func mysqlDML8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDML9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML9(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.GroupBy != nil && stmt.OrderBy == nil {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		return nil
 	default:
@@ -662,14 +661,14 @@ func mysqlDML9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDML10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML10(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
 		if orderBy != nil {
 			for _, item := range orderBy.Items {
 				if _, ok := item.Expr.(*ast.BinaryOperationExpr); ok {
-					addResult(res, rule, rule.Name)
+					addResult(input.Res, input.Rule, input.Rule.Name)
 					break
 				}
 			}
@@ -680,18 +679,18 @@ func mysqlDML10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 }
 
-func mysqlDML11(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if len(node.Text()) > rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
-		addResult(res, rule, rule.Name)
+func mysqlDML11(input *RuleHandlerInput) error {
+	if len(input.Node.Text()) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
 
-func mysqlDML12(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML12(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Having != nil {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		return nil
 	default:
@@ -699,11 +698,11 @@ func mysqlDML12(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 }
 
-func mysqlDML13(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML13(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.DeleteStmt:
 		if stmt.Where == nil {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		return nil
 	default:
@@ -711,10 +710,10 @@ func mysqlDML13(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 }
 
-func mysqlDML14(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML14(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.UpdateStmt:
-		createTable, exist, err := ctx.GetCreateTableStmt(stmt.TableRefs.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
+		createTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.TableRefs.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
 		if err != nil {
 			return err
 		}
@@ -732,7 +731,7 @@ func mysqlDML14(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 		}
 		for _, assignment := range stmt.List {
 			if _, ok := primary[assignment.Column.Name.L]; ok {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
 			}
 		}
@@ -742,11 +741,11 @@ func mysqlDML14(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 }
 
-func mysqlDDL6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL6(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
-		if len(stmt.Cols) > rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
-			addResult(res, rule, rule.Name)
+		if len(stmt.Cols) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		return nil
 	default:
@@ -754,12 +753,12 @@ func mysqlDDL6(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDDL7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL7(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
 			if col.Tp.Charset != "" {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
 			}
 		}
@@ -769,12 +768,12 @@ func mysqlDDL7(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDDL8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL8(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
 			if (col.Tp.Tp == mysql.TypeLong && col.Tp.Flen != 10) || (col.Tp.Tp == mysql.TypeLonglong && col.Tp.Flen != 20) {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
 			}
 		}
@@ -784,12 +783,12 @@ func mysqlDDL8(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDDL9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL9(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
-			if col.Tp.Tp == mysql.TypeVarchar && col.Tp.Flen > rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
-				addResult(res, rule, rule.Name)
+			if col.Tp.Tp == mysql.TypeVarchar && col.Tp.Flen > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
 			}
 		}
@@ -799,8 +798,8 @@ func mysqlDDL9(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, 
 	}
 }
 
-func mysqlDML15(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if where := getWhereExpr(node); where != nil {
+func mysqlDML15(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch expr.(type) {
@@ -811,23 +810,23 @@ func mysqlDML15(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDML16(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML16(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		for _, f := range stmt.Fields.Fields {
 			if fu, ok := f.Expr.(*ast.FuncCallExpr); ok && fu.FnName.L == "sysdate" {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				return nil
 			}
 		}
 	}
-	if where := getWhereExpr(node); where != nil {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch pattern := expr.(type) {
@@ -840,23 +839,23 @@ func mysqlDML16(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDML17(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML17(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		for _, f := range stmt.Fields.Fields {
 			if fu, ok := f.Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "sum" {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				return nil
 			}
 		}
 	}
-	if where := getWhereExpr(node); where != nil {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch pattern := expr.(type) {
@@ -869,18 +868,18 @@ func mysqlDML17(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDDL10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL10(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range stmt.Constraints {
-			if constraint.Tp == ast.ConstraintPrimaryKey && len(constraint.Keys) > rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
-				addResult(res, rule, rule.Name)
+			if constraint.Tp == ast.ConstraintPrimaryKey && len(constraint.Keys) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
 			}
 		}
@@ -890,11 +889,11 @@ func mysqlDDL10(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 }
 
-func mysqlDML18(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDML18(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.OrderBy == nil {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		return nil
 	default:
@@ -902,38 +901,38 @@ func mysqlDML18(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 	}
 }
 
-func mysqlDML19(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch node.(type) {
+func mysqlDML19(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
 	case *ast.TruncateTableStmt:
-		addResult(res, rule, rule.Name)
+		addResult(input.Res, input.Rule, input.Rule.Name)
 		return nil
 	default:
 		return nil
 	}
 }
 
-func mysqlDML20(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch node.(type) {
+func mysqlDML20(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
 	case *ast.TruncateTableStmt, *ast.DeleteStmt, *ast.DropTableStmt:
-		addResult(res, rule, rule.Name)
+		addResult(input.Res, input.Rule, input.Rule.Name)
 		return nil
 	default:
 		return nil
 	}
 }
 
-func mysqlDML21(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
+func mysqlDML21(input *RuleHandlerInput) error {
 	funcs := []string{"sleep", "benchmark", "get_lock", "release_lock"}
-	switch stmt := node.(type) {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		for _, f := range stmt.Fields.Fields {
 			if fu, ok := f.Expr.(*ast.FuncCallExpr); ok && inSlice(funcs, fu.FnName.L) {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 				return nil
 			}
 		}
 	}
-	if where := getWhereExpr(node); where != nil {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch pattern := expr.(type) {
@@ -946,7 +945,7 @@ func mysqlDML21(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
@@ -961,8 +960,8 @@ func inSlice(ss []string, s string) bool {
 	return false
 }
 
-func mysqlDML23(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if where := getWhereExpr(node); where != nil {
+func mysqlDML23(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch expr.(type) {
@@ -973,21 +972,21 @@ func mysqlDML23(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDML22(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if strings.Contains(node.Text(), "!=") {
-		addResult(res, rule, rule.Name)
+func mysqlDML22(input *RuleHandlerInput) error {
+	if strings.Contains(input.Node.Text(), "!=") {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
 
-func mysqlDML24(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	if where := getWhereExpr(node); where != nil {
+func mysqlDML24(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch pattern := expr.(type) {
@@ -1000,20 +999,20 @@ func mysqlDML24(ctx *session.Context, rule driver.Rule, res *driver.AuditResult,
 			return false
 		}, where)
 		if trigger {
-			addResult(res, rule, rule.Name)
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
 	return nil
 }
 
-func mysqlDDL11(ctx *session.Context, rule driver.Rule, res *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func mysqlDDL11(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	default:
 		return nil
 	case *ast.CreateTableStmt:
 		for _, option := range stmt.Options {
 			if option.Tp == ast.TableOptionAutoIncrement && option.UintValue != 0 {
-				addResult(res, rule, rule.Name)
+				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
 		}
 		return nil
