@@ -1246,9 +1246,9 @@ var RuleHandlers = []RuleHandler{
 	},
 }
 
-func checkFieldCreateTime(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+func checkFieldCreateTime(input *RuleHandlerInput) error {
 	var hasCreateTimeAndDefaultValue bool
-	switch stmt := node.(type) {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
 			return nil
@@ -1263,7 +1263,7 @@ func checkFieldCreateTime(_ *session.Context, rule driver.Rule, result *driver.A
 	}
 
 	if !hasCreateTimeAndDefaultValue {
-		addResult(result, rule, DDLCheckCreateTimeColumn)
+		addResult(input.Res, input.Rule, DDLCheckCreateTimeColumn)
 	}
 
 	return nil
@@ -1285,19 +1285,19 @@ func hasDefaultValueCurrentTimeStamp(options []*ast.ColumnOption) bool {
 	return false
 }
 
-func checkInQueryLimit(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
-	where := getWhereExpr(node)
+func checkInQueryLimit(input *RuleHandlerInput) error {
+	where := getWhereExpr(input.Node)
 	if where == nil {
 		return nil
 	}
 
-	paramThresholdNumber := rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	paramThresholdNumber := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 	util.ScanWhereStmt(func(expr ast.ExprNode) bool {
 		switch stmt := expr.(type) {
 		case *ast.PatternInExpr:
 			inQueryParamActualNumber := len(stmt.List)
 			if inQueryParamActualNumber > paramThresholdNumber {
-				addResult(result, rule, DMLCheckInQueryNumber, inQueryParamActualNumber, paramThresholdNumber)
+				addResult(input.Res, input.Rule, DMLCheckInQueryNumber, inQueryParamActualNumber, paramThresholdNumber)
 			}
 			return true
 		}
@@ -1308,15 +1308,15 @@ func checkInQueryLimit(_ *session.Context, rule driver.Rule, result *driver.Audi
 	return nil
 }
 
-func disableUseTypeTimestampField(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func disableUseTypeTimestampField(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
 			return nil
 		}
 		for _, col := range stmt.Cols {
 			if col.Tp.Tp == mysql.TypeTimestamp {
-				addResult(result, rule, DDLDisableTypeTimestamp)
+				addResult(input.Res, input.Rule, DDLDisableTypeTimestamp)
 				return nil
 			}
 		}
@@ -1329,7 +1329,7 @@ func disableUseTypeTimestampField(_ *session.Context, rule driver.Rule, result *
 		for _, spec := range specs {
 			for _, newColumn := range spec.NewColumns {
 				if newColumn.Tp.Tp == mysql.TypeTimestamp {
-					addResult(result, rule, DDLDisableTypeTimestamp)
+					addResult(input.Res, input.Rule, DDLDisableTypeTimestamp)
 					return nil
 				}
 			}
@@ -1339,9 +1339,9 @@ func disableUseTypeTimestampField(_ *session.Context, rule driver.Rule, result *
 	return nil
 }
 
-func checkBigintInsteadOfDecimal(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
+func checkBigintInsteadOfDecimal(input *RuleHandlerInput) error {
 	var columnNames []string
-	switch stmt := node.(type) {
+	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
 			return nil
@@ -1379,14 +1379,14 @@ func checkBigintInsteadOfDecimal(_ *session.Context, rule driver.Rule, result *d
 	}
 
 	if len(columnNames) > 0 {
-		addResult(result, rule, DDLCheckBigintInsteadOfDecimal, strings.Join(columnNames, ","))
+		addResult(input.Res, input.Rule, DDLCheckBigintInsteadOfDecimal, strings.Join(columnNames, ","))
 	}
 
 	return nil
 }
 
-func disableAlterUseFirstAndAfter(_ *session.Context, rule driver.Rule, result *driver.AuditResult, node ast.Node) error {
-	switch stmt := node.(type) {
+func disableAlterUseFirstAndAfter(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.AlterTableStmt:
 		specs := util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableModifyColumn,
 			ast.AlterTableChangeColumn)
@@ -1396,7 +1396,7 @@ func disableAlterUseFirstAndAfter(_ *session.Context, rule driver.Rule, result *
 				continue
 			}
 			if spec.Position.Tp == ast.ColumnPositionFirst || spec.Position.Tp == ast.ColumnPositionAfter {
-				addResult(result, rule, DDLDisableAlterFieldUseFirstAndAfter)
+				addResult(input.Res, input.Rule, DDLDisableAlterFieldUseFirstAndAfter)
 			}
 		}
 	}
