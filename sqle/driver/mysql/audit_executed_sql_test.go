@@ -92,7 +92,7 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD INDEX idx_2(b1);
 ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit test";
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
-				newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+				newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driver.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP"),
 				newTestResult(),
 				newTestResult(),
 				newTestResult(),
@@ -195,7 +195,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			`,
-				newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement),
+				newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).add(driver.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP"),
 				newTestResult(),
 			)
 
@@ -212,7 +212,7 @@ PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			`,
-				newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
+				newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned).add(driver.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP"),
 				newTestResult(),
 			)
 
