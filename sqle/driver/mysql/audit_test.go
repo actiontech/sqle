@@ -2413,6 +2413,40 @@ create table table_10
 `, newTestResult())
 }
 
+func Test_DDLCheckUpdateTimeColumn(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckUpdateTimeColumn].Rule
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+	create table table_10
+	(
+	  id          int primary key,
+	  update_time timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	  name        varchar(255)
+	)
+	`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+create table table_10
+(
+    id          int primary key,
+    update_time timestamp,
+    create_time timestamp
+)
+`, newTestResult().addResult(rulepkg.DDLCheckUpdateTimeColumn))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+	create table table_10
+	(
+	   id          int primary key,
+	   update_time timestamp default current_timestamp on    update current_timestamp
+	)
+	`, newTestResult())
+}
+
 func TestCheckWhereExistFunc_FP(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckWhereExistFunc].Rule
 	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist func", DefaultMysqlInspect(),
