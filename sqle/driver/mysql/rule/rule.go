@@ -92,6 +92,7 @@ const (
 const (
 	DMLCheckWithLimit                    = "dml_check_with_limit"
 	DMLCheckWithOrderBy                  = "dml_check_with_order_by"
+	DMLCheckSelectWithOrderBy            = "dml_check_select_with_order_by"
 	DMLCheckWhereIsInvalid               = "all_check_where_is_invalid"
 	DMLDisableSelectAllColumn            = "dml_disable_select_all_column"
 	DMLCheckInsertColumnsExist           = "dml_check_insert_columns_exist"
@@ -777,6 +778,17 @@ var RuleHandlers = []RuleHandler{
 		Func:         checkDMLWithOrderBy,
 	},
 	{
+		Rule: driver.Rule{
+			Name:     DMLCheckSelectWithOrderBy,
+			Desc:     "select 语句不能有order by",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message:      "select 语句不能有order by",
+		AllowOffline: true,
+		Func:         checkSelectWithOrderBy,
+	},
+	{
 		// TODO: 修改level以适配默认模板
 		Rule: driver.Rule{
 			Name:     DMLCheckInsertColumnsExist,
@@ -1264,6 +1276,32 @@ func checkFieldCreateTime(input *RuleHandlerInput) error {
 
 	if !hasCreateTimeAndDefaultValue {
 		addResult(input.Res, input.Rule, DDLCheckCreateTimeColumn)
+	}
+
+	return nil
+}
+
+func checkSelectWithOrderBy(input *RuleHandlerInput) error {
+	var hasOrderBy bool
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.OrderBy != nil {
+			hasOrderBy = true
+			break
+		}
+
+		selectStmtExtractor := util.SelectStmtExtractor{}
+		stmt.Accept(&selectStmtExtractor)
+
+		for _, selectStmt := range selectStmtExtractor.SelectStmts {
+			if selectStmt.OrderBy != nil {
+				hasOrderBy = true
+			}
+		}
+	}
+
+	if hasOrderBy {
+		addResult(input.Res, input.Rule, DMLCheckSelectWithOrderBy)
 	}
 
 	return nil
