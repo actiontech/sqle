@@ -1281,6 +1281,32 @@ func checkFieldCreateTime(input *RuleHandlerInput) error {
 	return nil
 }
 
+func checkSelectWithOrderBy(input *RuleHandlerInput) error {
+	var hasOrderBy bool
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.OrderBy != nil {
+			hasOrderBy = true
+			break
+		}
+
+		selectStmtExtractor := util.SelectStmtExtractor{}
+		stmt.Accept(&selectStmtExtractor)
+
+		for _, selectStmt := range selectStmtExtractor.SelectStmts {
+			if selectStmt.OrderBy != nil {
+				hasOrderBy = true
+			}
+		}
+	}
+
+	if hasOrderBy {
+		addResult(input.Res, input.Rule, DMLCheckSelectWithOrderBy)
+	}
+
+	return nil
+}
+
 func hasDefaultValueCurrentTimeStamp(options []*ast.ColumnOption) bool {
 	for _, option := range options {
 		if option.Tp == ast.ColumnOptionDefaultValue {
