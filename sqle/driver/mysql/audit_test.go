@@ -2283,10 +2283,17 @@ func Test_DMLCheckSelectWithOrderBy(t *testing.T) {
 		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select id from exist_db.exist_tb_1 where (select id from COLLATIONS limit 1) = 1`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`select id
 from (select * from exist_db.exist_tb_1 order by id limit 10) as test
-where id = 1;`,
-		newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
+where id = 1;`, newTestResult().addResult(rulepkg.DMLCheckSelectWithOrderBy))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select id
+from (select * from exist_db.exist_tb_1 limit 10) as test
+where id = 1;`, newTestResult())
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`select (select count(*) from exist_db.exist_tb_1 order by id limit 10) as count 
