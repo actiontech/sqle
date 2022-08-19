@@ -239,6 +239,21 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = req.InstanceType
 	}
 
+	// check rule template name
+	if req.RuleTemplateName != "" {
+		exist, err = s.IsRuleTemplateExist(req.RuleTemplateName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template does not exist")))
+		}
+	}
+	ruleTemplateName, err := autoSelectRuleTemplate(req.RuleTemplateName, req.InstanceName, req.InstanceType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	// check params
 	if req.Type == "" {
 		req.Type = auditplan.TypeDefault
@@ -264,6 +279,7 @@ func CreateAuditPlan(c echo.Context) error {
 		CreateUserID:     user.ID,
 		Token:            t,
 		DBType:           instanceType,
+		RuleTemplateName: ruleTemplateName,
 		InstanceName:     req.InstanceName,
 		InstanceDatabase: req.InstanceDatabase,
 	}
@@ -274,6 +290,27 @@ func CreateAuditPlan(c echo.Context) error {
 
 	manager := auditplan.GetManager()
 	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.Name))
+}
+
+// customRuleTemplateName如果为空, 将返回instanceName绑定的规则模板, 如果customRuleTemplateName,和instanceName都为空, 将返回dbType对应默认模板, dbType不能为空, 函数不做参数校验
+// 规则模板选择规则: 指定规则模板 -- > 数据源绑定的规则模板 -- > 数据库类型默认模板
+func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, dbType string) (ruleTemplateName string, err error) {
+	s := model.GetStorage()
+
+	if customRuleTemplateName != "" {
+		return customRuleTemplateName, nil
+	}
+
+	if instanceName != "" {
+		ruleTemplate, err := s.GetRuleTemplatesByInstanceName(instanceName)
+		if err != nil {
+			return "", err
+		}
+		return ruleTemplate.Name, nil
+	}
+
+	return s.GetDefaultRuleTemplateName(dbType), nil
+
 }
 
 // @Summary 删除审核计划
@@ -355,6 +392,16 @@ func UpdateAuditPlan(c echo.Context) error {
 	}
 	if req.InstanceDatabase != nil {
 		updateAttr["instance_database"] = *req.InstanceDatabase
+	}
+	if req.RuleTemplateName != nil {
+		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template does not exist")))
+		}
+		updateAttr["rule_template_name"] = *req.RuleTemplateName
 	}
 	if req.Params != nil {
 		ps, err := checkAndGenerateAuditPlanParams(ap.Type, ap.DBType, req.Params)
@@ -458,6 +505,7 @@ func GetAuditPlans(c echo.Context) error {
 			DBType:           ap.DBType,
 			InstanceName:     ap.InstanceName,
 			InstanceDatabase: ap.InstanceDatabase,
+			RuleTemplateName: ap.RuleTemplateName.String,
 			Token:            ap.Token,
 			Meta:             convertAuditPlanMetaToRes(meta),
 		}
@@ -512,6 +560,7 @@ func GetAuditPlan(c echo.Context) error {
 			DBType:           ap.DBType,
 			InstanceName:     ap.InstanceName,
 			InstanceDatabase: ap.InstanceDatabase,
+			RuleTemplateName: ap.RuleTemplateName,
 			Token:            ap.Token,
 			Meta:             convertAuditPlanMetaToRes(meta),
 		},

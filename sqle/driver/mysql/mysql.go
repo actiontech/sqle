@@ -113,6 +113,9 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error)
 		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
 			inspect.cnf.dmlExplainPreCheckEnable = true
 		}
+		if rule.Name == rulepkg.ConfigSQLIsExecuted {
+			inspect.cnf.isExecutedSQL = true
+		}
 	}
 
 	return inspect, nil
@@ -120,6 +123,10 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error)
 
 func (i *MysqlDriverImpl) IsOfflineAudit() bool {
 	return i.isOfflineAudit
+}
+
+func (i *MysqlDriverImpl) IsExecutedSQL() bool {
+	return i.cnf.isExecutedSQL
 }
 
 func (i *MysqlDriverImpl) executeByGhost(ctx context.Context, query string, isDryRun bool) (_driver.Result, error) {
@@ -271,7 +278,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		return nil, err
 	}
 
-	if i.IsOfflineAudit() {
+	if i.IsOfflineAudit() || i.IsExecutedSQL() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
 		err = i.CheckInvalid(nodes[0])
@@ -304,7 +311,23 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		if i.IsOfflineAudit() && !handler.IsAllowOfflineRule(nodes[0]) {
 			continue
 		}
-		if err := handler.Func(i.Ctx, *rule, i.result, nodes[0]); err != nil {
+		if i.cnf.isExecutedSQL {
+			if handler.OnlyAuditNotExecutedSQL {
+				continue
+			}
+			if handler.IsDisableExecutedSQLRule(nodes[0]) {
+				continue
+			}
+		}
+
+		input := &rulepkg.RuleHandlerInput{
+			Ctx:  i.Ctx,
+			Rule: *rule,
+			Res:  i.result,
+			Node: nodes[0],
+		}
+
+		if err := handler.Func(input); err != nil {
 			return nil, err
 		}
 	}
@@ -353,7 +376,11 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 	if oscCommandLine != "" {
 		i.result.Add(driver.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
-	i.Ctx.UpdateContext(nodes[0])
+
+	if !i.IsExecutedSQL() {
+		i.Ctx.UpdateContext(nodes[0])
+	}
+
 	return i.result, nil
 }
 
@@ -416,6 +443,7 @@ type Config struct {
 	dmlExplainPreCheckEnable   bool
 	calculateCardinalityMaxRow int
 	compositeIndexMaxColumn    int
+	isExecutedSQL              bool
 }
 
 func (i *MysqlDriverImpl) Context() *session.Context {

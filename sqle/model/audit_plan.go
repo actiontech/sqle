@@ -20,6 +20,7 @@ type AuditPlan struct {
 	CreateUserID     uint
 	InstanceDatabase string        `json:"instance_database"`
 	Type             string        `json:"type"`
+	RuleTemplateName string        `json:"rule_template_name"`
 	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
 	NotifyInterval      int    `json:"notify_interval" gorm:"default:10"`

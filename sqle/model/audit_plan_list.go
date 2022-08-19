@@ -12,13 +12,14 @@ type AuditPlanListDetail struct {
 	Token            string         `json:"token"`
 	InstanceName     string         `json:"instance_name"`
 	InstanceDatabase string         `json:"instance_database"`
+	RuleTemplateName sql.NullString `json:"rule_template_name"`
 	Type             sql.NullString `json:"type"`
 	Params           params.Params  `json:"params"`
 }
 
 var auditPlanQueryTpl = `
 SELECT audit_plans.name, audit_plans.cron_expression, audit_plans.db_type, audit_plans.token,
-audit_plans.instance_name, audit_plans.instance_database, audit_plans.type, audit_plans.params
+audit_plans.instance_name, audit_plans.instance_database, audit_plans.rule_template_name, audit_plans.type, audit_plans.params
 
 {{- template "body" . -}} 
 

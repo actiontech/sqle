@@ -207,8 +207,10 @@ CREATE TABLE exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT= "unit test";
 `,
 		newTestResult().addResult(rulepkg.DDLCheckPKWithoutIfNotExists),
 	)
@@ -220,6 +222,8 @@ func TestCheckObjectNameUsingKeywordOffline(t *testing.T) {
 			"id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT \"unit test\","+
 			"v1 varchar(255) NOT NULL DEFAULT \"unit test\" COMMENT \"unit test\","+
 			"`create` varchar(255) NOT NULL DEFAULT \"unit test\" COMMENT \"unit test\","+
+			"create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT \"unit test\","+
+			"update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT \"unit test\","+
 			"PRIMARY KEY (id),"+
 			"INDEX `show` (v1)"+
 			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT=\"unit test\";",
@@ -237,6 +241,8 @@ func TestCheckObjectNameLengthOffline(t *testing.T) {
 CREATE TABLE  if not exists exist_db.%s (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length64),
@@ -248,6 +254,8 @@ PRIMARY KEY (id)
 CREATE TABLE  if not exists exist_db.%s (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
@@ -259,6 +267,8 @@ PRIMARY KEY (id)
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
@@ -271,6 +281,8 @@ CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_%s (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
@@ -314,6 +326,8 @@ func TestCheckPrimaryKeyOffline(t *testing.T) {
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -324,6 +338,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -335,6 +351,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL KEY DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -347,6 +365,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -359,6 +379,8 @@ PRIMARY KEY (id)
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint NOT NULL AUTO_INCREMENT KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -370,6 +392,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -383,7 +407,8 @@ func TestCheckColumnCharLengthOffline(t *testing.T) {
 		`
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
-	v1 char(20) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+	update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",v1 char(20) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -396,6 +421,8 @@ func TestCheckColumnCharLengthOffline(t *testing.T) {
 	CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 	v1 char(21) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+	update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 	v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -482,6 +509,8 @@ func TestCheckTableWithoutInnodbUtf8mb4Offline(t *testing.T) {
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )AUTO_INCREMENT=3 COMMENT="unit test";
 `,
@@ -493,6 +522,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -504,6 +535,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1  COMMENT="unit test";
 `,
@@ -517,6 +550,8 @@ func TestCheckIndexColumnWithBlobOffline(t *testing.T) {
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 b1 blob COMMENT "unit test",
 PRIMARY KEY (id),
@@ -531,6 +566,8 @@ INDEX idx_b1 (b1)
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
@@ -553,6 +590,8 @@ func TestDisableForeignKeyOffline(t *testing.T) {
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 FOREIGN KEY (id) REFERENCES exist_tb_1(id)
@@ -682,6 +721,8 @@ func TestCheckIndexPrefixOffline(t *testing.T) {
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX index_1 (v1)
@@ -763,6 +804,8 @@ func TestCheckColumnDefaultOffline(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v1 varchar(255) COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -803,18 +846,20 @@ func TestCheckColumnTimestampDefaultOffline(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v1 timestamp COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).addResult(rulepkg.DDLDisableTypeTimestamp),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspectOffline(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).addResult(rulepkg.DDLDisableTypeTimestamp),
 	)
 }
 
@@ -823,6 +868,8 @@ func TestCheckColumnBlobNotNullOffline(t *testing.T) {
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v1 blob NOT NULL COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -844,6 +891,8 @@ func TestCheckColumnBlobDefaultNullOffline(t *testing.T) {
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 blob DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
@@ -1739,6 +1788,8 @@ func TestCheckNumberOfJoinTablesOffline(t *testing.T) {
 create table if not exists exist_db.exist_tb_4 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
@@ -1793,6 +1844,8 @@ func TestCheckNumberOfJoinTables_FPOffline(t *testing.T) {
 create table if not exists exist_db.exist_tb_4 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
