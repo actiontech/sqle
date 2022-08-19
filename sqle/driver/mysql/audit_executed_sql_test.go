@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewAfterEventInspect(e *executor.Executor) *MysqlDriverImpl {
+func NewSQLExecutedInspect(e *executor.Executor) *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
 	return &MysqlDriverImpl{
 		log: log.NewEntry(),
@@ -28,12 +28,12 @@ func NewAfterEventInspect(e *executor.Executor) *MysqlDriverImpl {
 			DDLOSCMinSize:      16,
 			DDLGhostMinSize:    -1,
 			DMLRollbackMaxRows: 1000,
-			isAfterEvent:       true,
+			isExecutedSQL:      true,
 		},
 	}
 }
 
-func TestAfterEvent(t *testing.T) {
+func TestAuditExecutedSQL(t *testing.T) {
 
 	{ // 完全屏蔽的规则
 
@@ -41,7 +41,7 @@ func TestAfterEvent(t *testing.T) {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge].Rule,
 			t,
 			"DDLCheckAlterTableNeedMerge",
-			NewAfterEventInspect(nil),
+			NewSQLExecutedInspect(nil),
 			`
 ALTER TABLE exist_db.exist_tb_1 Add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 ALTER TABLE exist_db.exist_tb_1 Add column v6 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
@@ -54,7 +54,7 @@ ALTER TABLE exist_db.exist_tb_1 Add column v6 varchar(255) NOT NULL DEFAULT "uni
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableSize].Rule,
 			t,
 			"DDLCheckTableSize",
-			NewAfterEventInspect(nil),
+			NewSQLExecutedInspect(nil),
 			`drop table exist_db.exist_tb_4;`,
 			newTestResult(),
 		)
@@ -63,7 +63,7 @@ ALTER TABLE exist_db.exist_tb_1 Add column v6 varchar(255) NOT NULL DEFAULT "uni
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexesExistBeforeCreateConstraints].Rule,
 			t,
 			"DDLCheckIndexesExistBeforeCreateConstraints",
-			NewAfterEventInspect(nil),
+			NewSQLExecutedInspect(nil),
 			`alter table exist_db.exist_tb_3 Add unique uniq_test(v2);`,
 			newTestResult(),
 		)
@@ -78,7 +78,7 @@ ALTER TABLE exist_db.exist_tb_1 Add column v6 varchar(255) NOT NULL DEFAULT "uni
 			runDefaultRulesInspectCase(
 				t,
 				"DDLCheckIndexedColumnWithBlob",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -103,7 +103,7 @@ ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "un
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexTooMany].Rule,
 				t,
 				"DDLCheckIndexTooMany",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 CREATE TABLE if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -123,7 +123,7 @@ AlTER TABLE exist_db.not_exist_tb_1 ADD INDEX idx_1(id), ADD INDEX idx_2(id), AD
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexCount].Rule,
 				t,
 				"DDLCheckIndexCount",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -147,7 +147,7 @@ AlTER TABLE exist_db.not_exist_tb_1 ADD INDEX idx_1(id), ADD INDEX idx_2(id), AD
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCompositeIndexMax].Rule,
 				t,
 				"DDLCheckCompositeIndexMax",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -169,7 +169,7 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD INDEX idx_1 (id,v1,v2,v3,v4,v5);
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckPKProhibitAutoIncrement].Rule,
 				t,
 				"DDLCheckPKProhibitAutoIncrement",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL AUTO_INCREMENT DEFAULT "unit test" COMMENT "unit test" ,
@@ -186,7 +186,7 @@ ALTER TABLE exist_db.not_exist_tb_1 modify COLUMN id BIGINT auto_increment;
 			// DDLCheckPKWithoutAutoIncrement
 			runDefaultRulesInspectCase(t,
 				"DDLCheckPKWithoutAutoIncrement",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint unsigned NOT NULL KEY DEFAULT "unit test" COMMENT "unit test",
@@ -202,7 +202,7 @@ ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			// DDLCheckPKWithoutBigintUnsigned
 			runDefaultRulesInspectCase(t,
 				"DDLCheckPKWithoutBigintUnsigned",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 id bigint NOT NULL AUTO_INCREMENT COMMENT "unit test",
@@ -221,7 +221,7 @@ ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckRedundantIndex].Rule,
 				t,
 				"DDLCheckRedundantIndex",
-				NewAfterEventInspect(nil),
+				NewSQLExecutedInspect(nil),
 				`
 			CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
 			id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",

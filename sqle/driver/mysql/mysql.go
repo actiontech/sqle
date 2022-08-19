@@ -113,8 +113,8 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error)
 		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
 			inspect.cnf.dmlExplainPreCheckEnable = true
 		}
-		if rule.Name == rulepkg.ConfigAfterEventEnable {
-			inspect.cnf.isAfterEvent = true
+		if rule.Name == rulepkg.ConfigSQLIsExecuted {
+			inspect.cnf.isExecutedSQL = true
 		}
 	}
 
@@ -125,8 +125,8 @@ func (i *MysqlDriverImpl) IsOfflineAudit() bool {
 	return i.isOfflineAudit
 }
 
-func (i *MysqlDriverImpl) IsAfterEvent() bool {
-	return i.cnf.isAfterEvent
+func (i *MysqlDriverImpl) IsExecutedSQL() bool {
+	return i.cnf.isExecutedSQL
 }
 
 func (i *MysqlDriverImpl) executeByGhost(ctx context.Context, query string, isDryRun bool) (_driver.Result, error) {
@@ -278,7 +278,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		return nil, err
 	}
 
-	if i.IsOfflineAudit() || i.IsAfterEvent() {
+	if i.IsOfflineAudit() || i.IsExecutedSQL() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
 		err = i.CheckInvalid(nodes[0])
@@ -311,11 +311,11 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		if i.IsOfflineAudit() && !handler.IsAllowOfflineRule(nodes[0]) {
 			continue
 		}
-		if i.cnf.isAfterEvent {
-			if handler.BeforeTheEvent {
+		if i.cnf.isExecutedSQL {
+			if handler.OnlyAuditNotExecutedSQL {
 				continue
 			}
-			if handler.IsDisableAfterEventRule(nodes[0]) {
+			if handler.IsDisableExecutedSQLRule(nodes[0]) {
 				continue
 			}
 		}
@@ -377,7 +377,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		i.result.Add(driver.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
 
-	if !i.IsAfterEvent() {
+	if !i.IsExecutedSQL() {
 		i.Ctx.UpdateContext(nodes[0])
 	}
 
@@ -443,7 +443,7 @@ type Config struct {
 	dmlExplainPreCheckEnable   bool
 	calculateCardinalityMaxRow int
 	compositeIndexMaxColumn    int
-	isAfterEvent               bool
+	isExecutedSQL              bool
 }
 
 func (i *MysqlDriverImpl) Context() *session.Context {
