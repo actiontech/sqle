@@ -233,6 +233,7 @@ func InitChecker(license string, workDurationHour int) error {
 }
 
 func UpdateLicense(license string) error {
+	std.mutex.Lock()
 	std.permission = map[string]int64{}
 	std.limitInstallLocation = ""
 
