@@ -57,7 +57,7 @@ func (i *License) decryptPassword() error {
 				i.Content = data
 			} else {
 				i.WorkDurationHour, _ = strconv.Atoi(data[:separate])
-				i.Content = data[separate+1:]
+				i.Content = data[separate+2:]
 			}
 		}
 	}
