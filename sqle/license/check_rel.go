@@ -246,7 +246,6 @@ func UpdateLicense(license string) error {
 		return err
 	}
 
-	std.mutex.Lock()
 	std.permission[LimitTypeUser] = int64(permission.UserCount)
 	for n, i := range permission.NumberOfInstanceOfEachType {
 		std.permission[n] = int64(i.Count)
@@ -256,4 +255,10 @@ func UpdateLicense(license string) error {
 	std.mutex.Unlock()
 
 	return nil
+}
+
+func ResetWorkedDuration() {
+	std.mutex.Lock()
+	std.timerHour = 0
+	std.mutex.Unlock()
 }
