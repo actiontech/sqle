@@ -25,12 +25,17 @@ var std = &checker{
 }
 
 type checker struct {
-	mutex                *sync.RWMutex
-	permission           map[string]int64
-	hardwareInfo         string
+	mutex *sync.RWMutex
+	// 各种限制
+	permission map[string]int64
+	// 机器信息
+	hardwareInfo string
+	// license中的机器信息
 	limitInstallLocation string
-	WorkDurationDay      int
-	timerHour            int
+	// 限制工作时长(天)
+	WorkDurationDay int
+	// 已工作时长（小时）
+	timerHour int
 }
 
 func (c *checker) GetPermission(key string) int64 {
