@@ -722,7 +722,7 @@ func tidbCompletionSchema(sql, schema string) (string, error) {
 
 	stmts[0].Accept(&completionSchemaVisitor{schema: schema})
 	buf := new(bytes.Buffer)
-	restoreCtx := format.NewRestoreCtx(0, buf)
+	restoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, buf)
 	err = stmts[0].Restore(restoreCtx)
 	return buf.String(), err
 }
