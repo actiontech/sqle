@@ -1328,7 +1328,7 @@ func checkRowLength(input *RuleHandlerInput) error {
 					return nil
 				}
 
-				columnNameModify := make(map[string]struct{}, 0)
+				columnNameModify := make(map[string]struct{})
 				for _, column := range spec.NewColumns {
 					columnNameModify[column.Name.Name.L] = struct{}{}
 					columnDefs = append(columnDefs, column)
