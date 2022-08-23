@@ -39,6 +39,7 @@ const (
 const (
 	DDLCheckPKWithoutIfNotExists                = "ddl_check_table_without_if_not_exists"
 	DDLCheckObjectNameLength                    = "ddl_check_object_name_length"
+	DDLCheckRowLength                           = "ddl_check_row_length"
 	DDLCheckObjectNameUsingKeyword              = "ddl_check_object_name_using_keyword"
 	DDLCheckPKNotExist                          = "ddl_check_pk_not_exist"
 	DDLCheckPKWithoutBigintUnsigned             = "ddl_check_pk_without_bigint_unsigned"
@@ -391,6 +392,25 @@ var RuleHandlers = []RuleHandler{
 		Message:      "表名、列名、索引名的长度不能大于%v字节",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckRowLength,
+			Desc:     "表记录长度不能大于指定KB",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "8",
+					Desc:  "最大长度（KB）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message:      "表记录长度不能大于%vKB",
+		AllowOffline: true,
+		Func:         checkRowLength,
 	},
 	{
 		Rule: driver.Rule{
@@ -1268,6 +1288,142 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
+}
+
+func checkRowLength(input *RuleHandlerInput) error {
+	var rowByteLength int
+	var columnDefs []*ast.ColumnDef
+
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		if stmt.Cols == nil {
+			return nil
+		}
+		rowByteLength = getMultipleColumnsByteLength(stmt.Cols)
+	case *ast.AlterTableStmt:
+		if stmt.Specs == nil {
+			return nil
+		}
+		for _, spec := range stmt.Specs {
+			switch spec.Tp {
+			case ast.AlterTableAddColumns:
+				tableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+				if err != nil {
+					return fmt.Errorf("get create table stmt error: %v", err)
+				}
+				if !exist {
+					return nil
+				}
+
+				columnDefs = append(columnDefs, tableStmt.Cols...)
+				columnDefs = append(columnDefs, spec.NewColumns...)
+
+				rowByteLength = getMultipleColumnsByteLength(columnDefs)
+			case ast.AlterTableModifyColumn:
+				tableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+				if err != nil {
+					return fmt.Errorf("get create table stmt error: %v", err)
+				}
+				if !exist {
+					return nil
+				}
+
+				columnNameModify := make(map[string]struct{}, 0)
+				for _, column := range spec.NewColumns {
+					columnNameModify[column.Name.Name.L] = struct{}{}
+					columnDefs = append(columnDefs, column)
+				}
+
+				for _, col := range tableStmt.Cols {
+					if _, ok := columnNameModify[col.Name.Name.L]; ok {
+						continue
+					}
+					columnDefs = append(columnDefs, col)
+				}
+
+				rowByteLength = getMultipleColumnsByteLength(columnDefs)
+			case ast.AlterTableChangeColumn:
+				tableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+				if err != nil {
+					return fmt.Errorf("get create table stmt error: %v", err)
+				}
+				if !exist {
+					return nil
+				}
+
+				oldColumnName := spec.OldColumnName.Name.L
+
+				columnDefs = append(columnDefs, spec.NewColumns...)
+				for _, col := range tableStmt.Cols {
+					if col.Tp == nil || col.Name.Name.L == oldColumnName {
+						continue
+					}
+
+					columnDefs = append(columnDefs, col)
+				}
+
+				rowByteLength = getMultipleColumnsByteLength(columnDefs)
+			}
+		}
+	default:
+		return nil
+	}
+
+	paramThresholdNumber := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if rowByteLength/1024 >= paramThresholdNumber {
+		addResult(input.Res, input.Rule, DDLCheckRowLength, paramThresholdNumber)
+	}
+
+	return nil
+}
+
+func getMultipleColumnsByteLength(columns []*ast.ColumnDef) int {
+	var multipleColumnByteLength int
+	for _, column := range columns {
+		if column.Tp == nil {
+			continue
+		}
+
+		columnByteLength := getColumnByteLength(column)
+		multipleColumnByteLength += columnByteLength
+	}
+
+	return multipleColumnByteLength
+}
+
+func getColumnByteLength(col *ast.ColumnDef) int {
+	var length int
+	if col.Tp.Flen == types.UnspecifiedLength {
+		length = 1
+	} else {
+		length = col.Tp.Flen
+	}
+
+	switch col.Tp.Tp {
+	case mysql.TypeBit:
+		return (length + 7) >> 3
+	case mysql.TypeVarchar, mysql.TypeString, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeBlob, mysql.TypeLongBlob:
+		return length
+	case mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeDouble, mysql.TypeShort:
+		return mysql.DefaultLengthOfMysqlTypes[col.Tp.Tp]
+	case mysql.TypeFloat:
+		if length <= mysql.MaxFloatPrecisionLength {
+			return mysql.DefaultLengthOfMysqlTypes[mysql.TypeFloat]
+		}
+		return mysql.DefaultLengthOfMysqlTypes[mysql.TypeDouble]
+	case mysql.TypeNewDecimal:
+		return calcBytesLengthForDecimal(length)
+	case mysql.TypeYear, mysql.TypeDate, mysql.TypeDuration, mysql.TypeDatetime, mysql.TypeTimestamp:
+		return mysql.DefaultLengthOfMysqlTypes[col.Tp.Tp]
+	default:
+		return 0
+	}
+}
+
+// decimal using a binary format that packs nine decimal (base 10) digits into four bytes.
+// https://dev.mysql.com/doc/refman/5.6/en/storage-requirements.html#data-types-storage-reqs-strings
+func calcBytesLengthForDecimal(m int) int {
+	return (m / 9 * 4) + ((m%9)+1)/2
 }
 
 func checkFieldCreateTime(input *RuleHandlerInput) error {
