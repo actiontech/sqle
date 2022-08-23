@@ -113,6 +113,7 @@ func setLicense(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	license.ResetWorkedDuration()
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 

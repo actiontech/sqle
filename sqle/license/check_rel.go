@@ -25,12 +25,17 @@ var std = &checker{
 }
 
 type checker struct {
-	mutex                *sync.RWMutex
-	permission           map[string]int64
-	hardwareInfo         string
+	mutex *sync.RWMutex
+	// 各种限制
+	permission map[string]int64
+	// 机器信息
+	hardwareInfo string
+	// license中的机器信息
 	limitInstallLocation string
-	WorkDurationDay      int
-	timerHour            int
+	// 限制工作时长(天)
+	WorkDurationDay int
+	// 已工作时长（小时）
+	timerHour int
 }
 
 func (c *checker) GetPermission(key string) int64 {
@@ -228,6 +233,7 @@ func InitChecker(license string, workDurationHour int) error {
 }
 
 func UpdateLicense(license string) error {
+	std.mutex.Lock()
 	std.permission = map[string]int64{}
 	std.limitInstallLocation = ""
 
@@ -240,7 +246,6 @@ func UpdateLicense(license string) error {
 		return err
 	}
 
-	std.mutex.Lock()
 	std.permission[LimitTypeUser] = int64(permission.UserCount)
 	for n, i := range permission.NumberOfInstanceOfEachType {
 		std.permission[n] = int64(i.Count)
@@ -250,4 +255,10 @@ func UpdateLicense(license string) error {
 	std.mutex.Unlock()
 
 	return nil
+}
+
+func ResetWorkedDuration() {
+	std.mutex.Lock()
+	std.timerHour = 0
+	std.mutex.Unlock()
 }
