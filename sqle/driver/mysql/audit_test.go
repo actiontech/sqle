@@ -3638,6 +3638,56 @@ func Test_DDL_CHECK_PK_NAME(t *testing.T) {
 	}
 }
 
+func Test_DDLCheckRowLength(t *testing.T) {
+	param := "2"
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckRowLength].Rule
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, param)
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`create table users_100
+(
+    id       int primary key not null auto_increment,
+    email    varchar(1024)   not null
+)`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`create table users_100
+(
+    id       int primary key not null auto_increment,
+    email    varchar(2043)   not null,
+    name     bit
+)`, newTestResult().addResult(rulepkg.DDLCheckRowLength, param))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`create table users_100
+(
+    id       int primary key not null auto_increment,
+    score    float not null,
+    name     char(2040) not null
+)`, newTestResult().addResult(rulepkg.DDLCheckRowLength, param))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_tb_2 Add column test_varchar varchar(1)`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_tb_2 Add column test_varchar varchar(2048)`,
+		newTestResult().addResult(rulepkg.DDLCheckRowLength, param))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_tb_2 modify column id varchar(1)`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_tb_2 modify column id varchar(2048)`,
+		newTestResult().addResult(rulepkg.DDLCheckRowLength, param))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_tb_2 change column id id_new varchar(1)`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_tb_2 change column id id_new varchar(2048)`,
+		newTestResult().addResult(rulepkg.DDLCheckRowLength, param))
+}
+
 func Test_DDLDisableAlterFieldUseFirstAndAfter(t *testing.T) {
 	for _, sql := range []string{
 		`alter table exist_db.exist_tb_2 Add column id_next int`,
