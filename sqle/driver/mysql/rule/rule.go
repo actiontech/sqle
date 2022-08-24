@@ -39,83 +39,118 @@ const (
 
 // inspector DDL rules
 const (
-	DDLCheckPKWithoutIfNotExists                = "ddl_check_table_without_if_not_exists"
-	DDLCheckObjectNameLength                    = "ddl_check_object_name_length"
-	DDLCheckObjectNameUsingKeyword              = "ddl_check_object_name_using_keyword"
-	DDLCheckPKNotExist                          = "ddl_check_pk_not_exist"
-	DDLCheckPKWithoutBigintUnsigned             = "ddl_check_pk_without_bigint_unsigned"
-	DDLCheckPKWithoutAutoIncrement              = "ddl_check_pk_without_auto_increment"
-	DDLCheckPKProhibitAutoIncrement             = "ddl_check_pk_prohibit_auto_increment"
-	DDLCheckColumnCharLength                    = "ddl_check_column_char_length"
-	DDLDisableFK                                = "ddl_disable_fk"
-	DDLCheckIndexCount                          = "ddl_check_index_count"
-	DDLCheckCompositeIndexMax                   = "ddl_check_composite_index_max"
-	DDLCheckTableDBEngine                       = "ddl_check_table_db_engine"
-	DDLCheckTableCharacterSet                   = "ddl_check_table_character_set"
-	DDLCheckIndexedColumnWithBlob               = "ddl_check_index_column_with_blob"
-	DDLCheckAlterTableNeedMerge                 = "ddl_check_alter_table_need_merge"
-	DDLDisableDropStatement                     = "ddl_disable_drop_statement"
-	DDLCheckTableWithoutComment                 = "ddl_check_table_without_comment"
-	DDLCheckColumnWithoutComment                = "ddl_check_column_without_comment"
-	DDLCheckIndexPrefix                         = "ddl_check_index_prefix"
-	DDLCheckUniqueIndexPrefix                   = "ddl_check_unique_index_prefix"
-	DDLCheckUniqueIndex                         = "ddl_check_unique_index"
-	DDLCheckColumnWithoutDefault                = "ddl_check_column_without_default"
-	DDLCheckColumnTimestampWithoutDefault       = "ddl_check_column_timestamp_without_default"
-	DDLCheckColumnBlobWithNotNull               = "ddl_check_column_blob_with_not_null"
-	DDLCheckColumnBlobDefaultIsNotNull          = "ddl_check_column_blob_default_is_not_null"
-	DDLCheckColumnEnumNotice                    = "ddl_check_column_enum_notice"
-	DDLCheckColumnSetNotice                     = "ddl_check_column_set_notice"
-	DDLCheckColumnBlobNotice                    = "ddl_check_column_blob_notice"
-	DDLCheckIndexesExistBeforeCreateConstraints = "ddl_check_indexes_exist_before_creat_constraints"
-	DDLCheckDatabaseCollation                   = "ddl_check_collation_database"
-	DDLCheckDecimalTypeColumn                   = "ddl_check_decimal_type_column"
-	DDLCheckBigintInsteadOfDecimal              = "ddl_check_bigint_instead_of_decimal"
-	DDLCheckDatabaseSuffix                      = "ddl_check_database_suffix"
-	DDLCheckPKName                              = "ddl_check_pk_name"
-	DDLCheckTransactionIsolationLevel           = "ddl_check_transaction_isolation_level"
-	DDLCheckTablePartition                      = "ddl_check_table_partition"
-	DDLCheckIsExistLimitOffset                  = "ddl_check_is_exist_limit_offset"
-	DDLCheckIndexOption                         = "ddl_check_index_option"
-	DDLCheckObjectNameUseCN                     = "ddl_check_object_name_using_cn"
-	DDLCheckCreateView                          = "ddl_check_create_view"
-	DDLCheckCreateTrigger                       = "ddl_check_create_trigger"
-	DDLCheckCreateFunction                      = "ddl_check_create_function"
-	DDLCheckCreateProcedure                     = "ddl_check_create_procedure"
-	DDLCheckTableSize                           = "ddl_check_table_size"
-	DDLCheckIndexTooMany                        = "ddl_check_index_too_many"
-	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
-	DDLDisableTypeTimestamp                     = "ddl_disable_type_timestamp"
-	DDLDisableAlterFieldUseFirstAndAfter        = "ddl_disable_alter_field_use_first_and_after"
-	DDLCheckCreateTimeColumn                    = "ddl_check_create_time_column"
-	DDLCheckUpdateTimeColumn                    = "ddl_check_update_time_column"
+	DDLCheckPKWithoutIfNotExists                       = "ddl_check_table_without_if_not_exists"
+	DDLCheckObjectNameLength                           = "ddl_check_object_name_length"
+	DDLCheckObjectNameUsingKeyword                     = "ddl_check_object_name_using_keyword"
+	DDLCheckPKNotExist                                 = "ddl_check_pk_not_exist"
+	DDLCheckPKWithoutBigintUnsigned                    = "ddl_check_pk_without_bigint_unsigned"
+	DDLCheckPKWithoutAutoIncrement                     = "ddl_check_pk_without_auto_increment"
+	DDLCheckPKProhibitAutoIncrement                    = "ddl_check_pk_prohibit_auto_increment"
+	DDLCheckColumnCharLength                           = "ddl_check_column_char_length"
+	DDLDisableFK                                       = "ddl_disable_fk"
+	DDLCheckIndexCount                                 = "ddl_check_index_count"
+	DDLCheckCompositeIndexMax                          = "ddl_check_composite_index_max"
+	DDLCheckTableDBEngine                              = "ddl_check_table_db_engine"
+	DDLCheckTableCharacterSet                          = "ddl_check_table_character_set"
+	DDLCheckIndexedColumnWithBlob                      = "ddl_check_index_column_with_blob"
+	DDLCheckAlterTableNeedMerge                        = "ddl_check_alter_table_need_merge"
+	DDLDisableDropStatement                            = "ddl_disable_drop_statement"
+	DDLCheckTableWithoutComment                        = "ddl_check_table_without_comment"
+	DDLCheckColumnWithoutComment                       = "ddl_check_column_without_comment"
+	DDLCheckIndexPrefix                                = "ddl_check_index_prefix"
+	DDLCheckUniqueIndexPrefix                          = "ddl_check_unique_index_prefix"
+	DDLCheckUniqueIndex                                = "ddl_check_unique_index"
+	DDLCheckColumnWithoutDefault                       = "ddl_check_column_without_default"
+	DDLCheckColumnTimestampWithoutDefault              = "ddl_check_column_timestamp_without_default"
+	DDLCheckColumnBlobWithNotNull                      = "ddl_check_column_blob_with_not_null"
+	DDLCheckColumnBlobDefaultIsNotNull                 = "ddl_check_column_blob_default_is_not_null"
+	DDLCheckColumnEnumNotice                           = "ddl_check_column_enum_notice"
+	DDLCheckColumnSetNotice                            = "ddl_check_column_set_notice"
+	DDLCheckColumnBlobNotice                           = "ddl_check_column_blob_notice"
+	DDLCheckIndexesExistBeforeCreateConstraints        = "ddl_check_indexes_exist_before_creat_constraints"
+	DDLCheckDatabaseCollation                          = "ddl_check_collation_database"
+	DDLCheckDecimalTypeColumn                          = "ddl_check_decimal_type_column"
+	DDLCheckBigintInsteadOfDecimal                     = "ddl_check_bigint_instead_of_decimal"
+	DDLCheckDatabaseSuffix                             = "ddl_check_database_suffix"
+	DDLCheckPKName                                     = "ddl_check_pk_name"
+	DDLCheckTransactionIsolationLevel                  = "ddl_check_transaction_isolation_level"
+	DDLCheckTablePartition                             = "ddl_check_table_partition"
+	DDLCheckIsExistLimitOffset                         = "ddl_check_is_exist_limit_offset"
+	DDLCheckIndexOption                                = "ddl_check_index_option"
+	DDLCheckObjectNameUseCN                            = "ddl_check_object_name_using_cn"
+	DDLCheckCreateView                                 = "ddl_check_create_view"
+	DDLCheckCreateTrigger                              = "ddl_check_create_trigger"
+	DDLCheckCreateFunction                             = "ddl_check_create_function"
+	DDLCheckCreateProcedure                            = "ddl_check_create_procedure"
+	DDLCheckTableSize                                  = "ddl_check_table_size"
+	DDLCheckIndexTooMany                               = "ddl_check_index_too_many"
+	DDLCheckRedundantIndex                             = "ddl_check_redundant_index"
+	DDLDisableTypeTimestamp                            = "ddl_disable_type_timestamp"
+	DDLDisableAlterFieldUseFirstAndAfter               = "ddl_disable_alter_field_use_first_and_after"
+	DDLCheckCreateTimeColumn                           = "ddl_check_create_time_column"
+	DDLCheckUpdateTimeColumn                           = "ddl_check_update_time_column"
+	DDLHintUpdateTableCharsetWillNotUpdateFieldCharset = "ddl_hint_update_table_charset_will_not_update_field_charset"
+	DDLHintDropColumn                                  = "ddl_hint_drop_column"
+	DDLHintDropPrimaryKey                              = "ddl_hint_drop_primary_key"
+	DDLHintDropForeignKey                              = "ddl_hint_drop_foreign_key"
+	DDLCheckFullWidthQuotationMarks                    = "ddl_check_full_width_quotation_marks"
+	DDLCheckColumnQuantity                             = "ddl_check_column_quantity"
+	DDLRecommendTableColumnCharsetSame                 = "ddl_table_column_charset_same"
+	DDLCheckColumnTypeInteger                          = "ddl_check_column_type_integer"
+	DDLCheckVarcharSize                                = "ddl_check_varchar_size"
+	DDLCheckColumnQuantityInPK                         = "ddl_check_column_quantity_in_pk"
+	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
 )
 
 // inspector DML rules
 const (
-	DMLCheckWithLimit                    = "dml_check_with_limit"
-	DMLCheckWithOrderBy                  = "dml_check_with_order_by"
-	DMLCheckSelectWithOrderBy            = "dml_check_select_with_order_by"
-	DMLCheckWhereIsInvalid               = "all_check_where_is_invalid"
-	DMLDisableSelectAllColumn            = "dml_disable_select_all_column"
-	DMLCheckInsertColumnsExist           = "dml_check_insert_columns_exist"
-	DMLCheckBatchInsertListsMax          = "dml_check_batch_insert_lists_max"
-	DMLCheckInQueryNumber                = "dml_check_in_query_limit"
-	DMLCheckWhereExistFunc               = "dml_check_where_exist_func"
-	DMLCheckWhereExistNot                = "dml_check_where_exist_not"
-	DMLCheckWhereExistImplicitConversion = "dml_check_where_exist_implicit_conversion"
-	DMLCheckLimitMustExist               = "dml_check_limit_must_exist"
-	DMLCheckWhereExistScalarSubquery     = "dml_check_where_exist_scalar_sub_queries"
-	DMLWhereExistNull                    = "dml_check_where_exist_null"
-	DMLCheckSelectForUpdate              = "dml_check_select_for_update"
-	DMLCheckNeedlessFunc                 = "dml_check_needless_func"
-	DMLCheckFuzzySearch                  = "dml_check_fuzzy_search"
-	DMLCheckNumberOfJoinTables           = "dml_check_number_of_join_tables"
-	DMLCheckIfAfterUnionDistinct         = "dml_check_is_after_union_distinct"
-	DMLCheckExplainAccessTypeAll         = "dml_check_explain_access_type_all"
-	DMLCheckExplainExtraUsingFilesort    = "dml_check_explain_extra_using_filesort"
-	DMLCheckExplainExtraUsingTemporary   = "dml_check_explain_extra_using_temporary"
-	DMLCheckTableSize                    = "dml_check_table_size"
+	DMLCheckWithLimit                     = "dml_check_with_limit"
+	DMLCheckWithOrderBy                   = "dml_check_with_order_by"
+	DMLCheckSelectWithOrderBy             = "dml_check_select_with_order_by"
+	DMLCheckWhereIsInvalid                = "all_check_where_is_invalid"
+	DMLDisableSelectAllColumn             = "dml_disable_select_all_column"
+	DMLCheckInsertColumnsExist            = "dml_check_insert_columns_exist"
+	DMLCheckBatchInsertListsMax           = "dml_check_batch_insert_lists_max"
+	DMLCheckInQueryNumber                 = "dml_check_in_query_limit"
+	DMLCheckWhereExistFunc                = "dml_check_where_exist_func"
+	DMLCheckWhereExistNot                 = "dml_check_where_exist_not"
+	DMLCheckWhereExistImplicitConversion  = "dml_check_where_exist_implicit_conversion"
+	DMLCheckLimitMustExist                = "dml_check_limit_must_exist"
+	DMLCheckWhereExistScalarSubquery      = "dml_check_where_exist_scalar_sub_queries"
+	DMLWhereExistNull                     = "dml_check_where_exist_null"
+	DMLCheckSelectForUpdate               = "dml_check_select_for_update"
+	DMLCheckNeedlessFunc                  = "dml_check_needless_func"
+	DMLCheckFuzzySearch                   = "dml_check_fuzzy_search"
+	DMLCheckNumberOfJoinTables            = "dml_check_number_of_join_tables"
+	DMLCheckIfAfterUnionDistinct          = "dml_check_is_after_union_distinct"
+	DMLCheckExplainAccessTypeAll          = "dml_check_explain_access_type_all"
+	DMLCheckExplainExtraUsingFilesort     = "dml_check_explain_extra_using_filesort"
+	DMLCheckExplainExtraUsingTemporary    = "dml_check_explain_extra_using_temporary"
+	DMLCheckTableSize                     = "dml_check_table_size"
+	DMLCheckAlias                         = "dml_check_alias"
+	DMLNotRecommendNotWildcardLike        = "dml_not_recommend_not_wildcard_like"
+	DMLHintInNullOnlyFalse                = "dml_hint_in_null_only_false"
+	DMLNotRecommendIn                     = "dml_not_recommend_in"
+	DMLCheckSpacesAroundTheString         = "dml_check_spaces_around_the_string"
+	DMLNotRecommendOrderByRand            = "dml_not_recommend_order_by_rand"
+	DMLNotRecommendGroupByConstant        = "dml_not_recommend_group_by_constant"
+	DMLCheckSortDirection                 = "dml_check_sort_direction"
+	DMLHintGroupByRequiresConditions      = "dml_hint_group_by_requires_conditions"
+	DMLNotRecommendGroupByExpression      = "dml_not_recommend_group_by_expression"
+	DMLCheckSQLLength                     = "dml_check_sql_length"
+	DMLNotRecommendHaving                 = "dml_not_recommend_having"
+	DMLHintUseTruncateInsteadOfDelete     = "dml_hint_use_truncate_instead_of_delete"
+	DMLNotRecommendUpdatePK               = "dml_not_recommend_update_pk"
+	DMLNotRecommendFuncInWhere            = "dml_not_recommend_func_in_where"
+	DMLNotRecommendSysdate                = "dml_not_recommend_sysdate"
+	DMLHintSumFuncTips                    = "dml_hint_sum_func_tips"
+	DMLHintLimitMustBeCombinedWithOrderBy = "dml_hint_limit_must_be_combined_with_order_by"
+	DMLHintTruncateTips                   = "dml_hint_truncate_tips"
+	DMLHintDeleteTips                     = "dml_hint_delete_tips"
+	DMLCheckSQLInjectionFunc              = "dml_check_sql_injection_func"
+	DMLCheckNotEqualSymbol                = "dml_check_not_equal_symbol"
+	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
+	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
 )
 
 // inspector config code
@@ -1272,146 +1307,146 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{ //select a as id, id , b as user  from mysql.user;
-			Name:     "mysql_dml_1",
+			Name:     DMLCheckAlias,
 			Desc:     "别名不要与表或列的名字相同",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "这些别名(%v)与列名或表名相同",
-		Func:    mysqlDML1,
+		Func:    checkAlias,
 	},
 	{
 
 		Rule: driver.Rule{ //ALTER TABLE test CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
-			Name:     "mysql_ddl_1",
+			Name:     DDLHintUpdateTableCharsetWillNotUpdateFieldCharset,
 			Desc:     "修改表的默认字符集不会改表各个字段的字符集",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "修改表的默认字符集不会改表各个字段的字符集",
-		Func:    mysqlDDL1,
+		Func:    hintUpdateTableCharsetWillNotUpdateFieldCharset,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP COLUMN col;
-			Name:     "mysql_ddl_2",
+			Name:     DDLHintDropColumn,
 			Desc:     "删除列为高危操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "删除列为高危操作",
-		Func:    mysqlDDL2,
+		Func:    hintDropColumn,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
-			Name:     "mysql_ddl_3",
+			Name:     DDLHintDropPrimaryKey,
 			Desc:     "删除主键为高危操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "删除主键为高危操作",
-		Func:    mysqlDDL3,
+		Func:    hintDropPrimaryKey,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
-			Name:     "mysql_ddl_4",
+			Name:     DDLHintDropForeignKey,
 			Desc:     "提示删除外键为高危操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "删除外键为高危操作",
-		Func:    mysqlDDL4,
+		Func:    hintDropForeignKey,
 	},
 	{
 		Rule: driver.Rule{ //select * from user where id like "a";
-			Name:     "mysql_dml_2",
+			Name:     DMLNotRecommendNotWildcardLike,
 			Desc:     "不建议使用没有通配符的 LIKE 查询",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用没有通配符的 LIKE 查询",
-		Func:    mysqlDML2,
+		Func:    notRecommendNotWildcardLike,
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
-			Name:     "mysql_dml_3",
+			Name:     DMLHintInNullOnlyFalse,
 			Desc:     "IN (NULL)/NOT IN (NULL) 永远非真",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "IN (NULL)/NOT IN (NULL) 永远非真",
-		Func:    mysqlDML3,
+		Func:    hintInNullOnlyFalse,
 	}, {
 		Rule: driver.Rule{ //select * from user where id in (a);
-			Name:     "mysql_dml_4",
+			Name:     DMLNotRecommendIn,
 			Desc:     "尽量不要使用IN",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "尽量不要使用IN",
-		Func:    mysqlDML4,
+		Func:    notRecommendIn,
 	},
 	{
 		Rule: driver.Rule{ //select * from user where id = ' 1';
-			Name:     "mysql_dml_5",
+			Name:     DMLCheckSpacesAroundTheString,
 			Desc:     "引号中的字符串开头或结尾包含空格",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "引号中的字符串开头或结尾包含空格",
-		Func:    mysqlDML5,
+		Func:    checkSpacesAroundTheString,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
-			Name:     "mysql_ddl_5",
+			Name:     DDLCheckFullWidthQuotationMarks,
 			Desc:     "DDL 语句中使用了中文全角引号",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "DDL 语句中使用了中文全角引号",
-		Func:    mysqlDDL5,
+		Func:    checkFullWidthQuotationMarks,
 	}, {
 		Rule: driver.Rule{ //select name from tbl where id < 1000 order by rand(1)
-			Name:     "mysql_dml_6",
+			Name:     DMLNotRecommendOrderByRand,
 			Desc:     "不建议使用 ORDER BY RAND()",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 ORDER BY RAND()",
-		Func:    mysqlDML6,
+		Func:    notRecommendOrderByRand,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
-			Name:     "mysql_dml_7",
+			Name:     DMLNotRecommendGroupByConstant,
 			Desc:     "不建议对常量进行 GROUP BY",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议对常量进行 GROUP BY",
-		Func:    mysqlDML7,
+		Func:    notRecommendGroupByConstant,
 	}, {
 		Rule: driver.Rule{ //select c1,c2,c3 from t1 where c1='foo' order by c2 desc, c3 asc
-			Name:     "mysql_dml_8",
+			Name:     DMLCheckSortDirection,
 			Desc:     "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
-		Func:    mysqlDML8,
+		Func:    checkSortDirection,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
-			Name:     "mysql_dml_9",
+			Name:     DMLHintGroupByRequiresConditions,
 			Desc:     "请为 GROUP BY 显示添加 ORDER BY 条件",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "请为 GROUP BY 显示添加 ORDER BY 条件",
-		Func:    mysqlDML9,
+		Func:    hintGroupByRequiresConditions,
 	}, {
 		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
-			Name:     "mysql_dml_10",
+			Name:     DMLNotRecommendGroupByExpression,
 			Desc:     "不建议ORDER BY 的条件为表达式",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议ORDER BY 的条件为表达式",
-		Func:    mysqlDML10,
+		Func:    notRecommendGroupByExpression,
 	}, {
 		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
-			Name:     "mysql_dml_11",
+			Name:     DMLCheckSQLLength,
 			Desc:     "建议将过长的SQL分解成几个简单的SQL",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
@@ -1425,37 +1460,37 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "建议将过长的SQL分解成几个简单的SQL",
-		Func:    mysqlDML11,
+		Func:    checkSQLLength,
 	}, {
 		Rule: driver.Rule{ //SELECT s.c_id,count(s.c_id) FROM s where c = test GROUP BY s.c_id HAVING s.c_id <> '1660' AND s.c_id <> '2' order by s.c_id
-			Name:     "mysql_dml_12",
+			Name:     DMLNotRecommendHaving,
 			Desc:     "不建议使用 HAVING 子句",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 HAVING 子句",
-		Func:    mysqlDML12,
+		Func:    notRecommendHaving,
 	}, {
 		Rule: driver.Rule{ //delete from tbl
-			Name:     "mysql_dml_13",
+			Name:     DMLHintUseTruncateInsteadOfDelete,
 			Desc:     "删除全表时建议使用 TRUNCATE 替代 DELETE",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "删除全表时建议使用 TRUNCATE 替代 DELETE",
-		Func:    mysqlDML13,
+		Func:    hintUseTruncateInsteadOfDelete,
 	}, {
 		Rule: driver.Rule{ //update mysql.func set name ="hello";
-			Name:     "mysql_dml_14",
+			Name:     DMLNotRecommendUpdatePK,
 			Desc:     "不要 UPDATE 主键",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不要 UPDATE 主键",
-		Func:    mysqlDML14,
+		Func:    notRecommendUpdatePK,
 	}, {
 		Rule: driver.Rule{ //create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);
-			Name:     "mysql_ddl_6",
+			Name:     DDLCheckColumnQuantity,
 			Desc:     "表中包含有太多的列",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
@@ -1469,28 +1504,28 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "表中包含有太多的列",
-		Func:    mysqlDDL6,
+		Func:    checkColumnQuantity,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)
-			Name:     "mysql_ddl_7",
+			Name:     DDLRecommendTableColumnCharsetSame,
 			Desc:     "建议列与表使用同一个字符集",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "建议列与表使用同一个字符集",
-		Func:    mysqlDDL7,
+		Func:    recommendTableColumnCharsetSame,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tab (a INT(1));
-			Name:     "mysql_ddl_8",
+			Name:     DDLCheckColumnTypeInteger,
 			Desc:     "整型定义建议采用 INT(10) 或 BIGINT(20)",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "整型定义建议采用 INT(10) 或 BIGINT(20)",
-		Func:    mysqlDDL8,
+		Func:    checkColumnTypeInteger,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tab (a varchar(3500));
-			Name:     "mysql_ddl_9",
+			Name:     DDLCheckVarcharSize,
 			Desc:     "VARCHAR 定义长度过长",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
@@ -1504,37 +1539,37 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "VARCHAR 定义长度过长",
-		Func:    mysqlDDL9,
+		Func:    checkVarcharSize,
 	}, {
 		Rule: driver.Rule{ //select id from t where substring(name,1,3)='abc'
-			Name:     "mysql_dml_15",
+			Name:     DMLNotRecommendFuncInWhere,
 			Desc:     "应避免在 WHERE 条件中使用函数或其他运算符",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "应避免在 WHERE 条件中使用函数或其他运算符",
-		Func:    mysqlDML15,
+		Func:    notRecommendFuncInWhere,
 	}, {
 		Rule: driver.Rule{ //SELECT SYSDATE();
-			Name:     "mysql_dml_16",
+			Name:     DMLNotRecommendSysdate,
 			Desc:     "不建议使用 SYSDATE() 函数",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 SYSDATE() 函数",
-		Func:    mysqlDML16,
+		Func:    notRecommendSysdate,
 	}, {
 		Rule: driver.Rule{ //SELECT SUM(COL) FROM tbl;
-			Name:     "mysql_dml_17",
+			Name:     DMLHintSumFuncTips,
 			Desc:     "使用 SUM(COL) 时需注意 NPE 问题",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "使用 SUM(COL) 时需注意 NPE 问题",
-		Func:    mysqlDML17,
+		Func:    hintSumFuncTips,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
-			Name:     "mysql_ddl_10",
+			Name:     DDLCheckColumnQuantityInPK,
 			Desc:     "检测主键中的列过多",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
@@ -1548,80 +1583,80 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		Message: "主键中的列过多",
-		Func:    mysqlDDL10,
+		Func:    checkColumnQuantityInPK,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl where name=xx limit 10
-			Name:     "mysql_dml_18",
+			Name:     DMLHintLimitMustBeCombinedWithOrderBy,
 			Desc:     "未使用 ORDER BY 的 LIMIT 查询",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "未使用 ORDER BY 的 LIMIT 查询",
-		Func:    mysqlDML18,
+		Func:    hintLimitMustBeCombinedWithOrderBy,
 	},
 	{
 		Rule: driver.Rule{ //TRUNCATE TABLE tbl_name
-			Name:     "mysql_dml_19",
+			Name:     DMLHintTruncateTips,
 			Desc:     "请谨慎使用TRUNCATE操作",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "请谨慎使用TRUNCATE操作",
-		Func:    mysqlDML19,
+		Func:    hintTruncateTips,
 	}, {
 		Rule: driver.Rule{ //delete from t where col = 'condition'
-			Name:     "mysql_dml_20",
+			Name:     DMLHintDeleteTips,
 			Desc:     "使用DELETE/DROP/TRUNCATE等操作时注意备份",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "使用DELETE/DROP/TRUNCATE等操作时注意备份",
-		Func:    mysqlDML20,
+		Func:    hintDeleteTips,
 	}, {
 		Rule: driver.Rule{ //SELECT BENCHMARK(10, RAND())
-			Name:     "mysql_dml_21",
+			Name:     DMLCheckSQLInjectionFunc,
 			Desc:     "发现常见 SQL 注入函数",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "发现常见 SQL 注入函数",
-		Func:    mysqlDML21,
+		Func:    checkSQLInjectionFunc,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl where type!=0
-			Name:     "mysql_dml_22",
+			Name:     DMLCheckNotEqualSymbol,
 			Desc:     "请使用'<>'代替'!='",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "请使用'<>'代替'!='",
-		Func:    mysqlDML22,
+		Func:    checkNotEqualSymbol,
 	}, {
 		Rule: driver.Rule{ //select col1,col2,col3 from table1 where col2 in(select col from table2)
-			Name:     "mysql_dml_23",
+			Name:     DMLNotRecommendSubquery,
 			Desc:     "不推荐使用子查询",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "不推荐使用子查询",
-		Func:    mysqlDML23,
+		Func:    notRecommendSubquery,
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
-			Name:     "mysql_dml_24",
+			Name:     DMLCheckSubqueryLimit,
 			Desc:     "子查询不支持LIMIT",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
 		Message: "子查询不支持LIMIT",
-		Func:    mysqlDML24,
+		Func:    checkSubqueryLimit,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
-			Name:     "mysql_ddl_11",
+			Name:     DDLCheckAutoIncrement,
 			Desc:     "表的初始AUTO_INCREMENT值不为0",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
 		Message: "表的初始AUTO_INCREMENT值不为0",
-		Func:    mysqlDDL11,
+		Func:    checkAutoIncrement,
 	},
 }
 
@@ -3922,7 +3957,7 @@ func checkCreateProcedure(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML1(input *RuleHandlerInput) error {
+func checkAlias(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		repeats := []string{}
@@ -3954,7 +3989,7 @@ func mysqlDML1(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL1(input *RuleHandlerInput) error {
+func hintUpdateTableCharsetWillNotUpdateFieldCharset(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
@@ -3971,7 +4006,7 @@ func mysqlDDL1(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL2(input *RuleHandlerInput) error {
+func hintDropColumn(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.AlterTableStmt:
 		if len(stmt.Specs) > 0 {
@@ -3988,7 +4023,7 @@ func mysqlDDL2(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL3(input *RuleHandlerInput) error {
+func hintDropPrimaryKey(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.DropIndexStmt:
 		if strings.ToLower(stmt.IndexName) == "primary" {
@@ -4010,7 +4045,7 @@ func mysqlDDL3(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL4(input *RuleHandlerInput) error {
+func hintDropForeignKey(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.AlterTableStmt:
 		if len(stmt.Specs) > 0 {
@@ -4027,7 +4062,7 @@ func mysqlDDL4(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML2(input *RuleHandlerInput) error {
+func notRecommendNotWildcardLike(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -4051,7 +4086,7 @@ func mysqlDML2(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML3(input *RuleHandlerInput) error {
+func hintInNullOnlyFalse(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -4077,7 +4112,7 @@ func mysqlDML3(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML4(input *RuleHandlerInput) error {
+func notRecommendIn(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -4095,7 +4130,7 @@ func mysqlDML4(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML5(input *RuleHandlerInput) error {
+func checkSpacesAroundTheString(input *RuleHandlerInput) error {
 	visitor := &mysqlDML5Visitor{}
 	input.Node.Accept(visitor)
 	if visitor.HasPrefixOrSuffixSpace {
@@ -4126,7 +4161,7 @@ func (g *mysqlDML5Visitor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
 }
 
-func mysqlDDL5(input *RuleHandlerInput) error {
+func checkFullWidthQuotationMarks(input *RuleHandlerInput) error {
 	switch input.Node.(type) {
 	case ast.DDLNode:
 		if strings.Contains(input.Node.Text(), "“") {
@@ -4136,7 +4171,7 @@ func mysqlDDL5(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML6(input *RuleHandlerInput) error {
+func notRecommendOrderByRand(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
@@ -4151,7 +4186,7 @@ func mysqlDML6(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML7(input *RuleHandlerInput) error {
+func notRecommendGroupByConstant(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		groupBy := stmt.GroupBy
@@ -4166,7 +4201,7 @@ func mysqlDML7(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML8(input *RuleHandlerInput) error {
+func checkSortDirection(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
@@ -4188,7 +4223,7 @@ func mysqlDML8(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML9(input *RuleHandlerInput) error {
+func hintGroupByRequiresConditions(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.GroupBy != nil && stmt.OrderBy == nil {
@@ -4200,7 +4235,7 @@ func mysqlDML9(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML10(input *RuleHandlerInput) error {
+func notRecommendGroupByExpression(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		orderBy := stmt.OrderBy
@@ -4218,14 +4253,14 @@ func mysqlDML10(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML11(input *RuleHandlerInput) error {
+func checkSQLLength(input *RuleHandlerInput) error {
 	if len(input.Node.Text()) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
 
-func mysqlDML12(input *RuleHandlerInput) error {
+func notRecommendHaving(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Having != nil {
@@ -4237,7 +4272,7 @@ func mysqlDML12(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML13(input *RuleHandlerInput) error {
+func hintUseTruncateInsteadOfDelete(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.DeleteStmt:
 		if stmt.Where == nil {
@@ -4249,7 +4284,7 @@ func mysqlDML13(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML14(input *RuleHandlerInput) error {
+func notRecommendUpdatePK(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.UpdateStmt:
 		createTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.TableRefs.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
@@ -4280,7 +4315,7 @@ func mysqlDML14(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL6(input *RuleHandlerInput) error {
+func checkColumnQuantity(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		if len(stmt.Cols) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
@@ -4292,7 +4327,7 @@ func mysqlDDL6(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL7(input *RuleHandlerInput) error {
+func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -4307,7 +4342,7 @@ func mysqlDDL7(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL8(input *RuleHandlerInput) error {
+func checkColumnTypeInteger(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -4322,7 +4357,7 @@ func mysqlDDL8(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDDL9(input *RuleHandlerInput) error {
+func checkVarcharSize(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -4337,7 +4372,7 @@ func mysqlDDL9(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML15(input *RuleHandlerInput) error {
+func notRecommendFuncInWhere(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -4355,7 +4390,7 @@ func mysqlDML15(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML16(input *RuleHandlerInput) error {
+func notRecommendSysdate(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		for _, f := range stmt.Fields.Fields {
@@ -4384,7 +4419,7 @@ func mysqlDML16(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML17(input *RuleHandlerInput) error {
+func hintSumFuncTips(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		for _, f := range stmt.Fields.Fields {
@@ -4413,7 +4448,7 @@ func mysqlDML17(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDDL10(input *RuleHandlerInput) error {
+func checkColumnQuantityInPK(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range stmt.Constraints {
@@ -4428,7 +4463,7 @@ func mysqlDDL10(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML18(input *RuleHandlerInput) error {
+func hintLimitMustBeCombinedWithOrderBy(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.OrderBy == nil {
@@ -4440,7 +4475,7 @@ func mysqlDML18(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML19(input *RuleHandlerInput) error {
+func hintTruncateTips(input *RuleHandlerInput) error {
 	switch input.Node.(type) {
 	case *ast.TruncateTableStmt:
 		addResult(input.Res, input.Rule, input.Rule.Name)
@@ -4450,7 +4485,7 @@ func mysqlDML19(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML20(input *RuleHandlerInput) error {
+func hintDeleteTips(input *RuleHandlerInput) error {
 	switch input.Node.(type) {
 	case *ast.TruncateTableStmt, *ast.DeleteStmt, *ast.DropTableStmt:
 		addResult(input.Res, input.Rule, input.Rule.Name)
@@ -4460,7 +4495,7 @@ func mysqlDML20(input *RuleHandlerInput) error {
 	}
 }
 
-func mysqlDML21(input *RuleHandlerInput) error {
+func checkSQLInjectionFunc(input *RuleHandlerInput) error {
 	funcs := []string{"sleep", "benchmark", "get_lock", "release_lock"}
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
@@ -4499,7 +4534,7 @@ func inSlice(ss []string, s string) bool {
 	return false
 }
 
-func mysqlDML23(input *RuleHandlerInput) error {
+func notRecommendSubquery(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -4517,14 +4552,14 @@ func mysqlDML23(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDML22(input *RuleHandlerInput) error {
+func checkNotEqualSymbol(input *RuleHandlerInput) error {
 	if strings.Contains(input.Node.Text(), "!=") {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
 
-func mysqlDML24(input *RuleHandlerInput) error {
+func checkSubqueryLimit(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -4544,7 +4579,7 @@ func mysqlDML24(input *RuleHandlerInput) error {
 	return nil
 }
 
-func mysqlDDL11(input *RuleHandlerInput) error {
+func checkAutoIncrement(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	default:
 		return nil
