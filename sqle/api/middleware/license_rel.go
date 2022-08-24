@@ -31,23 +31,25 @@ func initLicense() error {
 }
 
 func licenseAdapter() echo.MiddlewareFunc {
-	initFailed := false
-	once.Do(func() {
-		err := initLicense()
-		if err != nil {
-			log.NewEntry().Errorf("init license error: %v", err)
-			once = &sync.Once{}
-			initFailed = true
-		}
-	})
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			initFailed := false
+			once.Do(func() {
+				err := initLicense()
+				if err != nil {
+					log.NewEntry().Errorf("init license error: %v", err)
+					once = &sync.Once{}
+					initFailed = true
+				}
+			})
+
 			if initFailed {
 				return ErrInitLicenseFailed
 			}
 			pass, err := license.Check(c)
 			if err != nil {
+				log.NewEntry().Errorf("check failed: %v", err)
 				return ErrInitLicenseFailed
 			}
 			if !pass {
