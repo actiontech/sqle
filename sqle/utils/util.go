@@ -123,3 +123,10 @@ func SupplementalQuotationMarks(s string) string {
 	}
 	return s
 }
+
+func NvlString(param *string) string {
+	if param != nil {
+		return *param
+	}
+	return ""
+}

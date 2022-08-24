@@ -15,25 +15,32 @@ type Meta struct {
 }
 
 const (
-	TypeDefault         = "default"
-	TypeMySQLSlowLog    = "mysql_slow_log"
-	TypeMySQLMybatis    = "mysql_mybatis"
-	TypeMySQLSchemaMeta = "mysql_schema_meta"
-	TypeOracleTopSQL    = "oracle_top_sql"
-	TypeTiDBAuditLog    = "tidb_audit_log"
-	TypeAllAppExtract   = "all_app_extract"
+	TypeDefault             = "default"
+	TypeMySQLSlowLog        = "mysql_slow_log"
+	TypeMySQLMybatis        = "mysql_mybatis"
+	TypeMySQLSchemaMeta     = "mysql_schema_meta"
+	TypeOracleTopSQL        = "oracle_top_sql"
+	TypeTiDBAuditLog        = "tidb_audit_log"
+	TypePolarDBMySQLSlowLog = "polardb_mysql_slow_log"
+	TypeAllAppExtract       = "all_app_extract"
 )
 
 const (
-	InstanceTypeAll    = ""
-	InstanceTypeMySQL  = "MySQL"
-	InstanceTypeOracle = "Oracle"
-	InstanceTypeTiDB   = "TiDB"
+	InstanceTypeAll          = ""
+	InstanceTypeMySQL        = "MySQL"
+	InstanceTypeOracle       = "Oracle"
+	InstanceTypeTiDB         = "TiDB"
+	InstanceTypePolarDBMySQL = "PolarDB For MySQL"
 )
 
 const (
 	paramKeyCollectIntervalMinute               = "collect_interval_minute"
 	paramKeyAuditSQLsScrappedInLastPeriodMinute = "audit_sqls_scrapped_in_last_period_minute"
+	paramKeyRegionId                            = "region_id"
+	paramKeyDBClusterId                         = "db_cluster_id"
+	paramKeyAccessKeyId                         = "access_key_id"
+	paramKeyAccessKeySecret                     = "access_key_secret"
+	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
 )
 
 var Metas = []Meta{
@@ -114,6 +121,49 @@ var Metas = []Meta{
 		Desc:         "TiDB审计日志",
 		InstanceType: InstanceTypeTiDB,
 		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+		},
+	},
+	{
+		Type:         TypePolarDBMySQLSlowLog,
+		Desc:         "PolarDB MySQL慢日志",
+		InstanceType: InstanceTypePolarDBMySQL,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyRegionId,
+				Desc:  "地域ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyDBClusterId,
+				Desc:  "集群ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeyId,
+				Desc:  "Access Key ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeySecret,
+				Desc:  "Access Key Secret",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+				Desc:  "第一次拉取慢日志时间范围（单位:小时,不能超过30天）",
+				Value: "",
+				Type:  params.ParamTypeInt,
+			},
 			{
 				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
 				Desc:  "审核过去时间段内抓取的SQL（分钟）",
