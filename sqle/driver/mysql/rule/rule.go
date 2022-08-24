@@ -4131,7 +4131,7 @@ func notRecommendIn(input *RuleHandlerInput) error {
 }
 
 func checkSpacesAroundTheString(input *RuleHandlerInput) error {
-	visitor := &mysqlDML5Visitor{}
+	visitor := &checkSpacesAroundTheStringVisitor{}
 	input.Node.Accept(visitor)
 	if visitor.HasPrefixOrSuffixSpace {
 		addResult(input.Res, input.Rule, input.Rule.Name)
@@ -4139,11 +4139,11 @@ func checkSpacesAroundTheString(input *RuleHandlerInput) error {
 	return nil
 }
 
-type mysqlDML5Visitor struct {
+type checkSpacesAroundTheStringVisitor struct {
 	HasPrefixOrSuffixSpace bool
 }
 
-func (g *mysqlDML5Visitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+func (g *checkSpacesAroundTheStringVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
 	if g.HasPrefixOrSuffixSpace {
 		return n, false
 	}
@@ -4157,7 +4157,7 @@ func (g *mysqlDML5Visitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) 
 	return n, false
 }
 
-func (g *mysqlDML5Visitor) Leave(n ast.Node) (node ast.Node, ok bool) {
+func (g *checkSpacesAroundTheStringVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
 }
 
