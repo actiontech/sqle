@@ -870,7 +870,6 @@ func (at *AliRdsMySQLSlowLogTask) CreateClient(accessKeyId *string, accessKeySec
 	}
 	// 访问的域名
 	config.Endpoint = tea.String("rds.aliyuncs.com")
-	_result = &rds20140815.Client{}
 	_result, _err = rds20140815.NewClient(config)
 	return _result, _err
 }
