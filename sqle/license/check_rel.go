@@ -111,15 +111,27 @@ var InstanceLicenseChecker = func(c echo.Context) (skipSubsequentCheck bool, che
 	}
 
 	s := model.GetStorage()
-	count, err := s.GetAllInstanceCountByType(dbType)
+	count, err := s.GetAllInstanceCount()
 	if err != nil {
 		return true, false, err
 	}
-	limit := std.GetPermission(dbType)
-	if limit <= count {
-		return customInstanceLicenseChecker(map[string]int64{dbType: 1}, nil, nil)
+
+	addedCount := false
+	for _, dbCount := range count {
+		if dbCount.DBType == dbType {
+			dbCount.Count++
+			addedCount = true
+			break
+		}
 	}
-	return true, true, nil
+	if !addedCount {
+		count = append(count, &model.TypeCount{
+			DBType: dbType,
+			Count:  1,
+		})
+	}
+
+	return true, calculateIdleCustomAmount(count) >= 0, nil
 }
 
 // 复制结构体是为了防止循环依赖
@@ -151,39 +163,14 @@ func getDBTypeWithReq(c echo.Context) (dbType string, err error) {
 
 const CustomTypeKey = "custom"
 
-var customInstanceLicenseChecker = func(newInstanceCount map[string]int64, numberOfAdditionalInstances map[string]int64, skipType map[string]struct{}) (skipSubsequentCheck bool, checkResult bool, err error) {
-	s := model.GetStorage()
-	allCount, err := s.GetAllInstanceCount()
-	if err != nil {
-		return true, false, err
-	}
-
-A:
-	for t, i := range numberOfAdditionalInstances {
-		for _, count := range allCount {
-			if count.DBType == t {
-				count.Count += i
-				continue A
-			}
-		}
-		allCount = append(allCount, &model.TypeCount{
-			DBType: t,
-			Count:  i,
-		})
-	}
-
+func calculateIdleCustomAmount(allCount []*model.TypeCount) int64 {
 	var custom int64 = 0
 	for _, count := range allCount {
-		if _, ok := skipType[count.DBType]; ok {
-			continue
-		}
-		count.Count += newInstanceCount[count.DBType]
 		if t := count.Count - std.GetPermission(count.DBType); t > 0 {
 			custom += t
 		}
 	}
-
-	return true, std.GetPermission(CustomTypeKey) >= custom, nil
+	return std.GetPermission(CustomTypeKey) - custom
 }
 
 func Check(c echo.Context) (bool, error) {
