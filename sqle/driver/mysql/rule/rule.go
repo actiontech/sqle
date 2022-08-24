@@ -500,7 +500,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckUpdateTimeColumn,
-			Desc:     "建表DDL必须包含UPDATE_TIME字段且默认值为UPDATE_TIME",
+			Desc:     "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
