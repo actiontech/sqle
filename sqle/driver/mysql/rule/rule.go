@@ -440,7 +440,7 @@ var RuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message:      "存在JOIN字段类型不一致, 会导致隐式转换",
-		AllowOffline: true,
+		AllowOffline: false,
 		Func:         checkJoinFieldType,
 	},
 	{
