@@ -817,11 +817,13 @@ func (at *AliRdsMySQLSlowLogTask) collectorDo() {
 	}
 
 	pageSize := 100
+	needFullUpdate := false
 	for {
 		now := time.Now().UTC()
 		var startTime time.Time
 		if at.lastEndTime == nil {
 			startTime = now.Add(time.Duration(-1*firstScrapInLastHours) * time.Hour)
+			needFullUpdate = true
 		} else {
 			startTime = *at.lastEndTime
 		}
@@ -835,11 +837,20 @@ func (at *AliRdsMySQLSlowLogTask) collectorDo() {
 			}
 
 			if len(sqls) > 0 {
-				err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, at.convertRawSQLToModelSQLs(sqls, now))
-				if err != nil {
-					at.logger.Errorf("save sqls to storage fail, error: %v", err)
-					return
+				if needFullUpdate {
+					err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, at.convertRawSQLToModelSQLs(sqls, now))
+					if err != nil {
+						at.logger.Errorf("save sqls to storage fail, error: %v", err)
+						return
+					}
+				} else {
+					err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, at.convertRawSQLToModelSQLs(sqls, now))
+					if err != nil {
+						at.logger.Errorf("save sqls to storage fail, error: %v", err)
+						return
+					}
 				}
+
 			}
 
 			if len(sqls) < pageSize {
