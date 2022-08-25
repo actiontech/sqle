@@ -861,6 +861,50 @@ func (at *AliRdsMySQLSlowLogTask) collectorDo() {
 	}
 }
 
+type sqlInfo struct {
+	counter     int
+	fingerprint string
+	sql         string
+}
+
+func deduplicateSQLsByFingerprint(sqls []string) []*sqlInfo {
+	var sqlInfos []*sqlInfo
+	for _, sql := range sqls {
+		fp := query.Fingerprint(sql)
+		if exist, info := findSqlInfoByFingerprint(fp, sqlInfos); exist {
+			info.counter = info.counter + 1
+			info.fingerprint = fp
+			info.sql = sql
+			continue
+		}
+
+		sqlInfos = append(sqlInfos, &sqlInfo{
+			counter:     1,
+			fingerprint: fp,
+			sql:         sql,
+		})
+	}
+
+	res := make([]*sqlInfo, len(sqlInfos))
+	for i, info := range sqlInfos {
+		res[i] = &sqlInfo{
+			counter:     info.counter,
+			fingerprint: info.fingerprint,
+			sql:         info.sql,
+		}
+	}
+	return res
+}
+
+func findSqlInfoByFingerprint(fp string, sqlInfos []*sqlInfo) (exist bool, sqlInfo *sqlInfo) {
+	for i, info := range sqlInfos {
+		if info.fingerprint == fp {
+			return true, sqlInfos[i]
+		}
+	}
+	return false, nil
+}
+
 func (at *AliRdsMySQLSlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{
 		DBType: at.ap.DBType,
@@ -931,17 +975,19 @@ func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBIns
 }
 
 func (at *AliRdsMySQLSlowLogTask) convertRawSQLToModelSQLs(sqls []string, now time.Time) []*model.AuditPlanSQLV2 {
-	return convertRawSlowSQLToModelSQLs(sqls, now)
+	return convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls, now)
 }
 
-func convertRawSlowSQLToModelSQLs(sqls []string, now time.Time) []*model.AuditPlanSQLV2 {
-	as := make([]*model.AuditPlanSQLV2, len(sqls))
-	info := fmt.Sprintf(`{"counter":1,"last_receive_timestamp":"%v"}`, now.Format(time.RFC3339))
-	for i, sql := range sqls {
+func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []string, now time.Time) []*model.AuditPlanSQLV2 {
+	deduplicatedSqls := deduplicateSQLsByFingerprint(sqls)
+
+	as := make([]*model.AuditPlanSQLV2, len(deduplicatedSqls))
+	for i, sql := range deduplicatedSqls {
+		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v"}`, sql.counter, now.Format(time.RFC3339))
 		as[i] = &model.AuditPlanSQLV2{
-			Fingerprint: query.Fingerprint(sql),
-			SQLContent:  sql,
-			Info:        []byte(info),
+			Fingerprint: sql.fingerprint,
+			SQLContent:  sql.sql,
+			Info:        []byte(modelInfo),
 		}
 	}
 	return as
