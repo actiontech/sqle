@@ -8,7 +8,11 @@ require (
 	github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220728081924-8483c9ff0a98
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
-	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
+	github.com/alibabacloud-go/darabonba-openapi v0.1.18
+	github.com/alibabacloud-go/rds-20140815/v2 v2.1.0
+	github.com/alibabacloud-go/tea v1.1.19
+	github.com/alibabacloud-go/tea-utils v1.4.3
+	github.com/clbanning/mxj/v2 v2.5.6 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/cznic/parser v0.0.0-20181122101858-d773202d5b1f
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8
@@ -40,11 +44,9 @@ require (
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
-	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
 	github.com/pkg/errors v0.9.1
