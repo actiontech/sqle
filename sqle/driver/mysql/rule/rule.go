@@ -1283,7 +1283,9 @@ var RuleHandlers = []RuleHandler{
 }
 
 func checkJoinFieldType(input *RuleHandlerInput) error {
+	//nolint:staticcheck
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	//nolint:staticcheck
 	onConditions := make([]*ast.OnCondition, 0)
 
 	switch stmt := input.Node.(type) {
