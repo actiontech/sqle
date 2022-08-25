@@ -114,6 +114,7 @@ const (
 	DMLCheckExplainExtraUsingFilesort    = "dml_check_explain_extra_using_filesort"
 	DMLCheckExplainExtraUsingTemporary   = "dml_check_explain_extra_using_temporary"
 	DMLCheckTableSize                    = "dml_check_table_size"
+	DMLCheckJoinFieldType                = "dml_check_join_field_type"
 )
 
 // inspector config code
@@ -430,6 +431,17 @@ var RuleHandlers = []RuleHandler{
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}},
 		Func:                            checkPrimaryKey,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DMLCheckJoinFieldType,
+			Desc:     "join字段类型不一致",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message:      "join字段类型不一致",
+		AllowOffline: true,
+		Func:         checkJoinFieldType,
 	},
 	{
 		Rule: driver.Rule{
@@ -1268,6 +1280,91 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
+}
+
+func checkJoinFieldType(input *RuleHandlerInput) error {
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	onConditions := make([]*ast.OnCondition, 0)
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
+	case *ast.UpdateStmt:
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
+	case *ast.DeleteStmt:
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
+	default:
+		return nil
+	}
+
+	for _, onCondition := range onConditions {
+		leftType, rightType := getOnConditionLeftAndRightType(onCondition, tableNameCreateTableStmtMap)
+		// 没有类型的情况下不检查
+		if leftType == 0 || rightType == 0 {
+			continue
+		}
+		if leftType != rightType {
+			addResult(input.Res, input.Rule, DMLCheckJoinFieldType)
+		}
+	}
+
+	return nil
+}
+
+func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	tableSources := util.GetTableSources(joinStmt)
+	for _, tableSource := range tableSources {
+		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
+			tableName := tableNameStmt.Name.L
+			if tableSource.AsName.L != "" {
+				tableName = tableSource.AsName.L
+			}
+
+			createTableStmt, exist, err := sessionContext.GetCreateTableStmt(tableNameStmt)
+			if err != nil || !exist {
+				continue
+			}
+			tableNameCreateTableStmtMap[tableName] = createTableStmt
+		}
+	}
+	return tableNameCreateTableStmtMap
+}
+
+func getOnConditionLeftAndRightType(onCondition *ast.OnCondition, createTableStmtMap map[string]*ast.CreateTableStmt) (byte, byte) {
+	var leftType, rightType byte
+
+	if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
+		if columnName, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
+			leftType = getColumnType(columnName, createTableStmtMap)
+		}
+
+		if columnName, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
+			rightType = getColumnType(columnName, createTableStmtMap)
+		}
+	}
+
+	return leftType, rightType
+}
+
+func getColumnType(columnName *ast.ColumnNameExpr, createTableStmtMap map[string]*ast.CreateTableStmt) byte {
+	var columnType byte
+	if createTableStmt, ok := createTableStmtMap[columnName.Name.Table.L]; ok {
+		for _, col := range createTableStmt.Cols {
+			if col.Tp == nil {
+				continue
+			}
+
+			if col.Name.Name.L == columnName.Name.Name.L {
+				columnType = col.Tp.Tp
+			}
+		}
+	}
+
+	return columnType
 }
 
 func checkFieldCreateTime(input *RuleHandlerInput) error {
