@@ -868,6 +868,7 @@ type sqlInfo struct {
 }
 
 func deduplicateSQLsByFingerprint(sqls []string) []*sqlInfo {
+	//nolint:prealloc
 	var sqlInfos []*sqlInfo
 	for _, sql := range sqls {
 		fp := query.Fingerprint(sql)
