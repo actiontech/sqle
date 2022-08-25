@@ -435,11 +435,11 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DMLCheckJoinFieldType,
-			Desc:     "join字段类型不一致",
+			Desc:     "JOIN字段类型不一致",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 		},
-		Message:      "join字段类型不一致",
+		Message:      "存在JOIN字段类型不一致, 会导致隐式转换",
 		AllowOffline: true,
 		Func:         checkJoinFieldType,
 	},
