@@ -109,7 +109,7 @@ var Metas = []Meta{
 			},
 			{
 				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-				Desc:  "第一次拉取慢日志时间范围（单位:小时,不能超过31天）",
+				Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大31天)",
 				Value: "",
 				Type:  params.ParamTypeInt,
 			},
