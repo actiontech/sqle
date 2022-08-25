@@ -817,48 +817,68 @@ func (at *AliRdsMySQLSlowLogTask) collectorDo() {
 	}
 
 	pageSize := 100
-	needFullUpdate := false
+	now := time.Now().UTC()
+	var startTime time.Time
+	if at.isFirstScrap() {
+		startTime = now.Add(time.Duration(-1*firstScrapInLastHours) * time.Hour)
+	} else {
+		startTime = *at.lastEndTime
+	}
+	var pageNum int32 = 1
+	slowSqls := []slowSqlFromAliCloud{}
 	for {
-		now := time.Now().UTC()
-		var startTime time.Time
-		if at.lastEndTime == nil {
-			startTime = now.Add(time.Duration(-1*firstScrapInLastHours) * time.Hour)
-			needFullUpdate = true
-		} else {
-			startTime = *at.lastEndTime
+		newSlowSqls, err := at.pullSlowLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
+		if err != nil {
+			at.logger.Warnf("pull slow logs failed: %v", err)
+			return
 		}
-		at.lastEndTime = &now
-		var pageNum int32 = 1
-		for {
-			sqls, err := at.pullSlowLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
+		filteredNewSlowSqls := at.filterSlowSqlsByExecutionTime(newSlowSqls, startTime)
+		slowSqls = append(slowSqls, filteredNewSlowSqls...)
+
+		if len(newSlowSqls) < pageSize {
+			break
+		}
+		pageNum++
+	}
+
+	mergedSlowSqls := mergeSQLsByFingerprint(slowSqls)
+	if len(mergedSlowSqls) > 0 {
+		if at.isFirstScrap() {
+			err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
 			if err != nil {
-				at.logger.Warnf("pull slow logs failed: %v", err)
+				at.logger.Errorf("save sqls to storage fail, error: %v", err)
 				return
 			}
-
-			if len(sqls) > 0 {
-				if needFullUpdate {
-					err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, at.convertRawSQLToModelSQLs(sqls, now))
-					if err != nil {
-						at.logger.Errorf("save sqls to storage fail, error: %v", err)
-						return
-					}
-				} else {
-					err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, at.convertRawSQLToModelSQLs(sqls, now))
-					if err != nil {
-						at.logger.Errorf("save sqls to storage fail, error: %v", err)
-						return
-					}
-				}
-
-			}
-
-			if len(sqls) < pageSize {
+		} else {
+			err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
+			if err != nil {
+				at.logger.Errorf("save sqls to storage fail, error: %v", err)
 				return
 			}
-			pageNum++
 		}
 	}
+
+	// update lastEndTime
+	// 查询的起始时间为上一次查询到的最后一条慢语句的开始执行时间
+	if len(slowSqls) > 0 {
+		lastSlowSql := slowSqls[len(slowSqls)-1]
+		at.lastEndTime = &lastSlowSql.executionStartTime
+	}
+}
+
+// 因为查询的起始时间为上一次查询到的最后一条慢语句的executionStartTime（精确到秒），而查询起始时间只能精确到分钟，所以有可能还是会查询到上一次查询过的慢语句，需要将其过滤掉
+func (at *AliRdsMySQLSlowLogTask) filterSlowSqlsByExecutionTime(slowSqls []slowSqlFromAliCloud, executionTime time.Time) (res []slowSqlFromAliCloud) {
+	for _, sql := range slowSqls {
+		if !sql.executionStartTime.After(executionTime) {
+			continue
+		}
+		res = append(res, sql)
+	}
+	return
+}
+
+func (at *AliRdsMySQLSlowLogTask) isFirstScrap() bool {
+	return at.lastEndTime == nil
 }
 
 type sqlInfo struct {
@@ -867,43 +887,27 @@ type sqlInfo struct {
 	sql         string
 }
 
-func deduplicateSQLsByFingerprint(sqls []string) []*sqlInfo {
-	//nolint:prealloc
-	var sqlInfos []*sqlInfo
+func mergeSQLsByFingerprint(sqls []slowSqlFromAliCloud) []sqlInfo {
+	sqlInfos := []sqlInfo{}
+
+	counter := map[string]int /*slice subscript*/ {}
 	for _, sql := range sqls {
-		fp := query.Fingerprint(sql)
-		if exist, info := findSqlInfoByFingerprint(fp, sqlInfos); exist {
-			info.counter = info.counter + 1
-			info.fingerprint = fp
-			info.sql = sql
-			continue
+		fp := query.Fingerprint(sql.sql)
+		if index, exist := counter[fp]; exist {
+			sqlInfos[index].counter += 1
+			sqlInfos[index].fingerprint = fp
+			sqlInfos[index].sql = sql.sql
+		} else {
+			sqlInfos = append(sqlInfos, sqlInfo{
+				counter:     1,
+				fingerprint: fp,
+				sql:         sql.sql,
+			})
+			counter[fp] = len(sqlInfos) - 1
 		}
 
-		sqlInfos = append(sqlInfos, &sqlInfo{
-			counter:     1,
-			fingerprint: fp,
-			sql:         sql,
-		})
 	}
-
-	res := make([]*sqlInfo, len(sqlInfos))
-	for i, info := range sqlInfos {
-		res[i] = &sqlInfo{
-			counter:     info.counter,
-			fingerprint: info.fingerprint,
-			sql:         info.sql,
-		}
-	}
-	return res
-}
-
-func findSqlInfoByFingerprint(fp string, sqlInfos []*sqlInfo) (exist bool, sqlInfo *sqlInfo) {
-	for i, info := range sqlInfos {
-		if info.fingerprint == fp {
-			return true, sqlInfos[i]
-		}
-	}
-	return false, nil
+	return sqlInfos
 }
 
 func (at *AliRdsMySQLSlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
@@ -930,8 +934,14 @@ func (at *AliRdsMySQLSlowLogTask) CreateClient(accessKeyId *string, accessKeySec
 	return _result, _err
 }
 
+type slowSqlFromAliCloud struct {
+	sql                string
+	executionStartTime time.Time
+}
+
 // 查询内容范围是开始时间的0s到设置结束时间的0s，所以结束时间点的慢日志是查询不到的
-func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBInstanId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []string, err error) {
+// startTime和endTime对应的是慢语句的开始执行时间
+func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBInstanId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []slowSqlFromAliCloud, err error) {
 	describeSlowLogRecordsRequest := &rds20140815.DescribeSlowLogRecordsRequest{
 		DBInstanceId: tea.String(DBInstanId),
 		StartTime:    tea.String(startTime.Format("2006-01-02T15:04Z")),
@@ -968,22 +978,27 @@ func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBIns
 		return nil, fmt.Errorf("get slow log failed: %v", *errMsg)
 	}
 
-	sqls = make([]string, len(response.Body.Items.SQLSlowRecord))
+	sqls = make([]slowSqlFromAliCloud, len(response.Body.Items.SQLSlowRecord))
 	for i, slowRecord := range response.Body.Items.SQLSlowRecord {
-		sqls[i] = utils.NvlString(slowRecord.SQLText)
+		execStartTime, err := time.Parse("2006-01-02T15:04:05Z", utils.NvlString(slowRecord.ExecutionStartTime))
+		if err != nil {
+			return nil, fmt.Errorf("parse execution-start-time failed: %v", err)
+		}
+		sqls[i] = slowSqlFromAliCloud{
+			sql:                utils.NvlString(slowRecord.SQLText),
+			executionStartTime: execStartTime,
+		}
 	}
 	return sqls, nil
 }
 
-func (at *AliRdsMySQLSlowLogTask) convertRawSQLToModelSQLs(sqls []string, now time.Time) []*model.AuditPlanSQLV2 {
+func (at *AliRdsMySQLSlowLogTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
 	return convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls, now)
 }
 
-func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []string, now time.Time) []*model.AuditPlanSQLV2 {
-	deduplicatedSqls := deduplicateSQLsByFingerprint(sqls)
-
-	as := make([]*model.AuditPlanSQLV2, len(deduplicatedSqls))
-	for i, sql := range deduplicatedSqls {
+func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+	as := make([]*model.AuditPlanSQLV2, len(sqls))
+	for i, sql := range sqls {
 		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v"}`, sql.counter, now.Format(time.RFC3339))
 		as[i] = &model.AuditPlanSQLV2{
 			Fingerprint: sql.fingerprint,
