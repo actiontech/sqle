@@ -3474,6 +3474,60 @@ ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 		newTestResult(), newTestResult())
 }
 
+func Test_DMLCheckJoinFieldType(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldType].Rule
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.id = t2.id where exist_tb_2.v2 = 'v1'`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.v1 = t2.id where exist_tb_2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.v1 = t2.id left join exist_tb_4 t4 on t4.id = t3.id where exist_tb_2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	// 不检测on condition表名不存在的情况
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.v1 = id  where exist_tb_2.v2 = 'v1'`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 on t2.id=t3.id
+set t1.id = 1
+where t2.id = 2;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v1 left join exist_tb_3 t3 on t2.id=t3.id
+set t1.id = 1
+where t2.id = 2;`, newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	// 不检测on condition表名不存在的情况
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = v1 left join exist_tb_3 t3 on t2.id=t3.id
+set t1.id = 1
+where t2.id = 2;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id 
+					left join exist_tb_3 t3 on t3.id = t2.id where t2.v2 = 'v1'`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v2 
+					left join exist_tb_3 t3 on t3.id = t2.id where t2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	// 不检测on condition表名不存在的情况
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id 
+					left join exist_tb_3 t3 on t3.id = id where t2.v2 = 'v1'`, newTestResult())
+}
+
 func Test_CheckExplain_ShouldNotError(t *testing.T) {
 	e, handler, err := executor.NewMockExecutor()
 	assert.NoError(t, err)
