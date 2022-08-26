@@ -17,9 +17,11 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/types"
+	tidbTypes "github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/ungerik/go-dry"
 )
@@ -37,83 +39,119 @@ const (
 
 // inspector DDL rules
 const (
-	DDLCheckPKWithoutIfNotExists                = "ddl_check_table_without_if_not_exists"
-	DDLCheckObjectNameLength                    = "ddl_check_object_name_length"
-	DDLCheckObjectNameUsingKeyword              = "ddl_check_object_name_using_keyword"
-	DDLCheckPKNotExist                          = "ddl_check_pk_not_exist"
-	DDLCheckPKWithoutBigintUnsigned             = "ddl_check_pk_without_bigint_unsigned"
-	DDLCheckPKWithoutAutoIncrement              = "ddl_check_pk_without_auto_increment"
-	DDLCheckPKProhibitAutoIncrement             = "ddl_check_pk_prohibit_auto_increment"
-	DDLCheckColumnCharLength                    = "ddl_check_column_char_length"
-	DDLDisableFK                                = "ddl_disable_fk"
-	DDLCheckIndexCount                          = "ddl_check_index_count"
-	DDLCheckCompositeIndexMax                   = "ddl_check_composite_index_max"
-	DDLCheckTableDBEngine                       = "ddl_check_table_db_engine"
-	DDLCheckTableCharacterSet                   = "ddl_check_table_character_set"
-	DDLCheckIndexedColumnWithBlob               = "ddl_check_index_column_with_blob"
-	DDLCheckAlterTableNeedMerge                 = "ddl_check_alter_table_need_merge"
-	DDLDisableDropStatement                     = "ddl_disable_drop_statement"
-	DDLCheckTableWithoutComment                 = "ddl_check_table_without_comment"
-	DDLCheckColumnWithoutComment                = "ddl_check_column_without_comment"
-	DDLCheckIndexPrefix                         = "ddl_check_index_prefix"
-	DDLCheckUniqueIndexPrefix                   = "ddl_check_unique_index_prefix"
-	DDLCheckUniqueIndex                         = "ddl_check_unique_index"
-	DDLCheckColumnWithoutDefault                = "ddl_check_column_without_default"
-	DDLCheckColumnTimestampWithoutDefault       = "ddl_check_column_timestamp_without_default"
-	DDLCheckColumnBlobWithNotNull               = "ddl_check_column_blob_with_not_null"
-	DDLCheckColumnBlobDefaultIsNotNull          = "ddl_check_column_blob_default_is_not_null"
-	DDLCheckColumnEnumNotice                    = "ddl_check_column_enum_notice"
-	DDLCheckColumnSetNotice                     = "ddl_check_column_set_notice"
-	DDLCheckColumnBlobNotice                    = "ddl_check_column_blob_notice"
-	DDLCheckIndexesExistBeforeCreateConstraints = "ddl_check_indexes_exist_before_creat_constraints"
-	DDLCheckDatabaseCollation                   = "ddl_check_collation_database"
-	DDLCheckDecimalTypeColumn                   = "ddl_check_decimal_type_column"
-	DDLCheckBigintInsteadOfDecimal              = "ddl_check_bigint_instead_of_decimal"
-	DDLCheckDatabaseSuffix                      = "ddl_check_database_suffix"
-	DDLCheckPKName                              = "ddl_check_pk_name"
-	DDLCheckTransactionIsolationLevel           = "ddl_check_transaction_isolation_level"
-	DDLCheckTablePartition                      = "ddl_check_table_partition"
-	DDLCheckIsExistLimitOffset                  = "ddl_check_is_exist_limit_offset"
-	DDLCheckIndexOption                         = "ddl_check_index_option"
-	DDLCheckObjectNameUseCN                     = "ddl_check_object_name_using_cn"
-	DDLCheckCreateView                          = "ddl_check_create_view"
-	DDLCheckCreateTrigger                       = "ddl_check_create_trigger"
-	DDLCheckCreateFunction                      = "ddl_check_create_function"
-	DDLCheckCreateProcedure                     = "ddl_check_create_procedure"
-	DDLCheckTableSize                           = "ddl_check_table_size"
-	DDLCheckIndexTooMany                        = "ddl_check_index_too_many"
-	DDLCheckRedundantIndex                      = "ddl_check_redundant_index"
-	DDLDisableTypeTimestamp                     = "ddl_disable_type_timestamp"
-	DDLDisableAlterFieldUseFirstAndAfter        = "ddl_disable_alter_field_use_first_and_after"
-	DDLCheckCreateTimeColumn                    = "ddl_check_create_time_column"
-	DDLCheckUpdateTimeColumn                    = "ddl_check_update_time_column"
+	DDLCheckPKWithoutIfNotExists                       = "ddl_check_table_without_if_not_exists"
+	DDLCheckObjectNameLength                           = "ddl_check_object_name_length"
+	DDLCheckObjectNameUsingKeyword                     = "ddl_check_object_name_using_keyword"
+	DDLCheckPKNotExist                                 = "ddl_check_pk_not_exist"
+	DDLCheckPKWithoutBigintUnsigned                    = "ddl_check_pk_without_bigint_unsigned"
+	DDLCheckPKWithoutAutoIncrement                     = "ddl_check_pk_without_auto_increment"
+	DDLCheckPKProhibitAutoIncrement                    = "ddl_check_pk_prohibit_auto_increment"
+	DDLCheckColumnCharLength                           = "ddl_check_column_char_length"
+	DDLDisableFK                                       = "ddl_disable_fk"
+	DDLCheckIndexCount                                 = "ddl_check_index_count"
+	DDLCheckCompositeIndexMax                          = "ddl_check_composite_index_max"
+	DDLCheckTableDBEngine                              = "ddl_check_table_db_engine"
+	DDLCheckTableCharacterSet                          = "ddl_check_table_character_set"
+	DDLCheckIndexedColumnWithBlob                      = "ddl_check_index_column_with_blob"
+	DDLCheckAlterTableNeedMerge                        = "ddl_check_alter_table_need_merge"
+	DDLDisableDropStatement                            = "ddl_disable_drop_statement"
+	DDLCheckTableWithoutComment                        = "ddl_check_table_without_comment"
+	DDLCheckColumnWithoutComment                       = "ddl_check_column_without_comment"
+	DDLCheckIndexPrefix                                = "ddl_check_index_prefix"
+	DDLCheckUniqueIndexPrefix                          = "ddl_check_unique_index_prefix"
+	DDLCheckUniqueIndex                                = "ddl_check_unique_index"
+	DDLCheckColumnWithoutDefault                       = "ddl_check_column_without_default"
+	DDLCheckColumnTimestampWithoutDefault              = "ddl_check_column_timestamp_without_default"
+	DDLCheckColumnBlobWithNotNull                      = "ddl_check_column_blob_with_not_null"
+	DDLCheckColumnBlobDefaultIsNotNull                 = "ddl_check_column_blob_default_is_not_null"
+	DDLCheckColumnEnumNotice                           = "ddl_check_column_enum_notice"
+	DDLCheckColumnSetNotice                            = "ddl_check_column_set_notice"
+	DDLCheckColumnBlobNotice                           = "ddl_check_column_blob_notice"
+	DDLCheckIndexesExistBeforeCreateConstraints        = "ddl_check_indexes_exist_before_creat_constraints"
+	DDLCheckDatabaseCollation                          = "ddl_check_collation_database"
+	DDLCheckDecimalTypeColumn                          = "ddl_check_decimal_type_column"
+	DDLCheckBigintInsteadOfDecimal                     = "ddl_check_bigint_instead_of_decimal"
+	DDLCheckDatabaseSuffix                             = "ddl_check_database_suffix"
+	DDLCheckPKName                                     = "ddl_check_pk_name"
+	DDLCheckTransactionIsolationLevel                  = "ddl_check_transaction_isolation_level"
+	DDLCheckTablePartition                             = "ddl_check_table_partition"
+	DDLCheckIsExistLimitOffset                         = "ddl_check_is_exist_limit_offset"
+	DDLCheckIndexOption                                = "ddl_check_index_option"
+	DDLCheckObjectNameUseCN                            = "ddl_check_object_name_using_cn"
+	DDLCheckCreateView                                 = "ddl_check_create_view"
+	DDLCheckCreateTrigger                              = "ddl_check_create_trigger"
+	DDLCheckCreateFunction                             = "ddl_check_create_function"
+	DDLCheckCreateProcedure                            = "ddl_check_create_procedure"
+	DDLCheckTableSize                                  = "ddl_check_table_size"
+	DDLCheckIndexTooMany                               = "ddl_check_index_too_many"
+	DDLCheckRedundantIndex                             = "ddl_check_redundant_index"
+	DDLDisableTypeTimestamp                            = "ddl_disable_type_timestamp"
+	DDLDisableAlterFieldUseFirstAndAfter               = "ddl_disable_alter_field_use_first_and_after"
+	DDLCheckCreateTimeColumn                           = "ddl_check_create_time_column"
+	DDLCheckUpdateTimeColumn                           = "ddl_check_update_time_column"
+	DDLHintUpdateTableCharsetWillNotUpdateFieldCharset = "ddl_hint_update_table_charset_will_not_update_field_charset"
+	DDLHintDropColumn                                  = "ddl_hint_drop_column"
+	DDLHintDropPrimaryKey                              = "ddl_hint_drop_primary_key"
+	DDLHintDropForeignKey                              = "ddl_hint_drop_foreign_key"
+	DDLCheckFullWidthQuotationMarks                    = "ddl_check_full_width_quotation_marks"
+	DDLCheckColumnQuantity                             = "ddl_check_column_quantity"
+	DDLRecommendTableColumnCharsetSame                 = "ddl_table_column_charset_same"
+	DDLCheckColumnTypeInteger                          = "ddl_check_column_type_integer"
+	DDLCheckVarcharSize                                = "ddl_check_varchar_size"
+	DDLCheckColumnQuantityInPK                         = "ddl_check_column_quantity_in_pk"
+	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
 )
 
 // inspector DML rules
 const (
-	DMLCheckWithLimit                    = "dml_check_with_limit"
-	DMLCheckWithOrderBy                  = "dml_check_with_order_by"
-	DMLCheckSelectWithOrderBy            = "dml_check_select_with_order_by"
-	DMLCheckWhereIsInvalid               = "all_check_where_is_invalid"
-	DMLDisableSelectAllColumn            = "dml_disable_select_all_column"
-	DMLCheckInsertColumnsExist           = "dml_check_insert_columns_exist"
-	DMLCheckBatchInsertListsMax          = "dml_check_batch_insert_lists_max"
-	DMLCheckInQueryNumber                = "dml_check_in_query_limit"
-	DMLCheckWhereExistFunc               = "dml_check_where_exist_func"
-	DMLCheckWhereExistNot                = "dml_check_where_exist_not"
-	DMLCheckWhereExistImplicitConversion = "dml_check_where_exist_implicit_conversion"
-	DMLCheckLimitMustExist               = "dml_check_limit_must_exist"
-	DMLCheckWhereExistScalarSubquery     = "dml_check_where_exist_scalar_sub_queries"
-	DMLWhereExistNull                    = "dml_check_where_exist_null"
-	DMLCheckSelectForUpdate              = "dml_check_select_for_update"
-	DMLCheckNeedlessFunc                 = "dml_check_needless_func"
-	DMLCheckFuzzySearch                  = "dml_check_fuzzy_search"
-	DMLCheckNumberOfJoinTables           = "dml_check_number_of_join_tables"
-	DMLCheckIfAfterUnionDistinct         = "dml_check_is_after_union_distinct"
-	DMLCheckExplainAccessTypeAll         = "dml_check_explain_access_type_all"
-	DMLCheckExplainExtraUsingFilesort    = "dml_check_explain_extra_using_filesort"
-	DMLCheckExplainExtraUsingTemporary   = "dml_check_explain_extra_using_temporary"
-	DMLCheckTableSize                    = "dml_check_table_size"
+	DMLCheckWithLimit                     = "dml_check_with_limit"
+	DMLCheckWithOrderBy                   = "dml_check_with_order_by"
+	DMLCheckSelectWithOrderBy             = "dml_check_select_with_order_by"
+	DMLCheckWhereIsInvalid                = "all_check_where_is_invalid"
+	DMLDisableSelectAllColumn             = "dml_disable_select_all_column"
+	DMLCheckInsertColumnsExist            = "dml_check_insert_columns_exist"
+	DMLCheckBatchInsertListsMax           = "dml_check_batch_insert_lists_max"
+	DMLCheckInQueryNumber                 = "dml_check_in_query_limit"
+	DMLCheckWhereExistFunc                = "dml_check_where_exist_func"
+	DMLCheckWhereExistNot                 = "dml_check_where_exist_not"
+	DMLCheckWhereExistImplicitConversion  = "dml_check_where_exist_implicit_conversion"
+	DMLCheckLimitMustExist                = "dml_check_limit_must_exist"
+	DMLCheckWhereExistScalarSubquery      = "dml_check_where_exist_scalar_sub_queries"
+	DMLWhereExistNull                     = "dml_check_where_exist_null"
+	DMLCheckSelectForUpdate               = "dml_check_select_for_update"
+	DMLCheckNeedlessFunc                  = "dml_check_needless_func"
+	DMLCheckFuzzySearch                   = "dml_check_fuzzy_search"
+	DMLCheckNumberOfJoinTables            = "dml_check_number_of_join_tables"
+	DMLCheckIfAfterUnionDistinct          = "dml_check_is_after_union_distinct"
+	DMLCheckExplainAccessTypeAll          = "dml_check_explain_access_type_all"
+	DMLCheckExplainExtraUsingFilesort     = "dml_check_explain_extra_using_filesort"
+	DMLCheckExplainExtraUsingTemporary    = "dml_check_explain_extra_using_temporary"
+	DMLCheckTableSize                     = "dml_check_table_size"
+	DMLCheckJoinFieldType                = "dml_check_join_field_type"
+	DMLCheckAlias                         = "dml_check_alias"
+	DMLNotRecommendNotWildcardLike        = "dml_not_recommend_not_wildcard_like"
+	DMLHintInNullOnlyFalse                = "dml_hint_in_null_only_false"
+	DMLNotRecommendIn                     = "dml_not_recommend_in"
+	DMLCheckSpacesAroundTheString         = "dml_check_spaces_around_the_string"
+	DMLNotRecommendOrderByRand            = "dml_not_recommend_order_by_rand"
+	DMLNotRecommendGroupByConstant        = "dml_not_recommend_group_by_constant"
+	DMLCheckSortDirection                 = "dml_check_sort_direction"
+	DMLHintGroupByRequiresConditions      = "dml_hint_group_by_requires_conditions"
+	DMLNotRecommendGroupByExpression      = "dml_not_recommend_group_by_expression"
+	DMLCheckSQLLength                     = "dml_check_sql_length"
+	DMLNotRecommendHaving                 = "dml_not_recommend_having"
+	DMLHintUseTruncateInsteadOfDelete     = "dml_hint_use_truncate_instead_of_delete"
+	DMLNotRecommendUpdatePK               = "dml_not_recommend_update_pk"
+	DMLNotRecommendFuncInWhere            = "dml_not_recommend_func_in_where"
+	DMLNotRecommendSysdate                = "dml_not_recommend_sysdate"
+	DMLHintSumFuncTips                    = "dml_hint_sum_func_tips"
+	DMLHintLimitMustBeCombinedWithOrderBy = "dml_hint_limit_must_be_combined_with_order_by"
+	DMLHintTruncateTips                   = "dml_hint_truncate_tips"
+	DMLHintDeleteTips                     = "dml_hint_delete_tips"
+	DMLCheckSQLInjectionFunc              = "dml_check_sql_injection_func"
+	DMLCheckNotEqualSymbol                = "dml_check_not_equal_symbol"
+	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
+	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
 )
 
 // inspector config code
@@ -433,6 +471,17 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
+			Name:     DMLCheckJoinFieldType,
+			Desc:     "JOIN字段类型不一致",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message:      "存在JOIN字段类型不一致, 会导致隐式转换",
+		AllowOffline: false,
+		Func:         checkJoinFieldType,
+	},
+	{
+		Rule: driver.Rule{
 			Name:     DDLCheckColumnCharLength,
 			Desc:     "char长度大于20时，必须使用varchar类型",
 			Level:    driver.RuleLevelError,
@@ -500,7 +549,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckUpdateTimeColumn,
-			Desc:     "建表DDL必须包含UPDATE_TIME字段且默认值为UPDATE_TIME",
+			Desc:     "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
@@ -1268,6 +1317,446 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
+	{
+		Rule: driver.Rule{ //select a as id, id , b as user  from mysql.user;
+			Name:     DMLCheckAlias,
+			Desc:     "别名不要与表或列的名字相同",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "这些别名(%v)与列名或表名相同",
+		Func:    checkAlias,
+	},
+	{
+
+		Rule: driver.Rule{ //ALTER TABLE test CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
+			Name:     DDLHintUpdateTableCharsetWillNotUpdateFieldCharset,
+			Desc:     "修改表的默认字符集不会改表各个字段的字符集",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "修改表的默认字符集不会改表各个字段的字符集",
+		Func:    hintUpdateTableCharsetWillNotUpdateFieldCharset,
+	}, {
+		Rule: driver.Rule{ //ALTER TABLE tbl DROP COLUMN col;
+			Name:     DDLHintDropColumn,
+			Desc:     "删除列为高危操作",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "删除列为高危操作",
+		Func:    hintDropColumn,
+	}, {
+		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
+			Name:     DDLHintDropPrimaryKey,
+			Desc:     "删除主键为高危操作",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "删除主键为高危操作",
+		Func:    hintDropPrimaryKey,
+	}, {
+		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
+			Name:     DDLHintDropForeignKey,
+			Desc:     "删除外键为高危操作",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "删除外键为高危操作",
+		Func:    hintDropForeignKey,
+	},
+	{
+		Rule: driver.Rule{ //select * from user where id like "a";
+			Name:     DMLNotRecommendNotWildcardLike,
+			Desc:     "不建议使用没有通配符的 LIKE 查询",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不建议使用没有通配符的 LIKE 查询",
+		Func:    notRecommendNotWildcardLike,
+	}, {
+		Rule: driver.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
+			Name:     DMLHintInNullOnlyFalse,
+			Desc:     "IN (NULL)/NOT IN (NULL) 永远非真",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "IN (NULL)/NOT IN (NULL) 永远非真",
+		Func:    hintInNullOnlyFalse,
+	}, {
+		Rule: driver.Rule{ //select * from user where id in (a);
+			Name:     DMLNotRecommendIn,
+			Desc:     "尽量不要使用IN",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "尽量不要使用IN",
+		Func:    notRecommendIn,
+	},
+	{
+		Rule: driver.Rule{ //select * from user where id = ' 1';
+			Name:     DMLCheckSpacesAroundTheString,
+			Desc:     "引号中的字符串开头或结尾包含空格",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "引号中的字符串开头或结尾包含空格",
+		Func:    checkSpacesAroundTheString,
+	}, {
+		Rule: driver.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
+			Name:     DDLCheckFullWidthQuotationMarks,
+			Desc:     "DDL 语句中使用了中文全角引号",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "DDL 语句中使用了中文全角引号",
+		Func:    checkFullWidthQuotationMarks,
+	}, {
+		Rule: driver.Rule{ //select name from tbl where id < 1000 order by rand(1)
+			Name:     DMLNotRecommendOrderByRand,
+			Desc:     "不建议使用 ORDER BY RAND()",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不建议使用 ORDER BY RAND()",
+		Func:    notRecommendOrderByRand,
+	}, {
+		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
+			Name:     DMLNotRecommendGroupByConstant,
+			Desc:     "不建议对常量进行 GROUP BY",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不建议对常量进行 GROUP BY",
+		Func:    notRecommendGroupByConstant,
+	}, {
+		Rule: driver.Rule{ //select c1,c2,c3 from t1 where c1='foo' order by c2 desc, c3 asc
+			Name:     DMLCheckSortDirection,
+			Desc:     "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
+		Func:    checkSortDirection,
+	}, {
+		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
+			Name:     DMLHintGroupByRequiresConditions,
+			Desc:     "请为 GROUP BY 显示添加 ORDER BY 条件",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "请为 GROUP BY 显示添加 ORDER BY 条件",
+		Func:    hintGroupByRequiresConditions,
+	}, {
+		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
+			Name:     DMLNotRecommendGroupByExpression,
+			Desc:     "不建议ORDER BY 的条件为表达式",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不建议ORDER BY 的条件为表达式",
+		Func:    notRecommendGroupByExpression,
+	}, {
+		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
+			Name:     DMLCheckSQLLength,
+			Desc:     "建议将过长的SQL分解成几个简单的SQL",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "64",
+					Desc:  "SQL最大长度",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "建议将过长的SQL分解成几个简单的SQL",
+		Func:    checkSQLLength,
+	}, {
+		Rule: driver.Rule{ //SELECT s.c_id,count(s.c_id) FROM s where c = test GROUP BY s.c_id HAVING s.c_id <> '1660' AND s.c_id <> '2' order by s.c_id
+			Name:     DMLNotRecommendHaving,
+			Desc:     "不建议使用 HAVING 子句",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不建议使用 HAVING 子句",
+		Func:    notRecommendHaving,
+	}, {
+		Rule: driver.Rule{ //delete from tbl
+			Name:     DMLHintUseTruncateInsteadOfDelete,
+			Desc:     "删除全表时建议使用 TRUNCATE 替代 DELETE",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "删除全表时建议使用 TRUNCATE 替代 DELETE",
+		Func:    hintUseTruncateInsteadOfDelete,
+	}, {
+		Rule: driver.Rule{ //update mysql.func set name ="hello";
+			Name:     DMLNotRecommendUpdatePK,
+			Desc:     "不要 UPDATE 主键",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不要 UPDATE 主键",
+		Func:    notRecommendUpdatePK,
+	}, {
+		Rule: driver.Rule{ //create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);
+			Name:     DDLCheckColumnQuantity,
+			Desc:     "表中包含有太多的列",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "5",
+					Desc:  "最大列数",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "表中包含有太多的列",
+		Func:    checkColumnQuantity,
+	}, {
+		Rule: driver.Rule{ //CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)
+			Name:     DDLRecommendTableColumnCharsetSame,
+			Desc:     "建议列与表使用同一个字符集",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "建议列与表使用同一个字符集",
+		Func:    recommendTableColumnCharsetSame,
+	}, {
+		Rule: driver.Rule{ //CREATE TABLE tab (a INT(1));
+			Name:     DDLCheckColumnTypeInteger,
+			Desc:     "整型定义建议采用 INT(10) 或 BIGINT(20)",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "整型定义建议采用 INT(10) 或 BIGINT(20)",
+		Func:    checkColumnTypeInteger,
+	}, {
+		Rule: driver.Rule{ //CREATE TABLE tab (a varchar(3500));
+			Name:     DDLCheckVarcharSize,
+			Desc:     "VARCHAR 定义长度过长",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "1024",
+					Desc:  "VARCHAR最大长度",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "VARCHAR 定义长度过长",
+		Func:    checkVarcharSize,
+	}, {
+		Rule: driver.Rule{ //select id from t where substring(name,1,3)='abc'
+			Name:     DMLNotRecommendFuncInWhere,
+			Desc:     "应避免在 WHERE 条件中使用函数或其他运算符",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "应避免在 WHERE 条件中使用函数或其他运算符",
+		Func:    notRecommendFuncInWhere,
+	}, {
+		Rule: driver.Rule{ //SELECT SYSDATE();
+			Name:     DMLNotRecommendSysdate,
+			Desc:     "不建议使用 SYSDATE() 函数",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不建议使用 SYSDATE() 函数",
+		Func:    notRecommendSysdate,
+	}, {
+		Rule: driver.Rule{ //SELECT SUM(COL) FROM tbl;
+			Name:     DMLHintSumFuncTips,
+			Desc:     "使用 SUM(COL) 时需注意 NPE 问题",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "使用 SUM(COL) 时需注意 NPE 问题",
+		Func:    hintSumFuncTips,
+	}, {
+		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
+			Name:     DDLCheckColumnQuantityInPK,
+			Desc:     "主键中的列过多",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2",
+					Desc:  "主键应当不超过多少列",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "主键中的列过多",
+		Func:    checkColumnQuantityInPK,
+	}, {
+		Rule: driver.Rule{ //select col1,col2 from tbl where name=xx limit 10
+			Name:     DMLHintLimitMustBeCombinedWithOrderBy,
+			Desc:     "未使用 ORDER BY 的 LIMIT 查询",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "未使用 ORDER BY 的 LIMIT 查询",
+		Func:    hintLimitMustBeCombinedWithOrderBy,
+	},
+	{
+		Rule: driver.Rule{ //TRUNCATE TABLE tbl_name
+			Name:     DMLHintTruncateTips,
+			Desc:     "请谨慎使用TRUNCATE操作",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "请谨慎使用TRUNCATE操作",
+		Func:    hintTruncateTips,
+	}, {
+		Rule: driver.Rule{ //delete from t where col = 'condition'
+			Name:     DMLHintDeleteTips,
+			Desc:     "使用DELETE/DROP/TRUNCATE等操作时注意备份",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "使用DELETE/DROP/TRUNCATE等操作时注意备份",
+		Func:    hintDeleteTips,
+	}, {
+		Rule: driver.Rule{ //SELECT BENCHMARK(10, RAND())
+			Name:     DMLCheckSQLInjectionFunc,
+			Desc:     "发现常见 SQL 注入函数",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "发现常见 SQL 注入函数",
+		Func:    checkSQLInjectionFunc,
+	}, {
+		Rule: driver.Rule{ //select col1,col2 from tbl where type!=0
+			Name:     DMLCheckNotEqualSymbol,
+			Desc:     "请使用'<>'代替'!='",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "请使用'<>'代替'!='",
+		Func:    checkNotEqualSymbol,
+	}, {
+		Rule: driver.Rule{ //select col1,col2,col3 from table1 where col2 in(select col from table2)
+			Name:     DMLNotRecommendSubquery,
+			Desc:     "不推荐使用子查询",
+			Level:    driver.RuleLevelNotice,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "不推荐使用子查询",
+		Func:    notRecommendSubquery,
+	}, {
+		Rule: driver.Rule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
+			Name:     DMLCheckSubqueryLimit,
+			Desc:     "子查询不支持LIMIT",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+		},
+		Message: "子查询不支持LIMIT",
+		Func:    checkSubqueryLimit,
+	}, {
+		Rule: driver.Rule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
+			Name:     DDLCheckAutoIncrement,
+			Desc:     "表的初始AUTO_INCREMENT值不为0",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+		},
+		Message: "表的初始AUTO_INCREMENT值不为0",
+		Func:    checkAutoIncrement,
+	},
+}
+
+func checkJoinFieldType(input *RuleHandlerInput) error {
+	//nolint:staticcheck
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	//nolint:staticcheck
+	onConditions := make([]*ast.OnCondition, 0)
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
+	case *ast.UpdateStmt:
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
+	case *ast.DeleteStmt:
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
+	default:
+		return nil
+	}
+
+	for _, onCondition := range onConditions {
+		leftType, rightType := getOnConditionLeftAndRightType(onCondition, tableNameCreateTableStmtMap)
+		// 没有类型的情况下不检查
+		if leftType == 0 || rightType == 0 {
+			continue
+		}
+		if leftType != rightType {
+			addResult(input.Res, input.Rule, DMLCheckJoinFieldType)
+		}
+	}
+
+	return nil
+}
+
+func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	tableSources := util.GetTableSources(joinStmt)
+	for _, tableSource := range tableSources {
+		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
+			tableName := tableNameStmt.Name.L
+			if tableSource.AsName.L != "" {
+				tableName = tableSource.AsName.L
+			}
+
+			createTableStmt, exist, err := sessionContext.GetCreateTableStmt(tableNameStmt)
+			if err != nil || !exist {
+				continue
+			}
+			tableNameCreateTableStmtMap[tableName] = createTableStmt
+		}
+	}
+	return tableNameCreateTableStmtMap
+}
+
+func getOnConditionLeftAndRightType(onCondition *ast.OnCondition, createTableStmtMap map[string]*ast.CreateTableStmt) (byte, byte) {
+	var leftType, rightType byte
+
+	if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
+		if columnName, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
+			leftType = getColumnType(columnName, createTableStmtMap)
+		}
+
+		if columnName, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
+			rightType = getColumnType(columnName, createTableStmtMap)
+		}
+	}
+
+	return leftType, rightType
+}
+
+func getColumnType(columnName *ast.ColumnNameExpr, createTableStmtMap map[string]*ast.CreateTableStmt) byte {
+	var columnType byte
+	if createTableStmt, ok := createTableStmtMap[columnName.Name.Table.L]; ok {
+		for _, col := range createTableStmt.Cols {
+			if col.Tp == nil {
+				continue
+			}
+
+			if col.Name.Name.L == columnName.Name.Name.L {
+				columnType = col.Tp.Tp
+			}
+		}
+	}
+
+	return columnType
 }
 
 func checkFieldCreateTime(input *RuleHandlerInput) error {
@@ -3565,4 +4054,648 @@ func checkCreateProcedure(input *RuleHandlerInput) error {
 		}
 	}
 	return nil
+}
+
+func checkAlias(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		repeats := []string{}
+		fields := map[string]struct{}{}
+		if stmt.From != nil {
+			if source, ok := stmt.From.TableRefs.Left.(*ast.TableSource); ok {
+				if tableName, ok := source.Source.(*ast.TableName); ok {
+					fields[tableName.Name.L] = struct{}{}
+				}
+
+			}
+		}
+		for _, field := range stmt.Fields.Fields {
+			if selectColumn, ok := field.Expr.(*ast.ColumnNameExpr); ok && selectColumn.Name.Name.L != "" {
+				fields[selectColumn.Name.Name.L] = struct{}{}
+			}
+		}
+		for _, field := range stmt.Fields.Fields {
+			if _, ok := fields[field.AsName.L]; ok {
+				repeats = append(repeats, field.AsName.String())
+			}
+		}
+		if len(repeats) > 0 {
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(repeats, ","))
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintUpdateTableCharsetWillNotUpdateFieldCharset(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, option := range spec.Options {
+				if option.Tp == ast.TableOptionCharset {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintDropColumn(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.AlterTableStmt:
+		if len(stmt.Specs) > 0 {
+			for _, spec := range stmt.Specs {
+				if spec.Tp == ast.AlterTableDropColumn {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintDropPrimaryKey(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.DropIndexStmt:
+		if strings.ToLower(stmt.IndexName) == "primary" {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+		return nil
+	case *ast.AlterTableStmt:
+		if len(stmt.Specs) > 0 {
+			for _, spec := range stmt.Specs {
+				if spec.Tp == ast.AlterTableDropPrimaryKey {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintDropForeignKey(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.AlterTableStmt:
+		if len(stmt.Specs) > 0 {
+			for _, spec := range stmt.Specs {
+				if spec.Tp == ast.AlterTableDropForeignKey {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func notRecommendNotWildcardLike(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch x := expr.(type) {
+			case *ast.PatternLikeExpr:
+				switch pattern := x.Pattern.(type) {
+				case *parserdriver.ValueExpr:
+					datum := pattern.Datum.GetString()
+					if !strings.HasPrefix(datum, "%") && !strings.HasSuffix(datum, "%") {
+						trigger = true
+						return true
+					}
+				}
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func hintInNullOnlyFalse(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch x := expr.(type) {
+			case *ast.PatternInExpr:
+				for _, exprNode := range x.List {
+					switch pattern := exprNode.(type) {
+					case *parserdriver.ValueExpr:
+						if pattern.Datum.GetString() == "" {
+							trigger = true
+							return true
+						}
+
+					}
+				}
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func notRecommendIn(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch expr.(type) {
+			case *ast.PatternInExpr:
+				trigger = true
+				return true
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func checkSpacesAroundTheString(input *RuleHandlerInput) error {
+	visitor := &checkSpacesAroundTheStringVisitor{}
+	input.Node.Accept(visitor)
+	if visitor.HasPrefixOrSuffixSpace {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+type checkSpacesAroundTheStringVisitor struct {
+	HasPrefixOrSuffixSpace bool
+}
+
+func (g *checkSpacesAroundTheStringVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+	if g.HasPrefixOrSuffixSpace {
+		return n, false
+	}
+
+	if stmt, ok := n.(*parserdriver.ValueExpr); ok && stmt.Datum.Kind() == tidbTypes.KindString {
+		if strings.HasPrefix(stmt.GetDatumString(), " ") || strings.HasSuffix(stmt.GetDatumString(), " ") {
+			g.HasPrefixOrSuffixSpace = true
+		}
+	}
+
+	return n, false
+}
+
+func (g *checkSpacesAroundTheStringVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
+}
+
+func checkFullWidthQuotationMarks(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case ast.DDLNode:
+		if strings.Contains(input.Node.Text(), "“") {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func notRecommendOrderByRand(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		orderBy := stmt.OrderBy
+		if orderBy != nil {
+			if expr, ok := orderBy.Items[0].Expr.(*ast.FuncCallExpr); ok && expr.FnName.L == "rand" {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func notRecommendGroupByConstant(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		groupBy := stmt.GroupBy
+		if groupBy != nil {
+			if _, ok := groupBy.Items[0].Expr.(*ast.PositionExpr); ok {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func checkSortDirection(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		orderBy := stmt.OrderBy
+		if orderBy != nil {
+			isDesc := false
+			for i, item := range orderBy.Items {
+				if i == 0 {
+					isDesc = item.Desc
+				}
+				if item.Desc != isDesc {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintGroupByRequiresConditions(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.GroupBy != nil && stmt.OrderBy == nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func notRecommendGroupByExpression(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		orderBy := stmt.OrderBy
+		if orderBy != nil {
+			for _, item := range orderBy.Items {
+				if _, ok := item.Expr.(*ast.BinaryOperationExpr); ok {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func checkSQLLength(input *RuleHandlerInput) error {
+	if len(input.Node.Text()) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func notRecommendHaving(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Having != nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintUseTruncateInsteadOfDelete(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.DeleteStmt:
+		if stmt.Where == nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func notRecommendUpdatePK(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.UpdateStmt:
+		source, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		if !ok {
+			return nil
+		}
+		t, ok := source.Source.(*ast.TableName)
+		if !ok {
+			return nil
+		}
+		createTable, exist, err := input.Ctx.GetCreateTableStmt(t)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return nil
+		}
+		primary := map[string]struct{}{}
+		for _, col := range createTable.Constraints {
+			if col.Tp == ast.ConstraintPrimaryKey {
+				for _, key := range col.Keys {
+					primary[key.Column.Name.L] = struct{}{}
+				}
+				break
+			}
+		}
+		for _, assignment := range stmt.List {
+			if _, ok := primary[assignment.Column.Name.L]; ok {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func checkColumnQuantity(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		if len(stmt.Cols) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if col.Tp.Charset != "" {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func checkColumnTypeInteger(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if (col.Tp.Tp == mysql.TypeLong && col.Tp.Flen != 10) || (col.Tp.Tp == mysql.TypeLonglong && col.Tp.Flen != 20) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func checkVarcharSize(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if col.Tp.Tp == mysql.TypeVarchar && col.Tp.Flen > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func notRecommendFuncInWhere(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch expr.(type) {
+			case *ast.FuncCallExpr:
+				trigger = true
+				return true
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func notRecommendSysdate(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		for _, f := range stmt.Fields.Fields {
+			if fu, ok := f.Expr.(*ast.FuncCallExpr); ok && fu.FnName.L == "sysdate" {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	}
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch pattern := expr.(type) {
+			case *ast.FuncCallExpr:
+				if pattern.FnName.L == "sysdate" {
+					trigger = true
+					return true
+				}
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func hintSumFuncTips(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		for _, f := range stmt.Fields.Fields {
+			if fu, ok := f.Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "sum" {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	}
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch pattern := expr.(type) {
+			case *ast.AggregateFuncExpr:
+				if strings.ToLower(pattern.F) == "sum" {
+					trigger = true
+					return true
+				}
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func checkColumnQuantityInPK(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp == ast.ConstraintPrimaryKey && len(constraint.Keys) > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintLimitMustBeCombinedWithOrderBy(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Limit != nil && stmt.OrderBy == nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintTruncateTips(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.TruncateTableStmt:
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
+	default:
+		return nil
+	}
+}
+
+func hintDeleteTips(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.TruncateTableStmt, *ast.DeleteStmt, *ast.DropTableStmt:
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
+	default:
+		return nil
+	}
+}
+
+func checkSQLInjectionFunc(input *RuleHandlerInput) error {
+	funcs := []string{"sleep", "benchmark", "get_lock", "release_lock"}
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		for _, f := range stmt.Fields.Fields {
+			if fu, ok := f.Expr.(*ast.FuncCallExpr); ok && inSlice(funcs, fu.FnName.L) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	}
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch pattern := expr.(type) {
+			case *ast.FuncCallExpr:
+				if inSlice(funcs, pattern.FnName.L) {
+					trigger = true
+					return true
+				}
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func inSlice(ss []string, s string) bool {
+	for _, s2 := range ss {
+		if s2 == s {
+			return true
+		}
+	}
+	return false
+}
+
+func notRecommendSubquery(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch expr.(type) {
+			case *ast.SubqueryExpr:
+				trigger = true
+				return true
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func checkNotEqualSymbol(input *RuleHandlerInput) error {
+	if strings.Contains(input.Node.Text(), "!=") {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkSubqueryLimit(input *RuleHandlerInput) error {
+	if where := getWhereExpr(input.Node); where != nil {
+		trigger := false
+		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+			switch pattern := expr.(type) {
+			case *ast.SubqueryExpr:
+				if pattern.Query.(*ast.SelectStmt).Limit != nil {
+					trigger = true
+					return true
+				}
+			}
+			return false
+		}, where)
+		if trigger {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+	return nil
+}
+
+func checkAutoIncrement(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	default:
+		return nil
+	case *ast.CreateTableStmt:
+		for _, option := range stmt.Options {
+			if option.Tp == ast.TableOptionAutoIncrement && option.UintValue != 0 {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
+		return nil
+	}
 }

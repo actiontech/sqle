@@ -54,6 +54,40 @@ func GetNumberOfJoinTables(stmt *ast.Join) int {
 	return nums
 }
 
+func GetTableFromOnCondition(stmt *ast.Join) []*ast.OnCondition {
+	onConditions := make([]*ast.OnCondition, 0)
+	if stmt == nil {
+		return onConditions
+	}
+
+	// 如果最外层的ON Condition为nil，内层ON Condition一定也为nil，不需要再递归子节点
+	if stmt.On != nil {
+		onConditions = append(onConditions, stmt.On)
+		onConditions = append(onConditions, getTableFromOnCondition(stmt)...)
+	}
+
+	return onConditions
+}
+
+func getTableFromOnCondition(stmt *ast.Join) []*ast.OnCondition {
+	onConditions := make([]*ast.OnCondition, 0)
+	parseTableFunc := func(resultSetNode ast.ResultSetNode) []*ast.OnCondition {
+		switch t := resultSetNode.(type) {
+		case *ast.Join:
+			if t.On != nil {
+				onConditions = append(onConditions, t.On)
+			}
+			return getTableFromOnCondition(t)
+		}
+		return nil
+	}
+
+	onConditions = append(onConditions, parseTableFunc(stmt.Left)...)
+	onConditions = append(onConditions, parseTableFunc(stmt.Right)...)
+
+	return onConditions
+}
+
 func GetTables(stmt *ast.Join) []*ast.TableName {
 	tables := []*ast.TableName{}
 	if stmt == nil {

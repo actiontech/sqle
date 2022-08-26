@@ -7,13 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/log"
+
+	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -115,6 +116,17 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckInsertColumnsExist:                  struct{}{},
 		rulepkg.DMLCheckLimitMustExist:                      struct{}{},
 		rulepkg.DMLCheckWhereExistImplicitConversion:        struct{}{},
+		rulepkg.DMLCheckSQLLength:                           {},
+		rulepkg.DDLRecommendTableColumnCharsetSame:          {},
+		rulepkg.DDLCheckAutoIncrement:                       {},
+		rulepkg.DDLCheckColumnTypeInteger:                   {},
+		rulepkg.DDLHintDropColumn:                           {},
+		rulepkg.DMLHintDeleteTips:                           {},
+		rulepkg.DMLHintUseTruncateInsteadOfDelete:           {},
+		rulepkg.DDLCheckColumnQuantity:                      {},
+		rulepkg.DMLHintInNullOnlyFalse:                      {},
+		rulepkg.DMLNotRecommendIn:                           {},
+		rulepkg.DMLCheckAlias:                               {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -3474,6 +3486,60 @@ ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 		newTestResult(), newTestResult())
 }
 
+func Test_DMLCheckJoinFieldType(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldType].Rule
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.id = t2.id where exist_tb_2.v2 = 'v1'`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.v1 = t2.id where exist_tb_2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.v1 = t2.id left join exist_tb_4 t4 on t4.id = t3.id where exist_tb_2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	// 不检测on condition表名不存在的情况
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
+    				on t3.v1 = id  where exist_tb_2.v2 = 'v1'`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 on t2.id=t3.id
+set t1.id = 1
+where t2.id = 2;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v1 left join exist_tb_3 t3 on t2.id=t3.id
+set t1.id = 1
+where t2.id = 2;`, newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	// 不检测on condition表名不存在的情况
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = v1 left join exist_tb_3 t3 on t2.id=t3.id
+set t1.id = 1
+where t2.id = 2;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id 
+					left join exist_tb_3 t3 on t3.id = t2.id where t2.v2 = 'v1'`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v2 
+					left join exist_tb_3 t3 on t3.id = t2.id where t2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	// 不检测on condition表名不存在的情况
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id 
+					left join exist_tb_3 t3 on t3.id = id where t2.v2 = 'v1'`, newTestResult())
+}
+
 func Test_CheckExplain_ShouldNotError(t *testing.T) {
 	e, handler, err := executor.NewMockExecutor()
 	assert.NoError(t, err)
@@ -4309,4 +4375,566 @@ func Test_DDLDisableTypeTimestamp(t *testing.T) {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLDisableTypeTimestamp].Rule, t, "",
 			DefaultMysqlInspect(), sql, newTestResult())
 	}
+}
+
+func TestDMLCheckAlias(t *testing.T) {
+	for _, sql := range []string{
+		"select id as a , a from exist_tb_1 where a = 1",
+		//TODO　"select id from exist_tb_1 as exist_tb_1 where id = 1",
+		//TODO　"select id from exist_tb_1 join exist_tb_2 as exist_tb_1 on id = 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckAlias].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckAlias, "a"))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckAlias].Rule, t, "success", DefaultMysqlInspect(),
+		"select id as a from exist_tb_1 as a1 join exist_tb_2 as a2 on id = 1",
+		newTestResult())
+}
+
+func TestDDLHintUpdateTableCharsetWillNotUpdateFieldCharset(t *testing.T) {
+	for _, sql := range []string{
+		"ALTER TABLE exist_tb_1 CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;",
+		`alter table exist_tb_1 default character set 'utf8';`,
+		`alter table exist_tb_1 default character set='utf8';`,
+		`ALTER TABLE exist_tb_1 CHANGE v1 v3 BIGINT NOT NULL, default character set utf8`,
+		`ALTER TABLE exist_tb_1 CHANGE v1 v3 BIGINT NOT NULL, character set utf8`,
+		//TODO　`alter table exist_tb_1 default collate = utf8_unicode_ci;`,
+		`ALTER TABLE exist_tb_1 CHARACTER SET 'utf8';`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintUpdateTableCharsetWillNotUpdateFieldCharset].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLHintUpdateTableCharsetWillNotUpdateFieldCharset))
+	}
+
+	for _, sql := range []string{
+		`ALTER TABLE exist_tb_1 MODIFY v1 TEXT CHARACTER SET utf8`,
+		`ALTER TABLE exist_tb_1 CHANGE v1 v1 TEXT CHARACTER SET utf8;`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintUpdateTableCharsetWillNotUpdateFieldCharset].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+}
+
+func TestDDLHintDropColumn(t *testing.T) {
+	for _, sql := range []string{
+		`alter table exist_tb_1 drop column v2;`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropColumn].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLHintDropColumn))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropColumn].Rule, t, "success", DefaultMysqlInspect(),
+		"alter table exist_tb_1 drop index idx_1",
+		newTestResult())
+}
+
+func TestDDLHintDropPrimaryKey(t *testing.T) {
+	for _, sql := range []string{
+		`alter table exist_tb_1 drop primary key`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropPrimaryKey].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLHintDropPrimaryKey))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropPrimaryKey].Rule, t, "success", DefaultMysqlInspect(),
+		"alter table exist_tb_1 drop index idx_1",
+		newTestResult())
+}
+
+func TestDDLHintDropForeignKey(t *testing.T) {
+	for _, sql := range []string{
+		`alter table exist_tb_1 drop foreign key v1`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropForeignKey].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLHintDropForeignKey))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropForeignKey].Rule, t, "success", DefaultMysqlInspect(),
+		"alter table exist_tb_1 drop index idx_1",
+		newTestResult())
+}
+
+func TestDMLNotRecommendNotWildcardLike(t *testing.T) {
+	for _, sql := range []string{
+		`select * from exist_tb_1 where id like "a";`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendNotWildcardLike].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendNotWildcardLike))
+	}
+
+	for _, sql := range []string{
+		`select * from exist_tb_1 where id like "%a";`,
+		`select * from exist_tb_1 where id like "a%";`,
+		`select * from exist_tb_1 where id like "%a%";`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendNotWildcardLike].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLHintInNullOnlyFalse(t *testing.T) {
+	for _, sql := range []string{
+		`SELECT * FROM exist_tb_1 WHERE v1 IN (NULL)`,
+		`SELECT * FROM exist_tb_1 WHERE v1 NOT IN (NULL)`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintInNullOnlyFalse].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintInNullOnlyFalse))
+	}
+	for _, sql := range []string{
+		`SELECT * FROM exist_tb_1 WHERE v1 IN ("1","2")`,
+		`SELECT * FROM exist_tb_1 WHERE v1 NOT IN ("1","2")`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintInNullOnlyFalse].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+	}
+}
+
+func TestDMLNotRecommendIn(t *testing.T) {
+	for _, sql := range []string{
+		`SELECT * FROM exist_tb_1 WHERE v1 IN (NULL)`,
+		`SELECT * FROM exist_tb_1 WHERE v1 NOT IN (NULL)`,
+		`SELECT * FROM exist_tb_1 WHERE v1 IN ("a")`,
+		`SELECT * FROM exist_tb_1 WHERE v1 NOT IN ("a")`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendIn].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendIn))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendIn].Rule, t, "success", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 WHERE v1 <> "a"`,
+		newTestResult())
+}
+
+func TestDMLCheckSpacesAroundTheString(t *testing.T) {
+	for _, sql := range []string{
+		`select ' 1'`,
+		`select '1 '`,
+		`select ' 1 '`,
+		`select * from exist_tb_1 where id = ' 1'`,
+		`select * from exist_tb_1 where id = '1 '`,
+		`select * from exist_tb_1 where id = ' 1 '`,
+		`insert into exist_tb_1 values (' 1','1','1')`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSpacesAroundTheString].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSpacesAroundTheString))
+	}
+	for _, sql := range []string{
+		`select '1'`,
+		`select * from exist_tb_1 where id = '1'`,
+		`insert into exist_tb_1 values ('1','1','1')`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSpacesAroundTheString].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
+	}
+}
+
+func TestDDLCheckFullWidthQuotationMarks(t *testing.T) {
+	for _, sql := range []string{
+		`alter table exist_tb_1 add column a int comment '”a“'`,
+		`create table t (id int comment '”aaa“')`,
+		//TODO　`alter table exist_tb_1 add column a int comment '‘'`,
+		//TODO　`create table t (id int comment '’')`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckFullWidthQuotationMarks].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckFullWidthQuotationMarks))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckFullWidthQuotationMarks].Rule, t, "success", DefaultMysqlInspect(),
+		`select "1"`,
+		newTestResult())
+}
+
+func TestDMLNotRecommendOrderByRand(t *testing.T) {
+	for _, sql := range []string{
+		`select id from exist_tb_1 where id < 1000 order by rand(1)`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendOrderByRand].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendOrderByRand))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendOrderByRand].Rule, t, "success", DefaultMysqlInspect(),
+		"select id from exist_tb_1 where id < 1000 order by v1",
+		newTestResult())
+}
+
+func TestDMLNotRecommendGroupByConstant(t *testing.T) {
+	for _, sql := range []string{
+		`select v1,v2 from exist_tb_1 group by 1`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendGroupByConstant].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendGroupByConstant))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendGroupByConstant].Rule, t, "success", DefaultMysqlInspect(),
+		"select v1,v2 from exist_tb_1 group by v1",
+		newTestResult())
+}
+
+func TestDMLCheckSortDirection(t *testing.T) {
+	for _, sql := range []string{
+		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id desc, v2 asc`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortDirection].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSortDirection))
+	}
+
+	for _, sql := range []string{
+		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id asc, v2 asc`,
+		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id desc, v2 desc`,
+		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id , v2 `,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortDirection].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+}
+
+func TestDMLHintGroupByRequiresConditions(t *testing.T) {
+	for _, sql := range []string{
+		`select v1,v2 from exist_tb_1 group by 1`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintGroupByRequiresConditions].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintGroupByRequiresConditions))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintGroupByRequiresConditions].Rule, t, "success", DefaultMysqlInspect(),
+		"select v1,v2 from exist_tb_1 group by 1 order by v1",
+		newTestResult())
+}
+
+func TestDMLNotRecommendGroupByExpression(t *testing.T) {
+	for _, sql := range []string{
+		"SELECT v1 FROM exist_tb_1 order by v1 - v2;",
+		//TODO　"SELECT v1 - v2 a FROM exist_tb_1 order by a;",
+		//TODO　"SELECT v1 FROM exist_tb_1 order by from_unixtime(v1);",
+		//TODO　"SELECT from_unixtime(v1) a FROM exist_tb_1 order by a;",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendGroupByExpression].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendGroupByExpression))
+	}
+
+	for _, sql := range []string{
+		`SELECT exist_tb_1.col FROM exist_tb_1 ORDER BY v1`,
+		"SELECT sum(col) AS col FROM exist_tb_1 ORDER BY v1",
+		"SELECT exist_tb_2.v1 FROM exist_tb_2, exist_tb_1 WHERE exist_tb_1.id = exist_tb_2.id ORDER BY exist_tb_1.v1",
+		"SELECT col FROM exist_tb_1 order by `timestamp`;",
+		"select col from exist_tb_1 where cl = 1 order by APPLY_TIME",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendGroupByExpression].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLCheckSQLLength(t *testing.T) {
+	for _, sql := range []string{
+		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaaaa'", // len = 65
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSQLLength))
+	}
+
+	for _, sql := range []string{
+		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaaa'", // len = 64
+		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaa'",  // len = 63
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLNotRecommendHaving(t *testing.T) {
+	for _, sql := range []string{
+		"SELECT exist_tb_1.id,count(exist_tb_1.id) FROM exist_tb_2 where id = 'test' GROUP BY exist_tb_1.id HAVING exist_tb_2.id <> '1660' AND exist_tb_2.id <> '2' order by exist_tb_2.id",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendHaving].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendHaving))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendHaving].Rule, t, "success", DefaultMysqlInspect(),
+		"SELECT exist_tb_1.id,count(exist_tb_1.id) FROM exist_tb_2 where id = 'test' GROUP BY exist_tb_1.id",
+		newTestResult())
+}
+
+func TestDMLHintUseTruncateInsteadOfDelete(t *testing.T) {
+	for _, sql := range []string{
+		"delete from exist_tb_1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintUseTruncateInsteadOfDelete].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintUseTruncateInsteadOfDelete))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintUseTruncateInsteadOfDelete].Rule, t, "success", DefaultMysqlInspect(),
+		"truncate exist_tb_1",
+		newTestResult())
+}
+
+func TestDMLNotRecommendUpdatePK(t *testing.T) {
+	for _, sql := range []string{
+		"update exist_tb_1 set id = '1'",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendUpdatePK].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendUpdatePK))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendUpdatePK].Rule, t, "success", DefaultMysqlInspect(),
+		"update exist_tb_1 set v1 = 'a'",
+		newTestResult())
+}
+
+func TestDDLCheckColumnQuantity(t *testing.T) {
+	for _, sql := range []string{
+		"create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnQuantity].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckColumnQuantity))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnQuantity].Rule, t, "success", DefaultMysqlInspect(),
+		"create table t(c1 int,c2 int,c3 int,c4 int,c5 int);",
+		newTestResult())
+}
+
+func TestDDLRecommendTableColumnCharsetSame(t *testing.T) {
+	for _, sql := range []string{
+		"CREATE TABLE `t` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)",
+		//TODO　"alter table exist_tb_1 change v1 v1 char(10) CHARACTER SET utf8 DEFAULT NULL;",
+		"CREATE TABLE `t` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL) DEFAULT CHARSET=utf8mb4",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
+	}
+
+	for _, sql := range []string{
+		"CREATE TABLE `t` ( `id` int(10) )",
+		//TODO　"CREATE TABLE `t` ( `id` varchar(10) CHARACTER SET utf8 ) DEFAULT CHARSET=utf8",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDDLCheckColumnTypeInteger(t *testing.T) {
+	for _, sql := range []string{
+		"CREATE TABLE `t` ( `id` int(1) );",
+		"CREATE TABLE `t` ( `id` bigint(1) );",
+		//TODO　"alter TABLE `exist_tb_1` add column `v3` bigint(1);",
+		//TODO　"alter TABLE `exist_tb_1` add column `v3` int(1);",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnTypeInteger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckColumnTypeInteger))
+	}
+
+	for _, sql := range []string{
+		"CREATE TABLE `t` ( `id` int(10));",
+		"CREATE TABLE `t` ( `id` bigint(20));",
+		"alter TABLE `exist_tb_1` add column `v3` bigint(20);",
+		"alter TABLE `exist_tb_1` add column `v3` int(10);",
+		//TODO　"CREATE TABLE `t` ( `id` int);",
+		//TODO　"alter TABLE `t` add column `id` bigint;",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnTypeInteger].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDDLCheckVarcharSize(t *testing.T) {
+	for _, sql := range []string{
+		"CREATE TABLE `t` ( `id` varchar(1025) );",
+		//TODO　"alter TABLE `exist_tb_1` add column `v3` varchar(1025);",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckVarcharSize].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckVarcharSize))
+	}
+
+	for _, sql := range []string{
+		"CREATE TABLE `t` ( `id` varchar(1024));",
+		"alter TABLE `exist_tb_1` add column `v3` varchar(1024);",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckVarcharSize].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLNotRecommendFuncInWhere(t *testing.T) {
+	for _, sql := range []string{
+		`select id from exist_tb_1 where substring(v1,1,3)='abc';`,
+		`SELECT * FROM exist_tb_1 WHERE UNIX_TIMESTAMP(v1) BETWEEN UNIX_TIMESTAMP('2018-11-16 09:46:00 +0800 CST') AND UNIX_TIMESTAMP('2018-11-22 00:00:00 +0800 CST')`,
+		//TODO　`select id from exist_tb_1 where id/2 = 100`,
+		//TODO　`select id from exist_tb_1 where id/2 < 100`,
+		`SELECT * FROM exist_tb_1 WHERE DATE '2020-01-01'`,
+		`DELETE FROM exist_tb_1 WHERE DATE '2020-01-01'`,
+		`UPDATE exist_tb_1 SET id = 1 WHERE DATE '2020-01-01'`,
+		`SELECT * FROM exist_tb_1 WHERE TIME '10:01:01'`,
+		`SELECT * FROM exist_tb_1 WHERE TIMESTAMP '1587181360'`,
+		`select * from exist_tb_1 where id = "root" and date '2020-02-01'`,
+		`select id from exist_tb_1 where 'abc'=substring(v1,1,3);`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendFuncInWhere].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendFuncInWhere))
+	}
+
+	for _, sql := range []string{
+		`select id from exist_tb_1 where v1 = (select 1)`,
+		`select id from exist_tb_1 where v1 = 1`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendFuncInWhere].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLNotRecommendSysdate(t *testing.T) {
+	for _, sql := range []string{
+		"select sysdate();",
+		"select SYSDATE();",
+		"select SysDate();",
+		"select sysdate() from exist_tb_1;",
+		"select SYSDATE() from exist_tb_1;",
+		"select SysDate() from exist_tb_1;",
+		"select * from exist_tb_1 where id = sysdate()",
+		"select * from exist_tb_1 where id = SYSDATE()",
+		"select * from exist_tb_1 where id = SysDate()",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSysdate].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendSysdate))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSysdate].Rule, t, "success", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id =1 ",
+		newTestResult())
+}
+
+func TestDMLHintSumFuncTips(t *testing.T) {
+	for _, sql := range []string{
+		"select sum(1);",
+		"select SUM(1);",
+		"select Sum(1);",
+		"select * from exist_tb_1 where id = sum(1)",
+		"select * from exist_tb_1 where id = SUM(1)",
+		"select * from exist_tb_1 where id = Sum(1)",
+		"select sum(1) from exist_tb_1",
+		"select SUM(1) from exist_tb_1",
+		"select Sum(1) from exist_tb_1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintSumFuncTips].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintSumFuncTips))
+	}
+
+	for _, sql := range []string{
+		"select id from exist_tb_1 where id =1 ",
+		"SELECT IF(ISNULL(SUM(v1)), 0, SUM(v1)) FROM exist_tb_1",
+		"SELECT * FROM exist_tb_1 where id = IF(ISNULL(SUM(v1)), 0, SUM(v1))",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintSumFuncTips].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+}
+
+func TestDDLCheckColumnQuantityInPK(t *testing.T) {
+	for _, sql := range []string{
+		"CREATE TABLE t ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));",
+		//TODO　"alter TABLE `exist_tb_1` add primary key (`id`,`v1`,`v2`);",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnQuantityInPK].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckColumnQuantityInPK))
+	}
+	for _, sql := range []string{
+		"CREATE TABLE t ( a int, b int, c int, PRIMARY KEY(`a`,`b`));",
+		//TODO　"alter TABLE `exist_tb_1` add primary key (`id`,`v1`);",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnQuantityInPK].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLHintLimitMustBeCombinedWithOrderBy(t *testing.T) {
+	for _, sql := range []string{
+		"select v1,v2 from exist_tb_1 where id =1 limit 10",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintLimitMustBeCombinedWithOrderBy].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintLimitMustBeCombinedWithOrderBy))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintLimitMustBeCombinedWithOrderBy].Rule, t, "success", DefaultMysqlInspect(),
+		"select v1,v2 from exist_tb_1 where id =1 order by id limit 10",
+		newTestResult())
+}
+
+func TestDMLHintTruncateTips(t *testing.T) {
+	for _, sql := range []string{
+		"TRUNCATE TABLE exist_tb_1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintTruncateTips].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintTruncateTips))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintTruncateTips].Rule, t, "success", DefaultMysqlInspect(),
+		"delete from exist_tb_1",
+		newTestResult())
+}
+
+func TestDMLHintDeleteTips(t *testing.T) {
+	for _, sql := range []string{
+		`delete from exist_tb_1 where v1 = v2;`,
+		`truncate table exist_tb;`,
+		`drop table exist_tb_1;`,
+		//TODO　`drop database exist_db;`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintDeleteTips].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintDeleteTips))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintDeleteTips].Rule, t, "success", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id =1",
+		newTestResult())
+}
+
+func TestDMLCheckSQLInjectionFunc(t *testing.T) {
+	for _, sql := range []string{
+		`select benchmark(10, rand())`,
+		`select sleep(1)`,
+		`select get_lock('lock_name', 1)`,
+		`select release_lock('lock_name')`,
+		`select id from exist_tb_1 where id = benchmark(10, rand())`,
+		`select id from exist_tb_1 where id = sleep(1)`,
+		`select id from exist_tb_1 where id = get_lock('lock_name', 1)`,
+		`select id from exist_tb_1 where id = release_lock('lock_name')`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLInjectionFunc].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSQLInjectionFunc))
+	}
+
+	for _, sql := range []string{
+		`select sum(1)`,
+		`select 1`,
+		`select id from exist_tb_1 where id = sum(1)`,
+		`select id from exist_tb_1 where id = 1`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLInjectionFunc].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLCheckNotEqualSymbol(t *testing.T) {
+	for _, sql := range []string{
+		"select * from exist_tb_1 where id != 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckNotEqualSymbol].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckNotEqualSymbol))
+	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckNotEqualSymbol].Rule, t, "success", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id <> 1",
+		newTestResult())
+}
+
+func TestDMLNotRecommendSubquery(t *testing.T) {
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1 where v1 in(select id from exist_tb_1)",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 =(SELECT id FROM `exist_tb_1` limit 1)",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSubquery].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendSubquery))
+	}
+
+	for _, sql := range []string{
+		"SELECT id,v1,v2 from exist_tb_1 where v1 = 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSubquery].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDMLCheckSubqueryLimit(t *testing.T) {
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1 where v1 in(select id from exist_tb_1 limit 1)",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 =(SELECT id FROM `exist_tb_1` limit 1)",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSubqueryLimit].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSubqueryLimit))
+	}
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1 where v1 in(select id from exist_tb_1)",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 =(SELECT id FROM `exist_tb_1`)",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSubqueryLimit].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
+}
+
+func TestDDLCheckAutoIncrement(t *testing.T) {
+	for _, sql := range []string{
+		"CREATE TABLE `tb` ( `id` int(10)) AUTO_INCREMENT=1",
+		"CREATE TABLE `tb` ( `id` int(10)) AUTO_INCREMENT=2",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckAutoIncrement].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckAutoIncrement))
+	}
+
+	for _, sql := range []string{
+		"CREATE TABLE `test1` ( `id` int(10))",
+		"CREATE TABLE `test1` ( `id` int(10)) auto_increment = 0",
+		"CREATE TABLE `test1` ( `id` int(10)) auto_increment = 0 DEFAULT CHARSET=latin1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckAutoIncrement].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
 }
