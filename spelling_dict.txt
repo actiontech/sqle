@@ -281,6 +281,12 @@ sbtest
 oceanbase
 yyyy
 timestampdiff
+wildcard
+unixtime
+aaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaa
+isnull
 euhg
 vbka
 tvbz
