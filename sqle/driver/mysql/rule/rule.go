@@ -4287,7 +4287,15 @@ func hintUseTruncateInsteadOfDelete(input *RuleHandlerInput) error {
 func notRecommendUpdatePK(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.UpdateStmt:
-		createTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.TableRefs.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName))
+		source, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		if !ok {
+			return nil
+		}
+		t, ok := source.Source.(*ast.TableName)
+		if !ok {
+			return nil
+		}
+		createTable, exist, err := input.Ctx.GetCreateTableStmt(t)
 		if err != nil {
 			return err
 		}
