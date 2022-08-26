@@ -21,6 +21,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
+	polardb20170801 "github.com/alibabacloud-go/polardb-20170801/v2/client"
 	rds20140815 "github.com/alibabacloud-go/rds-20140815/v2/client"
 	_util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
@@ -64,6 +65,8 @@ func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 		return NewOracleTopSQLTask(entry, ap)
 	case TypeTiDBAuditLog:
 		return NewTiDBAuditLogTask(entry, ap)
+	case TypePolarDBMySQLSlowLog:
+		return NewPolarDBMysqlSlowLogTask(entry, ap)
 	case TypeAliRdsMySQLSlowLog:
 		return NewAliRdsMySQLSlowLogTask(entry, ap)
 	default:
@@ -868,6 +871,10 @@ func (at *AliRdsMySQLSlowLogTask) collectorDo() {
 
 // 因为查询的起始时间为上一次查询到的最后一条慢语句的executionStartTime（精确到秒），而查询起始时间只能精确到分钟，所以有可能还是会查询到上一次查询过的慢语句，需要将其过滤掉
 func (at *AliRdsMySQLSlowLogTask) filterSlowSqlsByExecutionTime(slowSqls []slowSqlFromAliCloud, executionTime time.Time) (res []slowSqlFromAliCloud) {
+	return filterSlowSqlsByExecutionTime(slowSqls, executionTime)
+}
+
+func filterSlowSqlsByExecutionTime(slowSqls []slowSqlFromAliCloud, executionTime time.Time) (res []slowSqlFromAliCloud) {
 	for _, sql := range slowSqls {
 		if !sql.executionStartTime.After(executionTime) {
 			continue
@@ -1007,4 +1014,209 @@ func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time
 		}
 	}
 	return as
+}
+
+// PolarDBMysqlSlowLogTask implement the Task interface.
+//
+// PolarDBMysqlSlowLogTask is a loop task which collect slow SQL from polarDB MySQL instance.
+type PolarDBMysqlSlowLogTask struct {
+	*sqlCollector
+	lastEndTime *time.Time
+}
+
+func NewPolarDBMysqlSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) *PolarDBMysqlSlowLogTask {
+	sqlCollector := newSQLCollector(entry, ap)
+	task := &PolarDBMysqlSlowLogTask{
+		sqlCollector: sqlCollector,
+		lastEndTime:  nil,
+	}
+	sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *PolarDBMysqlSlowLogTask) collectorDo() {
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	regionId := at.ap.Params.GetParam(paramKeyRegionId).String()
+	if regionId == "" {
+		at.logger.Warnf("region ID is not configured")
+		return
+	}
+
+	dbClusterId := at.ap.Params.GetParam(paramKeyDBClusterId).String()
+	if dbClusterId == "" {
+		at.logger.Warnf("DB cluster ID is not configured")
+		return
+	}
+
+	accessKeyId := at.ap.Params.GetParam(paramKeyAccessKeyId).String()
+	if accessKeyId == "" {
+		at.logger.Warnf("Access Key ID is not configured")
+		return
+	}
+
+	accessKeySecret := at.ap.Params.GetParam(paramKeyAccessKeySecret).String()
+	if accessKeySecret == "" {
+		at.logger.Warnf("Access Key Secret is not configured")
+		return
+	}
+
+	firstScrapInLastHours := at.ap.Params.GetParam(paramKeyFirstSqlsScrappedInLastPeriodHours).Int()
+	if firstScrapInLastHours == 0 {
+		firstScrapInLastHours = 24
+	}
+	theMaxSupportedDays := 30 // 支持往前查看慢日志的最大天数
+	hoursDuringADay := 24
+	if firstScrapInLastHours > theMaxSupportedDays*hoursDuringADay {
+		at.logger.Warnf("Can not get slow logs from so early time. firstScrapInLastHours=%v", firstScrapInLastHours)
+		return
+	}
+
+	client, err := at.CreateClient(tea.String(accessKeyId), tea.String(accessKeySecret))
+	if err != nil {
+		at.logger.Warnf("create client for polardb mysql failed: %v", err)
+		return
+	}
+
+	pageSize := 100
+	now := time.Now().UTC()
+	var startTime time.Time
+	if at.isFirstPull() {
+		startTime = now.Add(time.Duration(-1*firstScrapInLastHours) * time.Hour)
+	} else {
+		startTime = *at.lastEndTime
+	}
+	var pageNum int32 = 1
+	slowSqls := []slowSqlFromAliCloud{}
+	for {
+		newSlowSqls, err := at.pullSlowLogs(client, regionId, dbClusterId, startTime, now, int32(pageSize), pageNum)
+		if err != nil {
+			at.logger.Warnf("pull slow logs failed: %v", err)
+			return
+		}
+		filteredNewSlowSqls := at.filterSlowSqlsByExecutionTime(newSlowSqls, startTime)
+		slowSqls = append(slowSqls, filteredNewSlowSqls...)
+
+		if len(newSlowSqls) < pageSize {
+			break
+		}
+		pageNum++
+	}
+
+	mergedSlowSqls := mergeSQLsByFingerprint(slowSqls)
+	if len(mergedSlowSqls) > 0 {
+		if at.isFirstPull() {
+			err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
+			if err != nil {
+				at.logger.Errorf("save sqls to storage fail, error: %v", err)
+				return
+			}
+		} else {
+			err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
+			if err != nil {
+				at.logger.Errorf("save sqls to storage fail, error: %v", err)
+				return
+			}
+		}
+	}
+
+	// update lastEndTime
+	// 查询的起始时间为上一次查询到的最后一条慢语句的开始执行时间
+	if len(slowSqls) > 0 {
+		lastSlowSql := slowSqls[len(slowSqls)-1]
+		at.lastEndTime = &lastSlowSql.executionStartTime
+	}
+}
+
+// 因为查询的起始时间为上一次查询到的最后一条慢语句的executionStartTime（精确到秒），而查询起始时间只能精确到分钟，所以有可能还是会查询到上一次查询过的慢语句，需要将其过滤掉
+func (at *PolarDBMysqlSlowLogTask) filterSlowSqlsByExecutionTime(slowSqls []slowSqlFromAliCloud, executionTime time.Time) (res []slowSqlFromAliCloud) {
+	return filterSlowSqlsByExecutionTime(slowSqls, executionTime)
+}
+
+func (at *PolarDBMysqlSlowLogTask) isFirstPull() bool {
+	return at.lastEndTime == nil
+}
+
+func (at *PolarDBMysqlSlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *PolarDBMysqlSlowLogTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	return baseTaskGetSQLs(args, at.persist)
+}
+
+func (at *PolarDBMysqlSlowLogTask) CreateClient(accessKeyId *string, accessKeySecret *string) (_result *polardb20170801.Client, _err error) {
+	config := &openapi.Config{
+		// 您的 AccessKey ID
+		AccessKeyId: accessKeyId,
+		// 您的 AccessKey Secret
+		AccessKeySecret: accessKeySecret,
+	}
+	// 访问的域名
+	config.Endpoint = tea.String("polardb.aliyuncs.com")
+	_result, _err = polardb20170801.NewClient(config)
+	return _result, _err
+}
+
+// 查询内容范围是开始时间的0s到设置结束时间的0s，所以结束时间点的慢日志是查询不到的
+func (at *PolarDBMysqlSlowLogTask) pullSlowLogs(client *polardb20170801.Client, regionId, dbClusterId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []slowSqlFromAliCloud, err error) {
+	describeSlowLogRecordsRequest := &polardb20170801.DescribeSlowLogRecordsRequest{
+		RegionId:    tea.String(regionId),
+		DBClusterId: tea.String(dbClusterId),
+		StartTime:   tea.String(startTime.Format("2006-01-02T15:04Z")),
+		EndTime:     tea.String(endTime.Format("2006-01-02T15:04Z")),
+		PageSize:    tea.Int32(pageSize),
+		PageNumber:  tea.Int32(pageNum),
+	}
+
+	runtime := &_util.RuntimeOptions{}
+	response := &polardb20170801.DescribeSlowLogRecordsResponse{}
+	tryErr := func() (_e error) {
+		defer func() {
+			if r := tea.Recover(recover()); r != nil {
+				_e = r
+			}
+		}()
+
+		var err error
+		response, err = client.DescribeSlowLogRecordsWithOptions(describeSlowLogRecordsRequest, runtime)
+		if err != nil {
+			return err
+		}
+		return nil
+	}()
+
+	if tryErr != nil {
+		var error = &tea.SDKError{}
+		if _t, ok := tryErr.(*tea.SDKError); ok {
+			error = _t
+		} else {
+			error.Message = tea.String(tryErr.Error())
+		}
+		errMsg := _util.AssertAsString(error.Message)
+		return nil, fmt.Errorf("get slow log failed: %v", *errMsg)
+	}
+
+	sqls = make([]slowSqlFromAliCloud, len(response.Body.Items.SQLSlowRecord))
+	for i, slowRecord := range response.Body.Items.SQLSlowRecord {
+		execStartTime, err := time.Parse("2006-01-02T15:04:05Z", utils.NvlString(slowRecord.ExecutionStartTime))
+		if err != nil {
+			return nil, fmt.Errorf("parse execution-start-time failed: %v", err)
+		}
+		sqls[i] = slowSqlFromAliCloud{
+			sql:                utils.NvlString(slowRecord.SQLText),
+			executionStartTime: execStartTime,
+		}
+	}
+	return sqls, nil
+}
+
+func (at *PolarDBMysqlSlowLogTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+	return convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls, now)
 }

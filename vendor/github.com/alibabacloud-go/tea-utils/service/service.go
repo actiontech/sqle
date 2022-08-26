@@ -34,6 +34,7 @@ type RuntimeOptions struct {
 	MaxIdleConns   *int    `json:"maxIdleConns" xml:"maxIdleConns"`
 	Socks5Proxy    *string `json:"socks5Proxy" xml:"socks5Proxy"`
 	Socks5NetWork  *string `json:"socks5NetWork" xml:"socks5NetWork"`
+	KeepAlive      *bool   `json:"keepAlive" xml:"keepAlive"`
 }
 
 func (s RuntimeOptions) String() string {
@@ -111,6 +112,11 @@ func (s *RuntimeOptions) SetSocks5Proxy(v string) *RuntimeOptions {
 
 func (s *RuntimeOptions) SetSocks5NetWork(v string) *RuntimeOptions {
 	s.Socks5NetWork = &v
+	return s
+}
+
+func (s *RuntimeOptions) SetKeepAlive(v bool) *RuntimeOptions {
+	s.KeepAlive = &v
 	return s
 }
 
