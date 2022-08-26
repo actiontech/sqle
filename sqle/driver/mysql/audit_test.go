@@ -4408,6 +4408,9 @@ func TestDDLHintDropColumn(t *testing.T) {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropColumn].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLHintDropColumn))
 	}
 
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropColumn].Rule, t, "success", DefaultMysqlInspect(),
+		"alter table exist_tb_1 drop index idx_1",
+		newTestResult())
 }
 
 func TestDDLHintDropPrimaryKey(t *testing.T) {
@@ -4416,6 +4419,10 @@ func TestDDLHintDropPrimaryKey(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropPrimaryKey].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLHintDropPrimaryKey))
 	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropPrimaryKey].Rule, t, "success", DefaultMysqlInspect(),
+		"alter table exist_tb_1 drop index idx_1",
+		newTestResult())
 }
 
 func TestDDLHintDropForeignKey(t *testing.T) {
@@ -4424,6 +4431,10 @@ func TestDDLHintDropForeignKey(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropForeignKey].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLHintDropForeignKey))
 	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLHintDropForeignKey].Rule, t, "success", DefaultMysqlInspect(),
+		"alter table exist_tb_1 drop index idx_1",
+		newTestResult())
 }
 
 func TestDMLNotRecommendNotWildcardLike(t *testing.T) {
@@ -4432,6 +4443,15 @@ func TestDMLNotRecommendNotWildcardLike(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendNotWildcardLike].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendNotWildcardLike))
 	}
+
+	for _, sql := range []string{
+		`select * from exist_tb_1 where id like "%a";`,
+		`select * from exist_tb_1 where id like "a%";`,
+		`select * from exist_tb_1 where id like "%a%";`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendNotWildcardLike].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
 }
 
 func TestDMLHintInNullOnlyFalse(t *testing.T) {
@@ -4458,6 +4478,10 @@ func TestDMLNotRecommendIn(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendIn].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendIn))
 	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendIn].Rule, t, "success", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 WHERE v1 <> "a"`,
+		newTestResult())
 }
 
 func TestDMLCheckSpacesAroundTheString(t *testing.T) {
@@ -4485,6 +4509,8 @@ func TestDDLCheckFullWidthQuotationMarks(t *testing.T) {
 	for _, sql := range []string{
 		`alter table exist_tb_1 add column a int comment '”a“'`,
 		`create table t (id int comment '”aaa“')`,
+		`alter table exist_tb_1 add column a int comment '‘'`,
+		`create table t (id int comment '’')`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckFullWidthQuotationMarks].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckFullWidthQuotationMarks))
 	}
@@ -4500,6 +4526,10 @@ func TestDMLNotRecommendOrderByRand(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendOrderByRand].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendOrderByRand))
 	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendOrderByRand].Rule, t, "success", DefaultMysqlInspect(),
+		"select id from exist_tb_1 where id < 1000 order by v1",
+		newTestResult())
 }
 
 func TestDMLNotRecommendGroupByConstant(t *testing.T) {
@@ -4508,6 +4538,10 @@ func TestDMLNotRecommendGroupByConstant(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendGroupByConstant].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendGroupByConstant))
 	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendGroupByConstant].Rule, t, "success", DefaultMysqlInspect(),
+		"select v1,v2 from exist_tb_1 group by v1",
+		newTestResult())
 }
 
 func TestDMLCheckSortDirection(t *testing.T) {
@@ -4515,6 +4549,14 @@ func TestDMLCheckSortDirection(t *testing.T) {
 		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id desc, v2 asc`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortDirection].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSortDirection))
+	}
+
+	for _, sql := range []string{
+		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id asc, v2 asc`,
+		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id desc, v2 desc`,
+		`select id,v1,v2 from exist_tb_1 where v1='foo' order by id , v2 `,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortDirection].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
 	}
 }
 
@@ -4559,9 +4601,13 @@ func TestDMLCheckSQLLength(t *testing.T) {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSQLLength))
 	}
 
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "success", DefaultMysqlInspect(),
+	for _, sql := range []string{
 		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaaa'", // len = 64
-		newTestResult())
+		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaa'",  // len = 63
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
 }
 
 func TestDMLNotRecommendHaving(t *testing.T) {
@@ -4571,6 +4617,9 @@ func TestDMLNotRecommendHaving(t *testing.T) {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSQLLength))
 	}
 
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "success", DefaultMysqlInspect(),
+		"SELECT exist_tb_1.id,count(exist_tb_1.id) FROM exist_tb_2 where id = 'test' GROUP BY exist_tb_1.id",
+		newTestResult())
 }
 
 func TestDMLHintUseTruncateInsteadOfDelete(t *testing.T) {
@@ -4698,12 +4747,19 @@ func TestDMLNotRecommendSysdate(t *testing.T) {
 		"select sysdate();",
 		"select SYSDATE();",
 		"select SysDate();",
+		"select sysdate() from exist_tb_1;",
+		"select SYSDATE() from exist_tb_1;",
+		"select SysDate() from exist_tb_1;",
 		"select * from exist_tb_1 where id = sysdate()",
 		"select * from exist_tb_1 where id = SYSDATE()",
 		"select * from exist_tb_1 where id = SysDate()",
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSysdate].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendSysdate))
 	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSysdate].Rule, t, "success", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id =1 ",
+		newTestResult())
 }
 
 func TestDMLHintSumFuncTips(t *testing.T) {
@@ -4714,8 +4770,19 @@ func TestDMLHintSumFuncTips(t *testing.T) {
 		"select * from exist_tb_1 where id = sum(1)",
 		"select * from exist_tb_1 where id = SUM(1)",
 		"select * from exist_tb_1 where id = Sum(1)",
+		"select sum(1) from exist_tb_1",
+		"select SUM(1) from exist_tb_1",
+		"select Sum(1) from exist_tb_1",
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintSumFuncTips].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintSumFuncTips))
+	}
+
+	for _, sql := range []string{
+		"select id from exist_tb_1 where id =1 ",
+		"SELECT IF(ISNULL(SUM(v1)), 0, SUM(v1)) FROM exist_tb_1",
+		"SELECT * FROM exist_tb_1 where id = IF(ISNULL(SUM(v1)), 0, SUM(v1))",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintSumFuncTips].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
 	}
 }
 
@@ -4768,6 +4835,10 @@ func TestDMLHintDeleteTips(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintDeleteTips].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLHintDeleteTips))
 	}
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintDeleteTips].Rule, t, "success", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id =1",
+		newTestResult())
 }
 
 func TestDMLCheckSQLInjectionFunc(t *testing.T) {
@@ -4783,6 +4854,16 @@ func TestDMLCheckSQLInjectionFunc(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLInjectionFunc].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSQLInjectionFunc))
 	}
+
+	for _, sql := range []string{
+		`select sum(1)`,
+		`select 1`,
+		`select id from exist_tb_1 where id = sum(1)`,
+		`select id from exist_tb_1 where id = 1`,
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLInjectionFunc].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
 }
 
 func TestDMLCheckNotEqualSymbol(t *testing.T) {
@@ -4805,6 +4886,12 @@ func TestDMLNotRecommendSubquery(t *testing.T) {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSubquery].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendSubquery))
 	}
 
+	for _, sql := range []string{
+		"SELECT id,v1,v2 from exist_tb_1 where v1 = 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendSubquery].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
+
 }
 
 func TestDMLCheckSubqueryLimit(t *testing.T) {
@@ -4814,12 +4901,19 @@ func TestDMLCheckSubqueryLimit(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSubqueryLimit].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSubqueryLimit))
 	}
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1 where v1 in(select id from exist_tb_1)",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 =(SELECT id FROM `exist_tb_1`)",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSubqueryLimit].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+	}
 
 }
 
 func TestDDLCheckAutoIncrement(t *testing.T) {
 	for _, sql := range []string{
 		"CREATE TABLE `tb` ( `id` int(10)) AUTO_INCREMENT=1",
+		"CREATE TABLE `tb` ( `id` int(10)) AUTO_INCREMENT=2",
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckAutoIncrement].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckAutoIncrement))
 	}
