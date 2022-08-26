@@ -1160,7 +1160,6 @@ func (at *PolarDBMysqlSlowLogTask) CreateClient(accessKeyId *string, accessKeySe
 	}
 	// 访问的域名
 	config.Endpoint = tea.String("polardb.aliyuncs.com")
-	_result = &polardb20170801.Client{}
 	_result, _err = polardb20170801.NewClient(config)
 	return _result, _err
 }
