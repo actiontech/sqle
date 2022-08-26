@@ -1358,7 +1358,7 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
 			Name:     DDLHintDropForeignKey,
-			Desc:     "提示删除外键为高危操作",
+			Desc:     "删除外键为高危操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
@@ -1582,7 +1582,7 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
 			Name:     DDLCheckColumnQuantityInPK,
-			Desc:     "检测主键中的列过多",
+			Desc:     "主键中的列过多",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 			Params: params.Params{
