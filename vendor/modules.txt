@@ -54,6 +54,9 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
+# github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13
+## explicit
+github.com/chanxuehong/util/security
 # github.com/clbanning/mxj/v2 v2.5.6
 ## explicit
 github.com/clbanning/mxj/v2
@@ -259,6 +262,10 @@ github.com/mitchellh/go-testing-interface
 # github.com/moby/sys/mountinfo v0.6.2
 ## explicit
 github.com/moby/sys/mountinfo
+# github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+github.com/modern-go/concurrent
+# github.com/modern-go/reflect2 v1.0.1
+github.com/modern-go/reflect2
 # github.com/nxadm/tail v1.4.8
 ## explicit
 github.com/nxadm/tail
@@ -371,8 +378,6 @@ github.com/swaggo/files
 ## explicit
 github.com/swaggo/swag
 github.com/swaggo/swag/gen
-# github.com/tjfoc/gmsm v1.3.2
-github.com/tjfoc/gmsm/sm3
 # github.com/timtadh/data-structures v0.5.3
 ## explicit
 github.com/timtadh/data-structures/errors
@@ -392,6 +397,8 @@ github.com/timtadh/lexmachine/frontend
 github.com/timtadh/lexmachine/inst
 github.com/timtadh/lexmachine/machines
 github.com/timtadh/lexmachine/queue
+# github.com/tjfoc/gmsm v1.3.2
+github.com/tjfoc/gmsm/sm3
 # github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 ## explicit
 github.com/ungerik/go-dry
