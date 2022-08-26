@@ -116,6 +116,17 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckInsertColumnsExist:                  struct{}{},
 		rulepkg.DMLCheckLimitMustExist:                      struct{}{},
 		rulepkg.DMLCheckWhereExistImplicitConversion:        struct{}{},
+		rulepkg.DMLCheckSQLLength:                           {},
+		rulepkg.DDLRecommendTableColumnCharsetSame:          {},
+		rulepkg.DDLCheckAutoIncrement:                       {},
+		rulepkg.DDLCheckColumnTypeInteger:                   {},
+		rulepkg.DDLHintDropColumn:                           {},
+		rulepkg.DMLHintDeleteTips:                           {},
+		rulepkg.DMLHintUseTruncateInsteadOfDelete:           {},
+		rulepkg.DDLCheckColumnQuantity:                      {},
+		rulepkg.DMLHintInNullOnlyFalse:                      {},
+		rulepkg.DMLNotRecommendIn:                           {},
+		rulepkg.DMLCheckAlias:                               {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
