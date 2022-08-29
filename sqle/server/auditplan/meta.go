@@ -15,21 +15,23 @@ type Meta struct {
 }
 
 const (
-	TypeDefault            = "default"
-	TypeMySQLSlowLog       = "mysql_slow_log"
-	TypeMySQLMybatis       = "mysql_mybatis"
-	TypeMySQLSchemaMeta    = "mysql_schema_meta"
-	TypeAliRdsMySQLSlowLog = "ali_rds_mysql_slow_log"
-	TypeOracleTopSQL       = "oracle_top_sql"
-	TypeTiDBAuditLog       = "tidb_audit_log"
-	TypeAllAppExtract      = "all_app_extract"
+	TypeDefault                  = "default"
+	TypeMySQLSlowLog             = "mysql_slow_log"
+	TypeMySQLMybatis             = "mysql_mybatis"
+	TypeMySQLSchemaMeta          = "mysql_schema_meta"
+	TypeAliRdsMySQLSlowLog       = "ali_rds_mysql_slow_log"
+	TypeOracleTopSQL             = "oracle_top_sql"
+	TypeTiDBAuditLog             = "tidb_audit_log"
+	TypeAllAppExtract            = "all_app_extract"
+	TypeOceanBaseForMySQLMybatis = "ocean_base_for_mysql_mybatis"
 )
 
 const (
-	InstanceTypeAll    = ""
-	InstanceTypeMySQL  = "MySQL"
-	InstanceTypeOracle = "Oracle"
-	InstanceTypeTiDB   = "TiDB"
+	InstanceTypeAll               = ""
+	InstanceTypeMySQL             = "MySQL"
+	InstanceTypeOracle            = "Oracle"
+	InstanceTypeTiDB              = "TiDB"
+	InstanceTypeOceanBaseForMySQL = "OceanBase For MySQL"
 )
 
 const (
@@ -163,6 +165,11 @@ var Metas = []Meta{
 				Type:  params.ParamTypeInt,
 			},
 		},
+	},
+	{
+		Type:         TypeOceanBaseForMySQLMybatis,
+		Desc:         "Mybatis 扫描",
+		InstanceType: InstanceTypeOceanBaseForMySQL,
 	},
 }
 
