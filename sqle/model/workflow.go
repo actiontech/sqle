@@ -763,3 +763,20 @@ func (s *Storage) GetWorkFlowCountBetweenStartTimeAndEndTime(startTime, endTime 
 	var count int64
 	return count, s.db.Model(&Workflow{}).Where("created_at BETWEEN ? and ?", startTime, endTime).Count(&count).Error
 }
+
+type DailyWorkflowCount struct {
+	Date  time.Time `json:"date"`
+	Count int       `json:"count"`
+}
+
+func (s *Storage) GetWorkflowDailyCountBetweenStartTimeAndEndTime(startTime, endTime time.Time) ([]*DailyWorkflowCount, error) {
+	var counts []*DailyWorkflowCount
+	err := s.db.Table("workflows").
+		Select("cast(created_at as date) as date, count(*) as count").
+		Where("created_at BETWEEN ? and ?", startTime, endTime).
+		Group("cast(created_at as date)").Find(&counts).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return counts, nil
+}
