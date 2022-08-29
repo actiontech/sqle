@@ -23,6 +23,22 @@ func (f *FingerprintVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
 }
 
+type ParamMarkerChecker struct {
+	HasParamMarker bool
+}
+
+func (p *ParamMarkerChecker) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	if _, ok := in.(*driver.ParamMarkerExpr); ok {
+		p.HasParamMarker = true
+		return in, true
+	}
+	return in, false
+}
+
+func (p *ParamMarkerChecker) Leave(in ast.Node) (node ast.Node, skipChildren bool) {
+	return in, true
+}
+
 func ParseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
 	t, err := ParseOneSql(sql)
 	if err != nil {
