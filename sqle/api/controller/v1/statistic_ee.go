@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -381,18 +382,18 @@ func getWorkflowCreatedCountsEachDayV1(c echo.Context) error {
 	// parse date string
 	loc, err := time.LoadLocation("Local")
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, err))
 	}
 	dateFrom, err := time.ParseInLocation("2006-01-02", req.FilterDateFrom, loc)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("parse dateFrom failed: %v", err))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, fmt.Errorf("parse dateFrom failed: %v", err)))
 	}
 	dateTo, err := time.ParseInLocation("2006-01-02", req.FilterDateTo, loc)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("parse dateTo failed: %v", err))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, fmt.Errorf("parse dateTo failed: %v", err)))
 	}
 	if dateFrom.After(dateTo) {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("dateFrom must before dateTo"))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("dateFrom must before dateTo")))
 	}
 	dateTo = dateTo.Add(23 * time.Hour).Add(59 * time.Minute).Add(59 * time.Second) // 假设接口要查询第1天(date from)到第3天(date to)的趋势，那么第3天的工单创建数量是第3天0点到第23:59:59之间的数量
 
