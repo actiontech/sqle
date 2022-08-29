@@ -776,7 +776,7 @@ func (s *Storage) GetWorkflowDailyCountBetweenStartTimeAndEndTime(startTime, end
 		Where("created_at BETWEEN ? and ?", startTime, endTime).
 		Group("cast(created_at as date)").Find(&counts).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	return counts, nil
 }
