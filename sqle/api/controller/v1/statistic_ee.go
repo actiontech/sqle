@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -195,9 +196,9 @@ func getExecutionSuccessPercent() (float64, error) {
 }
 
 type CreatorRejectedPercent struct {
-	Creator         string
-	WorkflowTotalNum    uint
-	RejectedPercent float64
+	Creator          string
+	WorkflowTotalNum uint
+	RejectedPercent  float64
 }
 
 type CreatorRejectedPercents []CreatorRejectedPercent
@@ -247,9 +248,9 @@ func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 
 		percent := float64(rejected) / float64(total) * 100
 		percents = append(percents, CreatorRejectedPercent{
-			Creator:         user.Name,
-			WorkflowTotalNum:    uint(total),
-			RejectedPercent: percent,
+			Creator:          user.Name,
+			WorkflowTotalNum: uint(total),
+			RejectedPercent:  percent,
 		})
 	}
 
@@ -284,9 +285,9 @@ func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 }
 
 type InstanceRejectedPercent struct {
-	InstanceName    string
-	WorkflowTotalNum    uint
-	RejectedPercent float64
+	InstanceName     string
+	WorkflowTotalNum uint
+	RejectedPercent  float64
 }
 
 type InstanceRejectedPercents []InstanceRejectedPercent
@@ -336,9 +337,9 @@ func getWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
 
 		percent := float64(rejected) / float64(total) * 100
 		percents = append(percents, InstanceRejectedPercent{
-			InstanceName:    inst.Name,
-			WorkflowTotalNum:    uint(total),
-			RejectedPercent: percent,
+			InstanceName:     inst.Name,
+			WorkflowTotalNum: uint(total),
+			RejectedPercent:  percent,
 		})
 	}
 
@@ -360,9 +361,9 @@ func getWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
 	percentsRes := make([]*WorkflowRejectedPercentGroupByInstance, resItemCount)
 	for i := 0; i < int(resItemCount); i++ {
 		percentsRes[i] = &WorkflowRejectedPercentGroupByInstance{
-			InstanceName:    percents[i].InstanceName,
-			WorkflowTotalNum:    percents[i].WorkflowTotalNum,
-			RejectedPercent: percents[i].RejectedPercent,
+			InstanceName:     percents[i].InstanceName,
+			WorkflowTotalNum: percents[i].WorkflowTotalNum,
+			RejectedPercent:  percents[i].RejectedPercent,
 		}
 	}
 
@@ -381,17 +382,20 @@ func getWorkflowCreatedCountsEachDayV1(c echo.Context) error {
 	// parse date string
 	loc, err := time.LoadLocation("Local")
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, err))
 	}
 	dateFrom, err := time.ParseInLocation("2006-01-02", req.FilterDateFrom, loc)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("parse dateFrom failed: %v", err))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, fmt.Errorf("parse dateFrom failed: %v", err)))
 	}
 	dateTo, err := time.ParseInLocation("2006-01-02", req.FilterDateTo, loc)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("parse dateTo failed: %v", err))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, fmt.Errorf("parse dateTo failed: %v", err)))
 	}
-	dateTo = dateTo.AddDate(0, 0, 1) // 假设接口要查询第1天(date from)到第3天(date to)的趋势，那么第3天的工单创建数量是第3天0点到第4天0点之间的数量。实际需要查询的是第1天0点到第4天0点的数据
+	if dateFrom.After(dateTo) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("dateFrom must before dateTo")))
+	}
+	dateTo = dateTo.Add(23 * time.Hour).Add(59 * time.Minute).Add(59 * time.Second) // 假设接口要查询第1天(date from)到第3天(date to)的趋势，那么第3天的工单创建数量是第3天0点到第23:59:59之间的数量
 
 	var datePoints []time.Time
 	currentDate := dateFrom
@@ -400,21 +404,25 @@ func getWorkflowCreatedCountsEachDayV1(c echo.Context) error {
 		currentDate = currentDate.AddDate(0, 0, 1)
 	}
 
-	var samples []WorkflowCreatedCountsEachDayItem
 	s := model.GetStorage()
-	for i, j := 0, 1; j < len(datePoints); i, j = i+1, j+1 {
-		filter := map[string]interface{}{
-			"filter_create_time_from": datePoints[i],
-			"filter_create_time_to":   datePoints[j],
+	counts, err := s.GetWorkflowDailyCountBetweenStartTimeAndEndTime(dateFrom, dateTo)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	samples := make([]WorkflowCreatedCountsEachDayItem, len(datePoints))
+	for i, datePoint := range datePoints {
+		workflowCount := 0
+		for _, count := range counts {
+			if datePoint.Equal(count.Date) {
+				workflowCount = count.Count
+				break
+			}
 		}
-		count, err := s.GetWorkflowCountByReq(filter)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("get work flow count failed: %v", err))
+		samples[i] = WorkflowCreatedCountsEachDayItem{
+			Date:  datePoint.Format("2006-01-02"),
+			Value: uint(workflowCount),
 		}
-		samples = append(samples, WorkflowCreatedCountsEachDayItem{
-			Date:  datePoints[i].Format("2006-01-02"),
-			Value: uint(count),
-		})
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowCreatedCountsEachDayResV1{
