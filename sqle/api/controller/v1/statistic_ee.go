@@ -407,7 +407,7 @@ func getWorkflowCreatedCountsEachDayV1(c echo.Context) error {
 	s := model.GetStorage()
 	counts, err := s.GetWorkflowDailyCountBetweenStartTimeAndEndTime(dateFrom, dateTo)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows daily counts failed: %v", err))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	samples := make([]WorkflowCreatedCountsEachDayItem, len(datePoints))
