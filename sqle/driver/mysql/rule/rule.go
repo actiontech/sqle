@@ -2342,7 +2342,7 @@ func getColumnCSFromColumnsDef(columns []*ast.ColumnDef) []string {
 	columnCharacterSets := []string{}
 	for _, column := range columns {
 		// Just string data type and not binary can be set "character set".
-		if column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+		if column.Tp == nil || column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
 			continue
 		}
 		if column.Tp.Charset == "" {
