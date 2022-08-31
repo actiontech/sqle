@@ -127,7 +127,7 @@ const (
 	DMLCheckExplainExtraUsingFilesort     = "dml_check_explain_extra_using_filesort"
 	DMLCheckExplainExtraUsingTemporary    = "dml_check_explain_extra_using_temporary"
 	DMLCheckTableSize                     = "dml_check_table_size"
-	DMLCheckJoinFieldType                = "dml_check_join_field_type"
+	DMLCheckJoinFieldType                 = "dml_check_join_field_type"
 	DMLCheckAlias                         = "dml_check_alias"
 	DMLNotRecommendNotWildcardLike        = "dml_not_recommend_not_wildcard_like"
 	DMLHintInNullOnlyFalse                = "dml_hint_in_null_only_false"
@@ -2342,7 +2342,7 @@ func getColumnCSFromColumnsDef(columns []*ast.ColumnDef) []string {
 	columnCharacterSets := []string{}
 	for _, column := range columns {
 		// Just string data type and not binary can be set "character set".
-		if column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+		if column.Tp == nil || column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
 			continue
 		}
 		if column.Tp.Charset == "" {
