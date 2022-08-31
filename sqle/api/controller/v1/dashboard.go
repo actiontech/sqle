@@ -74,6 +74,7 @@ func Dashboard(c echo.Context) error {
 		"filter_current_step_type": model.WorkflowStepTypeSQLExecute,
 		"filter_create_user_name":  user.Name,
 		"check_user_can_access":    false,
+		"not_scheduled":            true,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -94,6 +95,7 @@ func Dashboard(c echo.Context) error {
 		"filter_current_step_type":               model.WorkflowStepTypeSQLExecute,
 		"filter_current_step_assignee_user_name": user.Name,
 		"check_user_can_access":                  false,
+		"not_scheduled":                          true,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
