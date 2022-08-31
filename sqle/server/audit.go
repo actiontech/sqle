@@ -91,9 +91,11 @@ func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
 func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHook) (err error) {
 	defer func() {
-		if err := recover(); err != nil {
+		if errRecover := recover(); errRecover != nil {
 			debug.PrintStack()
-			l.Errorf("hookAudit panic: %v", err)
+			// 为了将panic信息返回给调用者
+			err = errors.New("An unknown error occurred, check std.log for details")
+			l.Errorf("hookAudit panic: %v", errRecover)
 		}
 	}()
 
