@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"runtime/debug"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -89,6 +90,13 @@ func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
 func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
 func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHook) (err error) {
+	defer func() {
+		if err := recover(); err != nil {
+			debug.PrintStack()
+			l.Errorf("hookAudit panic: %v", err)
+		}
+	}()
+
 	st := model.GetStorage()
 
 	whitelist, _, err := st.GetSqlWhitelist(0, 0)
