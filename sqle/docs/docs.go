@@ -67,7 +67,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取扫描计划信息列表",
+                "summary": "获取扫描任务信息列表",
                 "operationId": "getAuditPlansV1",
                 "parameters": [
                     {
@@ -111,7 +111,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "添加扫描计划",
+                "summary": "添加扫描任务",
                 "operationId": "createAuditPlanV1",
                 "parameters": [
                     {
@@ -184,7 +184,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划",
+                "summary": "获取指定扫描任务",
                 "operationId": "getAuditPlanV1",
                 "parameters": [
                     {
@@ -214,7 +214,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "删除扫描计划",
+                "summary": "删除扫描任务",
                 "operationId": "deleteAuditPlanV1",
                 "parameters": [
                     {
@@ -244,7 +244,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "更新扫描计划",
+                "summary": "更新扫描任务",
                 "operationId": "updateAuditPlanV1",
                 "parameters": [
                     {
@@ -315,7 +315,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "更新扫描计划通知设置",
+                "summary": "更新扫描任务通知设置",
                 "operationId": "updateAuditPlanNotifyConfigV1",
                 "parameters": [
                     {
@@ -388,7 +388,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划的SQL扫描详情",
+                "summary": "获取指定扫描任务的SQL扫描详情",
                 "operationId": "getAuditPlanReportSQLsV1",
                 "deprecated": true,
                 "parameters": [
@@ -440,7 +440,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划的报告列表",
+                "summary": "获取指定扫描任务的报告列表",
                 "operationId": "getAuditPlanReportsV1",
                 "parameters": [
                     {
@@ -484,7 +484,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划的SQL扫描记录统计信息",
+                "summary": "获取指定扫描任务的SQL扫描记录统计信息",
                 "operationId": "getAuditPlanReportV1",
                 "parameters": [
                     {
@@ -523,7 +523,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划的SQLs信息(不包括扫描结果)",
+                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
                 "operationId": "getAuditPlanSQLsV1",
                 "deprecated": true,
                 "parameters": [
@@ -568,7 +568,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "全量同步SQL到扫描计划",
+                "summary": "全量同步SQL到扫描任务",
                 "operationId": "fullSyncAuditPlanSQLsV1",
                 "parameters": [
                     {
@@ -609,7 +609,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "增量同步SQL到扫描计划",
+                "summary": "增量同步SQL到扫描任务",
                 "operationId": "partialSyncAuditPlanSQLsV1",
                 "parameters": [
                     {
@@ -650,7 +650,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "触发扫描计划",
+                "summary": "触发扫描任务",
                 "operationId": "triggerAuditPlanV1",
                 "parameters": [
                     {
@@ -4597,7 +4597,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划的SQL扫描详情",
+                "summary": "获取指定扫描任务的SQL扫描详情",
                 "operationId": "getAuditPlanReportSQLsV2",
                 "deprecated": true,
                 "parameters": [
@@ -4649,7 +4649,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划的SQL扫描详情",
+                "summary": "获取指定扫描任务的SQL扫描详情",
                 "operationId": "getAuditPlanReportsSQLsV2",
                 "parameters": [
                     {
@@ -4700,7 +4700,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定扫描计划的SQLs信息(不包括扫描结果)",
+                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
                 "operationId": "getAuditPlanSQLsV2",
                 "parameters": [
                     {
