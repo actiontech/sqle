@@ -33,7 +33,7 @@ type AuditPlanSQLHeadV2 struct {
 	Type string `json:"type,omitempty" enums:"sql"`
 }
 
-// @Summary 获取指定扫描计划的SQLs信息(不包括扫描结果)
+// @Summary 获取指定扫描任务的SQLs信息(不包括扫描结果)
 // @Description get audit plan SQLs
 // @Id getAuditPlanSQLsV2
 // @Tags audit_plan
@@ -105,7 +105,7 @@ type AuditPlanReportSQLResV2 struct {
 	Number      uint   `json:"number" example:"1"`
 }
 
-// @Summary 获取指定扫描计划的SQL扫描详情
+// @Summary 获取指定扫描任务的SQL扫描详情
 // @Description get audit plan report SQLs
 // @Id getAuditPlanReportSQLsV2
 // @Deprecated
@@ -164,7 +164,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 
 // GetAuditPlanReportSQLsV2 is to fix the irregular uri used by GetAuditPlanReportSQLs
 // issue: https://github.com/actiontech/sqle/issues/429
-// @Summary 获取指定扫描计划的SQL扫描详情
+// @Summary 获取指定扫描任务的SQL扫描详情
 // @Description get audit plan report SQLs
 // @Id getAuditPlanReportsSQLsV2
 // @Tags audit_plan
