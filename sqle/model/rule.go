@@ -283,6 +283,16 @@ func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[s
 
 func (s *Storage) IsRuleTemplateExist(ruleTemplateName string) (bool, error) {
 	var count int
-	err := s.db.Table("rule_templates").Where("name = ?", ruleTemplateName).Count(&count).Error
+	err := s.db.Table("rule_templates").Where("name = ?", ruleTemplateName).Where("deleted_at IS NULL").Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string) (bool, error) {
+	var count int
+	err := s.db.Table("rule_templates").
+		Joins("join audit_plans on audit_plans.rule_template_name = rule_templates.name").
+		Where("audit_plans.deleted_at is null").
+		Where("rule_templates.name = ?", ruleTemplateName).
+		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
