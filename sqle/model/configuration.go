@@ -22,7 +22,7 @@ type SMTPConfiguration struct {
 	Host             string       `json:"smtp_host" gorm:"column:smtp_host; not null"`
 	Port             string       `json:"smtp_port" gorm:"column:smtp_port; not null"`
 	Username         string       `json:"smtp_username" gorm:"column:smtp_username; not null"`
-	Password         string       `json:"-"`
+	Password         string       `json:"-" gorm:"-"`
 	SecretPassword   string       `json:"secret_smtp_password" gorm:"column:secret_smtp_password; not null"`
 }
 
