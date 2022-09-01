@@ -226,12 +226,12 @@ func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPla
 }
 
 func (a *AuditPlanNotification) NotificationSubject() string {
-	return fmt.Sprintf("SQLE审核任务[%v]审核结果[%v]", a.auditPlan.Name, a.report.AuditLevel)
+	return fmt.Sprintf("SQLE扫描任务[%v]扫描结果[%v]", a.auditPlan.Name, a.report.AuditLevel)
 }
 
 func (a *AuditPlanNotification) NotificationBody() string {
 	return fmt.Sprintf(`
-- 审核任务: %v
+- 扫描任务: %v
 - 审核时间: %v
 - 审核类型: %v
 - 数据源: %v
