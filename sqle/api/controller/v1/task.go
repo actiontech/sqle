@@ -93,7 +93,7 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
-// @Summary 创建Sql审核任务并提交审核
+// @Summary 创建Sql扫描任务并提交审核
 // @Description create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
 // @Description 1. formData[sql]: sql content;
 // @Description 2. file[input_sql_file]: it is a sql file;
@@ -242,7 +242,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []uint)
 	return ErrTaskNoAccess
 }
 
-// @Summary 获取Sql审核任务信息
+// @Summary 获取Sql扫描任务信息
 // @Description get task
 // @Tags task
 // @Id getAuditTaskV1
@@ -298,7 +298,7 @@ type AuditTaskSQLResV1 struct {
 	Description string `json:"description"`
 }
 
-// @Summary 获取指定审核任务的SQLs信息
+// @Summary 获取指定扫描任务的SQLs信息
 // @Description get information of all SQLs belong to the specified audit task
 // @Tags task
 // @Id getAuditTaskSQLsV1
@@ -377,7 +377,7 @@ type DownloadAuditTaskSQLsFileReqV1 struct {
 	NoDuplicate bool `json:"no_duplicate" query:"no_duplicate"`
 }
 
-// @Summary 下载指定审核任务的SQLs信息报告
+// @Summary 下载指定扫描任务的SQLs信息报告
 // @Description download report file of all SQLs information belong to the specified audit task
 // @Tags task
 // @Id downloadAuditTaskSQLReportV1
@@ -448,7 +448,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
 }
 
-// @Summary 下载指定审核任务的SQL文件
+// @Summary 下载指定扫描任务的SQL文件
 // @Description download SQL file for the audit task
 // @Tags task
 // @Id downloadAuditTaskSQLFileV1
@@ -491,7 +491,7 @@ type AuditTaskSQLContentResV1 struct {
 	Sql string `json:"sql" example:"alter table tb1 drop columns c1"`
 }
 
-// @Summary 获取指定审核任务的SQL内容
+// @Summary 获取指定扫描任务的SQL内容
 // @Description get SQL content for the audit task
 // @Tags task
 // @Id getAuditTaskSQLContentV1
@@ -530,7 +530,7 @@ type UpdateAuditTaskSQLsReqV1 struct {
 	Description string `json:"description"`
 }
 
-// @Summary 修改审核任务中某条SQL的相关信息
+// @Summary 修改扫描任务中某条SQL的相关信息
 // @Description modify the relevant information of a certain SQL in the audit task
 // @Tags task
 // @Id updateAuditTaskSQLsV1

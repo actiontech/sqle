@@ -76,7 +76,7 @@ func convertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 	return res
 }
 
-// @Summary 获取审核任务元信息
+// @Summary 获取扫描任务元信息
 // @Description get audit plan metas
 // @Id getAuditPlanMetasV1
 // @Tags audit_plan
@@ -151,7 +151,7 @@ func checkAndGenerateAuditPlanParams(auditPlanType, instanceType string, paramsR
 	return meta.Params, nil
 }
 
-// @Summary 添加审核计划
+// @Summary 添加扫描计划
 // @Description create audit plan
 // @Id createAuditPlanV1
 // @Tags audit_plan
@@ -313,7 +313,7 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 
 }
 
-// @Summary 删除审核计划
+// @Summary 删除扫描计划
 // @Description delete audit plan
 // @Id deleteAuditPlanV1
 // @Tags audit_plan
@@ -352,7 +352,7 @@ type UpdateAuditPlanReqV1 struct {
 	Params           []AuditPlanParamReqV1 `json:"audit_plan_params" valid:"dive,required"`
 }
 
-// @Summary 更新审核计划
+// @Summary 更新扫描计划
 // @Description update audit plan
 // @Id updateAuditPlanV1
 // @Tags audit_plan
@@ -442,7 +442,7 @@ type AuditPlanResV1 struct {
 	Meta             AuditPlanMetaV1 `json:"audit_plan_meta"`
 }
 
-// @Summary 获取审核计划信息列表
+// @Summary 获取扫描计划信息列表
 // @Description get audit plan info list
 // @Id getAuditPlansV1
 // @Tags audit_plan
@@ -522,7 +522,7 @@ type GetAuditPlanResV1 struct {
 	Data AuditPlanResV1 `json:"data"`
 }
 
-// @Summary 获取指定审核计划
+// @Summary 获取指定扫描计划
 // @Description get audit plan
 // @Id getAuditPlanV1
 // @Tags audit_plan
@@ -586,7 +586,7 @@ type AuditPlanReportResV1 struct {
 	Timestamp  string  `json:"audit_plan_report_timestamp" example:"RFC3339"`
 }
 
-// @Summary 获取指定审核计划的报告列表
+// @Summary 获取指定扫描计划的报告列表
 // @Description get audit plan report list
 // @Id getAuditPlanReportsV1
 // @Tags audit_plan
@@ -647,7 +647,7 @@ type GetAuditPlanReportResV1 struct {
 	Data AuditPlanReportResV1 `json:"data"`
 }
 
-// @Summary 获取指定审核计划的SQL审核记录统计信息
+// @Summary 获取指定扫描计划的SQL扫描记录统计信息
 // @Description get audit plan report
 // @Id getAuditPlanReportV1
 // @Tags audit_plan
@@ -707,7 +707,7 @@ type AuditPlanReportSQLResV1 struct {
 	AuditResult          string `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
 }
 
-// @Summary 获取指定审核计划的SQL审核详情
+// @Summary 获取指定扫描计划的SQL扫描详情
 // @Description get audit plan report SQLs
 // @Deprecated
 // @Id getAuditPlanReportSQLsV1
@@ -735,7 +735,7 @@ type AuditPlanSQLReqV1 struct {
 	Schema               string `json:"audit_plan_sql_schema" from:"audit_plan_sql_schema" example:"db1"`
 }
 
-// @Summary 全量同步SQL到审核计划
+// @Summary 全量同步SQL到扫描计划
 // @Description full sync audit plan SQLs
 // @Id fullSyncAuditPlanSQLsV1
 // @Tags audit_plan
@@ -764,7 +764,7 @@ type PartialSyncAuditPlanSQLsReqV1 struct {
 	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
-// @Summary 增量同步SQL到审核计划
+// @Summary 增量同步SQL到扫描计划
 // @Description partial sync audit plan SQLs
 // @Id partialSyncAuditPlanSQLsV1
 // @Tags audit_plan
@@ -884,7 +884,7 @@ type AuditPlanSQLResV1 struct {
 	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
 }
 
-// @Summary 获取指定审核计划的SQLs信息(不包括审核结果)
+// @Summary 获取指定扫描计划的SQLs信息(不包括扫描结果)
 // @Description get audit plan SQLs
 // @Deprecated
 // @Id getAuditPlanSQLsV1
@@ -904,7 +904,7 @@ type TriggerAuditPlanResV1 struct {
 	Data AuditPlanReportResV1 `json:"data"`
 }
 
-// @Summary 触发审核计划
+// @Summary 触发扫描计划
 // @Description trigger audit plan
 // @Id triggerAuditPlanV1
 // @Tags audit_plan
@@ -982,7 +982,7 @@ type UpdateAuditPlanNotifyConfigReqV1 struct {
 	WebHookTemplate     *string `json:"web_hook_template"`
 }
 
-// @Summary 更新审核计划通知设置
+// @Summary 更新扫描计划通知设置
 // @Description update audit plan notify config
 // @Id updateAuditPlanNotifyConfigV1
 // @Tags audit_plan
@@ -1043,7 +1043,7 @@ type GetAuditPlanNotifyConfigResDataV1 struct {
 	WebHookTemplate     string `json:"web_hook_template"`
 }
 
-// @Summary 获取审核任务消息推送设置
+// @Summary 获取扫描任务消息推送设置
 // @Description get audit plan notify config
 // @Id getAuditPlanNotifyConfigV1
 // @Tags audit_plan
@@ -1085,7 +1085,7 @@ type TestAuditPlanNotifyConfigResDataV1 struct {
 	SendErrorMessage   string `json:"send_error_message,omitempty"`
 }
 
-// @Summary 测试审核任务消息推送
+// @Summary 测试扫描任务消息推送
 // @Description Test audit task message push
 // @Id testAuditPlanNotifyConfigV1
 // @Tags audit_plan
