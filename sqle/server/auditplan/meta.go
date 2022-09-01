@@ -3,15 +3,19 @@ package auditplan
 import (
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Meta struct {
-	Type         string        `json:"audit_plan_type"`
-	Desc         string        `json:"audit_plan_type_desc"`
-	InstanceType string        `json:"instance_type"`
-	Params       params.Params `json:"audit_plan_params,omitempty"`
+	Type         string                                              `json:"audit_plan_type"`
+	Desc         string                                              `json:"audit_plan_type_desc"`
+	InstanceType string                                              `json:"instance_type"`
+	Params       params.Params                                       `json:"audit_plan_params,omitempty"`
+	CreateTask   func(entry *logrus.Entry, ap *model.AuditPlan) Task `json:"-"`
 }
 
 const (
@@ -46,11 +50,13 @@ var Metas = []Meta{
 		Type:         TypeDefault,
 		Desc:         "自定义",
 		InstanceType: InstanceTypeAll,
+		CreateTask:   NewDefaultTask,
 	},
 	{
 		Type:         TypeMySQLSlowLog,
 		Desc:         "慢日志",
 		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewDefaultTask,
 		Params: []*params.Param{
 			{
 				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
@@ -64,11 +70,13 @@ var Metas = []Meta{
 		Type:         TypeMySQLMybatis,
 		Desc:         "Mybatis 扫描",
 		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewDefaultTask,
 	},
 	{
 		Type:         TypeMySQLSchemaMeta,
 		Desc:         "库表元数据",
 		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewSchemaMetaTask,
 		Params: []*params.Param{
 			&params.Param{
 				Key:   paramKeyCollectIntervalMinute,
@@ -88,6 +96,7 @@ var Metas = []Meta{
 		Type:         TypeAliRdsMySQLSlowLog,
 		Desc:         "阿里RDS MySQL慢日志",
 		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewAliRdsMySQLSlowLogTask,
 		Params: []*params.Param{
 			{
 				Key:   paramKeyDBInstanceId,
@@ -125,6 +134,7 @@ var Metas = []Meta{
 		Type:         TypeOracleTopSQL,
 		Desc:         "Oracle TOP SQL",
 		InstanceType: InstanceTypeOracle,
+		CreateTask:   NewOracleTopSQLTask,
 		Params: []*params.Param{
 			{
 				Key:   paramKeyCollectIntervalMinute,
@@ -150,11 +160,13 @@ var Metas = []Meta{
 		Type:         TypeAllAppExtract,
 		Desc:         "应用程序SQL抓取",
 		InstanceType: InstanceTypeAll,
+		CreateTask:   NewDefaultTask,
 	},
 	{
 		Type:         TypeTiDBAuditLog,
 		Desc:         "TiDB审计日志",
 		InstanceType: InstanceTypeTiDB,
+		CreateTask:   NewTiDBAuditLogTask,
 		Params: []*params.Param{
 			{
 				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,

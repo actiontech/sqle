@@ -57,18 +57,13 @@ type SQL struct {
 
 func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	entry = entry.WithField("name", ap.Name)
-	switch ap.Type {
-	case TypeMySQLSchemaMeta:
-		return NewSchemaMetaTask(entry, ap)
-	case TypeOracleTopSQL:
-		return NewOracleTopSQLTask(entry, ap)
-	case TypeTiDBAuditLog:
-		return NewTiDBAuditLogTask(entry, ap)
-	case TypeAliRdsMySQLSlowLog:
-		return NewAliRdsMySQLSlowLogTask(entry, ap)
-	default:
+
+	meta, err := GetMeta(ap.Type)
+	if err != nil || meta.CreateTask == nil {
 		return NewDefaultTask(entry, ap)
 	}
+
+	return meta.CreateTask(entry, ap)
 }
 
 type baseTask struct {
@@ -254,7 +249,7 @@ type DefaultTask struct {
 	*baseTask
 }
 
-func NewDefaultTask(entry *logrus.Entry, ap *model.AuditPlan) *DefaultTask {
+func NewDefaultTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	return &DefaultTask{newBaseTask(entry, ap)}
 }
 
@@ -363,7 +358,7 @@ type SchemaMetaTask struct {
 	*sqlCollector
 }
 
-func NewSchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) *SchemaMetaTask {
+func NewSchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	sqlCollector := newSQLCollector(entry, ap)
 	task := &SchemaMetaTask{
 		sqlCollector,
@@ -473,7 +468,7 @@ type OracleTopSQLTask struct {
 	*sqlCollector
 }
 
-func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) *OracleTopSQLTask {
+func NewOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	task := &OracleTopSQLTask{
 		sqlCollector: newSQLCollector(entry, ap),
 	}
@@ -616,8 +611,8 @@ type TiDBAuditLogTask struct {
 	*DefaultTask
 }
 
-func NewTiDBAuditLogTask(entry *logrus.Entry, ap *model.AuditPlan) *TiDBAuditLogTask {
-	return &TiDBAuditLogTask{NewDefaultTask(entry, ap)}
+func NewTiDBAuditLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	return &TiDBAuditLogTask{NewDefaultTask(entry, ap).(*DefaultTask)}
 }
 
 func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
@@ -765,7 +760,7 @@ type AliRdsMySQLSlowLogTask struct {
 	lastEndTime *time.Time
 }
 
-func NewAliRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) *AliRdsMySQLSlowLogTask {
+func NewAliRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	sqlCollector := newSQLCollector(entry, ap)
 	task := &AliRdsMySQLSlowLogTask{
 		sqlCollector: sqlCollector,
