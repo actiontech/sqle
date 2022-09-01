@@ -94,12 +94,15 @@ func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, er
 	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplatesByInstanceName(name string) (*RuleTemplate, error) {
+func (s *Storage) GetRuleTemplatesByInstanceName(name string) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
 	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
 		Joins("JOIN `instances` ON `instance_rule_template`.`instance_id` = `instances`.`id`").
 		Where("`instances`.`name` = ?", name).Find(t).Error
-	return t, errors.New(errors.ConnectStorageError, err)
+	if err == gorm.ErrRecordNotFound {
+		return t, false, nil
+	}
+	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]*Rule, error) {
