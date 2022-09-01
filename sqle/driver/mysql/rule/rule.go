@@ -1680,12 +1680,21 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
 	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	default:
