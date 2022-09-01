@@ -302,11 +302,13 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 	}
 
 	if instanceName != "" {
-		ruleTemplate, err := s.GetRuleTemplatesByInstanceName(instanceName)
+		ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceName(instanceName)
 		if err != nil {
 			return "", err
 		}
-		return ruleTemplate.Name, nil
+		if exist {
+			return ruleTemplate.Name, nil
+		}
 	}
 
 	return s.GetDefaultRuleTemplateName(dbType), nil
