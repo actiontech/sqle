@@ -304,6 +304,14 @@ func DeleteRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
+	used, err := s.IsRuleTemplateBeingUsed(templateName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if used {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is being used")))
+	}
+
 	err = s.Delete(template)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
