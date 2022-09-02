@@ -2434,6 +2434,7 @@ select v1 from exist_db.exist_tb_1 where v2 = "3"
 
 func Test_DDLCheckCreateTimeColumn(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTimeColumn].Rule
+	param := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).String()
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`
 create table table_10
@@ -2453,7 +2454,7 @@ create table table_10
     id          int primary key,
     create_time timestamp
 )
-`, newTestResult().addResult(rulepkg.DDLCheckCreateTimeColumn))
+`, newTestResult().addResult(rulepkg.DDLCheckCreateTimeColumn, param))
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`
@@ -2467,6 +2468,7 @@ create table table_10
 
 func Test_DDLCheckUpdateTimeColumn(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckUpdateTimeColumn].Rule
+	param := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).String()
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`
 	create table table_10
@@ -2487,7 +2489,7 @@ create table table_10
     update_time timestamp,
     create_time timestamp
 )
-`, newTestResult().addResult(rulepkg.DDLCheckUpdateTimeColumn))
+`, newTestResult().addResult(rulepkg.DDLCheckUpdateTimeColumn, param))
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`

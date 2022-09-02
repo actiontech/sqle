@@ -516,11 +516,19 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckCreateTimeColumn,
-			Desc:     "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
+			Desc:     "建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "CREATE_TIME",
+					Desc:  "创建时间字段名",
+					Type:  params.ParamTypeString,
+				},
+			},
 		},
-		Message:      "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP",
+		Message:      "建表DDL必须包含%v字段且默认值为CURRENT_TIMESTAMP",
 		AllowOffline: true,
 		Func:         checkFieldCreateTime,
 	},
@@ -549,11 +557,20 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckUpdateTimeColumn,
-			Desc:     "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+			Desc:     "建表DDL必须包含更新时间字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "UPDATE_TIME",
+					Desc:  "更新时间字段名",
+					Type:  params.ParamTypeString,
+				},
+			},
 		},
-		Message:      "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+
+		Message:      "建表DDL必须包含%v字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
 		AllowOffline: true,
 		Func:         checkFieldUpdateTime,
 	},
@@ -1770,13 +1787,15 @@ func getColumnType(columnName *ast.ColumnNameExpr, createTableStmtMap map[string
 
 func checkFieldCreateTime(input *RuleHandlerInput) error {
 	var hasCreateTimeAndDefaultValue bool
+	createTimeFieldName := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
 			return nil
 		}
 		for _, col := range stmt.Cols {
-			if col.Name.Name.L == "create_time" && hasDefaultValueCurrentTimeStamp(col.Options) {
+			if strings.EqualFold(col.Name.Name.O, createTimeFieldName) && hasDefaultValueCurrentTimeStamp(col.Options) {
 				hasCreateTimeAndDefaultValue = true
 			}
 		}
@@ -1785,7 +1804,7 @@ func checkFieldCreateTime(input *RuleHandlerInput) error {
 	}
 
 	if !hasCreateTimeAndDefaultValue {
-		addResult(input.Res, input.Rule, DDLCheckCreateTimeColumn)
+		addResult(input.Res, input.Rule, DDLCheckCreateTimeColumn, createTimeFieldName)
 	}
 
 	return nil
@@ -1858,13 +1877,15 @@ func checkInQueryLimit(input *RuleHandlerInput) error {
 
 func checkFieldUpdateTime(input *RuleHandlerInput) error {
 	var hasUpdateTimeAndDefaultValue bool
+	updateTimeFieldName := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		if stmt.Cols == nil {
 			return nil
 		}
 		for _, col := range stmt.Cols {
-			if col.Name.Name.L == "update_time" && hasDefaultValueUpdateTimeStamp(col.Options) {
+			if strings.EqualFold(col.Name.Name.O, updateTimeFieldName) && hasDefaultValueUpdateTimeStamp(col.Options) {
 				hasUpdateTimeAndDefaultValue = true
 			}
 		}
@@ -1873,7 +1894,7 @@ func checkFieldUpdateTime(input *RuleHandlerInput) error {
 	}
 
 	if !hasUpdateTimeAndDefaultValue {
-		addResult(input.Res, input.Rule, DDLCheckUpdateTimeColumn)
+		addResult(input.Res, input.Rule, DDLCheckUpdateTimeColumn, updateTimeFieldName)
 	}
 
 	return nil
