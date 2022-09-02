@@ -757,25 +757,16 @@ func (g *completionSchemaVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
 }
 
-// AliRdsMySQLSlowLogTask implement the Task interface.
+// aliRdsMySQLTask implement the Task interface.
 //
-// AliRdsMySQLSlowLogTask is a loop task which collect slow log from ali rds MySQL instance.
-type AliRdsMySQLSlowLogTask struct {
+// aliRdsMySQLTask is a loop task which collect slow log from ali rds MySQL instance.
+type aliRdsMySQLTask struct {
 	*sqlCollector
 	lastEndTime *time.Time
+	pullLogs    func(client *rds20140815.Client, DBInstanId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []SqlFromAliCloud, err error)
 }
 
-func NewAliRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) *AliRdsMySQLSlowLogTask {
-	sqlCollector := newSQLCollector(entry, ap)
-	task := &AliRdsMySQLSlowLogTask{
-		sqlCollector: sqlCollector,
-		lastEndTime:  nil,
-	}
-	sqlCollector.do = task.collectorDo
-	return task
-}
-
-func (at *AliRdsMySQLSlowLogTask) collectorDo() {
+func (at *aliRdsMySQLTask) collectorDo() {
 	if at.ap.InstanceName == "" {
 		at.logger.Warnf("instance is not configured")
 		return
@@ -825,11 +816,11 @@ func (at *AliRdsMySQLSlowLogTask) collectorDo() {
 		startTime = *at.lastEndTime
 	}
 	var pageNum int32 = 1
-	slowSqls := []slowSqlFromAliCloud{}
+	slowSqls := []SqlFromAliCloud{}
 	for {
-		newSlowSqls, err := at.pullSlowLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
+		newSlowSqls, err := at.pullLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
 		if err != nil {
-			at.logger.Warnf("pull slow logs failed: %v", err)
+			at.logger.Warnf("pull rds logs failed: %v", err)
 			return
 		}
 		filteredNewSlowSqls := at.filterSlowSqlsByExecutionTime(newSlowSqls, startTime)
@@ -867,7 +858,7 @@ func (at *AliRdsMySQLSlowLogTask) collectorDo() {
 }
 
 // 因为查询的起始时间为上一次查询到的最后一条慢语句的executionStartTime（精确到秒），而查询起始时间只能精确到分钟，所以有可能还是会查询到上一次查询过的慢语句，需要将其过滤掉
-func (at *AliRdsMySQLSlowLogTask) filterSlowSqlsByExecutionTime(slowSqls []slowSqlFromAliCloud, executionTime time.Time) (res []slowSqlFromAliCloud) {
+func (at *aliRdsMySQLTask) filterSlowSqlsByExecutionTime(slowSqls []SqlFromAliCloud, executionTime time.Time) (res []SqlFromAliCloud) {
 	for _, sql := range slowSqls {
 		if !sql.executionStartTime.After(executionTime) {
 			continue
@@ -877,7 +868,7 @@ func (at *AliRdsMySQLSlowLogTask) filterSlowSqlsByExecutionTime(slowSqls []slowS
 	return
 }
 
-func (at *AliRdsMySQLSlowLogTask) isFirstScrap() bool {
+func (at *aliRdsMySQLTask) isFirstScrap() bool {
 	return at.lastEndTime == nil
 }
 
@@ -887,7 +878,7 @@ type sqlInfo struct {
 	sql         string
 }
 
-func mergeSQLsByFingerprint(sqls []slowSqlFromAliCloud) []sqlInfo {
+func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
 	sqlInfos := []sqlInfo{}
 
 	counter := map[string]int /*slice subscript*/ {}
@@ -910,18 +901,18 @@ func mergeSQLsByFingerprint(sqls []slowSqlFromAliCloud) []sqlInfo {
 	return sqlInfos
 }
 
-func (at *AliRdsMySQLSlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *aliRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{
 		DBType: at.ap.DBType,
 	}
 	return at.baseTask.audit(task)
 }
 
-func (at *AliRdsMySQLSlowLogTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+func (at *aliRdsMySQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
 	return baseTaskGetSQLs(args, at.persist)
 }
 
-func (at *AliRdsMySQLSlowLogTask) CreateClient(accessKeyId *string, accessKeySecret *string) (_result *rds20140815.Client, _err error) {
+func (at *aliRdsMySQLTask) CreateClient(accessKeyId *string, accessKeySecret *string) (_result *rds20140815.Client, _err error) {
 	config := &openapi.Config{
 		// 您的 AccessKey ID
 		AccessKeyId: accessKeyId,
@@ -934,14 +925,48 @@ func (at *AliRdsMySQLSlowLogTask) CreateClient(accessKeyId *string, accessKeySec
 	return _result, _err
 }
 
-type slowSqlFromAliCloud struct {
+type SqlFromAliCloud struct {
 	sql                string
 	executionStartTime time.Time
 }
 
+func (at *aliRdsMySQLTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+	return convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls, now)
+}
+
+func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+	as := make([]*model.AuditPlanSQLV2, len(sqls))
+	for i, sql := range sqls {
+		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v"}`, sql.counter, now.Format(time.RFC3339))
+		as[i] = &model.AuditPlanSQLV2{
+			Fingerprint: sql.fingerprint,
+			SQLContent:  sql.sql,
+			Info:        []byte(modelInfo),
+		}
+	}
+	return as
+}
+
+type AliRdsMySQLSlowLogTask struct {
+	*aliRdsMySQLTask
+}
+
+func NewAliRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) *AliRdsMySQLSlowLogTask {
+	sqlCollector := newSQLCollector(entry, ap)
+	a := &AliRdsMySQLSlowLogTask{}
+	task := &aliRdsMySQLTask{
+		sqlCollector: sqlCollector,
+		lastEndTime:  nil,
+		pullLogs:     a.pullSlowLogs,
+	}
+	sqlCollector.do = task.collectorDo
+	a.aliRdsMySQLTask = task
+	return a
+}
+
 // 查询内容范围是开始时间的0s到设置结束时间的0s，所以结束时间点的慢日志是查询不到的
 // startTime和endTime对应的是慢语句的开始执行时间
-func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBInstanId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []slowSqlFromAliCloud, err error) {
+func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBInstanId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []SqlFromAliCloud, err error) {
 	describeSlowLogRecordsRequest := &rds20140815.DescribeSlowLogRecordsRequest{
 		DBInstanceId: tea.String(DBInstanId),
 		StartTime:    tea.String(startTime.Format("2006-01-02T15:04Z")),
@@ -978,13 +1003,13 @@ func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBIns
 		return nil, fmt.Errorf("get slow log failed: %v", *errMsg)
 	}
 
-	sqls = make([]slowSqlFromAliCloud, len(response.Body.Items.SQLSlowRecord))
+	sqls = make([]SqlFromAliCloud, len(response.Body.Items.SQLSlowRecord))
 	for i, slowRecord := range response.Body.Items.SQLSlowRecord {
 		execStartTime, err := time.Parse("2006-01-02T15:04:05Z", utils.NvlString(slowRecord.ExecutionStartTime))
 		if err != nil {
 			return nil, fmt.Errorf("parse execution-start-time failed: %v", err)
 		}
-		sqls[i] = slowSqlFromAliCloud{
+		sqls[i] = SqlFromAliCloud{
 			sql:                utils.NvlString(slowRecord.SQLText),
 			executionStartTime: execStartTime,
 		}
