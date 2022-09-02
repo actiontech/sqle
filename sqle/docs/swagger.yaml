@@ -2984,7 +2984,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanMetasResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取审核任务元信息
+      summary: 获取扫描任务元信息
       tags:
       - audit_plan
   /v1/audit_plans:
@@ -3011,7 +3011,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlansResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取审核计划信息列表
+      summary: 获取扫描任务信息列表
       tags:
       - audit_plan
     post:
@@ -3033,7 +3033,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 添加审核计划
+      summary: 添加扫描任务
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/:
@@ -3053,7 +3053,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 删除审核计划
+      summary: 删除扫描任务
       tags:
       - audit_plan
     get:
@@ -3072,7 +3072,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划
+      summary: 获取指定扫描任务
       tags:
       - audit_plan
     patch:
@@ -3097,7 +3097,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 更新审核计划
+      summary: 更新扫描任务
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/notify_config:
@@ -3117,7 +3117,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanNotifyConfigResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取审核任务消息推送设置
+      summary: 获取扫描任务消息推送设置
       tags:
       - audit_plan
     patch:
@@ -3142,7 +3142,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 更新审核计划通知设置
+      summary: 更新扫描任务通知设置
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/notify_config/test:
@@ -3162,7 +3162,7 @@ paths:
             $ref: '#/definitions/v1.TestAuditPlanNotifyConfigResV1'
       security:
       - ApiKeyAuth: []
-      summary: 测试审核任务消息推送
+      summary: 测试扫描任务消息推送
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/:
@@ -3196,7 +3196,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanReportSQLsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQL审核详情
+      summary: 获取指定扫描任务的SQL扫描详情
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/reports:
@@ -3224,7 +3224,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanReportsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的报告列表
+      summary: 获取指定扫描任务的报告列表
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/:
@@ -3249,7 +3249,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanReportResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQL审核记录统计信息
+      summary: 获取指定扫描任务的SQL扫描记录统计信息
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls:
@@ -3278,7 +3278,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditPlanSQLsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQLs信息(不包括审核结果)
+      summary: 获取指定扫描任务的SQLs信息(不包括扫描结果)
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls/full:
@@ -3304,7 +3304,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 全量同步SQL到审核计划
+      summary: 全量同步SQL到扫描任务
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/sqls/partial:
@@ -3330,7 +3330,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 增量同步SQL到审核计划
+      summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
   /v1/audit_plans/{audit_plan_name}/trigger:
@@ -3350,7 +3350,7 @@ paths:
             $ref: '#/definitions/v1.TriggerAuditPlanResV1'
       security:
       - ApiKeyAuth: []
-      summary: 触发审核计划
+      summary: 触发扫描任务
       tags:
       - audit_plan
   /v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis:
@@ -4891,7 +4891,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditTaskResV1'
       security:
       - ApiKeyAuth: []
-      summary: 创建Sql审核任务并提交审核
+      summary: 创建Sql扫描任务并提交审核
       tags:
       - task
   /v1/tasks/audits/{task_id}/:
@@ -4911,7 +4911,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditTaskResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取Sql审核任务信息
+      summary: 获取Sql扫描任务信息
       tags:
       - task
   /v1/tasks/audits/{task_id}/sql_content:
@@ -4931,7 +4931,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditTaskSQLContentResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核任务的SQL内容
+      summary: 获取指定扫描任务的SQL内容
       tags:
       - task
   /v1/tasks/audits/{task_id}/sql_file:
@@ -4951,7 +4951,7 @@ paths:
             type: file
       security:
       - ApiKeyAuth: []
-      summary: 下载指定审核任务的SQL文件
+      summary: 下载指定扫描任务的SQL文件
       tags:
       - task
   /v1/tasks/audits/{task_id}/sql_report:
@@ -4976,7 +4976,7 @@ paths:
             type: file
       security:
       - ApiKeyAuth: []
-      summary: 下载指定审核任务的SQLs信息报告
+      summary: 下载指定扫描任务的SQLs信息报告
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls:
@@ -5034,7 +5034,7 @@ paths:
             $ref: '#/definitions/v1.GetAuditTaskSQLsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核任务的SQLs信息
+      summary: 获取指定扫描任务的SQLs信息
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls/{number}:
@@ -5068,7 +5068,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 修改审核任务中某条SQL的相关信息
+      summary: 修改扫描任务中某条SQL的相关信息
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls/{number}/analysis:
@@ -5896,7 +5896,7 @@ paths:
             $ref: '#/definitions/v2.GetAuditPlanReportSQLsResV2'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQL审核详情
+      summary: 获取指定扫描任务的SQL扫描详情
       tags:
       - audit_plan
   /v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
@@ -5929,7 +5929,7 @@ paths:
             $ref: '#/definitions/v2.GetAuditPlanReportSQLsResV2'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQL审核详情
+      summary: 获取指定扫描任务的SQL扫描详情
       tags:
       - audit_plan
   /v2/audit_plans/{audit_plan_name}/sqls:
@@ -5957,7 +5957,7 @@ paths:
             $ref: '#/definitions/v2.GetAuditPlanSQLsResV2'
       security:
       - ApiKeyAuth: []
-      summary: 获取指定审核计划的SQLs信息(不包括审核结果)
+      summary: 获取指定扫描任务的SQLs信息(不包括扫描结果)
       tags:
       - audit_plan
   /v2/roles:
