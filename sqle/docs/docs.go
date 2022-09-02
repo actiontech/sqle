@@ -36,7 +36,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取审核任务元信息",
+                "summary": "获取扫描任务元信息",
                 "operationId": "getAuditPlanMetasV1",
                 "parameters": [
                     {
@@ -67,7 +67,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取审核计划信息列表",
+                "summary": "获取扫描任务信息列表",
                 "operationId": "getAuditPlansV1",
                 "parameters": [
                     {
@@ -111,7 +111,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "添加审核计划",
+                "summary": "添加扫描任务",
                 "operationId": "createAuditPlanV1",
                 "parameters": [
                     {
@@ -184,7 +184,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划",
+                "summary": "获取指定扫描任务",
                 "operationId": "getAuditPlanV1",
                 "parameters": [
                     {
@@ -214,7 +214,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "删除审核计划",
+                "summary": "删除扫描任务",
                 "operationId": "deleteAuditPlanV1",
                 "parameters": [
                     {
@@ -244,7 +244,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "更新审核计划",
+                "summary": "更新扫描任务",
                 "operationId": "updateAuditPlanV1",
                 "parameters": [
                     {
@@ -285,7 +285,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取审核任务消息推送设置",
+                "summary": "获取扫描任务消息推送设置",
                 "operationId": "getAuditPlanNotifyConfigV1",
                 "parameters": [
                     {
@@ -315,7 +315,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "更新审核计划通知设置",
+                "summary": "更新扫描任务通知设置",
                 "operationId": "updateAuditPlanNotifyConfigV1",
                 "parameters": [
                     {
@@ -356,7 +356,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "测试审核任务消息推送",
+                "summary": "测试扫描任务消息推送",
                 "operationId": "testAuditPlanNotifyConfigV1",
                 "parameters": [
                     {
@@ -388,7 +388,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的SQL审核详情",
+                "summary": "获取指定扫描任务的SQL扫描详情",
                 "operationId": "getAuditPlanReportSQLsV1",
                 "deprecated": true,
                 "parameters": [
@@ -440,7 +440,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的报告列表",
+                "summary": "获取指定扫描任务的报告列表",
                 "operationId": "getAuditPlanReportsV1",
                 "parameters": [
                     {
@@ -484,7 +484,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的SQL审核记录统计信息",
+                "summary": "获取指定扫描任务的SQL扫描记录统计信息",
                 "operationId": "getAuditPlanReportV1",
                 "parameters": [
                     {
@@ -523,7 +523,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的SQLs信息(不包括审核结果)",
+                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
                 "operationId": "getAuditPlanSQLsV1",
                 "deprecated": true,
                 "parameters": [
@@ -568,7 +568,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "全量同步SQL到审核计划",
+                "summary": "全量同步SQL到扫描任务",
                 "operationId": "fullSyncAuditPlanSQLsV1",
                 "parameters": [
                     {
@@ -609,7 +609,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "增量同步SQL到审核计划",
+                "summary": "增量同步SQL到扫描任务",
                 "operationId": "partialSyncAuditPlanSQLsV1",
                 "parameters": [
                     {
@@ -650,7 +650,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "触发审核计划",
+                "summary": "触发扫描任务",
                 "operationId": "triggerAuditPlanV1",
                 "parameters": [
                     {
@@ -3021,7 +3021,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "创建Sql审核任务并提交审核",
+                "summary": "创建Sql扫描任务并提交审核",
                 "operationId": "createAndAuditTaskV1",
                 "parameters": [
                     {
@@ -3077,7 +3077,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "获取Sql审核任务信息",
+                "summary": "获取Sql扫描任务信息",
                 "operationId": "getAuditTaskV1",
                 "parameters": [
                     {
@@ -3109,7 +3109,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "获取指定审核任务的SQL内容",
+                "summary": "获取指定扫描任务的SQL内容",
                 "operationId": "getAuditTaskSQLContentV1",
                 "parameters": [
                     {
@@ -3141,7 +3141,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "下载指定审核任务的SQL文件",
+                "summary": "下载指定扫描任务的SQL文件",
                 "operationId": "downloadAuditTaskSQLFileV1",
                 "parameters": [
                     {
@@ -3173,7 +3173,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "下载指定审核任务的SQLs信息报告",
+                "summary": "下载指定扫描任务的SQLs信息报告",
                 "operationId": "downloadAuditTaskSQLReportV1",
                 "parameters": [
                     {
@@ -3211,7 +3211,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "获取指定审核任务的SQLs信息",
+                "summary": "获取指定扫描任务的SQLs信息",
                 "operationId": "getAuditTaskSQLsV1",
                 "parameters": [
                     {
@@ -3299,7 +3299,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "修改审核任务中某条SQL的相关信息",
+                "summary": "修改扫描任务中某条SQL的相关信息",
                 "operationId": "updateAuditTaskSQLsV1",
                 "parameters": [
                     {
@@ -4597,7 +4597,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的SQL审核详情",
+                "summary": "获取指定扫描任务的SQL扫描详情",
                 "operationId": "getAuditPlanReportSQLsV2",
                 "deprecated": true,
                 "parameters": [
@@ -4649,7 +4649,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的SQL审核详情",
+                "summary": "获取指定扫描任务的SQL扫描详情",
                 "operationId": "getAuditPlanReportsSQLsV2",
                 "parameters": [
                     {
@@ -4700,7 +4700,7 @@ var doc = `{
                 "tags": [
                     "audit_plan"
                 ],
-                "summary": "获取指定审核计划的SQLs信息(不包括审核结果)",
+                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
                 "operationId": "getAuditPlanSQLsV2",
                 "parameters": [
                     {
