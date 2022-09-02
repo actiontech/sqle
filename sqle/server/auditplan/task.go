@@ -66,6 +66,8 @@ func NewTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 		return NewTiDBAuditLogTask(entry, ap)
 	case TypeAliRdsMySQLSlowLog:
 		return NewAliRdsMySQLSlowLogTask(entry, ap)
+	case TypeAliRdsMySQLAuditLog:
+		return NewAliRdsMySQLAuditLogTask(entry, ap)
 	default:
 		return NewDefaultTask(entry, ap)
 	}
@@ -1017,19 +1019,71 @@ func (at *AliRdsMySQLSlowLogTask) pullSlowLogs(client *rds20140815.Client, DBIns
 	return sqls, nil
 }
 
-func (at *AliRdsMySQLSlowLogTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
-	return convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls, now)
+type AliRdsMySQLAuditLogTask struct {
+	*aliRdsMySQLTask
 }
 
-func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
-	as := make([]*model.AuditPlanSQLV2, len(sqls))
-	for i, sql := range sqls {
-		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v"}`, sql.counter, now.Format(time.RFC3339))
-		as[i] = &model.AuditPlanSQLV2{
-			Fingerprint: sql.fingerprint,
-			SQLContent:  sql.sql,
-			Info:        []byte(modelInfo),
+func NewAliRdsMySQLAuditLogTask(entry *logrus.Entry, ap *model.AuditPlan) *AliRdsMySQLAuditLogTask {
+	sqlCollector := newSQLCollector(entry, ap)
+	a := &AliRdsMySQLAuditLogTask{}
+	task := &aliRdsMySQLTask{
+		sqlCollector: sqlCollector,
+		lastEndTime:  nil,
+		pullLogs:     a.pullAuditLogs,
+	}
+	sqlCollector.do = task.collectorDo
+	a.aliRdsMySQLTask = task
+	return a
+}
+
+// 查询内容范围是开始时间的0s到设置结束时间的0s，所以结束时间点的慢日志是查询不到的
+// startTime和endTime对应的是慢语句的开始执行时间
+func (at *AliRdsMySQLAuditLogTask) pullAuditLogs(client *rds20140815.Client, DBInstanId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []SqlFromAliCloud, err error) {
+	describeSQLLogRecordsRequest := &rds20140815.DescribeSQLLogRecordsRequest{
+		ClientToken:  tea.String(time.Now().String()),
+		DBInstanceId: tea.String(DBInstanId),
+		StartTime:    tea.String(startTime.Format("2006-01-02T15:04:05Z")),
+		EndTime:      tea.String(endTime.Format("2006-01-02T15:04:05Z")),
+		PageSize:     tea.Int32(pageSize),
+		PageNumber:   tea.Int32(pageNum),
+	}
+	runtime := &_util.RuntimeOptions{}
+	response := &rds20140815.DescribeSQLLogRecordsResponse{}
+	tryErr := func() (_e error) {
+		defer func() {
+			if r := tea.Recover(recover()); r != nil {
+				_e = r
+			}
+		}()
+
+		var err error
+		response, err = client.DescribeSQLLogRecordsWithOptions(describeSQLLogRecordsRequest, runtime)
+		if err != nil {
+			return err
+		}
+		return nil
+	}()
+	if tryErr != nil {
+		var error = &tea.SDKError{}
+		if _t, ok := tryErr.(*tea.SDKError); ok {
+			error = _t
+		} else {
+			error.Message = tea.String(tryErr.Error())
+		}
+		errMsg := _util.AssertAsString(error.Message)
+		return nil, fmt.Errorf("get audit log failed: %v", *errMsg)
+	}
+
+	sqls = make([]SqlFromAliCloud, len(response.Body.Items.SQLRecord))
+	for i, slowRecord := range response.Body.Items.SQLRecord {
+		execStartTime, err := time.Parse("2006-01-02T15:04:05Z", utils.NvlString(slowRecord.ExecuteTime))
+		if err != nil {
+			return nil, fmt.Errorf("parse execution-start-time failed: %v", err)
+		}
+		sqls[i] = SqlFromAliCloud{
+			sql:                utils.NvlString(slowRecord.SQLText),
+			executionStartTime: execStartTime,
 		}
 	}
-	return as
+	return sqls, nil
 }
