@@ -42,6 +42,7 @@ const (
 	paramKeyDBInstanceId                        = "db_instance_id"
 	paramKeyAccessKeyId                         = "access_key_id"
 	paramKeyAccessKeySecret                     = "access_key_secret"
+	paramKeyRdsPath                             = "rds_path"
 	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
 )
 
@@ -128,6 +129,12 @@ var Metas = []Meta{
 				Value: "0",
 				Type:  params.ParamTypeInt,
 			},
+			{
+				Key:   paramKeyRdsPath,
+				Desc:  "RDS Open API地址",
+				Value: "rds.aliyuncs.com",
+				Type:  params.ParamTypeString,
+			},
 		},
 	},
 	{
@@ -165,6 +172,12 @@ var Metas = []Meta{
 				Desc:  "审核过去时间段内抓取的SQL（分钟）",
 				Value: "0",
 				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyRdsPath,
+				Desc:  "RDS Open API地址",
+				Value: "rds.aliyuncs.com",
+				Type:  params.ParamTypeString,
 			},
 		},
 	}, {
@@ -236,5 +249,6 @@ func GetMeta(typ string) (Meta, error) {
 		Desc:         meta.Desc,
 		InstanceType: meta.InstanceType,
 		Params:       meta.Params.Copy(),
+		CreateTask:   meta.CreateTask,
 	}, nil
 }
