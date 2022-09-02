@@ -133,7 +133,7 @@ var Metas = []Meta{
 				Key:   paramKeyRdsPath,
 				Desc:  "RDS Open API地址",
 				Value: "rds.aliyuncs.com",
-				Type:  params.ParamTypeInt,
+				Type:  params.ParamTypeString,
 			},
 		},
 	},
@@ -177,7 +177,7 @@ var Metas = []Meta{
 				Key:   paramKeyRdsPath,
 				Desc:  "RDS Open API地址",
 				Value: "rds.aliyuncs.com",
-				Type:  params.ParamTypeInt,
+				Type:  params.ParamTypeString,
 			},
 		},
 	}, {
