@@ -785,6 +785,12 @@ func (at *aliRdsMySQLTask) collectorDo() {
 		return
 	}
 
+	rdsPath := at.ap.Params.GetParam(paramKeyRdsPath).String()
+	if rdsPath == "" {
+		at.logger.Warnf("RDS Path is not configured")
+		return
+	}
+
 	firstScrapInLastHours := at.ap.Params.GetParam(paramKeyFirstSqlsScrappedInLastPeriodHours).Int()
 	if firstScrapInLastHours == 0 {
 		firstScrapInLastHours = 24
@@ -796,7 +802,7 @@ func (at *aliRdsMySQLTask) collectorDo() {
 		return
 	}
 
-	client, err := at.CreateClient(tea.String(accessKeyId), tea.String(accessKeySecret))
+	client, err := at.CreateClient(rdsPath, tea.String(accessKeyId), tea.String(accessKeySecret))
 	if err != nil {
 		at.logger.Warnf("create client for polardb mysql failed: %v", err)
 		return
@@ -907,7 +913,7 @@ func (at *aliRdsMySQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[s
 	return baseTaskGetSQLs(args, at.persist)
 }
 
-func (at *aliRdsMySQLTask) CreateClient(accessKeyId *string, accessKeySecret *string) (_result *rds20140815.Client, _err error) {
+func (at *aliRdsMySQLTask) CreateClient(rdsPath string, accessKeyId *string, accessKeySecret *string) (_result *rds20140815.Client, _err error) {
 	config := &openapi.Config{
 		// 您的 AccessKey ID
 		AccessKeyId: accessKeyId,
@@ -915,7 +921,7 @@ func (at *aliRdsMySQLTask) CreateClient(accessKeyId *string, accessKeySecret *st
 		AccessKeySecret: accessKeySecret,
 	}
 	// 访问的域名
-	config.Endpoint = tea.String("rds.aliyuncs.com")
+	config.Endpoint = tea.String(rdsPath)
 	_result, _err = rds20140815.NewClient(config)
 	return _result, _err
 }
