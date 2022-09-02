@@ -221,6 +221,8 @@ func InitChecker(license string, workDurationHour int) error {
 
 func UpdateLicense(license string) error {
 	std.mutex.Lock()
+	defer std.mutex.Unlock()
+
 	std.permission = map[string]int64{}
 	std.limitInstallLocation = ""
 
@@ -239,7 +241,6 @@ func UpdateLicense(license string) error {
 	}
 	std.limitInstallLocation = info
 	std.WorkDurationDay = permission.WorkDurationDay
-	std.mutex.Unlock()
 
 	return nil
 }
