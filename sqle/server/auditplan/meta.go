@@ -249,5 +249,6 @@ func GetMeta(typ string) (Meta, error) {
 		Desc:         meta.Desc,
 		InstanceType: meta.InstanceType,
 		Params:       meta.Params.Copy(),
+		CreateTask:   meta.CreateTask,
 	}, nil
 }
