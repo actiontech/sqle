@@ -17,11 +17,11 @@ func TestTidbCompletionSchema(t *testing.T) {
 
 func TestMergeSQLsByFingerprint(t *testing.T) {
 	tests := []struct {
-		sqls []slowSqlFromAliCloud
+		sqls []SqlFromAliCloud
 		want []sqlInfo
 	}{
 		{
-			sqls: []slowSqlFromAliCloud{{sql: `select sleep(2)`}},
+			sqls: []SqlFromAliCloud{{sql: `select sleep(2)`}},
 			want: []sqlInfo{
 				{
 					counter:     1,
@@ -30,7 +30,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 				},
 			},
 		}, {
-			sqls: []slowSqlFromAliCloud{
+			sqls: []SqlFromAliCloud{
 				{
 					sql: `select sleep(2)`,
 				},
@@ -49,7 +49,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 				},
 			},
 		}, {
-			sqls: []slowSqlFromAliCloud{{sql: `select * from tb1 where a=1`}},
+			sqls: []SqlFromAliCloud{{sql: `select * from tb1 where a=1`}},
 			want: []sqlInfo{
 				{
 					counter:     1,
@@ -58,7 +58,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 				},
 			},
 		}, {
-			sqls: []slowSqlFromAliCloud{
+			sqls: []SqlFromAliCloud{
 				{
 					sql: `select * from tb1 where a=1`,
 				},
@@ -77,7 +77,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 				},
 			},
 		}, {
-			sqls: []slowSqlFromAliCloud{
+			sqls: []SqlFromAliCloud{
 				{
 					sql: `select * from tb1 where a=1`,
 				},
