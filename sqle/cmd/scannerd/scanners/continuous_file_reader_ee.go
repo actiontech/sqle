@@ -23,7 +23,7 @@ type ContinuousFileReader struct {
 }
 
 func NewContinuousFileReader(fineName string, l Logger, skipBlankLines bool) (*ContinuousFileReader, error) {
-	tf, err := tail.TailFile(fineName, tail.Config{Follow: true})
+	tf, err := tail.TailFile(fineName, tail.Config{Follow: true, ReOpen: true})
 	if err != nil {
 		return nil, err
 	}
