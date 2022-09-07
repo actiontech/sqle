@@ -8,7 +8,6 @@ type CreateWorkflowReqV2 struct {
 	Subject      string   `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
 	Desc         string   `json:"desc" form:"desc"`
 	TaskIds      []string `json:"task_ids" form:"task_ids" valid:"required"`
-	WorkflowMode string   `json:"workflow_mode" form:"workflow_mode" enums:"same_sqls,different_sqls"`
 }
 
 // CreateWorkflowV2

@@ -3399,58 +3399,6 @@
                 }
             }
         },
-        "/v1/tasks/same_sqls_audits": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create and audit a task with the same SQLs for each instance, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "创建多数据源相同SQL审核任务并提交审核",
-                "operationId": "createAndAuditTaskWithTheSameSQLsV1",
-                "parameters": [
-                    {
-                        "description": "parameters for creating and audit tasks",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAndAuditTasksWithTheSameSQLsReqV1"
-                        }
-                    },
-                    {
-                        "type": "file",
-                        "description": "input SQL file",
-                        "name": "input_sql_file",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "input mybatis XML file",
-                        "name": "input_mybatis_xml_file",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAndAuditTasksWithTheSameSQLsResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/user": {
             "get": {
                 "security": [
@@ -4956,6 +4904,58 @@
                 }
             }
         },
+        "/v2/tasks/audits": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create and audit tasks for each instance, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "多数据源批量创建SQL审核任务并提交审核",
+                "operationId": "createAndAuditTasks",
+                "parameters": [
+                    {
+                        "description": "parameters for creating and audit tasks",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.BatchCreateAndAuditTasksReqV1"
+                        }
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.BatchCreateAndAuditTasksResV2"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/workflows": {
             "post": {
                 "security": [
@@ -5377,39 +5377,6 @@
                     "items": {
                         "$ref": "#/definitions/v1.InstanceForCheckConnection"
                     }
-                }
-            }
-        },
-        "v1.BatchCreateAndAuditTasksWithTheSameSQLsReqV1": {
-            "type": "object",
-            "properties": {
-                "instances": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.InstanceForCreatingTask"
-                    }
-                },
-                "sql": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.BatchCreateAndAuditTasksWithTheSameSQLsResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.AuditTaskResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
@@ -7319,17 +7286,6 @@
             "type": "object",
             "properties": {
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.InstanceForCreatingTask": {
-            "type": "object",
-            "properties": {
-                "instance_name": {
-                    "type": "string"
-                },
-                "instance_schema": {
                     "type": "string"
                 }
             }
@@ -9273,6 +9229,39 @@
                 }
             }
         },
+        "v2.BatchCreateAndAuditTasksReqV1": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.InstanceForCreatingTask"
+                    }
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.BatchCreateAndAuditTasksResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditTaskResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v2.CreateRoleReqV2": {
             "type": "object",
             "properties": {
@@ -9319,13 +9308,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "workflow_mode": {
-                    "type": "string",
-                    "enum": [
-                        "same_sqls",
-                        "different_sqls"
-                    ]
                 },
                 "workflow_subject": {
                     "type": "string"
@@ -9393,6 +9375,17 @@
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v2.InstanceForCreatingTask": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_schema": {
+                    "type": "string"
                 }
             }
         },
