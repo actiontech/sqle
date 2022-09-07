@@ -1461,6 +1461,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter workflow template id",
+                        "name": "filter_workflow_template_id",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "create_audit_plan",
                             "sql_query"
@@ -1596,6 +1602,40 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances/connections": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch test instance db connections",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "批量测试实例连通性（实例提交后）",
+                "operationId": "batchCheckInstanceIsConnectableByName",
+                "parameters": [
+                    {
+                        "description": "instances",
+                        "name": "instances",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCheckInstanceConnectionsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchGetInstanceConnectionsResV1"
                         }
                     }
                 }
@@ -3375,6 +3415,58 @@ var doc = `{
                 }
             }
         },
+        "/v1/tasks/same_sqls_audits": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create and audit a task with the same SQLs for each instance, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "创建多数据源相同SQL审核任务并提交审核",
+                "operationId": "createAndAuditTaskWithTheSameSQLsV1",
+                "parameters": [
+                    {
+                        "description": "parameters for creating and audit tasks",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCreateAndAuditTasksWithTheSameSQLsReqV1"
+                        }
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCreateAndAuditTasksWithTheSameSQLsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user": {
             "get": {
                 "security": [
@@ -4256,6 +4348,7 @@ var doc = `{
                 ],
                 "summary": "创建工单",
                 "operationId": "createWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create workflow request",
@@ -4878,6 +4971,46 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/v2/workflows": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create workflow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "创建工单",
+                "operationId": "createWorkflowV1",
+                "parameters": [
+                    {
+                        "description": "create workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.CreateWorkflowReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -5249,6 +5382,69 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.BatchCheckInstanceConnectionsReqV1": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceForCheckConnection"
+                    }
+                }
+            }
+        },
+        "v1.BatchCreateAndAuditTasksWithTheSameSQLsReqV1": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceForCreatingTask"
+                    }
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.BatchCreateAndAuditTasksWithTheSameSQLsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditTaskResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.BatchGetInstanceConnectionsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceConnectionResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -7121,6 +7317,39 @@ var doc = `{
                 }
             }
         },
+        "v1.InstanceConnectionResV1": {
+            "type": "object",
+            "properties": {
+                "connect_error_message": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "is_instance_connectable": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.InstanceForCheckConnection": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.InstanceForCreatingTask": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_schema": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.InstanceResV1": {
             "type": "object",
             "properties": {
@@ -7221,6 +7450,9 @@ var doc = `{
                 },
                 "instance_type": {
                     "type": "string"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -9089,6 +9321,30 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v2.CreateWorkflowReqV2": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "workflow_mode": {
+                    "type": "string",
+                    "enum": [
+                        "same_sqls",
+                        "different_sqls"
+                    ]
+                },
+                "workflow_subject": {
+                    "type": "string"
                 }
             }
         },

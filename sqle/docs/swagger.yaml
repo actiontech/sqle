@@ -258,6 +258,48 @@ definitions:
           type: string
         type: array
     type: object
+  v1.BatchCheckInstanceConnectionsReqV1:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/v1.InstanceForCheckConnection'
+        type: array
+    type: object
+  v1.BatchCreateAndAuditTasksWithTheSameSQLsReqV1:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/v1.InstanceForCreatingTask'
+        type: array
+      sql:
+        type: string
+    type: object
+  v1.BatchCreateAndAuditTasksWithTheSameSQLsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditTaskResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.BatchGetInstanceConnectionsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceConnectionResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.BindOauth2UserReqV1:
     properties:
       oauth2_token:
@@ -1544,6 +1586,27 @@ definitions:
       is_instance_connectable:
         type: boolean
     type: object
+  v1.InstanceConnectionResV1:
+    properties:
+      connect_error_message:
+        type: string
+      instance_name:
+        type: string
+      is_instance_connectable:
+        type: boolean
+    type: object
+  v1.InstanceForCheckConnection:
+    properties:
+      name:
+        type: string
+    type: object
+  v1.InstanceForCreatingTask:
+    properties:
+      instance_name:
+        type: string
+      instance_schema:
+        type: string
+    type: object
   v1.InstanceResV1:
     properties:
       additional_params:
@@ -1613,6 +1676,8 @@ definitions:
         type: string
       instance_type:
         type: string
+      workflow_template_id:
+        type: integer
     type: object
   v1.InstanceTypePercent:
     properties:
@@ -2862,6 +2927,22 @@ definitions:
           type: string
         type: array
     type: object
+  v2.CreateWorkflowReqV2:
+    properties:
+      desc:
+        type: string
+      task_ids:
+        items:
+          type: string
+        type: array
+      workflow_mode:
+        enum:
+        - same_sqls
+        - different_sqls
+        type: string
+      workflow_subject:
+        type: string
+    type: object
   v2.GetAuditPlanReportSQLsResV2:
     properties:
       code:
@@ -3868,6 +3949,10 @@ paths:
         in: query
         name: filter_db_type
         type: string
+      - description: filter workflow template id
+        in: query
+        name: filter_workflow_template_id
+        type: string
       - description: functional module
         enum:
         - create_audit_plan
@@ -4159,6 +4244,27 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取实例应用的工作流程模板
+      tags:
+      - instance
+  /v1/instances/connections:
+    post:
+      description: batch test instance db connections
+      operationId: batchCheckInstanceIsConnectableByName
+      parameters:
+      - description: instances
+        in: body
+        name: instances
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCheckInstanceConnectionsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BatchGetInstanceConnectionsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量测试实例连通性（实例提交后）
       tags:
       - instance
   /v1/login:
@@ -5096,6 +5202,43 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
+  /v1/tasks/same_sqls_audits:
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        create and audit a task with the same SQLs for each instance, you can upload sql content in three ways, any one can be used, but only one is effective.
+        1. formData[sql]: sql content;
+        2. file[input_sql_file]: it is a sql file;
+        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+      operationId: createAndAuditTaskWithTheSameSQLsV1
+      parameters:
+      - description: parameters for creating and audit tasks
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCreateAndAuditTasksWithTheSameSQLsReqV1'
+      - description: input SQL file
+        in: formData
+        name: input_sql_file
+        type: file
+      - description: input mybatis XML file
+        in: formData
+        name: input_mybatis_xml_file
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BatchCreateAndAuditTasksWithTheSameSQLsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建多数据源相同SQL审核任务并提交审核
+      tags:
+      - task
   /v1/user:
     get:
       description: get current user info
@@ -5648,6 +5791,7 @@ paths:
     post:
       consumes:
       - application/json
+      deprecated: true
       description: create workflow
       operationId: createWorkflowV1
       parameters:
@@ -6053,6 +6197,31 @@ paths:
       summary: 更新角色信息
       tags:
       - role
+  /v2/workflows:
+    post:
+      consumes:
+      - application/json
+      description: create workflow
+      operationId: createWorkflowV1
+      parameters:
+      - description: create workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.CreateWorkflowReqV2'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建工单
+      tags:
+      - workflow
 securityDefinitions:
   ApiKeyAuth:
     in: header

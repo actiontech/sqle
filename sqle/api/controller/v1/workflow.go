@@ -479,6 +479,7 @@ type CreateWorkflowReqV1 struct {
 // @Description create workflow
 // @Accept json
 // @Produce json
+// @Deprecated
 // @Tags workflow
 // @Id createWorkflowV1
 // @Security ApiKeyAuth
