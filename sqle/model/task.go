@@ -31,6 +31,7 @@ const TaskExecResultOK = "OK"
 
 type Task struct {
 	Model
+	GroupId      string  `json:"group_id"`
 	InstanceId   uint    `json:"instance_id"`
 	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
 	PassRate     float64 `json:"pass_rate"`
@@ -47,6 +48,11 @@ type Task struct {
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
+}
+
+type TaskGroup struct {
+	Model
+	Tasks []*Task `json:"tasks" gorm:"foreignkey:GroupId"`
 }
 
 func (t *Task) InstanceName() string {
