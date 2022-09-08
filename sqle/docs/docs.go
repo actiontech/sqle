@@ -3044,14 +3044,54 @@ var doc = `{
                 }
             }
         },
-        "/v1/tasks/audit_tasks": {
+        "/v1/task_groups": {
             "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "audit tasks by group id.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "description": "create tasks group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "创建审核任务组",
+                "operationId": "createAuditTasksV1",
+                "parameters": [
+                    {
+                        "description": "parameters for creating audit tasks group",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/task_groups/audit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "audit task group.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -3061,8 +3101,8 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "按组审核",
-                "operationId": "auditTasksByGroupIdV1",
+                "summary": "审核任务组",
+                "operationId": "auditTaskGroupIdV1",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3094,7 +3134,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.AuditTasksByGroupIdResV1"
+                            "$ref": "#/definitions/v1.AuditTaskGroupResV1"
                         }
                     }
                 }
@@ -3466,46 +3506,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/tasks/group": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create tasks group.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "创建审核任务组",
-                "operationId": "createAuditTasksV1",
-                "parameters": [
-                    {
-                        "description": "parameters for creating audit tasks group",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupResV1"
                         }
                     }
                 }
@@ -5498,6 +5498,37 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditTaskGroupRes": {
+            "type": "object",
+            "properties": {
+                "group_id": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditTaskResV1"
+                    }
+                }
+            }
+        },
+        "v1.AuditTaskGroupResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskGroupRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
@@ -5595,25 +5626,6 @@ var doc = `{
                 },
                 "rollback_sql": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.AuditTasksByGroupIdResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.AuditTaskResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
