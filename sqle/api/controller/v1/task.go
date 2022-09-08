@@ -94,6 +94,7 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 }
 
 // @Summary 创建Sql扫描任务并提交审核
+// @Deprecated
 // @Description create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
 // @Description 1. formData[sql]: sql content;
 // @Description 2. file[input_sql_file]: it is a sql file;
