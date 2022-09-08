@@ -3137,7 +3137,7 @@ definitions:
         type: integer
       status:
         enum:
-        - auditing
+        - wait_for_audit
         - ' wait_for_execution'
         - ' rejected'
         - ' canceled'
@@ -6375,16 +6375,9 @@ paths:
         in: query
         name: filter_create_user_name
         type: string
-      - description: filter current step type
-        enum:
-        - sql_review
-        - sql_execute
-        in: query
-        name: filter_current_step_type
-        type: string
       - description: filter workflow status
         enum:
-        - auditing
+        - wait_for_audit
         - wait_for_execution
         - rejected
         - canceled
