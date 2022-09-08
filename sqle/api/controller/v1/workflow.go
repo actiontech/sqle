@@ -476,6 +476,7 @@ type CreateWorkflowReqV1 struct {
 }
 
 // @Summary 创建工单
+// @Deprecated
 // @Description create workflow
 // @Accept json
 // @Produce json
@@ -1257,6 +1258,7 @@ type UpdateWorkflowReqV1 struct {
 }
 
 // @Summary 更新审批流程（驳回后才可更新）
+// @Deprecated
 // @Description update workflow when it is rejected to creator.
 // @Tags workflow
 // @Accept json
