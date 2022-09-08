@@ -5045,17 +5045,7 @@ var doc = `{
                     },
                     {
                         "enum": [
-                            "sql_review",
-                            "sql_execute"
-                        ],
-                        "type": "string",
-                        "description": "filter current step type",
-                        "name": "filter_current_step_type",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "auditing",
+                            "wait_for_audit",
                             "wait_for_execution",
                             "rejected",
                             "canceled",
@@ -9850,7 +9840,7 @@ var doc = `{
                 "status": {
                     "type": "string",
                     "enum": [
-                        "auditing",
+                        "wait_for_audit",
                         " wait_for_execution",
                         " rejected",
                         " canceled",
