@@ -3063,6 +3063,7 @@ var doc = `{
                 ],
                 "summary": "创建Sql扫描任务并提交审核",
                 "operationId": "createAndAuditTaskV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4297,6 +4298,7 @@ var doc = `{
                 ],
                 "summary": "创建工单",
                 "operationId": "createWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create workflow request",
@@ -4402,6 +4404,7 @@ var doc = `{
                 ],
                 "summary": "更新审批流程（驳回后才可更新）",
                 "operationId": "updateWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -9558,7 +9561,7 @@ var doc = `{
                 "task_ids": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "workflow_subject": {
@@ -9770,7 +9773,7 @@ var doc = `{
                 "task_ids": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 }
             }
@@ -9803,11 +9806,10 @@ var doc = `{
                 "status": {
                     "type": "string",
                     "enum": [
-                        "on_process",
+                        "wait_for_audit",
+                        "wait_for_execution",
                         "rejected",
                         "canceled",
-                        "exec_scheduled",
-                        "executing",
                         "exec_failed",
                         "finished"
                     ]
@@ -9840,7 +9842,7 @@ var doc = `{
                 "task_ids": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "$ref": "#/definitions/v2.WorkflowTaskItem"
                     }
                 },
                 "workflow_step_list": {
@@ -9884,6 +9886,14 @@ var doc = `{
                     "type": "string"
                 },
                 "workflow_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.WorkflowTaskItem": {
+            "type": "object",
+            "properties": {
+                "task_ids": {
                     "type": "integer"
                 }
             }
