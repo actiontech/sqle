@@ -170,6 +170,27 @@ definitions:
       number:
         type: integer
     type: object
+  v1.AuditTaskGroupRes:
+    properties:
+      task_group_id:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/v1.AuditTaskResV1'
+        type: array
+    type: object
+  v1.AuditTaskGroupResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditTaskGroupRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.AuditTaskResV1:
     properties:
       audit_level:
@@ -264,6 +285,18 @@ definitions:
         items:
           $ref: '#/definitions/v1.InstanceForCheckConnection'
         type: array
+    type: object
+  v1.BatchCreateAuditTasksGroupReqV1:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/v1.InstanceForCreatingTask'
+        type: array
+    type: object
+  v1.BatchCreateAuditTasksGroupResV1:
+    properties:
+      task_group_id:
+        type: integer
     type: object
   v1.BatchGetInstanceConnectionsResV1:
     properties:
@@ -1607,6 +1640,13 @@ definitions:
       name:
         type: string
     type: object
+  v1.InstanceForCreatingTask:
+    properties:
+      instance_name:
+        type: string
+      instance_schema:
+        type: string
+    type: object
   v1.InstanceResV1:
     properties:
       additional_params:
@@ -2904,28 +2944,6 @@ definitions:
           type: object
         type: array
     type: object
-  v2.BatchCreateAndAuditTasksReqV1:
-    properties:
-      instances:
-        items:
-          $ref: '#/definitions/v2.InstanceForCreatingTask'
-        type: array
-      sql:
-        type: string
-    type: object
-  v2.BatchCreateAndAuditTasksResV2:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.AuditTaskResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
   v2.CreateRoleReqV2:
     properties:
       instance_name_list:
@@ -3030,13 +3048,6 @@ definitions:
         type: string
       total_nums:
         type: integer
-    type: object
-  v2.InstanceForCreatingTask:
-    properties:
-      instance_name:
-        type: string
-      instance_schema:
-        type: string
     type: object
   v2.Operation:
     properties:
@@ -5097,11 +5108,75 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
+  /v1/task_groups:
+    post:
+      consumes:
+      - application/json
+      description: create tasks group.
+      operationId: createAuditTasksV1
+      parameters:
+      - description: parameters for creating audit tasks group
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCreateAuditTasksGroupReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BatchCreateAuditTasksGroupResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建审核任务组
+      tags:
+      - task
+  /v1/task_groups/audit:
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        audit task group.
+        1. formData[sql]: sql content;
+        2. file[input_sql_file]: it is a sql file;
+        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+      operationId: auditTaskGroupIdV1
+      parameters:
+      - description: group id of tasks
+        in: formData
+        name: group_id
+        required: true
+        type: integer
+      - description: sqls for audit
+        in: formData
+        name: sql
+        type: string
+      - description: input SQL file
+        in: formData
+        name: input_sql_file
+        type: file
+      - description: input mybatis XML file
+        in: formData
+        name: input_mybatis_xml_file
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.AuditTaskGroupResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 审核任务组
+      tags:
+      - task
   /v1/tasks/audits:
     post:
       consumes:
       - multipart/form-data
-      deprecated: true
       description: |-
         create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
         1. formData[sql]: sql content;
@@ -6325,43 +6400,6 @@ paths:
       summary: 更新角色信息
       tags:
       - role
-  /v2/tasks/audits:
-    post:
-      consumes:
-      - multipart/form-data
-      description: |-
-        create and audit tasks for each instance, you can upload sql content in three ways, any one can be used, but only one is effective.
-        1. formData[sql]: sql content;
-        2. file[input_sql_file]: it is a sql file;
-        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
-      operationId: createAndAuditTasks
-      parameters:
-      - description: parameters for creating and audit tasks
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/v2.BatchCreateAndAuditTasksReqV1'
-      - description: input SQL file
-        in: formData
-        name: input_sql_file
-        type: file
-      - description: input mybatis XML file
-        in: formData
-        name: input_mybatis_xml_file
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.BatchCreateAndAuditTasksResV2'
-      security:
-      - ApiKeyAuth: []
-      summary: 多数据源批量创建SQL审核任务并提交审核
-      tags:
-      - task
   /v2/workflows:
     get:
       description: get workflow list

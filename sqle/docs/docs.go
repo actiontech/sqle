@@ -3044,6 +3044,102 @@ var doc = `{
                 }
             }
         },
+        "/v1/task_groups": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create tasks group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "创建审核任务组",
+                "operationId": "createAuditTasksV1",
+                "parameters": [
+                    {
+                        "description": "parameters for creating audit tasks group",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/task_groups/audit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "audit task group.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "审核任务组",
+                "operationId": "auditTaskGroupIdV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "group id of tasks",
+                        "name": "group_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sqls for audit",
+                        "name": "sql",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.AuditTaskGroupResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tasks/audits": {
             "post": {
                 "security": [
@@ -3063,7 +3159,6 @@ var doc = `{
                 ],
                 "summary": "创建Sql扫描任务并提交审核",
                 "operationId": "createAndAuditTaskV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4956,58 +5051,6 @@ var doc = `{
                 }
             }
         },
-        "/v2/tasks/audits": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create and audit tasks for each instance, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "多数据源批量创建SQL审核任务并提交审核",
-                "operationId": "createAndAuditTasks",
-                "parameters": [
-                    {
-                        "description": "parameters for creating and audit tasks",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.BatchCreateAndAuditTasksReqV1"
-                        }
-                    },
-                    {
-                        "type": "file",
-                        "description": "input SQL file",
-                        "name": "input_sql_file",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "input mybatis XML file",
-                        "name": "input_mybatis_xml_file",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.BatchCreateAndAuditTasksResV2"
-                        }
-                    }
-                }
-            }
-        },
         "/v2/workflows": {
             "get": {
                 "security": [
@@ -5455,6 +5498,37 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditTaskGroupRes": {
+            "type": "object",
+            "properties": {
+                "task_group_id": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditTaskResV1"
+                    }
+                }
+            }
+        },
+        "v1.AuditTaskGroupResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskGroupRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
@@ -5591,6 +5665,25 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.InstanceForCheckConnection"
                     }
+                }
+            }
+        },
+        "v1.BatchCreateAuditTasksGroupReqV1": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceForCreatingTask"
+                    }
+                }
+            }
+        },
+        "v1.BatchCreateAuditTasksGroupResV1": {
+            "type": "object",
+            "properties": {
+                "task_group_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -7545,6 +7638,17 @@ var doc = `{
                 }
             }
         },
+        "v1.InstanceForCreatingTask": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_schema": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.InstanceResV1": {
             "type": "object",
             "properties": {
@@ -9484,39 +9588,6 @@ var doc = `{
                 }
             }
         },
-        "v2.BatchCreateAndAuditTasksReqV1": {
-            "type": "object",
-            "properties": {
-                "instances": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.InstanceForCreatingTask"
-                    }
-                },
-                "sql": {
-                    "type": "string"
-                }
-            }
-        },
-        "v2.BatchCreateAndAuditTasksResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.AuditTaskResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v2.CreateRoleReqV2": {
             "type": "object",
             "properties": {
@@ -9669,17 +9740,6 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
-                }
-            }
-        },
-        "v2.InstanceForCreatingTask": {
-            "type": "object",
-            "properties": {
-                "instance_name": {
-                    "type": "string"
-                },
-                "instance_schema": {
-                    "type": "string"
                 }
             }
         },
