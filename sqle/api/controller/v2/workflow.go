@@ -10,9 +10,9 @@ import (
 )
 
 type CreateWorkflowReqV2 struct {
-	Subject string   `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc    string   `json:"desc" form:"desc"`
-	TaskIds []string `json:"task_ids" form:"task_ids" valid:"required"`
+	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc    string `json:"desc" form:"desc"`
+	TaskIds []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
 // CreateWorkflowV2
@@ -44,7 +44,7 @@ type WorkflowDetailResV2 struct {
 	CreateTime              *time.Time `json:"create_time"`
 	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string     `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
+	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,finished"`
 }
 
 // GetWorkflowsV2
@@ -73,8 +73,12 @@ type GetWorkflowResV2 struct {
 	Data *WorkflowResV2 `json:"data"`
 }
 
+type WorkflowTaskItem struct {
+	Id uint `json:"task_ids"`
+}
+
 type WorkflowRecordResV2 struct {
-	TaskIds           []uint                  `json:"task_ids"`
+	TaskIds           []*WorkflowTaskItem     `json:"task_ids"`
 	CurrentStepNumber uint                    `json:"current_step_number,omitempty"`
 	Status            string                  `json:"status" enums:"wait_for_audit, wait_for_execution, rejected, canceled, exec_failed, finished"`
 	Steps             []*v1.WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
@@ -105,7 +109,7 @@ func GetWorkflowV2(c echo.Context) error {
 }
 
 type UpdateWorkflowReqV2 struct {
-	TaskIds []string `json:"task_ids" form:"task_ids" valid:"required"`
+	TaskIds []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
 // UpdateWorkflowV2

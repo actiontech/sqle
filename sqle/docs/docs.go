@@ -7366,10 +7366,11 @@ var doc = `{
                 "status": {
                     "type": "string",
                     "enum": [
-                        "auditing",
+                        "wait_for_audit",
                         " wait_for_execution",
                         " rejected",
                         " canceled",
+                        " exec_scheduled",
                         " exec_failed",
                         " finished"
                     ]
