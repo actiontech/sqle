@@ -94,7 +94,6 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 }
 
 // @Summary 创建Sql扫描任务并提交审核
-// @Deprecated
 // @Description create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
 // @Description 1. formData[sql]: sql content;
 // @Description 2. file[input_sql_file]: it is a sql file;
@@ -613,4 +612,58 @@ type GetTaskAnalysisDataResV1 struct {
 // @router /v1/tasks/audits/{task_id}/sqls/{number}/analysis [get]
 func GetTaskAnalysisData(c echo.Context) error {
 	return getTaskAnalysisData(c)
+}
+
+type BatchCreateAuditTasksGroupReqV1 struct {
+	Instances []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
+}
+
+type InstanceForCreatingTask struct {
+	InstanceName   string `json:"instance_name" form:"instance_name" valid:"required"`
+	InstanceSchema string `json:"instance_schema" form:"instance_schema"`
+}
+
+type BatchCreateAuditTasksGroupResV1 struct {
+	TaskGroupId uint `json:"task_group_id"`
+}
+
+// CreateAuditTasksGroupV1
+// @Summary 创建审核任务组
+// @Description create tasks group.
+// @Accept json
+// @Produce json
+// @Tags task
+// @Id createAuditTasksV1
+// @Security ApiKeyAuth
+// @Param req body v1.BatchCreateAuditTasksGroupReqV1 true "parameters for creating audit tasks group"
+// @Success 200 {object} v1.BatchCreateAuditTasksGroupResV1
+// @router /v1/tasks/group [post]
+func CreateAuditTasksGroupV1(c echo.Context) error {
+	return nil
+}
+
+type AuditTasksByGroupIdResV1 struct {
+	controller.BaseRes
+	Data []*AuditTaskResV1 `json:"data"`
+}
+
+// AuditTasksByGroupIdV1
+// @Summary 按组审核
+// @Description audit tasks by group id.
+// @Description 1. formData[sql]: sql content;
+// @Description 2. file[input_sql_file]: it is a sql file;
+// @Description 3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+// @Accept mpfd
+// @Produce json
+// @Tags task
+// @Id auditTasksByGroupIdV1
+// @Security ApiKeyAuth
+// @Param group_id formData uint true "group id of tasks"
+// @Param sql formData string false "sqls for audit"
+// @Param input_sql_file formData file false "input SQL file"
+// @Param input_mybatis_xml_file formData file false "input mybatis XML file"
+// @Success 200 {object} v1.AuditTasksByGroupIdResV1
+// @router /v1/tasks/audit_tasks [post]
+func AuditTasksByGroupIdV1(c echo.Context) error {
+	return nil
 }
