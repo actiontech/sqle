@@ -624,7 +624,7 @@ type InstanceForCreatingTask struct {
 }
 
 type BatchCreateAuditTasksGroupResV1 struct {
-	TaskGroupId uint `json:"task_group_id"`
+	TaskGroupId uint `json:"task_group_id" form:"task_group_id" valid:"required"`
 }
 
 // CreateAuditTasksGroupV1
@@ -643,8 +643,8 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupRes struct {
-	GroupId uint              `json:"group_id"`
-	Tasks   []*AuditTaskResV1 `json:"tasks"`
+	TaskGroupId uint              `json:"task_group_id"`
+	Tasks       []*AuditTaskResV1 `json:"tasks"`
 }
 
 type AuditTaskGroupResV1 struct {

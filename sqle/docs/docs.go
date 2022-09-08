@@ -5501,7 +5501,7 @@ var doc = `{
         "v1.AuditTaskGroupRes": {
             "type": "object",
             "properties": {
-                "group_id": {
+                "task_group_id": {
                     "type": "integer"
                 },
                 "tasks": {

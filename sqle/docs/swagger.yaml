@@ -172,7 +172,7 @@ definitions:
     type: object
   v1.AuditTaskGroupRes:
     properties:
-      group_id:
+      task_group_id:
         type: integer
       tasks:
         items:
