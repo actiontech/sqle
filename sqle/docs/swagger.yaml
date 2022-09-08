@@ -170,6 +170,27 @@ definitions:
       number:
         type: integer
     type: object
+  v1.AuditTaskGroupRes:
+    properties:
+      group_id:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/v1.AuditTaskResV1'
+        type: array
+    type: object
+  v1.AuditTaskGroupResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditTaskGroupRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.AuditTaskResV1:
     properties:
       audit_level:
@@ -238,19 +259,6 @@ definitions:
       number:
         type: integer
       rollback_sql:
-        type: string
-    type: object
-  v1.AuditTasksByGroupIdResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.AuditTaskResV1'
-        type: array
-      message:
-        example: ok
         type: string
     type: object
   v1.AuditWhitelistResV1:
@@ -5100,16 +5108,41 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
-  /v1/tasks/audit_tasks:
+  /v1/task_groups:
+    post:
+      consumes:
+      - application/json
+      description: create tasks group.
+      operationId: createAuditTasksV1
+      parameters:
+      - description: parameters for creating audit tasks group
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCreateAuditTasksGroupReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BatchCreateAuditTasksGroupResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建审核任务组
+      tags:
+      - task
+  /v1/task_groups/audit:
     post:
       consumes:
       - multipart/form-data
       description: |-
-        audit tasks by group id.
+        audit task group.
         1. formData[sql]: sql content;
         2. file[input_sql_file]: it is a sql file;
         3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
-      operationId: auditTasksByGroupIdV1
+      operationId: auditTaskGroupIdV1
       parameters:
       - description: group id of tasks
         in: formData
@@ -5134,10 +5167,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.AuditTasksByGroupIdResV1'
+            $ref: '#/definitions/v1.AuditTaskGroupResV1'
       security:
       - ApiKeyAuth: []
-      summary: 按组审核
+      summary: 审核任务组
       tags:
       - task
   /v1/tasks/audits:
@@ -5384,31 +5417,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取task相关的SQL执行计划和表元数据
-      tags:
-      - task
-  /v1/tasks/group:
-    post:
-      consumes:
-      - application/json
-      description: create tasks group.
-      operationId: createAuditTasksV1
-      parameters:
-      - description: parameters for creating audit tasks group
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/v1.BatchCreateAuditTasksGroupReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.BatchCreateAuditTasksGroupResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建审核任务组
       tags:
       - task
   /v1/user:

@@ -637,33 +637,38 @@ type BatchCreateAuditTasksGroupResV1 struct {
 // @Security ApiKeyAuth
 // @Param req body v1.BatchCreateAuditTasksGroupReqV1 true "parameters for creating audit tasks group"
 // @Success 200 {object} v1.BatchCreateAuditTasksGroupResV1
-// @router /v1/tasks/group [post]
+// @router /v1/task_groups [post]
 func CreateAuditTasksGroupV1(c echo.Context) error {
 	return nil
 }
 
-type AuditTasksByGroupIdResV1 struct {
-	controller.BaseRes
-	Data []*AuditTaskResV1 `json:"data"`
+type AuditTaskGroupRes struct {
+	GroupId uint              `json:"group_id"`
+	Tasks   []*AuditTaskResV1 `json:"tasks"`
 }
 
-// AuditTasksByGroupIdV1
-// @Summary 按组审核
-// @Description audit tasks by group id.
+type AuditTaskGroupResV1 struct {
+	controller.BaseRes
+	Data AuditTaskGroupRes `json:"data"`
+}
+
+// AuditTaskGroupV1
+// @Summary 审核任务组
+// @Description audit task group.
 // @Description 1. formData[sql]: sql content;
 // @Description 2. file[input_sql_file]: it is a sql file;
 // @Description 3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
 // @Accept mpfd
 // @Produce json
 // @Tags task
-// @Id auditTasksByGroupIdV1
+// @Id auditTaskGroupIdV1
 // @Security ApiKeyAuth
 // @Param group_id formData uint true "group id of tasks"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
-// @Success 200 {object} v1.AuditTasksByGroupIdResV1
-// @router /v1/tasks/audit_tasks [post]
-func AuditTasksByGroupIdV1(c echo.Context) error {
+// @Success 200 {object} v1.AuditTaskGroupResV1
+// @router /v1/task_groups/audit [post]
+func AuditTaskGroupV1(c echo.Context) error {
 	return nil
 }
