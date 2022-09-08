@@ -800,6 +800,37 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 	return checkInstanceIsConnectable(c, instance)
 }
 
+type InstanceForCheckConnection struct {
+	Name string `json:"name"`
+}
+
+type BatchCheckInstanceConnectionsReqV1 struct {
+	Instances []InstanceForCheckConnection `json:"instances" valid:"dive,required"`
+}
+
+type BatchGetInstanceConnectionsResV1 struct {
+	controller.BaseRes
+	Data []InstanceConnectionResV1 `json:"data"`
+}
+
+type InstanceConnectionResV1 struct {
+	InstanceName string `json:"instance_name"`
+	InstanceConnectableResV1
+}
+
+// BatchCheckInstanceConnections test instance db connection
+// @Summary 批量测试实例连通性（实例提交后）
+// @Description batch test instance db connections
+// @Id batchCheckInstanceIsConnectableByName
+// @Tags instance
+// @Security ApiKeyAuth
+// @Param instances body v1.BatchCheckInstanceConnectionsReqV1 true "instances"
+// @Success 200 {object} v1.BatchGetInstanceConnectionsResV1
+// @router /v1/instances/connections [post]
+func BatchCheckInstanceConnections(c echo.Context) error {
+	return nil
+}
+
 type GetInstanceConnectableReqV1 struct {
 	DBType           string                          `json:"db_type" form:"db_type" example:"mysql"`
 	User             string                          `json:"user" form:"db_user" example:"root" valid:"required"`
@@ -910,13 +941,15 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 )
 
 type InstanceTipReqV1 struct {
-	FilterDBType     string `json:"filter_db_type" query:"filter_db_type"`
-	FunctionalModule string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,sql_query" valid:"omitempty,oneof=create_audit_plan sql_query"`
+	FilterDBType             string `json:"filter_db_type" query:"filter_db_type"`
+	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
+	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,sql_query" valid:"omitempty,oneof=create_audit_plan sql_query"`
 }
 
 type InstanceTipResV1 struct {
-	Name string `json:"instance_name"`
-	Type string `json:"instance_type"`
+	Name               string `json:"instance_name"`
+	Type               string `json:"instance_type"`
+	WorkflowTemplateId uint32 `json:"workflow_template_id"`
 }
 
 type GetInstanceTipsResV1 struct {
@@ -931,6 +964,7 @@ type GetInstanceTipsResV1 struct {
 // @Id getInstanceTipListV1
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
+// @Param filter_workflow_template_id query string false "filter workflow template id"
 // @Param functional_module query string false "functional module" Enums(create_audit_plan,sql_query)
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/instance_tips [get]
