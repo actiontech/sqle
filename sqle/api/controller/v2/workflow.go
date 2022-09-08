@@ -60,8 +60,6 @@ type WorkflowDetailResV2 struct {
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit, wait_for_execution, rejected, canceled, exec_failed, finished)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
 // @Param filter_task_instance_name query string false "filter instance name"
-// @Param filter_task_execute_start_time_from query string false "filter task execute start time from"
-// @Param filter_task_execute_start_time_to query string false "filter task execute start time to"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v2.GetWorkflowsResV2
@@ -83,10 +81,10 @@ type WorkflowRecordResV2 struct {
 }
 
 type WorkflowResV2 struct {
-	Id            uint   `json:"workflow_id"`
-	Subject       string `json:"subject"`
-	Desc          string `json:"desc,omitempty"`
-	Mode          string`json:"mode" enums:"same_sqls,different_sqls"`
+	Id            uint                   `json:"workflow_id"`
+	Subject       string                 `json:"subject"`
+	Desc          string                 `json:"desc,omitempty"`
+	Mode          string                 `json:"mode" enums:"same_sqls,different_sqls"`
 	CreateUser    string                 `json:"create_user_name"`
 	CreateTime    *time.Time             `json:"create_time"`
 	Record        *WorkflowRecordResV2   `json:"record"`

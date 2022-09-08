@@ -6394,14 +6394,6 @@ paths:
         in: query
         name: filter_task_instance_name
         type: string
-      - description: filter task execute start time from
-        in: query
-        name: filter_task_execute_start_time_from
-        type: string
-      - description: filter task execute start time to
-        in: query
-        name: filter_task_execute_start_time_to
-        type: string
       - description: page index
         in: query
         name: page_index

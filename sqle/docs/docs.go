@@ -5070,18 +5070,6 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "filter task execute start time from",
-                        "name": "filter_task_execute_start_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter task execute start time to",
-                        "name": "filter_task_execute_start_time_to",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
