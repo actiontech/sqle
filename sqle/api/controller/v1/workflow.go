@@ -479,7 +479,6 @@ type CreateWorkflowReqV1 struct {
 // @Description create workflow
 // @Accept json
 // @Produce json
-// @Deprecated
 // @Tags workflow
 // @Id createWorkflowV1
 // @Security ApiKeyAuth
@@ -789,6 +788,7 @@ func convertWorkflowStatusToRes(workflowStatus, taskStatus string, scheduleTime 
 }
 
 // @Summary 获取审批流程详情
+// @Deprecated
 // @Description get workflow detail
 // @Tags workflow
 // @Id getWorkflowV1
@@ -875,6 +875,7 @@ type WorkflowDetailResV1 struct {
 }
 
 // @Summary 获取审批流程列表
+// @Deprecated
 // @Description get workflow list
 // @Tags workflow
 // @Id getWorkflowListV1
@@ -1548,5 +1549,29 @@ func checkCurrentUserCanCreateWorkflow(user *model.User, instance *model.Instanc
 		return errors.NewAccessDeniedErr("user has no access to create workflow for instance")
 	}
 
+	return nil
+}
+
+type GetWorkflowTasksResV1 struct {
+	InstanceName            string     `json:"instance_name" query:"instance_name"`
+	Status                  string     `json:"status" enums:"auditing, wait_for_execution, rejected, canceled, exec_failed, finished"`
+	ExecStartTime           *time.Time `json:"exec_start_time,omitempty"`
+	ExecEndTime             *time.Time `json:"exec_end_time,omitempty"`
+	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`
+	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
+	TaskPassRate            float64    `json:"task_pass_rate"`
+	TaskScore               int32      `json:"task_score"`
+}
+
+// GetSummaryOfWorkflowTasksV1
+// @Summary 获取工单数据源任务概览
+// @Description get summary of workflow instance tasks
+// @Tags workflow
+// @Id getSummaryOfInstanceTasksV1
+// @Security ApiKeyAuth
+// @Param workflow_id path integer true "workflow id"
+// @Success 200 {object} v1.GetWorkflowTasksResV1
+// @router /v1/workflows/{workflow_id}/tasks [get]
+func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 	return nil
 }
