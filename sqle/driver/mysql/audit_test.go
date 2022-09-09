@@ -2476,14 +2476,6 @@ from exist_db.exist_tb_1
 where (select count(*) from exist_db.exist_tb_1 where (select id from exist_db.exist_tb_1 limit 1) = 1)`, newTestResult())
 
 	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
-		`create table table_10
-(
-    id          int primary key,
-    update_time timestamp,
-    create_time timestamp
-)`, newTestResult())
-
-	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
 		`select (select count(*) from users) as a
 from exist_db.exist_tb_1
 where (select count(*) from exist_db.exist_tb_2) > 1
