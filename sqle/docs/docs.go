@@ -5629,6 +5629,14 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditTasksGroupResV1": {
+            "type": "object",
+            "properties": {
+                "task_group_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.AuditWhitelistResV1": {
             "type": "object",
             "properties": {
@@ -5682,8 +5690,17 @@ var doc = `{
         "v1.BatchCreateAuditTasksGroupResV1": {
             "type": "object",
             "properties": {
-                "task_group_id": {
-                    "type": "integer"
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTasksGroupResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
