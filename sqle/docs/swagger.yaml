@@ -261,6 +261,11 @@ definitions:
       rollback_sql:
         type: string
     type: object
+  v1.AuditTasksGroupResV1:
+    properties:
+      task_group_id:
+        type: integer
+    type: object
   v1.AuditWhitelistResV1:
     properties:
       audit_whitelist_id:
@@ -295,8 +300,15 @@ definitions:
     type: object
   v1.BatchCreateAuditTasksGroupResV1:
     properties:
-      task_group_id:
+      code:
+        example: 0
         type: integer
+      data:
+        $ref: '#/definitions/v1.AuditTasksGroupResV1'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.BatchGetInstanceConnectionsResV1:
     properties:
