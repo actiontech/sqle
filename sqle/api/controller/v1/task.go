@@ -624,6 +624,11 @@ type InstanceForCreatingTask struct {
 }
 
 type BatchCreateAuditTasksGroupResV1 struct {
+	controller.BaseRes
+	Data AuditTasksGroupResV1 `json:"data"`
+}
+
+type AuditTasksGroupResV1 struct {
 	TaskGroupId uint `json:"task_group_id" form:"task_group_id" valid:"required"`
 }
 
