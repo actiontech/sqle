@@ -2466,6 +2466,83 @@ create table table_10
 `, newTestResult())
 }
 
+func Test_DDLCheckSubQueryNestNum(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckSubQueryNestNum]
+	param := rule.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
+
+	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
+		`select (select count(*) from users) as a
+from exist_db.exist_tb_1
+where (select count(*) from exist_db.exist_tb_1 where (select id from exist_db.exist_tb_1 limit 1) = 1)`, newTestResult())
+
+	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
+		`select (select count(*) from users) as a
+from exist_db.exist_tb_1
+where (select count(*) from exist_db.exist_tb_2) > 1
+  and (select count(*)
+       from exist_db.exist_tb_1
+       where (select id
+              from exist_db.exist_tb_1
+              where (select count(*) from exist_db.exist_tb_2 where (select count(*) from exist_db.exist_tb_2) = 1) =
+                    1) = 1) = 1`,
+		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+
+	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
+		`select (select count(*)
+        from users
+        where (select count(*)
+               from exist_db.exist_tb_1
+               where (select id
+                      from exist_db.exist_tb_1
+                      where (select count(*)
+                             from exist_db.exist_tb_2
+                             where (select count(*) from exist_db.exist_tb_2) = 1) = 1) = 1) = 1) as a
+from exist_db.exist_tb_1`,
+		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+
+	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
+		`delete
+from exist_db.exist_tb_1
+where (select count(*)
+       from exist_db.exist_tb_1
+       where (select id
+              from exist_db.exist_tb_1
+              where (select count(*) from exist_db.exist_tb_2 where exist_tb_2.id = 1) =
+                    1) = 1) = 1`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
+		`delete
+from exist_db.exist_tb_1
+where (select count(*)
+       from exist_db.exist_tb_1
+       where (select id
+              from exist_db.exist_tb_1
+              where (select count(*) from exist_db.exist_tb_2 where (select count(*) from exist_db.exist_tb_2) = 1) =
+                    1) = 1) = 1`,
+		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+
+	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
+		`update exist_db.exist_tb_1,exist_db.exist_tb_2
+set exist_tb_1.v1 = exist_tb_2.v1
+where (select count(*) from exist_db.exist_tb_2) > 1
+  and (select count(*)
+       from exist_db.exist_tb_1
+       where exist_tb_1.id = 1
+         and (select id from exist_db.exist_tb_1 limit 1) = 1) > 1`, newTestResult())
+
+	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
+		`update exist_db.exist_tb_1,exist_db.exist_tb_2
+set exist_tb_1.v1 = exist_tb_2.v1
+where (select count(*)
+       from exist_db.exist_tb_1
+       where (select id
+              from exist_db.exist_tb_1
+              where (select count(*) from exist_db.exist_tb_2 where (select count(*) from exist_db.exist_tb_2) = 1) =
+                    1) = 1) = 1;`,
+		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+}
+
 func Test_DDLCheckUpdateTimeColumn(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckUpdateTimeColumn].Rule
 	param := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).String()
