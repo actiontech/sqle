@@ -644,7 +644,83 @@ type AuditTasksGroupResV1 struct {
 // @Success 200 {object} v1.CreateAuditTasksGroupResV1
 // @router /v1/task_groups [post]
 func CreateAuditTasksGroupV1(c echo.Context) error {
-	return nil
+	req := new(CreateAuditTasksGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	instNames := make([]string, len(req.Instances))
+	for i, instance := range req.Instances {
+		instNames[i] = instance.InstanceName
+	}
+
+	s := model.GetStorage()
+	instances, err := s.GetInstancesByNames(instNames)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	nameInstanceMap := make(map[string]*model.Instance, len(req.Instances))
+	for _, instance := range instances {
+		nameInstanceMap[instance.Name] = instance
+	}
+
+	// check instances
+	if len(nameInstanceMap) != len(instances) {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	can, err := checkCurrentUserCanAccessInstances(c, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	l := log.NewEntry()
+	for _, instance := range instances {
+		driverManager, err := newDriverManagerWithoutAudit(l, instance, "")
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		d, err := driverManager.GetAuditDriver()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if err := d.Ping(context.TODO()); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		d.Close(context.TODO())
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	tasks := make([]*model.Task, len(req.Instances))
+	for i, reqInstance := range req.Instances {
+		tasks[i] = &model.Task{
+			Schema:       reqInstance.InstanceSchema,
+			InstanceId:   nameInstanceMap[reqInstance.InstanceName].ID,
+			CreateUserId: user.ID,
+			DBType:       nameInstanceMap[reqInstance.InstanceName].DbType,
+		}
+		tasks[i].CreatedAt = time.Now()
+	}
+
+	taskGroup := model.TaskGroup{Tasks: tasks}
+	if err := s.Save(&taskGroup); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, CreateAuditTasksGroupResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: AuditTasksGroupResV1{
+			TaskGroupId: taskGroup.ID,
+		},
+	})
 }
 
 type AuditTaskGroupRes struct {
