@@ -614,7 +614,7 @@ func GetTaskAnalysisData(c echo.Context) error {
 	return getTaskAnalysisData(c)
 }
 
-type BatchCreateAuditTasksGroupReqV1 struct {
+type CreateAuditTasksGroupReqV1 struct {
 	Instances []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
 }
 
@@ -623,7 +623,12 @@ type InstanceForCreatingTask struct {
 	InstanceSchema string `json:"instance_schema" form:"instance_schema"`
 }
 
-type BatchCreateAuditTasksGroupResV1 struct {
+type CreateAuditTasksGroupResV1 struct {
+	controller.BaseRes
+	Data AuditTasksGroupResV1 `json:"data"`
+}
+
+type AuditTasksGroupResV1 struct {
 	TaskGroupId uint `json:"task_group_id" form:"task_group_id" valid:"required"`
 }
 
@@ -635,8 +640,8 @@ type BatchCreateAuditTasksGroupResV1 struct {
 // @Tags task
 // @Id createAuditTasksV1
 // @Security ApiKeyAuth
-// @Param req body v1.BatchCreateAuditTasksGroupReqV1 true "parameters for creating audit tasks group"
-// @Success 200 {object} v1.BatchCreateAuditTasksGroupResV1
+// @Param req body v1.CreateAuditTasksGroupReqV1 true "parameters for creating audit tasks group"
+// @Success 200 {object} v1.CreateAuditTasksGroupResV1
 // @router /v1/task_groups [post]
 func CreateAuditTasksGroupV1(c echo.Context) error {
 	return nil

@@ -3070,7 +3070,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupReqV1"
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupReqV1"
                         }
                     }
                 ],
@@ -3078,7 +3078,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupResV1"
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupResV1"
                         }
                     }
                 }
@@ -5154,7 +5154,7 @@ var doc = `{
                     "workflow"
                 ],
                 "summary": "创建工单",
-                "operationId": "createWorkflowV1",
+                "operationId": "createWorkflowV2",
                 "parameters": [
                     {
                         "description": "create workflow request",
@@ -5629,6 +5629,14 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditTasksGroupResV1": {
+            "type": "object",
+            "properties": {
+                "task_group_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.AuditWhitelistResV1": {
             "type": "object",
             "properties": {
@@ -5665,25 +5673,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.InstanceForCheckConnection"
                     }
-                }
-            }
-        },
-        "v1.BatchCreateAuditTasksGroupReqV1": {
-            "type": "object",
-            "properties": {
-                "instances": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.InstanceForCreatingTask"
-                    }
-                }
-            }
-        },
-        "v1.BatchCreateAuditTasksGroupResV1": {
-            "type": "object",
-            "properties": {
-                "task_group_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -5820,6 +5809,34 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string",
                     "example": "default_MySQL"
+                }
+            }
+        },
+        "v1.CreateAuditTasksGroupReqV1": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceForCreatingTask"
+                    }
+                }
+            }
+        },
+        "v1.CreateAuditTasksGroupResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTasksGroupResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

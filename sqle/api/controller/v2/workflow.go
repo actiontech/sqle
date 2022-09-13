@@ -21,7 +21,7 @@ type CreateWorkflowReqV2 struct {
 // @Accept json
 // @Produce json
 // @Tags workflow
-// @Id createWorkflowV1
+// @Id createWorkflowV2
 // @Security ApiKeyAuth
 // @Param instance body v2.CreateWorkflowReqV2 true "create workflow request"
 // @Success 200 {object} controller.BaseRes
