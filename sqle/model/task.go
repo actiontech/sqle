@@ -39,6 +39,7 @@ type Task struct {
 	SQLSource    string  `json:"sql_source" gorm:"column:sql_source"`
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
+	GroupId      uint    `json:"group_id" gorm:"column:group_id"`
 	CreateUserId uint
 	ExecStartAt  *time.Time
 	ExecEndAt    *time.Time
@@ -444,4 +445,16 @@ func (s *Storage) GetTaskSQLByNumber(taskId, number string) (*ExecuteSQL, bool, 
 func (s *Storage) GetTaskSQLCountByTaskID(taskId uint) (int64, error) {
 	var count int64
 	return count, s.db.Model(&ExecuteSQL{}).Where("task_id = ?", taskId).Count(&count).Error
+}
+
+type TaskGroup struct {
+	Model
+	Tasks []*Task `json:"tasks" gorm:"foreignkey:GroupId"`
+}
+
+func (s *Storage) GetTaskGroupByGroupId(groupId uint) (*TaskGroup, error) {
+	taskGroup := &TaskGroup{}
+	err := s.db.Preload("Tasks").Preload("Tasks.Instance").
+		Where("id = ?", groupId).Find(&taskGroup).Error
+	return taskGroup, errors.New(errors.ConnectStorageError, err)
 }

@@ -131,6 +131,31 @@ func (se *SelectStmtExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }
 
+type SubQueryMaxNestNumExtractor struct {
+	MaxNestNum     *int
+	CurrentNestNum int
+}
+
+func (se *SubQueryMaxNestNumExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	stmt, ok := in.(*ast.SubqueryExpr)
+	if !ok {
+		return in, false
+	}
+
+	if *se.MaxNestNum < se.CurrentNestNum {
+		*se.MaxNestNum = se.CurrentNestNum
+	}
+
+	numExtractor := SubQueryMaxNestNumExtractor{MaxNestNum: se.MaxNestNum, CurrentNestNum: se.CurrentNestNum + 1}
+	stmt.Query.Accept(&numExtractor)
+
+	return in, true
+}
+
+func (se *SubQueryMaxNestNumExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
+
 type TableSourceExtractor struct {
 	TableSources map[string] /*origin table name without database name*/ *ast.TableSource
 }

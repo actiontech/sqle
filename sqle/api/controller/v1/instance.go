@@ -279,6 +279,24 @@ func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance)
 	return true, nil
 }
 
+func checkCurrentUserCanAccessInstances(c echo.Context, instances []*model.Instance) (bool, error) {
+	if len(instances) == 0 {
+		return false, nil
+	}
+
+	for _, instance := range instances {
+		can, err := checkCurrentUserCanAccessInstance(c, instance)
+		if err != nil {
+			return false, err
+		}
+		if !can {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 type InstanceResV1 struct {
 	Name                 string                          `json:"instance_name"`
 	DBType               string                          `json:"db_type" example:"mysql"`
