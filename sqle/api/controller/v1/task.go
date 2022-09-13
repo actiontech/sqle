@@ -190,15 +190,19 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	// if task instance is not nil, gorm will update instance when save task.
 	task.Instance = nil
-	err = s.Save(task)
+
+	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
+	err = s.Save(&taskGroup)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	task.Instance = instance
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
