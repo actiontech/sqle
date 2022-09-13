@@ -761,7 +761,7 @@ type AuditTaskGroupResV1 struct {
 // @Tags task
 // @Id auditTaskGroupIdV1
 // @Security ApiKeyAuth
-// @Param group_id formData uint true "group id of tasks"
+// @Param task_group_id formData uint true "group id of tasks"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
