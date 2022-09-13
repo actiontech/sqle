@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/utils"
 	"mime"
 	"net/http"
 	"strconv"
@@ -661,8 +662,10 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		instNames[i] = instance.InstanceName
 	}
 
+	distinctIntsNames := utils.RemoveDuplicate(instNames)
+
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(instNames)
+	instances, err := s.GetInstancesByNames(distinctIntsNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -673,7 +676,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	}
 
 	// check instances
-	if len(nameInstanceMap) != len(instances) {
+	if len(instances) != len(distinctIntsNames) {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
