@@ -664,10 +664,10 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		instNames[i] = instance.InstanceName
 	}
 
-	distinctIntsNames := utils.RemoveDuplicate(instNames)
+	distinctInstNames := utils.RemoveDuplicate(instNames)
 
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(distinctIntsNames)
+	instances, err := s.GetInstancesByNames(distinctInstNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -678,7 +678,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	}
 
 	// check instances
-	if len(instances) != len(distinctIntsNames) {
+	if len(instances) != len(distinctInstNames) {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
