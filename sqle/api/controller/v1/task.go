@@ -634,6 +634,8 @@ type AuditTasksGroupResV1 struct {
 	TaskGroupId uint `json:"task_group_id" form:"task_group_id" valid:"required"`
 }
 
+const maximumDataSourceNum = 10
+
 // CreateAuditTasksGroupV1
 // @Summary 创建审核任务组
 // @Description create tasks group.
@@ -652,7 +654,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	}
 
 	// 数据源个数最大为10
-	if len(req.Instances) > 10 {
+	if len(req.Instances) > maximumDataSourceNum {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("instances count must less than 10")))
 	}
