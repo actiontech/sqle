@@ -840,8 +840,8 @@ func AuditTaskGroupV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	for _, task := range tasks {
-		task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+	for i, task := range tasks {
+		tasks[i], err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
