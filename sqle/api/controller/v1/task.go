@@ -797,7 +797,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	tasks := taskGroup.Tasks
 
-	instances := make([]*model.Instance, len(tasks))
+	instances := make([]*model.Instance, 0)
 	for _, task := range tasks {
 		instances = append(instances, task.Instance)
 	}
