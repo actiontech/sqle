@@ -650,6 +650,12 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		return err
 	}
 
+	// 数据源个数最大为10
+	if len(req.Instances) > 10 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("instances count must less than 10")))
+	}
+
 	instNames := make([]string, len(req.Instances))
 	for i, instance := range req.Instances {
 		instNames[i] = instance.InstanceName
