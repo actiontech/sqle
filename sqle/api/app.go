@@ -214,6 +214,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.PATCH("/tasks/audits/:task_id/sqls/:number", v1.UpdateAuditTaskSQLs)
 	v1Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v1.GetTaskAnalysisData)
 	v1Router.POST("/task_groups", v1.CreateAuditTasksGroupV1)
+	v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)

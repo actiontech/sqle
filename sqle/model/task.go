@@ -451,3 +451,10 @@ type TaskGroup struct {
 	Model
 	Tasks []*Task `json:"tasks" gorm:"foreignkey:GroupId"`
 }
+
+func (s *Storage) GetTaskGroupByGroupId(groupId uint) (*TaskGroup, error) {
+	taskGroup := &TaskGroup{}
+	err := s.db.Preload("Tasks").Preload("Tasks.Instance").
+		Where("id = ?", groupId).Find(&taskGroup).Error
+	return taskGroup, errors.New(errors.ConnectStorageError, err)
+}
