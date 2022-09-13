@@ -3107,7 +3107,7 @@ var doc = `{
                     {
                         "type": "integer",
                         "description": "group id of tasks",
-                        "name": "group_id",
+                        "name": "task_group_id",
                         "in": "formData",
                         "required": true
                     },
