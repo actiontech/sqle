@@ -5158,7 +5158,7 @@ paths:
       parameters:
       - description: group id of tasks
         in: formData
-        name: group_id
+        name: task_group_id
         required: true
         type: integer
       - description: sqls for audit
