@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/utils"
 	"mime"
 	"net/http"
 	"strconv"
@@ -632,6 +634,8 @@ type AuditTasksGroupResV1 struct {
 	TaskGroupId uint `json:"task_group_id" form:"task_group_id" valid:"required"`
 }
 
+const maximumDataSourceNum = 10
+
 // CreateAuditTasksGroupV1
 // @Summary 创建审核任务组
 // @Description create tasks group.
@@ -644,7 +648,96 @@ type AuditTasksGroupResV1 struct {
 // @Success 200 {object} v1.CreateAuditTasksGroupResV1
 // @router /v1/task_groups [post]
 func CreateAuditTasksGroupV1(c echo.Context) error {
-	return nil
+	req := new(CreateAuditTasksGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	// 数据源个数最大为10
+	if len(req.Instances) > maximumDataSourceNum {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("instances count must less than 10")))
+	}
+
+	instNames := make([]string, len(req.Instances))
+	for i, instance := range req.Instances {
+		instNames[i] = instance.InstanceName
+	}
+
+	distinctInstNames := utils.RemoveDuplicate(instNames)
+
+	s := model.GetStorage()
+	instances, err := s.GetInstancesByNames(distinctInstNames)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	nameInstanceMap := make(map[string]*model.Instance, len(req.Instances))
+	for _, instance := range instances {
+		nameInstanceMap[instance.Name] = instance
+	}
+
+	// check instances
+	if len(instances) != len(distinctInstNames) {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	can, err := checkCurrentUserCanAccessInstances(c, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	l := log.NewEntry()
+	for _, instance := range instances {
+		driverManager, err := newDriverManagerWithoutAudit(l, instance, "")
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		d, err := driverManager.GetAuditDriver()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if err := d.Ping(context.TODO()); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		d.Close(context.TODO())
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	tasks := make([]*model.Task, len(req.Instances))
+	for i, reqInstance := range req.Instances {
+		tasks[i] = &model.Task{
+			Schema:       reqInstance.InstanceSchema,
+			InstanceId:   nameInstanceMap[reqInstance.InstanceName].ID,
+			CreateUserId: user.ID,
+			DBType:       nameInstanceMap[reqInstance.InstanceName].DbType,
+		}
+		tasks[i].CreatedAt = time.Now()
+	}
+
+	taskGroup := model.TaskGroup{Tasks: tasks}
+	if err := s.Save(&taskGroup); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, CreateAuditTasksGroupResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: AuditTasksGroupResV1{
+			TaskGroupId: taskGroup.ID,
+		},
+	})
+}
+
+type AuditTaskGroupReqV1 struct {
+	TaskGroupId uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql         string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 }
 
 type AuditTaskGroupRes struct {
@@ -675,5 +768,104 @@ type AuditTaskGroupResV1 struct {
 // @Success 200 {object} v1.AuditTaskGroupResV1
 // @router /v1/task_groups/audit [post]
 func AuditTaskGroupV1(c echo.Context) error {
-	return nil
+	req := new(AuditTaskGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	var err error
+	var sql string
+	var source string
+
+	if req.Sql != "" {
+		sql, source = req.Sql, model.TaskSQLSourceFromFormData
+	} else {
+		sql, source, err = getSQLFromFile(c)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	s := model.GetStorage()
+	taskGroup, err := s.GetTaskGroupByGroupId(req.TaskGroupId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	tasks := taskGroup.Tasks
+
+	instances := make([]*model.Instance, len(tasks))
+	for _, task := range tasks {
+		instances = append(instances, task.Instance)
+	}
+
+	can, err := checkCurrentUserCanAccessInstances(c, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	l := log.NewEntry()
+	driverManager, err := newDriverManagerWithoutCfg(l, driver.DriverTypeMySQL)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	d, err := driverManager.GetAuditDriver()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	nodes, err := d.Parse(context.TODO(), sql)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	for _, task := range tasks {
+		task.SQLSource = source
+		for j, node := range nodes {
+			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+				BaseSQL: model.BaseSQL{
+					Number:  uint(j + 1),
+					Content: node.Text,
+				},
+			})
+		}
+	}
+
+	if err := s.Save(taskGroup); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	for _, task := range tasks {
+		task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	tasksRes := make([]*AuditTaskResV1, len(tasks))
+	for i, task := range tasks {
+		tasksRes[i] = &AuditTaskResV1{
+			Id:             task.ID,
+			InstanceName:   task.InstanceName(),
+			InstanceDbType: task.DBType,
+			InstanceSchema: task.Schema,
+			AuditLevel:     task.AuditLevel,
+			Score:          task.Score,
+			PassRate:       task.PassRate,
+			Status:         task.Status,
+			SQLSource:      task.SQLSource,
+			ExecStartTime:  task.ExecStartAt,
+			ExecEndTime:    task.ExecEndAt,
+		}
+	}
+
+	return c.JSON(http.StatusOK, AuditTaskGroupResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: AuditTaskGroupRes{
+			TaskGroupId: taskGroup.ID,
+			Tasks:       tasksRes,
+		},
+	})
 }

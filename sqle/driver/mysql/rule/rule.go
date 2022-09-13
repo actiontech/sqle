@@ -152,6 +152,7 @@ const (
 	DMLCheckNotEqualSymbol                = "dml_check_not_equal_symbol"
 	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
+	DDLCheckSubQueryNestNum               = "ddl_check_sub_query_depth"
 )
 
 // inspector config code
@@ -1060,6 +1061,25 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
+			Name:     DDLCheckSubQueryNestNum,
+			Desc:     "子查询嵌套层数不能超过阈值",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "3",
+					Desc:  "子查询嵌套层数阈值",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message:      "子查询嵌套层数超过阈值%v",
+		Func:         checkSubQueryNestNum,
+		AllowOffline: true,
+	},
+	{
+		Rule: driver.Rule{
 			Name:  DMLCheckNeedlessFunc,
 			Desc:  "避免使用不必要的内置函数",
 			Level: driver.RuleLevelNotice,
@@ -1687,6 +1707,19 @@ var RuleHandlers = []RuleHandler{
 		Message: "表的初始AUTO_INCREMENT值不为0",
 		Func:    checkAutoIncrement,
 	},
+}
+
+func checkSubQueryNestNum(in *RuleHandlerInput) error {
+	if _, ok := in.Node.(ast.DMLNode); ok {
+		var maxNestNum int
+		subQueryNestNumExtract := util.SubQueryMaxNestNumExtractor{MaxNestNum: &maxNestNum, CurrentNestNum: 1}
+		in.Node.Accept(&subQueryNestNumExtract)
+		expectNestNum := in.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+		if *subQueryNestNumExtract.MaxNestNum > expectNestNum {
+			addResult(in.Res, in.Rule, DDLCheckSubQueryNestNum, expectNestNum)
+		}
+	}
+	return nil
 }
 
 func checkJoinFieldType(input *RuleHandlerInput) error {
