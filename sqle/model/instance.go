@@ -200,18 +200,11 @@ AND users.id = ?
 AND role_operations.op_code IN (?)
 GROUP BY instances.id
 `
-	// deduplicate
-	insts := make(map[uint]struct{})
-	for _, inst := range instances {
-		insts[inst.ID] = struct{}{}
+	instanceIds := make([]uint, len(instances))
+	for i, inst := range instances {
+		instanceIds[i] = inst.ID
 	}
-
-	instanceIds := make([]uint, len(insts))
-	i := 0
-	for id := range insts {
-		instanceIds[i] = id
-		i++
-	}
+	instanceIds = utils.RemoveDuplicateUint(instanceIds)
 
 	var instanceRecords []*Instance
 	err := s.db.Raw(query, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
