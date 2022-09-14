@@ -6081,6 +6081,7 @@ paths:
     put:
       consumes:
       - application/json
+      deprecated: true
       description: update workflow schedule.
       operationId: updateWorkflowScheduleV1
       parameters:
@@ -6161,6 +6162,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 审批驳回
+      tags:
+      - workflow
+  /v1/workflows/{workflow_id}/task/{task_id}/execute:
+    post:
+      description: execute one task on workflow
+      operationId: executeOneTaskOnWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单提交单个数据源上线
       tags:
       - workflow
   /v1/workflows/{workflow_id}/task/execute:
@@ -6541,6 +6567,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新工单（驳回后才可更新）
+      tags:
+      - workflow
+  /v2/workflows/{workflow_id}/task/{task_id}/schedule:
+    put:
+      consumes:
+      - application/json
+      description: update workflow schedule.
+      operationId: updateWorkflowScheduleV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: update workflow schedule request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWorkflowScheduleV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
       tags:
       - workflow
 securityDefinitions:

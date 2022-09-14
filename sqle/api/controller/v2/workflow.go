@@ -127,3 +127,20 @@ type UpdateWorkflowReqV2 struct {
 func UpdateWorkflowV2(c echo.Context) error {
 	return nil
 }
+
+// UpdateWorkflowScheduleV2
+// @Summary 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+// @Description update workflow schedule.
+// @Tags workflow
+// @Accept json
+// @Produce json
+// @Id updateWorkflowScheduleV2
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Param task_id path string true "task id"
+// @Param instance body v1.UpdateWorkflowScheduleV1 true "update workflow schedule request"
+// @Success 200 {object} controller.BaseRes
+// @router /v2/workflows/{workflow_id}/task/{task_id}/schedule [put]
+func UpdateWorkflowScheduleV2(c echo.Context) error {
+	return nil
+}
