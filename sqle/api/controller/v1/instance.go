@@ -903,12 +903,22 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 
 	l := log.NewEntry()
 
-	err = checkMultipleIntsIsConnectable(instances)
-	if err != nil {
-		l.Warnf("check multiple instances is connectable failed: %v", err)
+	instanceConnectionResV1 := make([]InstanceConnectionResV1, len(instances))
+	for i, instance := range instances {
+		err := checkInstanceIsConnectable(instance)
+		if err != nil {
+			l.Warnf("instance %s is not connectable, err: %s", instance.Name, err)
+		}
+		instanceConnectionResV1[i] = InstanceConnectionResV1{
+			InstanceName:             instance.Name,
+			InstanceConnectableResV1: newInstanceConnectableResV1(err),
+		}
 	}
 
-	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+	return c.JSON(http.StatusOK, BatchGetInstanceConnectionsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    instanceConnectionResV1,
+	})
 }
 
 type GetInstanceConnectableReqV1 struct {
