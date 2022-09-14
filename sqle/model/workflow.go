@@ -158,13 +158,15 @@ type Workflow struct {
 }
 
 const (
-	WorkflowStatusRunning       = "on_process"
-	WorkflowStatusReject        = "rejected"
-	WorkflowStatusCancel        = "canceled"
-	WorkflowStatusExecScheduled = "exec_scheduled"
-	WorkflowStatusExecuting     = "executing"
-	WorkflowStatusExecFailed    = "exec_failed"
-	WorkflowStatusFinish        = "finished"
+	WorkflowStatusRunning          = "on_process" // todo issue832 remove
+	WorkflowStatusWaitForAudit     = "wait_for_audit"
+	WorkflowStatusWaitForExecution = "wait_for_execution"
+	WorkflowStatusReject           = "rejected"
+	WorkflowStatusCancel           = "canceled"
+	WorkflowStatusExecScheduled    = "exec_scheduled" // todo issue832 remove
+	WorkflowStatusExecuting        = "executing"
+	WorkflowStatusExecFailed       = "exec_failed"
+	WorkflowStatusFinish           = "finished"
 
 	WorkflowModeSameSQLs      = "same_sqls"
 	WorkflowModeDifferentSQLs = "different_sqls"

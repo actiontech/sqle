@@ -734,7 +734,7 @@ func GetWorkflows(c echo.Context) error {
 }
 
 func checkUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
-	if workflow.Record.Status != model.WorkflowStatusRunning {
+	if workflow.Record.Status != model.WorkflowStatusWaitForAudit && workflow.Record.Status != model.WorkflowStatusWaitForExecution {
 		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
 	}
 	currentStep := workflow.CurrentStep()
@@ -801,7 +801,7 @@ func ApproveWorkflow(c echo.Context) error {
 
 	currentStep := workflow.CurrentStep()
 
-	if currentStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
+	if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow has been approved, you should to execute it")))
 	}
@@ -812,6 +812,7 @@ func ApproveWorkflow(c echo.Context) error {
 	currentStep.OperationUserId = user.ID
 	nextStep := workflow.NextStep()
 	workflow.Record.CurrentWorkflowStepId = nextStep.ID
+	workflow.Record.Status = model.WorkflowStatusWaitForExecution
 
 	err = s.UpdateWorkflowStatus(workflow, currentStep)
 	if err != nil {
