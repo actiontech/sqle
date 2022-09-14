@@ -154,6 +154,7 @@ type Workflow struct {
 	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
 	Record        *WorkflowRecord   `gorm:"foreignkey:WorkflowRecordId"`
 	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history;"`
+	Mode          string
 }
 
 const (
@@ -164,18 +165,31 @@ const (
 	WorkflowStatusExecuting     = "executing"
 	WorkflowStatusExecFailed    = "exec_failed"
 	WorkflowStatusFinish        = "finished"
+
+	WorkflowModeSameSQLs      = "same_sqls"
+	WorkflowModeDifferentSQLs = "different_sqls"
 )
 
 type WorkflowRecord struct {
 	Model
-	TaskId                uint `gorm:"index"`
 	CurrentWorkflowStepId uint
-	Status                string `gorm:"default:\"on_process\""`
-	ScheduledAt           *time.Time
-	ScheduleUserId        uint
+	Status                string                    `gorm:"default:\"wait_for_audit\""`
+	InstanceRecords       []*WorkflowInstanceRecord `gorm:"foreignkey:WorkflowRecordId"`
 
+	// 当workflow只有部分数据源已上线时，current step仍处于"sql_execute"步骤
 	CurrentStep *WorkflowStep   `gorm:"foreignkey:CurrentWorkflowStepId"`
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
+}
+
+type WorkflowInstanceRecord struct {
+	Model
+	TaskId           uint `gorm:"index"`
+	WorkflowRecordId uint `gorm:"index; not null"`
+	InstanceId       uint
+	ScheduledAt      *time.Time
+	ScheduleUserId   uint
+	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
+	IsSQLExecuted bool
 }
 
 const (
