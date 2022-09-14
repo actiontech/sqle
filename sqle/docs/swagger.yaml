@@ -6081,6 +6081,7 @@ paths:
     put:
       consumes:
       - application/json
+      deprecated: true
       description: update workflow schedule.
       operationId: updateWorkflowScheduleV1
       parameters:
@@ -6165,6 +6166,7 @@ paths:
       - workflow
   /v1/workflows/{workflow_id}/task/execute:
     post:
+      deprecated: true
       description: execute task on workflow
       operationId: executeTaskOnWorkflowV1
       parameters:
@@ -6201,6 +6203,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取工单数据源任务概览
+      tags:
+      - workflow
+  /v1/workflows/{workflow_id}/tasks/{task_id}/execute:
+    post:
+      description: execute one task on workflow
+      operationId: executeOneTaskOnWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单提交单个数据源上线
       tags:
       - workflow
   /v1/workflows/cancel:
@@ -6541,6 +6568,61 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新工单（驳回后才可更新）
+      tags:
+      - workflow
+  /v2/workflows/{workflow_id}/tasks/{task_id}/schedule:
+    put:
+      consumes:
+      - application/json
+      description: update workflow schedule.
+      operationId: updateWorkflowScheduleV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: update workflow schedule request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWorkflowScheduleV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+      tags:
+      - workflow
+  /v2/workflows/{workflow_id}/tasks/execute:
+    post:
+      description: execute tasks on workflow
+      operationId: executeTasksOnWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 多数据源批量上线
       tags:
       - workflow
 securityDefinitions:
