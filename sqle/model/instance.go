@@ -208,7 +208,7 @@ GROUP BY instances.id
 
 	instanceIds := make([]uint, len(insts))
 	i := 0
-	for id, _ := range insts {
+	for id := range insts {
 		instanceIds[i] = id
 		i++
 	}
