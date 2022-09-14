@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -763,21 +762,6 @@ func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 		IsInstanceConnectable: false,
 		ConnectErrorMessage:   err.Error(),
 	}
-}
-
-func checkMultipleIntsIsConnectable(instances []*model.Instance) error {
-	var intsNames []string
-	for _, instance := range instances {
-		if err := checkInstanceIsConnectable(instance); err != nil {
-			intsNames = append(intsNames, instance.Name)
-		}
-	}
-
-	if len(intsNames) > 0 {
-		return fmt.Errorf("instances %s is not connectable", strings.Join(intsNames, ","))
-	}
-
-	return nil
 }
 
 func checkInstanceIsConnectable(instance *model.Instance) error {
