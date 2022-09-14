@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -764,25 +765,6 @@ func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 	}
 }
 
-func checkInstanceIsConnectable(instance *model.Instance) error {
-	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
-	if err != nil {
-		return err
-	}
-	defer drvMgr.Close(context.TODO())
-
-	d, err := drvMgr.GetAuditDriver()
-	if err != nil {
-		return err
-	}
-
-	if err := d.Ping(context.TODO()); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // CheckInstanceIsConnectableByName test instance db connection
 // @Summary 实例连通性测试（实例提交后）
 // @Description test instance db connection
@@ -812,7 +794,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 
 	l := log.NewEntry()
 
-	err = checkInstanceIsConnectable(instance)
+	err = common.CheckInstanceIsConnectable(instance)
 	if err != nil {
 		l.Warnf("instance %s is not connectable, err: %s", instanceName, err)
 	}
@@ -885,7 +867,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 
 	instanceConnectionResV1 := make([]InstanceConnectionResV1, len(instances))
 	for i, instance := range instances {
-		err := checkInstanceIsConnectable(instance)
+		err := common.CheckInstanceIsConnectable(instance)
 		if err != nil {
 			l.Warnf("instance %s is not connectable, err: %s", instance.Name, err)
 		}
@@ -948,7 +930,7 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 
 	l := log.NewEntry()
 
-	err := checkInstanceIsConnectable(instance)
+	err := common.CheckInstanceIsConnectable(instance)
 	if err != nil {
 		l.Warnf("check instance is connectable failed: %v", err)
 	}
@@ -995,7 +977,7 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
