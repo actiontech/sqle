@@ -140,7 +140,20 @@ func UpdateWorkflowV2(c echo.Context) error {
 // @Param task_id path string true "task id"
 // @Param instance body v1.UpdateWorkflowScheduleV1 true "update workflow schedule request"
 // @Success 200 {object} controller.BaseRes
-// @router /v2/workflows/{workflow_id}/task/{task_id}/schedule [put]
+// @router /v2/workflows/{workflow_id}/tasks/{task_id}/schedule [put]
 func UpdateWorkflowScheduleV2(c echo.Context) error {
+	return nil
+}
+
+// ExecuteTasksOnWorkflow
+// @Summary 工单提交 SQL 上线
+// @Description execute tasks on workflow
+// @Tags workflow
+// @Id executeTasksOnWorkflowV2
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Success 200 {object} controller.BaseRes
+// @router /v2/workflows/{workflow_id}/tasks/execute [post]
+func ExecuteTasksOnWorkflow(c echo.Context) error {
 	return nil
 }

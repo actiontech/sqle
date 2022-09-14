@@ -4727,7 +4727,39 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflows/{workflow_id}/task/{task_id}/execute": {
+        "/v1/workflows/{workflow_id}/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get summary of workflow instance tasks",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单数据源任务概览",
+                "operationId": "getSummaryOfInstanceTasksV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTasksResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/{workflow_id}/tasks/{task_id}/execute": {
             "post": {
                 "security": [
                     {
@@ -4761,38 +4793,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/tasks": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get summary of workflow instance tasks",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单数据源任务概览",
-                "operationId": "getSummaryOfInstanceTasksV1",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowTasksResV1"
                         }
                     }
                 }
@@ -5293,7 +5293,39 @@ var doc = `{
                 }
             }
         },
-        "/v2/workflows/{workflow_id}/task/{task_id}/schedule": {
+        "/v2/workflows/{workflow_id}/tasks/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute tasks on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "工单提交 SQL 上线",
+                "operationId": "executeTasksOnWorkflowV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/workflows/{workflow_id}/tasks/{task_id}/schedule": {
             "put": {
                 "security": [
                     {

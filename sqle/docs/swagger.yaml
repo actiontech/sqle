@@ -6164,31 +6164,6 @@ paths:
       summary: 审批驳回
       tags:
       - workflow
-  /v1/workflows/{workflow_id}/task/{task_id}/execute:
-    post:
-      description: execute one task on workflow
-      operationId: executeOneTaskOnWorkflowV1
-      parameters:
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      - description: task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 工单提交单个数据源上线
-      tags:
-      - workflow
   /v1/workflows/{workflow_id}/task/execute:
     post:
       description: execute task on workflow
@@ -6227,6 +6202,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取工单数据源任务概览
+      tags:
+      - workflow
+  /v1/workflows/{workflow_id}/tasks/{task_id}/execute:
+    post:
+      description: execute one task on workflow
+      operationId: executeOneTaskOnWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单提交单个数据源上线
       tags:
       - workflow
   /v1/workflows/cancel:
@@ -6569,7 +6569,7 @@ paths:
       summary: 更新工单（驳回后才可更新）
       tags:
       - workflow
-  /v2/workflows/{workflow_id}/task/{task_id}/schedule:
+  /v2/workflows/{workflow_id}/tasks/{task_id}/schedule:
     put:
       consumes:
       - application/json
@@ -6602,6 +6602,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+      tags:
+      - workflow
+  /v2/workflows/{workflow_id}/tasks/execute:
+    post:
+      description: execute tasks on workflow
+      operationId: executeTasksOnWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单提交 SQL 上线
       tags:
       - workflow
 securityDefinitions:
