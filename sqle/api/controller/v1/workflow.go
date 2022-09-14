@@ -812,7 +812,9 @@ func ApproveWorkflow(c echo.Context) error {
 	currentStep.OperationUserId = user.ID
 	nextStep := workflow.NextStep()
 	workflow.Record.CurrentWorkflowStepId = nextStep.ID
-	workflow.Record.Status = model.WorkflowStatusWaitForExecution
+	if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
+		workflow.Record.Status = model.WorkflowStatusWaitForExecution
+	}
 
 	err = s.UpdateWorkflowStatus(workflow, currentStep)
 	if err != nil {
