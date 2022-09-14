@@ -872,10 +872,6 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if len(req.Instances) > MaximumDataSourceNum {
-		return controller.JSONBaseErrorReq(c, ErrTooManyDataSource)
-	}
-
 	instanceNames := make([]string, 0, len(req.Instances))
 	for _, instance := range req.Instances {
 		instanceNames = append(instanceNames, instance.Name)
