@@ -6622,7 +6622,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 工单提交 SQL 上线
+      summary: 多数据源批量上线
       tags:
       - workflow
 securityDefinitions:
