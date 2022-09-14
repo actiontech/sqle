@@ -4708,6 +4708,7 @@ var doc = `{
                 ],
                 "summary": "工单提交 SQL 上线",
                 "operationId": "executeTaskOnWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -5342,7 +5343,7 @@ var doc = `{
                 "tags": [
                     "workflow"
                 ],
-                "summary": "设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
+                "summary": "设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
                 "operationId": "updateWorkflowScheduleV2",
                 "parameters": [
                     {
