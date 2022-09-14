@@ -20,10 +20,7 @@ import (
 )
 
 var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
-var ErrForbidMyBatisXMLTask = errors.New(errors.DataConflict,
-	fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow"))
 var errWorkflowExecuteTimeIncorrect = errors.New(errors.TaskActionInvalid, fmt.Errorf("please go online during instance operation and maintenance time"))
-var errExecuteSQLsIsNull = errors.New(errors.DataInvalid, fmt.Errorf("workflow's execute sql is null"))
 
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
