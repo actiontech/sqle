@@ -1546,7 +1546,7 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 // @Param workflow_id path string true "workflow id"
 // @Param task_id path string true "task id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/task/{task_id}/execute [post]
+// @router /v1/workflows/{workflow_id}/tasks/{task_id}/execute [post]
 func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 	return nil
 }
