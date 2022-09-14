@@ -190,10 +190,13 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	// if task instance is not nil, gorm will update instance when save task.
 	task.Instance = nil
-	err = s.Save(task)
+
+	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
+	err = s.Save(&taskGroup)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	task.Instance = instance
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
@@ -761,7 +764,7 @@ type AuditTaskGroupResV1 struct {
 // @Tags task
 // @Id auditTaskGroupIdV1
 // @Security ApiKeyAuth
-// @Param group_id formData uint true "group id of tasks"
+// @Param task_group_id formData uint true "group id of tasks"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
@@ -794,7 +797,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	tasks := taskGroup.Tasks
 
-	instances := make([]*model.Instance, len(tasks))
+	instances := make([]*model.Instance, 0)
 	for _, task := range tasks {
 		instances = append(instances, task.Instance)
 	}
@@ -837,8 +840,8 @@ func AuditTaskGroupV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	for _, task := range tasks {
-		task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+	for i, task := range tasks {
+		tasks[i], err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
