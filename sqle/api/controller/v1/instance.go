@@ -870,7 +870,48 @@ type InstanceConnectionResV1 struct {
 // @Success 200 {object} v1.BatchGetInstanceConnectionsResV1
 // @router /v1/instances/connections [post]
 func BatchCheckInstanceConnections(c echo.Context) error {
-	return nil
+	req := new(BatchCheckInstanceConnectionsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if len(req.Instances) > MaximumDataSourceNum {
+		return controller.JSONBaseErrorReq(c, ErrTooManyDataSource)
+	}
+
+	instanceNames := make([]string, 0, len(req.Instances))
+	for _, instance := range req.Instances {
+		instanceNames = append(instanceNames, instance.Name)
+	}
+
+	distinctIntsNames := utils.RemoveDuplicate(instanceNames)
+
+	s := model.GetStorage()
+	instances, err := s.GetInstancesByNames(distinctIntsNames)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if len(distinctIntsNames) != len(instances) {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	can, err := checkCurrentUserCanAccessInstances(c, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	l := log.NewEntry()
+
+	err = checkMultipleIntsIsConnectable(instances)
+	if err != nil {
+		l.Warnf("check multiple instances is connectable failed: %v", err)
+	}
+
+	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
 }
 
 type GetInstanceConnectableReqV1 struct {
