@@ -770,23 +770,23 @@ func newGetInstanceConnectableResV1(err error) GetInstanceConnectableResV1 {
 	}
 }
 
-func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
+func checkInstanceIsConnectable(instance *model.Instance) error {
 	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
-		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+		return err
 	}
 	defer drvMgr.Close(context.TODO())
 
 	d, err := drvMgr.GetAuditDriver()
 	if err != nil {
-		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+		return err
 	}
 
 	if err := d.Ping(context.TODO()); err != nil {
-		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+		return err
 	}
 
-	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(nil))
+	return nil
 }
 
 // CheckInstanceIsConnectableByName test instance db connection
@@ -815,7 +815,15 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-	return checkInstanceIsConnectable(c, instance)
+
+	l := log.NewEntry()
+
+	err = checkInstanceIsConnectable(instance)
+	if err != nil {
+		l.Warnf("instance %s is not connectable, err: %s", instanceName, err)
+	}
+
+	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
 }
 
 type InstanceForCheckConnection struct {
@@ -893,7 +901,15 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		Password:         req.Password,
 		AdditionalParams: additionalParams,
 	}
-	return checkInstanceIsConnectable(c, instance)
+
+	l := log.NewEntry()
+
+	err := checkInstanceIsConnectable(instance)
+	if err != nil {
+		l.Warnf("check instance is connectable failed: %v", err)
+	}
+
+	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
 }
 
 type GetInstanceSchemaResV1 struct {
