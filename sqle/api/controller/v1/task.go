@@ -23,6 +23,7 @@ import (
 )
 
 var ErrTaskNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
+var ErrTooManyDataSource = errors.New(errors.DataConflict, fmt.Errorf("the number of data sources must be less than %v", MaximumDataSourceNum))
 
 type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
@@ -658,8 +659,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	// 数据源个数最大为10
 	if len(req.Instances) > MaximumDataSourceNum {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("instances count must less than 10")))
+		return controller.JSONBaseErrorReq(c, ErrTooManyDataSource)
 	}
 
 	instNames := make([]string, len(req.Instances))
