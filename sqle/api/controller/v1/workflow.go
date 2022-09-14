@@ -490,18 +490,6 @@ func CreateWorkflow(c echo.Context) error {
 	return nil
 }
 
-func checkWorkflowCanCommit(template *model.WorkflowTemplate, task *model.Task) error {
-	allowLevel := driver.RuleLevelError
-	if template.AllowSubmitWhenLessAuditLevel != "" {
-		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
-	}
-	if driver.RuleLevel(task.AuditLevel).More(allowLevel) {
-		return errors.New(errors.DataInvalid,
-			fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting", allowLevel))
-	}
-	return nil
-}
-
 type GetWorkflowResV1 struct {
 	controller.BaseRes
 	Data *WorkflowResV1 `json:"data"`
@@ -1193,24 +1181,6 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
-}
-
-func checkCurrentUserCanCreateWorkflow(user *model.User, instance *model.Instance) error {
-
-	if model.IsDefaultAdminUser(user.Name) {
-		return nil
-	}
-
-	s := model.GetStorage()
-	ok, err := s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_WORKFLOW_SAVE})
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.NewAccessDeniedErr("user has no access to create workflow for instance")
-	}
-
-	return nil
 }
 
 type GetWorkflowTasksResV1 struct {
