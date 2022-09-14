@@ -753,21 +753,15 @@ type InstanceConnectableResV1 struct {
 	ConnectErrorMessage   string `json:"connect_error_message,omitempty"`
 }
 
-func newGetInstanceConnectableResV1(err error) GetInstanceConnectableResV1 {
+func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 	if err == nil {
-		return GetInstanceConnectableResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: InstanceConnectableResV1{
-				IsInstanceConnectable: true,
-			},
+		return InstanceConnectableResV1{
+			IsInstanceConnectable: true,
 		}
 	}
-	return GetInstanceConnectableResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: InstanceConnectableResV1{
-			IsInstanceConnectable: false,
-			ConnectErrorMessage:   err.Error(),
-		},
+	return InstanceConnectableResV1{
+		IsInstanceConnectable: false,
+		ConnectErrorMessage:   err.Error(),
 	}
 }
 
@@ -839,7 +833,10 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 		l.Warnf("instance %s is not connectable, err: %s", instanceName, err)
 	}
 
-	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    newInstanceConnectableResV1(err),
+	})
 }
 
 type InstanceForCheckConnection struct {
@@ -966,7 +963,10 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		l.Warnf("check instance is connectable failed: %v", err)
 	}
 
-	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
+	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    newInstanceConnectableResV1(err),
+	})
 }
 
 type GetInstanceSchemaResV1 struct {
