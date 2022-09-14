@@ -560,7 +560,7 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow,
 		if err != nil {
 			return err
 		}
-		ok, err := s.CheckUserHasOpToInstance(user, instance, ops)
+		ok, err := s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, ops)
 		if err != nil {
 			return err
 		}
