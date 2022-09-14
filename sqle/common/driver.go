@@ -1,4 +1,4 @@
-package v1
+package common
 
 import (
 	"github.com/actiontech/sqle/sqle/driver"
@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func newDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, database string) (driver.DriverManager, error) {
+func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, database string) (driver.DriverManager, error) {
 	if inst == nil {
 		return nil, errors.Errorf("instance is nil")
 	}
@@ -25,7 +25,7 @@ func newDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 	return driver.NewDriverManger(l, inst.DbType, cfg)
 }
 
-func newDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.DriverManager, error) {
+func NewDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.DriverManager, error) {
 	return driver.NewDriverManger(l, dbType, &driver.Config{})
 }
 
