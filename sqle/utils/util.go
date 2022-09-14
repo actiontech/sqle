@@ -72,6 +72,20 @@ func RemoveDuplicate(c []string) []string {
 	return result
 }
 
+func RemoveDuplicateUint(c []uint) []uint {
+	var tmpMap = map[uint]struct{}{}
+	var result = []uint{}
+	for _, v := range c {
+		beforeLen := len(tmpMap)
+		tmpMap[v] = struct{}{}
+		AfterLen := len(tmpMap)
+		if beforeLen != AfterLen {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
 // Round rounds the argument f to dec decimal places.
 func Round(f float64, dec int) float64 {
 	shift := math.Pow10(dec)

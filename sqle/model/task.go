@@ -203,6 +203,15 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	return task, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetTasksByIds(taskIds []uint) ([]*Task, error) {
+	tasks := []*Task{}
+	err := s.db.Where("id IN (?)", taskIds).Preload("Instance").Find(&tasks).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return tasks, nil
+}
+
 func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 	task := &Task{}
 	err := s.db.Where("id = ?", taskId).Preload("Instance").

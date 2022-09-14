@@ -168,7 +168,7 @@ func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error
 	return names, nil
 }
 
-func (s *Storage) CheckUserHasOpToInstance(user *User, instance *Instance, ops []uint) (bool, error) {
+func (s *Storage) CheckUserHasOpToInstances(user *User, instances []*Instance, ops []uint) (bool, error) {
 	query := `
 SELECT instances.id
 FROM instances
@@ -200,12 +200,18 @@ AND users.id = ?
 AND role_operations.op_code IN (?)
 GROUP BY instances.id
 `
-	var instances []*Instance
-	err := s.db.Raw(query, instance.ID, user.ID, ops, instance.ID, user.ID, ops).Scan(&instances).Error
+	instanceIds := make([]uint, len(instances))
+	for i, inst := range instances {
+		instanceIds[i] = inst.ID
+	}
+	instanceIds = utils.RemoveDuplicateUint(instanceIds)
+
+	var instanceRecords []*Instance
+	err := s.db.Raw(query, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
 	if err != nil {
 		return false, errors.ConnectStorageErrWrapper(err)
 	}
-	return len(instances) > 0, nil
+	return len(instanceRecords) == len(instanceIds), nil
 }
 
 func (s *Storage) GetUserCanOpInstances(user *User, ops []uint) (instances []*Instance, err error) {
