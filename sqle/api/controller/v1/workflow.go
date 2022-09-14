@@ -1394,6 +1394,7 @@ type UpdateWorkflowScheduleV1 struct {
 
 // @Summary 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
 // @Description update workflow schedule.
+// @Deprecated
 // @Tags workflow
 // @Accept json
 // @Produce json
@@ -1534,6 +1535,20 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+// ExecuteOneTaskOnWorkflowV1
+// @Summary 工单提交单个数据源上线
+// @Description execute one task on workflow
+// @Tags workflow
+// @Id executeOneTaskOnWorkflowV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Param task_id path string true "task id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/workflows/{workflow_id}/task/{task_id}/execute [post]
+func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
+	return nil
 }
 
 func checkCurrentUserCanCreateWorkflow(user *model.User, instance *model.Instance) error {
