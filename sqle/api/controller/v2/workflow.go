@@ -146,7 +146,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 }
 
 // ExecuteTasksOnWorkflow
-// @Summary 工单提交 SQL 上线
+// @Summary 多数据源批量上线
 // @Description execute tasks on workflow
 // @Tags workflow
 // @Id executeTasksOnWorkflowV2
