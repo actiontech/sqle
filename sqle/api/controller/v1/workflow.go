@@ -1471,6 +1471,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 
 // @Summary 工单提交 SQL 上线
 // @Description execute task on workflow
+// @Deprecated
 // @Tags workflow
 // @Id executeTaskOnWorkflowV1
 // @Security ApiKeyAuth

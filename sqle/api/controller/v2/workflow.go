@@ -129,7 +129,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 }
 
 // UpdateWorkflowScheduleV2
-// @Summary 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+// @Summary 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
 // @Description update workflow schedule.
 // @Tags workflow
 // @Accept json
