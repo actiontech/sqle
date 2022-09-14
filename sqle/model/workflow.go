@@ -301,28 +301,58 @@ func (w *Workflow) IsFirstRecord(record *WorkflowRecord) bool {
 	return false
 }
 
-func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
+func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task,
 	stepTemplates []*WorkflowStepTemplate) error {
+	if len(tasks) <= 0 {
+		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
+	}
+
+	workflowMode := WorkflowModeSameSQLs
+	groupId := tasks[0].GroupId
+	for _, task := range tasks {
+		if task.GroupId != groupId {
+			workflowMode = WorkflowModeDifferentSQLs
+			break
+		}
+	}
 
 	workflow := &Workflow{
 		Subject:      subject,
 		Desc:         desc,
 		CreateUserId: user.ID,
+		Mode:         workflowMode,
+	}
+
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
+	for i, task := range tasks {
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
 	}
 	record := &WorkflowRecord{
-		TaskId: task.ID,
+		InstanceRecords: instanceRecords,
 	}
 
-	inspector, err := s.GetUsersByOperationCode(task.Instance, OP_WORKFLOW_AUDIT)
-	if err != nil {
-		return err
+	allUsers := make([][]*User, len(tasks))
+	for i, task := range tasks {
+		users, err := s.GetUsersByOperationCode(task.Instance, OP_WORKFLOW_AUDIT)
+		if err != nil {
+			return err
+		}
+		allUsers[i] = users
 	}
 
-	steps := generateWorkflowStepByTemplate(stepTemplates, inspector)
+	canOptUsers := allUsers[0]
+	for i := 1; i < len(allUsers); i++ {
+		canOptUsers = getOverlapOfUsers(canOptUsers, allUsers[i])
+	}
+
+	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers)
 
 	tx := s.db.Begin()
 
-	err = tx.Save(record).Error
+	err := tx.Save(record).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
@@ -360,6 +390,18 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 		}
 	}
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
+}
+
+func getOverlapOfUsers(users1, users2 []*User) []*User {
+	var res []*User
+	for _, user1 := range users1 {
+		for _, user2 := range users2 {
+			if user1.ID == user2.ID {
+				res = append(res, user1)
+			}
+		}
+	}
+	return res
 }
 
 func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
@@ -527,18 +569,13 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 	return records, nil
 }
 
-// TODO: args `id` using uint
-func (s *Storage) GetWorkflowRecordByTaskId(id string) (*WorkflowRecord, bool, error) {
-	record := &WorkflowRecord{}
-	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.id").
-		Where("workflow_records.task_id = ?", id).Scan(record).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
+func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (uint32, error) {
+	var count uint32
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("workflow_instance_records.task_id IN (?)", ids).Count(&count).Error //todo 测试0条记录的表现
 	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
+		return 0, errors.New(errors.ConnectStorageError, err)
 	}
-	return record, true, nil
+	return count, nil
 }
 
 func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
