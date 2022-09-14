@@ -1572,7 +1572,7 @@ func checkCurrentUserCanCreateWorkflow(user *model.User, instance *model.Instanc
 
 type GetWorkflowTasksResV1 struct {
 	InstanceName            string     `json:"instance_name" query:"instance_name"`
-	Status                  string     `json:"status" enums:"wait_for_audit, wait_for_execution, rejected, canceled, exec_scheduled, exec_failed, finished"`
+	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_scheduled,exec_failed,finished"`
 	ExecStartTime           *time.Time `json:"exec_start_time,omitempty"`
 	ExecEndTime             *time.Time `json:"exec_end_time,omitempty"`
 	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`

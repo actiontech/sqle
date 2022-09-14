@@ -7607,12 +7607,12 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "wait_for_audit",
-                        " wait_for_execution",
-                        " rejected",
-                        " canceled",
-                        " exec_scheduled",
-                        " exec_failed",
-                        " finished"
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_scheduled",
+                        "exec_failed",
+                        "finished"
                     ]
                 },
                 "task_pass_rate": {
@@ -10036,11 +10036,11 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "wait_for_audit",
-                        " wait_for_execution",
-                        " rejected",
-                        " canceled",
-                        " exec_failed",
-                        " finished"
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "finished"
                     ]
                 },
                 "task_ids": {
