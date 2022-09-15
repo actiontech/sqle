@@ -35,6 +35,7 @@ func (s *Sqled) WorkflowSchedule(entry *logrus.Entry) {
 		entry.Errorf("get need scheduled workflows from storage error: %v", err)
 		return
 	}
+	now := time.Now()
 	for _, workflow := range workflows {
 		w, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(workflow.ID)))
 		if err != nil {
@@ -57,7 +58,20 @@ func (s *Sqled) WorkflowSchedule(entry *logrus.Entry) {
 		}
 
 		entry.Infof("start to execute scheduled workflow %s", w.Subject)
-		err = ExecuteWorkflow(w, w.Record.ScheduleUserId)
+		needExecuteTaskIds := map[uint]struct{}{}
+		// TODO: issue832 上线人暂时先保存最后一个上线人，后续可能需要保存到每个数据源上
+		var userId uint
+		for _, ir := range w.Record.InstanceRecords {
+			if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now){
+				userId = ir.ScheduleUserId
+				needExecuteTaskIds[ir.TaskId] = struct{}{}
+			}
+		}
+		if len(needExecuteTaskIds) == 0 {
+			entry.Warnf("workflow %s need to execute scheduled, but no task find", w.Subject)
+		}
+
+		err = ExecuteWorkflow(w, needExecuteTaskIds, userId)
 		if err != nil {
 			entry.Errorf("execute scheduled workflow %s error: %v", w.Subject, err)
 		} else {
