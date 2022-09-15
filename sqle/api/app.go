@@ -207,6 +207,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v2Router.PUT("/workflows/:workflow_id/tasks/:task_id/schedule", v2.UpdateWorkflowScheduleV2)
 	v1Router.POST("/workflows/:workflow_id/task/execute", DeprecatedBy(apiV2))
 	v2Router.POST("/workflows/:workflow_id/tasks/execute", v2.ExecuteTasksOnWorkflow)
+	v1Router.POST("/workflows/:workflow_id/tasks/:task_id/execute", v1.ExecuteOneTaskOnWorkflowV1)
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
