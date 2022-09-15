@@ -17,7 +17,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var errInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
+var ErrInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 var errInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
 var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 var errWrongTimePeriod = errors.New(errors.DataInvalid, fmt.Errorf("wrong time period"))
@@ -448,7 +448,7 @@ func DeleteInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	}
 
 	tasks, err := s.GetTaskByInstanceId(instance.ID)
@@ -518,7 +518,7 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	}
 
 	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
