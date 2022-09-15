@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -205,7 +206,7 @@ func CreateAuditPlan(c echo.Context) error {
 		}
 		// check instance database
 		if req.InstanceDatabase != "" {
-			drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), inst, "")
+			drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, "")
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
@@ -812,7 +813,7 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 	// lazy load driver
 	initDriver := func() error {
 		if drv == nil {
-			drvMgr, err = newDriverManagerWithoutCfg(log.NewEntry(), ap.DBType)
+			drvMgr, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), ap.DBType)
 			if err != nil {
 				return err
 			}
