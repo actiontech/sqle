@@ -200,7 +200,7 @@ func CreateAuditPlan(c echo.Context) error {
 	if req.InstanceName != "" {
 		inst, exist, err := s.GetInstanceByName(req.InstanceName)
 		if !exist {
-			return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 		} else if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
