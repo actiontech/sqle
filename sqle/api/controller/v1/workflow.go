@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -12,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -1137,7 +1139,47 @@ func ExecuteTaskOnWorkflow(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows/{workflow_id}/tasks/{task_id}/execute [post]
 func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
-	return nil
+	workflowIdStr := c.Param("workflow_id")
+	workflowId, err := FormatStringToInt(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	taskIdStr := c.Param("task_id")
+	taskId, err := FormatStringToInt(taskIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(strconv.Itoa(workflowId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = PrepareForWorkflowExecution(c, workflow, user, workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if _, ok := needExecTaskIds[uint(taskId)]; !ok {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflowId))
+	}
+
+	err = server.ExecuteWorkflow(workflow, map[uint]struct{}{uint(taskId): {}}, user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow) (taskIds map[uint] /*task id*/ struct{}, err error) {
