@@ -18,6 +18,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var ErrForbidMyBatisXMLTask = func(taskId uint) error {
+	return errors.New(errors.DataConflict,
+		fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow. taskId=%v", taskId))
+}
+
+var errTaskHasBeenUsed = errors.New(errors.DataConflict, fmt.Errorf("task has been used in other workflow"))
+
 type CreateWorkflowReqV2 struct {
 	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
 	Desc    string `json:"desc" form:"desc"`
@@ -87,8 +94,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		}
 
 		if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-				fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow. taskId=%v", task.ID)))
+			return controller.JSONBaseErrorReq(c, ErrForbidMyBatisXMLTask(task.ID))
 		}
 
 		// all instances must use the same workflow template
@@ -111,8 +117,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if count > 0 {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-			fmt.Errorf("task has been used in other workflow")))
+		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
 	}
 
 	template, exist, err := s.GetWorkflowTemplateById(workflowTemplateId)
