@@ -1,6 +1,7 @@
 package v2
 
 import (
+	_err "errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -338,7 +339,7 @@ func ExecuteTasksOnWorkflow(c echo.Context) error {
 	}
 	currentStep := workflow.CurrentStep()
 	if currentStep == nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("workflow current step not found")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, _err.New("workflow current step not found")))
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
