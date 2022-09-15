@@ -1032,6 +1032,18 @@ func FormatStringToInt(s string) (ret int, err error) {
 	return ret, nil
 }
 
+func FormatStringToUint64(s string) (ret uint64, err error) {
+	if s == "" {
+		return 0, nil
+	} else {
+		ret, err = strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return ret, nil
+}
+
 type UpdateWorkflowScheduleV1 struct {
 	ScheduleTime *time.Time `json:"schedule_time"`
 }
