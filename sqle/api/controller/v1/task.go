@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
 	"mime"
@@ -147,7 +148,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -695,7 +696,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	l := log.NewEntry()
 	for _, instance := range instances {
-		driverManager, err := newDriverManagerWithoutAudit(l, instance, "")
+		driverManager, err := common.NewDriverManagerWithoutAudit(l, instance, "")
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -811,7 +812,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
-	driverManager, err := newDriverManagerWithoutCfg(l, driver.DriverTypeMySQL)
+	driverManager, err := common.NewDriverManagerWithoutCfg(l, driver.DriverTypeMySQL)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -183,6 +183,7 @@ type WorkflowRecord struct {
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
 }
 
+// todo issue832 数据源概览需要展示上线操作人
 type WorkflowInstanceRecord struct {
 	Model
 	TaskId           uint `gorm:"index"`
@@ -460,7 +461,7 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) error {
+func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
 			w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID)
@@ -474,6 +475,17 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 			operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
 		if err != nil {
 			return err
+		}
+
+		if len(instanceRecords) <= 0 {
+			return nil
+		}
+		for _, inst := range instanceRecords {
+			_, err = tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ? WHERE id = ?",
+				inst.IsSQLExecuted, inst.ID)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -514,6 +526,16 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 	return steps, nil
 }
 
+func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInstanceRecord, error) {
+	instanceRecords := []*WorkflowInstanceRecord{}
+	err := s.db.Where("workflow_record_id = ?", id).
+		Find(&instanceRecords).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return instanceRecords, nil
+}
+
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
 	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
@@ -528,6 +550,13 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	if workflow.Record == nil {
 		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
 	}
+
+	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	workflow.Record.InstanceRecords = instanceRecords
+
 	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
@@ -669,22 +698,21 @@ func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 	return len(workflowRecords) > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstanceByWorkflowID(workflowID uint) (*Instance, error) {
+func (s *Storage) GetInstancesByWorkflowID(workflowID uint) ([]*Instance, error) {
 	query := `
 SELECT instances.id ,instances.maintenance_period
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
-LEFT JOIN tasks ON tasks.id = wr.task_id
-LEFT JOIN instances ON instances.id = tasks.instance_id
+LEFT JOIN workflow_instance_records AS wir ON wr.id = wir.workflow_record_id
+LEFT JOIN instances ON instances.id = wir.instance_id
 WHERE 
-w.id = ?
-LIMIT 1`
-	instance := &Instance{}
-	err := s.db.Raw(query, workflowID).Scan(instance).Error
+w.id = ?`
+	instances := []*Instance{}
+	err := s.db.Raw(query, workflowID).Scan(&instances).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
-	return instance, err
+	return instances, err
 }
 
 // GetWorkFlowStepIdsHasAudit 返回走完所有审核流程的workflow_steps的id
@@ -832,4 +860,18 @@ func (s *Storage) GetWorkflowDailyCountBetweenStartTimeAndEndTime(startTime, end
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	return counts, nil
+}
+
+func (s *Storage) GetWaitExecInstancesCountByWorkflowId(workflowId uint) (int, error) {
+	count := 0
+	err := s.db.Table("workflows").
+		Joins("LEFT JOIN workflow_records ON workflow_records.id = workflows.workflow_record_id").
+		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
+		Where("workflows.id = ?", workflowId).
+		Where("workflow_instance_records.is_sql_executed = false").
+		Count(&count).Error
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
+	return count, nil
 }

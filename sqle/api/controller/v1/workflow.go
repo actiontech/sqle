@@ -7,20 +7,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/driver"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
-	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
 
 var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
-var errWorkflowExecuteTimeIncorrect = errors.New(errors.TaskActionInvalid, fmt.Errorf("please go online during instance operation and maintenance time"))
 
 type GetWorkflowTemplateResV1 struct {
 	controller.BaseRes
@@ -524,7 +521,7 @@ type WorkflowStepResV1 struct {
 	Reason        string     `json:"reason,omitempty"`
 }
 
-func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow, ops []uint) error {
+func CheckCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow, ops []uint) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
@@ -541,11 +538,11 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow,
 		return nil
 	}
 	if len(ops) > 0 {
-		instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+		instances, err := s.GetInstancesByWorkflowID(workflow.ID)
 		if err != nil {
 			return err
 		}
-		ok, err := s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, ops)
+		ok, err := s.CheckUserHasOpToInstances(user, instances, ops)
 		if err != nil {
 			return err
 		}
@@ -733,7 +730,7 @@ func GetWorkflows(c echo.Context) error {
 	})
 }
 
-func checkUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
+func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
 	if workflow.Record.Status != model.WorkflowStatusWaitForAudit && workflow.Record.Status != model.WorkflowStatusWaitForExecution {
 		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
 	}
@@ -766,7 +763,7 @@ func ApproveWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
 	}, []uint{})
 	if err != nil {
@@ -794,7 +791,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	err = checkUserCanOperateStep(user, workflow, stepId)
+	err = CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -816,7 +813,7 @@ func ApproveWorkflow(c echo.Context) error {
 		workflow.Record.Status = model.WorkflowStatusWaitForExecution
 	}
 
-	err = s.UpdateWorkflowStatus(workflow, currentStep)
+	err = s.UpdateWorkflowStatus(workflow, currentStep, nil)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
@@ -851,7 +848,7 @@ func RejectWorkflow(c echo.Context) error {
 	}
 
 	// RejectWorkflow no need extra operation code for now.
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
 	}, []uint{})
 	if err != nil {
@@ -879,7 +876,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	err = checkUserCanOperateStep(user, workflow, stepId)
+	err = CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -894,7 +891,7 @@ func RejectWorkflow(c echo.Context) error {
 	workflow.Record.Status = model.WorkflowStatusReject
 	workflow.Record.CurrentWorkflowStepId = 0
 
-	err = s.UpdateWorkflowStatus(workflow, currentStep)
+	err = s.UpdateWorkflowStatus(workflow, currentStep, nil)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
@@ -917,7 +914,7 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
 	}, []uint{})
 	if err != nil {
@@ -941,7 +938,7 @@ func CancelWorkflow(c echo.Context) error {
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
 
-	err = model.GetStorage().UpdateWorkflowStatus(workflow, nil)
+	err = model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -980,7 +977,7 @@ func BatchCancelWorkflows(c echo.Context) error {
 	}
 
 	for _, workflow := range workflows {
-		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil); err != nil {
+		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
@@ -1061,7 +1058,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanAccessWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
 	}, []uint{})
 	if err != nil {
@@ -1091,7 +1088,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 			fmt.Errorf("workflow need to be approved first")))
 	}
 
-	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
+	err = CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -1101,12 +1098,12 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 			"request schedule time is too early")))
 	}
 
-	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+	instance, err := s.GetInstancesByWorkflowID(workflow.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if req.ScheduleTime != nil && len(instance.MaintenancePeriod) != 0 && !instance.MaintenancePeriod.IsWithinScope(*req.ScheduleTime) {
-		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
+		return controller.JSONBaseErrorReq(c, ErrWorkflowExecuteTimeIncorrect)
 	}
 
 	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
@@ -1126,63 +1123,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows/{workflow_id}/task/execute [post]
 func ExecuteTaskOnWorkflow(c echo.Context) error {
-	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	}, []uint{})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-	}
-	currentStep := workflow.CurrentStep()
-	if currentStep == nil {
-		return fmt.Errorf("workflow current step not found")
-	}
-
-	if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow need to be approved first")))
-	}
-
-	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
-	}
-
-	if workflow.Record.ScheduledAt != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow has been set to scheduled execution, not allowed to be executed")))
-	}
-	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if len(instance.MaintenancePeriod) != 0 && !instance.MaintenancePeriod.IsWithinScope(time.Now()) {
-		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
-	}
-
-	err = server.ExecuteWorkflow(workflow, user.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return nil
 }
 
 // ExecuteOneTaskOnWorkflowV1
