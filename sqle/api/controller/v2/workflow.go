@@ -286,7 +286,114 @@ type UpdateWorkflowReqV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/workflows/{workflow_id}/ [patch]
 func UpdateWorkflowV2(c echo.Context) error {
-	return nil
+	req := new(UpdateWorkflowReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	workflowIdStr := c.Param("workflow_id")
+	workflowId, err := v1.FormatStringToInt(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = v1.CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(workflowId)},
+	}, []uint{})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	tasks, err := s.GetTasksByIds(req.TaskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(tasks) <= 0 {
+		return controller.JSONBaseErrorReq(c, v1.ErrTaskNoAccess)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	taskIds := make([]uint, len(tasks))
+	for i, task := range tasks {
+		taskIds[i] = task.ID
+
+		count, err := s.GetTaskSQLCountByTaskID(task.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if count == 0 {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("task's execute sql is null. taskId=%v", task.ID)))
+		}
+
+		err = v1.CheckCurrentUserCanViewTask(c, task)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		if task.Instance == nil {
+			return controller.JSONBaseErrorReq(c, v1.ErrInstanceNotExist)
+		}
+
+		if user.ID != task.CreateUserId {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+				fmt.Errorf("the task is not created by yourself. taskId=%v", task.ID)))
+		}
+
+		if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+			return controller.JSONBaseErrorReq(c, ErrForbidMyBatisXMLTask(task.ID))
+		}
+	}
+
+	count, err := s.GetWorkflowRecordCountByTaskIds(taskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if count > 0 {
+		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
+	}
+
+	workflow, exist, err := s.GetWorkflowDetailById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusReject {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
+	}
+
+	if user.ID != workflow.CreateUserId {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("you are not allow to operate the workflow")))
+	}
+
+	template, exist, err := s.GetWorkflowTemplateById(tasks[0].Instance.WorkflowTemplateId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+			fmt.Errorf("failed to find the corresponding workflow template based on the task id")))
+	}
+
+	err = checkWorkflowCanCommit(template, tasks)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.UpdateWorkflowRecord(workflow, tasks)
+	if err != nil {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	}
+	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeCreate)
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // UpdateWorkflowScheduleV2
