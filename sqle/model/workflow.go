@@ -460,7 +460,7 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) error {
+func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
 			w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID)
@@ -474,6 +474,17 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 			operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
 		if err != nil {
 			return err
+		}
+
+		if len(instanceRecords) <= 0 {
+			return nil
+		}
+		for _, inst := range instanceRecords {
+			_, err = tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ? WHERE id = ?",
+				inst.IsSQLExecuted, inst.ID)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})

@@ -816,7 +816,7 @@ func ApproveWorkflow(c echo.Context) error {
 		workflow.Record.Status = model.WorkflowStatusWaitForExecution
 	}
 
-	err = s.UpdateWorkflowStatus(workflow, currentStep)
+	err = s.UpdateWorkflowStatus(workflow, currentStep, nil)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
@@ -894,7 +894,7 @@ func RejectWorkflow(c echo.Context) error {
 	workflow.Record.Status = model.WorkflowStatusReject
 	workflow.Record.CurrentWorkflowStepId = 0
 
-	err = s.UpdateWorkflowStatus(workflow, currentStep)
+	err = s.UpdateWorkflowStatus(workflow, currentStep, nil)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
@@ -941,7 +941,7 @@ func CancelWorkflow(c echo.Context) error {
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
 
-	err = model.GetStorage().UpdateWorkflowStatus(workflow, nil)
+	err = model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -980,7 +980,7 @@ func BatchCancelWorkflows(c echo.Context) error {
 	}
 
 	for _, workflow := range workflows {
-		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil); err != nil {
+		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
