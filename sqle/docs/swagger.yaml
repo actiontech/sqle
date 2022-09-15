@@ -1516,7 +1516,7 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetWorkflowTasksResV1:
+  v1.GetWorkflowTasksItemV1:
     properties:
       current_step_assignee_user_name_list:
         items:
@@ -1544,6 +1544,19 @@ definitions:
         type: number
       task_score:
         type: integer
+    type: object
+  v1.GetWorkflowTasksResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.GetWorkflowTasksItemV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetWorkflowTemplateResV1:
     properties:

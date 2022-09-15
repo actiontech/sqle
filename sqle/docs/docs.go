@@ -7582,7 +7582,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetWorkflowTasksResV1": {
+        "v1.GetWorkflowTasksItemV1": {
             "type": "object",
             "properties": {
                 "current_step_assignee_user_name_list": {
@@ -7620,6 +7620,25 @@ var doc = `{
                 },
                 "task_score": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetWorkflowTasksResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.GetWorkflowTasksItemV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
