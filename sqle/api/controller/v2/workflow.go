@@ -338,7 +338,7 @@ func ExecuteTasksOnWorkflow(c echo.Context) error {
 	}
 	currentStep := workflow.CurrentStep()
 	if currentStep == nil {
-		return fmt.Errorf("workflow current step not found")
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("workflow current step not found")))
 	}
 
 	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
