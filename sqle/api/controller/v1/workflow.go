@@ -1140,6 +1140,59 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 	return nil
 }
 
+func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow) (taskIds map[uint] /*task id*/ struct{}, err error) {
+	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return nil, err
+	}
+	// 有不在运维时间内的instances报错
+	var cannotExecuteInstanceNames []string
+	for _, inst := range instances {
+		if len(inst.MaintenancePeriod) != 0 && !inst.MaintenancePeriod.IsWithinScope(time.Now()) {
+			cannotExecuteInstanceNames = append(cannotExecuteInstanceNames, inst.Name)
+		}
+	}
+	if len(cannotExecuteInstanceNames) > 0 {
+		return nil, errors.New(errors.TaskActionInvalid,
+			fmt.Errorf("please go online during instance operation and maintenance time. these instances are not in maintenance time[%v]", strings.Join(cannotExecuteInstanceNames, ",")))
+	}
+
+	// 定时的instances和已上线的跳过
+	needExecTaskIds := make(map[uint]struct{})
+	for _, instRecord := range workflow.Record.InstanceRecords {
+		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
+			continue
+		}
+		needExecTaskIds[instRecord.TaskId] = struct{}{}
+	}
+	return needExecTaskIds, nil
+}
+
+func PrepareForWorkflowExecution(c echo.Context, workflow *model.Workflow, user *model.User, workflowId int) error {
+	err := CheckCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(workflowId)},
+	}, []uint{})
+	if err != nil {
+		return err
+	}
+
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return errors.New(errors.DataInvalid, fmt.Errorf("workflow current step not found"))
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first"))
+	}
+
+	err = CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return errors.New(errors.DataInvalid, err)
+	}
+	return nil
+}
+
 type GetWorkflowTasksResV1 struct {
 	controller.BaseRes
 	Data []*GetWorkflowTasksItemV1 `json:"data"`
