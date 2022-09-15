@@ -19,6 +19,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var ErrWorkflowExecuteTimeIncorrect = errors.New(errors.TaskActionInvalid, fmt.Errorf("please go online during instance operation and maintenance time"))
+
 type CreateWorkflowReqV2 struct {
 	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
 	Desc    string `json:"desc" form:"desc"`
@@ -299,7 +301,90 @@ func UpdateWorkflowV2(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/workflows/{workflow_id}/tasks/{task_id}/schedule [put]
 func UpdateWorkflowScheduleV2(c echo.Context) error {
-	return nil
+	workflowId := c.Param("workflow_id")
+	workflowIdInt, err := v1.FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	taskId := c.Param("task_id")
+	taskIdUint, err :=v1.FormatStringToUint64(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	req := new(v1.UpdateWorkflowScheduleV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	err = v1.CheckCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(workflowIdInt)},
+	}, []uint{})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, _err.New("workflow current step not found")))
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first")))
+	}
+
+	err = v1.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+	var curTaskRecord *model.WorkflowInstanceRecord
+	for _, ir := range workflow.Record.InstanceRecords {
+		if uint64(ir.TaskId) == taskIdUint {
+			curTaskRecord = ir
+		}
+	}
+	if curTaskRecord == nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, _err.New("task is not found in workflow")))
+	}
+
+	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
+			"request schedule time is too early")))
+	}
+
+	if curTaskRecord.IsSQLExecuted {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
+			"task has been executed")))
+	}
+
+	instance,exist, err := s.GetInstanceById(fmt.Sprintf("%v", curTaskRecord.InstanceId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrInstanceNotExist)
+	}
+
+	if req.ScheduleTime != nil && len(instance.MaintenancePeriod) != 0 && !instance.MaintenancePeriod.IsWithinScope(*req.ScheduleTime) {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowExecuteTimeIncorrect)
+	}
+
+	err = s.UpdateInstanceRecordSchedule(curTaskRecord, user.ID, req.ScheduleTime)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // ExecuteTasksOnWorkflow
