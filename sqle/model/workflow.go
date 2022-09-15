@@ -183,6 +183,7 @@ type WorkflowRecord struct {
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
 }
 
+// todo issue832 数据源概览需要展示上线操作人
 type WorkflowInstanceRecord struct {
 	Model
 	TaskId           uint `gorm:"index"`
@@ -525,6 +526,16 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 	return steps, nil
 }
 
+func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInstanceRecord, error) {
+	instanceRecords := []*WorkflowInstanceRecord{}
+	err := s.db.Where("workflow_record_id = ?", id).
+		Find(&instanceRecords).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return instanceRecords, nil
+}
+
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
 	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
@@ -539,6 +550,13 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	if workflow.Record == nil {
 		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
 	}
+
+	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	workflow.Record.InstanceRecords = instanceRecords
+
 	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
@@ -842,4 +860,18 @@ func (s *Storage) GetWorkflowDailyCountBetweenStartTimeAndEndTime(startTime, end
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	return counts, nil
+}
+
+func (s *Storage) GetWaitExecInstancesCountByWorkflowId(workflowId uint) (int, error) {
+	count := 0
+	err := s.db.Table("workflows").
+		Joins("LEFT JOIN workflow_records ON workflow_records.id = workflows.workflow_record_id").
+		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
+		Where("workflows.id = ?", workflowId).
+		Where("workflow_instance_records.is_sql_executed = false").
+		Count(&count).Error
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
+	return count, nil
 }

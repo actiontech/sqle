@@ -204,7 +204,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
 	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)
 	v1Router.PUT("/workflows/:workflow_id/schedule", v1.UpdateWorkflowSchedule)
-	v1Router.POST("/workflows/:workflow_id/task/execute", v1.ExecuteTaskOnWorkflow)
+	v1Router.POST("/workflows/:workflow_id/task/execute", DeprecatedBy(apiV2))
+	v2Router.POST("/workflows/:workflow_id/tasks/execute", v2.ExecuteTasksOnWorkflow)
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
