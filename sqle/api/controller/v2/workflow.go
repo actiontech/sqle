@@ -3,6 +3,7 @@ package v2
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -11,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -309,5 +311,74 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/workflows/{workflow_id}/tasks/execute [post]
 func ExecuteTasksOnWorkflow(c echo.Context) error {
-	return nil
+	workflowId := c.Param("workflow_id")
+	id, err := v1.FormatStringToInt(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = v1.CheckCurrentUserCanAccessWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(id)},
+	}, []uint{})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first")))
+	}
+
+	err = v1.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 有不在运维时间内的instances报错
+	var cannotExecuteInstanceNames []string
+	for _, inst := range instances {
+		if len(inst.MaintenancePeriod) != 0 && !inst.MaintenancePeriod.IsWithinScope(time.Now()) {
+			cannotExecuteInstanceNames = append(cannotExecuteInstanceNames, inst.Name)
+		}
+	}
+	if len(cannotExecuteInstanceNames) > 0 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.TaskActionInvalid,
+			fmt.Errorf("please go online during instance operation and maintenance time. these instances are not in maintenance time[%v]", strings.Join(cannotExecuteInstanceNames, ","))))
+	}
+
+	// 定时的instances和已上线的跳过
+	needExecTaskIds := make(map[uint]struct{})
+	for _, instRecord := range workflow.Record.InstanceRecords {
+		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
+			continue
+		}
+		needExecTaskIds[instRecord.TaskId] = struct{}{}
+	}
+
+	err = server.ExecuteWorkflow(workflow, needExecTaskIds, user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
