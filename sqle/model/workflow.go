@@ -407,9 +407,17 @@ func getOverlapOfUsers(users1, users2 []*User) []*User {
 	return res
 }
 
-func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
+func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
+	for i, task := range tasks {
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
+	}
+
 	record := &WorkflowRecord{
-		TaskId: task.ID,
+		InstanceRecords: instanceRecords,
 	}
 	steps := w.cloneWorkflowStep()
 
