@@ -669,22 +669,21 @@ func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 	return len(workflowRecords) > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstanceByWorkflowID(workflowID uint) (*Instance, error) {
+func (s *Storage) GetInstancesByWorkflowID(workflowID uint) ([]*Instance, error) {
 	query := `
 SELECT instances.id ,instances.maintenance_period
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
-LEFT JOIN tasks ON tasks.id = wr.task_id
-LEFT JOIN instances ON instances.id = tasks.instance_id
+LEFT JOIN workflow_instance_records AS wir ON wr.id = wir.workflow_record_id
+LEFT JOIN instances ON instances.id = wir.instance_id
 WHERE 
-w.id = ?
-LIMIT 1`
-	instance := &Instance{}
-	err := s.db.Raw(query, workflowID).Scan(instance).Error
+w.id = ?`
+	instances := []*Instance{}
+	err := s.db.Raw(query, workflowID).Scan(&instances).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
-	return instance, err
+	return instances, err
 }
 
 // GetWorkFlowStepIdsHasAudit 返回走完所有审核流程的workflow_steps的id

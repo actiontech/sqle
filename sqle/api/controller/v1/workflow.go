@@ -541,11 +541,11 @@ func checkCurrentUserCanAccessWorkflow(c echo.Context, workflow *model.Workflow,
 		return nil
 	}
 	if len(ops) > 0 {
-		instance, err := s.GetInstanceByWorkflowID(workflow.ID)
+		instances, err := s.GetInstancesByWorkflowID(workflow.ID)
 		if err != nil {
 			return err
 		}
-		ok, err := s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, ops)
+		ok, err := s.CheckUserHasOpToInstances(user, instances, ops)
 		if err != nil {
 			return err
 		}
