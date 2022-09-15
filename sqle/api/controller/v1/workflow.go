@@ -1141,8 +1141,14 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 }
 
 type GetWorkflowTasksResV1 struct {
-	InstanceName            string     `json:"instance_name" query:"instance_name"`
-	Status                  string     `json:"status" enums:"wait_for_audit, wait_for_execution, rejected, canceled, exec_scheduled, exec_failed, finished"`
+	controller.BaseRes
+	Data []*GetWorkflowTasksItemV1 `json:"data"`
+}
+
+type GetWorkflowTasksItemV1 struct {
+	TaskId                  uint       `json:"task_id"`
+	InstanceName            string     `json:"instance_name"`
+	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_scheduled,exec_failed,finished"`
 	ExecStartTime           *time.Time `json:"exec_start_time,omitempty"`
 	ExecEndTime             *time.Time `json:"exec_end_time,omitempty"`
 	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`

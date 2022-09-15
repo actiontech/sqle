@@ -7582,7 +7582,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetWorkflowTasksResV1": {
+        "v1.GetWorkflowTasksItemV1": {
             "type": "object",
             "properties": {
                 "current_step_assignee_user_name_list": {
@@ -7607,19 +7607,41 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "wait_for_audit",
-                        " wait_for_execution",
-                        " rejected",
-                        " canceled",
-                        " exec_scheduled",
-                        " exec_failed",
-                        " finished"
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_scheduled",
+                        "exec_failed",
+                        "finished"
                     ]
+                },
+                "task_id": {
+                    "type": "integer"
                 },
                 "task_pass_rate": {
                     "type": "number"
                 },
                 "task_score": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetWorkflowTasksResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.GetWorkflowTasksItemV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -10036,11 +10058,11 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "wait_for_audit",
-                        " wait_for_execution",
-                        " rejected",
-                        " canceled",
-                        " exec_failed",
-                        " finished"
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "finished"
                     ]
                 },
                 "task_ids": {

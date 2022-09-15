@@ -214,7 +214,7 @@ type WorkflowDetailResV2 struct {
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_create_user_name query string false "filter create user name"
-// @Param filter_status query string false "filter workflow status" Enums(wait_for_audit, wait_for_execution, rejected, canceled, exec_failed, finished)
+// @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
@@ -237,7 +237,7 @@ type WorkflowTaskItem struct {
 type WorkflowRecordResV2 struct {
 	TaskIds           []*WorkflowTaskItem     `json:"task_ids"`
 	CurrentStepNumber uint                    `json:"current_step_number,omitempty"`
-	Status            string                  `json:"status" enums:"wait_for_audit, wait_for_execution, rejected, canceled, exec_failed, finished"`
+	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,finished"`
 	Steps             []*v1.WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
