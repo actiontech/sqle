@@ -1540,6 +1540,8 @@ definitions:
         - exec_failed
         - finished
         type: string
+      task_id:
+        type: integer
       task_pass_rate:
         type: number
       task_score:
