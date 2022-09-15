@@ -7615,6 +7615,9 @@ var doc = `{
                         "finished"
                     ]
                 },
+                "task_id": {
+                    "type": "integer"
+                },
                 "task_pass_rate": {
                     "type": "number"
                 },
