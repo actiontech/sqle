@@ -1126,63 +1126,7 @@ func UpdateWorkflowSchedule(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows/{workflow_id}/task/execute [post]
 func ExecuteTaskOnWorkflow(c echo.Context) error {
-	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = checkCurrentUserCanAccessWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	}, []uint{})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-	}
-	currentStep := workflow.CurrentStep()
-	if currentStep == nil {
-		return fmt.Errorf("workflow current step not found")
-	}
-
-	if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow need to be approved first")))
-	}
-
-	err = checkUserCanOperateStep(user, workflow, int(currentStep.ID))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
-	}
-
-	if workflow.Record.ScheduledAt != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow has been set to scheduled execution, not allowed to be executed")))
-	}
-	instance, err := s.GetInstanceByWorkflowID(workflow.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if len(instance.MaintenancePeriod) != 0 && !instance.MaintenancePeriod.IsWithinScope(time.Now()) {
-		return controller.JSONBaseErrorReq(c, errWorkflowExecuteTimeIncorrect)
-	}
-
-	err = server.ExecuteWorkflow(workflow, user.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return nil
 }
 
 // ExecuteOneTaskOnWorkflowV1
