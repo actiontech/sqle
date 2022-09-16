@@ -468,7 +468,7 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 
 	return &WorkflowRecordResV2{
 		TaskIds:           tasks,
-		CurrentStepNumber: 0,
+		CurrentStepNumber: record.CurrentWorkflowStepId,
 		Status:            record.Status,
 		Steps:             steps,
 	}
