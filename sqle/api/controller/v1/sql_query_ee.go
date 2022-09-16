@@ -10,19 +10,16 @@ import (
 	"strconv"
 	"time"
 
-	sqlQuery "github.com/actiontech/sqle/sqle/server/sql_query"
-
-	"github.com/actiontech/sqle/sqle/errors"
-
-	"github.com/sirupsen/logrus"
-
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
-
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	sqlQuery "github.com/actiontech/sqle/sqle/server/sql_query"
 
-	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 var errSqlQueryUserNoAccessToSql = errors.New(errors.DataNotExist, fmt.Errorf("current user has no access to this sql"))
@@ -51,7 +48,7 @@ func prepareSQLQuery(c echo.Context) error {
 	}
 
 	if user.Name != model.DefaultAdminUser {
-		exist, err = s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		exist, err = s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, []uint{model.OP_SQL_QUERY_QUERY})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -61,7 +58,7 @@ func prepareSQLQuery(c echo.Context) error {
 	}
 
 	// parse sql using driver
-	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -189,7 +186,7 @@ func getSQLResult(c echo.Context) error {
 	}
 
 	if user.Name != model.DefaultAdminUser {
-		exist, err = s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		exist, err = s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, []uint{model.OP_SQL_QUERY_QUERY})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -213,7 +210,7 @@ func getSQLResult(c echo.Context) error {
 	l.Infoln("SQL Query begin")
 
 	// rewrite sql
-	dsn, err := newDSN(instance, history.Schema)
+	dsn, err := common.NewDSN(instance, history.Schema)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -360,7 +357,7 @@ func getSQLQueryHistory(c echo.Context) error {
 	}
 
 	if user.Name != model.DefaultAdminUser {
-		exist, err = s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		exist, err = s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, []uint{model.OP_SQL_QUERY_QUERY})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -407,7 +404,7 @@ func getSQLExplain(c echo.Context) error {
 	}
 
 	if user.Name != model.DefaultAdminUser {
-		exist, err = s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		exist, err = s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, []uint{model.OP_SQL_QUERY_QUERY})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -416,7 +413,7 @@ func getSQLExplain(c echo.Context) error {
 		}
 	}
 
-	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, req.InstanceSchema)
+	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, req.InstanceSchema)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

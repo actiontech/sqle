@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -77,7 +78,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 }
 
 func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, instance *model.Instance) (explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult, err error) {
-	dsn, err := newDSN(instance, database)
+	dsn, err := common.NewDSN(instance, database)
 	if err != nil {
 		return nil, "", nil, err
 	}

@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-
-	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -91,7 +91,7 @@ func listTableBySchema(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	dsn, err := newDSN(instance, "")
+	dsn, err := common.NewDSN(instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -138,7 +138,7 @@ func getTableMetadata(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -147,7 +147,7 @@ func getTableMetadata(c echo.Context) error {
 	}
 
 	if user.Name != model.DefaultAdminUser {
-		exist, err := s.CheckUserHasOpToInstance(user, instance, []uint{model.OP_SQL_QUERY_QUERY})
+		exist, err := s.CheckUserHasOpToInstances(user, []*model.Instance{instance}, []uint{model.OP_SQL_QUERY_QUERY})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -156,7 +156,7 @@ func getTableMetadata(c echo.Context) error {
 		}
 	}
 
-	dsn, err := newDSN(instance, schemaName)
+	dsn, err := common.NewDSN(instance, schemaName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
