@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
 
 	mdriver "github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,17 +40,28 @@ type BaseConn struct {
 func newConn(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*BaseConn, error) {
 	var db *sql.DB
 	var err error
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?timeout=%s&charset=utf8&parseTime=True&loc=Local",
-		instance.User, instance.Password, instance.Host, instance.Port, schema, DAIL_TIMEOUT))
+
+	config := mysql.NewConfig()
+	config.User = instance.User
+	config.Passwd = instance.Password
+	config.Addr = net.JoinHostPort(instance.Host, instance.Port)
+	config.DBName = instance.DatabaseName
+	config.ParseTime = true
+	config.Loc = time.Local
+	config.Timeout = DAIL_TIMEOUT
+	config.Params = map[string]string {
+		"charset": "utf8",
+	}
+	driver, err := mysql.NewConnector(config)
 	if err != nil {
 		entry.Error(err)
 		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
-
+	db = sql.OpenDB(driver)
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
-	entry.Infof("connecting to %s:%s", instance.Host, instance.Port)
+	entry.Infof("connecting to %s:%s with user(%s)", instance.Host, instance.Port, config.User)
 	conn, err := db.Conn(context.Background())
 	if err != nil {
 		entry.Error(err)
