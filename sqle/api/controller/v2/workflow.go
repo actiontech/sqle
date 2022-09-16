@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -318,13 +317,12 @@ func GetWorkflowsV2(c echo.Context) error {
 	})
 }
 
-func convertWorkflowStatusToRes(workflowStatus, taskStatus string) string {
+func convertWorkflowStatusToRes(workflowStatus string, taskStatus []string) string {
 	var status = workflowStatus
 
-	taskStatusArray := strings.Split(taskStatus, ",")
 	if workflowStatus == model.WorkflowStatusFinish {
 		var hasExecuteFailTask bool
-		for _, taskStat := range taskStatusArray {
+		for _, taskStat := range taskStatus {
 			if taskStat == model.TaskStatusExecuteFailed {
 				hasExecuteFailTask = true
 			}
