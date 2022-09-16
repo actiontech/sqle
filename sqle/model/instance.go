@@ -219,6 +219,16 @@ func (s *Storage) CheckUserHasOpToInstances(user *User, instances []*Instance, o
 	return len(instanceRecords) == len(instanceIds), nil
 }
 
+func (s *Storage) CheckUserHasOpToAnyInstance(user *User, instances []*Instance, ops []uint) (bool, error) {
+	instanceIds := getDeduplicatedInstanceIds(instances)
+	var instanceRecords []*Instance
+	err := s.db.Raw(checkUserHasOpToInstancesQuery, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
+	if err != nil {
+		return false, errors.ConnectStorageErrWrapper(err)
+	}
+	return len(instanceRecords) > 0, nil
+}
+
 func (s *Storage) GetUserCanOpInstances(user *User, ops []uint) (instances []*Instance, err error) {
 	query := `
 SELECT instances.id, instances.name
