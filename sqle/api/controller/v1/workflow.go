@@ -14,8 +14,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -642,94 +640,7 @@ type WorkflowDetailResV1 struct {
 // @Success 200 {object} v1.GetWorkflowsResV1
 // @router /v1/workflows [get]
 func GetWorkflows(c echo.Context) error {
-	req := new(GetWorkflowsReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-	var workflowStatus string
-	var taskStatus string
-	var isScheduled bool
-	var notScheduled bool
-	// filter task status
-	switch req.FilterStatus {
-	case model.WorkflowStatusExecuting:
-		taskStatus = model.TaskStatusExecuting
-	case model.WorkflowStatusExecFailed:
-		taskStatus = model.TaskStatusExecuteFailed
-	case model.WorkflowStatusFinish:
-		taskStatus = model.TaskStatusExecuteSucceeded
-	}
-	// filter workflow status
-	switch req.FilterStatus {
-	case model.WorkflowStatusRunning:
-		workflowStatus = model.WorkflowStatusRunning
-		notScheduled = true
-	case model.WorkflowStatusExecScheduled:
-		workflowStatus = model.WorkflowStatusRunning
-		isScheduled = true
-	case model.WorkflowStatusCancel, model.WorkflowStatusReject:
-		workflowStatus = req.FilterStatus
-	}
-
-	data := map[string]interface{}{
-		"filter_subject":                         req.FilterSubject,
-		"filter_create_time_from":                req.FilterCreateTimeFrom,
-		"filter_create_time_to":                  req.FilterCreateTimeTo,
-		"filter_create_user_name":                req.FilterCreateUserName,
-		"filter_status":                          workflowStatus,
-		"filter_task_status":                     taskStatus,
-		"is_scheduled":                           isScheduled,
-		"not_scheduled":                          notScheduled,
-		"filter_current_step_type":               req.FilterCurrentStepType,
-		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
-		"filter_task_instance_name":              req.FilterTaskInstanceName,
-		"current_user_id":                        user.ID,
-		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
-		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
-		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
-		"limit":                                  req.PageSize,
-		"offset":                                 offset,
-	}
-	s := model.GetStorage()
-	workflows, count, err := s.GetWorkflowsByReq(data, user)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	workflowsReq := make([]*WorkflowDetailResV1, 0, len(workflows))
-	for _, workflow := range workflows {
-		workflowReq := &WorkflowDetailResV1{
-			Id:                      workflow.Id,
-			Subject:                 workflow.Subject,
-			Desc:                    workflow.Desc,
-			TaskPassRate:            workflow.TaskPassRate,
-			TaskScore:               workflow.TaskScore.Int32,
-			TaskInstance:            utils.AddDelTag(workflow.TaskInstanceDeletedAt, workflow.TaskInstance.String),
-			TaskInstanceSchema:      workflow.TaskInstanceSchema,
-			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
-			CreateTime:              workflow.CreateTime,
-			CurrentStepType:         workflow.CurrentStepType.String,
-			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
-			Status:                  convertWorkflowStatusToRes(workflow.Status, workflow.TaskStatus, workflow.ScheduleTime),
-			ScheduleTime:            workflow.ScheduleTime,
-		}
-		workflowsReq = append(workflowsReq, workflowReq)
-	}
-	return c.JSON(http.StatusOK, &GetWorkflowsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      workflowsReq,
-		TotalNums: count,
-	})
+	return nil
 }
 
 func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
