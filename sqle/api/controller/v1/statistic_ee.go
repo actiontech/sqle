@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -494,8 +493,7 @@ func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 	instanceTypesMap := make(map[string]int, 0)
 
 	for _, workflow := range workflows {
-		instanceTypes := strings.Split(workflow.TaskInstanceType, ",")
-		for _, instanceType := range instanceTypes {
+		for _, instanceType := range workflow.TaskInstanceType {
 			instanceTypesMap[instanceType]++
 		}
 	}
