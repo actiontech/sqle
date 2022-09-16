@@ -507,6 +507,14 @@ func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime 
 	return errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId uint,  scheduleTime *time.Time) error {
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
+		"scheduled_at":     scheduleTime,
+		"schedule_user_id": userId,
+	}).Error
+	return errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, error) {
 	steps := []*WorkflowStep{}
 	err := s.db.Where("workflow_record_id in (?)", ids).
@@ -684,9 +692,11 @@ func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
 	workflows := []*Workflow{}
 	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
-		Where("workflow_records.scheduled_at IS NOT NULL "+
-			"AND workflow_records.scheduled_at <= ? "+
-			"AND workflow_records.status = 'on_process'", time.Now()).
+		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
+		Where("workflow_records.status = 'wait_for_execution' "+
+			"AND workflow_instance_records.scheduled_at IS NOT NULL "+
+			"AND workflow_instance_records.scheduled_at <= ? "+
+			"AND workflow_instance_records.is_sql_executed = false", time.Now()).
 		Scan(&workflows).Error
 	return workflows, errors.New(errors.ConnectStorageError, err)
 }

@@ -1034,6 +1034,18 @@ func FormatStringToInt(s string) (ret int, err error) {
 	return ret, nil
 }
 
+func FormatStringToUint64(s string) (ret uint64, err error) {
+	if s == "" {
+		return 0, nil
+	} else {
+		ret, err = strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return ret, nil
+}
+
 type UpdateWorkflowScheduleV1 struct {
 	ScheduleTime *time.Time `json:"schedule_time"`
 }
@@ -1051,68 +1063,7 @@ type UpdateWorkflowScheduleV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/workflows/{workflow_id}/schedule [put]
 func UpdateWorkflowSchedule(c echo.Context) error {
-	req := new(UpdateWorkflowScheduleV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	}, []uint{})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-	}
-	currentStep := workflow.CurrentStep()
-	if currentStep == nil {
-		return fmt.Errorf("workflow current step not found")
-	}
-
-	if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow need to be approved first")))
-	}
-
-	err = CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
-	}
-
-	if req.ScheduleTime != nil && req.ScheduleTime.Before(time.Now()) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf(
-			"request schedule time is too early")))
-	}
-
-	instance, err := s.GetInstancesByWorkflowID(workflow.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if req.ScheduleTime != nil && len(instance.MaintenancePeriod) != 0 && !instance.MaintenancePeriod.IsWithinScope(*req.ScheduleTime) {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowExecuteTimeIncorrect)
-	}
-
-	err = s.UpdateWorkflowSchedule(workflow, user.ID, req.ScheduleTime)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return nil
 }
 
 // @Summary 工单提交 SQL 上线
