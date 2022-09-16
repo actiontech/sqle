@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 	"time"
 )
@@ -72,8 +71,8 @@ w.create_user_id = :current_user_id
 OR curr_ass_user.id = :current_user_id
 OR all_ass_user.id = :current_user_id
 
-{{- if .workflow_ids }} 
-OR w.id IN ( {{ .workflow_ids }})
+{{- if .viewable_instance_ids }} 
+OR inst.id IN ( {{ .viewable_instance_ids }})
 {{- end }}
 
 )
@@ -138,23 +137,16 @@ func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 	result []*WorkflowListDetail, count uint64, err error) {
 
 	var ids []uint
-	var workflowRecordIds []uint
 	{
 		instances, err := s.GetUserCanOpInstances(user, []uint{OP_WORKFLOW_VIEW_OTHERS})
 		if err != nil {
 			return result, 0, err
 		}
-
 		ids = getInstanceIDsFromInstances(instances)
-
-		workflowRecordIds, err = s.GetDistinctWorkflowIdsByIntsIDs(ids)
-		if err != nil {
-			return result, 0, err
-		}
 	}
 
-	if len(workflowRecordIds) > 0 {
-		data["workflow_ids"] = utils.JoinUintSliceToString(workflowRecordIds, ", ")
+	if len(ids) > 0 {
+		data["viewable_instance_ids"] = utils.JoinUintSliceToString(ids, ", ")
 	}
 
 	err = s.getListResult(workflowsQueryBodyTpl, workflowsQueryTpl, data, &result)
@@ -165,17 +157,6 @@ func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 	count, err = s.getCountResult(workflowsQueryBodyTpl, workflowsCountTpl, data)
 
 	return result, count, err
-}
-
-func (s *Storage) GetDistinctWorkflowIdsByIntsIDs(ids []uint) ([]uint, error) {
-	var workflowRecordIds []uint
-	err := s.db.Raw(`SELECT DISTINCT(workflow_record_id) FROM workflow_instance_records WHERE deleted_at IS NULL and instance_id IN (?)`, ids).
-		Scan(&workflowRecordIds).Error
-	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-
-	return workflowRecordIds, nil
 }
 
 func (s *Storage) GetWorkflowCountByReq(data map[string]interface{}) (uint64, error) {
