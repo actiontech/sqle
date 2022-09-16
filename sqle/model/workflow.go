@@ -304,6 +304,14 @@ func (w *Workflow) IsFirstRecord(record *WorkflowRecord) bool {
 	return false
 }
 
+func (w *Workflow) GetTaskIds() []uint {
+	taskIds := make([]uint, len(w.Record.InstanceRecords))
+	for i, inst := range w.Record.InstanceRecords {
+		taskIds[i] = inst.TaskId
+	}
+	return taskIds
+}
+
 func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task,
 	stepTemplates []*WorkflowStepTemplate) error {
 	if len(tasks) <= 0 {
@@ -507,7 +515,7 @@ func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime 
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId uint,  scheduleTime *time.Time) error {
+func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId uint, scheduleTime *time.Time) error {
 	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
 		"scheduled_at":     scheduleTime,
 		"schedule_user_id": userId,
