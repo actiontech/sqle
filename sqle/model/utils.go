@@ -131,6 +131,8 @@ var autoMigrateList = []interface{}{
 	&Workflow{},
 	&SqlQueryExecutionSql{},
 	&SqlQueryHistory{},
+	&TaskGroup{},
+	&WorkflowInstanceRecord{},
 }
 
 func (s *Storage) AutoMigrate() error {

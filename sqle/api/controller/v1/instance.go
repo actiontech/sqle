@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -16,7 +17,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var errInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
+var ErrInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 var errInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
 var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 var errWrongTimePeriod = errors.New(errors.DataInvalid, fmt.Errorf("wrong time period"))
@@ -279,6 +280,24 @@ func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance)
 	return true, nil
 }
 
+func checkCurrentUserCanAccessInstances(c echo.Context, instances []*model.Instance) (bool, error) {
+	if len(instances) == 0 {
+		return false, nil
+	}
+
+	for _, instance := range instances {
+		can, err := checkCurrentUserCanAccessInstance(c, instance)
+		if err != nil {
+			return false, err
+		}
+		if !can {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 type InstanceResV1 struct {
 	Name                 string                          `json:"instance_name"`
 	DBType               string                          `json:"db_type" example:"mysql"`
@@ -429,7 +448,7 @@ func DeleteInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	}
 
 	tasks, err := s.GetTaskByInstanceId(instance.ID)
@@ -499,7 +518,7 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNotExist)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	}
 
 	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
@@ -734,41 +753,16 @@ type InstanceConnectableResV1 struct {
 	ConnectErrorMessage   string `json:"connect_error_message,omitempty"`
 }
 
-func newGetInstanceConnectableResV1(err error) GetInstanceConnectableResV1 {
+func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 	if err == nil {
-		return GetInstanceConnectableResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: InstanceConnectableResV1{
-				IsInstanceConnectable: true,
-			},
+		return InstanceConnectableResV1{
+			IsInstanceConnectable: true,
 		}
 	}
-	return GetInstanceConnectableResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: InstanceConnectableResV1{
-			IsInstanceConnectable: false,
-			ConnectErrorMessage:   err.Error(),
-		},
+	return InstanceConnectableResV1{
+		IsInstanceConnectable: false,
+		ConnectErrorMessage:   err.Error(),
 	}
-}
-
-func checkInstanceIsConnectable(c echo.Context, instance *model.Instance) error {
-	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
-	if err != nil {
-		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
-	}
-	defer drvMgr.Close(context.TODO())
-
-	d, err := drvMgr.GetAuditDriver()
-	if err != nil {
-		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
-	}
-
-	if err := d.Ping(context.TODO()); err != nil {
-		return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(err))
-	}
-
-	return c.JSON(http.StatusOK, newGetInstanceConnectableResV1(nil))
 }
 
 // CheckInstanceIsConnectableByName test instance db connection
@@ -797,7 +791,18 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-	return checkInstanceIsConnectable(c, instance)
+
+	l := log.NewEntry()
+
+	err = common.CheckInstanceIsConnectable(instance)
+	if err != nil {
+		l.Warnf("instance %s is not connectable, err: %s", instanceName, err)
+	}
+
+	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    newInstanceConnectableResV1(err),
+	})
 }
 
 type InstanceForCheckConnection struct {
@@ -828,7 +833,54 @@ type InstanceConnectionResV1 struct {
 // @Success 200 {object} v1.BatchGetInstanceConnectionsResV1
 // @router /v1/instances/connections [post]
 func BatchCheckInstanceConnections(c echo.Context) error {
-	return nil
+	req := new(BatchCheckInstanceConnectionsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceNames := make([]string, 0, len(req.Instances))
+	for _, instance := range req.Instances {
+		instanceNames = append(instanceNames, instance.Name)
+	}
+
+	distinctInstNames := utils.RemoveDuplicate(instanceNames)
+
+	s := model.GetStorage()
+	instances, err := s.GetInstancesByNames(distinctInstNames)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if len(distinctInstNames) != len(instances) {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	can, err := checkCurrentUserCanAccessInstances(c, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
+	l := log.NewEntry()
+
+	instanceConnectionResV1 := make([]InstanceConnectionResV1, len(instances))
+	for i, instance := range instances {
+		err := common.CheckInstanceIsConnectable(instance)
+		if err != nil {
+			l.Warnf("instance %s is not connectable, err: %s", instance.Name, err)
+		}
+		instanceConnectionResV1[i] = InstanceConnectionResV1{
+			InstanceName:             instance.Name,
+			InstanceConnectableResV1: newInstanceConnectableResV1(err),
+		}
+	}
+
+	return c.JSON(http.StatusOK, BatchGetInstanceConnectionsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    instanceConnectionResV1,
+	})
 }
 
 type GetInstanceConnectableReqV1 struct {
@@ -875,7 +927,18 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		Password:         req.Password,
 		AdditionalParams: additionalParams,
 	}
-	return checkInstanceIsConnectable(c, instance)
+
+	l := log.NewEntry()
+
+	err := common.CheckInstanceIsConnectable(instance)
+	if err != nil {
+		l.Warnf("check instance is connectable failed: %v", err)
+	}
+
+	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    newInstanceConnectableResV1(err),
+	})
 }
 
 type GetInstanceSchemaResV1 struct {
@@ -914,7 +977,7 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	drvMgr, err := newDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
