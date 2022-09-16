@@ -2,8 +2,9 @@ package model
 
 import (
 	"database/sql"
-	"github.com/actiontech/sqle/sqle/utils"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 type WorkflowListDetail struct {
