@@ -18,7 +18,7 @@ type WorkflowListDetail struct {
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
 	TaskStatus              RowList        `json:"task_status"`
 	Status                  string         `json:"status"`
-	TaskInstanceType        string         `json:"task_instance_type"`
+	TaskInstanceType        RowList        `json:"task_instance_type"`
 }
 
 var workflowsQueryTpl = `
