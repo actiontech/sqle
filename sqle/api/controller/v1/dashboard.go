@@ -43,7 +43,7 @@ func Dashboard(c echo.Context) error {
 
 	createdNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
 		"filter_create_user_name": user.Name,
-		"filter_status":           model.WorkflowStatusRunning,
+		"filter_status":           model.WorkflowStatusWaitForAudit,
 		"check_user_can_access":   false,
 	})
 	if err != nil {
@@ -60,7 +60,7 @@ func Dashboard(c echo.Context) error {
 	}
 
 	myNeedReviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_status":            model.WorkflowStatusRunning,
+		"filter_status":            model.WorkflowStatusWaitForAudit,
 		"filter_current_step_type": model.WorkflowStepTypeSQLReview,
 		"filter_create_user_name":  user.Name,
 		"check_user_can_access":    false,
@@ -70,18 +70,17 @@ func Dashboard(c echo.Context) error {
 	}
 
 	myNeedExecuteNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_status":            model.WorkflowStatusRunning,
+		"filter_status":            model.WorkflowStatusWaitForExecution,
 		"filter_current_step_type": model.WorkflowStepTypeSQLExecute,
 		"filter_create_user_name":  user.Name,
 		"check_user_can_access":    false,
-		"not_scheduled":            true,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	reviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_status":                          model.WorkflowStatusRunning,
+		"filter_status":                          model.WorkflowStatusWaitForAudit,
 		"filter_current_step_type":               model.WorkflowStepTypeSQLReview,
 		"filter_current_step_assignee_user_name": user.Name,
 		"check_user_can_access":                  false,
@@ -91,11 +90,10 @@ func Dashboard(c echo.Context) error {
 	}
 
 	executeNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_status":                          model.WorkflowStatusRunning,
+		"filter_status":                          model.WorkflowStatusWaitForExecution,
 		"filter_current_step_type":               model.WorkflowStepTypeSQLExecute,
 		"filter_current_step_assignee_user_name": user.Name,
 		"check_user_can_access":                  false,
-		"not_scheduled":                          true,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
