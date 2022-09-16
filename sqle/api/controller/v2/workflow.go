@@ -193,6 +193,18 @@ func checkCurrentUserCanCreateWorkflow(user *model.User, tasks []*model.Task) er
 	return nil
 }
 
+type GetWorkflowsReqV2 struct {
+	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
+	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
+	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled exec_failed finished"`
+	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
+	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
 type GetWorkflowsResV2 struct {
 	controller.BaseRes
 	Data      []*WorkflowDetailResV2 `json:"data"`
@@ -228,7 +240,102 @@ type WorkflowDetailResV2 struct {
 // @Success 200 {object} v2.GetWorkflowsResV2
 // @router /v2/workflows [get]
 func GetWorkflowsV2(c echo.Context) error {
-	return nil
+	req := new(GetWorkflowsReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var offset uint32
+	if req.PageIndex > 0 {
+		offset = (req.PageIndex - 1) * req.PageSize
+	}
+
+	var workflowStatus string
+	var taskStatus string
+
+	// task status
+	switch req.FilterStatus {
+	case model.WorkflowStatusExecFailed:
+		taskStatus = model.TaskStatusExecuteFailed
+	case model.WorkflowStatusFinish:
+		taskStatus = model.TaskStatusExecuteSucceeded
+	}
+
+	// workflow status
+	switch req.FilterStatus {
+	case model.WorkflowStatusWaitForAudit, model.WorkflowStatusWaitForExecution, model.WorkflowStatusCancel,
+		model.WorkflowStatusReject:
+
+		workflowStatus = req.FilterStatus
+	}
+
+	data := map[string]interface{}{
+		"filter_subject":                         req.FilterSubject,
+		"filter_create_time_from":                req.FilterCreateTimeFrom,
+		"filter_create_time_to":                  req.FilterCreateTimeTo,
+		"filter_create_user_name":                req.FilterCreateUserName,
+		"filter_status":                          workflowStatus,
+		"filter_task_status":                     taskStatus,
+		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
+		"filter_task_instance_name":              req.FilterTaskInstanceName,
+		"current_user_id":                        user.ID,
+		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
+		"limit":                                  req.PageSize,
+		"offset":                                 offset,
+	}
+
+	s := model.GetStorage()
+	workflows, count, err := s.GetWorkflowsByReq(data, user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflowsReq := make([]*WorkflowDetailResV2, 0, len(workflows))
+	for _, workflow := range workflows {
+		workflowReq := &WorkflowDetailResV2{
+			Id:                      workflow.Id,
+			Subject:                 workflow.Subject,
+			Desc:                    workflow.Desc,
+			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
+			CreateTime:              workflow.CreateTime,
+			CurrentStepType:         workflow.CurrentStepType.String,
+			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
+			Status:                  convertWorkflowStatusToRes(workflow.Status, workflow.TaskStatus),
+		}
+		workflowsReq = append(workflowsReq, workflowReq)
+	}
+
+	return c.JSON(http.StatusOK, GetWorkflowsResV2{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      workflowsReq,
+		TotalNums: count,
+	})
+}
+
+func convertWorkflowStatusToRes(workflowStatus string, taskStatus []string) string {
+	var status = workflowStatus
+
+	if workflowStatus == model.WorkflowStatusFinish {
+		var hasExecuteFailTask bool
+		for _, taskStat := range taskStatus {
+			if taskStat == model.TaskStatusExecuteFailed {
+				hasExecuteFailTask = true
+			}
+		}
+
+		if hasExecuteFailTask {
+			status = model.WorkflowStatusExecFailed
+		} else {
+			status = model.WorkflowStatusFinish
+		}
+	}
+
+	return status
 }
 
 type GetWorkflowResV2 struct {

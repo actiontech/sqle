@@ -11,32 +11,27 @@ type WorkflowListDetail struct {
 	Id                      uint           `json:"workflow_id"`
 	Subject                 string         `json:"subject"`
 	Desc                    string         `json:"desc"`
-	TaskPassRate            float64        `json:"task_pass_rate"`
-	TaskScore               sql.NullInt32  `json:"task_score"`
-	TaskInstance            sql.NullString `json:"task_instance_name"`
-	TaskInstanceType        sql.NullString `json:"task_instance_type"`
-	TaskInstanceDeletedAt   *time.Time     `json:"task_instance_deleted_at"`
-	TaskInstanceSchema      string         `json:"task_instance_schema"`
-	TaskStatus              string         `json:"task_status"`
 	CreateUser              sql.NullString `json:"create_user_name"`
 	CreateUserDeletedAt     *time.Time     `json:"create_user_deleted_at"`
 	CreateTime              *time.Time     `json:"create_time"`
 	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
+	TaskStatus              RowList        `json:"task_status"`
 	Status                  string         `json:"status"`
-	ScheduleTime            *time.Time     `json:"schedule_time"`
 }
 
-var workflowsQueryTpl = `SELECT w.id AS workflow_id, w.subject, w.desc, wr.status,
-tasks.status AS task_status, tasks.pass_rate AS task_pass_rate, tasks.score AS task_score, tasks.instance_schema AS task_instance_schema,
-inst.name AS task_instance_name, inst.db_type AS task_instance_type, inst.deleted_at AS task_instance_deleted_at,
-create_user.login_name AS create_user_name, create_user.deleted_at AS create_user_deleted_at,
-w.created_at AS create_time, curr_wst.type AS current_step_type, 
-GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name,'')) AS current_step_assignee_user_name_list,
-wr.scheduled_at AS schedule_time
-
-{{- template "body" . -}} 
-
+var workflowsQueryTpl = `
+SELECT w.id                                                          AS workflow_id,
+       w.subject,
+       w.desc,
+       create_user.login_name                                        AS create_user_name,
+	   create_user.deleted_at                                        AS create_user_deleted_at,
+       w.created_at                                                  AS create_time,
+       curr_wst.type                                                 AS current_step_type,
+       GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name, '')) AS current_step_assignee_user_name_list,
+       GROUP_CONCAT(tasks.status)                                    AS task_status,
+       wr.status
+{{- template "body" . -}}
 GROUP BY w.id
 ORDER BY w.id DESC
 {{- if .limit }}
@@ -54,7 +49,8 @@ var workflowsQueryBodyTpl = `
 FROM workflows AS w
 LEFT JOIN users AS create_user ON w.create_user_id = create_user.id
 LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
-LEFT JOIN tasks ON wr.task_id = tasks.id
+LEFT JOIN workflow_instance_records wir on wir.workflow_record_id = wr.id
+LEFT JOIN tasks ON wir.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
 LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
@@ -141,7 +137,6 @@ AND inst.name = :filter_task_instance_name
 func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 	result []*WorkflowListDetail, count uint64, err error) {
 
-	// get workflow ids only for user can access by OP_WORKFLOW_VIEW_OTHERS
 	var ids []uint
 	{
 		instances, err := s.GetUserCanOpInstances(user, []uint{OP_WORKFLOW_VIEW_OTHERS})
@@ -150,6 +145,7 @@ func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 		}
 		ids = getInstanceIDsFromInstances(instances)
 	}
+
 	if len(ids) > 0 {
 		data["viewable_instance_ids"] = utils.JoinUintSliceToString(ids, ", ")
 	}
@@ -158,7 +154,9 @@ func (s *Storage) GetWorkflowsByReq(data map[string]interface{}, user *User) (
 	if err != nil {
 		return result, 0, err
 	}
+
 	count, err = s.getCountResult(workflowsQueryBodyTpl, workflowsCountTpl, data)
+
 	return result, count, err
 }
 
