@@ -178,6 +178,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
 	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
+	v1Router.POST("/instances/connections", v1.BatchCheckInstanceConnections)
 	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)
 	v1Router.GET("/instance_tips", v1.GetInstanceTips)
 	v1Router.GET("/instances/:instance_name/rules", v1.GetInstanceRules)
@@ -194,15 +195,24 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/rules", v1.GetRules)
 
 	// workflow
-	v1Router.POST("/workflows", v1.CreateWorkflow)
+	v1Router.POST("/workflows", DeprecatedBy(apiV2))
+	v2Router.POST("/workflows", v2.CreateWorkflowV2)
 	v1Router.GET("/workflows/:workflow_id/", v1.GetWorkflow)
-	v1Router.GET("/workflows", v1.GetWorkflows)
+	v1Router.GET("/workflows/:workflow_id/", DeprecatedBy(apiV2))
+	v2Router.GET("/workflows/:workflow_id/", v2.GetWorkflowV2)
+	v1Router.GET("/workflows", DeprecatedBy(apiV2))
+	v2Router.GET("/workflows", v2.GetWorkflowsV2)
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
-	v1Router.PATCH("/workflows/:workflow_id/", v1.UpdateWorkflow)
-	v1Router.PUT("/workflows/:workflow_id/schedule", v1.UpdateWorkflowSchedule)
-	v1Router.POST("/workflows/:workflow_id/task/execute", v1.ExecuteTaskOnWorkflow)
+	v1Router.PATCH("/workflows/:workflow_id/", DeprecatedBy(apiV2))
+	v2Router.PATCH("/workflows/:workflow_id/", v2.UpdateWorkflowV2)
+	v1Router.PUT("/workflows/:workflow_id/schedule", DeprecatedBy(apiV2))
+	v2Router.PUT("/workflows/:workflow_id/tasks/:task_id/schedule", v2.UpdateWorkflowScheduleV2)
+	v1Router.POST("/workflows/:workflow_id/task/execute", DeprecatedBy(apiV2))
+	v2Router.POST("/workflows/:workflow_id/tasks/execute", v2.ExecuteTasksOnWorkflow)
+	v1Router.POST("/workflows/:workflow_id/tasks/:task_id/execute", v1.ExecuteOneTaskOnWorkflowV1)
+	v1Router.GET("/workflows/:workflow_id/tasks", v1.GetSummaryOfWorkflowTasksV1)
 
 	// task
 	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
@@ -213,6 +223,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
 	v1Router.PATCH("/tasks/audits/:task_id/sqls/:number", v1.UpdateAuditTaskSQLs)
 	v1Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v1.GetTaskAnalysisData)
+	v1Router.POST("/task_groups", v1.CreateAuditTasksGroupV1)
+	v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)

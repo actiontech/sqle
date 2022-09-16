@@ -1,14 +1,13 @@
 package notification
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver"
-	"strconv"
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
-
 	"github.com/actiontech/sqle/sqle/model"
 )
 
@@ -80,40 +79,61 @@ func (w *WorkflowNotification) NotificationSubject() string {
 }
 
 func (w *WorkflowNotification) NotificationBody() string {
-	var (
-		instanceName   string
-		schema         string
-		score          int32
-		passRate       float64
-		executeStartAt *time.Time
-		executeEndAt   *time.Time
-	)
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(strconv.Itoa(int(w.workflow.Record.TaskId)))
-	if err == nil && exist {
-		instanceName = task.InstanceName()
-		score = task.Score
-		passRate = task.PassRate
-		schema = task.Schema
-		executeStartAt = task.ExecStartAt
-		executeEndAt = task.ExecEndAt
-	}
-	switch w.notifyType {
-	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
+	taskIds := w.workflow.GetTaskIds()
+	tasks, err := s.GetTasksByIds(taskIds)
+	if err != nil || len(tasks) <= 0 {
 		return fmt.Sprintf(`
 - 工单主题: %v
 - 工单描述: %v
 - 申请人: %v
 - 创建时间: %v
+- 读取工单任务内容失败，请通过SQLE界面确认工单状态
+`,
+			w.workflow.Subject,
+			w.workflow.Desc,
+			w.workflow.CreateUserName(),
+			w.workflow.CreatedAt)
+	}
+
+	buf := bytes.Buffer{}
+	head := fmt.Sprintf(`
+- 工单主题: %v
+- 工单描述: %v
+- 申请人: %v
+- 创建时间: %v
+--------------
+`,
+		w.workflow.Subject,
+		w.workflow.Desc,
+		w.workflow.CreateUserName(),
+		w.workflow.CreatedAt)
+	buf.WriteString(head)
+
+	for _, t := range tasks {
+		buf.WriteString("\n--------------\n")
+		buf.WriteString(w.buildNotifyBody(t))
+	}
+
+	return buf.String()
+}
+
+func (w *WorkflowNotification) buildNotifyBody(task *model.Task) string {
+	instanceName := task.InstanceName()
+	score := task.Score
+	passRate := task.PassRate
+	schema := task.Schema
+	executeStartAt := task.ExecStartAt
+	executeEndAt := task.ExecEndAt
+
+	switch w.notifyType {
+	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
+		return fmt.Sprintf(`
 - 数据源: %v
 - schema: %v
 - 上线开始时间: %v
 - 上线结束时间: %v
 `,
-			w.workflow.Subject,
-			w.workflow.Desc,
-			w.workflow.CreateUserName(),
-			w.workflow.CreatedAt,
 			instanceName,
 			schema,
 			executeStartAt,
@@ -128,37 +148,21 @@ func (w *WorkflowNotification) NotificationBody() string {
 			}
 		}
 		return fmt.Sprintf(`
-- 工单主题: %v
-- 工单描述: %v
-- 申请人: %v
-- 创建时间: %v
 - 数据源: %v
 - schema: %v
 - 驳回原因: %v
 `,
-			w.workflow.Subject,
-			w.workflow.Desc,
-			w.workflow.CreateUserName(),
-			w.workflow.CreatedAt,
 			instanceName,
 			schema,
 			reason,
 		)
 	default:
 		return fmt.Sprintf(`
-- 工单主题: %v
-- 工单描述: %v
-- 申请人: %v
-- 创建时间: %v
 - 数据源: %v
 - schema: %v
 - 工单审核得分: %v
 - 工单审核通过率：%v%%
 `,
-			w.workflow.Subject,
-			w.workflow.Desc,
-			w.workflow.CreateUserName(),
-			w.workflow.CreatedAt,
 			instanceName,
 			schema,
 			score,

@@ -7608,11 +7608,10 @@ var doc = `{
                     "enum": [
                         "wait_for_audit",
                         "wait_for_execution",
-                        "rejected",
-                        "canceled",
                         "exec_scheduled",
                         "exec_failed",
-                        "finished"
+                        "exec_succeeded",
+                        "executing"
                     ]
                 },
                 "task_id": {

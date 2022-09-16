@@ -154,28 +154,45 @@ type Workflow struct {
 	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
 	Record        *WorkflowRecord   `gorm:"foreignkey:WorkflowRecordId"`
 	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history;"`
+	Mode          string
 }
 
 const (
-	WorkflowStatusRunning       = "on_process"
-	WorkflowStatusReject        = "rejected"
-	WorkflowStatusCancel        = "canceled"
-	WorkflowStatusExecScheduled = "exec_scheduled"
-	WorkflowStatusExecuting     = "executing"
-	WorkflowStatusExecFailed    = "exec_failed"
-	WorkflowStatusFinish        = "finished"
+	WorkflowStatusRunning          = "on_process" // todo issue832 remove
+	WorkflowStatusWaitForAudit     = "wait_for_audit"
+	WorkflowStatusWaitForExecution = "wait_for_execution"
+	WorkflowStatusReject           = "rejected"
+	WorkflowStatusCancel           = "canceled"
+	WorkflowStatusExecScheduled    = "exec_scheduled" // todo issue832 remove
+	WorkflowStatusExecuting        = "executing"
+	WorkflowStatusExecFailed       = "exec_failed"
+	WorkflowStatusFinish           = "finished"
+
+	WorkflowModeSameSQLs      = "same_sqls"
+	WorkflowModeDifferentSQLs = "different_sqls"
 )
 
 type WorkflowRecord struct {
 	Model
-	TaskId                uint `gorm:"index"`
 	CurrentWorkflowStepId uint
-	Status                string `gorm:"default:\"on_process\""`
-	ScheduledAt           *time.Time
-	ScheduleUserId        uint
+	Status                string                    `gorm:"default:\"wait_for_audit\""`
+	InstanceRecords       []*WorkflowInstanceRecord `gorm:"foreignkey:WorkflowRecordId"`
 
+	// 当workflow只有部分数据源已上线时，current step仍处于"sql_execute"步骤
 	CurrentStep *WorkflowStep   `gorm:"foreignkey:CurrentWorkflowStepId"`
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
+}
+
+// todo issue832 数据源概览需要展示上线操作人
+type WorkflowInstanceRecord struct {
+	Model
+	TaskId           uint `gorm:"index"`
+	WorkflowRecordId uint `gorm:"index; not null"`
+	InstanceId       uint
+	ScheduledAt      *time.Time
+	ScheduleUserId   uint
+	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
+	IsSQLExecuted bool
 }
 
 const (
@@ -287,28 +304,66 @@ func (w *Workflow) IsFirstRecord(record *WorkflowRecord) bool {
 	return false
 }
 
-func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
+func (w *Workflow) GetTaskIds() []uint {
+	taskIds := make([]uint, len(w.Record.InstanceRecords))
+	for i, inst := range w.Record.InstanceRecords {
+		taskIds[i] = inst.TaskId
+	}
+	return taskIds
+}
+
+func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task,
 	stepTemplates []*WorkflowStepTemplate) error {
+	if len(tasks) <= 0 {
+		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
+	}
+
+	workflowMode := WorkflowModeSameSQLs
+	groupId := tasks[0].GroupId
+	for _, task := range tasks {
+		if task.GroupId != groupId {
+			workflowMode = WorkflowModeDifferentSQLs
+			break
+		}
+	}
 
 	workflow := &Workflow{
 		Subject:      subject,
 		Desc:         desc,
 		CreateUserId: user.ID,
+		Mode:         workflowMode,
+	}
+
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
+	for i, task := range tasks {
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
 	}
 	record := &WorkflowRecord{
-		TaskId: task.ID,
+		InstanceRecords: instanceRecords,
 	}
 
-	inspector, err := s.GetUsersByOperationCode(task.Instance, OP_WORKFLOW_AUDIT)
-	if err != nil {
-		return err
+	allUsers := make([][]*User, len(tasks))
+	for i, task := range tasks {
+		users, err := s.GetUsersByOperationCode(task.Instance, OP_WORKFLOW_AUDIT)
+		if err != nil {
+			return err
+		}
+		allUsers[i] = users
 	}
 
-	steps := generateWorkflowStepByTemplate(stepTemplates, inspector)
+	canOptUsers := allUsers[0]
+	for i := 1; i < len(allUsers); i++ {
+		canOptUsers = getOverlapOfUsers(canOptUsers, allUsers[i])
+	}
+
+	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers)
 
 	tx := s.db.Begin()
 
-	err = tx.Save(record).Error
+	err := tx.Save(record).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
@@ -348,9 +403,29 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, task *Task,
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
+func getOverlapOfUsers(users1, users2 []*User) []*User {
+	var res []*User
+	for _, user1 := range users1 {
+		for _, user2 := range users2 {
+			if user1.ID == user2.ID {
+				res = append(res, user1)
+			}
+		}
+	}
+	return res
+}
+
+func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
+	for i, task := range tasks {
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
+	}
+
 	record := &WorkflowRecord{
-		TaskId: task.ID,
+		InstanceRecords: instanceRecords,
 	}
 	steps := w.cloneWorkflowStep()
 
@@ -402,7 +477,7 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, task *Task) error {
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) error {
+func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
 	return s.TxExec(func(tx *sql.Tx) error {
 		_, err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
 			w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID)
@@ -417,12 +492,23 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep) e
 		if err != nil {
 			return err
 		}
+
+		if len(instanceRecords) <= 0 {
+			return nil
+		}
+		for _, inst := range instanceRecords {
+			_, err = tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ? WHERE id = ?",
+				inst.IsSQLExecuted, inst.ID)
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }
 
-func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime *time.Time) error {
-	err := s.db.Model(&WorkflowRecord{}).Where("id = ?", w.Record.ID).Update(map[string]interface{}{
+func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId uint, scheduleTime *time.Time) error {
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
 		"scheduled_at":     scheduleTime,
 		"schedule_user_id": userId,
 	}).Error
@@ -456,6 +542,16 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 	return steps, nil
 }
 
+func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInstanceRecord, error) {
+	instanceRecords := []*WorkflowInstanceRecord{}
+	err := s.db.Where("workflow_record_id = ?", id).
+		Find(&instanceRecords).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return instanceRecords, nil
+}
+
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
 	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
@@ -470,6 +566,13 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	if workflow.Record == nil {
 		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
 	}
+
+	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	workflow.Record.InstanceRecords = instanceRecords
+
 	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
@@ -513,18 +616,13 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 	return records, nil
 }
 
-// TODO: args `id` using uint
-func (s *Storage) GetWorkflowRecordByTaskId(id string) (*WorkflowRecord, bool, error) {
-	record := &WorkflowRecord{}
-	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.id").
-		Where("workflow_records.task_id = ?", id).Scan(record).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
+func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (uint32, error) {
+	var count uint32
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("workflow_instance_records.task_id IN (?)", ids).Count(&count).Error //todo 测试0条记录的表现
 	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
+		return 0, errors.New(errors.ConnectStorageError, err)
 	}
-	return record, true, nil
+	return count, nil
 }
 
 func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
@@ -594,9 +692,11 @@ func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
 	workflows := []*Workflow{}
 	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
-		Where("workflow_records.scheduled_at IS NOT NULL "+
-			"AND workflow_records.scheduled_at <= ? "+
-			"AND workflow_records.status = 'on_process'", time.Now()).
+		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
+		Where("workflow_records.status = 'wait_for_execution' "+
+			"AND workflow_instance_records.scheduled_at IS NOT NULL "+
+			"AND workflow_instance_records.scheduled_at <= ? "+
+			"AND workflow_instance_records.is_sql_executed = false", time.Now()).
 		Scan(&workflows).Error
 	return workflows, errors.New(errors.ConnectStorageError, err)
 }
@@ -616,22 +716,21 @@ func (s *Storage) TaskWorkflowIsRunning(taskIds []uint) (bool, error) {
 	return len(workflowRecords) > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstanceByWorkflowID(workflowID uint) (*Instance, error) {
+func (s *Storage) GetInstancesByWorkflowID(workflowID uint) ([]*Instance, error) {
 	query := `
 SELECT instances.id ,instances.maintenance_period
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
-LEFT JOIN tasks ON tasks.id = wr.task_id
-LEFT JOIN instances ON instances.id = tasks.instance_id
+LEFT JOIN workflow_instance_records AS wir ON wr.id = wir.workflow_record_id
+LEFT JOIN instances ON instances.id = wir.instance_id
 WHERE 
-w.id = ?
-LIMIT 1`
-	instance := &Instance{}
-	err := s.db.Raw(query, workflowID).Scan(instance).Error
+w.id = ?`
+	instances := []*Instance{}
+	err := s.db.Raw(query, workflowID).Scan(&instances).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
-	return instance, err
+	return instances, err
 }
 
 // GetWorkFlowStepIdsHasAudit 返回走完所有审核流程的workflow_steps的id
@@ -779,4 +878,18 @@ func (s *Storage) GetWorkflowDailyCountBetweenStartTimeAndEndTime(startTime, end
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	return counts, nil
+}
+
+func (s *Storage) GetWaitExecInstancesCountByWorkflowId(workflowId uint) (int, error) {
+	count := 0
+	err := s.db.Table("workflows").
+		Joins("LEFT JOIN workflow_records ON workflow_records.id = workflows.workflow_record_id").
+		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
+		Where("workflows.id = ?", workflowId).
+		Where("workflow_instance_records.is_sql_executed = false").
+		Count(&count).Error
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
+	return count, nil
 }
