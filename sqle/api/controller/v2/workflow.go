@@ -275,7 +275,7 @@ func GetWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = CheckCurrentUserCanViewWorkflow(c, &model.Workflow{
+	err = v1.CheckCurrentUserCanViewWorkflow(c, &model.Workflow{
 		Model: model.Model{ID: uint(workflowId)}})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -386,36 +386,6 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *v1.WorkflowStepResV1 {
 		}
 	}
 	return stepRes
-}
-
-func CheckCurrentUserCanViewWorkflow(c echo.Context, workflow *model.Workflow) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
-	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return err
-	}
-	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(user, workflow)
-	if err != nil {
-		return err
-	}
-	if access {
-		return nil
-	}
-	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
-	if err != nil {
-		return err
-	}
-	ok, err := s.CheckUserHasOpToAnyInstance(user, instances, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
-	if err != nil {
-		return err
-	}
-	if ok {
-		return nil
-	}
-	return v1.ErrWorkflowNoAccess
 }
 
 type UpdateWorkflowReqV2 struct {

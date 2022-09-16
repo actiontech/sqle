@@ -1215,3 +1215,33 @@ type GetWorkflowTasksItemV1 struct {
 func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 	return nil
 }
+
+func CheckCurrentUserCanViewWorkflow(c echo.Context, workflow *model.Workflow) error {
+	if controller.GetUserName(c) == model.DefaultAdminUser {
+		return nil
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if access {
+		return nil
+	}
+	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return err
+	}
+	ok, err := s.CheckUserHasOpToAnyInstance(user, instances, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+	return ErrWorkflowNoAccess
+}
