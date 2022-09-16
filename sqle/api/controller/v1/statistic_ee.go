@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -483,38 +484,31 @@ func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	s := model.GetStorage()
-	tasks, total, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
+	workflows, total, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows failed: %v", err))
 	}
 
-	type taskCount struct {
-		dbType string
-		count  uint
-	}
-	var taskCounts []*taskCount
-loop:
-	for _, task := range tasks {
-		for _, count := range taskCounts {
-			if count.dbType == task.TaskInstanceType.String {
-				count.count += 1
-				continue loop
-			}
+	instanceTypesMap := make(map[string]int, 0)
+
+	for _, workflow := range workflows {
+		instanceTypes := strings.Split(workflow.TaskInstanceType, ",")
+		for _, instanceType := range instanceTypes {
+			instanceTypesMap[instanceType]++
 		}
-		taskCounts = append(taskCounts, &taskCount{
-			dbType: task.TaskInstanceType.String,
-			count:  1,
-		})
 	}
 
-	percents := make([]WorkflowPercentCountedByInstanceType, len(taskCounts))
-	for i, count := range taskCounts {
+	percents := make([]WorkflowPercentCountedByInstanceType, len(instanceTypesMap))
+	i := 0
+	for instType, count := range instanceTypesMap {
 		percents[i] = WorkflowPercentCountedByInstanceType{
-			InstanceType: count.dbType,
-			Percent:      float64(count.count) / float64(total) * 100,
-			Count:        count.count,
+			InstanceType: instType,
+			Percent:      float64(count) / float64(total) * 100,
+			Count:        uint(count),
 		}
+		i++
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowPercentCountedByInstanceTypeResV1{
