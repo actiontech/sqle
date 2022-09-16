@@ -507,14 +507,6 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, i
 	})
 }
 
-func (s *Storage) UpdateWorkflowSchedule(w *Workflow, userId uint, scheduleTime *time.Time) error {
-	err := s.db.Model(&WorkflowRecord{}).Where("id = ?", w.Record.ID).Update(map[string]interface{}{
-		"scheduled_at":     scheduleTime,
-		"schedule_user_id": userId,
-	}).Error
-	return errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId uint, scheduleTime *time.Time) error {
 	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
 		"scheduled_at":     scheduleTime,

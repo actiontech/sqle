@@ -3,6 +3,7 @@ package v1
 import (
 	"database/sql"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/utils"
 	"net/http"
 	"strconv"
 	"strings"
@@ -551,22 +552,6 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, workflow *model.Workflow
 		}
 	}
 	return ErrWorkflowNoAccess
-}
-
-func convertWorkflowStatusToRes(workflowStatus, taskStatus string, scheduleTime *time.Time) string {
-	var status = workflowStatus
-	switch taskStatus {
-	case model.TaskStatusExecuting:
-		status = model.WorkflowStatusExecuting
-	case model.TaskStatusExecuteSucceeded:
-		status = model.WorkflowStatusFinish
-	case model.TaskStatusExecuteFailed:
-		status = model.WorkflowStatusExecFailed
-	}
-	if status == model.WorkflowStatusRunning && scheduleTime != nil {
-		status = model.WorkflowStatusExecScheduled
-	}
-	return status
 }
 
 // @Summary 获取审批流程详情

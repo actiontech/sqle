@@ -843,15 +843,15 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		instanceNames = append(instanceNames, instance.Name)
 	}
 
-	distinctIntsNames := utils.RemoveDuplicate(instanceNames)
+	distinctInstNames := utils.RemoveDuplicate(instanceNames)
 
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(distinctIntsNames)
+	instances, err := s.GetInstancesByNames(distinctInstNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if len(distinctIntsNames) != len(instances) {
+	if len(distinctInstNames) != len(instances) {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
