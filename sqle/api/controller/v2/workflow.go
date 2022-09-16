@@ -462,9 +462,13 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 		steps = append(steps, stepRes)
 	}
 	// fill step number
+	var currentStepNum uint
 	for i, step := range steps {
 		number := uint(i + 1)
 		step.Number = number
+		if step.Id != 0 && step.Id == record.CurrentWorkflowStepId {
+			currentStepNum = number
+		}
 	}
 
 	tasksRes := make([]*WorkflowTaskItem, len(record.InstanceRecords))
@@ -483,7 +487,7 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 
 	return &WorkflowRecordResV2{
 		TaskIds:           tasksRes,
-		CurrentStepNumber: record.CurrentWorkflowStepId,
+		CurrentStepNumber: currentStepNum,
 		Status:            workflowStatus,
 		Steps:             steps,
 	}
