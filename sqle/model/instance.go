@@ -179,7 +179,7 @@ LEFT JOIN user_role ON user_role.role_id = roles.id
 LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
 WHERE
 instances.deleted_at IS NULL
-AND instances.id = ?
+AND instances.id IN (?)
 AND users.id = ?
 AND role_operations.op_code IN (?)
 GROUP BY instances.id
@@ -195,7 +195,7 @@ JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
 JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
 WHERE 
 instances.deleted_at IS NULL
-AND instances.id = ?
+AND instances.id IN (?)
 AND users.id = ?
 AND role_operations.op_code IN (?)
 GROUP BY instances.id
