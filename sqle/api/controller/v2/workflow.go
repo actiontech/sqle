@@ -260,8 +260,10 @@ func GetWorkflowsV2(c echo.Context) error {
 
 	// task status
 	switch req.FilterStatus {
-	case model.WorkflowStatusExecFailed, model.WorkflowStatusFinish:
-		taskStatus = req.FilterStatus
+	case model.WorkflowStatusExecFailed:
+		taskStatus = model.TaskStatusExecuteFailed
+	case model.WorkflowStatusFinish:
+		taskStatus = model.TaskStatusExecuteSucceeded
 	}
 
 	// workflow status
