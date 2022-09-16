@@ -1,6 +1,7 @@
 package v2
 
 import (
+	_err "errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -417,7 +418,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	taskId := c.Param("task_id")
-	taskIdUint, err :=v1.FormatStringToUint64(taskId)
+	taskIdUint, err := v1.FormatStringToUint64(taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -478,7 +479,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 			"task has been executed")))
 	}
 
-	instance,exist, err := s.GetInstanceById(fmt.Sprintf("%v", curTaskRecord.InstanceId))
+	instance, exist, err := s.GetInstanceById(fmt.Sprintf("%v", curTaskRecord.InstanceId))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
