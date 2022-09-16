@@ -1194,7 +1194,7 @@ type GetWorkflowTasksResV1 struct {
 type GetWorkflowTasksItemV1 struct {
 	TaskId                  uint       `json:"task_id"`
 	InstanceName            string     `json:"instance_name"`
-	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_scheduled,exec_failed,finished"`
+	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing"`
 	ExecStartTime           *time.Time `json:"exec_start_time,omitempty"`
 	ExecEndTime             *time.Time `json:"exec_end_time,omitempty"`
 	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`
@@ -1213,5 +1213,141 @@ type GetWorkflowTasksItemV1 struct {
 // @Success 200 {object} v1.GetWorkflowTasksResV1
 // @router /v1/workflows/{workflow_id}/tasks [get]
 func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
-	return nil
+	workflowIdStr := c.Param("workflow_id")
+	workflowId, err := FormatStringToInt(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckCurrentUserCanViewWorkflow(c, &model.Workflow{
+		Model: model.Model{ID: uint(workflowId)}})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
+	data, err := convertWorkflowToTasksSummaryRes(s, workflow)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowTasksResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    data,
+	})
+}
+
+func convertWorkflowToTasksSummaryRes(s *model.Storage, workflow *model.Workflow) ([]*GetWorkflowTasksItemV1, error) {
+	res := make([]*GetWorkflowTasksItemV1, len(workflow.Record.InstanceRecords))
+	taskIds := make([]uint, len(workflow.Record.InstanceRecords))
+
+	for i, inst := range workflow.Record.InstanceRecords {
+		taskIds[i] = inst.TaskId
+	}
+	taskIds = utils.RemoveDuplicateUint(taskIds)
+	tasks, err := s.GetTasksByIds(taskIds)
+	if err != nil {
+		return nil, err
+	}
+	if len(tasks) != len(taskIds) {
+		return nil, ErrWorkflowNoAccess
+	}
+	taskIdToTask := make(map[uint]*model.Task, len(tasks))
+	for _, task := range tasks {
+		taskIdToTask[task.ID] = task
+	}
+
+	for i, inst := range workflow.Record.InstanceRecords {
+		// convert assignees
+		var assignees []string
+		// current step is nil if workflow is finished
+		if workflow.Record.CurrentStep != nil {
+			assignees = make([]string, len(workflow.Record.CurrentStep.Assignees))
+			for i, user := range workflow.Record.CurrentStep.Assignees {
+				assignees[i] = user.Name
+			}
+		}
+
+		res[i] = &GetWorkflowTasksItemV1{
+			TaskId:                  inst.TaskId,
+			InstanceName:            taskIdToTask[inst.TaskId].Instance.Name,
+			Status:                  getTaskStatusRes(workflow, taskIdToTask[inst.TaskId], inst.ScheduledAt),
+			ExecStartTime:           taskIdToTask[inst.TaskId].ExecStartAt,
+			ExecEndTime:             taskIdToTask[inst.TaskId].ExecEndAt,
+			ScheduleTime:            inst.ScheduledAt,
+			CurrentStepAssigneeUser: assignees,
+			TaskPassRate:            taskIdToTask[inst.TaskId].PassRate,
+			TaskScore:               taskIdToTask[inst.TaskId].Score,
+		}
+	}
+	return res, nil
+}
+
+const (
+	taskDisplayStatusWaitForAudit     = "wait_for_audit"
+	taskDisplayStatusWaitForExecution = "wait_for_execution"
+	taskDisplayStatusExecFailed       = "exec_failed"
+	taskDisplayStatusExecSucceeded    = "exec_succeeded"
+	taskDisplayStatusExecuting        = "executing"
+	taskDisplayStatusScheduled        = "exec_scheduled"
+)
+
+func getTaskStatusRes(workflow *model.Workflow, task *model.Task, scheduleAt *time.Time) (status string) {
+	if workflow.Record.Status == model.WorkflowStatusWaitForAudit {
+		return taskDisplayStatusWaitForAudit
+	}
+
+	if scheduleAt != nil {
+		return taskDisplayStatusScheduled
+	}
+
+	switch task.Status {
+	case model.TaskStatusAudited:
+		return taskDisplayStatusWaitForExecution
+	case model.TaskStatusExecuteSucceeded:
+		return taskDisplayStatusExecSucceeded
+	case model.TaskStatusExecuteFailed:
+		return taskDisplayStatusExecFailed
+	case model.TaskStatusExecuting:
+		return taskDisplayStatusExecuting
+	}
+	return ""
+}
+
+func CheckCurrentUserCanViewWorkflow(c echo.Context, workflow *model.Workflow) error {
+	if controller.GetUserName(c) == model.DefaultAdminUser {
+		return nil
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if access {
+		return nil
+	}
+	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return err
+	}
+	ok, err := s.CheckUserHasOpToAnyInstance(user, instances, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+	return ErrWorkflowNoAccess
 }
