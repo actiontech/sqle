@@ -12,7 +12,7 @@ func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 		return nil, errors.Errorf("instance is nil")
 	}
 
-	dsn, err := newDSN(inst, database)
+	dsn, err := NewDSN(inst, database)
 	if err != nil {
 		return nil, errors.Wrap(err, "new dsn")
 	}
@@ -29,7 +29,7 @@ func NewDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.DriverMa
 	return driver.NewDriverManger(l, dbType, &driver.Config{})
 }
 
-func newDSN(instance *model.Instance, database string) (*driver.DSN, error) {
+func NewDSN(instance *model.Instance, database string) (*driver.DSN, error) {
 	if instance == nil {
 		return nil, errors.Errorf("instance is nil")
 	}
