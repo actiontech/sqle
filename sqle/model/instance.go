@@ -168,8 +168,7 @@ func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error
 	return names, nil
 }
 
-func (s *Storage) CheckUserHasOpToInstances(user *User, instances []*Instance, ops []uint) (bool, error) {
-	query := `
+var checkUserHasOpToInstancesQuery = `
 SELECT instances.id
 FROM instances
 LEFT JOIN instance_role ON instance_role.instance_id = instances.id
@@ -179,7 +178,7 @@ LEFT JOIN user_role ON user_role.role_id = roles.id
 LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
 WHERE
 instances.deleted_at IS NULL
-AND instances.id = ?
+AND instances.id IN (?)
 AND users.id = ?
 AND role_operations.op_code IN (?)
 GROUP BY instances.id
@@ -195,23 +194,39 @@ JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
 JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
 WHERE 
 instances.deleted_at IS NULL
-AND instances.id = ?
+AND instances.id IN (?)
 AND users.id = ?
 AND role_operations.op_code IN (?)
 GROUP BY instances.id
 `
+
+func getDeduplicatedInstanceIds(instances []*Instance) []uint {
 	instanceIds := make([]uint, len(instances))
 	for i, inst := range instances {
 		instanceIds[i] = inst.ID
 	}
 	instanceIds = utils.RemoveDuplicateUint(instanceIds)
+	return instanceIds
+}
 
+func (s *Storage) CheckUserHasOpToInstances(user *User, instances []*Instance, ops []uint) (bool, error) {
+	instanceIds := getDeduplicatedInstanceIds(instances)
 	var instanceRecords []*Instance
-	err := s.db.Raw(query, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
+	err := s.db.Raw(checkUserHasOpToInstancesQuery, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
 	if err != nil {
 		return false, errors.ConnectStorageErrWrapper(err)
 	}
 	return len(instanceRecords) == len(instanceIds), nil
+}
+
+func (s *Storage) CheckUserHasOpToAnyInstance(user *User, instances []*Instance, ops []uint) (bool, error) {
+	instanceIds := getDeduplicatedInstanceIds(instances)
+	var instanceRecords []*Instance
+	err := s.db.Raw(checkUserHasOpToInstancesQuery, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
+	if err != nil {
+		return false, errors.ConnectStorageErrWrapper(err)
+	}
+	return len(instanceRecords) > 0, nil
 }
 
 func (s *Storage) GetUserCanOpInstances(user *User, ops []uint) (instances []*Instance, err error) {
