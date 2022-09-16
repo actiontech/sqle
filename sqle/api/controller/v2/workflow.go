@@ -400,13 +400,19 @@ func GetWorkflowV2(c echo.Context) error {
 	}
 	workflow.RecordHistory = history
 
+	taskIds := workflow.GetTaskIds()
+	tasks, err := s.GetTasksByIds(taskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToRes(workflow),
+		Data:    convertWorkflowToRes(workflow, tasks),
 	})
 }
 
-func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
+func convertWorkflowToRes(workflow *model.Workflow, tasks []*model.Task) *WorkflowResV2 {
 	workflowRes := &WorkflowResV2{
 		Id:         workflow.ID,
 		Subject:    workflow.Subject,
@@ -417,11 +423,6 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
 	}
 
 	// convert workflow record
-	tasks := make([]*WorkflowTaskItem, len(workflow.Record.InstanceRecords))
-	for i, inst := range workflow.Record.InstanceRecords {
-		tasks[i] = &WorkflowTaskItem{Id: inst.TaskId}
-	}
-
 	workflowRecordRes := convertWorkflowRecordToRes(workflow, workflow.Record, tasks)
 
 	// convert workflow record history
@@ -436,7 +437,7 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
 }
 
 func convertWorkflowRecordToRes(workflow *model.Workflow,
-	record *model.WorkflowRecord, tasks []*WorkflowTaskItem) *WorkflowRecordResV2 {
+	record *model.WorkflowRecord, tasks []*model.Task) *WorkflowRecordResV2 {
 
 	steps := make([]*v1.WorkflowStepResV1, 0, len(record.Steps)+1)
 	// It is filled by create user and create time;
@@ -466,10 +467,24 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 		step.Number = number
 	}
 
+	tasksRes := make([]*WorkflowTaskItem, len(record.InstanceRecords))
+	for i, inst := range record.InstanceRecords {
+		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
+	}
+
+	workflowStatus := record.Status
+	if record.Status == model.WorkflowStatusFinish {
+		for _, task := range tasks {
+			if task.Status == model.TaskStatusExecuteFailed {
+				workflowStatus = model.WorkflowStatusExecFailed
+			}
+		}
+	}
+
 	return &WorkflowRecordResV2{
-		TaskIds:           tasks,
+		TaskIds:           tasksRes,
 		CurrentStepNumber: record.CurrentWorkflowStepId,
-		Status:            record.Status,
+		Status:            workflowStatus,
 		Steps:             steps,
 	}
 }
