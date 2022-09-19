@@ -1201,6 +1201,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/sql_query": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sqle query configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取SQL查询配置信息",
+                "operationId": "getSQLQueryConfiguration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLQueryConfigurationResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/system_variables": {
             "get": {
                 "security": [
@@ -7109,6 +7132,34 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.SQLQuerySQLExplain"
                     }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSQLQueryConfigurationResDataV1": {
+            "type": "object",
+            "properties": {
+                "enable_sql_query": {
+                    "type": "boolean"
+                },
+                "sql_query_root_uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.GetSQLQueryConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetSQLQueryConfigurationResDataV1"
                 },
                 "message": {
                     "type": "string",
