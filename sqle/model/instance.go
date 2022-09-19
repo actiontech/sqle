@@ -302,46 +302,49 @@ func (s *Storage) GetAllInstanceCount() ([]*TypeCount, error) {
 	return counts, s.db.Table("instances").Select("db_type, count(*) as count").Where("deleted_at is NULL").Group("db_type").Find(&counts).Error
 }
 
-func (s *Storage) GetInstanceTipsByUserViaRoles(
-	user *User, dbType string) (instances []*Instance, err error) {
+func (s *Storage) GetInstanceTipsByUserViaRolesAndTempID(user *User, dbType string, tempID uint32) (instances []*Instance, err error) {
 
-	rawQuery := `
-SELECT instances.name, instances.db_type
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
-LEFT JOIN user_role ON roles.id = user_role.role_id 
-LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND users.stat=0
-WHERE instances.deleted_at IS NULL 
-AND users.id = ?
-%s
-GROUP BY instances.id
-UNION
-SELECT instances.name, instances.db_type
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.stat = 0 AND user_groups.deleted_at IS NULL
-JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
-JOIN users ON users.id = user_group_users.user_id AND users.stat = 0 AND users.deleted_at IS NULL
-WHERE instances.deleted_at IS NULL
-%s
-AND users.id = ?
-GROUP BY instances.id
-`
+	queryByRole := s.db.Model(&Instance{}).Select("instances.name, instances.db_type , instances.workflow_template_id").
+		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
+		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL").
+		Joins("LEFT JOIN user_role ON roles.id = user_role.role_id").
+		Joins("LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND users.stat=0").
+		Where("users.id = ?", user.ID).
+		Group("instances.id")
 
-	dbTypeCond := getDbTypeQueryCond(dbType)
+	queryByGroup := s.db.Model(&Instance{}).Select("instances.name, instances.db_type , instances.workflow_template_id").
+		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
+		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
+		Joins("JOIN user_group_roles ON roles.id = user_group_roles.role_id").
+		Joins("JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.stat = 0 AND user_groups.deleted_at IS NULL").
+		Joins("JOIN user_group_users ON user_groups.id = user_group_users.user_group_id").
+		Joins("JOIN users ON users.id = user_group_users.user_id AND users.stat = 0 AND users.deleted_at IS NULL").
+		Where("users.id = ?", user.ID).
+		Group("instances.id")
 
-	query := fmt.Sprintf(rawQuery, dbTypeCond, dbTypeCond)
-
-	if dbType == "" {
-		err = s.db.Unscoped().Raw(query, user.ID, user.ID).Scan(&instances).Error
-	} else {
-		err = s.db.Unscoped().Raw(query, user.ID, dbType, user.ID, dbType).Scan(&instances).Error
+	if dbType != "" {
+		queryByRole = queryByRole.Where("db_type = ?", dbType)
+		queryByGroup = queryByGroup.Where("db_type = ?", dbType)
 	}
 
-	return instances, errors.ConnectStorageErrWrapper(err)
+	if tempID != 0 {
+		queryByRole = queryByRole.Where("workflow_template_id = ?", tempID)
+		queryByGroup = queryByGroup.Where("workflow_template_id = ?", tempID)
+	}
+
+	var intsByRole, instByGroup []*Instance
+	if err := queryByRole.Scan(&intsByRole).Error; err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	if err := queryByGroup.Scan(&instByGroup).Error; err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	instances = append(instances, intsByRole...)
+	instances = append(instances, instByGroup...)
+
+	return instances, nil
 }
 
 func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
@@ -351,7 +354,7 @@ func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
 		return s.GetInstanceTipsByTempID(dbType, 0)
 	}
 
-	return s.GetInstanceTipsByUserViaRoles(user, dbType)
+	return s.GetInstanceTipsByUserViaRolesAndTempID(user, dbType, 0)
 }
 
 func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType string, opCode ...int) (
