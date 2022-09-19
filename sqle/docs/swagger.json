@@ -1453,7 +1453,8 @@
                     {
                         "enum": [
                             "create_audit_plan",
-                            "sql_query"
+                            "sql_query",
+                            "create_audit_workflow"
                         ],
                         "type": "string",
                         "description": "functional module",
