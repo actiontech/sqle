@@ -10116,7 +10116,7 @@ var doc = `{
                         "finished"
                     ]
                 },
-                "task_ids": {
+                "tasks": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v2.WorkflowTaskItem"
@@ -10170,7 +10170,7 @@ var doc = `{
         "v2.WorkflowTaskItem": {
             "type": "object",
             "properties": {
-                "task_ids": {
+                "task_id": {
                     "type": "integer"
                 }
             }
