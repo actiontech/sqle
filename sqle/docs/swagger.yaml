@@ -3200,7 +3200,7 @@ definitions:
         - exec_failed
         - finished
         type: string
-      task_ids:
+      tasks:
         items:
           $ref: '#/definitions/v2.WorkflowTaskItem'
         type: array
@@ -3236,7 +3236,7 @@ definitions:
     type: object
   v2.WorkflowTaskItem:
     properties:
-      task_ids:
+      task_id:
         type: integer
     type: object
 info:
