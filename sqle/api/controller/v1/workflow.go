@@ -1143,11 +1143,7 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 
 func convertWorkflowToTasksSummaryRes(s *model.Storage, workflow *model.Workflow) ([]*GetWorkflowTasksItemV1, error) {
 	res := make([]*GetWorkflowTasksItemV1, len(workflow.Record.InstanceRecords))
-	taskIds := make([]uint, len(workflow.Record.InstanceRecords))
-
-	for i, inst := range workflow.Record.InstanceRecords {
-		taskIds[i] = inst.TaskId
-	}
+	taskIds := workflow.GetTaskIds()
 	taskIds = utils.RemoveDuplicateUint(taskIds)
 	tasks, err := s.GetTasksByIds(taskIds)
 	if err != nil {
