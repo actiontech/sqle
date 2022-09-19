@@ -25,3 +25,9 @@ func updateWeChatConfigurationV1(c echo.Context) error {
 func getWeChatConfiguration(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWeChatConfiguration)
 }
+
+var errCommunityEditionDoesNotSupportSQLQueryConfiguration = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support SQLQuery configuration"))
+
+func getSQLQueryConfiguration(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSQLQueryConfiguration)
+}

@@ -602,3 +602,24 @@ func GetOauth2Tips(c echo.Context) error {
 		},
 	})
 }
+
+type GetSQLQueryConfigurationResV1 struct {
+	controller.BaseRes
+	Data GetSQLQueryConfigurationResDataV1 `json:"data"`
+}
+
+type GetSQLQueryConfigurationResDataV1 struct {
+	EnableSQLQuery  bool   `json:"enable_sql_query"`
+	SQLQueryRootURI string `json:"sql_query_root_uri"`
+}
+
+// @Summary 获取SQL查询配置信息
+// @Description get sqle query configuration
+// @Id getSQLQueryConfiguration
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSQLQueryConfigurationResV1
+// @router /v1/configurations/sql_query [get]
+func GetSQLQueryConfiguration(c echo.Context) error {
+	return getSQLQueryConfiguration(c)
+}
