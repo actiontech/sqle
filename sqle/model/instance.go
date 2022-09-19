@@ -273,22 +273,18 @@ func getDbTypeQueryCond(dbType string) string {
 	return `AND instances.db_type = ?`
 }
 
-func (s *Storage) GetAllInstanceTips(dbType string) (instances []*Instance, err error) {
-	rawQuery := `
-SELECT instances.name, instances.db_type
-FROM instances
-WHERE instances.deleted_at IS NULL
-%s
-GROUP BY instances.id
-`
+func (s *Storage) GetInstanceTipsByTempID(dbType string, tempID uint32) (instances []*Instance, err error) {
+	query := s.db.Model(&Instance{}).Select("name, db_type, workflow_template_id").Group("id")
 
-	query := fmt.Sprintf(rawQuery, getDbTypeQueryCond(dbType))
-	if dbType == "" {
-		err = s.db.Unscoped().Raw(query).Scan(&instances).Error
-	} else {
-		err = s.db.Unscoped().Raw(query, dbType).Scan(&instances).Error
+	if dbType != "" {
+		query = query.Where("db_type = ?", dbType)
 	}
-	return instances, errors.ConnectStorageErrWrapper(err)
+
+	if tempID != 0 {
+		query = query.Where("workflow_template_id = ?", tempID)
+	}
+
+	return instances, query.Scan(&instances).Error
 }
 
 func (s *Storage) GetAllInstanceCountByType(dbTypes ...string) (int64, error) {
@@ -352,7 +348,7 @@ func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
 	instances []*Instance, err error) {
 
 	if IsDefaultAdminUser(user.Name) {
-		return s.GetAllInstanceTips(dbType)
+		return s.GetInstanceTipsByTempID(dbType, 0)
 	}
 
 	return s.GetInstanceTipsByUserViaRoles(user, dbType)
@@ -362,7 +358,7 @@ func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType string, o
 	instances []*Instance, err error) {
 
 	if IsDefaultAdminUser(user.Name) {
-		return s.GetAllInstanceTips(dbType)
+		return s.GetInstanceTipsByTempID(dbType, 0)
 	}
 	return s.getInstanceTipsByUserAndOperation(user, dbType, opCode...)
 }
