@@ -1470,7 +1470,7 @@ var doc = `{
                         "enum": [
                             "create_audit_plan",
                             "sql_query",
-                            "create_audit_workflow"
+                            "create_workflow"
                         ],
                         "type": "string",
                         "description": "functional module",
