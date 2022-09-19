@@ -1193,6 +1193,25 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSQLQueryConfigurationResDataV1:
+    properties:
+      enable_sql_query:
+        type: boolean
+      sql_query_root_uri:
+        type: string
+    type: object
+  v1.GetSQLQueryConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetSQLQueryConfigurationResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSQLQueryHistoryResDataV1:
     properties:
       sql_histories:
@@ -3967,6 +3986,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 测试 邮箱 配置
+      tags:
+      - configuration
+  /v1/configurations/sql_query:
+    get:
+      description: get sqle query configuration
+      operationId: getSQLQueryConfiguration
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLQueryConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL查询配置信息
       tags:
       - configuration
   /v1/configurations/system_variables:
