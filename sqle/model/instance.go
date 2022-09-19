@@ -273,6 +273,14 @@ func getDbTypeQueryCond(dbType string) string {
 	return `AND instances.db_type = ?`
 }
 
+func (s *Storage) GetInstancesTipsByUserAndTempId(user *User, dbType string, tempID uint32) ([]*Instance, error) {
+	if IsDefaultAdminUser(user.Name) {
+		return s.GetInstanceTipsByTempID(dbType, tempID)
+	}
+
+	return s.GetInstanceTipsByUserViaRolesAndTempID(user, dbType, tempID)
+}
+
 func (s *Storage) GetInstanceTipsByTempID(dbType string, tempID uint32) (instances []*Instance, err error) {
 	query := s.db.Model(&Instance{}).Select("name, db_type, workflow_template_id").Group("id")
 
