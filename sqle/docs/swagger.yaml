@@ -4135,6 +4135,7 @@ paths:
         enum:
         - create_audit_plan
         - sql_query
+        - create_workflow
         in: query
         name: functional_module
         type: string
