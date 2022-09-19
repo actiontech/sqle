@@ -1006,7 +1006,7 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 type InstanceTipReqV1 struct {
 	FilterDBType             string `json:"filter_db_type" query:"filter_db_type"`
 	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
-	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,sql_query" valid:"omitempty,oneof=create_audit_plan sql_query"`
+	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,sql_query" valid:"omitempty,oneof=create_audit_plan sql_query create_workflow"`
 }
 
 type InstanceTipResV1 struct {
@@ -1028,7 +1028,7 @@ type GetInstanceTipsResV1 struct {
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
 // @Param filter_workflow_template_id query string false "filter workflow template id"
-// @Param functional_module query string false "functional module" Enums(create_audit_plan,sql_query)
+// @Param functional_module query string false "functional module" Enums(create_audit_plan,sql_query,create_workflow)
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
