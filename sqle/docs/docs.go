@@ -7649,6 +7649,12 @@ var doc = `{
                 "exec_start_time": {
                     "type": "string"
                 },
+                "instance_maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
+                },
                 "instance_name": {
                     "type": "string"
                 },
