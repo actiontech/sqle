@@ -483,14 +483,12 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
 	}
 
-	workflowStatus := record.Status
-	if record.Status == model.WorkflowStatusFinish {
-		for _, task := range tasks {
-			if task.Status == model.TaskStatusExecuteFailed {
-				workflowStatus = model.WorkflowStatusExecFailed
-			}
-		}
+	taskStatus := make([]string, 0, len(tasks))
+	for _, task := range tasks {
+		taskStatus = append(taskStatus, task.Status)
 	}
+
+	workflowStatus := getWorkFlowStatus(record.Status, taskStatus)
 
 	return &WorkflowRecordResV2{
 		Tasks:             tasksRes,
