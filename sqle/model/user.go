@@ -344,3 +344,15 @@ func (s *Storage) GetUserByID(id uint) (*User, bool, error) {
 	}
 	return u, true, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetUsersByIDs(ids []uint) (users []*User, foundAllIds bool, err error) {
+	ids = utils.RemoveDuplicateUint(ids)
+	err = s.db.Model(User{}).Where("id IN (?)", ids).Find(&users).Error
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	if len(users) == len(ids) {
+		foundAllIds = true
+	}
+	return
+}

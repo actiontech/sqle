@@ -183,7 +183,6 @@ type WorkflowRecord struct {
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
 }
 
-// todo issue832 数据源概览需要展示上线操作人
 type WorkflowInstanceRecord struct {
 	Model
 	TaskId           uint `gorm:"index"`
@@ -192,7 +191,8 @@ type WorkflowInstanceRecord struct {
 	ScheduledAt      *time.Time
 	ScheduleUserId   uint
 	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
-	IsSQLExecuted bool
+	IsSQLExecuted   bool
+	ExecutionUserId uint
 }
 
 const (
@@ -499,6 +499,11 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, i
 		for _, inst := range instanceRecords {
 			_, err = tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ? WHERE id = ?",
 				inst.IsSQLExecuted, inst.ID)
+			if err != nil {
+				return err
+			}
+			_, err = tx.Exec("UPDATE workflow_instance_records SET execution_user_id = ? WHERE id = ?",
+				inst.ExecutionUserId, inst.ID)
 			if err != nil {
 				return err
 			}

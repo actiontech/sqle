@@ -1013,7 +1013,7 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow)
+	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1021,14 +1021,14 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflowId))
 	}
 
-	err = server.ExecuteWorkflow(workflow, map[uint]struct{}{uint(taskId): {}}, user.ID)
+	err = server.ExecuteWorkflow(workflow, map[uint]uint{uint(taskId): user.ID})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow) (taskIds map[uint] /*task id*/ struct{}, err error) {
+func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ uint /*user id*/, err error) {
 	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
 	if err != nil {
 		return nil, err
@@ -1046,12 +1046,12 @@ func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow) (taskIds map
 	}
 
 	// 定时的instances和已上线的跳过
-	needExecTaskIds := make(map[uint]struct{})
+	needExecTaskIds := make(map[uint]uint)
 	for _, instRecord := range workflow.Record.InstanceRecords {
 		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
 			continue
 		}
-		needExecTaskIds[instRecord.TaskId] = struct{}{}
+		needExecTaskIds[instRecord.TaskId] = user.ID
 	}
 	return needExecTaskIds, nil
 }
@@ -1097,6 +1097,7 @@ type GetWorkflowTasksItemV1 struct {
 	TaskPassRate             float64                 `json:"task_pass_rate"`
 	TaskScore                int32                   `json:"task_score"`
 	InstanceMaintenanceTimes []*MaintenanceTimeResV1 `json:"instance_maintenance_times"`
+	ExecutionUserName        string                  `json:"execution_user_name"`
 }
 
 // GetSummaryOfWorkflowTasksV1
@@ -1140,17 +1141,37 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
+	var userIds []uint
+	for _, inst := range workflow.Record.InstanceRecords {
+		if !inst.IsSQLExecuted {
+			continue
+		}
+		userIds = append(userIds, inst.ExecutionUserId)
+	}
+	users, foundAllUsers, err := s.GetUsersByIDs(userIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !foundAllUsers {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
 	return c.JSON(http.StatusOK, &GetWorkflowTasksResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToTasksSummaryRes(workflow, tasks),
+		Data:    convertWorkflowToTasksSummaryRes(workflow, tasks, users),
 	})
 }
 
-func convertWorkflowToTasksSummaryRes(workflow *model.Workflow, tasks []*model.Task) []*GetWorkflowTasksItemV1 {
+func convertWorkflowToTasksSummaryRes(workflow *model.Workflow, tasks []*model.Task, users []*model.User) []*GetWorkflowTasksItemV1 {
 	res := make([]*GetWorkflowTasksItemV1, len(workflow.Record.InstanceRecords))
 	taskIdToTask := make(map[uint]*model.Task, len(tasks))
 	for _, task := range tasks {
 		taskIdToTask[task.ID] = task
+	}
+
+	userIdToUser := make(map[uint]*model.User, len(users))
+	for _, user := range users {
+		userIdToUser[user.ID] = user
 	}
 
 	for i, inst := range workflow.Record.InstanceRecords {
@@ -1164,6 +1185,11 @@ func convertWorkflowToTasksSummaryRes(workflow *model.Workflow, tasks []*model.T
 			}
 		}
 
+		executionUserName := ""
+		if user, ok := userIdToUser[inst.ExecutionUserId]; ok {
+			executionUserName = user.Name
+		}
+
 		res[i] = &GetWorkflowTasksItemV1{
 			TaskId:                   inst.TaskId,
 			InstanceName:             taskIdToTask[inst.TaskId].Instance.Name,
@@ -1175,6 +1201,7 @@ func convertWorkflowToTasksSummaryRes(workflow *model.Workflow, tasks []*model.T
 			TaskPassRate:             taskIdToTask[inst.TaskId].PassRate,
 			TaskScore:                taskIdToTask[inst.TaskId].Score,
 			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskIdToTask[inst.TaskId].Instance.MaintenancePeriod),
+			ExecutionUserName:        executionUserName,
 		}
 	}
 	return res
