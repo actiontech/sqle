@@ -3,7 +3,6 @@ package v1
 import (
 	"database/sql"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/utils"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -1197,7 +1197,7 @@ func getTaskStatusRes(workflow *model.Workflow, task *model.Task, scheduleAt *ti
 		return taskDisplayStatusWaitForAudit
 	}
 
-	if scheduleAt != nil {
+	if scheduleAt != nil && task.Status == model.TaskStatusAudited {
 		return taskDisplayStatusScheduled
 	}
 
