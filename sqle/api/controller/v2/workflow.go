@@ -773,12 +773,12 @@ func ExecuteTasksOnWorkflow(c echo.Context) error {
 		return err
 	}
 
-	needExecTaskIds, err := v1.GetNeedExecTaskIds(s, workflow)
+	needExecTaskIds, err := v1.GetNeedExecTaskIds(s, workflow, user)
 	if err != nil {
 		return err
 	}
 
-	err = server.ExecuteWorkflow(workflow, needExecTaskIds, user.ID)
+	err = server.ExecuteWorkflow(workflow, needExecTaskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
