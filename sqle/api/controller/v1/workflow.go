@@ -1122,6 +1122,7 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// get data
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowDetailById(workflowIdStr)
 	if err != nil {
@@ -1131,28 +1132,24 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	data, err := convertWorkflowToTasksSummaryRes(s, workflow)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return c.JSON(http.StatusOK, &GetWorkflowTasksResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    data,
-	})
-}
-
-func convertWorkflowToTasksSummaryRes(s *model.Storage, workflow *model.Workflow) ([]*GetWorkflowTasksItemV1, error) {
-	res := make([]*GetWorkflowTasksItemV1, len(workflow.Record.InstanceRecords))
 	taskIds := workflow.GetTaskIds()
 	taskIds = utils.RemoveDuplicateUint(taskIds)
 	tasks, err := s.GetTasksByIds(taskIds)
 	if err != nil {
-		return nil, err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 	if len(tasks) != len(taskIds) {
-		return nil, ErrWorkflowNoAccess
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowTasksResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertWorkflowToTasksSummaryRes(workflow, tasks),
+	})
+}
+
+func convertWorkflowToTasksSummaryRes(workflow *model.Workflow, tasks []*model.Task) []*GetWorkflowTasksItemV1 {
+	res := make([]*GetWorkflowTasksItemV1, len(workflow.Record.InstanceRecords))
 	taskIdToTask := make(map[uint]*model.Task, len(tasks))
 	for _, task := range tasks {
 		taskIdToTask[task.ID] = task
@@ -1182,7 +1179,7 @@ func convertWorkflowToTasksSummaryRes(s *model.Storage, workflow *model.Workflow
 			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskIdToTask[inst.TaskId].Instance.MaintenancePeriod),
 		}
 	}
-	return res, nil
+	return res
 }
 
 const (
