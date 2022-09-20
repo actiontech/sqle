@@ -672,6 +672,10 @@ func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
 		if err != nil {
 			return err
 		}
+		_, err = tx.Exec("DELETE FROM workflow_instance_records WHERE workflow_record_id = ?", workflow.WorkflowRecordId)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 }

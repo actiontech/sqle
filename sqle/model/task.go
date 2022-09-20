@@ -434,9 +434,9 @@ func (s *Storage) DeleteTask(task *Task) error {
 func (s *Storage) GetExpiredTasks(start time.Time) ([]*Task, error) {
 	tasks := []*Task{}
 	err := s.db.Model(&Task{}).Select("tasks.id").
-		Joins("LEFT JOIN workflow_records ON tasks.id = workflow_records.task_id").
+		Joins("LEFT JOIN workflow_instance_records ON tasks.id = workflow_instance_records.task_id").
 		Where("tasks.created_at < ?", start).
-		Where("workflow_records.id is NULL").
+		Where("workflow_instance_records.id is NULL").
 		Scan(&tasks).Error
 
 	return tasks, errors.New(errors.ConnectStorageError, err)
