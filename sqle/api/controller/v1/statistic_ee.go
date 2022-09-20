@@ -309,7 +309,7 @@ func getWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	insts, err := s.GetAllInstanceTips("")
+	insts, err := s.GetInstanceTipsByTypeAndTempID("", 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
