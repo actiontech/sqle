@@ -1088,15 +1088,16 @@ type GetWorkflowTasksResV1 struct {
 }
 
 type GetWorkflowTasksItemV1 struct {
-	TaskId                  uint       `json:"task_id"`
-	InstanceName            string     `json:"instance_name"`
-	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing"`
-	ExecStartTime           *time.Time `json:"exec_start_time,omitempty"`
-	ExecEndTime             *time.Time `json:"exec_end_time,omitempty"`
-	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`
-	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	TaskPassRate            float64    `json:"task_pass_rate"`
-	TaskScore               int32      `json:"task_score"`
+	TaskId                   uint                    `json:"task_id"`
+	InstanceName             string                  `json:"instance_name"`
+	Status                   string                  `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing"`
+	ExecStartTime            *time.Time              `json:"exec_start_time,omitempty"`
+	ExecEndTime              *time.Time              `json:"exec_end_time,omitempty"`
+	ScheduleTime             *time.Time              `json:"schedule_time,omitempty"`
+	CurrentStepAssigneeUser  []string                `json:"current_step_assignee_user_name_list,omitempty"`
+	TaskPassRate             float64                 `json:"task_pass_rate"`
+	TaskScore                int32                   `json:"task_score"`
+	InstanceMaintenanceTimes []*MaintenanceTimeResV1 `json:"instance_maintenance_times"`
 }
 
 // GetSummaryOfWorkflowTasksV1
@@ -1169,15 +1170,16 @@ func convertWorkflowToTasksSummaryRes(s *model.Storage, workflow *model.Workflow
 		}
 
 		res[i] = &GetWorkflowTasksItemV1{
-			TaskId:                  inst.TaskId,
-			InstanceName:            taskIdToTask[inst.TaskId].Instance.Name,
-			Status:                  getTaskStatusRes(workflow, taskIdToTask[inst.TaskId], inst.ScheduledAt),
-			ExecStartTime:           taskIdToTask[inst.TaskId].ExecStartAt,
-			ExecEndTime:             taskIdToTask[inst.TaskId].ExecEndAt,
-			ScheduleTime:            inst.ScheduledAt,
-			CurrentStepAssigneeUser: assignees,
-			TaskPassRate:            taskIdToTask[inst.TaskId].PassRate,
-			TaskScore:               taskIdToTask[inst.TaskId].Score,
+			TaskId:                   inst.TaskId,
+			InstanceName:             taskIdToTask[inst.TaskId].Instance.Name,
+			Status:                   getTaskStatusRes(workflow, taskIdToTask[inst.TaskId], inst.ScheduledAt),
+			ExecStartTime:            taskIdToTask[inst.TaskId].ExecStartAt,
+			ExecEndTime:              taskIdToTask[inst.TaskId].ExecEndAt,
+			ScheduleTime:             inst.ScheduledAt,
+			CurrentStepAssigneeUser:  assignees,
+			TaskPassRate:             taskIdToTask[inst.TaskId].PassRate,
+			TaskScore:                taskIdToTask[inst.TaskId].Score,
+			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskIdToTask[inst.TaskId].Instance.MaintenancePeriod),
 		}
 	}
 	return res, nil
