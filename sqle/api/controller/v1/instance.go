@@ -1001,6 +1001,7 @@ func GetInstanceSchemas(c echo.Context) error {
 
 const ( // InstanceTipReqV1.FunctionalModule Enums
 	create_audit_plan = "create_audit_plan"
+	sql_query         = "sql_query"
 )
 
 type InstanceTipReqV1 struct {
