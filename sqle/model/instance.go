@@ -275,13 +275,13 @@ func getDbTypeQueryCond(dbType string) string {
 
 func (s *Storage) GetInstancesTipsByUserAndTempId(user *User, dbType string, tempID uint32) ([]*Instance, error) {
 	if IsDefaultAdminUser(user.Name) {
-		return s.GetInstanceTipsByTempID(dbType, tempID)
+		return s.GetInstanceTipsByTypeAndTempID(dbType, tempID)
 	}
 
-	return s.GetInstanceTipsByUserViaRolesAndTempID(user, dbType, tempID)
+	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, tempID)
 }
 
-func (s *Storage) GetInstanceTipsByTempID(dbType string, tempID uint32) (instances []*Instance, err error) {
+func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32) (instances []*Instance, err error) {
 	query := s.db.Model(&Instance{}).Select("name, db_type, workflow_template_id").Group("id")
 
 	if dbType != "" {
@@ -310,7 +310,7 @@ func (s *Storage) GetAllInstanceCount() ([]*TypeCount, error) {
 	return counts, s.db.Table("instances").Select("db_type, count(*) as count").Where("deleted_at is NULL").Group("db_type").Find(&counts).Error
 }
 
-func (s *Storage) GetInstanceTipsByUserViaRolesAndTempID(user *User, dbType string, tempID uint32) (instances []*Instance, err error) {
+func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType string, tempID uint32) (instances []*Instance, err error) {
 
 	queryByRole := s.db.Model(&Instance{}).Select("instances.name, instances.db_type , instances.workflow_template_id").
 		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
@@ -359,17 +359,17 @@ func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
 	instances []*Instance, err error) {
 
 	if IsDefaultAdminUser(user.Name) {
-		return s.GetInstanceTipsByTempID(dbType, 0)
+		return s.GetInstanceTipsByTypeAndTempID(dbType, 0)
 	}
 
-	return s.GetInstanceTipsByUserViaRolesAndTempID(user, dbType, 0)
+	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, 0)
 }
 
 func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType string, opCode ...int) (
 	instances []*Instance, err error) {
 
 	if IsDefaultAdminUser(user.Name) {
-		return s.GetInstanceTipsByTempID(dbType, 0)
+		return s.GetInstanceTipsByTypeAndTempID(dbType, 0)
 	}
 	return s.getInstanceTipsByUserAndOperation(user, dbType, opCode...)
 }
