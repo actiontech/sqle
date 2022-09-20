@@ -318,7 +318,8 @@ func GetWorkflowsV2(c echo.Context) error {
 }
 
 func convertWorkflowStatusToRes(workflowStatus string, taskStatus []string) string {
-	var status = workflowStatus
+	return getWorkFlowStatus(workflowStatus, taskStatus)
+}
 
 func getWorkFlowStatus(workFlowStatus string, taskStatus []string) string {
 	if workFlowStatus == model.WorkflowStatusFinish {
