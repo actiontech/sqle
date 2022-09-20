@@ -344,11 +344,11 @@ type GetWorkflowResV2 struct {
 }
 
 type WorkflowTaskItem struct {
-	Id uint `json:"task_ids"`
+	Id uint `json:"task_id"`
 }
 
 type WorkflowRecordResV2 struct {
-	TaskIds           []*WorkflowTaskItem     `json:"task_ids"`
+	Tasks             []*WorkflowTaskItem     `json:"tasks"`
 	CurrentStepNumber uint                    `json:"current_step_number,omitempty"`
 	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,finished"`
 	Steps             []*v1.WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
@@ -486,7 +486,7 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 	}
 
 	return &WorkflowRecordResV2{
-		TaskIds:           tasksRes,
+		Tasks:             tasksRes,
 		CurrentStepNumber: currentStepNum,
 		Status:            workflowStatus,
 		Steps:             steps,
