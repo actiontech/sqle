@@ -320,22 +320,28 @@ func GetWorkflowsV2(c echo.Context) error {
 func convertWorkflowStatusToRes(workflowStatus string, taskStatus []string) string {
 	var status = workflowStatus
 
-	if workflowStatus == model.WorkflowStatusFinish {
+func getWorkFlowStatus(workFlowStatus string, taskStatus []string) string {
+	if workFlowStatus == model.WorkflowStatusFinish {
 		var hasExecuteFailTask bool
+		var hasExecutingTask bool
 		for _, taskStat := range taskStatus {
 			if taskStat == model.TaskStatusExecuteFailed {
 				hasExecuteFailTask = true
 			}
+
+			if taskStat == model.TaskStatusExecuting {
+				hasExecutingTask = true
+			}
 		}
 
-		if hasExecuteFailTask {
-			status = model.WorkflowStatusExecFailed
-		} else {
-			status = model.WorkflowStatusFinish
+		if hasExecutingTask {
+			workFlowStatus = model.WorkflowStatusExecuting
+		} else if hasExecuteFailTask {
+			workFlowStatus = model.WorkflowStatusExecFailed
 		}
 	}
 
-	return status
+	return workFlowStatus
 }
 
 type GetWorkflowResV2 struct {
