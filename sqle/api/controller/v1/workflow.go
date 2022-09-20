@@ -14,7 +14,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server"
-	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -1133,12 +1132,11 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 	}
 
 	taskIds := workflow.GetTaskIds()
-	taskIds = utils.RemoveDuplicateUint(taskIds)
-	tasks, err := s.GetTasksByIds(taskIds)
+	tasks, foundAllTasks, err := s.GetTasksByIds(taskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if len(tasks) != len(taskIds) {
+	if !foundAllTasks {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
