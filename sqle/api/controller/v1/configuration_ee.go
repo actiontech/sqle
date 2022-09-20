@@ -97,3 +97,13 @@ func getWeChatConfiguration(c echo.Context) error {
 		},
 	})
 }
+
+func getSQLQueryConfiguration(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetSQLQueryConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetSQLQueryConfigurationResDataV1{
+			EnableSQLQuery:  false,
+			SQLQueryRootURI: "/sql_query",
+		},
+	})
+}
