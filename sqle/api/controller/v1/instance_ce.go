@@ -36,7 +36,7 @@ func getInstanceTips(c echo.Context) error {
 	case sql_query:
 		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType)
 	default: // create_workflow case
-		instances, err = s.GetInstancesTipsByUserAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId)
+		instances, err = s.GetInstancesTipsByUserAndTypeAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId)
 	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

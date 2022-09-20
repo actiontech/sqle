@@ -273,7 +273,7 @@ func getDbTypeQueryCond(dbType string) string {
 	return `AND instances.db_type = ?`
 }
 
-func (s *Storage) GetInstancesTipsByUserAndTempId(user *User, dbType string, tempID uint32) ([]*Instance, error) {
+func (s *Storage) GetInstancesTipsByUserAndTypeAndTempId(user *User, dbType string, tempID uint32) ([]*Instance, error) {
 	if IsDefaultAdminUser(user.Name) {
 		return s.GetInstanceTipsByTypeAndTempID(dbType, tempID)
 	}
