@@ -63,11 +63,11 @@ func CreateWorkflowV2(c echo.Context) error {
 	if len(taskIds) > v1.MaximumDataSourceNum {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the max task count of a workflow is %v", v1.MaximumDataSourceNum)))
 	}
-	tasks, err := s.GetTasksByIds(taskIds)
+	tasks, foundAllTasks, err := s.GetTasksByIds(taskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if len(tasks) != len(taskIds) {
+	if !foundAllTasks {
 		return controller.JSONBaseErrorReq(c, v1.ErrTaskNoAccess)
 	}
 
@@ -401,7 +401,7 @@ func GetWorkflowV2(c echo.Context) error {
 	workflow.RecordHistory = history
 
 	taskIds := workflow.GetTaskIds()
-	tasks, err := s.GetTasksByIds(taskIds)
+	tasks, _, err := s.GetTasksByIds(taskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -548,7 +548,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	tasks, err := s.GetTasksByIds(req.TaskIds)
+	tasks, _, err := s.GetTasksByIds(req.TaskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

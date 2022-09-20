@@ -81,7 +81,7 @@ func (w *WorkflowNotification) NotificationSubject() string {
 func (w *WorkflowNotification) NotificationBody() string {
 	s := model.GetStorage()
 	taskIds := w.workflow.GetTaskIds()
-	tasks, err := s.GetTasksByIds(taskIds)
+	tasks, _, err := s.GetTasksByIds(taskIds)
 	if err != nil || len(tasks) <= 0 {
 		return fmt.Sprintf(`
 - 工单主题: %v
