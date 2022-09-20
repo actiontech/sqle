@@ -1140,7 +1140,7 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 	if !foundAllTasks {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
-
+	//nolint:prealloc
 	var userIds []uint
 	for _, inst := range workflow.Record.InstanceRecords {
 		if !inst.IsSQLExecuted {
