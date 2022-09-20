@@ -340,8 +340,8 @@ func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType strin
 		queryByGroup = queryByGroup.Where("workflow_template_id = ?", tempID)
 	}
 
-	var intsByRole, instByGroup []*Instance
-	if err := queryByRole.Scan(&intsByRole).Error; err != nil {
+	var instByRole, instByGroup []*Instance
+	if err := queryByRole.Scan(&instByRole).Error; err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
 
@@ -349,7 +349,7 @@ func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType strin
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
 
-	instances = append(instances, intsByRole...)
+	instances = append(instances, instByRole...)
 	instances = append(instances, instByGroup...)
 
 	return instances, nil
