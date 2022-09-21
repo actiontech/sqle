@@ -10072,6 +10072,7 @@
                         "rejected",
                         "canceled",
                         "exec_failed",
+                        "executing",
                         "finished"
                     ]
                 },
@@ -10097,6 +10098,7 @@
                         "rejected",
                         "canceled",
                         "exec_failed",
+                        "executing",
                         "finished"
                     ]
                 },

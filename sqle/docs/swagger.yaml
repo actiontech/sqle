@@ -3180,6 +3180,7 @@ definitions:
         - rejected
         - canceled
         - exec_failed
+        - executing
         - finished
         type: string
       subject:
@@ -3198,6 +3199,7 @@ definitions:
         - rejected
         - canceled
         - exec_failed
+        - executing
         - finished
         type: string
       tasks:
