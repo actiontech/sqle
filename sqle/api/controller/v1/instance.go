@@ -459,13 +459,13 @@ func DeleteInstance(c echo.Context) error {
 	for _, task := range tasks {
 		taskIds = append(taskIds, task.ID)
 	}
-	isRunning, err := s.TaskWorkflowIsRunning(taskIds)
+	isRunning, err := s.TaskWorkflowIsUnfinished(taskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if isRunning {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
-			fmt.Errorf("%s can't be deleted,cause on_process workflow exist", instanceName)))
+			fmt.Errorf("%s can't be deleted,cause wait_for_audit or wait_for_execution workflow exist", instanceName)))
 	}
 
 	err = s.Delete(instance)
