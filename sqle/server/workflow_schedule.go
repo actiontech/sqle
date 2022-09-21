@@ -58,20 +58,17 @@ func (s *Sqled) WorkflowSchedule(entry *logrus.Entry) {
 		}
 
 		entry.Infof("start to execute scheduled workflow %s", w.Subject)
-		needExecuteTaskIds := map[uint]struct{}{}
-		// TODO: issue832 上线人暂时先保存最后一个上线人，后续可能需要保存到每个数据源上
-		var userId uint
+		needExecuteTaskIds := map[uint]uint{}
 		for _, ir := range w.Record.InstanceRecords {
-			if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now){
-				userId = ir.ScheduleUserId
-				needExecuteTaskIds[ir.TaskId] = struct{}{}
+			if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
+				needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
 			}
 		}
 		if len(needExecuteTaskIds) == 0 {
 			entry.Warnf("workflow %s need to execute scheduled, but no task find", w.Subject)
 		}
 
-		err = ExecuteWorkflow(w, needExecuteTaskIds, userId)
+		err = ExecuteWorkflow(w, needExecuteTaskIds)
 		if err != nil {
 			entry.Errorf("execute scheduled workflow %s error: %v", w.Subject, err)
 		} else {
@@ -80,11 +77,11 @@ func (s *Sqled) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIds map[uint]struct{}, userId uint) error {
+func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {
 	s := model.GetStorage()
 
 	// get task and check connection before to execute it.
-	for taskId := range needExecTaskIds {
+	for taskId := range needExecTaskIdToUserId {
 		taskId := fmt.Sprintf("%d", taskId)
 		task, exist, err := s.GetTaskDetailById(taskId)
 		if err != nil {
@@ -115,29 +112,25 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIds map[uint]struct{}
 		return fmt.Errorf("get count of tasks failed: %v", err)
 	}
 	for i, inst := range workflow.Record.InstanceRecords {
-		if _, ok := needExecTaskIds[inst.TaskId]; ok {
+		if userId, ok := needExecTaskIdToUserId[inst.TaskId]; ok {
 			workflow.Record.InstanceRecords[i].IsSQLExecuted = true
+			workflow.Record.InstanceRecords[i].ExecutionUserId = userId
 		}
 	}
 
 	// 只有当所有数据源都上线时，current step状态才改为"approved"
-	if waitForExecTasksCount == len(needExecTaskIds) {
+	if waitForExecTasksCount == len(needExecTaskIdToUserId) {
 		currentStep.State = model.WorkflowStepStateApprove
 		workflow.Record.Status = model.WorkflowStatusFinish
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	// todo issue832 上线人暂时先保存最后一个上线人，后续可能需要保存到每个数据源上
-	now := time.Now()
-	currentStep.OperateAt = &now
-	currentStep.OperationUserId = userId
-
-	err = s.UpdateWorkflowStatus(workflow, currentStep,workflow.Record.InstanceRecords)
+	err = s.UpdateWorkflowStatus(workflow, currentStep, workflow.Record.InstanceRecords)
 	if err != nil {
 		return err
 	}
 
-	for taskId := range needExecTaskIds {
+	for taskId := range needExecTaskIdToUserId {
 		id := taskId
 		go func() {
 			sqledServer := GetSqled()
