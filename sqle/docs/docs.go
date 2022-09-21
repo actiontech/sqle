@@ -10088,6 +10088,7 @@ var doc = `{
                         "rejected",
                         "canceled",
                         "exec_failed",
+                        "executing",
                         "finished"
                     ]
                 },
@@ -10113,6 +10114,7 @@ var doc = `{
                         "rejected",
                         "canceled",
                         "exec_failed",
+                        "executing",
                         "finished"
                     ]
                 },
