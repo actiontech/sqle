@@ -18,10 +18,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const ( // InstanceTipReqV1.FunctionalModule Enums
-	sql_query = "sql_query"
-)
-
 func getInstanceTips(c echo.Context) error {
 	req := new(InstanceTipReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
