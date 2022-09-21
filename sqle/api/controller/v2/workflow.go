@@ -219,7 +219,7 @@ type WorkflowDetailResV2 struct {
 	CreateTime              *time.Time `json:"create_time"`
 	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,finished"`
+	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
 }
 
 // GetWorkflowsV2
@@ -318,24 +318,31 @@ func GetWorkflowsV2(c echo.Context) error {
 }
 
 func convertWorkflowStatusToRes(workflowStatus string, taskStatus []string) string {
-	var status = workflowStatus
+	return getWorkFlowStatus(workflowStatus, taskStatus)
+}
 
-	if workflowStatus == model.WorkflowStatusFinish {
+func getWorkFlowStatus(workFlowStatus string, taskStatus []string) string {
+	if workFlowStatus == model.WorkflowStatusFinish {
 		var hasExecuteFailTask bool
+		var hasExecutingTask bool
 		for _, taskStat := range taskStatus {
 			if taskStat == model.TaskStatusExecuteFailed {
 				hasExecuteFailTask = true
 			}
+
+			if taskStat == model.TaskStatusExecuting {
+				hasExecutingTask = true
+			}
 		}
 
-		if hasExecuteFailTask {
-			status = model.WorkflowStatusExecFailed
-		} else {
-			status = model.WorkflowStatusFinish
+		if hasExecutingTask {
+			workFlowStatus = model.WorkflowStatusExecuting
+		} else if hasExecuteFailTask {
+			workFlowStatus = model.WorkflowStatusExecFailed
 		}
 	}
 
-	return status
+	return workFlowStatus
 }
 
 type GetWorkflowResV2 struct {
@@ -350,7 +357,7 @@ type WorkflowTaskItem struct {
 type WorkflowRecordResV2 struct {
 	Tasks             []*WorkflowTaskItem     `json:"tasks"`
 	CurrentStepNumber uint                    `json:"current_step_number,omitempty"`
-	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,finished"`
+	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
 	Steps             []*v1.WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
@@ -476,14 +483,12 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
 	}
 
-	workflowStatus := record.Status
-	if record.Status == model.WorkflowStatusFinish {
-		for _, task := range tasks {
-			if task.Status == model.TaskStatusExecuteFailed {
-				workflowStatus = model.WorkflowStatusExecFailed
-			}
-		}
+	taskStatus := make([]string, 0, len(tasks))
+	for _, task := range tasks {
+		taskStatus = append(taskStatus, task.Status)
 	}
+
+	workflowStatus := getWorkFlowStatus(record.Status, taskStatus)
 
 	return &WorkflowRecordResV2{
 		Tasks:             tasksRes,

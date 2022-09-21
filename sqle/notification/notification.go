@@ -102,7 +102,6 @@ func (w *WorkflowNotification) NotificationBody() string {
 - 工单描述: %v
 - 申请人: %v
 - 创建时间: %v
---------------
 `,
 		w.workflow.Subject,
 		w.workflow.Desc,
