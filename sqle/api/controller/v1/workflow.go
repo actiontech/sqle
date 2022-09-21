@@ -14,6 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -1122,86 +1123,37 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// get data
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowIdStr)
+	queryData := map[string]interface{}{
+		"workflow_id": workflowId,
+	}
+	taskDetails, err := s.GetWorkflowTasksSummaryByReq(queryData)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-	}
-
-	taskIds := workflow.GetTaskIds()
-	tasks, foundAllTasks, err := s.GetTasksByIds(taskIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !foundAllTasks {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-	}
-	//nolint:prealloc
-	var userIds []uint
-	for _, inst := range workflow.Record.InstanceRecords {
-		if !inst.IsSQLExecuted {
-			continue
-		}
-		userIds = append(userIds, inst.ExecutionUserId)
-	}
-	users, foundAllUsers, err := s.GetUsersByIDs(userIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !foundAllUsers {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowTasksResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToTasksSummaryRes(workflow, tasks, users),
+		Data:    convertWorkflowToTasksSummaryRes(taskDetails),
 	})
 }
 
-func convertWorkflowToTasksSummaryRes(workflow *model.Workflow, tasks []*model.Task, users []*model.User) []*GetWorkflowTasksItemV1 {
-	res := make([]*GetWorkflowTasksItemV1, len(workflow.Record.InstanceRecords))
-	taskIdToTask := make(map[uint]*model.Task, len(tasks))
-	for _, task := range tasks {
-		taskIdToTask[task.ID] = task
-	}
+func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryDetail) []*GetWorkflowTasksItemV1 {
+	res := make([]*GetWorkflowTasksItemV1, len(taskDetails))
 
-	userIdToUser := make(map[uint]*model.User, len(users))
-	for _, user := range users {
-		userIdToUser[user.ID] = user
-	}
-
-	for i, inst := range workflow.Record.InstanceRecords {
-		// convert assignees
-		var assignees []string
-		// current step is nil if workflow is finished
-		if workflow.Record.CurrentStep != nil {
-			assignees = make([]string, len(workflow.Record.CurrentStep.Assignees))
-			for i, user := range workflow.Record.CurrentStep.Assignees {
-				assignees[i] = user.Name
-			}
-		}
-
-		executionUserName := ""
-		if user, ok := userIdToUser[inst.ExecutionUserId]; ok {
-			executionUserName = user.Name
-		}
-
+	for i, taskDetail := range taskDetails {
 		res[i] = &GetWorkflowTasksItemV1{
-			TaskId:                   inst.TaskId,
-			InstanceName:             taskIdToTask[inst.TaskId].Instance.Name,
-			Status:                   getTaskStatusRes(workflow, taskIdToTask[inst.TaskId], inst.ScheduledAt),
-			ExecStartTime:            taskIdToTask[inst.TaskId].ExecStartAt,
-			ExecEndTime:              taskIdToTask[inst.TaskId].ExecEndAt,
-			ScheduleTime:             inst.ScheduledAt,
-			CurrentStepAssigneeUser:  assignees,
-			TaskPassRate:             taskIdToTask[inst.TaskId].PassRate,
-			TaskScore:                taskIdToTask[inst.TaskId].Score,
-			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskIdToTask[inst.TaskId].Instance.MaintenancePeriod),
-			ExecutionUserName:        executionUserName,
+			TaskId:                   taskDetail.TaskId,
+			InstanceName:             utils.AddDelTag(taskDetail.InstanceDeletedAt, taskDetail.InstanceName),
+			Status:                   getTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
+			ExecStartTime:            taskDetail.TaskExecStartAt,
+			ExecEndTime:              taskDetail.TaskExecEndAt,
+			ScheduleTime:             taskDetail.InstanceScheduledAt,
+			CurrentStepAssigneeUser:  taskDetail.CurrentStepAssigneeUsers,
+			TaskPassRate:             taskDetail.TaskPassRate,
+			TaskScore:                taskDetail.TaskScore,
+			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
+			ExecutionUserName:        utils.AddDelTag(taskDetail.ExecutionUserDeletedAt, taskDetail.ExecutionUserName),
 		}
 	}
 	return res
@@ -1216,16 +1168,16 @@ const (
 	taskDisplayStatusScheduled        = "exec_scheduled"
 )
 
-func getTaskStatusRes(workflow *model.Workflow, task *model.Task, scheduleAt *time.Time) (status string) {
-	if workflow.Record.Status == model.WorkflowStatusWaitForAudit {
+func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time.Time) (status string) {
+	if workflowStatus == model.WorkflowStatusWaitForAudit {
 		return taskDisplayStatusWaitForAudit
 	}
 
-	if scheduleAt != nil && task.Status == model.TaskStatusAudited {
+	if scheduleAt != nil && taskStatus == model.TaskStatusAudited {
 		return taskDisplayStatusScheduled
 	}
 
-	switch task.Status {
+	switch taskStatus {
 	case model.TaskStatusAudited:
 		return taskDisplayStatusWaitForExecution
 	case model.TaskStatusExecuteSucceeded:
