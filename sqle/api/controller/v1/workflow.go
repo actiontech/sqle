@@ -1014,7 +1014,7 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow)
+	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1022,14 +1022,14 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflowId))
 	}
 
-	err = server.ExecuteWorkflow(workflow, map[uint]struct{}{uint(taskId): {}}, user.ID)
+	err = server.ExecuteWorkflow(workflow, map[uint]uint{uint(taskId): user.ID})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow) (taskIds map[uint] /*task id*/ struct{}, err error) {
+func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ uint /*user id*/, err error) {
 	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
 	if err != nil {
 		return nil, err
@@ -1047,12 +1047,12 @@ func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow) (taskIds map
 	}
 
 	// 定时的instances和已上线的跳过
-	needExecTaskIds := make(map[uint]struct{})
+	needExecTaskIds := make(map[uint]uint)
 	for _, instRecord := range workflow.Record.InstanceRecords {
 		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
 			continue
 		}
-		needExecTaskIds[instRecord.TaskId] = struct{}{}
+		needExecTaskIds[instRecord.TaskId] = user.ID
 	}
 	return needExecTaskIds, nil
 }
@@ -1088,15 +1088,17 @@ type GetWorkflowTasksResV1 struct {
 }
 
 type GetWorkflowTasksItemV1 struct {
-	TaskId                  uint       `json:"task_id"`
-	InstanceName            string     `json:"instance_name"`
-	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing"`
-	ExecStartTime           *time.Time `json:"exec_start_time,omitempty"`
-	ExecEndTime             *time.Time `json:"exec_end_time,omitempty"`
-	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`
-	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	TaskPassRate            float64    `json:"task_pass_rate"`
-	TaskScore               int32      `json:"task_score"`
+	TaskId                   uint                    `json:"task_id"`
+	InstanceName             string                  `json:"instance_name"`
+	Status                   string                  `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing"`
+	ExecStartTime            *time.Time              `json:"exec_start_time,omitempty"`
+	ExecEndTime              *time.Time              `json:"exec_end_time,omitempty"`
+	ScheduleTime             *time.Time              `json:"schedule_time,omitempty"`
+	CurrentStepAssigneeUser  []string                `json:"current_step_assignee_user_name_list,omitempty"`
+	TaskPassRate             float64                 `json:"task_pass_rate"`
+	TaskScore                int32                   `json:"task_score"`
+	InstanceMaintenanceTimes []*MaintenanceTimeResV1 `json:"instance_maintenance_times"`
+	ExecutionUserName        string                  `json:"execution_user_name"`
 }
 
 // GetSummaryOfWorkflowTasksV1
@@ -1122,65 +1124,39 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowIdStr)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	queryData := map[string]interface{}{
+		"workflow_id": workflowId,
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-	}
-
-	data, err := convertWorkflowToTasksSummaryRes(s, workflow)
+	taskDetails, err := s.GetWorkflowTasksSummaryByReq(queryData)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowTasksResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    data,
+		Data:    convertWorkflowToTasksSummaryRes(taskDetails),
 	})
 }
 
-func convertWorkflowToTasksSummaryRes(s *model.Storage, workflow *model.Workflow) ([]*GetWorkflowTasksItemV1, error) {
-	res := make([]*GetWorkflowTasksItemV1, len(workflow.Record.InstanceRecords))
-	taskIds := workflow.GetTaskIds()
-	taskIds = utils.RemoveDuplicateUint(taskIds)
-	tasks, err := s.GetTasksByIds(taskIds)
-	if err != nil {
-		return nil, err
-	}
-	if len(tasks) != len(taskIds) {
-		return nil, ErrWorkflowNoAccess
-	}
-	taskIdToTask := make(map[uint]*model.Task, len(tasks))
-	for _, task := range tasks {
-		taskIdToTask[task.ID] = task
-	}
+func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryDetail) []*GetWorkflowTasksItemV1 {
+	res := make([]*GetWorkflowTasksItemV1, len(taskDetails))
 
-	for i, inst := range workflow.Record.InstanceRecords {
-		// convert assignees
-		var assignees []string
-		// current step is nil if workflow is finished
-		if workflow.Record.CurrentStep != nil {
-			assignees = make([]string, len(workflow.Record.CurrentStep.Assignees))
-			for i, user := range workflow.Record.CurrentStep.Assignees {
-				assignees[i] = user.Name
-			}
-		}
-
+	for i, taskDetail := range taskDetails {
 		res[i] = &GetWorkflowTasksItemV1{
-			TaskId:                  inst.TaskId,
-			InstanceName:            taskIdToTask[inst.TaskId].Instance.Name,
-			Status:                  getTaskStatusRes(workflow, taskIdToTask[inst.TaskId], inst.ScheduledAt),
-			ExecStartTime:           taskIdToTask[inst.TaskId].ExecStartAt,
-			ExecEndTime:             taskIdToTask[inst.TaskId].ExecEndAt,
-			ScheduleTime:            inst.ScheduledAt,
-			CurrentStepAssigneeUser: assignees,
-			TaskPassRate:            taskIdToTask[inst.TaskId].PassRate,
-			TaskScore:               taskIdToTask[inst.TaskId].Score,
+			TaskId:                   taskDetail.TaskId,
+			InstanceName:             utils.AddDelTag(taskDetail.InstanceDeletedAt, taskDetail.InstanceName),
+			Status:                   getTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
+			ExecStartTime:            taskDetail.TaskExecStartAt,
+			ExecEndTime:              taskDetail.TaskExecEndAt,
+			ScheduleTime:             taskDetail.InstanceScheduledAt,
+			CurrentStepAssigneeUser:  taskDetail.CurrentStepAssigneeUsers,
+			TaskPassRate:             taskDetail.TaskPassRate,
+			TaskScore:                taskDetail.TaskScore,
+			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
+			ExecutionUserName:        utils.AddDelTag(taskDetail.ExecutionUserDeletedAt, taskDetail.ExecutionUserName),
 		}
 	}
-	return res, nil
+	return res
 }
 
 const (
@@ -1192,16 +1168,16 @@ const (
 	taskDisplayStatusScheduled        = "exec_scheduled"
 )
 
-func getTaskStatusRes(workflow *model.Workflow, task *model.Task, scheduleAt *time.Time) (status string) {
-	if workflow.Record.Status == model.WorkflowStatusWaitForAudit {
+func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time.Time) (status string) {
+	if workflowStatus == model.WorkflowStatusWaitForAudit {
 		return taskDisplayStatusWaitForAudit
 	}
 
-	if scheduleAt != nil && task.Status == model.TaskStatusAudited {
+	if scheduleAt != nil && taskStatus == model.TaskStatusAudited {
 		return taskDisplayStatusScheduled
 	}
 
-	switch task.Status {
+	switch taskStatus {
 	case model.TaskStatusAudited:
 		return taskDisplayStatusWaitForExecution
 	case model.TaskStatusExecuteSucceeded:
