@@ -925,7 +925,7 @@ SELECT wr.status                                                     AS workflow
        tasks.exec_end_at                                             AS task_exec_end_at,
        tasks.pass_rate                                               AS task_pass_rate,
        tasks.score                                                   AS task_score,
-       GROUP_CONCAT(tasks.status)                                    AS task_status,
+       tasks.status                                                  AS task_status,
        inst.name                                                     AS instance_name,
        inst.deleted_at                                               AS instance_deleted_at,
        inst.maintenance_period                                       AS instance_maintenance_period,
