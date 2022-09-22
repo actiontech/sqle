@@ -7649,6 +7649,9 @@ var doc = `{
                 "exec_start_time": {
                     "type": "string"
                 },
+                "execution_user_name": {
+                    "type": "string"
+                },
                 "instance_maintenance_times": {
                     "type": "array",
                     "items": {
