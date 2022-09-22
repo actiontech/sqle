@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/jinzhu/gorm"
 )
@@ -203,13 +204,16 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	return task, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetTasksByIds(taskIds []uint) ([]*Task, error) {
-	tasks := []*Task{}
-	err := s.db.Where("id IN (?)", taskIds).Preload("Instance").Find(&tasks).Error
+func (s *Storage) GetTasksByIds(taskIds []uint) (tasks []*Task, foundAllIds bool, err error) {
+	taskIds = utils.RemoveDuplicateUint(taskIds)
+	err = s.db.Where("id IN (?)", taskIds).Preload("Instance").Find(&tasks).Error
 	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
+		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
-	return tasks, nil
+	if len(tasks) == len(taskIds) {
+		foundAllIds = true
+	}
+	return
 }
 
 func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
