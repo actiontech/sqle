@@ -890,7 +890,8 @@ func checkCancelWorkflow(id string) (*model.Workflow, error) {
 	if !exist {
 		return nil, ErrWorkflowNoAccess
 	}
-	if !(workflow.Record.Status == model.WorkflowStatusRunning ||
+	if !(workflow.Record.Status == model.WorkflowStatusWaitForAudit ||
+		workflow.Record.Status == model.WorkflowStatusWaitForExecution ||
 		workflow.Record.Status == model.WorkflowStatusReject) {
 		return nil, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
