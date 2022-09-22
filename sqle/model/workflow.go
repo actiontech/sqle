@@ -623,7 +623,7 @@ func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 
 func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (uint32, error) {
 	var count uint32
-	err := s.db.Model(&WorkflowInstanceRecord{}).Where("workflow_instance_records.task_id IN (?)", ids).Count(&count).Error //todo 测试0条记录的表现
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("workflow_instance_records.task_id IN (?)", ids).Count(&count).Error
 	if err != nil {
 		return 0, errors.New(errors.ConnectStorageError, err)
 	}
@@ -639,7 +639,11 @@ func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
 			"workflows.id = workflow_record_history.workflow_id").
 		Joins("LEFT JOIN workflow_records AS h_wr ON "+
 			"workflow_record_history.workflow_record_id = h_wr.id").
-		Where("wr.task_id = ? OR h_wr.task_id = ? AND workflows.id IS NOT NULL", id, id).
+		Joins("LEFT JOIN workflow_instance_records AS wir ON "+
+			"wir.workflow_record_id = wr.id").
+		Joins("LEFT JOIN workflow_instance_records AS h_wir ON "+
+			"h_wir.workflow_record_id = workflow_record_history.workflow_record_id").
+		Where("wir.task_id = ? OR h_wir.task_id = ? AND workflows.id IS NOT NULL", id, id).
 		Limit(1).Group("workflows.id").Scan(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
