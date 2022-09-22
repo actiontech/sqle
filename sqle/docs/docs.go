@@ -5159,6 +5159,7 @@ var doc = `{
                             "wait_for_audit",
                             "wait_for_execution",
                             "rejected",
+                            "executing",
                             "canceled",
                             "exec_failed",
                             "finished"
@@ -7647,6 +7648,9 @@ var doc = `{
                     "type": "string"
                 },
                 "exec_start_time": {
+                    "type": "string"
+                },
+                "execution_user_name": {
                     "type": "string"
                 },
                 "instance_maintenance_times": {
