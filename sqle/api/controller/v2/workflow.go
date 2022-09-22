@@ -198,7 +198,7 @@ type GetWorkflowsReqV2 struct {
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
-	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled exec_failed finished"`
+	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
 	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
 	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
 	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
@@ -232,7 +232,7 @@ type WorkflowDetailResV2 struct {
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_create_user_name query string false "filter create user name"
-// @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,finished)
+// @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
