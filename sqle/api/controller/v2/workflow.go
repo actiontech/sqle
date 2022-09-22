@@ -233,6 +233,8 @@ type WorkflowDetailResV2 struct {
 // @Param filter_subject query string false "filter subject"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
+// @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
+// @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
 // @Param filter_create_user_name query string false "filter create user name"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
