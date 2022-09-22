@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
@@ -60,7 +61,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	e.POST("/v1/login", v1.Login)
+	e.POST("/v1/login", v1.Login, cloudbeaver_wrapper.TriggerLogin())
 
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)

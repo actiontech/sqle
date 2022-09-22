@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -56,6 +57,9 @@ func Login(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
+
+	c.Set(config.LoginUserNameKey, req.UserName)
+
 	return c.JSON(http.StatusOK, &GetUserLoginResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: UserLoginResV1{
