@@ -53,6 +53,13 @@ func (e ErrCode) String() string {
 	return fmt.Sprintf("unknown error code 0x%x", uint32(e))
 }
 
+func (e ErrCode) stringToken() string {
+	if s, ok := errCodeName[e]; ok {
+		return s
+	}
+	return fmt.Sprintf("ERR_UNKNOWN_%d", uint32(e))
+}
+
 // ConnectionError is an error that results in the termination of the
 // entire connection.
 type ConnectionError ErrCode
@@ -129,7 +136,7 @@ func (e headerFieldNameError) Error() string {
 type headerFieldValueError string
 
 func (e headerFieldValueError) Error() string {
-	return fmt.Sprintf("invalid header field value %q", string(e))
+	return fmt.Sprintf("invalid header field value for %q", string(e))
 }
 
 var (
