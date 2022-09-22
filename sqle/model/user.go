@@ -94,6 +94,10 @@ func (i *User) encryptPassword() error {
 	return nil
 }
 
+func (i *User) FingerPrint() string {
+	return fmt.Sprintf(`{"id":"%v", "secret_password":"%v" }`, i.ID, i.SecretPassword)
+}
+
 func (s *Storage) GetUserByThirdPartyUserID(thirdPartyUserID string) (*User, bool, error) {
 	t := &User{}
 	err := s.db.Where("third_party_user_id = ?", thirdPartyUserID).First(t).Error
