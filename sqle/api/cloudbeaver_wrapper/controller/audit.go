@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/model"
@@ -15,7 +16,7 @@ func (r *MutationResolverImpl) AsyncSQLExecuteQuery(ctx context.Context, connect
 	}
 	if !success {
 		name := "SQL Audit Failed"
-		msg := "the audit level is not allowed to perform sql query"
+		msg := fmt.Sprintf("[sqle] sql statements are not allowed to excute, caused by: \nthe highest error level in audit results is %v,  which reaches the error level limit (%v) set in sqle.", result.AuditLevel, result.LimitLevel)
 		return nil, r.Ctx.JSON(http.StatusOK, struct {
 			Data struct {
 				TaskInfo model.AsyncTaskInfo `json:"taskInfo"`
@@ -30,7 +31,7 @@ func (r *MutationResolverImpl) AsyncSQLExecuteQuery(ctx context.Context, connect
 					Status:  &sql,
 					Error: &model.ServerError{
 						Message:    &msg,
-						StackTrace: &result,
+						StackTrace: &result.Result,
 					},
 				},
 			},
