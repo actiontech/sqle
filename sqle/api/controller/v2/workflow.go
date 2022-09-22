@@ -281,6 +281,8 @@ func GetWorkflowsV2(c echo.Context) error {
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
 		"filter_create_user_name":                req.FilterCreateUserName,
+		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
+		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
 		"filter_status":                          workflowStatus,
 		"filter_task_status":                     taskStatus,
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
