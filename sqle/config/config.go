@@ -5,8 +5,9 @@ type Config struct {
 }
 
 type Server struct {
-	SqleCnf SqleConfig     `yaml:"sqle_config"`
-	DBCnf   DatabaseConfig `yaml:"db_config"`
+	SqleCnf        SqleConfig     `yaml:"sqle_config"`
+	DBCnf          DatabaseConfig `yaml:"db_config"`
+	SQLQueryConfig SQLQueryConfig `yaml:"sql_query_config"`
 }
 
 type SqleConfig struct {
@@ -32,4 +33,12 @@ type MysqlConfig struct {
 	Password       string `yaml:"mysql_password,omitempty"`
 	SecretPassword string `yaml:"secret_mysql_password,omitempty"`
 	Schema         string `yaml:"mysql_schema"`
+}
+
+type SQLQueryConfig struct {
+	EnableHttps              bool   `yaml:"enable_https"`
+	CloudBeaverHost          string `yaml:"cloud_beaver_host"`
+	CloudBeaverPort          string `yaml:"cloud_beaver_port"`
+	CloudBeaverAdminUser     string `yaml:"cloud_beaver_admin_user"`
+	CloudBeaverAdminPassword string `yaml:"cloud_beaver_admin_password"`
 }
