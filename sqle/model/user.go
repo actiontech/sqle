@@ -248,9 +248,9 @@ func (s *Storage) UserHasRunningWorkflow(userId uint) (bool, error) {
 LEFT JOIN workflow_step_user wstu ON users.id = wstu.user_id
 LEFT JOIN workflow_steps ws ON wstu.workflow_step_id = ws.id
 LEFT JOIN workflow_records wr ON ws.workflow_record_id = wr.id
-WHERE users.id = ? AND wr.status = ? AND ws.state = ?;`
+WHERE users.id = ? AND wr.status IN (?) AND ws.state = ?;`
 	var count uint
-	err := s.db.Raw(query, userId, WorkflowStatusRunning, WorkflowStepStateInit).Count(&count).Error
+	err := s.db.Debug().Raw(query, userId, []string{WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution}, WorkflowStepStateInit).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
 	}
@@ -261,7 +261,7 @@ WHERE users.id = ? AND wr.status = ? AND ws.state = ?;`
 	// count how many running workflows have been created by this user
 	var workflows []*Workflow
 	err = s.db.Model(workflows).
-		Preload("Record", "status = ?", WorkflowStatusRunning).
+		Preload("Record", "status IN (?)", []string{WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution}).
 		Where("create_user_id = ?", userId).
 		Find(&workflows).Error
 	return len(workflows) > 0 && workflows[0].Record != nil, errors.New(errors.ConnectStorageError, err)
