@@ -6512,6 +6512,14 @@ paths:
         in: query
         name: filter_create_time_to
         type: string
+      - description: filter_task_execute_start_time_from
+        in: query
+        name: filter_task_execute_start_time_from
+        type: string
+      - description: filter_task_execute_start_time_to
+        in: query
+        name: filter_task_execute_start_time_to
+        type: string
       - description: filter create user name
         in: query
         name: filter_create_user_name
