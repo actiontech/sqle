@@ -197,7 +197,7 @@ func DeleteUser(c echo.Context) error {
 	}
 	if exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
-			fmt.Errorf("%s can't be deleted,cause on_process workflow exist", userName)))
+			fmt.Errorf("%s can't be deleted,cause wait_for_audit or wait_for_execution workflow exist", userName)))
 	}
 	hasBind, err := s.UserHasBindWorkflowTemplate(user)
 	if err != nil {
