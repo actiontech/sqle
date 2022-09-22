@@ -133,6 +133,8 @@ var autoMigrateList = []interface{}{
 	&SqlQueryHistory{},
 	&TaskGroup{},
 	&WorkflowInstanceRecord{},
+	&CloudBeaverUserCache{},
+	&CloudBeaverInstanceCache{},
 }
 
 func (s *Storage) AutoMigrate() error {

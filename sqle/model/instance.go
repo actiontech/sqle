@@ -78,6 +78,19 @@ func (i *Instance) encryptPassword() error {
 	return nil
 }
 
+func (i *Instance) Fingerprint() string {
+	return fmt.Sprintf(`
+{
+    "id":"%v",
+    "host":"%v",
+    "port":"%v",
+    "user":"%v",
+    "secret_password":"%v",
+    "additional_params":"%v"
+}
+`, i.ID, i.Host, i.Port, i.User, i.SecretPassword, i.AdditionalParams)
+}
+
 func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 	instance := &Instance{}
 	err := s.db.Preload("RuleTemplates").Where("id = ?", id).First(instance).Error
@@ -85,6 +98,12 @@ func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 		return instance, false, nil
 	}
 	return instance, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAllInstance() ([]*Instance, error) {
+	i := []*Instance{}
+	err := s.db.Preload("RuleTemplates").Find(&i).Error
+	return i, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
