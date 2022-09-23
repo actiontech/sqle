@@ -71,7 +71,7 @@ func GetSQLEGqlServerURI() string {
 
 	c := GetSQLQueryConfig()
 
-	return fmt.Sprintf("%v://%v:%v%v%v", protocol, c.CloudBeaverHost, c.SqlePort, CbRootUri, CbGqlApi)
+	return fmt.Sprintf("%v://localhost:%v%v%v", protocol, c.SqlePort, CbRootUri, CbGqlApi)
 }
 
 func InitSQLQueryConfig(sqlePort int, sqleEnableHttps bool, c config.SQLQueryConfig) {
