@@ -18,7 +18,7 @@ func SyncCurrentUser(cloudBeaverUser string) error {
 
 	// 获取SQLE缓存中的CloudBeaver用户信息和SQLE用户信息
 	s := sqleModel.GetStorage()
-	cache, exist, err := s.GetCloudBeaverUserCacheByCBUserID(cloudBeaverUser)
+	cache, cbExist, err := s.GetCloudBeaverUserCacheByCBUserID(cloudBeaverUser)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func SyncCurrentUser(cloudBeaverUser string) error {
 
 	// 如果缓存存在且指纹校验通过, 则认为用户同步过且当前缓存为最新缓存
 	// 反之则需要触发同步并更新缓存
-	if exist && sqleUser.FingerPrint() == cache.SQLEFingerprint {
+	if cbExist && sqleUser.FingerPrint() == cache.SQLEFingerprint {
 		return nil
 	}
 

@@ -291,8 +291,8 @@ func GraphqlDistributor() echo.MiddlewareFunc {
 						return err
 					}
 					header.Set("Content-Length", fmt.Sprintf("%d", len(b)))
-					resWrite.ResponseWriter.Write(b)
-					return nil
+					_, err = resWrite.ResponseWriter.Write(b)
+					return err
 				}
 			}
 			return next(c)

@@ -249,17 +249,17 @@ func WithCookie(cookie []*http.Cookie) ClientOption {
 // modify the behaviour of the Client.
 type ClientOption func(*Client)
 
-type graphErr struct {
+type graphError struct {
 	Message string
 }
 
-func (e graphErr) Error() string {
+func (e graphError) Error() string {
 	return "graphql: " + e.Message
 }
 
 type graphResponse struct {
 	Data   interface{}
-	Errors []graphErr
+	Errors []graphError
 }
 
 // Request is a GraphQL request.
