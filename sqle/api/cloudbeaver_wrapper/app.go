@@ -177,18 +177,18 @@ func TriggerLogin() echo.MiddlewareFunc {
 			user, _, err := s.GetUserByName(userName)
 			if err != nil {
 				l.Errorf("get user info err: %v", err)
-				return nil
+				return respFunc()
 			}
 
 			_, isLogin, _ := service.GetCurrentCloudBeaverUserID(c)
 			if isLogin {
-				return nil
+				return respFunc()
 			}
 
 			cookies, err := service.Login(user.Name, user.Password)
 			if err != nil {
 				l.Errorf("login to cloudbeaver failed: %v", err)
-				return nil
+				return respFunc()
 			}
 			for _, cookie := range cookies {
 				c.SetCookie(cookie)
