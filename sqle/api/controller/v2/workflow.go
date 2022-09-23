@@ -328,6 +328,7 @@ func GetWorkflowsV2(c echo.Context) error {
 			for _, status := range workflow.TaskStatus {
 				if status == model.TaskStatusExecuting {
 					hasExecuting = true
+					break
 				}
 				if status == model.TaskStatusExecuteFailed {
 					hasExecutedFail = true
