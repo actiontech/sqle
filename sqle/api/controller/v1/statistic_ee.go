@@ -100,44 +100,44 @@ func getWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 }
 
 func getWorkflowDurationOfWaitingForExecutionV1(c echo.Context) error {
-	s := model.GetStorage()
-
-	// 获取所有最后一位审核人审核通过的WorkStep
-	allStepsHasAudit, err := getAllFinalAuditedPassWorkStepBO(s)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	// 获取所有上线成功的WorkStep
-	allStepsHasOnline, err := getAllExecutedSuccessWorkStepBO(s)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var durationMin float64
-	var count int
-	for _, stepsHasOnline := range allStepsHasOnline {
-		for _, stepsHasAudit := range allStepsHasAudit {
-			if stepsHasAudit.WorkflowId == stepsHasOnline.WorkflowId {
-				count++
-				durationMin += stepsHasOnline.OperateAt.Sub(*stepsHasAudit.OperateAt).Minutes()
-			}
-		}
-	}
-
-	if count == 0 {
-		return c.JSON(http.StatusOK, &GetWorkflowDurationOfWaitingForExecutionResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data:    &WorkflowStageDuration{Minutes: 0},
-		})
-	}
-
-	averageOnlineMin := int(durationMin) / count
+	//s := model.GetStorage()
+	//
+	//// 获取所有最后一位审核人审核通过的WorkStep
+	//allStepsHasAudit, err := getAllFinalAuditedPassWorkStepBO(s)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//// 获取所有上线成功的WorkStep
+	//allStepsHasOnline, err := getAllExecutedSuccessWorkStepBO(s)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//var durationMin float64
+	//var count int
+	//for _, stepsHasOnline := range allStepsHasOnline {
+	//	for _, stepsHasAudit := range allStepsHasAudit {
+	//		if stepsHasAudit.WorkflowId == stepsHasOnline.WorkflowId {
+	//			count++
+	//			durationMin += stepsHasOnline.OperateAt.Sub(*stepsHasAudit.OperateAt).Minutes()
+	//		}
+	//	}
+	//}
+	//
+	//if count == 0 {
+	//	return c.JSON(http.StatusOK, &GetWorkflowDurationOfWaitingForExecutionResV1{
+	//		BaseRes: controller.NewBaseReq(nil),
+	//		Data:    &WorkflowStageDuration{Minutes: 0},
+	//	})
+	//}
+	//
+	//averageOnlineMin := int(durationMin) / count
 
 	return c.JSON(http.StatusOK, &GetWorkflowDurationOfWaitingForExecutionResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &WorkflowStageDuration{
-			Minutes: uint(averageOnlineMin),
+			Minutes: 0,
 		},
 	})
 }
