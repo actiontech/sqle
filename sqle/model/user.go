@@ -250,7 +250,7 @@ LEFT JOIN workflow_steps ws ON wstu.workflow_step_id = ws.id
 LEFT JOIN workflow_records wr ON ws.workflow_record_id = wr.id
 WHERE users.id = ? AND wr.status IN (?) AND ws.state = ?;`
 	var count uint
-	err := s.db.Debug().Raw(query, userId, []string{WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution}, WorkflowStepStateInit).Count(&count).Error
+	err := s.db.Raw(query, userId, []string{WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution}, WorkflowStepStateInit).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
 	}
