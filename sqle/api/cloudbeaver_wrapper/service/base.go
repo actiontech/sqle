@@ -27,8 +27,8 @@ const (
 	CBUserRole = "user"
 )
 
-func GetGQLClientWithCurrentUser(ctx echo.Context) (*gqlClient.Client, error) {
-	return gqlClient.NewClient(GetGqlServerURI(), gqlClient.WithCookie(ctx.Cookies())), nil
+func GetSQLEGQLClientWithCurrentUser(ctx echo.Context) (*gqlClient.Client, error) {
+	return gqlClient.NewClient(GetSQLEGqlServerURI(), gqlClient.WithCookie(ctx.Cookies())), nil
 }
 
 func GetGQLClientWithRootUser() (*gqlClient.Client, error) {
