@@ -3,6 +3,7 @@ module github.com/actiontech/sqle
 go 1.16
 
 require (
+	github.com/99designs/gqlgen v0.17.20
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220728081924-8483c9ff0a98
@@ -65,10 +66,11 @@ require (
 	github.com/timtadh/data-structures v0.5.3 // indirect
 	github.com/timtadh/lexmachine v0.2.2
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
-	github.com/urfave/cli/v2 v2.1.1
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+	github.com/urfave/cli/v2 v2.8.1
+	github.com/vektah/gqlparser/v2 v2.5.1
+	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+    golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 	google.golang.org/grpc v1.39.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/chanxuehong/wechat.v1 v1.0.0-20171118020122-aad7e298d1e7

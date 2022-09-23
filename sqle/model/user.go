@@ -94,6 +94,10 @@ func (i *User) encryptPassword() error {
 	return nil
 }
 
+func (i *User) FingerPrint() string {
+	return fmt.Sprintf(`{"id":"%v", "secret_password":"%v" }`, i.ID, i.SecretPassword)
+}
+
 func (s *Storage) GetUserByThirdPartyUserID(thirdPartyUserID string) (*User, bool, error) {
 	t := &User{}
 	err := s.db.Where("third_party_user_id = ?", thirdPartyUserID).First(t).Error
@@ -250,7 +254,7 @@ LEFT JOIN workflow_steps ws ON wstu.workflow_step_id = ws.id
 LEFT JOIN workflow_records wr ON ws.workflow_record_id = wr.id
 WHERE users.id = ? AND wr.status IN (?) AND ws.state = ?;`
 	var count uint
-	err := s.db.Debug().Raw(query, userId, []string{WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution}, WorkflowStepStateInit).Count(&count).Error
+	err := s.db.Raw(query, userId, []string{WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution}, WorkflowStepStateInit).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
 	}

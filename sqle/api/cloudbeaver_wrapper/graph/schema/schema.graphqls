@@ -1,0 +1,13 @@
+# Any object (JSON)
+scalar Object
+# Date/Time
+scalar DateTime
+
+type Query
+
+type Mutation
+
+schema {
+    query: Query
+    mutation: Mutation
+}
