@@ -6,15 +6,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/actiontech/sqle/sqle/api"
+	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
 )
@@ -36,6 +36,8 @@ func Run(config *config.Config) error {
 	if err := driver.InitPlugins(config.Server.SqleCnf.PluginPath); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
+
+	service.InitSQLQueryConfig(config.Server.SqleCnf.SqleServerPort, config.Server.SqleCnf.EnableHttps, config.Server.SQLQueryConfig)
 
 	dbConfig := config.Server.DBCnf.MysqlCnf
 
