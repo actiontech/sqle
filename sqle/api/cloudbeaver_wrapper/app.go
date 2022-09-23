@@ -102,6 +102,11 @@ var gqlHandlerRouters = map[string] /* gql operation name */ gqlBehavior{
 }
 
 func StartApp(e *echo.Echo) {
+	if !service.IsCloudBeaverConfigured() {
+		return
+	}
+	fmt.Println("cloudbeaver wrapper is configured")
+
 	cfg := service.GetSQLQueryConfig()
 	protocol := "http"
 	if cfg.EnableHttps {
@@ -151,14 +156,20 @@ func TriggerLogin() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			resWrite := &responseProcessWriter{tmp: &bytes.Buffer{}, ResponseWriter: c.Response().Writer}
 			c.Response().Writer = resWrite
+			respFunc := func() error {
+				_, err := resWrite.ResponseWriter.Write(resWrite.tmp.Bytes())
+				return err
+			}
+
 			err := next(c)
 			if err != nil {
 				return err
 			}
 
+			// 如果登陆失败, userName应该取不出来
 			userName, ok := c.Get(config.LoginUserNameKey).(string)
-			if !ok {
-				return nil
+			if !ok || !service.IsCloudBeaverConfigured() {
+				return respFunc()
 			}
 
 			l := log.NewEntry()
@@ -166,10 +177,6 @@ func TriggerLogin() echo.MiddlewareFunc {
 			user, _, err := s.GetUserByName(userName)
 			if err != nil {
 				l.Errorf("get user info err: %v", err)
-				return nil
-			}
-
-			if !service.IsCloudBeaverConfigured() {
 				return nil
 			}
 
@@ -187,11 +194,7 @@ func TriggerLogin() echo.MiddlewareFunc {
 				c.SetCookie(cookie)
 			}
 
-			_, err = resWrite.ResponseWriter.Write(resWrite.tmp.Bytes())
-			if err != nil {
-				return err
-			}
-			return nil
+			return respFunc()
 		}
 	}
 }
