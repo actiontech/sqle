@@ -299,6 +299,22 @@ func GetWorkflowsV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	if req.FilterStatus == model.WorkflowStatusFinish {
+		var workFlowTest []*model.WorkflowListDetail
+		for _, workflow := range workflows {
+			var hasNotExecutedSuccess bool
+			for _, status := range workflow.TaskStatus {
+				if status != model.TaskStatusExecuteSucceeded {
+					hasNotExecutedSuccess = true
+				}
+			}
+			if !hasNotExecutedSuccess {
+				workFlowTest = append(workFlowTest, workflow)
+			}
+		}
+		workflows = workFlowTest
+	}
+
 	workflowsReq := make([]*WorkflowDetailResV2, 0, len(workflows))
 	for _, workflow := range workflows {
 		workflowReq := &WorkflowDetailResV2{
