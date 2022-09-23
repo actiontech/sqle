@@ -779,6 +779,23 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
+	taskIds := workflow.GetTaskIds()
+	tasks, foundAllTasks, err := s.GetTasksByIds(taskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !foundAllTasks {
+		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+	}
+
+	for _, task := range tasks {
+		if task.Status == model.TaskStatusExecuteSucceeded ||
+			task.Status == model.TaskStatusExecuteFailed ||
+			task.Status == model.TaskStatusExecuting {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("can not reject workflow, cause there is any task is executed"))
+		}
+	}
+
 	currentStep := workflow.CurrentStep()
 	currentStep.State = model.WorkflowStepStateReject
 	currentStep.Reason = req.Reason
