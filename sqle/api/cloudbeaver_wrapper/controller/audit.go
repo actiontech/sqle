@@ -16,7 +16,7 @@ func (r *MutationResolverImpl) AsyncSQLExecuteQuery(ctx context.Context, connect
 	}
 	if !success {
 		name := "SQL Audit Failed"
-		msg := fmt.Sprintf("[sqle] sql statements are not allowed to excute, caused by: \nthe highest error level in audit results is %v,  which reaches the error level limit (%v) set in sqle.", result.AuditLevel, result.LimitLevel)
+		msg := fmt.Sprintf("[SQLE] sql statements are not allowed to excute, caused by: \nthe highest error level in audit results is %v,  which reaches the error level limit (%v) set in SQLE.", result.AuditLevel, result.LimitLevel)
 		return nil, r.Ctx.JSON(http.StatusOK, struct {
 			Data struct {
 				TaskInfo model.AsyncTaskInfo `json:"taskInfo"`
