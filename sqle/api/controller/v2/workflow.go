@@ -264,14 +264,19 @@ func GetWorkflowsV2(c echo.Context) error {
 
 	// task status
 	if req.FilterStatus == model.WorkflowStatusExecuting {
+		// 上线中（所有数据源全部上线，有任一数据源处于上线中状态)
 		taskStatus = model.TaskStatusExecuting
 		workflowStatus = model.WorkflowStatusFinish
 	}
 
 	// workflow status
 	switch req.FilterStatus {
+	// 上线成功（所有数据源全部上线成功）
+	// 上线失败（所有数据源全部上线，但有部分上线失败）
+	case model.WorkflowStatusFinish, model.WorkflowStatusExecFailed:
+		workflowStatus = model.WorkflowStatusFinish
 	case model.WorkflowStatusWaitForAudit, model.WorkflowStatusWaitForExecution, model.WorkflowStatusCancel,
-		model.WorkflowStatusReject, model.WorkflowStatusFinish:
+		model.WorkflowStatusReject:
 
 		workflowStatus = req.FilterStatus
 	}
@@ -309,6 +314,26 @@ func GetWorkflowsV2(c echo.Context) error {
 				}
 			}
 			if !hasNotExecutedSuccess {
+				workFlowDetails = append(workFlowDetails, workflow)
+			}
+		}
+		workflows = workFlowDetails
+	}
+
+	if req.FilterStatus == model.WorkflowStatusExecFailed {
+		var workFlowDetails []*model.WorkflowListDetail
+		for _, workflow := range workflows {
+			var hasExecuting bool
+			var hasExecutedFail bool
+			for _, status := range workflow.TaskStatus {
+				if status == model.TaskStatusExecuting {
+					hasExecuting = true
+				}
+				if status == model.TaskStatusExecuteFailed {
+					hasExecutedFail = true
+				}
+			}
+			if !hasExecuting && hasExecutedFail {
 				workFlowDetails = append(workFlowDetails, workflow)
 			}
 		}
