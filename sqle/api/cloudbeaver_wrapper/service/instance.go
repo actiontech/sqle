@@ -113,6 +113,8 @@ func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instan
 	driverID, err := GenerateCloudBeaverDriverID(sqleInst)
 	if err != nil {
 		fmt.Println("Instances of this type are not currently supported:", sqleInst.DbType)
+		// 不支持的类型跳过就好,没必要终端流程
+		//nolint:nilerr
 		return nil
 	}
 	// 添加实例
@@ -185,6 +187,8 @@ func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleIn
 	driverID, err := GenerateCloudBeaverDriverID(sqleInst)
 	if err != nil {
 		fmt.Println("Instances of this type are not currently supported:", sqleInst.DbType)
+		// 不支持的类型跳过就好,没必要终端流程
+		//nolint:nilerr
 		return nil
 	}
 	// 更新实例
