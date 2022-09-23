@@ -236,7 +236,7 @@ query authLogin(
 `
 
 func GetCurrentCloudBeaverUserID(ctx echo.Context) (string, bool, error) {
-	client, err := GetSQLEGQLClientWithCurrentUser(ctx)
+	client, err := GetGQLClientWithCurrentUser(ctx)
 	if err != nil {
 		return "", false, err
 	}

@@ -182,7 +182,7 @@ func TriggerLogin() echo.MiddlewareFunc {
 
 			_, isLogin, _ := service.GetCurrentCloudBeaverUserID(c)
 			if isLogin {
-				return respFunc()
+				return nil
 			}
 
 			cookies, err := service.Login(user.Name, user.Password)
