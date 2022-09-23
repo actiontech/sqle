@@ -300,7 +300,7 @@ func GetWorkflowsV2(c echo.Context) error {
 	}
 
 	if req.FilterStatus == model.WorkflowStatusFinish {
-		var workFlowTest []*model.WorkflowListDetail
+		var workFlowDetails []*model.WorkflowListDetail
 		for _, workflow := range workflows {
 			var hasNotExecutedSuccess bool
 			for _, status := range workflow.TaskStatus {
@@ -309,10 +309,10 @@ func GetWorkflowsV2(c echo.Context) error {
 				}
 			}
 			if !hasNotExecutedSuccess {
-				workFlowTest = append(workFlowTest, workflow)
+				workFlowDetails = append(workFlowDetails, workflow)
 			}
 		}
-		workflows = workFlowTest
+		workflows = workFlowDetails
 	}
 
 	workflowsReq := make([]*WorkflowDetailResV2, 0, len(workflows))
