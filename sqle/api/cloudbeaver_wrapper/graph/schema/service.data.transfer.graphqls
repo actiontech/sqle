@@ -1,0 +1,49 @@
+# Data transfer queries
+
+type DataTransferProcessorInfo {
+    id: ID!
+    name: String
+    description: String
+    fileExtension: String
+    appFileExtension: String
+    appName: String
+    order: Int!
+    icon: String
+    properties: [ ObjectPropertyInfo ]
+    isBinary: Boolean
+    isHTML: Boolean
+}
+
+input DataTransferParameters {
+    # Processor ID
+    processorId: ID!
+    # General settings:
+    #   - openNewConnection: opens new database connection for data transfer task
+    settings: Object
+    # Processor properties. See DataTransferProcessorInfo.properties
+    processorProperties: Object!
+    # Data filter settings
+    filter: SQLDataFilter
+}
+
+extend type Query {
+
+    # Available transfer processors
+    dataTransferAvailableStreamProcessors: [ DataTransferProcessorInfo! ]!
+
+    dataTransferExportDataFromContainer(
+        connectionId: ID!,
+        containerNodePath: ID!,
+        parameters: DataTransferParameters!
+    ): AsyncTaskInfo!
+
+    dataTransferExportDataFromResults(
+        connectionId: ID!,
+        contextId: ID!,
+        resultsId: ID!,
+        parameters: DataTransferParameters!
+    ): AsyncTaskInfo!
+
+    dataTransferRemoveDataFile(dataFileId: String!): Boolean
+
+}

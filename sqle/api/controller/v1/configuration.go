@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -621,5 +622,11 @@ type GetSQLQueryConfigurationResDataV1 struct {
 // @Success 200 {object} v1.GetSQLQueryConfigurationResV1
 // @router /v1/configurations/sql_query [get]
 func GetSQLQueryConfiguration(c echo.Context) error {
-	return getSQLQueryConfiguration(c)
+	return c.JSON(http.StatusOK, GetSQLQueryConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetSQLQueryConfigurationResDataV1{
+			EnableSQLQuery:  service.IsCloudBeaverConfigured(),
+			SQLQueryRootURI: service.CbRootUri,
+		},
+	})
 }

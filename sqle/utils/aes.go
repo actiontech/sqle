@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -146,4 +148,11 @@ func (p *Password) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("encrypt error: %v", err)
 	}
 	return json.Marshal(value)
+}
+
+func Md5(src string) string {
+	m := md5.New()
+	m.Write([]byte(src))
+	res := hex.EncodeToString(m.Sum(nil))
+	return res
 }
