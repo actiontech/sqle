@@ -858,21 +858,91 @@ func (s *Storage) GetAllWorkflowCount() (int, error) {
 	return count, errors.New(errors.ConnectStorageError, s.db.Model(&Workflow{}).Count(&count).Error)
 }
 
-func (s *Storage) GetWorkflowCountByTaskStatus(status []string) (int, error) {
-	//if len(status) == 0 {
-	//	return 0, nil
-	//}
-	//
-	//var count int
-	//err := s.db.Table("workflows").
-	//	Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
-	//	Joins("left join tasks on workflow_records.task_id = tasks.id").
-	//	Where("tasks.status in (?)", status).
-	//	Count(&count).Error
-	//
-	//return count, errors.New(errors.ConnectStorageError, err)
-	// todo issue832
-	return 0, nil
+type GetWorkflowCountByTaskStatusDetail struct {
+	WorkflowRecordStatus string  `json:"workflow_record_status"`
+	TasksStatus          RowList `json:"tasks_status"`
+}
+
+var GetWorkflowCountByTaskStatusQueryTpl = `
+SELECT wr.status                                                     AS workflow_record_status,
+       GROUP_CONCAT(tasks.status)                                    AS tasks_status
+
+{{- template "body" . -}}
+`
+
+var GetWorkflowCountByTaskStatusQueryBodyTpl = `
+{{ define "body" }}
+FROM workflows AS w
+LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
+LEFT JOIN workflow_instance_records AS wir ON wir.workflow_record_id = wr.id
+LEFT JOIN tasks ON wir.task_id = tasks.id
+
+WHERE
+w.deleted_at IS NULL
+GROUP BY w.id
+{{ end }}
+`
+
+// 工单状态说明
+// 上线成功（所有task全部上线成功）
+// 上线失败（所有task全部上线，但有部分上线失败）
+// 上线中（所有task都点了上线，但有部分或全部task还在上线中的状态）
+func (s *Storage) GetWorkflowCountByTaskStatus(status string) (int, error) {
+	if len(status) == 0 {
+		return 0, nil
+	}
+
+	workflows := []GetWorkflowCountByTaskStatusDetail{}
+	err := s.getListResult(GetWorkflowCountByTaskStatusQueryBodyTpl, GetWorkflowCountByTaskStatusQueryTpl, nil, &workflows)
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
+
+	var count int
+
+	for _, workflow := range workflows {
+		if workflow.WorkflowRecordStatus != WorkflowStatusFinish {
+			continue
+		}
+		switch status {
+		case TaskStatusExecuteFailed:
+			hasExecFailedTask := false
+			hasExecutingTask := false
+			for _, taskStatus := range workflow.TasksStatus {
+				if taskStatus == TaskStatusExecuting {
+					hasExecutingTask = true
+					break
+				}
+				if taskStatus == TaskStatusExecuteFailed {
+					hasExecFailedTask = true
+				}
+			}
+			if !hasExecutingTask && hasExecFailedTask {
+				count++
+			}
+		case TaskStatusExecuteSucceeded:
+			isExecSucceededWorkflow := true
+			for _, taskStatus := range workflow.TasksStatus {
+				if taskStatus == TaskStatusExecuting || taskStatus == TaskStatusExecuteFailed {
+					isExecSucceededWorkflow = false
+					break
+				}
+			}
+			if isExecSucceededWorkflow {
+				count++
+			}
+		case TaskStatusExecuting:
+			for _, taskStatus := range workflow.TasksStatus {
+				if taskStatus == TaskStatusExecuting {
+					count++
+				}
+			}
+		default:
+			return 0, errors.New(errors.DataInvalid, fmt.Errorf("unknown task status %v", status))
+		}
+	}
+
+	return count, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetWorkFlowCountBetweenStartTimeAndEndTime(startTime, endTime time.Time) (int64, error) {
