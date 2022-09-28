@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/common"
@@ -118,10 +119,10 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 		}
 	}
 
-	// 只有当所有数据源都上线时，current step状态才改为"approved"
+	// 只有当所有数据源都执行上线操作时，current step状态才改为"approved"
 	if waitForExecTasksCount == len(needExecTaskIdToUserId) {
 		currentStep.State = model.WorkflowStepStateApprove
-		workflow.Record.Status = model.WorkflowStatusFinish
+		workflow.Record.Status = model.WorkflowStatusExecuting
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
@@ -130,6 +131,8 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 		return err
 	}
 
+	l := log.NewEntry()
+	var lock sync.Mutex
 	for taskId := range needExecTaskIdToUserId {
 		id := taskId
 		go func() {
@@ -140,7 +143,56 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 			} else {
 				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteSuccess)
 			}
+
+			lock.Lock()
+			updateStatus(s, workflow, l)
+			lock.Unlock()
 		}()
 	}
+
 	return nil
+}
+
+func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry) {
+	tasks, err := s.GetTasksByWorkFlowRecordID(workflow.Record.ID)
+	if err != nil {
+		l.Errorf("get tasks by workflow record id error: %v", err)
+	}
+
+	var workFlowStatus string
+
+	var hasExecuting bool
+	var hasExecuteFailed bool
+	var hasWaitExecute bool
+
+	for _, task := range tasks {
+		if task.Status == model.TaskStatusExecuting {
+			hasExecuting = true
+		}
+		if task.Status == model.TaskStatusExecuteFailed {
+			hasExecuteFailed = true
+		}
+		if task.Status == model.TaskStatusAudited {
+			hasWaitExecute = true
+		}
+	}
+
+	if hasWaitExecute {
+		workFlowStatus = model.WorkflowStatusWaitForExecution
+	} else if hasExecuting {
+		workFlowStatus = model.WorkflowStatusExecuting
+	} else if hasExecuteFailed {
+		workFlowStatus = model.WorkflowStatusExecFailed
+	} else {
+		workFlowStatus = model.WorkflowStatusFinish
+	}
+
+	if workFlowStatus != "" {
+		err = s.UpdateWorkflowRecordByID(workflow.Record.ID, map[string]interface{}{
+			"status": workFlowStatus,
+		})
+		if err != nil {
+			l.Errorf("update workflow record status failed: %v", err)
+		}
+	}
 }
