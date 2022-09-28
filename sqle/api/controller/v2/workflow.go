@@ -259,28 +259,6 @@ func GetWorkflowsV2(c echo.Context) error {
 		offset = (req.PageIndex - 1) * req.PageSize
 	}
 
-	var workflowStatus string
-	var taskStatus string
-
-	// task status
-	if req.FilterStatus == model.WorkflowStatusExecuting {
-		// 上线中（所有数据源全部上线，有任一数据源处于上线中状态)
-		taskStatus = model.TaskStatusExecuting
-		workflowStatus = model.WorkflowStatusFinish
-	}
-
-	// workflow status
-	switch req.FilterStatus {
-	// 上线成功（所有数据源全部上线成功）
-	// 上线失败（所有数据源全部上线，但有部分上线失败）
-	case model.WorkflowStatusFinish, model.WorkflowStatusExecFailed:
-		workflowStatus = model.WorkflowStatusFinish
-	case model.WorkflowStatusWaitForAudit, model.WorkflowStatusWaitForExecution, model.WorkflowStatusCancel,
-		model.WorkflowStatusReject:
-
-		workflowStatus = req.FilterStatus
-	}
-
 	data := map[string]interface{}{
 		"filter_subject":                         req.FilterSubject,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
@@ -288,8 +266,7 @@ func GetWorkflowsV2(c echo.Context) error {
 		"filter_create_user_name":                req.FilterCreateUserName,
 		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
 		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
-		"filter_status":                          workflowStatus,
-		"filter_task_status":                     taskStatus,
+		"filter_status":                          req.FilterStatus,
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
 		"current_user_id":                        user.ID,
@@ -304,43 +281,6 @@ func GetWorkflowsV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if req.FilterStatus == model.WorkflowStatusFinish {
-		var workFlowDetails []*model.WorkflowListDetail
-		for _, workflow := range workflows {
-			var hasNotExecutedSuccess bool
-			for _, status := range workflow.TaskStatus {
-				if status != model.TaskStatusExecuteSucceeded {
-					hasNotExecutedSuccess = true
-				}
-			}
-			if !hasNotExecutedSuccess {
-				workFlowDetails = append(workFlowDetails, workflow)
-			}
-		}
-		workflows = workFlowDetails
-	}
-
-	if req.FilterStatus == model.WorkflowStatusExecFailed {
-		var workFlowDetails []*model.WorkflowListDetail
-		for _, workflow := range workflows {
-			var hasExecuting bool
-			var hasExecutedFail bool
-			for _, status := range workflow.TaskStatus {
-				if status == model.TaskStatusExecuting {
-					hasExecuting = true
-					break
-				}
-				if status == model.TaskStatusExecuteFailed {
-					hasExecutedFail = true
-				}
-			}
-			if !hasExecuting && hasExecutedFail {
-				workFlowDetails = append(workFlowDetails, workflow)
-			}
-		}
-		workflows = workFlowDetails
-	}
-
 	workflowsReq := make([]*WorkflowDetailResV2, 0, len(workflows))
 	for _, workflow := range workflows {
 		workflowReq := &WorkflowDetailResV2{
@@ -351,7 +291,7 @@ func GetWorkflowsV2(c echo.Context) error {
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
-			Status:                  convertWorkflowStatusToRes(workflow.Status, workflow.TaskStatus),
+			Status:                  workflow.Status,
 		}
 		workflowsReq = append(workflowsReq, workflowReq)
 	}
@@ -361,34 +301,6 @@ func GetWorkflowsV2(c echo.Context) error {
 		Data:      workflowsReq,
 		TotalNums: count,
 	})
-}
-
-func convertWorkflowStatusToRes(workflowStatus string, taskStatus []string) string {
-	return getWorkFlowStatus(workflowStatus, taskStatus)
-}
-
-func getWorkFlowStatus(workFlowStatus string, taskStatus []string) string {
-	if workFlowStatus == model.WorkflowStatusFinish {
-		var hasExecuteFailTask bool
-		var hasExecutingTask bool
-		for _, taskStat := range taskStatus {
-			if taskStat == model.TaskStatusExecuteFailed {
-				hasExecuteFailTask = true
-			}
-
-			if taskStat == model.TaskStatusExecuting {
-				hasExecutingTask = true
-			}
-		}
-
-		if hasExecutingTask {
-			workFlowStatus = model.WorkflowStatusExecuting
-		} else if hasExecuteFailTask {
-			workFlowStatus = model.WorkflowStatusExecFailed
-		}
-	}
-
-	return workFlowStatus
 }
 
 type GetWorkflowResV2 struct {
@@ -453,19 +365,13 @@ func GetWorkflowV2(c echo.Context) error {
 	}
 	workflow.RecordHistory = history
 
-	taskIds := workflow.GetTaskIds()
-	tasks, _, err := s.GetTasksByIds(taskIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	return c.JSON(http.StatusOK, &GetWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToRes(workflow, tasks),
+		Data:    convertWorkflowToRes(workflow),
 	})
 }
 
-func convertWorkflowToRes(workflow *model.Workflow, tasks []*model.Task) *WorkflowResV2 {
+func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
 	workflowRes := &WorkflowResV2{
 		Id:         workflow.ID,
 		Subject:    workflow.Subject,
@@ -476,12 +382,12 @@ func convertWorkflowToRes(workflow *model.Workflow, tasks []*model.Task) *Workfl
 	}
 
 	// convert workflow record
-	workflowRecordRes := convertWorkflowRecordToRes(workflow, workflow.Record, tasks)
+	workflowRecordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
 
 	// convert workflow record history
 	recordHistory := make([]*WorkflowRecordResV2, 0, len(workflow.RecordHistory))
 	for _, record := range workflow.RecordHistory {
-		recordRes := convertWorkflowRecordToRes(workflow, record, tasks)
+		recordRes := convertWorkflowRecordToRes(workflow, record)
 		recordHistory = append(recordHistory, recordRes)
 	}
 	workflowRes.RecordHistory = recordHistory
@@ -489,9 +395,7 @@ func convertWorkflowToRes(workflow *model.Workflow, tasks []*model.Task) *Workfl
 	return workflowRes
 }
 
-func convertWorkflowRecordToRes(workflow *model.Workflow,
-	record *model.WorkflowRecord, tasks []*model.Task) *WorkflowRecordResV2 {
-
+func convertWorkflowRecordToRes(workflow *model.Workflow, record *model.WorkflowRecord) *WorkflowRecordResV2 {
 	steps := make([]*v1.WorkflowStepResV1, 0, len(record.Steps)+1)
 	// It is filled by create user and create time;
 	// and tell others that this is a creating or updating operation.
@@ -529,17 +433,10 @@ func convertWorkflowRecordToRes(workflow *model.Workflow,
 		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
 	}
 
-	taskStatus := make([]string, 0, len(tasks))
-	for _, task := range tasks {
-		taskStatus = append(taskStatus, task.Status)
-	}
-
-	workflowStatus := getWorkFlowStatus(record.Status, taskStatus)
-
 	return &WorkflowRecordResV2{
 		Tasks:             tasksRes,
 		CurrentStepNumber: currentStepNum,
-		Status:            workflowStatus,
+		Status:            record.Status,
 		Steps:             steps,
 	}
 }
