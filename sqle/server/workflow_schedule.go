@@ -130,6 +130,7 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 		return err
 	}
 
+	l := log.NewEntry()
 	for taskId := range needExecTaskIdToUserId {
 		id := taskId
 		go func() {
@@ -140,7 +141,51 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 			} else {
 				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteSuccess)
 			}
+
+			tasks, err := s.GetTasksByWorkFlowRecordID(workflow.Record.ID)
+			if err != nil {
+				l.Errorf("get tasks by workflow record id error: %v", err)
+			}
+
+			var workFlowStatus string
+
+			var hasNotExecuteSuccess bool
+			var hasExecuting bool
+			var hasExecuteFailed bool
+			var hasWaitExecute bool
+			for _, task := range tasks {
+				if task.Status != model.TaskStatusExecuteSucceeded {
+					hasNotExecuteSuccess = true
+				}
+				if task.Status == model.TaskStatusExecuting {
+					hasExecuting = true
+				}
+				if task.Status == model.TaskStatusExecuteFailed {
+					hasExecuteFailed = true
+				}
+				if task.Status == model.TaskStatusAudited {
+					hasWaitExecute = true
+				}
+			}
+
+			if !hasNotExecuteSuccess {
+				workFlowStatus = model.WorkflowStatusFinish
+			} else if hasExecuting && !hasWaitExecute {
+				workFlowStatus = model.WorkflowStatusExecuting
+			} else if !hasExecuting && !hasWaitExecute && hasExecuteFailed {
+				workFlowStatus = model.WorkflowStatusExecFailed
+			}
+
+			if workFlowStatus != "" {
+				err = s.UpdateWorkflowRecordByID(workflow.Record.ID, map[string]interface{}{
+					"status": workFlowStatus,
+				})
+				if err != nil {
+					l.Errorf("update workflow record status failed: %v", err)
+				}
+			}
 		}()
 	}
+
 	return nil
 }
