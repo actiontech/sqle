@@ -842,7 +842,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	for i, task := range tasks {
-		if task.Status == model.TaskStatusAudited {
+		if task.Status != model.TaskStatusInit {
 			continue
 		}
 
