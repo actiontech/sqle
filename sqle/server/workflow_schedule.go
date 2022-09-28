@@ -118,10 +118,10 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 		}
 	}
 
-	// 只有当所有数据源都上线时，current step状态才改为"approved"
+	// 只有当所有数据源都执行上线操作时，current step状态才改为"approved"
 	if waitForExecTasksCount == len(needExecTaskIdToUserId) {
 		currentStep.State = model.WorkflowStepStateApprove
-		workflow.Record.Status = model.WorkflowStatusFinish
+		workflow.Record.Status = model.WorkflowStatusExecuting
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
