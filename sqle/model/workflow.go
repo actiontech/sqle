@@ -510,6 +510,10 @@ func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, i
 	})
 }
 
+func (s *Storage) UpdateWorkflowRecordByID(id uint, workFlow map[string]interface{}) error {
+	return s.db.Model(&WorkflowRecord{}).Where("id = ?", id).Updates(workFlow).Error
+}
+
 func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId uint, scheduleTime *time.Time) error {
 	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
 		"scheduled_at":     scheduleTime,
@@ -976,4 +980,16 @@ func (s *Storage) GetWorkflowTasksSummaryByReq(data map[string]interface{}) (
 	}
 
 	return result, nil
+}
+
+func (s *Storage) GetTasksByWorkFlowRecordID(id uint) ([]*Task, error) {
+	var tasks []*Task
+	err := s.db.Model(&WorkflowInstanceRecord{}).Select("tasks.status").
+		Joins("left join tasks on tasks.id = workflow_instance_records.task_id").
+		Where("workflow_instance_records.workflow_record_id = ?", id).Scan(&tasks).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return tasks, nil
 }
