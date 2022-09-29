@@ -583,21 +583,16 @@ partition p13,
 partition p14,
 partition p15)
 
-当左括号的数量和右括号的数量相同时, 以正好数量相等时的右括号为分界线, 后边是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options。为了能解析，临时处理方案是把options都截掉
+建表语句后半段是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options, 为了能解析, 方法将会倒着遍历建表语句, 每次找到右括号时截断后面的部分, 然后尝试解析一次, 直到解析成功, 此时剩余的建表语句将不在包含OB特有options
 
-假设建表语句如示例中所示, 左括号和右括号正好相等时最后一个右括号是 ') DEFAULT CHARSET = utf8mb4' 处第一个字符, 这个字符往前是建表语句的表结构声明部分, 后半部分是表参数, 需要截掉后半部分
 */
 func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.CreateTableStmt, error) {
-	leftCount, rightCount := 0, 0
-	for i, s := range createTableSql {
-		if s == '(' {
-			leftCount++
-		}
-		if s == ')' {
-			rightCount++
-		}
-		if leftCount != 0 && leftCount == rightCount {
-			return util.ParseCreateTableStmt(createTableSql[0 : i+1])
+	for i := len(createTableSql) - 1; i >= 0; i-- {
+		if createTableSql[i] == ')' {
+			stmt, err := util.ParseCreateTableStmt(createTableSql[0 : i+1])
+			if err == nil {
+				return stmt, nil
+			}
 		}
 	}
 
