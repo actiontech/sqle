@@ -344,3 +344,5 @@ pcfkswn
 unmarshals
 auhentication
 datasource
+pctfree
+tablegroup
