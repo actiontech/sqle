@@ -1021,11 +1021,11 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow, user)
+	isCan, err := IsTaskCanExecute(s, taskIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if _, ok := needExecTaskIds[uint(taskId)]; !ok {
+	if !isCan {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflowId))
 	}
 
@@ -1034,6 +1034,36 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return false, fmt.Errorf("get task by id failed. taskId=%v err=%v", taskId, err)
+	}
+	if !exist {
+		return false, fmt.Errorf("task not exist. taskId=%v", taskId)
+	}
+
+	if task.Instance == nil {
+		return false, fmt.Errorf("task instance is nil. taskId=%v", taskId)
+	}
+
+	inst := task.Instance
+	if len(inst.MaintenancePeriod) > 0 && !inst.MaintenancePeriod.IsWithinScope(time.Now()) {
+		return false, nil
+	}
+
+	instanceRecord, err := s.GetWorkInstanceRecordByTaskId(taskId)
+	if err != nil {
+		return false, fmt.Errorf("get work instance record by task id failed. taskId=%v err=%v", taskId, err)
+	}
+
+	if instanceRecord.ScheduledAt != nil || instanceRecord.IsSQLExecuted {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ uint /*user id*/, err error) {
