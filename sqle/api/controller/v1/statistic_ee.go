@@ -434,34 +434,17 @@ func getWorkflowCreatedCountsEachDayV1(c echo.Context) error {
 }
 
 func getWorkflowStatusCountV1(c echo.Context) error {
-	s := model.GetStorage()
-	executionSuccessCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	executingCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuting})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	executingFailedCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteFailed})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	waitingForExecutionCount, err := s.GetWorkflowCountByStepType([]string{model.WorkflowStepTypeSQLExecute})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	rejectedCount, err := s.GetWorkflowCountByStatus([]string{model.WorkflowStatusReject})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	waitingForAuditCount, err := s.GetWorkflowCountByStepType([]string{model.WorkflowStepTypeSQLReview})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	closedCount, err := s.GetWorkflowCountByStatus([]string{model.WorkflowStatusCancel})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	d := &dbErr{s: model.GetStorage()}
+
+	waitingForAuditCount := d.getWorkFlowStatusCount(model.WorkflowStatusWaitForAudit)
+	waitingForExecutionCount := d.getWorkFlowStatusCount(model.WorkflowStatusWaitForExecution)
+	executingCount := d.getWorkFlowStatusCount(model.WorkflowStatusExecuting)
+	executionSuccessCount := d.getWorkFlowStatusCount(model.WorkflowStatusFinish)
+	executingFailedCount := d.getWorkFlowStatusCount(model.WorkflowStatusExecFailed)
+	rejectedCount := d.getWorkFlowStatusCount(model.WorkflowStatusReject)
+	closedCount := d.getWorkFlowStatusCount(model.WorkflowStatusCancel)
+	if d.err != nil {
+		return controller.JSONBaseErrorReq(c, d.err)
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowStatusCountResV1{
@@ -476,6 +459,21 @@ func getWorkflowStatusCountV1(c echo.Context) error {
 			ClosedCount:              closedCount,
 		},
 	})
+}
+
+type dbErr struct {
+	s   *model.Storage
+	err error
+}
+
+func (d *dbErr) getWorkFlowStatusCount(status string) (count int) {
+	if d.err != nil {
+		return 0
+	}
+
+	count, d.err = d.s.GetWorkflowCountByStatus(status)
+
+	return count
 }
 
 func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
