@@ -193,6 +193,10 @@ type WorkflowInstanceRecord struct {
 	ExecutionUserId uint
 }
 
+func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
+	return instanceRecord, s.db.Where("task_id = ?", id).First(&instanceRecord).Error
+}
+
 const (
 	WorkflowStepStateInit    = "initialized"
 	WorkflowStepStateApprove = "approved"
