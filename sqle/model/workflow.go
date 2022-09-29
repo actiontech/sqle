@@ -824,18 +824,17 @@ func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
 	return count, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowCountByStatus(status []string) (int, error) {
-	if len(status) == 0 {
-		return 0, nil
-	}
-
+func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
 	var count int
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
-		Where("workflow_records.status in (?)", status).
+		Where("workflow_records.status = ?", status).
 		Count(&count).Error
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
 
-	return count, errors.New(errors.ConnectStorageError, err)
+	return count, nil
 }
 
 // GetApprovedWorkflowCount 将会返回未被回收且审核流程全部通过的工单数, 包括上线成功(失败)的工单和等待上线的工单, 不包括关闭的工单
