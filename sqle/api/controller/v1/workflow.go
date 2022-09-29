@@ -1051,7 +1051,7 @@ func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
 
 	inst := task.Instance
 	if len(inst.MaintenancePeriod) > 0 && !inst.MaintenancePeriod.IsWithinScope(time.Now()) {
-		return false, fmt.Errorf("task is not in maintenance period. taskId=%v", taskId)
+		return false, nil
 	}
 
 	instanceRecord, err := s.GetWorkInstanceRecordByTaskId(taskId)
@@ -1060,7 +1060,7 @@ func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
 	}
 
 	if instanceRecord.ScheduledAt != nil || instanceRecord.IsSQLExecuted {
-		return false, fmt.Errorf("task has been executed. taskId=%v", taskId)
+		return false, nil
 	}
 
 	return true, nil
