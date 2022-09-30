@@ -580,7 +580,12 @@ func UpdateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = s.UpdateWorkflowRecord(workflow, tasks)
+	stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
+	if err != nil {
+		return err
+	}
+
+	err = s.UpdateWorkflowRecord(workflow, tasks, stepTemplates)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
