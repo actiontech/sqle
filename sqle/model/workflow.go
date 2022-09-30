@@ -343,8 +343,13 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task
 			InstanceId: task.InstanceId,
 		}
 	}
+
 	record := &WorkflowRecord{
 		InstanceRecords: instanceRecords,
+	}
+
+	if len(stepTemplates) == 1 {
+		record.Status = WorkflowStatusWaitForExecution
 	}
 
 	allUsers := make([][]*User, len(tasks))
