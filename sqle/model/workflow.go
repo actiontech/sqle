@@ -329,6 +329,16 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task
 		}
 	}
 
+	// 相同sql模式下，数据源类型必须相同
+	if workflowMode == WorkflowModeSameSQLs && len(tasks) > 1 {
+		dbType := tasks[0].Instance.DbType
+		for _, task := range tasks {
+			if dbType != task.Instance.DbType {
+				return errors.New(errors.DataConflict, fmt.Errorf("the instance types must be the same"))
+			}
+		}
+	}
+
 	workflow := &Workflow{
 		Subject:      subject,
 		Desc:         desc,
