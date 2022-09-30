@@ -45,8 +45,8 @@ func getInstanceTips(c echo.Context) error {
 			}
 			instances = append(instances[:i], instances[i+1:]...)
 		}
-	default:
-		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType)
+	default: // create_workflow case
+		instances, err = s.GetInstancesTipsByUserAndTypeAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId)
 	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -55,8 +55,9 @@ func getInstanceTips(c echo.Context) error {
 
 	for _, inst := range instances {
 		instanceTipRes := InstanceTipResV1{
-			Name: inst.Name,
-			Type: inst.DbType,
+			Name:               inst.Name,
+			Type:               inst.DbType,
+			WorkflowTemplateId: uint32(inst.WorkflowTemplateId),
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}
