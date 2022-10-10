@@ -236,17 +236,21 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 		Table  string
 	}
 
-	schemaTables := []schemaTable{}
+	schemaTableMap := make(map[string]schemaTable, 0)
 	addTable := func(t *ast.TableName) {
 		schema := t.Schema.String()
 		if schema == "" {
 			schema = i.Ctx.CurrentSchema()
 		}
-		schemaTables = append(schemaTables, schemaTable{
-			Schema: schema,
-			Table:  t.Name.String(),
-		})
+		schemaTableKey := fmt.Sprintf("%s.%s", schema, t.Name.String())
+		if _, ok := schemaTableMap[schemaTableKey]; !ok {
+			schemaTableMap[schemaTableKey] = schemaTable{
+				Schema: schema,
+				Table:  t.Name.String(),
+			}
+		}
 	}
+
 	getMultiTables := func(stmt *ast.Join) {
 		tables := util.GetTables(stmt)
 		for _, t := range tables {
@@ -286,8 +290,9 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", conf.Sql)
 	}
 
-	tableMetas := make([]driver.TableMetaItemBySQL, len(schemaTables))
-	for j, schemaTable := range schemaTables {
+	tableMetas := make([]driver.TableMetaItemBySQL, len(schemaTableMap))
+	j := 0
+	for _, schemaTable := range schemaTableMap {
 		msg := ""
 		columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schemaTable.Schema, schemaTable.Table)
 		if err != nil {
@@ -301,7 +306,9 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 			CreateTableSQL: sql,
 			Message:        msg,
 		}
+		j++
 	}
+
 	return &driver.GetTableMetaBySQLResult{
 		TableMetas: tableMetas,
 	}, nil
