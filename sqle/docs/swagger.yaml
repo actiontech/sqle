@@ -3282,6 +3282,18 @@ paths:
         in: query
         name: filter_audit_plan_db_type
         type: string
+      - description: scan task name
+        in: query
+        name: scan_task_name
+        type: string
+      - description: scan task type
+        in: query
+        name: scan_task_type
+        type: string
+      - description: instance name
+        in: query
+        name: instance_name
+        type: string
       - description: page index
         in: query
         name: page_index
