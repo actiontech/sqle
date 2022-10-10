@@ -9,6 +9,7 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -48,9 +49,10 @@ func getLicense(c echo.Context) error {
 		Name:        "duration of running",
 		Limit:       strconv.Itoa(l.WorkDurationHour / 24),
 	}, LicenseItem{
-		Description: "预计剩余时长(天)",
-		Name:        "days remaining",
-		Limit:       strconv.Itoa(permission.WorkDurationDay - l.WorkDurationHour/24),
+		Description: "预计到期时间",
+		Name:        "estimated maturity",
+		// 这个时间要展示给人看, 展示成RFC3339不够友好, 也不需要展示精确的时间, 所以展示成自定义时间格式
+		Limit: time.Now().Add(time.Hour * time.Duration(permission.WorkDurationDay*24-l.WorkDurationHour)).Format("2006-01-02"),
 	})
 
 	return c.JSON(http.StatusOK, GetLicenseResV1{
