@@ -424,6 +424,9 @@ func UpdateAuditPlan(c echo.Context) error {
 
 type GetAuditPlansReqV1 struct {
 	FilterAuditPlanDBType string `json:"filter_audit_plan_db_type" query:"filter_audit_plan_db_type"`
+	ScanTaskName          string `json:"scan_task_name" query:"scan_task_name"`
+	ScanTaskType          string `json:"scan_task_type" query:"scan_task_type"`
+	InstanceName          string `json:"instance_name" query:"instance_name"`
 	PageIndex             uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize              uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
@@ -451,6 +454,9 @@ type AuditPlanResV1 struct {
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Param filter_audit_plan_db_type query string false "filter audit plan db type"
+// @Param scan_task_name query string false "scan task name"
+// @Param scan_task_type query string false "scan task type"
+// @Param instance_name query string false "instance name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetAuditPlansResV1

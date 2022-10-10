@@ -77,6 +77,24 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "scan task name",
+                        "name": "scan_task_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "scan task type",
+                        "name": "scan_task_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
