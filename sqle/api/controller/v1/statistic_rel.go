@@ -8,12 +8,16 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/license"
 	"github.com/actiontech/sqle/sqle/model"
+
 	"github.com/labstack/echo/v4"
 )
 
 func getLicenseUsageV1(c echo.Context) error {
-	permission, _, _, exist, err := parseLicense(c)
+	s := model.GetStorage()
+	l, exist, err := s.GetLicense()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -34,7 +38,11 @@ func getLicenseUsageV1(c echo.Context) error {
 		})
 	}
 
-	s := model.GetStorage()
+	permission, _, err := license.DecodeLicense(l.Content)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
+	}
+
 	usersTotal, err := s.GetAllUserCount()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get users count failed: %v", err))

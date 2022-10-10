@@ -26,7 +26,8 @@ const (
 )
 
 func getLicense(c echo.Context) error {
-	permission, collectedInfosContent, content, exist, err := parseLicense(c)
+	s := model.GetStorage()
+	l, exist, err := s.GetLicense()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -35,32 +36,29 @@ func getLicense(c echo.Context) error {
 			BaseRes: controller.NewBaseReq(nil),
 		})
 	}
+	permission, collectedInfosContent, err := license.DecodeLicense(l.Content)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
+	}
 
 	items := generateLicenseItems(permission, collectedInfosContent)
 
+	items = append(items, LicenseItem{
+		Description: "已运行时长(天)",
+		Name:        "duration of running",
+		Limit:       strconv.Itoa(l.WorkDurationHour / 24),
+	}, LicenseItem{
+		Description: "预计剩余时长(天)",
+		Name:        "days remaining",
+		Limit:       strconv.Itoa(permission.WorkDurationDay - l.WorkDurationHour/24),
+	})
+
 	return c.JSON(http.StatusOK, GetLicenseResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Content: content,
+		Content: l.Content,
 		License: items,
 	})
 
-}
-
-func parseLicense(c echo.Context) (permission *license.LicensePermission, collectedInfosContent, content string, exist bool, err error) {
-	s := model.GetStorage()
-	l, exist, err := s.GetLicense()
-	if err != nil {
-		return nil, "", "", false, err
-	}
-	if !exist {
-		return nil, "", "", false, nil
-	}
-
-	permission, collectedInfosContent, err = license.DecodeLicense(l.Content)
-	if err != nil {
-		return nil, "", "", false, errors.New(errors.DataInvalid, license.ErrInvalidLicense)
-	}
-	return permission, collectedInfosContent, l.Content, exist, nil
 }
 
 func getSQLELicenseInfo(c echo.Context) error {
@@ -170,13 +168,13 @@ func generateLicenseItems(permission *license.LicensePermission, collectedInfosC
 			Name:        "info",
 			Limit:       collectedInfosContent,
 		}, {
-			Description: "授权运行时长(天)",
-			Name:        "work duration day",
-			Limit:       strconv.Itoa(permission.WorkDurationDay),
-		}, {
 			Description: "SQLE版本",
 			Name:        "version",
 			Limit:       permission.Version,
+		}, {
+			Description: "授权运行时长(天)",
+			Name:        "work duration day",
+			Limit:       strconv.Itoa(permission.WorkDurationDay),
 		},
 	}...)
 
