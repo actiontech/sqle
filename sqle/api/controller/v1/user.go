@@ -77,7 +77,7 @@ func CreateUser(c echo.Context) error {
 }
 
 type UpdateUserReqV1 struct {
-	Email      *string   `json:"email" valid:"omitempty,email" form:"email"`
+	Email      *string   `json:"email" form:"email"`
 	WeChatID   *string   `json:"wechat_id" example:"UserID"`
 	Roles      *[]string `json:"role_name_list" form:"role_name_list"`
 	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
@@ -113,6 +113,11 @@ func UpdateUser(c echo.Context) error {
 	// Email
 	if req.Email != nil {
 		user.Email = *req.Email
+	}
+	if user.Email != "" {
+		if err = validateUserEmail(user.Email); err != nil {
+			return err
+		}
 	}
 
 	// WeChatID
@@ -375,9 +380,16 @@ func UpdateCurrentUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	s := model.GetStorage()
+
 	if req.Email != nil {
 		user.Email = *req.Email
 	}
+	if user.Email != "" {
+		if err = validateUserEmail(user.Email); err != nil {
+			return err
+		}
+	}
+
 	if req.WeChatID != nil {
 		user.WeChatID = *req.WeChatID
 	}
@@ -386,6 +398,18 @@ func UpdateCurrentUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
+}
+
+func validateUserEmail(email string) error {
+	validEmail := struct {
+		Email string `valid:"email"`
+	}{
+		Email: email,
+	}
+	if err := controller.Validate(&validEmail); err != nil {
+		return errors.New(errors.DataInvalid, err)
+	}
+	return nil
 }
 
 type UpdateCurrentUserPasswordReqV1 struct {
