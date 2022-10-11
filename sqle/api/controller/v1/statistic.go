@@ -90,6 +90,29 @@ func GetWorkflowDurationOfWaitingForExecutionV1(c echo.Context) error {
 	return getWorkflowDurationOfWaitingForExecutionV1(c)
 }
 
+type WorkflowPassPercentV1 struct {
+	AuditPassPercent        float64 `json:"audit_pass_percent"`
+	ExecutionSuccessPercent float64 `json:"execution_success_percent"`
+}
+
+type GetWorkflowPassPercentResV1 struct {
+	controller.BaseRes
+	Data *WorkflowPassPercentV1 `json:"data"`
+}
+
+// GetWorkflowPassPercentV1
+// @Deprecated
+// @Summary 获取工单通过率
+// @Description get workflow pass percent
+// @Tags statistic
+// @Id getWorkflowPassPercentV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetWorkflowPassPercentResV1
+// @router /v1/statistic/workflows/pass_percent [get]
+func GetWorkflowPassPercentV1(c echo.Context) error {
+	return nil
+}
+
 type WorkflowAuditPassPercentV1 struct {
 	AuditPassPercent float64 `json:"audit_pass_percent"`
 }
