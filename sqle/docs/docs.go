@@ -2806,17 +2806,17 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get average execute time of instances",
+                "description": "get average execution time of sql",
                 "tags": [
                     "statistic"
                 ],
                 "summary": "sql上线平均耗时top10",
-                "operationId": "getInstancesAverageExecuteTimeV1",
+                "operationId": "getSqlAverageExecutionTimeV1",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetInstancesAverageExecuteTimeResV1"
+                            "$ref": "#/definitions/v1.GetSqlAverageExecutionTimeResV1"
                         }
                     }
                 }
@@ -6813,25 +6813,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetInstancesAverageExecuteTimeResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.InstancesAverageExecuteTime"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetInstancesResV1": {
             "type": "object",
             "properties": {
@@ -7315,6 +7296,25 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.GetSQLResultResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSqlAverageExecutionTimeResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlAverageExecuteTime"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -8069,23 +8069,6 @@ var doc = `{
                 }
             }
         },
-        "v1.InstancesAverageExecuteTime": {
-            "type": "object",
-            "properties": {
-                "average_execute_seconds": {
-                    "type": "integer"
-                },
-                "instance_name": {
-                    "type": "string"
-                },
-                "max_execute_seconds": {
-                    "type": "integer"
-                },
-                "min_execute_seconds": {
-                    "type": "integer"
-                }
-            }
-        },
         "v1.InstancesTypePercentV1": {
             "type": "object",
             "properties": {
@@ -8684,6 +8667,23 @@ var doc = `{
             "properties": {
                 "field_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.SqlAverageExecuteTime": {
+            "type": "object",
+            "properties": {
+                "average_execution_seconds": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "max_execution_seconds": {
+                    "type": "integer"
+                },
+                "min_execution_seconds": {
+                    "type": "integer"
                 }
             }
         },

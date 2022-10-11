@@ -48,28 +48,28 @@ func GetWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 	return getWorkflowDurationOfWaitingForAuditV1(c)
 }
 
-type GetInstancesAverageExecuteTimeResV1 struct {
+type GetSqlAverageExecutionTimeResV1 struct {
 	controller.BaseRes
-	Data []InstancesAverageExecuteTime `json:"data"`
+	Data []SqlAverageExecuteTime `json:"data"`
 }
 
-type InstancesAverageExecuteTime struct {
-	InstanceName          string `json:"instance_name"`
-	AverageExecuteSeconds uint   `json:"average_execute_seconds"`
-	MaxExecuteSeconds     uint   `json:"max_execute_seconds"`
-	MinExecuteSeconds     uint   `json:"min_execute_seconds"`
+type SqlAverageExecuteTime struct {
+	InstanceName            string `json:"instance_name"`
+	AverageExecutionSeconds uint   `json:"average_execution_seconds"`
+	MaxExecutionSeconds     uint   `json:"max_execution_seconds"`
+	MinExecutionSeconds     uint   `json:"min_execution_seconds"`
 }
 
-// GetInstancesAverageExecuteTimeV1
+// GetSqlAverageExecutionTimeV1
 // @Summary sql上线平均耗时top10
-// @Description get average execute time of instances
+// @Description get average execution time of sql
 // @Tags statistic
-// @Id getInstancesAverageExecuteTimeV1
+// @Id getSqlAverageExecutionTimeV1
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.GetInstancesAverageExecuteTimeResV1
+// @Success 200 {object} v1.GetSqlAverageExecutionTimeResV1
 // @router /v1/statistic/instances/sql_average_execution_time [get]
-func GetInstancesAverageExecuteTimeV1(c echo.Context) error {
-	return getInstancesAverageExecuteTimeV1(c)
+func GetSqlAverageExecutionTimeV1(c echo.Context) error {
+	return getSqlAverageExecutionTimeV1(c)
 }
 
 type GetWorkflowDurationOfWaitingForExecutionResV1 struct {
