@@ -2868,6 +2868,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/statistic/workflows/audit_pass_percent": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow audit pass percent",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单审核通过率",
+                "operationId": "getWorkflowAuditPassPercentV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowAuditPassPercentResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/workflows/counts": {
             "get": {
                 "security": [
@@ -2995,29 +3018,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowPercentCountedByInstanceTypeResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/statistic/workflows/pass_percent": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow pass percent",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取工单通过率",
-                "operationId": "getWorkflowPassPercentV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowPassPercentResV1"
                         }
                     }
                 }
@@ -7534,6 +7534,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetWorkflowAuditPassPercentResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowAuditPassPercentV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetWorkflowCountsResV1": {
             "type": "object",
             "properties": {
@@ -7595,23 +7612,6 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStageDuration"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetWorkflowPassPercentResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.WorkflowPassPercentV1"
                 },
                 "message": {
                     "type": "string",
@@ -9465,6 +9465,14 @@ var doc = `{
                 }
             }
         },
+        "v1.WorkflowAuditPassPercentV1": {
+            "type": "object",
+            "properties": {
+                "audit_pass_percent": {
+                    "type": "number"
+                }
+            }
+        },
         "v1.WorkflowCountsV1": {
             "type": "object",
             "properties": {
@@ -9556,17 +9564,6 @@ var doc = `{
                 },
                 "workflow_id": {
                     "type": "integer"
-                }
-            }
-        },
-        "v1.WorkflowPassPercentV1": {
-            "type": "object",
-            "properties": {
-                "audit_pass_percent": {
-                    "type": "number"
-                },
-                "execution_success_percent": {
-                    "type": "number"
                 }
             }
         },
