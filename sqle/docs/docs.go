@@ -2799,7 +2799,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/statistic/instances/average_execute_time": {
+        "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
                     {
@@ -2927,6 +2927,7 @@ var doc = `{
                 ],
                 "summary": "获取工单各从审核完毕到执行上线的平均时长",
                 "operationId": "getWorkflowDurationOfWaitingForExecutionV1",
+                "deprecated": true,
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -8071,16 +8072,16 @@ var doc = `{
         "v1.InstancesAverageExecuteTime": {
             "type": "object",
             "properties": {
-                "average_execute_minutes": {
+                "average_execute_seconds": {
                     "type": "integer"
                 },
                 "instance_name": {
                     "type": "string"
                 },
-                "max_execute_minutes": {
+                "max_execute_seconds": {
                     "type": "integer"
                 },
-                "min_execute_minutes": {
+                "min_execute_seconds": {
                     "type": "integer"
                 }
             }

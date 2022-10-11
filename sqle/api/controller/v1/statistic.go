@@ -55,9 +55,9 @@ type GetInstancesAverageExecuteTimeResV1 struct {
 
 type InstancesAverageExecuteTime struct {
 	InstanceName          string `json:"instance_name"`
-	AverageExecuteMinutes uint   `json:"average_execute_minutes"`
-	MaxExecuteMinutes     uint   `json:"max_execute_minutes"`
-	MinExecuteMinutes     uint   `json:"min_execute_minutes"`
+	AverageExecuteSeconds uint   `json:"average_execute_seconds"`
+	MaxExecuteSeconds     uint   `json:"max_execute_seconds"`
+	MinExecuteSeconds     uint   `json:"min_execute_seconds"`
 }
 
 // GetInstancesAverageExecuteTimeV1
@@ -67,7 +67,7 @@ type InstancesAverageExecuteTime struct {
 // @Id getInstancesAverageExecuteTimeV1
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetInstancesAverageExecuteTimeResV1
-// @router /v1/statistic/instances/average_execute_time [get]
+// @router /v1/statistic/instances/sql_average_execution_time [get]
 func GetInstancesAverageExecuteTimeV1(c echo.Context) error {
 	return getInstancesAverageExecuteTimeV1(c)
 }
@@ -78,6 +78,7 @@ type GetWorkflowDurationOfWaitingForExecutionResV1 struct {
 }
 
 // GetWorkflowDurationOfWaitingForExecutionV1
+// @Deprecated
 // @Summary 获取工单各从审核完毕到执行上线的平均时长
 // @Description get duration from workflow being created to executed
 // @Tags statistic

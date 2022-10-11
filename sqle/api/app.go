@@ -153,13 +153,13 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, AdminUserAllowed())
+		v1Router.GET("/statistic/instances/sql_average_execution_time", v1.GetInstancesAverageExecuteTimeV1, AdminUserAllowed())
 		v1Router.GET("/statistic/license/usage", v1.GetLicenseUsageV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/rejected_percent_group_by_creator", v1.GetWorkflowRejectedPercentGroupByCreatorV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/rejected_percent_group_by_instance", v1.GetWorkflowRejectedPercentGroupByInstanceV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/counts", v1.GetWorkflowCountsV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/duration_of_waiting_for_audit", v1.GetWorkflowDurationOfWaitingForAuditV1, AdminUserAllowed())
 		//v1Router.GET("/statistic/workflows/duration_of_waiting_for_execution", v1.GetWorkflowDurationOfWaitingForExecutionV1, AdminUserAllowed())
-		v1Router.GET("/statistic/instances/average_execute_time", v1.GetInstancesAverageExecuteTimeV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/pass_percent", v1.GetWorkflowPassPercentV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/each_day_counts", v1.GetWorkflowCreatedCountsEachDayV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/status_count", v1.GetWorkflowStatusCountV1, AdminUserAllowed())

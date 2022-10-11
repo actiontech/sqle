@@ -1794,13 +1794,13 @@ definitions:
     type: object
   v1.InstancesAverageExecuteTime:
     properties:
-      average_execute_minutes:
+      average_execute_seconds:
         type: integer
       instance_name:
         type: string
-      max_execute_minutes:
+      max_execute_seconds:
         type: integer
-      min_execute_minutes:
+      min_execute_seconds:
         type: integer
     type: object
   v1.InstancesTypePercentV1:
@@ -5033,7 +5033,7 @@ paths:
       summary: 获取SQL查询结果
       tags:
       - sql_query
-  /v1/statistic/instances/average_execute_time:
+  /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execute time of instances
       operationId: getInstancesAverageExecuteTimeV1
@@ -5105,6 +5105,7 @@ paths:
       - statistic
   /v1/statistic/workflows/duration_of_waiting_for_execution:
     get:
+      deprecated: true
       description: get duration from workflow being created to executed
       operationId: getWorkflowDurationOfWaitingForExecutionV1
       responses:
