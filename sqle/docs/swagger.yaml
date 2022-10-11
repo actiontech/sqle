@@ -1426,6 +1426,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetWorkflowAuditPassPercentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowAuditPassPercentV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowCountsResV1:
     properties:
       code:
@@ -2723,6 +2735,11 @@ definitions:
         type: integer
       type:
         type: string
+    type: object
+  v1.WorkflowAuditPassPercentV1:
+    properties:
+      audit_pass_percent:
+        type: number
     type: object
   v1.WorkflowCountsV1:
     properties:
@@ -5075,6 +5092,20 @@ paths:
       summary: 获取License使用情况
       tags:
       - statistic
+  /v1/statistic/workflows/audit_pass_percent:
+    get:
+      description: get workflow audit pass percent
+      operationId: getWorkflowAuditPassPercentV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowAuditPassPercentResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单审核通过率
+      tags:
+      - statistic
   /v1/statistic/workflows/counts:
     get:
       description: get workflow counts
@@ -5159,6 +5190,7 @@ paths:
       - statistic
   /v1/statistic/workflows/pass_percent:
     get:
+      deprecated: true
       description: get workflow pass percent
       operationId: getWorkflowPassPercentV1
       responses:
