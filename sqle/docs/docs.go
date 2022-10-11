@@ -7313,7 +7313,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SqlAverageExecuteTime"
+                        "$ref": "#/definitions/v1.SqlAverageExecutionTime"
                     }
                 },
                 "message": {
@@ -8670,7 +8670,7 @@ var doc = `{
                 }
             }
         },
-        "v1.SqlAverageExecuteTime": {
+        "v1.SqlAverageExecutionTime": {
             "type": "object",
             "properties": {
                 "average_execution_seconds": {

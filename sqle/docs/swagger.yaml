@@ -1273,7 +1273,7 @@ definitions:
         type: integer
       data:
         items:
-          $ref: '#/definitions/v1.SqlAverageExecuteTime'
+          $ref: '#/definitions/v1.SqlAverageExecutionTime'
         type: array
       message:
         example: ok
@@ -2193,7 +2193,7 @@ definitions:
       field_name:
         type: string
     type: object
-  v1.SqlAverageExecuteTime:
+  v1.SqlAverageExecutionTime:
     properties:
       average_execution_seconds:
         type: integer

@@ -50,10 +50,10 @@ func GetWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 
 type GetSqlAverageExecutionTimeResV1 struct {
 	controller.BaseRes
-	Data []SqlAverageExecuteTime `json:"data"`
+	Data []SqlAverageExecutionTime `json:"data"`
 }
 
-type SqlAverageExecuteTime struct {
+type SqlAverageExecutionTime struct {
 	InstanceName            string `json:"instance_name"`
 	AverageExecutionSeconds uint   `json:"average_execution_seconds"`
 	MaxExecutionSeconds     uint   `json:"max_execution_seconds"`
