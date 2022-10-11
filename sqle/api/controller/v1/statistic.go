@@ -101,6 +101,7 @@ type GetWorkflowPassPercentResV1 struct {
 }
 
 // GetWorkflowPassPercentV1
+// @Deprecated
 // @Summary 获取工单通过率
 // @Description get workflow pass percent
 // @Tags statistic
@@ -109,7 +110,28 @@ type GetWorkflowPassPercentResV1 struct {
 // @Success 200 {object} v1.GetWorkflowPassPercentResV1
 // @router /v1/statistic/workflows/pass_percent [get]
 func GetWorkflowPassPercentV1(c echo.Context) error {
-	return getWorkflowPassPercentV1(c)
+	return nil
+}
+
+type WorkflowAuditPassPercentV1 struct {
+	AuditPassPercent float64 `json:"audit_pass_percent"`
+}
+
+type GetWorkflowAuditPassPercentResV1 struct {
+	controller.BaseRes
+	Data *WorkflowAuditPassPercentV1 `json:"data"`
+}
+
+// GetWorkflowAuditPassPercentV1
+// @Summary 获取工单审核通过率
+// @Description get workflow audit pass percent
+// @Tags statistic
+// @Id getWorkflowAuditPassPercentV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetWorkflowAuditPassPercentResV1
+// @router /v1/statistic/workflows/audit_pass_percent [get]
+func GetWorkflowAuditPassPercentV1(c echo.Context) error {
+	return getWorkflowAuditPassPercentV1(c)
 }
 
 type GetWorkflowCreatedCountsEachDayReqV1 struct {
