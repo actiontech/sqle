@@ -56,3 +56,7 @@ func getWorkflowStatusCountV1(c echo.Context) error {
 func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
+
+func getSqlAverageExecutionTimeV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}

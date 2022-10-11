@@ -1219,6 +1219,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/sql_query": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sqle query configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取SQL查询配置信息",
+                "operationId": "getSQLQueryConfiguration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLQueryConfigurationResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/system_variables": {
             "get": {
                 "security": [
@@ -1479,9 +1502,16 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter workflow template id",
+                        "name": "filter_workflow_template_id",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "create_audit_plan",
-                            "sql_query"
+                            "sql_query",
+                            "create_workflow"
                         ],
                         "type": "string",
                         "description": "functional module",
@@ -1614,6 +1644,40 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/instances/connections": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch test instance db connections",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "批量测试实例连通性（实例提交后）",
+                "operationId": "batchCheckInstanceIsConnectableByName",
+                "parameters": [
+                    {
+                        "description": "instances",
+                        "name": "instances",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCheckInstanceConnectionsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchGetInstanceConnectionsResV1"
                         }
                     }
                 }
@@ -2735,6 +2799,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/statistic/instances/sql_average_execution_time": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get average execution time of sql",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "sql上线平均耗时top10",
+                "operationId": "getSqlAverageExecutionTimeV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlAverageExecutionTimeResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/type_percent": {
             "get": {
                 "security": [
@@ -2840,6 +2927,7 @@ var doc = `{
                 ],
                 "summary": "获取工单各从审核完毕到执行上线的平均时长",
                 "operationId": "getWorkflowDurationOfWaitingForExecutionV1",
+                "deprecated": true,
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3048,7 +3136,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupReqV1"
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupReqV1"
                         }
                     }
                 ],
@@ -3056,7 +3144,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.BatchCreateAuditTasksGroupResV1"
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupResV1"
                         }
                     }
                 }
@@ -3085,7 +3173,7 @@ var doc = `{
                     {
                         "type": "integer",
                         "description": "group id of tasks",
-                        "name": "group_id",
+                        "name": "task_group_id",
                         "in": "formData",
                         "required": true
                     },
@@ -4256,6 +4344,7 @@ var doc = `{
                 ],
                 "summary": "获取审批流程列表",
                 "operationId": "getWorkflowListV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4370,6 +4459,7 @@ var doc = `{
                 ],
                 "summary": "创建工单",
                 "operationId": "createWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create workflow request",
@@ -4438,6 +4528,7 @@ var doc = `{
                 ],
                 "summary": "获取审批流程详情",
                 "operationId": "getWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "integer",
@@ -4474,6 +4565,7 @@ var doc = `{
                 ],
                 "summary": "更新审批流程（驳回后才可更新）",
                 "operationId": "updateWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4553,6 +4645,7 @@ var doc = `{
                 ],
                 "summary": "设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
                 "operationId": "updateWorkflowScheduleV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4681,11 +4774,83 @@ var doc = `{
                 ],
                 "summary": "工单提交 SQL 上线",
                 "operationId": "executeTaskOnWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
                         "description": "workflow id",
                         "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/{workflow_id}/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get summary of workflow instance tasks",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单数据源任务概览",
+                "operationId": "getSummaryOfInstanceTasksV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTasksResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/{workflow_id}/tasks/{task_id}/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute one task on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "工单提交单个数据源上线",
+                "operationId": "executeOneTaskOnWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
                         "in": "path",
                         "required": true
                     }
@@ -4980,6 +5145,307 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v2.UpdateRoleReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/workflows": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow list",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单列表",
+                "operationId": "getWorkflowsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter subject",
+                        "name": "filter_subject",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_task_execute_start_time_from",
+                        "name": "filter_task_execute_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_task_execute_start_time_to",
+                        "name": "filter_task_execute_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create user name",
+                        "name": "filter_create_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "wait_for_audit",
+                            "wait_for_execution",
+                            "rejected",
+                            "executing",
+                            "canceled",
+                            "exec_failed",
+                            "finished"
+                        ],
+                        "type": "string",
+                        "description": "filter workflow status",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter current step assignee user name",
+                        "name": "filter_current_step_assignee_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_task_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetWorkflowsResV2"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create workflow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "创建工单",
+                "operationId": "createWorkflowV2",
+                "parameters": [
+                    {
+                        "description": "create workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.CreateWorkflowReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/workflows/{workflow_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow detail",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单详情",
+                "operationId": "getWorkflowV2",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetWorkflowResV2"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update workflow when it is rejected to creator.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "更新工单（驳回后才可更新）",
+                "operationId": "updateWorkflowV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.UpdateWorkflowReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/workflows/{workflow_id}/tasks/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute tasks on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "多数据源批量上线",
+                "operationId": "executeTasksOnWorkflowV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/workflows/{workflow_id}/tasks/{task_id}/schedule": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update workflow schedule.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
+                "operationId": "updateWorkflowScheduleV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update workflow schedule request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowScheduleV1"
                         }
                     }
                 ],
@@ -5405,18 +5871,18 @@ var doc = `{
                 }
             }
         },
-        "v1.BatchCreateAuditTasksGroupReqV1": {
+        "v1.BatchCheckInstanceConnectionsReqV1": {
             "type": "object",
             "properties": {
                 "instances": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.InstanceForCreatingTask"
+                        "$ref": "#/definitions/v1.InstanceForCheckConnection"
                     }
                 }
             }
         },
-        "v1.BatchCreateAuditTasksGroupResV1": {
+        "v1.BatchGetInstanceConnectionsResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -5424,8 +5890,10 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.AuditTasksGroupResV1"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceConnectionResV1"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -5547,6 +6015,34 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string",
                     "example": "default_MySQL"
+                }
+            }
+        },
+        "v1.CreateAuditTasksGroupReqV1": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceForCreatingTask"
+                    }
+                }
+            }
+        },
+        "v1.CreateAuditTasksGroupResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTasksGroupResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -6699,6 +7195,34 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSQLQueryConfigurationResDataV1": {
+            "type": "object",
+            "properties": {
+                "enable_sql_query": {
+                    "type": "boolean"
+                },
+                "sql_query_root_uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.GetSQLQueryConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetSQLQueryConfigurationResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSQLQueryHistoryResDataV1": {
             "type": "object",
             "properties": {
@@ -6772,6 +7296,25 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.GetSQLResultResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSqlAverageExecutionTimeResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlAverageExecutionTime"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -7165,6 +7708,77 @@ var doc = `{
                 }
             }
         },
+        "v1.GetWorkflowTasksItemV1": {
+            "type": "object",
+            "properties": {
+                "current_step_assignee_user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exec_end_time": {
+                    "type": "string"
+                },
+                "exec_start_time": {
+                    "type": "string"
+                },
+                "execution_user_name": {
+                    "type": "string"
+                },
+                "instance_maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "schedule_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_audit",
+                        "wait_for_execution",
+                        "exec_scheduled",
+                        "exec_failed",
+                        "exec_succeeded",
+                        "executing"
+                    ]
+                },
+                "task_id": {
+                    "type": "integer"
+                },
+                "task_pass_rate": {
+                    "type": "number"
+                },
+                "task_score": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetWorkflowTasksResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.GetWorkflowTasksItemV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetWorkflowTemplateResV1": {
             "type": "object",
             "properties": {
@@ -7302,6 +7916,28 @@ var doc = `{
                 }
             }
         },
+        "v1.InstanceConnectionResV1": {
+            "type": "object",
+            "properties": {
+                "connect_error_message": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "is_instance_connectable": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.InstanceForCheckConnection": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.InstanceForCreatingTask": {
             "type": "object",
             "properties": {
@@ -7413,6 +8049,9 @@ var doc = `{
                 },
                 "instance_type": {
                     "type": "string"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -8028,6 +8667,23 @@ var doc = `{
             "properties": {
                 "field_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.SqlAverageExecutionTime": {
+            "type": "object",
+            "properties": {
+                "average_execution_seconds": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "max_execution_seconds": {
+                    "type": "integer"
+                },
+                "min_execution_seconds": {
+                    "type": "integer"
                 }
             }
         },
@@ -9284,6 +9940,23 @@ var doc = `{
                 }
             }
         },
+        "v2.CreateWorkflowReqV2": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "workflow_subject": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.GetAuditPlanReportSQLsResV2": {
             "type": "object",
             "properties": {
@@ -9337,6 +10010,45 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v2.RoleResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.GetWorkflowResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.WorkflowResV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v2.GetWorkflowsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.WorkflowDetailResV2"
                     }
                 },
                 "message": {
@@ -9429,6 +10141,139 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v2.UpdateWorkflowReqV2": {
+            "type": "object",
+            "properties": {
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "v2.WorkflowDetailResV2": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "current_step_assignee_user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "current_step_type": {
+                    "type": "string",
+                    "enum": [
+                        "sql_review",
+                        "sql_execute"
+                    ]
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_audit",
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "executing",
+                        "finished"
+                    ]
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.WorkflowRecordResV2": {
+            "type": "object",
+            "properties": {
+                "current_step_number": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_audit",
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "executing",
+                        "finished"
+                    ]
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.WorkflowTaskItem"
+                    }
+                },
+                "workflow_step_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowStepResV1"
+                    }
+                }
+            }
+        },
+        "v2.WorkflowResV2": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "mode": {
+                    "type": "string",
+                    "enum": [
+                        "same_sqls",
+                        "different_sqls"
+                    ]
+                },
+                "record": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.WorkflowRecordResV2"
+                },
+                "record_history_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.WorkflowRecordResV2"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.WorkflowTaskItem": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "integer"
                 }
             }
         }
