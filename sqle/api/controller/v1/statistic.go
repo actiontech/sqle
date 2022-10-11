@@ -48,12 +48,37 @@ func GetWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 	return getWorkflowDurationOfWaitingForAuditV1(c)
 }
 
+type GetSqlAverageExecutionTimeResV1 struct {
+	controller.BaseRes
+	Data []SqlAverageExecutionTime `json:"data"`
+}
+
+type SqlAverageExecutionTime struct {
+	InstanceName            string `json:"instance_name"`
+	AverageExecutionSeconds uint   `json:"average_execution_seconds"`
+	MaxExecutionSeconds     uint   `json:"max_execution_seconds"`
+	MinExecutionSeconds     uint   `json:"min_execution_seconds"`
+}
+
+// GetSqlAverageExecutionTimeV1
+// @Summary sql上线平均耗时top10
+// @Description get average execution time of sql
+// @Tags statistic
+// @Id getSqlAverageExecutionTimeV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSqlAverageExecutionTimeResV1
+// @router /v1/statistic/instances/sql_average_execution_time [get]
+func GetSqlAverageExecutionTimeV1(c echo.Context) error {
+	return getSqlAverageExecutionTimeV1(c)
+}
+
 type GetWorkflowDurationOfWaitingForExecutionResV1 struct {
 	controller.BaseRes
 	Data *WorkflowStageDuration `json:"data"`
 }
 
 // GetWorkflowDurationOfWaitingForExecutionV1
+// @Deprecated
 // @Summary 获取工单各从审核完毕到执行上线的平均时长
 // @Description get duration from workflow being created to executed
 // @Tags statistic
