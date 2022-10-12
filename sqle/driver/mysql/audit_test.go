@@ -2165,6 +2165,18 @@ select id from exist_db.exist_tb_1 where id =1 limit 1;
 `,
 		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
+	runDefaultRulesInspectCase(t, "success 3", DefaultMysqlInspectOffline(),
+		`
+select 1;
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "success 4", DefaultMysqlInspectOffline(),
+		`
+select sleep(1);
+`,
+		newTestResult(),
+	)
 
 	runDefaultRulesInspectCase(t, "failed big 1", DefaultMysqlInspect(),
 		`

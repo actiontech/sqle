@@ -3485,6 +3485,11 @@ func checkDMLWithLimit(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, DMLCheckWithLimit)
 		}
 	case *ast.SelectStmt:
+		// 类似 select 1 和 select sleep(1) 这种不是真正查询的SQL, 没有检查limit的必要
+		if stmt.From == nil {
+			return nil
+		}
+
 		max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 
 		if stmt.Limit == nil {
