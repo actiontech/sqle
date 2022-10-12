@@ -48,6 +48,10 @@ func GetWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 	return getWorkflowDurationOfWaitingForAuditV1(c)
 }
 
+type GetSqlAverageExecutionTimeReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
+}
+
 type GetSqlAverageExecutionTimeResV1 struct {
 	controller.BaseRes
 	Data []SqlAverageExecutionTime `json:"data"`
@@ -61,11 +65,12 @@ type SqlAverageExecutionTime struct {
 }
 
 // GetSqlAverageExecutionTimeV1
-// @Summary sql上线平均耗时top10
+// @Summary 获取sql上线平均耗时，按平均耗时降序排列
 // @Description get average execution time of sql
 // @Tags statistic
 // @Id getSqlAverageExecutionTimeV1
 // @Security ApiKeyAuth
+// @Param limit query uint true "the limit of result item number"
 // @Success 200 {object} v1.GetSqlAverageExecutionTimeResV1
 // @router /v1/statistic/instances/sql_average_execution_time [get]
 func GetSqlAverageExecutionTimeV1(c echo.Context) error {
