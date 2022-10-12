@@ -142,6 +142,8 @@ definitions:
     type: object
   v1.AuditPlanTypesV1:
     properties:
+      desc:
+        type: string
       type:
         type: string
     type: object

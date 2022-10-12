@@ -5752,6 +5752,9 @@ var doc = `{
         "v1.AuditPlanTypesV1": {
             "type": "object",
             "properties": {
+                "desc": {
+                    "type": "string"
+                },
                 "type": {
                     "type": "string"
                 }
