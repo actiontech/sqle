@@ -142,10 +142,8 @@ definitions:
     type: object
   v1.AuditPlanTypesV1:
     properties:
-      types:
-        items:
-          type: string
-        type: array
+      type:
+        type: string
     type: object
   v1.AuditResDataV1:
     properties:

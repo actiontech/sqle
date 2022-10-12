@@ -106,7 +106,7 @@ func GetAuditPlanMetas(c echo.Context) error {
 }
 
 type AuditPlanTypesV1 struct {
-	Types []string `json:"types"`
+	Type string `json:"type"`
 }
 
 type GetAuditPlanTypesResV1 struct {
