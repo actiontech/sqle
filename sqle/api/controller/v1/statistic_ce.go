@@ -25,10 +25,6 @@ func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
-}
-
 func getWorkflowCounts(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
