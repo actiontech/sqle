@@ -3377,9 +3377,9 @@ paths:
         in: query
         name: filter_audit_plan_db_type
         type: string
-      - description: filter audit plan name
+      - description: fuzzy search audit plan name
         in: query
-        name: filter_audit_plan_name
+        name: fuzzy_search_audit_plan_name
         type: string
       - description: filter audit plan type
         in: query
