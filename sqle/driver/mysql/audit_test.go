@@ -2152,6 +2152,58 @@ UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 limit 1;
 	)
 }
 
+func TestDMLCheckSelectLimit(t *testing.T) {
+	runDefaultRulesInspectCase(t, "success 1", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1000;
+`,
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+	runDefaultRulesInspectCase(t, "success 2", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1;
+`,
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+
+	runDefaultRulesInspectCase(t, "failed big 1", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1001;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+
+	runDefaultRulesInspectCase(t, "failed big 2", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 2, 1001;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driver.RuleLevelNotice, "使用LIMIT分页时,避免使用LIMIT M,N").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+
+	runDefaultRulesInspectCase(t, "failed nil", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000),
+	)
+}
+
+func TestDMLCheckSelectLimit_FP(t *testing.T) {
+	runDefaultRulesInspectCase(t, "[fp]success", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit ?;
+`,
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+	runDefaultRulesInspectCase(t, "[fp]failed", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000),
+	)
+
+}
+
 func TestCheckDMLWithLimit_FP(t *testing.T) {
 	runDefaultRulesInspectCase(t, "[fp]update: with limit", DefaultMysqlInspect(),
 		`
