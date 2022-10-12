@@ -85,6 +85,11 @@ func init() {
 			zhText: "{0}是无效的邮箱地址",
 		},
 		{
+			tag:    "len=0|email",
+			enText: "{0} is invalid email addr",
+			zhText: "{0}是无效的邮箱地址",
+		},
+		{
 			tag:    ValidNameTag,
 			enText: "{0} must match regexp `{1}`",
 			zhText: "{0}必须匹配正则`{1}`",
