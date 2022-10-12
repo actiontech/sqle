@@ -2810,8 +2810,17 @@ var doc = `{
                 "tags": [
                     "statistic"
                 ],
-                "summary": "sql上线平均耗时top10",
+                "summary": "获取sql上线平均耗时，按平均耗时降序排列",
                 "operationId": "getSqlAverageExecutionTimeV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "the limit of result item number",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
