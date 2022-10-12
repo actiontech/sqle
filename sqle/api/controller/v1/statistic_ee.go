@@ -163,19 +163,6 @@ func getAuditPassPercent() (float64, error) {
 	return float64(passCount) / float64(allCount), err
 }
 
-func getExecutionSuccessPercent() (float64, error) {
-	s := model.GetStorage()
-	successCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
-	if err != nil {
-		return 0, err
-	}
-	allCount, err := s.GetAllWorkflowCount()
-	if allCount == 0 {
-		return 0, nil
-	}
-	return float64(successCount) / float64(allCount), err
-}
-
 type CreatorRejectedPercent struct {
 	Creator          string
 	WorkflowTotalNum uint
