@@ -1279,6 +1279,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlExecutionFailPercentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SqlExecutionFailPercent'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSqlExplainReqV1:
     properties:
       instance_schema:
@@ -2215,6 +2228,13 @@ definitions:
         type: integer
       min_execution_seconds:
         type: integer
+    type: object
+  v1.SqlExecutionFailPercent:
+    properties:
+      instance_name:
+        type: string
+      percent:
+        type: number
     type: object
   v1.SystemVariablesResV1:
     properties:
@@ -5062,6 +5082,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: sql上线平均耗时top10
+      tags:
+      - statistic
+  /v1/statistic/instances/sql_execution_fail_percent:
+    get:
+      description: get sql execution fail percent
+      operationId: getSqlExecutionFailPercentV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlExecutionFailPercentResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL上线失败率top10
       tags:
       - statistic
   /v1/statistic/instances/type_percent:
