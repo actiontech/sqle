@@ -41,7 +41,7 @@ func getWorkflowDurationOfWaitingForExecutionV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getWorkflowPassPercentV1(c echo.Context) error {
+func getWorkflowAuditPassPercentV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
