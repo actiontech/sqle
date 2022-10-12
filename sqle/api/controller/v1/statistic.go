@@ -335,3 +335,25 @@ type GetLicenseUsageResV1 struct {
 func GetLicenseUsageV1(c echo.Context) error {
 	return getLicenseUsageV1(c)
 }
+
+type SqlExecutionFailPercent struct {
+	InstanceName string  `json:"instance_name"`
+	Percent      float64 `json:"percent"`
+}
+
+type GetSqlExecutionFailPercentResV1 struct {
+	controller.BaseRes
+	Data []SqlExecutionFailPercent `json:"data"`
+}
+
+// GetSqlExecutionFailPercentV1
+// @Summary 获取SQL上线失败率top10
+// @Description get sql execution fail percent
+// @Tags statistic
+// @Id getSqlExecutionFailPercentV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSqlExecutionFailPercentResV1
+// @router /v1/statistic/instances/sql_execution_fail_percent [get]
+func GetSqlExecutionFailPercentV1(c echo.Context) error {
+	return getSqlExecutionFailPercentV1(c)
+}
