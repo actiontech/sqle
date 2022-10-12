@@ -105,6 +105,27 @@ func GetAuditPlanMetas(c echo.Context) error {
 	})
 }
 
+type AuditPlanTypesV1 struct {
+	Types []string `json:"types"`
+}
+
+type GetAuditPlanTypesResV1 struct {
+	controller.BaseRes
+	Data []AuditPlanTypesV1 `json:"data"`
+}
+
+// GetAuditPlanTypes
+// @Summary 获取扫描任务类型
+// @Description get audit plan types
+// @Id getAuditPlanTypesV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetAuditPlanTypesResV1
+// @router /v1/audit_plan_types [get]
+func GetAuditPlanTypes(c echo.Context) error {
+	return nil
+}
+
 type CreateAuditPlanReqV1 struct {
 	Name             string                `json:"audit_plan_name" form:"audit_plan_name" example:"audit_plan_for_java_repo_1" valid:"required,name"`
 	Cron             string                `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"required,cron"`
