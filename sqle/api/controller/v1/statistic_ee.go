@@ -519,3 +519,17 @@ func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 func getSqlAverageExecutionTimeV1(c echo.Context) error {
 	return nil
 }
+
+func getWorkflowAuditPassPercentV1(c echo.Context) error {
+	auditPassPercent, err := getAuditPassPercent()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowAuditPassPercentResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &WorkflowAuditPassPercentV1{
+			AuditPassPercent: auditPassPercent * 100,
+		},
+	})
+}
