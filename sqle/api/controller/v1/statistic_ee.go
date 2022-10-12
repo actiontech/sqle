@@ -501,3 +501,7 @@ func getWorkflowAuditPassPercentV1(c echo.Context) error {
 		},
 	})
 }
+
+func getSqlExecutionFailPercentV1(c echo.Context) error {
+	return nil
+}
