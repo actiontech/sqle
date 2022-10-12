@@ -5074,6 +5074,12 @@ paths:
     get:
       description: get average execution time of sql
       operationId: getSqlAverageExecutionTimeV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -5081,7 +5087,7 @@ paths:
             $ref: '#/definitions/v1.GetSqlAverageExecutionTimeResV1'
       security:
       - ApiKeyAuth: []
-      summary: sql上线平均耗时top10
+      summary: 获取sql上线平均耗时，按平均耗时降序排列
       tags:
       - statistic
   /v1/statistic/instances/sql_execution_fail_percent:
