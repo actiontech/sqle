@@ -2822,6 +2822,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/statistic/instances/sql_execution_fail_percent": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql execution fail percent",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取SQL上线失败率,按失败率降序排列",
+                "operationId": "getSqlExecutionFailPercentV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "the limit of result item number",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlExecutionFailPercentResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/type_percent": {
             "get": {
                 "security": [
@@ -7346,6 +7378,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlExecutionFailPercentResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlExecutionFailPercent"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSqlExplainReqV1": {
             "type": "object",
             "properties": {
@@ -8725,6 +8776,17 @@ var doc = `{
                 },
                 "min_execution_seconds": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.SqlExecutionFailPercent": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "percent": {
+                    "type": "number"
                 }
             }
         },
