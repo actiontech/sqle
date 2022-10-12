@@ -150,25 +150,6 @@ func getAllFinalAuditedPassWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsB
 	return s.GetWorkFlowReverseStepsByIndexAndState(1, model.WorkflowStepStateApprove)
 }
 
-func getWorkflowPassPercentV1(c echo.Context) error {
-	auditPassPercent, err := getAuditPassPercent()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	executionSuccessPercent, err := getExecutionSuccessPercent()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return c.JSON(http.StatusOK, &GetWorkflowPassPercentResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: &WorkflowPassPercentV1{
-			AuditPassPercent:        auditPassPercent * 100,
-			ExecutionSuccessPercent: executionSuccessPercent * 100,
-		},
-	})
-}
-
 func getAuditPassPercent() (float64, error) {
 	s := model.GetStorage()
 	passCount, err := s.GetApprovedWorkflowCount()
@@ -180,19 +161,6 @@ func getAuditPassPercent() (float64, error) {
 		return 0, nil
 	}
 	return float64(passCount) / float64(allCount), err
-}
-
-func getExecutionSuccessPercent() (float64, error) {
-	s := model.GetStorage()
-	successCount, err := s.GetWorkflowCountByTaskStatus([]string{model.TaskStatusExecuteSucceeded})
-	if err != nil {
-		return 0, err
-	}
-	allCount, err := s.GetAllWorkflowCount()
-	if allCount == 0 {
-		return 0, nil
-	}
-	return float64(successCount) / float64(allCount), err
 }
 
 type CreatorRejectedPercent struct {
@@ -512,6 +480,24 @@ func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 		Data: &WorkflowPercentCountedByInstanceTypeV1{
 			WorkflowPercents: percents,
 			WorkflowTotalNum: uint(total),
+		},
+	})
+}
+
+func getSqlAverageExecutionTimeV1(c echo.Context) error {
+	return nil
+}
+
+func getWorkflowAuditPassPercentV1(c echo.Context) error {
+	auditPassPercent, err := getAuditPassPercent()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowAuditPassPercentResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &WorkflowAuditPassPercentV1{
+			AuditPassPercent: auditPassPercent * 100,
 		},
 	})
 }
