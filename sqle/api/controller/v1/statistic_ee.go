@@ -150,25 +150,6 @@ func getAllFinalAuditedPassWorkStepBO(s *model.Storage) ([]*model.WorkFlowStepsB
 	return s.GetWorkFlowReverseStepsByIndexAndState(1, model.WorkflowStepStateApprove)
 }
 
-func getWorkflowPassPercentV1(c echo.Context) error {
-	auditPassPercent, err := getAuditPassPercent()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	executionSuccessPercent, err := getExecutionSuccessPercent()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return c.JSON(http.StatusOK, &GetWorkflowPassPercentResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: &WorkflowPassPercentV1{
-			AuditPassPercent:        auditPassPercent * 100,
-			ExecutionSuccessPercent: executionSuccessPercent * 100,
-		},
-	})
-}
-
 func getAuditPassPercent() (float64, error) {
 	s := model.GetStorage()
 	passCount, err := s.GetApprovedWorkflowCount()
