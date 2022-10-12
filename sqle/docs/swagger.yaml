@@ -1279,6 +1279,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlExecutionFailPercentResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SqlExecutionFailPercent'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSqlExplainReqV1:
     properties:
       instance_schema:
@@ -2215,6 +2228,13 @@ definitions:
         type: integer
       min_execution_seconds:
         type: integer
+    type: object
+  v1.SqlExecutionFailPercent:
+    properties:
+      instance_name:
+        type: string
+      percent:
+        type: number
     type: object
   v1.SystemVariablesResV1:
     properties:
@@ -5054,6 +5074,12 @@ paths:
     get:
       description: get average execution time of sql
       operationId: getSqlAverageExecutionTimeV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -5061,7 +5087,27 @@ paths:
             $ref: '#/definitions/v1.GetSqlAverageExecutionTimeResV1'
       security:
       - ApiKeyAuth: []
-      summary: sql上线平均耗时top10
+      summary: 获取sql上线平均耗时，按平均耗时降序排列
+      tags:
+      - statistic
+  /v1/statistic/instances/sql_execution_fail_percent:
+    get:
+      description: get sql execution fail percent
+      operationId: getSqlExecutionFailPercentV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlExecutionFailPercentResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL上线失败率,按失败率降序排列
       tags:
       - statistic
   /v1/statistic/instances/type_percent:
@@ -5226,6 +5272,7 @@ paths:
       - statistic
   /v1/statistic/workflows/rejected_percent_group_by_instance:
     get:
+      deprecated: true
       description: get workflow rejected percent group by instance. The result will
         be sorted by rejected percent in descending order
       operationId: getWorkflowRejectedPercentGroupByInstanceV1

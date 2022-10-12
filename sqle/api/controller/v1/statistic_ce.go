@@ -25,10 +25,6 @@ func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
-}
-
 func getWorkflowCounts(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
@@ -58,5 +54,9 @@ func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 }
 
 func getSqlAverageExecutionTimeV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}
+
+func getSqlExecutionFailPercentV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }

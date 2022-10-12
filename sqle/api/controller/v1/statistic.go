@@ -48,6 +48,10 @@ func GetWorkflowDurationOfWaitingForAuditV1(c echo.Context) error {
 	return getWorkflowDurationOfWaitingForAuditV1(c)
 }
 
+type GetSqlAverageExecutionTimeReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
+}
+
 type GetSqlAverageExecutionTimeResV1 struct {
 	controller.BaseRes
 	Data []SqlAverageExecutionTime `json:"data"`
@@ -61,11 +65,12 @@ type SqlAverageExecutionTime struct {
 }
 
 // GetSqlAverageExecutionTimeV1
-// @Summary sql上线平均耗时top10
+// @Summary 获取sql上线平均耗时，按平均耗时降序排列
 // @Description get average execution time of sql
 // @Tags statistic
 // @Id getSqlAverageExecutionTimeV1
 // @Security ApiKeyAuth
+// @Param limit query uint true "the limit of result item number"
 // @Success 200 {object} v1.GetSqlAverageExecutionTimeResV1
 // @router /v1/statistic/instances/sql_average_execution_time [get]
 func GetSqlAverageExecutionTimeV1(c echo.Context) error {
@@ -266,6 +271,7 @@ type GetWorkflowRejectedPercentGroupByInstanceResV1 struct {
 }
 
 // GetWorkflowRejectedPercentGroupByInstanceV1
+// @Deprecated
 // @Summary 获取各个数据源相关的工单驳回率，按驳回率降序排列
 // @Description get workflow rejected percent group by instance. The result will be sorted by rejected percent in descending order
 // @Tags statistic
@@ -275,7 +281,7 @@ type GetWorkflowRejectedPercentGroupByInstanceResV1 struct {
 // @Success 200 {object} v1.GetWorkflowRejectedPercentGroupByInstanceResV1
 // @router /v1/statistic/workflows/rejected_percent_group_by_instance [get]
 func GetWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
-	return getWorkflowRejectedPercentGroupByInstanceV1(c)
+	return nil
 }
 
 type InstanceTypePercent struct {
@@ -334,4 +340,31 @@ type GetLicenseUsageResV1 struct {
 // @router /v1/statistic/license/usage [get]
 func GetLicenseUsageV1(c echo.Context) error {
 	return getLicenseUsageV1(c)
+}
+
+type GetSqlExecutionFailPercentReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
+}
+
+type SqlExecutionFailPercent struct {
+	InstanceName string  `json:"instance_name"`
+	Percent      float64 `json:"percent"`
+}
+
+type GetSqlExecutionFailPercentResV1 struct {
+	controller.BaseRes
+	Data []SqlExecutionFailPercent `json:"data"`
+}
+
+// GetSqlExecutionFailPercentV1
+// @Summary 获取SQL上线失败率,按失败率降序排列
+// @Description get sql execution fail percent
+// @Tags statistic
+// @Id getSqlExecutionFailPercentV1
+// @Security ApiKeyAuth
+// @Param limit query uint true "the limit of result item number"
+// @Success 200 {object} v1.GetSqlExecutionFailPercentResV1
+// @router /v1/statistic/instances/sql_execution_fail_percent [get]
+func GetSqlExecutionFailPercentV1(c echo.Context) error {
+	return getSqlExecutionFailPercentV1(c)
 }
