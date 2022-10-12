@@ -77,7 +77,7 @@ func CreateUser(c echo.Context) error {
 }
 
 type UpdateUserReqV1 struct {
-	Email      *string   `json:"email" valid:"omitempty,email" form:"email"`
+	Email      *string   `json:"email" valid:"omitempty,len=0|email" form:"email"`
 	WeChatID   *string   `json:"wechat_id" example:"UserID"`
 	Roles      *[]string `json:"role_name_list" form:"role_name_list"`
 	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
