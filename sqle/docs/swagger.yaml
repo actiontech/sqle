@@ -5088,6 +5088,12 @@ paths:
     get:
       description: get sql execution fail percent
       operationId: getSqlExecutionFailPercentV1
+      parameters:
+      - description: the limit of result item number
+        in: query
+        name: limit
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -5095,7 +5101,7 @@ paths:
             $ref: '#/definitions/v1.GetSqlExecutionFailPercentResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取SQL上线失败率top10
+      summary: 获取SQL上线失败率,按失败率降序排列
       tags:
       - statistic
   /v1/statistic/instances/type_percent:

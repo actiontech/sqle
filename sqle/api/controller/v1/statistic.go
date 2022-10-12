@@ -336,6 +336,10 @@ func GetLicenseUsageV1(c echo.Context) error {
 	return getLicenseUsageV1(c)
 }
 
+type GetSqlExecutionFailPercentReqV1 struct {
+	Limit uint `json:"limit" query:"limit" valid:"required"`
+}
+
 type SqlExecutionFailPercent struct {
 	InstanceName string  `json:"instance_name"`
 	Percent      float64 `json:"percent"`
@@ -347,11 +351,12 @@ type GetSqlExecutionFailPercentResV1 struct {
 }
 
 // GetSqlExecutionFailPercentV1
-// @Summary 获取SQL上线失败率top10
+// @Summary 获取SQL上线失败率,按失败率降序排列
 // @Description get sql execution fail percent
 // @Tags statistic
 // @Id getSqlExecutionFailPercentV1
 // @Security ApiKeyAuth
+// @Param limit query uint true "the limit of result item number"
 // @Success 200 {object} v1.GetSqlExecutionFailPercentResV1
 // @router /v1/statistic/instances/sql_execution_fail_percent [get]
 func GetSqlExecutionFailPercentV1(c echo.Context) error {

@@ -2817,8 +2817,17 @@
                 "tags": [
                     "statistic"
                 ],
-                "summary": "获取SQL上线失败率top10",
+                "summary": "获取SQL上线失败率,按失败率降序排列",
                 "operationId": "getSqlExecutionFailPercentV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "the limit of result item number",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
