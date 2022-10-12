@@ -3133,6 +3133,7 @@ var doc = `{
                 ],
                 "summary": "获取各个数据源相关的工单驳回率，按驳回率降序排列",
                 "operationId": "getWorkflowRejectedPercentGroupByInstanceV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "integer",

@@ -5272,6 +5272,7 @@ paths:
       - statistic
   /v1/statistic/workflows/rejected_percent_group_by_instance:
     get:
+      deprecated: true
       description: get workflow rejected percent group by instance. The result will
         be sorted by rejected percent in descending order
       operationId: getWorkflowRejectedPercentGroupByInstanceV1
