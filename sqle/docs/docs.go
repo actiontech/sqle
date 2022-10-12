@@ -56,6 +56,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/audit_plan_types": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan types",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取扫描任务类型",
+                "operationId": "getAuditPlanTypesV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanTypesResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plans": {
             "get": {
                 "security": [
@@ -5726,6 +5749,17 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditPlanTypesV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditResDataV1": {
             "type": "object",
             "properties": {
@@ -6605,6 +6639,25 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetAuditPlanTypesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanTypesV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
