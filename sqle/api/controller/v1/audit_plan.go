@@ -446,7 +446,7 @@ func UpdateAuditPlan(c echo.Context) error {
 
 type GetAuditPlansReqV1 struct {
 	FilterAuditPlanDBType       string `json:"filter_audit_plan_db_type" query:"filter_audit_plan_db_type"`
-	FilterAuditPlanName         string `json:"filter_audit_plan_name" query:"filter_audit_plan_name"`
+	FuzzySearchAuditPlanName    string `json:"fuzzy_search_audit_plan_name" query:"fuzzy_search_audit_plan_name"`
 	FilterAuditPlanType         string `json:"filter_audit_plan_type" query:"filter_audit_plan_type"`
 	FilterAuditPlanInstanceName string `json:"filter_audit_plan_instance_name" query:"filter_audit_plan_instance_name"`
 	PageIndex                   uint32 `json:"page_index" query:"page_index" valid:"required"`
@@ -470,13 +470,14 @@ type AuditPlanResV1 struct {
 	Meta             AuditPlanMetaV1 `json:"audit_plan_meta"`
 }
 
+// GetAuditPlans
 // @Summary 获取扫描任务信息列表
 // @Description get audit plan info list
 // @Id getAuditPlansV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Param filter_audit_plan_db_type query string false "filter audit plan db type"
-// @Param filter_audit_plan_name query string false "filter audit plan name"
+// @Param fuzzy_search_audit_plan_name query string false "fuzzy search audit plan name"
 // @Param filter_audit_plan_type query string false "filter audit plan type"
 // @Param filter_audit_plan_instance_name query string false "filter audit plan instance name"
 // @Param page_index query uint32 false "page index"

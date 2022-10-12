@@ -101,8 +101,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter audit plan name",
-                        "name": "filter_audit_plan_name",
+                        "description": "fuzzy search audit plan name",
+                        "name": "fuzzy_search_audit_plan_name",
                         "in": "query"
                     },
                     {
