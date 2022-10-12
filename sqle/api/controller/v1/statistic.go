@@ -271,6 +271,7 @@ type GetWorkflowRejectedPercentGroupByInstanceResV1 struct {
 }
 
 // GetWorkflowRejectedPercentGroupByInstanceV1
+// @Deprecated
 // @Summary 获取各个数据源相关的工单驳回率，按驳回率降序排列
 // @Description get workflow rejected percent group by instance. The result will be sorted by rejected percent in descending order
 // @Tags statistic
@@ -280,7 +281,7 @@ type GetWorkflowRejectedPercentGroupByInstanceResV1 struct {
 // @Success 200 {object} v1.GetWorkflowRejectedPercentGroupByInstanceResV1
 // @router /v1/statistic/workflows/rejected_percent_group_by_instance [get]
 func GetWorkflowRejectedPercentGroupByInstanceV1(c echo.Context) error {
-	return getWorkflowRejectedPercentGroupByInstanceV1(c)
+	return nil
 }
 
 type InstanceTypePercent struct {
