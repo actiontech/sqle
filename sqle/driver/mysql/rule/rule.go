@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -105,6 +106,7 @@ const (
 // inspector DML rules
 const (
 	DMLCheckWithLimit                     = "dml_check_with_limit"
+	DMLCheckSelectLimit                   = "dml_check_select_limit"
 	DMLCheckWithOrderBy                   = "dml_check_with_order_by"
 	DMLCheckSelectWithOrderBy             = "dml_check_select_with_order_by"
 	DMLCheckWhereIsInvalid                = "all_check_where_is_invalid"
@@ -842,6 +844,25 @@ var RuleHandlers = []RuleHandler{
 			Category: RuleTypeDMLConvention,
 		},
 		Message:      "delete/update 语句不能有limit条件",
+		AllowOffline: true,
+		Func:         checkDMLWithLimit,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DMLCheckSelectLimit,
+			Desc:     "select 语句必须带limit",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "1000",
+					Desc:  "最大查询行数",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message:      "select 语句必须带limit,且限制数不得超过%v",
 		AllowOffline: true,
 		Func:         checkDMLWithLimit,
 	},
@@ -3462,6 +3483,28 @@ func checkDMLWithLimit(input *RuleHandlerInput) error {
 	case *ast.DeleteStmt:
 		if stmt.Limit != nil {
 			addResult(input.Res, input.Rule, DMLCheckWithLimit)
+		}
+	case *ast.SelectStmt:
+		max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+		if stmt.Limit == nil {
+			addResult(input.Res, input.Rule, DMLCheckSelectLimit, max)
+			return nil
+		}
+
+		value, ok := stmt.Limit.Count.(ast.ValueExpr)
+		if !ok {
+			return nil
+		}
+		limit, err := strconv.Atoi(fmt.Sprintf("%v", value.GetValue()))
+		if err != nil {
+			// 当limit的值为 ? 时此处会报错, 此时应当跳过检查
+			//nolint:nilerr
+			return nil
+		}
+		if limit > max {
+			addResult(input.Res, input.Rule, DMLCheckSelectLimit, max)
+			return nil
 		}
 	}
 	return nil
