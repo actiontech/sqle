@@ -55,6 +55,18 @@ OR instance_name IN ( {{ .accessible_instances_name }} )
 AND audit_plans.db_type = :filter_audit_plan_db_type
 {{- end }}
 
+{{- if .fuzzy_search_audit_plan_name }}
+AND audit_plans.name LIKE '%{{ .fuzzy_search_audit_plan_name }}%'
+{{- end }}
+
+{{- if .filter_audit_plan_type }}
+AND audit_plans.type = :filter_audit_plan_type
+{{- end }}
+
+{{- if .filter_audit_plan_instance_name }}
+AND audit_plans.instance_name = :filter_audit_plan_instance_name
+{{- end }}
+
 {{ end }}
 `
 
