@@ -851,7 +851,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name:     DMLCheckSelectLimit,
 			Desc:     "select 语句必须带limit",
-			Level:    driver.RuleLevelError,
+			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
