@@ -939,6 +939,70 @@ UPDATE exist_db.exist_tb_1 Set v1="2" where id=? limit ?;
 	)
 }
 
+func TestDMLCheckSelectLimitOffline(t *testing.T) {
+	runDefaultRulesInspectCase(t, "success 1", DefaultMysqlInspectOffline(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1000;
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "success 2", DefaultMysqlInspectOffline(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1;
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "success 3", DefaultMysqlInspectOffline(),
+		`
+select 1;
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "success 4", DefaultMysqlInspectOffline(),
+		`
+select sleep(1);
+`,
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "failed big 1", DefaultMysqlInspectOffline(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1001;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000),
+	)
+
+	runDefaultRulesInspectCase(t, "failed big 2", DefaultMysqlInspectOffline(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 2, 1001;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driver.RuleLevelNotice, "使用LIMIT分页时,避免使用LIMIT M,N"),
+	)
+
+	runDefaultRulesInspectCase(t, "failed nil", DefaultMysqlInspectOffline(),
+		`
+select id from exist_db.exist_tb_1 where id =1;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000),
+	)
+}
+
+func TestDMLCheckSelectLimit_FPOffline(t *testing.T) {
+	runDefaultRulesInspectCase(t, "[fp]success", DefaultMysqlInspectOffline(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit ?;
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "[fp]failed", DefaultMysqlInspectOffline(),
+		`
+select id from exist_db.exist_tb_1 where id =1;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000),
+	)
+
+}
+
 func TestCheckDMLWithOrderByOffline(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckWithOrderBy].Rule
 	runSingleRuleInspectCase(rule, t, "update: with order by", DefaultMysqlInspectOffline(),

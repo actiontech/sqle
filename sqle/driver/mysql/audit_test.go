@@ -195,18 +195,18 @@ func TestCheckInvalidUse(t *testing.T) {
 func TestCaseSensitive(t *testing.T) {
 	runDefaultRulesInspectCase(t, "", DefaultMysqlInspect(),
 		`
-select id from exist_db.EXIST_TB_1 where id = 1;
+select id from exist_db.EXIST_TB_1 where id = 1 limit 1;
 `,
 		newTestResult().add(driver.RuleLevelError,
-			TableNotExistMessage, "exist_db.EXIST_TB_1"))
+			TableNotExistMessage, "exist_db.EXIST_TB_1").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 
 	inspect1 := DefaultMysqlInspect()
 	inspect1.Ctx.AddSystemVariable(session.SysVarLowerCaseTableNames, "1")
 	runDefaultRulesInspectCase(t, "", inspect1,
 		`
-select id from exist_db.EXIST_TB_1 where id = 1;
+select id from exist_db.EXIST_TB_1 where id = 1 limit 1;
 `,
-		newTestResult())
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 }
 
 func TestDDLCheckTableSize(t *testing.T) {
@@ -1013,16 +1013,16 @@ delete from exist_db.exist_tb_1 where exist_tb_2.id=1;
 func TestCheckInvalidSelect(t *testing.T) {
 	runDefaultRulesInspectCase(t, "select: schema not exist", DefaultMysqlInspect(),
 		`
-select id from not_exist_db.not_exist_tb where id=1;
+select id from not_exist_db.not_exist_tb where id=1 limit 1;
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
+		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "not_exist_db").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select: table not exist", DefaultMysqlInspect(),
 		`
-select id from exist_db.not_exist_tb where id=1;
+select id from exist_db.not_exist_tb where id=1 limit 1;
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 }
 
@@ -1035,28 +1035,28 @@ func TestCheckSelectAll(t *testing.T) {
 
 func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "select_from: has where condition", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where id > 1;",
-		newTestResult(),
+		"select id from exist_db.exist_tb_1 where id > 1 limit 1;",
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(1)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
+		"select id from exist_db.exist_tb_1 limit 1;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(2)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
+		"select id from exist_db.exist_tb_1 where 1=1 and 2=2 limit 1;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(3)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where id=id;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
+		"select id from exist_db.exist_tb_1 where id=id limit 1;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(4)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
+		"select id from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id limit 1;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: has where condition", DefaultMysqlInspect(),
@@ -1115,20 +1115,20 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 func TestCheckWhereInvalid_FP(t *testing.T) {
 	runDefaultRulesInspectCase(t, "[pf]select_from: has where condition(1)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where id=?;",
-		newTestResult(),
+		"select id from exist_db.exist_tb_1 where id=? limit ?;",
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: has where condition(2)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where exist_tb_1.id=?;",
-		newTestResult(),
+		"select id from exist_db.exist_tb_1 where exist_tb_1.id=? limit ?;",
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(1)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where 1=? and 2=2;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
+		"select id from exist_db.exist_tb_1 where 1=? and 2=2 limit ?;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(2)", DefaultMysqlInspect(),
-		"select id from exist_db.exist_tb_1 where ?=?;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
+		"select id from exist_db.exist_tb_1 where ?=? limit ?;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "[pf]update: has where condition", DefaultMysqlInspect(),
@@ -2150,6 +2150,70 @@ UPDATE exist_db.exist_tb_1 Set v1="2" where id=1 limit 1;
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWithLimit),
 	)
+}
+
+func TestDMLCheckSelectLimit(t *testing.T) {
+	runDefaultRulesInspectCase(t, "success 1", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1000;
+`,
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+	runDefaultRulesInspectCase(t, "success 2", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1;
+`,
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+	runDefaultRulesInspectCase(t, "success 3", DefaultMysqlInspectOffline(),
+		`
+select 1;
+`,
+		newTestResult(),
+	)
+	runDefaultRulesInspectCase(t, "success 4", DefaultMysqlInspectOffline(),
+		`
+select sleep(1);
+`,
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "failed big 1", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 1001;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+
+	runDefaultRulesInspectCase(t, "failed big 2", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit 2, 1001;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driver.RuleLevelNotice, "使用LIMIT分页时,避免使用LIMIT M,N").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+
+	runDefaultRulesInspectCase(t, "failed nil", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000),
+	)
+}
+
+func TestDMLCheckSelectLimit_FP(t *testing.T) {
+	runDefaultRulesInspectCase(t, "[fp]success", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1 limit ?;
+`,
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+	)
+	runDefaultRulesInspectCase(t, "[fp]failed", DefaultMysqlInspect(),
+		`
+select id from exist_db.exist_tb_1 where id =1;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000),
+	)
+
 }
 
 func TestCheckDMLWithLimit_FP(t *testing.T) {
@@ -4394,15 +4458,15 @@ func TestInspect_CheckColumn(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "check column 7", DefaultMysqlInspect(),
 		`
-	select id, v1 from exist_db.exist_tb_1 where id in (1, 2);
+	select id, v1 from exist_db.exist_tb_1 where id in (1, 2) limit 1;
 	`,
-		newTestResult())
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 
 	runDefaultRulesInspectCase(t, "check column 8", DefaultMysqlInspect(),
 		`
-	select ID, V1 from exist_db.exist_tb_1 where ID in (1, 2);
+	select ID, V1 from exist_db.exist_tb_1 where ID in (1, 2) limit 1;
 	`,
-		newTestResult())
+		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 
 	runDefaultRulesInspectCase(t, "check column 9", DefaultMysqlInspect(),
 		`
