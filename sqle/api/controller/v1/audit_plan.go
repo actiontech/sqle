@@ -124,7 +124,18 @@ type GetAuditPlanTypesResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanTypesResV1
 // @router /v1/audit_plan_types [get]
 func GetAuditPlanTypes(c echo.Context) error {
-	return nil
+	auditPlanTypesV1 := make([]AuditPlanTypesV1, 0, len(auditplan.Metas))
+	for _, meta := range auditplan.Metas {
+		auditPlanTypesV1 = append(auditPlanTypesV1, AuditPlanTypesV1{
+			Type: meta.Type,
+			Desc: meta.Desc,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditPlanTypesResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    auditPlanTypesV1,
+	})
 }
 
 type CreateAuditPlanReqV1 struct {
