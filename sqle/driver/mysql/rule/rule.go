@@ -864,7 +864,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message:      "select 语句必须带limit,且限制数不得超过%v",
 		AllowOffline: true,
-		Func:         checkDMLWithLimit,
+		Func:         checkSelectLimit,
 	},
 	{
 		Rule: driver.Rule{
@@ -3484,6 +3484,12 @@ func checkDMLWithLimit(input *RuleHandlerInput) error {
 		if stmt.Limit != nil {
 			addResult(input.Res, input.Rule, DMLCheckWithLimit)
 		}
+	}
+	return nil
+}
+
+func checkSelectLimit(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		// 类似 select 1 和 select sleep(1) 这种不是真正查询的SQL, 没有检查limit的必要
 		if stmt.From == nil {
@@ -3511,9 +3517,12 @@ func checkDMLWithLimit(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, DMLCheckSelectLimit, max)
 			return nil
 		}
+		return nil
+	default:
+		return nil
 	}
-	return nil
 }
+
 func checkDMLLimitExist(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.UpdateStmt:
