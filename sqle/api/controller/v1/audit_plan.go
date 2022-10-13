@@ -105,6 +105,39 @@ func GetAuditPlanMetas(c echo.Context) error {
 	})
 }
 
+type AuditPlanTypesV1 struct {
+	Type string `json:"type"`
+	Desc string `json:"desc"`
+}
+
+type GetAuditPlanTypesResV1 struct {
+	controller.BaseRes
+	Data []AuditPlanTypesV1 `json:"data"`
+}
+
+// GetAuditPlanTypes
+// @Summary 获取扫描任务类型
+// @Description get audit plan types
+// @Id getAuditPlanTypesV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetAuditPlanTypesResV1
+// @router /v1/audit_plan_types [get]
+func GetAuditPlanTypes(c echo.Context) error {
+	auditPlanTypesV1 := make([]AuditPlanTypesV1, 0, len(auditplan.Metas))
+	for _, meta := range auditplan.Metas {
+		auditPlanTypesV1 = append(auditPlanTypesV1, AuditPlanTypesV1{
+			Type: meta.Type,
+			Desc: meta.Desc,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditPlanTypesResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    auditPlanTypesV1,
+	})
+}
+
 type CreateAuditPlanReqV1 struct {
 	Name             string                `json:"audit_plan_name" form:"audit_plan_name" example:"audit_plan_for_java_repo_1" valid:"required,name"`
 	Cron             string                `json:"audit_plan_cron" form:"audit_plan_cron" example:"0 */2 * * *" valid:"required,cron"`
@@ -424,7 +457,7 @@ func UpdateAuditPlan(c echo.Context) error {
 
 type GetAuditPlansReqV1 struct {
 	FilterAuditPlanDBType       string `json:"filter_audit_plan_db_type" query:"filter_audit_plan_db_type"`
-	FilterAuditPlanName         string `json:"filter_audit_plan_name" query:"filter_audit_plan_name"`
+	FuzzySearchAuditPlanName    string `json:"fuzzy_search_audit_plan_name" query:"fuzzy_search_audit_plan_name"`
 	FilterAuditPlanType         string `json:"filter_audit_plan_type" query:"filter_audit_plan_type"`
 	FilterAuditPlanInstanceName string `json:"filter_audit_plan_instance_name" query:"filter_audit_plan_instance_name"`
 	PageIndex                   uint32 `json:"page_index" query:"page_index" valid:"required"`
@@ -448,13 +481,14 @@ type AuditPlanResV1 struct {
 	Meta             AuditPlanMetaV1 `json:"audit_plan_meta"`
 }
 
+// GetAuditPlans
 // @Summary 获取扫描任务信息列表
 // @Description get audit plan info list
 // @Id getAuditPlansV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Param filter_audit_plan_db_type query string false "filter audit plan db type"
-// @Param filter_audit_plan_name query string false "filter audit plan name"
+// @Param fuzzy_search_audit_plan_name query string false "fuzzy search audit plan name"
 // @Param filter_audit_plan_type query string false "filter audit plan type"
 // @Param filter_audit_plan_instance_name query string false "filter audit plan instance name"
 // @Param page_index query uint32 false "page index"

@@ -140,6 +140,13 @@ definitions:
         example: RFC3339
         type: string
     type: object
+  v1.AuditPlanTypesV1:
+    properties:
+      desc:
+        type: string
+      type:
+        type: string
+    type: object
   v1.AuditResDataV1:
     properties:
       audit_level:
@@ -741,6 +748,19 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetAuditPlanTypesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanTypesV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetAuditPlansResV1:
     properties:
@@ -3334,6 +3354,20 @@ paths:
       summary: 获取扫描任务元信息
       tags:
       - audit_plan
+  /v1/audit_plan_types:
+    get:
+      description: get audit plan types
+      operationId: getAuditPlanTypesV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanTypesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务类型
+      tags:
+      - audit_plan
   /v1/audit_plans:
     get:
       description: get audit plan info list
@@ -3343,9 +3377,9 @@ paths:
         in: query
         name: filter_audit_plan_db_type
         type: string
-      - description: filter audit plan name
+      - description: fuzzy search audit plan name
         in: query
-        name: filter_audit_plan_name
+        name: fuzzy_search_audit_plan_name
         type: string
       - description: filter audit plan type
         in: query
