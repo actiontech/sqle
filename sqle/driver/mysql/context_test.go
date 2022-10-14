@@ -10,9 +10,12 @@ import (
 
 func TestContext(t *testing.T) {
 	handler := rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge]
+	handlerNotAllowRenaming := rule.RuleHandlerMap[rule.DDLNotAllowRenaming]
 	delete(rule.RuleHandlerMap, rule.DDLCheckAlterTableNeedMerge)
+	delete(rule.RuleHandlerMap, rule.DDLNotAllowRenaming)
 	defer func() {
 		rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge] = handler
+		rule.RuleHandlerMap[rule.DDLNotAllowRenaming] = handlerNotAllowRenaming
 	}()
 
 	runDefaultRulesInspectCase(t, "rename table and drop column: table not exists", DefaultMysqlInspect(),
