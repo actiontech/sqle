@@ -2297,3 +2297,16 @@ end;`,
 			newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
 }
+
+func TestDDLNotAllowRenamingOffline(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "success", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 MODIFY v1 CHAR(10);", newTestResult())
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "change 1", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 CHANGE v1 a BIGINT;", newTestResult().add(driver.RuleLevelError, "禁止修改字段名"))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "change 2", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 RENAME COLUMN v1 TO a", newTestResult().add(driver.RuleLevelError, "禁止修改字段名"))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 1", DefaultMysqlInspect(), "RENAME TABLE exist_tb_1 TO test", newTestResult().add(driver.RuleLevelError, "禁止修改表名"))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 2", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 RENAME TO test", newTestResult().add(driver.RuleLevelError, "禁止修改表名"))
+
+}
