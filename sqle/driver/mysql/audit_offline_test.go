@@ -292,7 +292,7 @@ INDEX idx_%s (v1)
 	runDefaultRulesInspectCase(t, "alter_table: table length > 64", DefaultMysqlInspectOffline(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 RENAME %s;`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64).addResult(rulepkg.DDLNotAllowRenaming),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:Add column length > 64", DefaultMysqlInspectOffline(),
@@ -304,7 +304,7 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255) NOT NULL DEFAULT "uni
 	runDefaultRulesInspectCase(t, "alter_table:change column length > 64", DefaultMysqlInspectOffline(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64).addResult(rulepkg.DDLNotAllowRenaming),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add index length > 64", DefaultMysqlInspectOffline(),
@@ -2296,4 +2296,17 @@ end;`,
 			DefaultMysqlInspectOffline(), sql,
 			newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
+}
+
+func TestDDLNotAllowRenamingOffline(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "success", DefaultMysqlInspectOffline(), "ALTER TABLE exist_tb_1 MODIFY v1 CHAR(10);", newTestResult())
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "change 1", DefaultMysqlInspectOffline(), "ALTER TABLE exist_tb_1 CHANGE v1 a BIGINT;", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "change 2", DefaultMysqlInspectOffline(), "ALTER TABLE exist_tb_1 RENAME COLUMN v1 TO a", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 1", DefaultMysqlInspectOffline(), "RENAME TABLE exist_tb_1 TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 2", DefaultMysqlInspectOffline(), "ALTER TABLE exist_tb_1 RENAME TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
+
 }
