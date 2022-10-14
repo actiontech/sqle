@@ -1731,12 +1731,13 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ // rename table t1 to t2;
 			Name:     DDLNotAllowRenaming,
-			Desc:     "禁止使用rename、change",
+			Desc:     "禁止使用rename或change对表名字段名进行修改",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "禁止使用rename、change",
-		Func:    ddlNotAllowRenaming,
+		AllowOffline: true,
+		Message:      "禁止使用rename或change对表名字段名进行修改",
+		Func:         ddlNotAllowRenaming,
 	},
 }
 
@@ -4831,31 +4832,19 @@ func checkAutoIncrement(input *RuleHandlerInput) error {
 }
 
 func ddlNotAllowRenaming(input *RuleHandlerInput) error {
-	isRename := false
-	isChange := false
-
 	switch stmt := input.Node.(type) {
 	case *ast.RenameTableStmt:
-		isRename = true
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
-			if spec.Tp == ast.AlterTableChangeColumn {
-				isChange = true
-			}
-			if spec.Tp == ast.AlterTableRenameTable {
-				isRename = true
-			}
-			if spec.Tp == ast.AlterTableRenameColumn {
-				isChange = true
+			if spec.Tp == ast.AlterTableChangeColumn ||
+				spec.Tp == ast.AlterTableRenameTable ||
+				spec.Tp == ast.AlterTableRenameColumn {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
 			}
 		}
-	}
-
-	if isRename {
-		input.Res.Add(driver.RuleLevelError, "禁止修改表名")
-	}
-	if isChange {
-		input.Res.Add(driver.RuleLevelError, "禁止修改字段名")
 	}
 	return nil
 }
