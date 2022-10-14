@@ -414,7 +414,46 @@ func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 }
 
 func getSqlAverageExecutionTimeV1(c echo.Context) error {
-	return nil
+	req := new(GetSqlAverageExecutionTimeReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	sqlExecuteStatistics, err := s.GetSqlAvgExecutionTimeStatistic(req.Limit)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instIds := make([]uint, 0, len(sqlExecuteStatistics))
+	for _, statistic := range sqlExecuteStatistics {
+		instIds = append(instIds, statistic.InstanceID)
+	}
+
+	instances, err := s.GetInstancesByIds(instIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	InstIdNameMap := make(map[uint] /*instance id*/ string /*instance name*/, 0)
+	for _, instance := range instances {
+		InstIdNameMap[instance.ID] = instance.Name
+	}
+
+	sqlAverageExecutionTimes := make([]SqlAverageExecutionTime, len(sqlExecuteStatistics))
+	for i, executeStatistic := range sqlExecuteStatistics {
+		sqlAverageExecutionTimes[i] = SqlAverageExecutionTime{
+			InstanceName:            InstIdNameMap[executeStatistic.InstanceID],
+			AverageExecutionSeconds: sqlExecuteStatistics[i].AvgExecutionTime,
+			MaxExecutionSeconds:     sqlExecuteStatistics[i].MaxExecutionTime,
+			MinExecutionSeconds:     sqlExecuteStatistics[i].MinExecutionTime,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetSqlAverageExecutionTimeResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    sqlAverageExecutionTimes,
+	})
 }
 
 func getWorkflowAuditPassPercentV1(c echo.Context) error {
