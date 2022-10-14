@@ -101,6 +101,7 @@ const (
 	DDLCheckVarcharSize                                = "ddl_check_varchar_size"
 	DDLCheckColumnQuantityInPK                         = "ddl_check_column_quantity_in_pk"
 	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
+	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
 )
 
 // inspector DML rules
@@ -1727,6 +1728,16 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "表的初始AUTO_INCREMENT值不为0",
 		Func:    checkAutoIncrement,
+	}, {
+		Rule: driver.Rule{ // rename table t1 to t2;
+			Name:     DDLNotAllowRenaming,
+			Desc:     "禁止使用rename或change对表名字段名进行修改",
+			Level:    driver.RuleLevelError,
+			Category: RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用rename或change对表名字段名进行修改",
+		Func:         ddlNotAllowRenaming,
 	},
 }
 
@@ -4818,4 +4829,22 @@ func checkAutoIncrement(input *RuleHandlerInput) error {
 		}
 		return nil
 	}
+}
+
+func ddlNotAllowRenaming(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.RenameTableStmt:
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Tp == ast.AlterTableChangeColumn ||
+				spec.Tp == ast.AlterTableRenameTable ||
+				spec.Tp == ast.AlterTableRenameColumn {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	}
+	return nil
 }

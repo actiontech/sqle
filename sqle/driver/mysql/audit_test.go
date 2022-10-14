@@ -474,11 +474,14 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 	// elegant method: unit test support MySQL.
 	handlerEngine := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableDBEngine]
 	handlerCharacter := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableCharacterSet]
+	handlerNotAllowRenaming := rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming]
 	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableDBEngine)
 	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableCharacterSet)
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLNotAllowRenaming)
 	defer func() {
 		rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableDBEngine] = handlerEngine
 		rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableCharacterSet] = handlerCharacter
+		rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming] = handlerNotAllowRenaming
 	}()
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
@@ -1264,7 +1267,7 @@ INDEX idx_%s (v1)
 	runDefaultRulesInspectCase(t, "alter_table: table length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 RENAME %s;`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64).addResult(rulepkg.DDLNotAllowRenaming),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table:Add column length > 64", DefaultMysqlInspect(),
@@ -1276,7 +1279,7 @@ ALTER TABLE exist_db.exist_tb_1 ADD COLUMN %s varchar(255) NOT NULL DEFAULT "uni
 	runDefaultRulesInspectCase(t, "alter_table:change column length > 64", DefaultMysqlInspect(),
 		fmt.Sprintf(`
 ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v1 %s varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64).addResult(rulepkg.DDLNotAllowRenaming),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add index length > 64", DefaultMysqlInspect(),
@@ -4424,7 +4427,7 @@ func TestInspect_CheckColumn(t *testing.T) {
 		`
 	alter table exist_db.exist_tb_1 change column v1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
 	`,
-		newTestResult())
+		newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
 
 	runDefaultRulesInspectCase(t, "check column 2", DefaultMysqlInspect(),
 		`
@@ -4436,7 +4439,7 @@ func TestInspect_CheckColumn(t *testing.T) {
 		`
 	alter table exist_db.exist_tb_1 change column V1 v11 varchar(255) DEFAULT "v11" COMMENT "uint test";
 	`,
-		newTestResult())
+		newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
 
 	runDefaultRulesInspectCase(t, "check column 4", DefaultMysqlInspect(),
 		`
@@ -5079,5 +5082,18 @@ func TestDDLCheckAutoIncrement(t *testing.T) {
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckAutoIncrement].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
 	}
+
+}
+
+func TestDDLNotAllowRenaming(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "success", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 MODIFY v1 CHAR(10);", newTestResult())
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "change 1", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 CHANGE v1 a BIGINT;", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "change 2", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 RENAME COLUMN v1 TO a", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 1", DefaultMysqlInspect(), "RENAME TABLE exist_tb_1 TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
+
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 2", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 RENAME TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
 
 }
