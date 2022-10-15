@@ -43,7 +43,7 @@ ifdef TARGET_USER
 	override RPM_NAME := $(PROJECT_NAME)-$(EDITION)-$(TARGET_USER)-$(PROJECT_VERSION).$(RELEASE).$(OS_VERSION).$(RPMBUILD_TARGET).rpm
 endif
 
-## The docker registry to pull complier image, can be overwrite by: `make DOCKER_REGISTRY=10.0.0.1`
+## The docker registry to pull compiler image, can be overwrite by: `make DOCKER_REGISTRY=10.0.0.1`
 DOCKER_REGISTRY ?= 10.186.18.20
 
 ## Dynamic Parameter
