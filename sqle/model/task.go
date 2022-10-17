@@ -471,3 +471,29 @@ func (s *Storage) GetTaskGroupByGroupId(groupId uint) (*TaskGroup, error) {
 		Where("id = ?", groupId).Find(&taskGroup).Error
 	return taskGroup, errors.New(errors.ConnectStorageError, err)
 }
+
+type SqlExecuteStatistic struct {
+	InstanceID       uint `json:"instance_id"`
+	AvgExecutionTime uint `json:"avg_execution_time"`
+	MaxExecutionTime uint `json:"max_execution_time"`
+	MinExecutionTime uint `json:"min_execution_time"`
+}
+
+func (s *Storage) GetSqlAvgExecutionTimeStatistic(limit uint) ([]*SqlExecuteStatistic, error) {
+	var sqlExecuteStatistics []*SqlExecuteStatistic
+	err := s.db.Model(&Workflow{}).Select("t.instance_id,"+
+		"round(avg(timestampdiff(second, t.exec_start_at, t.exec_end_at))) avg_execution_time,"+
+		"max(timestampdiff(second, t.exec_start_at, t.exec_end_at)) max_execution_time,"+
+		"min(timestampdiff(second, t.exec_start_at, t.exec_end_at)) min_execution_time").
+		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
+		Joins("left join workflow_instance_records wir on wr.id = wir.workflow_record_id").
+		Joins("left join tasks t on wir.task_id = t.id").
+		Where("t.status = ?", TaskStatusExecuteSucceeded).
+		Group("t.instance_id").Order("avg_execution_time desc").Limit(limit).
+		Scan(&sqlExecuteStatistics).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return sqlExecuteStatistics, nil
+}
