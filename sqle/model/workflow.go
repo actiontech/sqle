@@ -861,23 +861,21 @@ func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
 	return count, nil
 }
 
-// GetApprovedWorkflowCount 将会返回未被回收且审核流程全部通过的工单数, 包括上线成功(失败)的工单和等待上线的工单, 不包括关闭的工单
-func (s *Storage) GetApprovedWorkflowCount() (int, error) {
-	query := `
-	select count(1) as count
-from workflows 
-left join workflow_records on workflows.workflow_record_id = workflow_records.id
-left join workflow_steps on workflow_records.current_workflow_step_id = workflow_steps.id 
-left join workflow_step_templates on workflow_steps.workflow_step_template_id = workflow_step_templates.id 
-where 
-workflow_records.status = 'finished'
-or
-workflow_step_templates.type = 'sql_execute';
-`
-	var count = struct {
-		Count int `json:"count"`
-	}{}
-	return count.Count, errors.New(errors.ConnectStorageError, s.db.Raw(query).Scan(&count).Error)
+// GetApprovedWorkflowCount
+// 返回审核通过的工单数（工单状态是 待上线,正在上线,上线成功,上线失败 中任意一个表示工单通过审核）
+// 工单状态是 待审核,已驳回,已关闭 中任意一个表示工单未通过审核
+func (s *Storage) GetApprovedWorkflowCount() (count int, err error) {
+	notPassAuditStatus := []string{WorkflowStatusWaitForAudit, WorkflowStatusReject, WorkflowStatusCancel}
+
+	err = s.db.Model(&Workflow{}).
+		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
+		Where("wr.status not in (?)", notPassAuditStatus).
+		Count(&count).Error
+	if err != nil {
+		return 0, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return count, nil
 }
 
 func (s *Storage) GetAllWorkflowCount() (int, error) {
