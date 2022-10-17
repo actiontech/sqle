@@ -101,7 +101,8 @@ func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 }
 
 func (s *Storage) GetInstancesByIds(ids []uint) (instances []*Instance, err error) {
-	return instances, s.db.Model(&Instance{}).Where("id in (?)", ids).Scan(&instances).Error
+	distinctIds := utils.RemoveDuplicateUint(ids)
+	return instances, s.db.Model(&Instance{}).Where("id in (?)", distinctIds).Scan(&instances).Error
 }
 
 func (s *Storage) GetAllInstance() ([]*Instance, error) {
