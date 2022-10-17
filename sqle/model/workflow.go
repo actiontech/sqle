@@ -869,10 +869,7 @@ func (s *Storage) GetApprovedWorkflowCount() (count int, err error) {
 
 	err = s.db.Model(&Workflow{}).
 		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
-		Joins("left join workflow_steps ws on wr.current_workflow_step_id = ws.id").
-		Joins("left join workflow_step_templates wst on ws.workflow_step_template_id = wst.id").
 		Where("wr.status not in (?)", notPassAuditStatus).
-		Or("wst.type = ?", WorkflowStepTypeSQLExecute).
 		Count(&count).Error
 	if err != nil {
 		return 0, errors.ConnectStorageErrWrapper(err)
