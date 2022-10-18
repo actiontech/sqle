@@ -487,35 +487,20 @@ func getSqlExecutionFailPercentV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instIdExecTotalCountMap := make(map[uint] /*instance id*/ uint /*execute fail total count*/, 0)
+	instNameExecTotalCountMap := make(map[string] /*instance name*/ uint /*execute fail total count*/, 0)
 	for _, totalCount := range sqlExecTotalCount {
-		instIdExecTotalCountMap[totalCount.InstanceID] = totalCount.Count
-	}
-
-	instIds := make([]uint, 0, len(sqlExecFailCount))
-	for _, failCount := range sqlExecFailCount {
-		instIds = append(instIds, failCount.InstanceID)
-	}
-
-	instances, err := s.GetInstancesByIds(instIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	instIdNameMap := make(map[uint] /*instance id*/ string /*instance name*/, 0)
-	for _, inst := range instances {
-		instIdNameMap[inst.ID] = inst.Name
+		instNameExecTotalCountMap[totalCount.InstanceName] = totalCount.Count
 	}
 
 	executionFailPercents := make([]SqlExecutionFailPercent, 0, len(sqlExecFailCount))
 	for _, failCount := range sqlExecFailCount {
-		execTotalCount, ok := instIdExecTotalCountMap[failCount.InstanceID]
+		execTotalCount, ok := instNameExecTotalCountMap[failCount.InstanceName]
 		if !ok {
 			continue
 		}
 
 		executionFailPercents = append(executionFailPercents, SqlExecutionFailPercent{
-			InstanceName: instIdNameMap[failCount.InstanceID],
+			InstanceName: failCount.InstanceName,
 			Percent:      float64(failCount.Count) / float64(execTotalCount) * 100,
 		})
 	}
