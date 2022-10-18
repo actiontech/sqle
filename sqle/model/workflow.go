@@ -883,23 +883,6 @@ func (s *Storage) GetAllWorkflowCount() (int, error) {
 	return count, errors.New(errors.ConnectStorageError, s.db.Model(&Workflow{}).Count(&count).Error)
 }
 
-func (s *Storage) GetWorkflowCountByTaskStatus(status []string) (int, error) {
-	//if len(status) == 0 {
-	//	return 0, nil
-	//}
-	//
-	//var count int
-	//err := s.db.Table("workflows").
-	//	Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
-	//	Joins("left join tasks on workflow_records.task_id = tasks.id").
-	//	Where("tasks.status in (?)", status).
-	//	Count(&count).Error
-	//
-	//return count, errors.New(errors.ConnectStorageError, err)
-	// todo issue901
-	return 0, nil
-}
-
 func (s *Storage) GetWorkFlowCountBetweenStartTimeAndEndTime(startTime, endTime time.Time) (int64, error) {
 	var count int64
 	return count, s.db.Model(&Workflow{}).Where("created_at BETWEEN ? and ?", startTime, endTime).Count(&count).Error
