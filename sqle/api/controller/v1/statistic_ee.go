@@ -471,5 +471,50 @@ func getWorkflowAuditPassPercentV1(c echo.Context) error {
 }
 
 func getSqlExecutionFailPercentV1(c echo.Context) error {
-	return nil
+	req := new(GetSqlExecutionFailPercentReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	sqlExecFailCount, err := s.GetSqlExecutionFailCount()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	sqlExecTotalCount, err := s.GetSqlExecutionTotalCount()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instNameExecTotalCountMap := make(map[string] /*instance name*/ uint /*execute fail total count*/, 0)
+	for _, totalCount := range sqlExecTotalCount {
+		instNameExecTotalCountMap[totalCount.InstanceName] = totalCount.Count
+	}
+
+	executionFailPercents := make([]SqlExecutionFailPercent, 0, len(sqlExecFailCount))
+	for _, failCount := range sqlExecFailCount {
+		execTotalCount, ok := instNameExecTotalCountMap[failCount.InstanceName]
+		if !ok {
+			continue
+		}
+
+		executionFailPercents = append(executionFailPercents, SqlExecutionFailPercent{
+			InstanceName: failCount.InstanceName,
+			Percent:      float64(failCount.Count) / float64(execTotalCount) * 100,
+		})
+	}
+
+	sort.Slice(executionFailPercents, func(i, j int) bool {
+		return executionFailPercents[i].Percent > executionFailPercents[j].Percent
+	})
+
+	if len(executionFailPercents) > int(req.Limit) {
+		executionFailPercents = executionFailPercents[:req.Limit]
+	}
+
+	return c.JSON(http.StatusOK, &GetSqlExecutionFailPercentResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    executionFailPercents,
+	})
 }
