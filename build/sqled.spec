@@ -108,6 +108,7 @@ server:
   auto_migrate_table: true
   debug_log: false
   log_path: './logs'
+  log_backup_num: 2
   plugin_path: './plugins'
   enable_https: false
   cert_file_path: './etc/cert.pem'
