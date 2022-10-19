@@ -721,6 +721,7 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflows.created_at < ? "+
 			"AND (workflow_records.status = 'finished' "+
+			"OR workflow_records.status = 'exec_failed' "+
 			"OR workflow_records.status = 'canceled' "+
 			"OR workflow_records.status IS NULL)", start).
 		Scan(&workflows).Error
