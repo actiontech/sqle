@@ -108,7 +108,7 @@ server:
   auto_migrate_table: true
   debug_log: false
   log_path: './logs'
-  log_max_size: 1024
+  log_max_size_mb: 1024
   log_max_backup_number: 2
   plugin_path: './plugins'
   enable_https: false

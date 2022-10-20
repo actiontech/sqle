@@ -28,7 +28,7 @@ var pidFile string
 var debug bool
 var autoMigrateTable bool
 var logPath = "./logs"
-var logMaxSize int
+var logMaxSizeMB int
 var logMaxBackupNumber int
 var httpsEnable bool
 var certFilePath string
@@ -62,7 +62,7 @@ func main() {
 	rootCmd.Flags().StringVarP(&pidFile, "pidfile", "", "", "pid file path")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
 	rootCmd.Flags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
-	rootCmd.Flags().IntVarP(&logMaxSize, "log-max-size", "", 1024, "log max size (MB)")
+	rootCmd.Flags().IntVarP(&logMaxSizeMB, "log-max-size-mb", "", 1024, "log max size (MB)")
 	rootCmd.Flags().IntVarP(&logMaxBackupNumber, "log-max-backup-number", "", 2, "log max backup number")
 	rootCmd.Flags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
 	rootCmd.Flags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
@@ -102,7 +102,7 @@ func run(cmd *cobra.Command, _ []string) error {
 					AutoMigrateTable:   autoMigrateTable,
 					DebugLog:           debug,
 					LogPath:            logPath,
-					LogMaxSize:         logMaxSize,
+					LogMaxSizeMB:       logMaxSizeMB,
 					LogMaxBackupNumber: logMaxBackupNumber,
 					EnableHttps:        httpsEnable,
 					CertFilePath:       certFilePath,
