@@ -29,7 +29,7 @@ var debug bool
 var autoMigrateTable bool
 var logPath = "./logs"
 var logMaxSize int
-var logBackupNum int
+var logMaxBackupNumber int
 var httpsEnable bool
 var certFilePath string
 var keyFilePath string
@@ -63,7 +63,7 @@ func main() {
 	rootCmd.Flags().BoolVarP(&debug, "debug", "", false, "debug mode, print more log")
 	rootCmd.Flags().BoolVarP(&autoMigrateTable, "auto-migrate-table", "", false, "auto migrate table if table model has changed")
 	rootCmd.Flags().IntVarP(&logMaxSize, "log-max-size", "", 1024, "log max size (MB)")
-	rootCmd.Flags().IntVarP(&logBackupNum, "log-backup-num", "", 2, "log backup num")
+	rootCmd.Flags().IntVarP(&logMaxBackupNumber, "log-max-backup-number", "", 2, "log max backup number")
 	rootCmd.Flags().BoolVarP(&httpsEnable, "enable-https", "", false, "enable https")
 	rootCmd.Flags().StringVarP(&certFilePath, "cert-file-path", "", "", "https cert file path")
 	rootCmd.Flags().StringVarP(&keyFilePath, "key-file-path", "", "", "https key file path")
@@ -98,16 +98,16 @@ func run(cmd *cobra.Command, _ []string) error {
 		cfg = &config.Config{
 			Server: config.Server{
 				SqleCnf: config.SqleConfig{
-					SqleServerPort:   port,
-					AutoMigrateTable: autoMigrateTable,
-					DebugLog:         debug,
-					LogPath:          logPath,
-					LogMaxSize:       logMaxSize,
-					LogBackupNum:     logBackupNum,
-					EnableHttps:      httpsEnable,
-					CertFilePath:     certFilePath,
-					KeyFilePath:      keyFilePath,
-					PluginPath:       pluginPath,
+					SqleServerPort:     port,
+					AutoMigrateTable:   autoMigrateTable,
+					DebugLog:           debug,
+					LogPath:            logPath,
+					LogMaxSize:         logMaxSize,
+					LogMaxBackupNumber: logMaxBackupNumber,
+					EnableHttps:        httpsEnable,
+					CertFilePath:       certFilePath,
+					KeyFilePath:        keyFilePath,
+					PluginPath:         pluginPath,
 				},
 				DBCnf: config.DatabaseConfig{
 					MysqlCnf: config.MysqlConfig{

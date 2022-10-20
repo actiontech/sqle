@@ -11,17 +11,17 @@ type Server struct {
 }
 
 type SqleConfig struct {
-	SqleServerPort   int    `yaml:"server_port"`
-	EnableHttps      bool   `yaml:"enable_https"`
-	CertFilePath     string `yaml:"cert_file_path"`
-	KeyFilePath      string `yaml:"key_file_path"`
-	AutoMigrateTable bool   `yaml:"auto_migrate_table"`
-	DebugLog         bool   `yaml:"debug_log"`
-	LogPath          string `yaml:"log_path"`
-	LogMaxSize       int    `yaml:"log_max_size"`
-	LogBackupNum     int    `yaml:"log_backup_num"`
-	PluginPath       string `yaml:"plugin_path"`
-	SecretKey        string `yaml:"secret_key"`
+	SqleServerPort     int    `yaml:"server_port"`
+	EnableHttps        bool   `yaml:"enable_https"`
+	CertFilePath       string `yaml:"cert_file_path"`
+	KeyFilePath        string `yaml:"key_file_path"`
+	AutoMigrateTable   bool   `yaml:"auto_migrate_table"`
+	DebugLog           bool   `yaml:"debug_log"`
+	LogPath            string `yaml:"log_path"`
+	LogMaxSize         int    `yaml:"log_max_size"`
+	LogMaxBackupNumber int    `yaml:"log_max_backup_number"`
+	PluginPath         string `yaml:"plugin_path"`
+	SecretKey          string `yaml:"secret_key"`
 }
 
 type DatabaseConfig struct {
