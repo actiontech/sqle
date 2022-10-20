@@ -21,23 +21,24 @@ import (
 
 func Run(config *config.Config) error {
 	// init logger
-	log.InitLogger(config.Server.SqleCnf.LogPath, config.Server.SqleCnf.LogBackupNum)
+	sqleCnf := config.Server.SqleCnf
+	log.InitLogger(sqleCnf.LogPath, sqleCnf.LogBackupNum)
 	defer log.ExitLogger()
 
 	log.Logger().Infoln("starting sqled server")
 
-	secretKey := config.Server.SqleCnf.SecretKey
+	secretKey := sqleCnf.SecretKey
 	if secretKey != "" {
 		if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
 			return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
 		}
 	}
 
-	if err := driver.InitPlugins(config.Server.SqleCnf.PluginPath); err != nil {
+	if err := driver.InitPlugins(sqleCnf.PluginPath); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
 
-	service.InitSQLQueryConfig(config.Server.SqleCnf.SqleServerPort, config.Server.SqleCnf.EnableHttps, config.Server.SQLQueryConfig)
+	service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
 
 	dbConfig := config.Server.DBCnf.MysqlCnf
 
@@ -54,13 +55,13 @@ func Run(config *config.Config) error {
 	}
 
 	s, err := model.NewStorage(dbConfig.User, dbPassword,
-		dbConfig.Host, dbConfig.Port, dbConfig.Schema, config.Server.SqleCnf.DebugLog)
+		dbConfig.Host, dbConfig.Port, dbConfig.Schema, sqleCnf.DebugLog)
 	if err != nil {
 		return fmt.Errorf("get new storage failed: %v", err)
 	}
 	model.InitStorage(s)
 
-	if config.Server.SqleCnf.AutoMigrateTable {
+	if sqleCnf.AutoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
 		}
@@ -82,7 +83,7 @@ func Run(config *config.Config) error {
 	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
 
 	net := &gracenet.Net{}
-	go api.StartApi(net, exitChan, config.Server.SqleCnf)
+	go api.StartApi(net, exitChan, sqleCnf)
 
 	killChan := make(chan os.Signal, 1)
 	// os.Kill is like kill -9 which kills a process immediately, can't be caught
