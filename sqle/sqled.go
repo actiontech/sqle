@@ -22,7 +22,7 @@ import (
 func Run(config *config.Config) error {
 	// init logger
 	sqleCnf := config.Server.SqleCnf
-	log.InitLogger(sqleCnf.LogPath, sqleCnf.LogMaxSize, sqleCnf.LogBackupNum)
+	log.InitLogger(sqleCnf.LogPath, sqleCnf.LogMaxSize, sqleCnf.LogMaxBackupNumber)
 	defer log.ExitLogger()
 
 	log.Logger().Infoln("starting sqled server")
