@@ -18,6 +18,7 @@ type SqleConfig struct {
 	AutoMigrateTable bool   `yaml:"auto_migrate_table"`
 	DebugLog         bool   `yaml:"debug_log"`
 	LogPath          string `yaml:"log_path"`
+	LogMaxSize       int    `yaml:"log_max_size"`
 	LogBackupNum     int    `yaml:"log_backup_num"`
 	PluginPath       string `yaml:"plugin_path"`
 	SecretKey        string `yaml:"secret_key"`

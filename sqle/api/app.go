@@ -39,7 +39,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	defer close(exitChan)
 
 	e := echo.New()
-	output := log.NewRotateFile(config.LogPath, "/api.log", 1024 /*1GB*/, config.LogBackupNum)
+	output := log.NewRotateFile(config.LogPath, "/api.log", config.LogMaxSize /*MB*/, config.LogBackupNum)
 	defer output.Close()
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
