@@ -263,6 +263,9 @@ func (l *ldapLoginV3) registerUser(pwd string) (err error) {
 }
 
 func (l *ldapLoginV3) updateUser(pwd string) (err error) {
+	if l.user.Password == pwd {
+		return nil
+	}
 	return model.GetStorage().UpdatePassword(l.user, pwd)
 }
 
