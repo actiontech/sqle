@@ -26,8 +26,8 @@ func init() {
 	std = logrus.New()
 }
 
-func InitLogger(filePath string, maxBackupNum int) {
-	std.SetOutput(NewRotateFile(filePath, "/sqled.log", 1024 /*1GB*/, maxBackupNum))
+func InitLogger(filePath string, maxSize, maxBackupNum int) {
+	std.SetOutput(NewRotateFile(filePath, "/sqled.log", maxSize /*MB*/, maxBackupNum))
 }
 
 func ExitLogger() {
@@ -38,7 +38,7 @@ func ExitLogger() {
 	}
 }
 
-func NewRotateFile(filePath, fileName string, maxSize int, maxBackupNum int) *rotate.Logger {
+func NewRotateFile(filePath, fileName string, maxSize, maxBackupNum int) *rotate.Logger {
 	return &rotate.Logger{
 		Filename:   strings.TrimRight(filePath, "/") + fileName,
 		MaxSize:    maxSize,
