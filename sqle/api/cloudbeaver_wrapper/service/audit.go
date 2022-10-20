@@ -44,7 +44,16 @@ func AuditSQL(sql string, connectionID string) (auditSuccess bool, result *Audit
 		return true, nil, nil
 	}
 
-	task, err := server.AuditSQLByDBType(log.NewEntry(), sql, inst.DbType, "")
+	ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceName(inst.Name)
+	if err != nil {
+		return false, nil, err
+	}
+	ruleTemplateName := ""
+	if exist {
+		ruleTemplateName = ruleTemplate.Name
+	}
+
+	task, err := server.AuditSQLByDBType(log.NewEntry(), sql, inst.DbType, ruleTemplateName)
 	if err != nil {
 		return false, nil, err
 	}
