@@ -721,6 +721,7 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflows.created_at < ? "+
 			"AND (workflow_records.status = 'finished' "+
+			"OR workflow_records.status = 'exec_failed' "+
 			"OR workflow_records.status = 'canceled' "+
 			"OR workflow_records.status IS NULL)", start).
 		Scan(&workflows).Error
@@ -881,23 +882,6 @@ func (s *Storage) GetApprovedWorkflowCount() (count int, err error) {
 func (s *Storage) GetAllWorkflowCount() (int, error) {
 	var count int
 	return count, errors.New(errors.ConnectStorageError, s.db.Model(&Workflow{}).Count(&count).Error)
-}
-
-func (s *Storage) GetWorkflowCountByTaskStatus(status []string) (int, error) {
-	//if len(status) == 0 {
-	//	return 0, nil
-	//}
-	//
-	//var count int
-	//err := s.db.Table("workflows").
-	//	Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
-	//	Joins("left join tasks on workflow_records.task_id = tasks.id").
-	//	Where("tasks.status in (?)", status).
-	//	Count(&count).Error
-	//
-	//return count, errors.New(errors.ConnectStorageError, err)
-	// todo issue901
-	return 0, nil
 }
 
 func (s *Storage) GetWorkFlowCountBetweenStartTimeAndEndTime(startTime, endTime time.Time) (int64, error) {
