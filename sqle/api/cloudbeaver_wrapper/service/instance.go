@@ -110,7 +110,7 @@ func SyncInstance(sqleInstances map[uint] /*sqle inst id*/ *sqleModel.Instance) 
 
 // AddCloudBeaverInstance 添加实例后会同步缓存
 func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instance) error {
-	driverID, err := GenerateCloudBeaverDriverID(sqleInst)
+	params, err := GenerateCloudBeaverInstanceParams(sqleInst)
 	if err != nil {
 		fmt.Println("Instances of this type are not currently supported:", sqleInst.DbType)
 		// 不支持的类型跳过就好,没必要终端流程
@@ -118,24 +118,7 @@ func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instan
 		return nil
 	}
 	// 添加实例
-	req := gqlClient.NewRequest(CreateConnectionQuery, map[string]interface{}{
-		"projectId": "g_GlobalConfiguration",
-		"config": map[string]interface{}{
-			"configurationType": "MANUAL",
-			"name":              sqleInst.Name,
-			"template":          false,
-			"driverId":          driverID,
-			"host":              sqleInst.Host,
-			"port":              sqleInst.Port,
-			"authModelId":       "native",
-			"saveCredentials":   true,
-			"credentials": map[string]interface{}{
-				"userName":     sqleInst.User,
-				"userPassword": sqleInst.Password,
-			},
-			"properties": map[string]interface{}{},
-		},
-	})
+	req := gqlClient.NewRequest(CreateConnectionQuery, params)
 	resp := struct {
 		Connection struct {
 			ID string `json:"id"`
@@ -184,7 +167,7 @@ fragment DatabaseConnection on ConnectionInfo {
 
 // UpdateCloudBeaverInstance 更新完毕后会同步缓存
 func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleInst *sqleModel.Instance) error {
-	driverID, err := GenerateCloudBeaverDriverID(sqleInst)
+	params, err := GenerateCloudBeaverInstanceParams(sqleInst)
 	if err != nil {
 		fmt.Println("Instances of this type are not currently supported:", sqleInst.DbType)
 		// 不支持的类型跳过就好,没必要终端流程
@@ -192,26 +175,8 @@ func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleIn
 		return nil
 	}
 	// 更新实例
-	req := gqlClient.NewRequest(UpdateConnectionQuery, map[string]interface{}{
-		"projectId": "g_GlobalConfiguration",
-		"config": map[string]interface{}{
-			"connectionId":      cbInstID,
-			"configurationType": "MANUAL",
-			"name":              sqleInst.Name,
-			"template":          false,
-			"driverId":          driverID,
-			"host":              sqleInst.Host,
-			"port":              sqleInst.Port,
-			"databaseName":      nil,
-			"authModelId":       "native",
-			"saveCredentials":   true,
-			"credentials": map[string]interface{}{
-				"userName":     sqleInst.User,
-				"userPassword": sqleInst.Password,
-			},
-			"properties": map[string]interface{}{},
-		},
-	})
+	params["connectionId"] = cbInstID
+	req := gqlClient.NewRequest(UpdateConnectionQuery, params)
 	resp := struct {
 		Connection struct {
 			ID string `json:"id"`
@@ -344,3 +309,108 @@ query setConnections($userId: ID!, $connections: [ID!]!) {
 }
 `
 )
+
+func generateCommonCloudBeaverConfigParams(sqleInst *sqleModel.Instance) map[string]interface{} {
+	return map[string]interface{}{
+		"configurationType": "MANUAL",
+		"name":              sqleInst.Name,
+		"template":          false,
+		"host":              sqleInst.Host,
+		"port":              sqleInst.Port,
+		"databaseName":      nil,
+		"authModelId":       "native",
+		"saveCredentials":   true,
+		"credentials": map[string]interface{}{
+			"userName":     sqleInst.User,
+			"userPassword": sqleInst.Password,
+		},
+	}
+}
+
+func GenerateCloudBeaverInstanceParams(sqleInst *sqleModel.Instance) (map[string]interface{}, error) {
+	var err error
+	config := generateCommonCloudBeaverConfigParams(sqleInst)
+
+	switch sqleInst.DbType {
+	case driver.DriverTypeMySQL, driver.DriverTypeTiDB:
+		err = fillMySQLParams(config)
+	case driver.DriverTypePostgreSQL:
+		err = fillPGSQLParams(config)
+	case driver.DriverTypeSQLServer:
+		err = fillMSSQLParams(config)
+	case driver.DriverTypeOracle:
+		err = fillOracleParams(sqleInst, config)
+	case driver.DriverTypeDB2:
+		err = fillDB2Params(sqleInst, config)
+	case driver.DriverTypeOceanBase:
+		err = fillOceanBaseParams(sqleInst, config)
+	default:
+		return nil, fmt.Errorf("temporarily unsupported instance types")
+	}
+
+	resp := map[string]interface{}{
+		"projectId": "g_GlobalConfiguration",
+		"config":    config,
+	}
+	return resp, err
+}
+
+func fillMySQLParams(config map[string]interface{}) error {
+	config["driverId"] = "mysql:mysql8"
+	return nil
+}
+
+func fillMSSQLParams(config map[string]interface{}) error {
+	config["driverId"] = "sqlserver:microsoft"
+	config["authModelId"] = "sqlserver_database"
+	return nil
+}
+
+func fillPGSQLParams(config map[string]interface{}) error {
+	config["driverId"] = "postgresql:postgres-jdbc"
+	config["providerProperties"] = map[string]interface{}{
+		"@dbeaver-show-non-default-db@": true,
+		"@dbeaver-show-unavailable-db@": true,
+		"@dbeaver-show-template-db@":    true,
+	}
+	return nil
+}
+
+func fillOracleParams(inst *sqleModel.Instance, config map[string]interface{}) error {
+	serviceName := inst.AdditionalParams.GetParam("service_name")
+	if serviceName == nil {
+		return fmt.Errorf("the service name of oracle cannot be empty")
+	}
+
+	config["driverId"] = "oracle:oracle_thin"
+	config["authModelId"] = "oracle_native"
+	config["databaseName"] = serviceName.Value
+	config["providerProperties"] = map[string]interface{}{
+		"@dbeaver-sid-service@": "SID",
+		"oracle.logon-as":       "Normal",
+	}
+	return nil
+}
+
+func fillDB2Params(inst *sqleModel.Instance, config map[string]interface{}) error {
+	dbName := inst.AdditionalParams.GetParam("database_name")
+	if dbName == nil {
+		return fmt.Errorf("the database name of DB2 cannot be empty")
+	}
+
+	config["driverId"] = "db2:db2"
+	config["databaseName"] = dbName.Value
+	return nil
+}
+
+func fillOceanBaseParams(inst *sqleModel.Instance, config map[string]interface{}) error {
+	tenant := inst.AdditionalParams.GetParam("tenant_name")
+	if tenant == nil {
+		return fmt.Errorf("the tenant name of oceanbase cannot be empty")
+	}
+
+	config["driverId"] = "oceanbase:alipay_oceanbase"
+	config["authModelId"] = "oceanbase_native"
+	config["credentials"].(map[string]interface{})["userName"] = fmt.Sprintf("%v@%v", inst.User, tenant)
+	return nil
+}
