@@ -28,12 +28,10 @@ func (r *QueryResolverImpl) AuthLogin(ctx context.Context, provider string, conf
 	err := service.SyncCurrentUser(cbUser)
 	if err != nil {
 		l.Errorf("sync cloudbeaver user %v info failed: %v", cbUser, err)
-		return nil, nil
 	}
 	err = service.SyncUserBindInstance(cbUser)
 	if err != nil {
 		l.Errorf("sync cloudbeaver user %v bind instance failed: %v", cbUser, err)
-		return nil, nil
 	}
 
 	data, err := r.Next(r.Ctx)
