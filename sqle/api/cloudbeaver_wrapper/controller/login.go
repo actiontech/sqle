@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/log"
 	"net/http"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/model"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
+	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/labstack/echo/v4"
 )
