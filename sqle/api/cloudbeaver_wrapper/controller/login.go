@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/model"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
+	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/labstack/echo/v4"
 )
@@ -21,14 +22,16 @@ func (r *QueryResolverImpl) AuthLogin(ctx context.Context, provider string, conf
 	}
 	cbUser := fmt.Sprintf("%v", mp["user"])
 
+	l := log.NewEntry()
+
 	// 同步信息
 	err := service.SyncCurrentUser(cbUser)
 	if err != nil {
-		return nil, err
+		l.Errorf("sync cloudbeaver user %v info failed: %v", cbUser, err)
 	}
 	err = service.SyncUserBindInstance(cbUser)
 	if err != nil {
-		return nil, err
+		l.Errorf("sync cloudbeaver user %v bind instance failed: %v", cbUser, err)
 	}
 
 	data, err := r.Next(r.Ctx)
