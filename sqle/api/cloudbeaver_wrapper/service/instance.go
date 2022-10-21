@@ -5,6 +5,7 @@ import (
 	"fmt"
 	gqlClient "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/client"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/log"
 	sqleModel "github.com/actiontech/sqle/sqle/model"
 )
 
@@ -92,15 +93,17 @@ func SyncInstance(sqleInstances map[uint] /*sqle inst id*/ *sqleModel.Instance) 
 		return err
 	}
 
+	l := log.NewEntry()
+
 	// 同步实例信息
 	for _, sqleInstID := range needAdd {
 		if err := AddCloudBeaverInstance(client, sqleInstances[sqleInstID]); err != nil {
-			return err
+			l.Errorf("add instance %v to cloudbeaver failed: %v", sqleInstID, err)
 		}
 	}
 	for _, sqleInstID := range needUpdate {
 		if err := UpdateCloudBeaverInstance(client, cbInstCacheMap[sqleInstID].CloudBeaverInstanceID, sqleInstances[sqleInstID]); err != nil {
-			return err
+			l.Errorf("update instance %v to cloudbeaver failed: %v", sqleInstID, err)
 		}
 	}
 

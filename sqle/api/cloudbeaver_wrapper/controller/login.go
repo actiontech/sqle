@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/log"
 	"net/http"
 	"strings"
 
@@ -21,14 +22,18 @@ func (r *QueryResolverImpl) AuthLogin(ctx context.Context, provider string, conf
 	}
 	cbUser := fmt.Sprintf("%v", mp["user"])
 
+	l := log.NewEntry()
+
 	// 同步信息
 	err := service.SyncCurrentUser(cbUser)
 	if err != nil {
-		return nil, err
+		l.Errorf("sync cloudbeaver user %v info failed: %v", cbUser, err)
+		return nil, nil
 	}
 	err = service.SyncUserBindInstance(cbUser)
 	if err != nil {
-		return nil, err
+		l.Errorf("sync cloudbeaver user %v bind instance failed: %v", cbUser, err)
+		return nil, nil
 	}
 
 	data, err := r.Next(r.Ctx)
