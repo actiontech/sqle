@@ -187,7 +187,7 @@ func (l *ldapLoginV3) login(password string) (err error) {
 	if err != nil {
 		return err
 	}
-	return l.autoRegisterUser()
+	return l.autoRegisterUser(password)
 }
 
 var errLdapLoginFailed = _errors.New("ldap login failed, username and password do not match")
@@ -245,17 +245,28 @@ func (l *ldapLoginV3) loginToLdap(password string) (err error) {
 	return nil
 }
 
-func (l *ldapLoginV3) autoRegisterUser() (err error) {
+func (l *ldapLoginV3) autoRegisterUser(pwd string) (err error) {
 	if l.userExist {
-		return nil
+		return l.updateUser(pwd)
 	}
+	return l.registerUser(pwd)
+}
+
+func (l *ldapLoginV3) registerUser(pwd string) (err error) {
 	user := &model.User{
 		Name:                   l.user.Name,
-		Password:               "this password will not be used",
+		Password:               pwd,
 		Email:                  l.email,
 		UserAuthenticationType: model.UserAuthenticationTypeLDAP,
 	}
 	return model.GetStorage().Save(user)
+}
+
+func (l *ldapLoginV3) updateUser(pwd string) (err error) {
+	if l.user.Password == pwd {
+		return nil
+	}
+	return model.GetStorage().UpdatePassword(l.user, pwd)
 }
 
 // sqleLogin sqle login verification logic
