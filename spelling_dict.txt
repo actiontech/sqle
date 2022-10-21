@@ -346,3 +346,8 @@ auhentication
 datasource
 pctfree
 tablegroup
+microsoft
+postgresql
+dbeaver
+logon
+alipay
