@@ -129,9 +129,29 @@ func TestSMTPConfigurationV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+
+	s := model.GetStorage()
+	smtpC, exist, err := s.GetSMTPConfiguration()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &TestSMTPConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    newSmtpConnectableResV1(false, "SMTP is not configured"),
+		})
+	}
+
+	if !smtpC.EnableSMTPNotify.Bool {
+		return c.JSON(http.StatusOK, &TestSMTPConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    newSmtpConnectableResV1(false, "SMTP notice is not enabled"),
+		})
+	}
+
 	addr := req.RecipientAddr
 	notifier := &notification.EmailNotifier{}
-	err := notifier.Notify(&notification.TestNotify{}, []*model.User{
+	err = notifier.Notify(&notification.TestNotify{}, []*model.User{
 		{
 			Email: addr,
 		},
@@ -139,19 +159,21 @@ func TestSMTPConfigurationV1(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestSMTPConfigurationResV1{
 			BaseRes: controller.NewBaseReq(nil),
-			Data: TestSMTPConfigurationResDataV1{
-				IsSMTPSendNormal: false,
-				SendErrorMessage: err.Error(),
-			},
+			Data:    newSmtpConnectableResV1(false, err.Error()),
 		})
 	}
+
 	return c.JSON(http.StatusOK, &TestSMTPConfigurationResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: TestSMTPConfigurationResDataV1{
-			IsSMTPSendNormal: true,
-			SendErrorMessage: "ok",
-		},
+		Data:    newSmtpConnectableResV1(true, "ok"),
 	})
+}
+
+func newSmtpConnectableResV1(isSendNormal bool, errMsg string) TestSMTPConfigurationResDataV1 {
+	return TestSMTPConfigurationResDataV1{
+		IsSMTPSendNormal: isSendNormal,
+		SendErrorMessage: errMsg,
+	}
 }
 
 type TestWeChatConfigurationReqV1 struct {
