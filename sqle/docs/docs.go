@@ -79,639 +79,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/audit_plans": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan info list",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取扫描任务信息列表",
-                "operationId": "getAuditPlansV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter audit plan db type",
-                        "name": "filter_audit_plan_db_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "fuzzy search audit plan name",
-                        "name": "fuzzy_search_audit_plan_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter audit plan type",
-                        "name": "filter_audit_plan_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter audit plan instance name",
-                        "name": "filter_audit_plan_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlansResV1"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create audit plan",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "添加扫描任务",
-                "operationId": "createAuditPlanV1",
-                "parameters": [
-                    {
-                        "description": "create audit plan",
-                        "name": "audit_plan",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateAuditPlanReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get SQL explain and related table metadata for analysis",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取task相关的SQL执行计划和表元数据",
-                "operationId": "getTaskAnalysisData",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql number",
-                        "name": "number",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务",
-                "operationId": "getAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanResV1"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "delete audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "删除扫描任务",
-                "operationId": "deleteAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "更新扫描任务",
-                "operationId": "updateAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update audit plan",
-                        "name": "audit_plan",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateAuditPlanReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/notify_config": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan notify config",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取扫描任务消息推送设置",
-                "operationId": "getAuditPlanNotifyConfigV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanNotifyConfigResV1"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update audit plan notify config",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "更新扫描任务通知设置",
-                "operationId": "updateAuditPlanNotifyConfigV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update audit plan notify config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateAuditPlanNotifyConfigReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/notify_config/test": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Test audit task message push",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "测试扫描任务消息推送",
-                "operationId": "testAuditPlanNotifyConfigV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.TestAuditPlanNotifyConfigResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描详情",
-                "operationId": "getAuditPlanReportSQLsV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportSQLsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/reports": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report list",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的报告列表",
-                "operationId": "getAuditPlanReportsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描记录统计信息",
-                "operationId": "getAuditPlanReportV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
-                "operationId": "getAuditPlanSQLsV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanSQLsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/sqls/full": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "full sync audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "全量同步SQL到扫描任务",
-                "operationId": "fullSyncAuditPlanSQLsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "full sync audit plan SQLs request",
-                        "name": "sqls",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.FullSyncAuditPlanSQLsReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/sqls/partial": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "partial sync audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "增量同步SQL到扫描任务",
-                "operationId": "partialSyncAuditPlanSQLsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "partial sync audit plan SQLs request",
-                        "name": "sqls",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.PartialSyncAuditPlanSQLsReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/trigger": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "trigger audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "触发扫描任务",
-                "operationId": "triggerAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.TriggerAuditPlanResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/audit_whitelist": {
             "get": {
                 "security": [
@@ -1552,7 +919,137 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances": {
+        "/v1/login": {
+            "post": {
+                "description": "user login",
+                "tags": [
+                    "user"
+                ],
+                "summary": "用户登录",
+                "operationId": "loginV1",
+                "parameters": [
+                    {
+                        "description": "user login request",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UserLoginReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetUserLoginResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/oauth2/link": {
+            "get": {
+                "description": "oauth2 link",
+                "tags": [
+                    "oauth2"
+                ],
+                "summary": "oauth2通过此链接跳转到第三方登录网址",
+                "operationId": "Oauth2Link"
+            }
+        },
+        "/v1/oauth2/user/bind": {
+            "post": {
+                "description": "bind Oauth2 user to sqle",
+                "tags": [
+                    "oauth2"
+                ],
+                "summary": "绑定 Oauth2 和 sqle用户",
+                "operationId": "bindOauth2User",
+                "parameters": [
+                    {
+                        "description": "bind oauth2 user req",
+                        "name": "conf",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BindOauth2UserReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BindOauth2UserResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/operations": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get permission operations",
+                "tags": [
+                    "operation"
+                ],
+                "summary": "获取权限动作列表",
+                "operationId": "GetOperationsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOperationsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/project/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/project/{project_id}/instances": {
             "get": {
                 "security": [
                     {
@@ -1566,6 +1063,13 @@ var doc = `{
                 "summary": "获取实例信息列表",
                 "operationId": "getInstanceListV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "filter instance name",
@@ -1653,6 +1157,13 @@ var doc = `{
                 "operationId": "createInstanceV1",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "add instance",
                         "name": "instance",
                         "in": "body",
@@ -1672,7 +1183,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances/connections": {
+        "/v1/project/{project_id}/instances/connections": {
             "post": {
                 "security": [
                     {
@@ -1686,6 +1197,13 @@ var doc = `{
                 "summary": "批量测试实例连通性（实例提交后）",
                 "operationId": "batchCheckInstanceIsConnectableByName",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "instances",
                         "name": "instances",
@@ -1706,7 +1224,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances/{instance_name}/": {
+        "/v1/project/{project_id}/instances/{instance_name}/": {
             "get": {
                 "security": [
                     {
@@ -1720,6 +1238,13 @@ var doc = `{
                 "summary": "获取实例信息",
                 "operationId": "getInstanceV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "instance name",
@@ -1751,6 +1276,13 @@ var doc = `{
                 "operationId": "deleteInstanceV1",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "instance name",
                         "name": "instance_name",
@@ -1781,6 +1313,13 @@ var doc = `{
                 "operationId": "updateInstanceV1",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "instance name",
                         "name": "instance_name",
@@ -1807,7 +1346,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances/{instance_name}/connection": {
+        "/v1/project/{project_id}/instances/{instance_name}/connection": {
             "get": {
                 "security": [
                     {
@@ -1821,6 +1360,13 @@ var doc = `{
                 "summary": "实例连通性测试（实例提交后）",
                 "operationId": "checkInstanceIsConnectableByNameV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "instance name",
@@ -1839,7 +1385,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances/{instance_name}/rules": {
+        "/v1/project/{project_id}/instances/{instance_name}/rules": {
             "get": {
                 "security": [
                     {
@@ -1853,6 +1399,13 @@ var doc = `{
                 "summary": "获取实例应用的规则列表",
                 "operationId": "getInstanceRuleListV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "instance name",
@@ -1871,7 +1424,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances/{instance_name}/schemas": {
+        "/v1/project/{project_id}/instances/{instance_name}/schemas": {
             "get": {
                 "security": [
                     {
@@ -1885,6 +1438,13 @@ var doc = `{
                 "summary": "实例 Schema 列表",
                 "operationId": "getInstanceSchemasV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "instance name",
@@ -1903,7 +1463,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances/{instance_name}/schemas/{schema_name}/tables": {
+        "/v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables": {
             "get": {
                 "security": [
                     {
@@ -1917,6 +1477,13 @@ var doc = `{
                 "summary": "获取数据库下的所有表",
                 "operationId": "listTableBySchema",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "instance name",
@@ -1942,7 +1509,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata": {
+        "/v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata": {
             "get": {
                 "security": [
                     {
@@ -1956,6 +1523,13 @@ var doc = `{
                 "summary": "获取表元数据",
                 "operationId": "getTableMetadata",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "instance name",
@@ -1983,129 +1557,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTableMetadataResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/workflow_template": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance workflow template",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例应用的工作流程模板",
-                "operationId": "getInstanceWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceWorkflowTemplateResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/login": {
-            "post": {
-                "description": "user login",
-                "tags": [
-                    "user"
-                ],
-                "summary": "用户登录",
-                "operationId": "loginV1",
-                "parameters": [
-                    {
-                        "description": "user login request",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UserLoginReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetUserLoginResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/oauth2/link": {
-            "get": {
-                "description": "oauth2 link",
-                "tags": [
-                    "oauth2"
-                ],
-                "summary": "oauth2通过此链接跳转到第三方登录网址",
-                "operationId": "Oauth2Link"
-            }
-        },
-        "/v1/oauth2/user/bind": {
-            "post": {
-                "description": "bind Oauth2 user to sqle",
-                "tags": [
-                    "oauth2"
-                ],
-                "summary": "绑定 Oauth2 和 sqle用户",
-                "operationId": "bindOauth2User",
-                "parameters": [
-                    {
-                        "description": "bind oauth2 user req",
-                        "name": "conf",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BindOauth2UserReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.BindOauth2UserResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/operations": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get permission operations",
-                "tags": [
-                    "operation"
-                ],
-                "summary": "获取权限动作列表",
-                "operationId": "GetOperationsV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetOperationsResV1"
                         }
                     }
                 }
@@ -2259,6 +1710,703 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan info list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取扫描任务信息列表",
+                "operationId": "getAuditPlansV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan db type",
+                        "name": "filter_audit_plan_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search audit plan name",
+                        "name": "fuzzy_search_audit_plan_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan type",
+                        "name": "filter_audit_plan_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan instance name",
+                        "name": "filter_audit_plan_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlansResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create audit plan",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "添加扫描任务",
+                "operationId": "createAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create audit plan",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditPlanReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务",
+                "operationId": "getAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "删除扫描任务",
+                "operationId": "deleteAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "更新扫描任务",
+                "operationId": "updateAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update audit plan",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditPlanReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan notify config",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取扫描任务消息推送设置",
+                "operationId": "getAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanNotifyConfigResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update audit plan notify config",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "更新扫描任务通知设置",
+                "operationId": "updateAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update audit plan notify config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditPlanNotifyConfigReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config/test": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Test audit task message push",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "测试扫描任务消息推送",
+                "operationId": "testAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestAuditPlanNotifyConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的报告列表",
+                "operationId": "getAuditPlanReportsV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQL扫描记录统计信息",
+                "operationId": "getAuditPlanReportV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQL扫描详情",
+                "operationId": "getAuditPlanReportsSQLsV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportSQLsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
+                "operationId": "getAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/full": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "full sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "全量同步SQL到扫描任务",
+                "operationId": "fullSyncAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "full sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.FullSyncAuditPlanSQLsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/partial": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "partial sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "增量同步SQL到扫描任务",
+                "operationId": "partialSyncAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "partial sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.PartialSyncAuditPlanSQLsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "trigger audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "触发扫描任务",
+                "operationId": "triggerAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TriggerAuditPlanResV1"
                         }
                     }
                 }
@@ -5107,153 +5255,6 @@ var doc = `{
                 }
             }
         },
-        "/v2/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描详情",
-                "operationId": "getAuditPlanReportSQLsV2",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetAuditPlanReportSQLsResV2"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描详情",
-                "operationId": "getAuditPlanReportsSQLsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetAuditPlanReportSQLsResV2"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/audit_plans/{audit_plan_name}/sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
-                "operationId": "getAuditPlanSQLsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetAuditPlanSQLsResV2"
-                        }
-                    }
-                }
-            }
-        },
         "/v2/roles": {
             "get": {
                 "security": [
@@ -5801,21 +5802,17 @@ var doc = `{
         "v1.AuditPlanReportSQLResV1": {
             "type": "object",
             "properties": {
+                "audit_plan_report_sql": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
                 "audit_plan_report_sql_audit_result": {
                     "type": "string",
                     "example": "same format as task audit result"
                 },
-                "audit_plan_report_sql_fingerprint": {
-                    "type": "string",
-                    "example": "select * from t1 where id = ?"
-                },
-                "audit_plan_report_sql_last_receive_text": {
-                    "type": "string",
-                    "example": "select * from t1 where id = 1"
-                },
-                "audit_plan_report_sql_last_receive_timestamp": {
-                    "type": "string",
-                    "example": "RFC3339"
+                "number": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -5856,6 +5853,23 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditPlanSQLHeadV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "sql"
+                    ]
+                }
+            }
+        },
         "v1.AuditPlanSQLReqV1": {
             "type": "object",
             "properties": {
@@ -5884,21 +5898,20 @@ var doc = `{
         "v1.AuditPlanSQLResV1": {
             "type": "object",
             "properties": {
-                "audit_plan_sql_counter": {
-                    "type": "string",
-                    "example": "6"
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanSQLHeadV1"
+                    }
                 },
-                "audit_plan_sql_fingerprint": {
-                    "type": "string",
-                    "example": "select * from t1 where id = ?"
-                },
-                "audit_plan_sql_last_receive_text": {
-                    "type": "string",
-                    "example": "select * from t1 where id = 1"
-                },
-                "audit_plan_sql_last_receive_timestamp": {
-                    "type": "string",
-                    "example": "RFC3339"
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
@@ -6792,10 +6805,8 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.AuditPlanSQLResV1"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanSQLResV1"
                 },
                 "message": {
                     "type": "string",
@@ -7072,23 +7083,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.InstanceTipResV1"
                     }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetInstanceWorkflowTemplateResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.WorkflowTemplateDetailResV1"
                 },
                 "message": {
                     "type": "string",
@@ -10239,60 +10233,6 @@ var doc = `{
                 }
             }
         },
-        "v2.AuditPlanReportSQLResV2": {
-            "type": "object",
-            "properties": {
-                "audit_plan_report_sql": {
-                    "type": "string",
-                    "example": "select * from t1 where id = 1"
-                },
-                "audit_plan_report_sql_audit_result": {
-                    "type": "string",
-                    "example": "same format as task audit result"
-                },
-                "number": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
-        "v2.AuditPlanSQLHeadV2": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "sql"
-                    ]
-                }
-            }
-        },
-        "v2.AuditPlanSQLResV2": {
-            "type": "object",
-            "properties": {
-                "head": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditPlanSQLHeadV2"
-                    }
-                },
-                "rows": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "v2.CreateRoleReqV2": {
             "type": "object",
             "properties": {
@@ -10342,48 +10282,6 @@ var doc = `{
                 },
                 "workflow_subject": {
                     "type": "string"
-                }
-            }
-        },
-        "v2.GetAuditPlanReportSQLsResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditPlanReportSQLResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.GetAuditPlanSQLsResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.AuditPlanSQLResV2"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
                 }
             }
         },
