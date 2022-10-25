@@ -135,9 +135,10 @@ func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) model.Perio
 // @Tags instance
 // @Security ApiKeyAuth
 // @Accept json
+// @Param project_id path uint true "project id"
 // @Param instance body v1.CreateInstanceReqV1 true "add instance"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/instances [post]
+// @router /v1/project/{project_id}/instances [post]
 func CreateInstance(c echo.Context) error {
 	s := model.GetStorage()
 	req := new(CreateInstanceReqV1)
@@ -403,9 +404,10 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 // @Id getInstanceV1
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceResV1
-// @router /v1/instances/{instance_name}/ [get]
+// @router /v1/project/{project_id}/instances/{instance_name}/ [get]
 func GetInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -437,9 +439,10 @@ func GetInstance(c echo.Context) error {
 // @Id deleteInstanceV1
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/instances/{instance_name}/ [delete]
+// @router /v1/project/{project_id}/instances/{instance_name}/ [delete]
 func DeleteInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -496,10 +499,11 @@ type UpdateInstanceReqV1 struct {
 // @Id updateInstanceV1
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @param instance body v1.UpdateInstanceReqV1 true "update instance request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/instances/{instance_name}/ [patch]
+// @router /v1/project/{project_id}/instances/{instance_name}/ [patch]
 func UpdateInstance(c echo.Context) error {
 	req := new(UpdateInstanceReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -666,6 +670,7 @@ type GetInstancesResV1 struct {
 // @Id getInstanceListV1
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param filter_instance_name query string false "filter instance name"
 // @Param filter_db_type query string false "filter db type"
 // @Param filter_db_host query string false "filter db host"
@@ -677,7 +682,7 @@ type GetInstancesResV1 struct {
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetInstancesResV1
-// @router /v1/instances [get]
+// @router /v1/project/{project_id}/instances [get]
 func GetInstances(c echo.Context) error {
 	req := new(GetInstancesReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -771,9 +776,10 @@ func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 // @Id checkInstanceIsConnectableByNameV1
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceConnectableResV1
-// @router /v1/instances/{instance_name}/connection [get]
+// @router /v1/project/{project_id}/instances/{instance_name}/connection [get]
 func CheckInstanceIsConnectableByName(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -829,9 +835,10 @@ type InstanceConnectionResV1 struct {
 // @Id batchCheckInstanceIsConnectableByName
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instances body v1.BatchCheckInstanceConnectionsReqV1 true "instances"
 // @Success 200 {object} v1.BatchGetInstanceConnectionsResV1
-// @router /v1/instances/connections [post]
+// @router /v1/project/{project_id}/instances/connections [post]
 func BatchCheckInstanceConnections(c echo.Context) error {
 	req := new(BatchCheckInstanceConnectionsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -956,9 +963,10 @@ type InstanceSchemaResV1 struct {
 // @Id getInstanceSchemasV1
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceSchemaResV1
-// @router /v1/instances/{instance_name}/schemas [get]
+// @router /v1/project/{project_id}/instances/{instance_name}/schemas [get]
 func GetInstanceSchemas(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -1042,9 +1050,10 @@ func GetInstanceTips(c echo.Context) error {
 // @Id getInstanceRuleListV1
 // @Tags instance
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetRulesResV1
-// @router /v1/instances/{instance_name}/rules [get]
+// @router /v1/project/{project_id}/instances/{instance_name}/rules [get]
 func GetInstanceRules(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -1103,54 +1112,6 @@ type GetInstanceWorkflowTemplateResV1 struct {
 	Data *WorkflowTemplateDetailResV1 `json:"data"`
 }
 
-// GetInstanceWorkflowTemplate get instance workflow template
-// @Summary 获取实例应用的工作流程模板
-// @Description get instance workflow template
-// @Id getInstanceWorkflowTemplateV1
-// @Tags instance
-// @Security ApiKeyAuth
-// @Param instance_name path string true "instance name"
-// @Success 200 {object} v1.GetInstanceWorkflowTemplateResV1
-// @router /v1/instances/{instance_name}/workflow_template [get]
-func GetInstanceWorkflowTemplate(c echo.Context) error {
-	s := model.GetStorage()
-	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
-	}
-
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
-	}
-
-	template, exist, err := s.GetWorkflowTemplateById(instance.WorkflowTemplateId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("the instance is not bound workflow template")))
-	}
-
-	res, err := getWorkflowTemplateDetailByTemplate(template)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return c.JSON(http.StatusOK, &GetInstanceWorkflowTemplateResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    res,
-	})
-}
-
 type Table struct {
 	Name string `json:"name"`
 }
@@ -1165,11 +1126,12 @@ type ListTableBySchemaResV1 struct {
 // @Description list table by schema
 // @Id listTableBySchema
 // @Tags instance
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Param schema_name path string true "schema name"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.ListTableBySchemaResV1
-// @router /v1/instances/{instance_name}/schemas/{schema_name}/tables [get]
+// @router /v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables [get]
 func ListTableBySchema(c echo.Context) error {
 	return listTableBySchema(c)
 }
@@ -1207,12 +1169,13 @@ type GetTableMetadataResV1 struct {
 // @Description get table metadata
 // @Id getTableMetadata
 // @Tags instance
+// @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Param schema_name path string true "schema name"
 // @Param table_name path string true "table name"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetTableMetadataResV1
-// @router /v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata [get]
+// @router /v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata [get]
 func GetTableMetadata(c echo.Context) error {
 	return getTableMetadata(c)
 }
