@@ -3,10 +3,17 @@ package v1
 import (
 	"time"
 
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
 )
 
 type GetProjectResV1 struct {
+	controller.BaseRes
+	Data      []*ProjectListItem `json:"data"`
+	TotalNums uint64             `json:"total_nums"`
+}
+
+type ProjectListItem struct {
 	Id             uint       `json:"id"`
 	Name           string     `json:"name"`
 	Desc           string     `json:"desc"`
