@@ -7296,20 +7296,22 @@ var doc = `{
         "v1.GetProjectResV1": {
             "type": "object",
             "properties": {
-                "create_time": {
-                    "type": "string"
+                "code": {
+                    "type": "integer",
+                    "example": 0
                 },
-                "create_user_name": {
-                    "type": "string"
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ProjectListItem"
+                    }
                 },
-                "desc": {
-                    "type": "string"
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 },
-                "id": {
+                "total_nums": {
                     "type": "integer"
-                },
-                "name": {
-                    "type": "string"
                 }
             }
         },
@@ -8711,6 +8713,26 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.ProjectListItem": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
