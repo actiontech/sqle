@@ -470,6 +470,13 @@ definitions:
       workflow_template_name:
         type: string
     type: object
+  v1.CreateProjectReqV1:
+    properties:
+      desc:
+        type: string
+      name:
+        type: string
+    type: object
   v1.CreateRoleReqV1:
     properties:
       instance_name_list:
@@ -1085,6 +1092,21 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetProjectResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.ProjectListItem'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetRoleTipsResV1:
     properties:
@@ -2039,6 +2061,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.ProjectListItem:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      desc:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   v1.RejectWorkflowReqV1:
     properties:
       reason:
@@ -2530,6 +2565,11 @@ definitions:
   v1.UpdateOtherUserPasswordReqV1:
     properties:
       password:
+        type: string
+    type: object
+  v1.UpdateProjectReqV1:
+    properties:
+      desc:
         type: string
     type: object
   v1.UpdateRoleReqV1:
@@ -4653,6 +4693,103 @@ paths:
       summary: 获取权限动作列表
       tags:
       - operation
+  /v1/projects:
+    get:
+      description: get project list
+      operationId: getProjectListV1
+      parameters:
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - default: 50
+        description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetProjectResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目列表
+      tags:
+      - project
+    post:
+      consumes:
+      - application/json
+      description: create project
+      operationId: createProjectV1
+      parameters:
+      - description: create project request
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateProjectReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建项目
+      tags:
+      - project
+  /v1/projects/{project_id}/:
+    delete:
+      description: delete project
+      operationId: deleteProjectV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除项目
+      tags:
+      - project
+    patch:
+      consumes:
+      - application/json
+      description: update project
+      operationId: updateProjectV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: create project request
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateProjectReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新项目
+      tags:
+      - project
   /v1/role_tips:
     get:
       description: get role tip list
