@@ -38,11 +38,12 @@ type AuditPlanSQLHeadV2 struct {
 // @Id getAuditPlanSQLsV2
 // @Tags audit_plan
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v2.GetAuditPlanSQLsResV2
-// @router /v2/audit_plans/{audit_plan_name}/sqls [get]
+// @router /v2/projects/{project_id}/audit_plans/{audit_plan_name}/sqls [get]
 func GetAuditPlanSQLs(c echo.Context) error {
 	req := new(GetAuditPlanSQLsReqV2)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -169,12 +170,13 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 // @Id getAuditPlanReportsSQLsV2
 // @Tags audit_plan
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param audit_plan_report_id path string true "audit plan report id"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v2.GetAuditPlanReportSQLsResV2
-// @router /v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
+// @router /v2/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
 func GetAuditPlanReportSQLsV2(c echo.Context) error {
 	return GetAuditPlanReportSQLs(c)
 }
