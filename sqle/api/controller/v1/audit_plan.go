@@ -21,7 +21,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
-	dry "github.com/ungerik/go-dry"
+	"github.com/ungerik/go-dry"
 )
 
 var tokenExpire = 365 * 24 * time.Hour
@@ -191,10 +191,9 @@ func checkAndGenerateAuditPlanParams(auditPlanType, instanceType string, paramsR
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Accept json
-// @Param project_id path uint true "project id"
 // @Param audit_plan body v1.CreateAuditPlanReqV1 true "create audit plan"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/audit_plans [post]
+// @router /v1/audit_plans [post]
 func CreateAuditPlan(c echo.Context) error {
 	s := model.GetStorage()
 
@@ -355,10 +354,9 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 // @Id deleteAuditPlanV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/ [delete]
+// @router /v1/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
@@ -395,11 +393,10 @@ type UpdateAuditPlanReqV1 struct {
 // @Id updateAuditPlanV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @param audit_plan body v1.UpdateAuditPlanReqV1 true "update audit plan"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/ [patch]
+// @router /v1/audit_plans/{audit_plan_name}/ [patch]
 func UpdateAuditPlan(c echo.Context) error {
 	req := new(UpdateAuditPlanReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -490,7 +487,6 @@ type AuditPlanResV1 struct {
 // @Id getAuditPlansV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param filter_audit_plan_db_type query string false "filter audit plan db type"
 // @Param fuzzy_search_audit_plan_name query string false "fuzzy search audit plan name"
 // @Param filter_audit_plan_type query string false "filter audit plan type"
@@ -498,7 +494,7 @@ type AuditPlanResV1 struct {
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetAuditPlansResV1
-// @router /v1/projects/{project_id}/audit_plans [get]
+// @router /v1/audit_plans [get]
 func GetAuditPlans(c echo.Context) error {
 	s := model.GetStorage()
 
@@ -577,10 +573,9 @@ type GetAuditPlanResV1 struct {
 // @Id getAuditPlanV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} v1.GetAuditPlanResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/ [get]
+// @router /v1/audit_plans/{audit_plan_name}/ [get]
 func GetAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
@@ -642,12 +637,11 @@ type AuditPlanReportResV1 struct {
 // @Id getAuditPlanReportsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetAuditPlanReportsResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports [get]
+// @router /v1/audit_plans/{audit_plan_name}/reports [get]
 func GetAuditPlanReports(c echo.Context) error {
 	s := model.GetStorage()
 
@@ -704,11 +698,10 @@ type GetAuditPlanReportResV1 struct {
 // @Id getAuditPlanReportV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param audit_plan_report_id path string true "audit plan report id"
 // @Success 200 {object} v1.GetAuditPlanReportResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
+// @router /v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
 func GetAuditPlanReport(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
@@ -742,6 +735,40 @@ func GetAuditPlanReport(c echo.Context) error {
 	})
 }
 
+type GetAuditPlanReportSQLsReqV1 struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
+type GetAuditPlanReportSQLsResV1 struct {
+	controller.BaseRes
+	Data      []AuditPlanReportSQLResV1 `json:"data"`
+	TotalNums uint64                    `json:"total_nums"`
+}
+
+type AuditPlanReportSQLResV1 struct {
+	Fingerprint          string `json:"audit_plan_report_sql_fingerprint" example:"select * from t1 where id = ?"`
+	LastReceiveText      string `json:"audit_plan_report_sql_last_receive_text" example:"select * from t1 where id = 1"`
+	LastReceiveTimestamp string `json:"audit_plan_report_sql_last_receive_timestamp" example:"RFC3339"`
+	AuditResult          string `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
+}
+
+// @Summary 获取指定扫描任务的SQL扫描详情
+// @Description get audit plan report SQLs
+// @Deprecated
+// @Id getAuditPlanReportSQLsV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
+// @router /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/ [get]
+func GetAuditPlanReportSQLs(c echo.Context) error {
+	return nil
+}
+
 type FullSyncAuditPlanSQLsReqV1 struct {
 	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
@@ -759,11 +786,10 @@ type AuditPlanSQLReqV1 struct {
 // @Id fullSyncAuditPlanSQLsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param sqls body v1.FullSyncAuditPlanSQLsReqV1 true "full sync audit plan SQLs request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/full [post]
+// @router /v1/audit_plans/{audit_plan_name}/sqls/full [post]
 func FullSyncAuditPlanSQLs(c echo.Context) error {
 	req := new(FullSyncAuditPlanSQLsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -789,11 +815,10 @@ type PartialSyncAuditPlanSQLsReqV1 struct {
 // @Id partialSyncAuditPlanSQLsV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param sqls body v1.PartialSyncAuditPlanSQLsReqV1 true "partial sync audit plan SQLs request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/partial [post]
+// @router /v1/audit_plans/{audit_plan_name}/sqls/partial [post]
 func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	req := new(PartialSyncAuditPlanSQLsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -887,6 +912,39 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 	return sqls, nil
 }
 
+type GetAuditPlanSQLsReqV1 struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
+type GetAuditPlanSQLsResV1 struct {
+	controller.BaseRes
+	Data      []AuditPlanSQLResV1 `json:"data"`
+	TotalNums uint64              `json:"total_nums"`
+}
+
+type AuditPlanSQLResV1 struct {
+	Fingerprint          string `json:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
+	Counter              string `json:"audit_plan_sql_counter" example:"6"`
+	LastReceiveText      string `json:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
+	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
+}
+
+// @Summary 获取指定扫描任务的SQLs信息(不包括扫描结果)
+// @Description get audit plan SQLs
+// @Deprecated
+// @Id getAuditPlanSQLsV1
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param audit_plan_name path string true "audit plan name"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Success 200 {object} v1.GetAuditPlanSQLsResV1
+// @router /v1/audit_plans/{audit_plan_name}/sqls [get]
+func GetAuditPlanSQLs(c echo.Context) error {
+	return nil
+}
+
 type TriggerAuditPlanResV1 struct {
 	controller.BaseRes
 	Data AuditPlanReportResV1 `json:"data"`
@@ -897,10 +955,9 @@ type TriggerAuditPlanResV1 struct {
 // @Id triggerAuditPlanV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} v1.TriggerAuditPlanResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/trigger [post]
+// @router /v1/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
@@ -976,11 +1033,10 @@ type UpdateAuditPlanNotifyConfigReqV1 struct {
 // @Id updateAuditPlanNotifyConfigV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @param config body v1.UpdateAuditPlanNotifyConfigReqV1 true "update audit plan notify config"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config [patch]
+// @router /v1/audit_plans/{audit_plan_name}/notify_config [patch]
 func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 	req := new(UpdateAuditPlanNotifyConfigReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -1038,10 +1094,9 @@ type GetAuditPlanNotifyConfigResDataV1 struct {
 // @Id getAuditPlanNotifyConfigV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} v1.GetAuditPlanNotifyConfigResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config [get]
+// @router /v1/audit_plans/{audit_plan_name}/notify_config [get]
 func GetAuditPlanNotifyConfig(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 
@@ -1081,10 +1136,9 @@ type TestAuditPlanNotifyConfigResDataV1 struct {
 // @Id testAuditPlanNotifyConfigV1
 // @Tags audit_plan
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
 // @Param audit_plan_name path string true "audit plan name"
 // @Success 200 {object} v1.TestAuditPlanNotifyConfigResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config/test [get]
+// @router /v1/audit_plans/{audit_plan_name}/notify_config/test [get]
 func TestAuditPlanNotifyConfig(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	s := model.GetStorage()
@@ -1160,161 +1214,7 @@ type GetAuditPlanAnalysisDataResV1 struct {
 // @Param number path string true "sql number"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetAuditPlanAnalysisDataResV1
-// @router /v1/project/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
+// @router /v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
 func GetAuditPlanAnalysisData(c echo.Context) error {
 	return getAuditPlanAnalysisData(c)
-}
-
-type GetAuditPlanSQLsReqV1 struct {
-	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
-}
-
-type GetAuditPlanSQLsResV1 struct {
-	controller.BaseRes
-	Data      AuditPlanSQLResV1 `json:"data"`
-	TotalNums uint64            `json:"total_nums"`
-}
-
-type AuditPlanSQLResV1 struct {
-	Head []AuditPlanSQLHeadV1                 `json:"head"`
-	Rows []map[string] /* head name */ string `json:"rows"`
-}
-
-type AuditPlanSQLHeadV1 struct {
-	Name string `json:"name"`
-	Desc string `json:"desc"`
-	Type string `json:"type,omitempty" enums:"sql"`
-}
-
-// @Summary 获取指定扫描任务的SQLs信息(不包括扫描结果)
-// @Description get audit plan SQLs
-// @Id getAuditPlanSQLsV1
-// @Tags audit_plan
-// @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
-// @Param audit_plan_name path string true "audit plan name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
-// @Success 200 {object} v1.GetAuditPlanSQLsResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls [get]
-func GetAuditPlanSQLs(c echo.Context) error {
-	req := new(GetAuditPlanSQLsReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-
-	data := map[string]interface{}{
-		"audit_plan_name": apName,
-		"limit":           req.PageSize,
-		"offset":          offset,
-	}
-	manager := auditplan.GetManager()
-	head, rows, count, err := manager.GetSQLs(apName, data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	// convert head and rows to audit planSQL response
-	res := AuditPlanSQLResV1{
-		Rows: rows,
-	}
-	for _, v := range head {
-		res.Head = append(res.Head, AuditPlanSQLHeadV1{
-			Name: v.Name,
-			Desc: v.Desc,
-			Type: v.Type,
-		})
-	}
-	return c.JSON(http.StatusOK, &GetAuditPlanSQLsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      res,
-		TotalNums: count,
-	})
-}
-
-type GetAuditPlanReportSQLsReqV1 struct {
-	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
-}
-
-type GetAuditPlanReportSQLsResV1 struct {
-	controller.BaseRes
-	Data      []AuditPlanReportSQLResV1 `json:"data"`
-	TotalNums uint64                    `json:"total_nums"`
-}
-
-type AuditPlanReportSQLResV1 struct {
-	SQL         string `json:"audit_plan_report_sql" example:"select * from t1 where id = 1"`
-	AuditResult string `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
-	Number      uint   `json:"number" example:"1"`
-}
-
-// GetAuditPlanReportSQLsV1 is to fix the irregular uri used by GetAuditPlanReportSQLs
-// issue: https://github.com/actiontech/sqle/issues/429
-// @Summary 获取指定扫描任务的SQL扫描详情
-// @Description get audit plan report SQLs
-// @Id getAuditPlanReportsSQLsV1
-// @Tags audit_plan
-// @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
-// @Param audit_plan_name path string true "audit plan name"
-// @Param audit_plan_report_id path string true "audit plan report id"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
-// @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
-// @router /v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
-func GetAuditPlanReportSQLsV1(c echo.Context) error {
-	s := model.GetStorage()
-
-	req := new(GetAuditPlanReportSQLsReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-
-	data := map[string]interface{}{
-		"audit_plan_name":      apName,
-		"audit_plan_report_id": c.Param("audit_plan_report_id"),
-		"limit":                req.PageSize,
-		"offset":               offset,
-	}
-	auditPlanReportSQLs, count, err := s.GetAuditPlanReportSQLsByReq(data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	auditPlanReportSQLsResV1 := make([]AuditPlanReportSQLResV1, len(auditPlanReportSQLs))
-	for i, auditPlanReportSQL := range auditPlanReportSQLs {
-		auditPlanReportSQLsResV1[i] = AuditPlanReportSQLResV1{
-			SQL:         auditPlanReportSQL.SQL,
-			AuditResult: auditPlanReportSQL.AuditResult,
-			Number:      auditPlanReportSQL.Number,
-		}
-	}
-	return c.JSON(http.StatusOK, &GetAuditPlanReportSQLsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      auditPlanReportSQLsResV1,
-		TotalNums: count,
-	})
 }
