@@ -16,7 +16,6 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
-	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
 )
 
 // %s = audit plan name
@@ -35,7 +34,7 @@ const (
 
 type (
 	BaseRes                     = controller.BaseRes
-	GetAuditPlanReportSQLsRes   = v2.GetAuditPlanReportSQLsResV2
+	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1 // todo issue980 confirm
 	AuditPlanSQLReq             = v1.AuditPlanSQLReqV1
 	FullSyncAuditPlanSQLsReq    = v1.FullSyncAuditPlanSQLsReqV1
 	PartialSyncAuditPlanSQLsReq = v1.PartialSyncAuditPlanSQLsReqV1

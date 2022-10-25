@@ -742,40 +742,6 @@ func GetAuditPlanReport(c echo.Context) error {
 	})
 }
 
-type GetAuditPlanReportSQLsReqV1 struct {
-	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
-}
-
-type GetAuditPlanReportSQLsResV1 struct {
-	controller.BaseRes
-	Data      []AuditPlanReportSQLResV1 `json:"data"`
-	TotalNums uint64                    `json:"total_nums"`
-}
-
-type AuditPlanReportSQLResV1 struct {
-	Fingerprint          string `json:"audit_plan_report_sql_fingerprint" example:"select * from t1 where id = ?"`
-	LastReceiveText      string `json:"audit_plan_report_sql_last_receive_text" example:"select * from t1 where id = 1"`
-	LastReceiveTimestamp string `json:"audit_plan_report_sql_last_receive_timestamp" example:"RFC3339"`
-	AuditResult          string `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
-}
-
-// @Summary 获取指定扫描任务的SQL扫描详情
-// @Description get audit plan report SQLs
-// @Deprecated
-// @Id getAuditPlanReportSQLsV1
-// @Tags audit_plan
-// @Security ApiKeyAuth
-// @Param audit_plan_name path string true "audit plan name"
-// @Param audit_plan_report_id path string true "audit plan report id"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
-// @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
-// @router /v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/ [get]
-func GetAuditPlanReportSQLs(c echo.Context) error {
-	return nil
-}
-
 type FullSyncAuditPlanSQLsReqV1 struct {
 	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
@@ -919,39 +885,6 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		}
 	}
 	return sqls, nil
-}
-
-type GetAuditPlanSQLsReqV1 struct {
-	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
-}
-
-type GetAuditPlanSQLsResV1 struct {
-	controller.BaseRes
-	Data      []AuditPlanSQLResV1 `json:"data"`
-	TotalNums uint64              `json:"total_nums"`
-}
-
-type AuditPlanSQLResV1 struct {
-	Fingerprint          string `json:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
-	Counter              string `json:"audit_plan_sql_counter" example:"6"`
-	LastReceiveText      string `json:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
-	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
-}
-
-// @Summary 获取指定扫描任务的SQLs信息(不包括扫描结果)
-// @Description get audit plan SQLs
-// @Deprecated
-// @Id getAuditPlanSQLsV1
-// @Tags audit_plan
-// @Security ApiKeyAuth
-// @Param audit_plan_name path string true "audit plan name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
-// @Success 200 {object} v1.GetAuditPlanSQLsResV1
-// @router /v1/audit_plans/{audit_plan_name}/sqls [get]
-func GetAuditPlanSQLs(c echo.Context) error {
-	return nil
 }
 
 type TriggerAuditPlanResV1 struct {
