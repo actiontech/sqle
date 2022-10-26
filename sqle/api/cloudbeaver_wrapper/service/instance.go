@@ -335,8 +335,10 @@ func GenerateCloudBeaverInstanceParams(sqleInst *sqleModel.Instance) (map[string
 	config := generateCommonCloudBeaverConfigParams(sqleInst)
 
 	switch sqleInst.DbType {
-	case driver.DriverTypeMySQL, driver.DriverTypeTiDB:
+	case driver.DriverTypeMySQL:
 		err = fillMySQLParams(config)
+	case driver.DriverTypeTiDB:
+		err = fillTiDBParams(config)
 	case driver.DriverTypePostgreSQL:
 		err = fillPGSQLParams(config)
 	case driver.DriverTypeSQLServer:
@@ -360,6 +362,11 @@ func GenerateCloudBeaverInstanceParams(sqleInst *sqleModel.Instance) (map[string
 
 func fillMySQLParams(config map[string]interface{}) error {
 	config["driverId"] = "mysql:mysql8"
+	return nil
+}
+
+func fillTiDBParams(config map[string]interface{}) error {
+	config["driverId"] = "mysql:tidb"
 	return nil
 }
 
