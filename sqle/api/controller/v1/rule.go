@@ -628,3 +628,140 @@ func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, in
 	}
 	return nil
 }
+
+type CreateProjectRuleTemplateReqV1 struct {
+	Name      string      `json:"rule_template_name" valid:"required,name"`
+	Desc      string      `json:"desc"`
+	DBType    string      `json:"db_type" valid:"required"`
+	Instances []string    `json:"instance_name_list"`
+	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
+}
+
+// CreateProjectRuleTemplate
+// @Summary 添加项目规则模板
+// @Description create a rule template in project
+// @Id createProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Accept json
+// @Param project_id path uint true "project id"
+// @Param instance body v1.CreateProjectRuleTemplateReqV1 true "add rule template request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/{project_id}/rule_templates [post]
+func CreateProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+type UpdateProjectRuleTemplateReqV1 struct {
+	Desc      *string     `json:"desc"`
+	Instances []string    `json:"instance_name_list" example:"mysql-xxx"`
+	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"dive,required"`
+}
+
+// UpdateProjectRuleTemplate
+// @Summary 更新项目规则模板
+// @Description update rule template in project
+// @Id updateProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_template_id path uint true "rule template id"
+// @Param instance body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/rule_templates/{rule_template_id}/ [patch]
+func UpdateProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+type GetProjectRuleTemplateResV1 struct {
+	controller.BaseRes
+	Data *RuleProjectTemplateDetailResV1 `json:"data"`
+}
+
+type RuleProjectTemplateDetailResV1 struct {
+	Id        uint                           `json:"id"`
+	Name      string                         `json:"rule_template_name"`
+	Desc      string                         `json:"desc"`
+	DBType    string                         `json:"db_type"`
+	Instances []*ProjectRuleTemplateInstance `json:"instance_list,omitempty"`
+	RuleList  []RuleResV1                    `json:"rule_list,omitempty"`
+}
+
+type ProjectRuleTemplateInstance struct {
+	Name string `json:"name"`
+}
+
+// GetProjectRuleTemplate
+// @Summary 获取项目规则模板信息
+// @Description get rule template detail in project
+// @Id getProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_template_id path uint true "rule template id"
+// @Success 200 {object} v1.GetProjectRuleTemplateResV1
+// @router /v1/project/rule_templates/{rule_template_id}/ [get]
+func GetProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+// DeleteProjectRuleTemplate
+// @Summary 删除项目规则模板
+// @Description delete rule template in project
+// @Id deleteProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_template_id path uint true "rule template id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/rule_templates/{rule_template_id}/ [delete]
+func DeleteProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+type GetProjectRuleTemplatesResV1 struct {
+	controller.BaseRes
+	Data      []ProjectRuleTemplateResV1 `json:"data"`
+	TotalNums uint64                     `json:"total_nums"`
+}
+
+type ProjectRuleTemplateResV1 struct {
+	Id        uint                           `json:"id"`
+	Name      string                         `json:"rule_template_name"`
+	Desc      string                         `json:"desc"`
+	DBType    string                         `json:"db_type"`
+	Instances []*ProjectRuleTemplateInstance `json:"instance_list"`
+}
+
+// GetProjectRuleTemplates
+// @Summary 项目规则模板列表
+// @Description get all rule template in a project
+// @Id getProjectRuleTemplateListV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Success 200 {object} v1.GetProjectRuleTemplatesResV1
+// @router /v1/project/{project_id}/rule_templates [get]
+func GetProjectRuleTemplates(c echo.Context) error {
+	return nil
+}
+
+type CloneProjectRuleTemplateReqV1 struct {
+	Name      string   `json:"new_rule_template_name" valid:"required"`
+	Desc      string   `json:"desc"`
+	Instances []string `json:"instance_name_list"`
+}
+
+// CloneProjectRuleTemplate
+// @Summary 克隆项目规则模板
+// @Description clone a rule template in project
+// @Id cloneProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Accept json
+// @Param rule_template_id path uint true "rule template id"
+// @Param instance body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/rule_templates/{rule_template_id}/clone [post]
+func CloneProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
