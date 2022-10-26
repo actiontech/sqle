@@ -3813,37 +3813,6 @@ paths:
       summary: 实例连通性测试（实例提交前）
       tags:
       - instance
-  /v1/instance_tips:
-    get:
-      description: get instance tip list
-      operationId: getInstanceTipListV1
-      parameters:
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
-      - description: filter workflow template id
-        in: query
-        name: filter_workflow_template_id
-        type: string
-      - description: functional module
-        enum:
-        - create_audit_plan
-        - sql_query
-        - create_workflow
-        in: query
-        name: functional_module
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceTipsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例提示列表
-      tags:
-      - instance
   /v1/login:
     post:
       description: user login
@@ -3903,6 +3872,41 @@ paths:
       summary: 获取权限动作列表
       tags:
       - operation
+  /v1/project/{project_id}/instance_tips:
+    get:
+      description: get instance tip list
+      operationId: getInstanceTipListV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: filter workflow template id
+        in: query
+        name: filter_workflow_template_id
+        type: string
+      - description: functional module
+        enum:
+        - create_audit_plan
+        - create_workflow
+        in: query
+        name: functional_module
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例提示列表
+      tags:
+      - instance
   /v1/project/{project_id}/instances:
     get:
       description: get instance info list
@@ -5865,6 +5869,11 @@ paths:
     get:
       description: get user group tip list
       operationId: getUserGroupTipListV1
+      parameters:
+      - description: project id
+        in: query
+        name: filter_project
+        type: string
       responses:
         "200":
           description: OK
@@ -5977,6 +5986,11 @@ paths:
     get:
       description: get user tip list
       operationId: getUserTipListV1
+      parameters:
+      - description: project id
+        in: query
+        name: filter_project
+        type: string
       responses:
         "200":
           description: OK

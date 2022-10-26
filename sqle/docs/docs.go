@@ -871,54 +871,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/instance_tips": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance tip list",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例提示列表",
-                "operationId": "getInstanceTipListV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter db type",
-                        "name": "filter_db_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter workflow template id",
-                        "name": "filter_workflow_template_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "create_audit_plan",
-                            "sql_query",
-                            "create_workflow"
-                        ],
-                        "type": "string",
-                        "description": "functional module",
-                        "name": "functional_module",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/login": {
             "post": {
                 "description": "user login",
@@ -1044,6 +996,60 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/project/{project_id}/instance_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance tip list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例提示列表",
+                "operationId": "getInstanceTipListV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter workflow template id",
+                        "name": "filter_workflow_template_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "create_audit_plan",
+                            "create_workflow"
+                        ],
+                        "type": "string",
+                        "description": "functional module",
+                        "name": "functional_module",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
                         }
                     }
                 }
@@ -4069,6 +4075,14 @@ var doc = `{
                 ],
                 "summary": "获取用户组提示列表",
                 "operationId": "getUserGroupTipListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project id",
+                        "name": "filter_project",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4247,6 +4261,14 @@ var doc = `{
                 ],
                 "summary": "获取用户提示列表",
                 "operationId": "getUserTipListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project id",
+                        "name": "filter_project",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
