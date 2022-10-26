@@ -1102,20 +1102,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter workflow rule template name",
-                        "name": "filter_workflow_template_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "filter rule template name",
                         "name": "filter_rule_template_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter role name",
-                        "name": "filter_role_name",
                         "in": "query"
                     },
                     {
@@ -6376,12 +6364,6 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
                     }
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "rule_template_name_list": {
                     "type": "array",
                     "items": {
@@ -6391,9 +6373,6 @@ var doc = `{
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigReqV1"
-                },
-                "workflow_template_name": {
-                    "type": "string"
                 }
             }
         },
@@ -8322,12 +8301,6 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeResV1"
                     }
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "rule_template_name_list": {
                     "type": "array",
                     "items": {
@@ -8337,9 +8310,6 @@ var doc = `{
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigResV1"
-                },
-                "workflow_template_name": {
-                    "type": "string"
                 }
             }
         },
@@ -9433,12 +9403,6 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
                     }
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "rule_template_name_list": {
                     "type": "array",
                     "items": {
@@ -9448,9 +9412,6 @@ var doc = `{
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigReqV1"
-                },
-                "workflow_template_name": {
-                    "type": "string"
                 }
             }
         },
