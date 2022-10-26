@@ -3886,639 +3886,6 @@ paths:
       summary: 获取权限动作列表
       tags:
       - operation
-  /v1/project/{project_id}/audit_whitelist:
-    get:
-      description: get all whitelist
-      operationId: getAuditWhitelistV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: page index
-        in: query
-        name: page_index
-        type: string
-      - description: page size
-        in: query
-        name: page_size
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditWhitelistResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取Sql审核白名单
-      tags:
-      - audit_whitelist
-    post:
-      consumes:
-      - application/json
-      description: create a sql whitelist
-      operationId: createAuditWhitelistV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: add sql whitelist req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateAuditWhitelistReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加SQL白名单
-      tags:
-      - audit_whitelist
-  /v1/project/{project_id}/instance_tips:
-    get:
-      description: get instance tip list
-      operationId: getInstanceTipListV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
-      - description: filter workflow template id
-        in: query
-        name: filter_workflow_template_id
-        type: string
-      - description: functional module
-        enum:
-        - create_audit_plan
-        - create_workflow
-        in: query
-        name: functional_module
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceTipsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例提示列表
-      tags:
-      - instance
-  /v1/project/{project_id}/instances:
-    get:
-      description: get instance info list
-      operationId: getInstanceListV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
-      - description: filter db host
-        in: query
-        name: filter_db_host
-        type: string
-      - description: filter db port
-        in: query
-        name: filter_db_port
-        type: string
-      - description: filter db user
-        in: query
-        name: filter_db_user
-        type: string
-      - description: filter rule template name
-        in: query
-        name: filter_rule_template_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstancesResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例信息列表
-      tags:
-      - instance
-    post:
-      consumes:
-      - application/json
-      description: create a instance
-      operationId: createInstanceV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: add instance
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateInstanceReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加实例
-      tags:
-      - instance
-  /v1/project/{project_id}/instances/{instance_name}/:
-    delete:
-      description: delete instance db
-      operationId: deleteInstanceV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除实例
-      tags:
-      - instance
-    get:
-      description: get instance db
-      operationId: getInstanceV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例信息
-      tags:
-      - instance
-    patch:
-      description: update instance
-      operationId: updateInstanceV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: update instance request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateInstanceReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新实例
-      tags:
-      - instance
-  /v1/project/{project_id}/instances/{instance_name}/connection:
-    get:
-      description: test instance db connection
-      operationId: checkInstanceIsConnectableByNameV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceConnectableResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 实例连通性测试（实例提交后）
-      tags:
-      - instance
-  /v1/project/{project_id}/instances/{instance_name}/rules:
-    get:
-      description: get instance all rule
-      operationId: getInstanceRuleListV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetRulesResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例应用的规则列表
-      tags:
-      - instance
-  /v1/project/{project_id}/instances/{instance_name}/schemas:
-    get:
-      description: instance schema list
-      operationId: getInstanceSchemasV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceSchemaResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 实例 Schema 列表
-      tags:
-      - instance
-  /v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables:
-    get:
-      description: list table by schema
-      operationId: listTableBySchema
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: schema name
-        in: path
-        name: schema_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.ListTableBySchemaResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取数据库下的所有表
-      tags:
-      - instance
-  /v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata:
-    get:
-      description: get table metadata
-      operationId: getTableMetadata
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: schema name
-        in: path
-        name: schema_name
-        required: true
-        type: string
-      - description: table name
-        in: path
-        name: table_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetTableMetadataResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取表元数据
-      tags:
-      - instance
-  /v1/project/{project_id}/instances/connections:
-    post:
-      description: batch test instance db connections
-      operationId: batchCheckInstanceIsConnectableByName
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: instances
-        in: body
-        name: instances
-        required: true
-        schema:
-          $ref: '#/definitions/v1.BatchCheckInstanceConnectionsReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.BatchGetInstanceConnectionsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 批量测试实例连通性（实例提交后）
-      tags:
-      - instance
-  /v1/project/{project_id}/rule_templates:
-    get:
-      description: get all rule template in a project
-      operationId: getProjectRuleTemplateListV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetProjectRuleTemplatesResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 项目规则模板列表
-      tags:
-      - rule_template
-    post:
-      consumes:
-      - application/json
-      description: create a rule template in project
-      operationId: createProjectRuleTemplateV1
-      parameters:
-      - description: project id
-        in: path
-        name: project_id
-        required: true
-        type: integer
-      - description: add rule template request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateProjectRuleTemplateReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加项目规则模板
-      tags:
-      - rule_template
-  /v1/project/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis:
-    get:
-      description: get SQL explain and related table metadata for analysis
-      operationId: getTaskAnalysisData
-      parameters:
-      - description: audit plan report id
-        in: path
-        name: audit_plan_report_id
-        required: true
-        type: string
-      - description: sql number
-        in: path
-        name: number
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditPlanAnalysisDataResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取task相关的SQL执行计划和表元数据
-      tags:
-      - audit_plan
-  /v1/project/audit_whitelist/{audit_whitelist_id}/:
-    delete:
-      description: remove sql white
-      operationId: deleteAuditWhitelistByIdV1
-      parameters:
-      - description: audit whitelist id
-        in: path
-        name: audit_whitelist_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除SQL白名单信息
-      tags:
-      - audit_whitelist
-    patch:
-      consumes:
-      - application/json
-      description: update sql whitelist by id
-      operationId: UpdateAuditWhitelistByIdV1
-      parameters:
-      - description: sql audit whitelist id
-        in: path
-        name: audit_whitelist_id
-        required: true
-        type: string
-      - description: update sql whitelist req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateAuditWhitelistReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新SQL白名单
-      tags:
-      - audit_whitelist
-  /v1/project/rule_templates/{rule_template_id}/:
-    delete:
-      description: delete rule template in project
-      operationId: deleteProjectRuleTemplateV1
-      parameters:
-      - description: rule template id
-        in: path
-        name: rule_template_id
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除项目规则模板
-      tags:
-      - rule_template
-    get:
-      description: get rule template detail in project
-      operationId: getProjectRuleTemplateV1
-      parameters:
-      - description: rule template id
-        in: path
-        name: rule_template_id
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetProjectRuleTemplateResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取项目规则模板信息
-      tags:
-      - rule_template
-    patch:
-      description: update rule template in project
-      operationId: updateProjectRuleTemplateV1
-      parameters:
-      - description: rule template id
-        in: path
-        name: rule_template_id
-        required: true
-        type: integer
-      - description: update rule template request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateProjectRuleTemplateReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新项目规则模板
-      tags:
-      - rule_template
-  /v1/project/rule_templates/{rule_template_id}/clone:
-    post:
-      consumes:
-      - application/json
-      description: clone a rule template in project
-      operationId: cloneProjectRuleTemplateV1
-      parameters:
-      - description: rule template id
-        in: path
-        name: rule_template_id
-        required: true
-        type: integer
-      - description: clone rule template request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CloneProjectRuleTemplateReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 克隆项目规则模板
-      tags:
-      - rule_template
   /v1/projects:
     get:
       description: get project list
@@ -5067,6 +4434,639 @@ paths:
       summary: 触发扫描任务
       tags:
       - audit_plan
+  /v1/projects/{project_id}/audit_whitelist:
+    get:
+      description: get all whitelist
+      operationId: getAuditWhitelistV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: page index
+        in: query
+        name: page_index
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditWhitelistResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取Sql审核白名单
+      tags:
+      - audit_whitelist
+    post:
+      consumes:
+      - application/json
+      description: create a sql whitelist
+      operationId: createAuditWhitelistV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: add sql whitelist req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateAuditWhitelistReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加SQL白名单
+      tags:
+      - audit_whitelist
+  /v1/projects/{project_id}/instance_tips:
+    get:
+      description: get instance tip list
+      operationId: getInstanceTipListV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: filter workflow template id
+        in: query
+        name: filter_workflow_template_id
+        type: string
+      - description: functional module
+        enum:
+        - create_audit_plan
+        - create_workflow
+        in: query
+        name: functional_module
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例提示列表
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances:
+    get:
+      description: get instance info list
+      operationId: getInstanceListV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: filter db host
+        in: query
+        name: filter_db_host
+        type: string
+      - description: filter db port
+        in: query
+        name: filter_db_port
+        type: string
+      - description: filter db user
+        in: query
+        name: filter_db_user
+        type: string
+      - description: filter rule template name
+        in: query
+        name: filter_rule_template_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstancesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例信息列表
+      tags:
+      - instance
+    post:
+      consumes:
+      - application/json
+      description: create a instance
+      operationId: createInstanceV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: add instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateInstanceReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加实例
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances/{instance_name}/:
+    delete:
+      description: delete instance db
+      operationId: deleteInstanceV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除实例
+      tags:
+      - instance
+    get:
+      description: get instance db
+      operationId: getInstanceV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例信息
+      tags:
+      - instance
+    patch:
+      description: update instance
+      operationId: updateInstanceV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: update instance request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateInstanceReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新实例
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances/{instance_name}/connection:
+    get:
+      description: test instance db connection
+      operationId: checkInstanceIsConnectableByNameV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceConnectableResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 实例连通性测试（实例提交后）
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances/{instance_name}/rules:
+    get:
+      description: get instance all rule
+      operationId: getInstanceRuleListV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRulesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例应用的规则列表
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances/{instance_name}/schemas:
+    get:
+      description: instance schema list
+      operationId: getInstanceSchemasV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceSchemaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 实例 Schema 列表
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables:
+    get:
+      description: list table by schema
+      operationId: listTableBySchema
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: path
+        name: schema_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ListTableBySchemaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据库下的所有表
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata:
+    get:
+      description: get table metadata
+      operationId: getTableMetadata
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: path
+        name: schema_name
+        required: true
+        type: string
+      - description: table name
+        in: path
+        name: table_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetTableMetadataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取表元数据
+      tags:
+      - instance
+  /v1/projects/{project_id}/instances/connections:
+    post:
+      description: batch test instance db connections
+      operationId: batchCheckInstanceIsConnectableByName
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: instances
+        in: body
+        name: instances
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCheckInstanceConnectionsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BatchGetInstanceConnectionsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量测试实例连通性（实例提交后）
+      tags:
+      - instance
+  /v1/projects/{project_id}/rule_templates:
+    get:
+      description: get all rule template in a project
+      operationId: getProjectRuleTemplateListV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetProjectRuleTemplatesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 项目规则模板列表
+      tags:
+      - rule_template
+    post:
+      consumes:
+      - application/json
+      description: create a rule template in project
+      operationId: createProjectRuleTemplateV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: add rule template request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateProjectRuleTemplateReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加项目规则模板
+      tags:
+      - rule_template
+  /v1/projects/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getTaskAnalysisData
+      parameters:
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanAnalysisDataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取task相关的SQL执行计划和表元数据
+      tags:
+      - audit_plan
+  /v1/projects/audit_whitelist/{audit_whitelist_id}/:
+    delete:
+      description: remove sql white
+      operationId: deleteAuditWhitelistByIdV1
+      parameters:
+      - description: audit whitelist id
+        in: path
+        name: audit_whitelist_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除SQL白名单信息
+      tags:
+      - audit_whitelist
+    patch:
+      consumes:
+      - application/json
+      description: update sql whitelist by id
+      operationId: UpdateAuditWhitelistByIdV1
+      parameters:
+      - description: sql audit whitelist id
+        in: path
+        name: audit_whitelist_id
+        required: true
+        type: string
+      - description: update sql whitelist req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateAuditWhitelistReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新SQL白名单
+      tags:
+      - audit_whitelist
+  /v1/projects/rule_templates/{rule_template_id}/:
+    delete:
+      description: delete rule template in project
+      operationId: deleteProjectRuleTemplateV1
+      parameters:
+      - description: rule template id
+        in: path
+        name: rule_template_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除项目规则模板
+      tags:
+      - rule_template
+    get:
+      description: get rule template detail in project
+      operationId: getProjectRuleTemplateV1
+      parameters:
+      - description: rule template id
+        in: path
+        name: rule_template_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetProjectRuleTemplateResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目规则模板信息
+      tags:
+      - rule_template
+    patch:
+      description: update rule template in project
+      operationId: updateProjectRuleTemplateV1
+      parameters:
+      - description: rule template id
+        in: path
+        name: rule_template_id
+        required: true
+        type: integer
+      - description: update rule template request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateProjectRuleTemplateReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新项目规则模板
+      tags:
+      - rule_template
+  /v1/projects/rule_templates/{rule_template_id}/clone:
+    post:
+      consumes:
+      - application/json
+      description: clone a rule template in project
+      operationId: cloneProjectRuleTemplateV1
+      parameters:
+      - description: rule template id
+        in: path
+        name: rule_template_id
+        required: true
+        type: integer
+      - description: clone rule template request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CloneProjectRuleTemplateReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 克隆项目规则模板
+      tags:
+      - rule_template
   /v1/role_tips:
     get:
       description: get role tip list
