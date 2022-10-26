@@ -3424,98 +3424,6 @@ paths:
       summary: 获取扫描任务类型
       tags:
       - audit_plan
-  /v1/audit_whitelist:
-    get:
-      description: get all whitelist
-      operationId: getAuditWhitelistV1
-      parameters:
-      - description: page index
-        in: query
-        name: page_index
-        type: string
-      - description: page size
-        in: query
-        name: page_size
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditWhitelistResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取Sql审核白名单
-      tags:
-      - audit_whitelist
-    post:
-      consumes:
-      - application/json
-      description: create a sql whitelist
-      operationId: createAuditWhitelistV1
-      parameters:
-      - description: add sql whitelist req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateAuditWhitelistReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加SQL白名单
-      tags:
-      - audit_whitelist
-  /v1/audit_whitelist/{audit_whitelist_id}/:
-    delete:
-      description: remove sql white
-      operationId: deleteAuditWhitelistByIdV1
-      parameters:
-      - description: audit whitelist id
-        in: path
-        name: audit_whitelist_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除SQL白名单信息
-      tags:
-      - audit_whitelist
-    patch:
-      consumes:
-      - application/json
-      description: update sql whitelist by id
-      operationId: UpdateAuditWhitelistByIdV1
-      parameters:
-      - description: sql audit whitelist id
-        in: path
-        name: audit_whitelist_id
-        required: true
-        type: string
-      - description: update sql whitelist req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateAuditWhitelistReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新SQL白名单
-      tags:
-      - audit_whitelist
   /v1/basic_info:
     get:
       description: get sqle basic info
@@ -3978,6 +3886,61 @@ paths:
       summary: 获取权限动作列表
       tags:
       - operation
+  /v1/project/{project_id}/audit_whitelist:
+    get:
+      description: get all whitelist
+      operationId: getAuditWhitelistV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: page index
+        in: query
+        name: page_index
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditWhitelistResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取Sql审核白名单
+      tags:
+      - audit_whitelist
+    post:
+      consumes:
+      - application/json
+      description: create a sql whitelist
+      operationId: createAuditWhitelistV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: add sql whitelist req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateAuditWhitelistReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加SQL白名单
+      tags:
+      - audit_whitelist
   /v1/project/{project_id}/instance_tips:
     get:
       description: get instance tip list
@@ -4417,6 +4380,53 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - audit_plan
+  /v1/project/audit_whitelist/{audit_whitelist_id}/:
+    delete:
+      description: remove sql white
+      operationId: deleteAuditWhitelistByIdV1
+      parameters:
+      - description: audit whitelist id
+        in: path
+        name: audit_whitelist_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除SQL白名单信息
+      tags:
+      - audit_whitelist
+    patch:
+      consumes:
+      - application/json
+      description: update sql whitelist by id
+      operationId: UpdateAuditWhitelistByIdV1
+      parameters:
+      - description: sql audit whitelist id
+        in: path
+        name: audit_whitelist_id
+        required: true
+        type: string
+      - description: update sql whitelist req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateAuditWhitelistReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新SQL白名单
+      tags:
+      - audit_whitelist
   /v1/project/rule_templates/{rule_template_id}/:
     delete:
       description: delete rule template in project
