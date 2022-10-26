@@ -280,6 +280,10 @@ func UpdateUserGroup(c echo.Context) (err error) {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
+type UserGroupTipsReqV1 struct {
+	FilterProject string `json:"filter_project"`
+}
+
 type UserGroupTipListItem struct {
 	Name string `json:"user_group_name"`
 }
@@ -293,6 +297,7 @@ type GetUserGroupTipsResV1 struct {
 // @Description get user group tip list
 // @Tags user_group
 // @Id getUserGroupTipListV1
+// @Param filter_project query string false "project id"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetUserGroupTipsResV1
 // @router /v1/user_group_tips [get]
