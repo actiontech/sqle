@@ -136,7 +136,7 @@ func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) model.Perio
 // @Param project_id path uint true "project id"
 // @Param instance body v1.CreateInstanceReqV1 true "add instance"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/{project_id}/instances [post]
+// @router /v1/projects/{project_id}/instances [post]
 func CreateInstance(c echo.Context) error {
 	s := model.GetStorage()
 	req := new(CreateInstanceReqV1)
@@ -408,7 +408,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 // @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceResV1
-// @router /v1/project/{project_id}/instances/{instance_name}/ [get]
+// @router /v1/projects/{project_id}/instances/{instance_name}/ [get]
 func GetInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -443,7 +443,7 @@ func GetInstance(c echo.Context) error {
 // @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/{project_id}/instances/{instance_name}/ [delete]
+// @router /v1/projects/{project_id}/instances/{instance_name}/ [delete]
 func DeleteInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -502,7 +502,7 @@ type UpdateInstanceReqV1 struct {
 // @Param instance_name path string true "instance name"
 // @param instance body v1.UpdateInstanceReqV1 true "update instance request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/{project_id}/instances/{instance_name}/ [patch]
+// @router /v1/projects/{project_id}/instances/{instance_name}/ [patch]
 func UpdateInstance(c echo.Context) error {
 	req := new(UpdateInstanceReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -679,7 +679,7 @@ type GetInstancesResV1 struct {
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetInstancesResV1
-// @router /v1/project/{project_id}/instances [get]
+// @router /v1/projects/{project_id}/instances [get]
 func GetInstances(c echo.Context) error {
 	req := new(GetInstancesReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -778,7 +778,7 @@ func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 // @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceConnectableResV1
-// @router /v1/project/{project_id}/instances/{instance_name}/connection [get]
+// @router /v1/projects/{project_id}/instances/{instance_name}/connection [get]
 func CheckInstanceIsConnectableByName(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -837,7 +837,7 @@ type InstanceConnectionResV1 struct {
 // @Param project_id path uint true "project id"
 // @Param instances body v1.BatchCheckInstanceConnectionsReqV1 true "instances"
 // @Success 200 {object} v1.BatchGetInstanceConnectionsResV1
-// @router /v1/project/{project_id}/instances/connections [post]
+// @router /v1/projects/{project_id}/instances/connections [post]
 func BatchCheckInstanceConnections(c echo.Context) error {
 	req := new(BatchCheckInstanceConnectionsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -965,7 +965,7 @@ type InstanceSchemaResV1 struct {
 // @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetInstanceSchemaResV1
-// @router /v1/project/{project_id}/instances/{instance_name}/schemas [get]
+// @router /v1/projects/{project_id}/instances/{instance_name}/schemas [get]
 func GetInstanceSchemas(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -1039,7 +1039,7 @@ type GetInstanceTipsResV1 struct {
 // @Param filter_workflow_template_id query string false "filter workflow template id"
 // @Param functional_module query string false "functional module" Enums(create_audit_plan,create_workflow)
 // @Success 200 {object} v1.GetInstanceTipsResV1
-// @router /v1/project/{project_id}/instance_tips [get]
+// @router /v1/projects/{project_id}/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
 	return getInstanceTips(c)
 }
@@ -1053,7 +1053,7 @@ func GetInstanceTips(c echo.Context) error {
 // @Param project_id path uint true "project id"
 // @Param instance_name path string true "instance name"
 // @Success 200 {object} v1.GetRulesResV1
-// @router /v1/project/{project_id}/instances/{instance_name}/rules [get]
+// @router /v1/projects/{project_id}/instances/{instance_name}/rules [get]
 func GetInstanceRules(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
@@ -1131,7 +1131,7 @@ type ListTableBySchemaResV1 struct {
 // @Param schema_name path string true "schema name"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.ListTableBySchemaResV1
-// @router /v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables [get]
+// @router /v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables [get]
 func ListTableBySchema(c echo.Context) error {
 	return listTableBySchema(c)
 }
@@ -1175,7 +1175,7 @@ type GetTableMetadataResV1 struct {
 // @Param table_name path string true "table name"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetTableMetadataResV1
-// @router /v1/project/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata [get]
+// @router /v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata [get]
 func GetTableMetadata(c echo.Context) error {
 	return getTableMetadata(c)
 }
