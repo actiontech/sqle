@@ -462,10 +462,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeReqV1'
         type: array
-      role_name_list:
-        items:
-          type: string
-        type: array
       rule_template_name_list:
         items:
           type: string
@@ -473,8 +469,6 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
-      workflow_template_name:
-        type: string
     type: object
   v1.CreateProjectReqV1:
     properties:
@@ -1798,10 +1792,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeResV1'
         type: array
-      role_name_list:
-        items:
-          type: string
-        type: array
       rule_template_name_list:
         items:
           type: string
@@ -1809,8 +1799,6 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
-      workflow_template_name:
-        type: string
     type: object
   v1.InstanceSchemaResV1:
     properties:
@@ -2541,10 +2529,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeReqV1'
         type: array
-      role_name_list:
-        items:
-          type: string
-        type: array
       rule_template_name_list:
         items:
           type: string
@@ -2552,8 +2536,6 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
-      workflow_template_name:
-        type: string
     type: object
   v1.UpdateOtherUserPasswordReqV1:
     properties:
@@ -3951,17 +3933,9 @@ paths:
         in: query
         name: filter_db_user
         type: string
-      - description: filter workflow rule template name
-        in: query
-        name: filter_workflow_template_name
-        type: string
       - description: filter rule template name
         in: query
         name: filter_rule_template_name
-        type: string
-      - description: filter role name
-        in: query
-        name: filter_role_name
         type: string
       - description: page index
         in: query
