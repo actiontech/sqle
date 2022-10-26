@@ -12,11 +12,10 @@ import (
 )
 
 type CreateRuleTemplateReqV1 struct {
-	Name      string      `json:"rule_template_name" valid:"required,name"`
-	Desc      string      `json:"desc"`
-	DBType    string      `json:"db_type" valid:"required"`
-	Instances []string    `json:"instance_name_list"`
-	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
+	Name     string      `json:"rule_template_name" valid:"required,name"`
+	Desc     string      `json:"desc"`
+	DBType   string      `json:"db_type" valid:"required"`
+	RuleList []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
 }
 
 type RuleReqV1 struct {
@@ -79,8 +78,8 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 	return templateRules, nil
 }
 
-// @Summary 添加规则模板
-// @Description create a rule template
+// @Summary 添加全局规则模板
+// @Description create a global rule template
 // @Id createRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
@@ -89,144 +88,147 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates [post]
 func CreateRuleTemplate(c echo.Context) error {
-	req := new(CreateRuleTemplateReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByName(req.Name)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
-	}
-
-	ruleTemplate := &model.RuleTemplate{
-		Name:   req.Name,
-		Desc:   req.Desc,
-		DBType: req.DBType,
-	}
-	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
-		templateRules, err = checkAndGenerateRules(req.RuleList, ruleTemplate)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-		}
-	}
-
-	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = s.Save(ruleTemplate)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = s.UpdateRuleTemplateRules(ruleTemplate, templateRules...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	// todo issue988 handle instance_name_list
+	return nil
+	//req := new(CreateRuleTemplateReqV1)
+	//if err := controller.BindAndValidateReq(c, req); err != nil {
+	//	return err
+	//}
+	//s := model.GetStorage()
+	//_, exist, err := s.GetRuleTemplateByName(req.Name)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//if exist {
+	//	return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
+	//}
+	//
+	//ruleTemplate := &model.RuleTemplate{
+	//	Name:   req.Name,
+	//	Desc:   req.Desc,
+	//	DBType: req.DBType,
+	//}
+	//templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
+	//if req.RuleList != nil || len(req.RuleList) > 0 {
+	//	templateRules, err = checkAndGenerateRules(req.RuleList, ruleTemplate)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	//	}
+	//}
+	//
+	//var instances []*model.Instance
+	//if req.Instances != nil || len(req.Instances) > 0 {
+	//	instances, err = s.GetAndCheckInstanceExist(req.Instances)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, err)
+	//	}
+	//}
+	//
+	//err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//err = s.Save(ruleTemplate)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//err = s.UpdateRuleTemplateRules(ruleTemplate, templateRules...)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type UpdateRuleTemplateReqV1 struct {
-	Desc      *string     `json:"desc"`
-	Instances []string    `json:"instance_name_list" example:"mysql-xxx"`
-	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"dive,required"`
+	Desc     *string     `json:"desc"`
+	RuleList []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"dive,required"`
 }
 
-// @Summary 更新规则模板
-// @Description update rule template
+// @Summary 更新全局规则模板
+// @Description update global rule template
 // @Id updateRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_template_name path string true "rule template name"
+// @Param rule_template_id path uint true "rule template id"
 // @Param instance body v1.UpdateRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/rule_templates/{rule_template_name}/ [patch]
+// @router /v1/rule_templates/{rule_template_id}/ [patch]
 func UpdateRuleTemplate(c echo.Context) error {
-	templateName := c.Param("rule_template_name")
-	req := new(UpdateRuleTemplateReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-	s := model.GetStorage()
-	template, exist, err := s.GetRuleTemplateByName(templateName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
-	}
-
-	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
-		templateRules, err = checkAndGenerateRules(req.RuleList, template)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-		}
-	}
-
-	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	err = CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if req.Desc != nil {
-		template.Desc = *req.Desc
-		err = s.Save(&template)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-	if req.RuleList != nil {
-		err = s.UpdateRuleTemplateRules(template, templateRules...)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	if req.Instances != nil {
-		err = s.UpdateRuleTemplateInstances(template, instances...)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	// todo issue988 handle instance_name_list and rule_template_id
+	return nil
+	//templateName := c.Param("rule_template_name")
+	//req := new(UpdateRuleTemplateReqV1)
+	//if err := controller.BindAndValidateReq(c, req); err != nil {
+	//	return err
+	//}
+	//s := model.GetStorage()
+	//template, exist, err := s.GetRuleTemplateByName(templateName)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//if !exist {
+	//	return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
+	//}
+	//
+	//templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
+	//if req.RuleList != nil || len(req.RuleList) > 0 {
+	//	templateRules, err = checkAndGenerateRules(req.RuleList, template)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	//	}
+	//}
+	//
+	//var instances []*model.Instance
+	//if req.Instances != nil || len(req.Instances) > 0 {
+	//	instances, err = s.GetAndCheckInstanceExist(req.Instances)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, err)
+	//	}
+	//}
+	//
+	//err = CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//if req.Desc != nil {
+	//	template.Desc = *req.Desc
+	//	err = s.Save(&template)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, err)
+	//	}
+	//}
+	//if req.RuleList != nil {
+	//	err = s.UpdateRuleTemplateRules(template, templateRules...)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, err)
+	//	}
+	//}
+	//
+	//if req.Instances != nil {
+	//	err = s.UpdateRuleTemplateInstances(template, instances...)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, err)
+	//	}
+	//}
+	//return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetRuleTemplateResV1 struct {
@@ -235,11 +237,12 @@ type GetRuleTemplateResV1 struct {
 }
 
 type RuleTemplateDetailResV1 struct {
-	Name      string      `json:"rule_template_name"`
-	Desc      string      `json:"desc"`
-	DBType    string      `json:"db_type"`
-	Instances []string    `json:"instance_name_list,omitempty"`
-	RuleList  []RuleResV1 `json:"rule_list,omitempty"`
+	Id        uint                          `json:"id"`
+	Name      string                        `json:"rule_template_name"`
+	Desc      string                        `json:"desc"`
+	DBType    string                        `json:"db_type"`
+	Instances []*GlobalRuleTemplateInstance `json:"instance_list,omitempty"`
+	RuleList  []RuleResV1                   `json:"rule_list,omitempty"`
 }
 
 func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailResV1 {
@@ -252,24 +255,26 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
 	}
 	return &RuleTemplateDetailResV1{
-		Name:      template.Name,
-		Desc:      template.Desc,
-		DBType:    template.DBType,
-		Instances: instanceNames,
-		RuleList:  ruleList,
+		Name:   template.Name,
+		Desc:   template.Desc,
+		DBType: template.DBType,
+		// todo issue988 handle instanceNames
+		//Instances: instanceNames,
+		RuleList: ruleList,
 	}
 }
 
-// @Summary 获取规则模板信息
-// @Description get rule template
+// @Summary 获取全局规则模板信息
+// @Description get global rule template
 // @Id getRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_template_name path string true "rule template name"
+// @Param rule_template_id path uint true "rule template id"
 // @Success 200 {object} v1.GetRuleTemplateResV1
-// @router /v1/rule_templates/{rule_template_name}/ [get]
+// @router /v1/rule_templates/{rule_template_id}/ [get]
 func GetRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
+	// todo issue988 handle rule_template_id
 	templateName := c.Param("rule_template_name")
 	template, exist, err := s.GetRuleTemplateDetailByName(templateName)
 	if err != nil {
@@ -286,16 +291,17 @@ func GetRuleTemplate(c echo.Context) error {
 	})
 }
 
-// @Summary 删除规则模板
-// @Description delete rule template
+// @Summary 删除全局规则模板
+// @Description delete global rule template
 // @Id deleteRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_template_name path string true "rule template name"
+// @Param rule_template_id path uint true "rule template id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/rule_templates/{rule_template_name}/ [delete]
+// @router /v1/rule_templates/{rule_template_id}/ [delete]
 func DeleteRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
+	// todo issue988 handle rule_template_id
 	templateName := c.Param("rule_template_name")
 	template, exist, err := s.GetRuleTemplateByName(templateName)
 	if err != nil {
@@ -332,14 +338,20 @@ type GetRuleTemplatesResV1 struct {
 }
 
 type RuleTemplateResV1 struct {
-	Name      string   `json:"rule_template_name"`
-	Desc      string   `json:"desc"`
-	DBType    string   `json:"db_type"`
-	Instances []string `json:"instance_name_list,omitempty"`
+	Id        uint                          `json:"id"`
+	Name      string                        `json:"rule_template_name"`
+	Desc      string                        `json:"desc"`
+	DBType    string                        `json:"db_type"`
+	Instances []*GlobalRuleTemplateInstance `json:"instance_list"`
 }
 
-// @Summary 规则模板列表
-// @Description get all rule template
+type GlobalRuleTemplateInstance struct {
+	ProjectName  string `json:"project_name"`
+	InstanceName string `json:"instance_name"`
+}
+
+// @Summary 全局规则模板列表
+// @Description get all global rule template
 // @Id getRuleTemplateListV1
 // @Tags rule_template
 // @Security ApiKeyAuth
@@ -372,10 +384,10 @@ func GetRuleTemplates(c echo.Context) error {
 	ruleTemplatesReq := make([]RuleTemplateResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
 		ruleTemplateReq := RuleTemplateResV1{
-			Name:      ruleTemplate.Name,
-			Desc:      ruleTemplate.Desc,
-			DBType:    ruleTemplate.DBType,
-			Instances: ruleTemplate.InstanceNames,
+			Name:   ruleTemplate.Name,
+			Desc:   ruleTemplate.Desc,
+			DBType: ruleTemplate.DBType,
+			//Instances: ruleTemplate.InstanceNames,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
 	}
@@ -522,82 +534,83 @@ func GetRuleTemplateTips(c echo.Context) error {
 }
 
 type CloneRuleTemplateReqV1 struct {
-	Name      string   `json:"new_rule_template_name" valid:"required"`
-	Desc      string   `json:"desc"`
-	Instances []string `json:"instance_name_list"`
+	Name string `json:"new_rule_template_name" valid:"required"`
+	Desc string `json:"desc"`
 }
 
-// @Summary 克隆规则模板
+// @Summary 克隆全局规则模板
 // @Description clone a rule template
 // @Id CloneRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Accept json
-// @Param rule_template_name path string true "rule template name"
+// @Param rule_template_id path uint true "rule template id"
 // @Param instance body v1.CloneRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/rule_templates/{rule_template_name}/clone [post]
+// @router /v1/rule_templates/{rule_template_id}/clone [post]
 func CloneRuleTemplate(c echo.Context) error {
-	req := new(CloneRuleTemplateReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByName(req.Name)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
-	}
-
-	sourceTplName := c.Param("rule_template_name")
-	sourceTpl, exist, err := s.GetRuleTemplateDetailByName(sourceTplName)
-	if err != nil {
-		return c.JSON(200, controller.NewBaseReq(err))
-	}
-	if !exist {
-		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
-			fmt.Errorf("source rule template %s is not exist", sourceTplName))))
-	}
-
-	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	ruleTemplate := &model.RuleTemplate{
-		Name:   req.Name,
-		Desc:   req.Desc,
-		DBType: sourceTpl.DBType,
-	}
-	err = s.Save(ruleTemplate)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = s.CloneRuleTemplateRules(sourceTpl, ruleTemplate)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	// todo issue988 handle instance_name_list and rule_template_id
+	return nil
+	//req := new(CloneRuleTemplateReqV1)
+	//if err := controller.BindAndValidateReq(c, req); err != nil {
+	//	return err
+	//}
+	//s := model.GetStorage()
+	//_, exist, err := s.GetRuleTemplateByName(req.Name)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//if exist {
+	//	return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
+	//}
+	//
+	//sourceTplName := c.Param("rule_template_name")
+	//sourceTpl, exist, err := s.GetRuleTemplateDetailByName(sourceTplName)
+	//if err != nil {
+	//	return c.JSON(200, controller.NewBaseReq(err))
+	//}
+	//if !exist {
+	//	return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
+	//		fmt.Errorf("source rule template %s is not exist", sourceTplName))))
+	//}
+	//
+	//var instances []*model.Instance
+	//if req.Instances != nil || len(req.Instances) > 0 {
+	//	instances, err = s.GetAndCheckInstanceExist(req.Instances)
+	//	if err != nil {
+	//		return controller.JSONBaseErrorReq(c, err)
+	//	}
+	//}
+	//
+	//err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//ruleTemplate := &model.RuleTemplate{
+	//	Name:   req.Name,
+	//	Desc:   req.Desc,
+	//	DBType: sourceTpl.DBType,
+	//}
+	//err = s.Save(ruleTemplate)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//err = s.CloneRuleTemplateRules(sourceTpl, ruleTemplate)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//
+	//err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
+	//if err != nil {
+	//	return controller.JSONBaseErrorReq(c, err)
+	//}
+	//return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, instances []*model.Instance) error {
@@ -613,5 +626,142 @@ func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, in
 			return errInstanceBind
 		}
 	}
+	return nil
+}
+
+type CreateProjectRuleTemplateReqV1 struct {
+	Name      string      `json:"rule_template_name" valid:"required,name"`
+	Desc      string      `json:"desc"`
+	DBType    string      `json:"db_type" valid:"required"`
+	Instances []string    `json:"instance_name_list"`
+	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
+}
+
+// CreateProjectRuleTemplate
+// @Summary 添加项目规则模板
+// @Description create a rule template in project
+// @Id createProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Accept json
+// @Param project_id path uint true "project id"
+// @Param instance body v1.CreateProjectRuleTemplateReqV1 true "add rule template request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/{project_id}/rule_templates [post]
+func CreateProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+type UpdateProjectRuleTemplateReqV1 struct {
+	Desc      *string     `json:"desc"`
+	Instances []string    `json:"instance_name_list" example:"mysql-xxx"`
+	RuleList  []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"dive,required"`
+}
+
+// UpdateProjectRuleTemplate
+// @Summary 更新项目规则模板
+// @Description update rule template in project
+// @Id updateProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_template_id path uint true "rule template id"
+// @Param instance body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/rule_templates/{rule_template_id}/ [patch]
+func UpdateProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+type GetProjectRuleTemplateResV1 struct {
+	controller.BaseRes
+	Data *RuleProjectTemplateDetailResV1 `json:"data"`
+}
+
+type RuleProjectTemplateDetailResV1 struct {
+	Id        uint                           `json:"id"`
+	Name      string                         `json:"rule_template_name"`
+	Desc      string                         `json:"desc"`
+	DBType    string                         `json:"db_type"`
+	Instances []*ProjectRuleTemplateInstance `json:"instance_list,omitempty"`
+	RuleList  []RuleResV1                    `json:"rule_list,omitempty"`
+}
+
+type ProjectRuleTemplateInstance struct {
+	Name string `json:"name"`
+}
+
+// GetProjectRuleTemplate
+// @Summary 获取项目规则模板信息
+// @Description get rule template detail in project
+// @Id getProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_template_id path uint true "rule template id"
+// @Success 200 {object} v1.GetProjectRuleTemplateResV1
+// @router /v1/project/rule_templates/{rule_template_id}/ [get]
+func GetProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+// DeleteProjectRuleTemplate
+// @Summary 删除项目规则模板
+// @Description delete rule template in project
+// @Id deleteProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_template_id path uint true "rule template id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/rule_templates/{rule_template_id}/ [delete]
+func DeleteProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+type GetProjectRuleTemplatesResV1 struct {
+	controller.BaseRes
+	Data      []ProjectRuleTemplateResV1 `json:"data"`
+	TotalNums uint64                     `json:"total_nums"`
+}
+
+type ProjectRuleTemplateResV1 struct {
+	Id        uint                           `json:"id"`
+	Name      string                         `json:"rule_template_name"`
+	Desc      string                         `json:"desc"`
+	DBType    string                         `json:"db_type"`
+	Instances []*ProjectRuleTemplateInstance `json:"instance_list"`
+}
+
+// GetProjectRuleTemplates
+// @Summary 项目规则模板列表
+// @Description get all rule template in a project
+// @Id getProjectRuleTemplateListV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Success 200 {object} v1.GetProjectRuleTemplatesResV1
+// @router /v1/project/{project_id}/rule_templates [get]
+func GetProjectRuleTemplates(c echo.Context) error {
+	return nil
+}
+
+type CloneProjectRuleTemplateReqV1 struct {
+	Name      string   `json:"new_rule_template_name" valid:"required"`
+	Desc      string   `json:"desc"`
+	Instances []string `json:"instance_name_list"`
+}
+
+// CloneProjectRuleTemplate
+// @Summary 克隆项目规则模板
+// @Description clone a rule template in project
+// @Id cloneProjectRuleTemplateV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Accept json
+// @Param rule_template_id path uint true "rule template id"
+// @Param instance body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/project/rule_templates/{rule_template_id}/clone [post]
+func CloneProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
