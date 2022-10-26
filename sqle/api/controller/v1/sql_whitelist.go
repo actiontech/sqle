@@ -24,9 +24,10 @@ type CreateAuditWhitelistReqV1 struct {
 // @Id createAuditWhitelistV1
 // @Tags audit_whitelist
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param instance body v1.CreateAuditWhitelistReqV1 true "add sql whitelist req"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/audit_whitelist [post]
+// @router /v1/project/{project_id}/audit_whitelist [post]
 func CreateAuditWhitelist(c echo.Context) error {
 	req := new(CreateAuditWhitelistReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -63,7 +64,7 @@ type UpdateAuditWhitelistReqV1 struct {
 // @Param audit_whitelist_id path string true "sql audit whitelist id"
 // @Param instance body v1.UpdateAuditWhitelistReqV1 true "update sql whitelist req"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/audit_whitelist/{audit_whitelist_id}/ [patch]
+// @router /v1/project/audit_whitelist/{audit_whitelist_id}/ [patch]
 func UpdateAuditWhitelistById(c echo.Context) error {
 	req := new(UpdateAuditWhitelistReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -110,7 +111,7 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param audit_whitelist_id path string true "audit whitelist id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/audit_whitelist/{audit_whitelist_id}/ [delete]
+// @router /v1/project/audit_whitelist/{audit_whitelist_id}/ [delete]
 func DeleteAuditWhitelistById(c echo.Context) error {
 	s := model.GetStorage()
 	whitelistId := c.Param("audit_whitelist_id")
@@ -152,10 +153,11 @@ type AuditWhitelistResV1 struct {
 // @Id getAuditWhitelistV1
 // @Tags audit_whitelist
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param page_index query string false "page index"
 // @Param page_size query string false "page size"
 // @Success 200 {object} v1.GetAuditWhitelistResV1
-// @router /v1/audit_whitelist [get]
+// @router /v1/project/{project_id}/audit_whitelist [get]
 func GetSqlWhitelist(c echo.Context) error {
 	req := new(GetAuditWhitelistReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
