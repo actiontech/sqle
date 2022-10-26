@@ -647,7 +647,7 @@ type CreateProjectRuleTemplateReqV1 struct {
 // @Param project_id path uint true "project id"
 // @Param instance body v1.CreateProjectRuleTemplateReqV1 true "add rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/{project_id}/rule_templates [post]
+// @router /v1/projects/{project_id}/rule_templates [post]
 func CreateProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
@@ -667,7 +667,7 @@ type UpdateProjectRuleTemplateReqV1 struct {
 // @Param rule_template_id path uint true "rule template id"
 // @Param instance body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/rule_templates/{rule_template_id}/ [patch]
+// @router /v1/projects/rule_templates/{rule_template_id}/ [patch]
 func UpdateProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
@@ -698,7 +698,7 @@ type ProjectRuleTemplateInstance struct {
 // @Security ApiKeyAuth
 // @Param rule_template_id path uint true "rule template id"
 // @Success 200 {object} v1.GetProjectRuleTemplateResV1
-// @router /v1/project/rule_templates/{rule_template_id}/ [get]
+// @router /v1/projects/rule_templates/{rule_template_id}/ [get]
 func GetProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
@@ -711,7 +711,7 @@ func GetProjectRuleTemplate(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param rule_template_id path uint true "rule template id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/rule_templates/{rule_template_id}/ [delete]
+// @router /v1/projects/rule_templates/{rule_template_id}/ [delete]
 func DeleteProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
@@ -740,7 +740,7 @@ type ProjectRuleTemplateResV1 struct {
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetProjectRuleTemplatesResV1
-// @router /v1/project/{project_id}/rule_templates [get]
+// @router /v1/projects/{project_id}/rule_templates [get]
 func GetProjectRuleTemplates(c echo.Context) error {
 	return nil
 }
@@ -761,7 +761,7 @@ type CloneProjectRuleTemplateReqV1 struct {
 // @Param rule_template_id path uint true "rule template id"
 // @Param instance body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/rule_templates/{rule_template_id}/clone [post]
+// @router /v1/projects/rule_templates/{rule_template_id}/clone [post]
 func CloneProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
