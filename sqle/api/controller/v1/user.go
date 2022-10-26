@@ -510,6 +510,10 @@ func GetUsers(c echo.Context) error {
 	})
 }
 
+type UserTipsReqV1 struct {
+	FilterProject string `json:"filter_project"`
+}
+
 type UserTipResV1 struct {
 	Name string `json:"user_name"`
 }
@@ -524,6 +528,7 @@ type GetUserTipsResV1 struct {
 // @Tags user
 // @Id getUserTipListV1
 // @Security ApiKeyAuth
+// @Param filter_project query string false "project id"
 // @Success 200 {object} v1.GetUserTipsResV1
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
