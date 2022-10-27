@@ -464,27 +464,6 @@ func GetWorkflowTemplateTips(c echo.Context) error {
 	})
 }
 
-type CreateWorkflowReqV1 struct {
-	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc    string `json:"desc" form:"desc"`
-	TaskId  string `json:"task_id" form:"task_id" valid:"required"`
-}
-
-// @Summary 创建工单
-// @Deprecated
-// @Description create workflow
-// @Accept json
-// @Produce json
-// @Tags workflow
-// @Id createWorkflowV1
-// @Security ApiKeyAuth
-// @Param instance body v1.CreateWorkflowReqV1 true "create workflow request"
-// @Success 200 {object} controller.BaseRes
-// @router /v1/workflows [post]
-func CreateWorkflow(c echo.Context) error {
-	return nil
-}
-
 type GetWorkflowResV1 struct {
 	controller.BaseRes
 	Data *WorkflowResV1 `json:"data"`
@@ -554,19 +533,6 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, workflow *model.Workflow
 	return ErrWorkflowNoAccess
 }
 
-// @Summary 获取审批流程详情
-// @Deprecated
-// @Description get workflow detail
-// @Tags workflow
-// @Id getWorkflowV1
-// @Security ApiKeyAuth
-// @Param workflow_id path integer true "workflow id"
-// @Success 200 {object} v1.GetWorkflowResV1
-// @router /v1/workflows/{workflow_id}/ [get]
-func GetWorkflow(c echo.Context) error {
-	return nil
-}
-
 type GetWorkflowsReqV1 struct {
 	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
@@ -602,30 +568,6 @@ type WorkflowDetailResV1 struct {
 	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
 	Status                  string     `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
 	ScheduleTime            *time.Time `json:"schedule_time,omitempty"`
-}
-
-// @Summary 获取审批流程列表
-// @Deprecated
-// @Description get workflow list
-// @Tags workflow
-// @Id getWorkflowListV1
-// @Security ApiKeyAuth
-// @Param filter_subject query string false "filter subject"
-// @Param filter_create_time_from query string false "filter create time from"
-// @Param filter_create_time_to query string false "filter create time to"
-// @Param filter_create_user_name query string false "filter create user name"
-// @Param filter_current_step_type query string false "filter current step type" Enums(sql_review, sql_execute)
-// @Param filter_status query string false "filter workflow status" Enums(on_process, rejected, canceled, exec_scheduled, executing, exec_failed, finished)
-// @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
-// @Param filter_task_instance_name query string false "filter instance name"
-// @Param filter_task_execute_start_time_from query string false "filter task execute start time from"
-// @Param filter_task_execute_start_time_to query string false "filter task execute start time to"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
-// @Success 200 {object} v1.GetWorkflowsResV1
-// @router /v1/workflows [get]
-func GetWorkflows(c echo.Context) error {
-	return nil
 }
 
 func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
@@ -909,22 +851,6 @@ type UpdateWorkflowReqV1 struct {
 	TaskId string `json:"task_id" form:"task_id" valid:"required"`
 }
 
-// @Summary 更新审批流程（驳回后才可更新）
-// @Deprecated
-// @Description update workflow when it is rejected to creator.
-// @Tags workflow
-// @Accept json
-// @Produce json
-// @Id updateWorkflowV1
-// @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
-// @Param instance body v1.UpdateWorkflowReqV1 true "update workflow request"
-// @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/ [patch]
-func UpdateWorkflow(c echo.Context) error {
-	return nil
-}
-
 func FormatStringToInt(s string) (ret int, err error) {
 	if s == "" {
 		return 0, nil
@@ -951,35 +877,6 @@ func FormatStringToUint64(s string) (ret uint64, err error) {
 
 type UpdateWorkflowScheduleV1 struct {
 	ScheduleTime *time.Time `json:"schedule_time"`
-}
-
-// @Summary 设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
-// @Description update workflow schedule.
-// @Deprecated
-// @Tags workflow
-// @Accept json
-// @Produce json
-// @Id updateWorkflowScheduleV1
-// @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
-// @Param instance body v1.UpdateWorkflowScheduleV1 true "update workflow schedule request"
-// @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/schedule [put]
-func UpdateWorkflowSchedule(c echo.Context) error {
-	return nil
-}
-
-// @Summary 工单提交 SQL 上线
-// @Description execute task on workflow
-// @Deprecated
-// @Tags workflow
-// @Id executeTaskOnWorkflowV1
-// @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
-// @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/task/execute [post]
-func ExecuteTaskOnWorkflow(c echo.Context) error {
-	return nil
 }
 
 // ExecuteOneTaskOnWorkflowV1
