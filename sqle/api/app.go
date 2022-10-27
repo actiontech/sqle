@@ -117,12 +117,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
 
 		// workflow template
-		v1Router.GET("/workflow_templates", v1.GetWorkflowTemplates, AdminUserAllowed())
-		v1Router.POST("/workflow_templates", v1.CreateWorkflowTemplate, AdminUserAllowed())
 		v1Router.GET("/workflow_templates/:workflow_template_name/", v1.GetWorkflowTemplate, AdminUserAllowed())
 		v1Router.PATCH("/workflow_templates/:workflow_template_name/", v1.UpdateWorkflowTemplate, AdminUserAllowed())
-		v1Router.DELETE("/workflow_templates/:workflow_template_name/", v1.DeleteWorkflowTemplate, AdminUserAllowed())
-		v1Router.GET("/workflow_template_tips", v1.GetWorkflowTemplateTips, AdminUserAllowed())
 
 		// workflow
 		v1Router.POST("/workflows/cancel", v1.BatchCancelWorkflows, AdminUserAllowed())
@@ -199,20 +195,14 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// workflow
 	v1Router.POST("/workflows", DeprecatedBy(apiV2))
-	v2Router.POST("/workflows", v2.CreateWorkflowV2)
 	v1Router.GET("/workflows/:workflow_id/", DeprecatedBy(apiV2))
-	v2Router.GET("/workflows/:workflow_id/", v2.GetWorkflowV2)
 	v1Router.GET("/workflows", DeprecatedBy(apiV2))
-	v2Router.GET("/workflows", v2.GetWorkflowsV2)
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
 	v1Router.PATCH("/workflows/:workflow_id/", DeprecatedBy(apiV2))
-	v2Router.PATCH("/workflows/:workflow_id/", v2.UpdateWorkflowV2)
 	v1Router.PUT("/workflows/:workflow_id/schedule", DeprecatedBy(apiV2))
-	v2Router.PUT("/workflows/:workflow_id/tasks/:task_id/schedule", v2.UpdateWorkflowScheduleV2)
 	v1Router.POST("/workflows/:workflow_id/task/execute", DeprecatedBy(apiV2))
-	v2Router.POST("/workflows/:workflow_id/tasks/execute", v2.ExecuteTasksOnWorkflow)
 	v1Router.POST("/workflows/:workflow_id/tasks/:task_id/execute", v1.ExecuteOneTaskOnWorkflowV1)
 	v1Router.GET("/workflows/:workflow_id/tasks", v1.GetSummaryOfWorkflowTasksV1)
 
