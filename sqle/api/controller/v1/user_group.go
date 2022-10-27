@@ -13,7 +13,6 @@ import (
 type CreateUserGroupReqV1 struct {
 	Name  string   `json:"user_group_name" form:"user_group_name" example:"test" valid:"required,name"`
 	Desc  string   `json:"user_group_desc" form:"user_group_desc" example:"this is a group"`
-	Roles []string `json:"role_name_list" form:"role_name_list"`
 	Users []string `json:"user_name_list" form:"user_name_list"`
 }
 
@@ -58,13 +57,6 @@ func CreateUserGroup(c echo.Context) (err error) {
 
 	// check roles
 	var roles []*model.Role
-	{
-		roleNames := req.Roles
-		roles, err = s.GetAndCheckRoleExist(roleNames)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
 
 	// user group
 	ug := &model.UserGroup{
@@ -96,7 +88,6 @@ type UserGroupListItemResV1 struct {
 	Desc       string   `json:"user_group_desc"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
 	Users      []string `json:"user_name_list,omitempty"`
-	Roles      []string `json:"role_name_list,omitempty"`
 }
 
 // @Summary 获取用户组列表
@@ -141,7 +132,6 @@ func GetUserGroups(c echo.Context) (err error) {
 			Desc:       userGroups[i].Desc,
 			IsDisabled: userGroups[i].IsDisabled(),
 			Users:      userGroups[i].UserNames,
-			Roles:      userGroups[i].RoleNames,
 		}
 		resData[i] = userGroupItem
 	}
@@ -193,7 +183,6 @@ type PatchUserGroupReqV1 struct {
 	Desc       *string   `json:"user_group_desc,omitempty" form:"user_group_desc" example:"this is a group"`
 	Users      *[]string `json:"user_name_list,omitempty" form:"user_name_list"`
 	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
-	Roles      *[]string `json:"role_name_list,omitempty" form:"role_name_list"`
 }
 
 // @Summary 更新用户组
@@ -245,18 +234,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 
 	// roles
 	var roles []*model.Role
-	{
-		if req.Roles != nil {
-			if len(*req.Roles) > 0 {
-				roles, err = s.GetAndCheckRoleExist(*req.Roles)
-				if err != nil {
-					return controller.JSONBaseErrorReq(c, err)
-				}
-			} else {
-				roles = make([]*model.Role, 0)
-			}
-		}
-	}
+
 
 	// users
 	var users []*model.User
