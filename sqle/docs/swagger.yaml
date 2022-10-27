@@ -4612,6 +4612,55 @@ paths:
       summary: 添加项目规则模板
       tags:
       - rule_template
+  /v1/projects/{project_id}/workflow_templates:
+    get:
+      description: get workflow template detail
+      operationId: getWorkflowTemplateV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowTemplateResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审批流程模板详情
+      tags:
+      - workflow
+    patch:
+      consumes:
+      - application/json
+      description: update the workflow template
+      operationId: updateWorkflowTemplateV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: create workflow template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWorkflowTemplateReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新Sql审批流程模板
+      tags:
+      - workflow
   /v1/projects/{project_id}/workflows:
     get:
       description: get workflow list
@@ -4877,55 +4926,6 @@ paths:
       summary: 克隆项目规则模板
       tags:
       - rule_template
-  /v1/projects/workflow_templates/{workflow_template_name}/:
-    get:
-      description: get workflow template detail
-      operationId: getWorkflowTemplateV1
-      parameters:
-      - description: workflow template name
-        in: path
-        name: workflow_template_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetWorkflowTemplateResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取审批流程模板详情
-      tags:
-      - workflow
-    patch:
-      consumes:
-      - application/json
-      description: update the workflow template
-      operationId: updateWorkflowTemplateV1
-      parameters:
-      - description: workflow template name
-        in: path
-        name: workflow_template_name
-        required: true
-        type: string
-      - description: create workflow template
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateWorkflowTemplateReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新Sql审批流程模板
-      tags:
-      - workflow
   /v1/projects/workflows/{workflow_id}/:
     patch:
       consumes:
