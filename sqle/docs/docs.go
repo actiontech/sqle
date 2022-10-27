@@ -3279,24 +3279,11 @@ var doc = `{
                 ],
                 "summary": "获取角色列表",
                 "operationId": "getRoleListV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
                         "description": "filter role name",
                         "name": "filter_role_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter user name",
-                        "name": "filter_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
                         "in": "query"
                     },
                     {
@@ -3339,7 +3326,6 @@ var doc = `{
                 ],
                 "summary": "创建角色",
                 "operationId": "createRoleV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create role",
@@ -3416,7 +3402,6 @@ var doc = `{
                 ],
                 "summary": "更新角色信息",
                 "operationId": "updateRoleV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -5131,12 +5116,6 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "filter role name",
-                        "name": "filter_role_name",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -5338,152 +5317,6 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.UpdateOtherUserPasswordReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/roles": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get role list",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "role"
-                ],
-                "summary": "获取角色列表",
-                "operationId": "getRoleListV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter role name",
-                        "name": "filter_role_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter user name",
-                        "name": "filter_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetRolesResV2"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "role"
-                ],
-                "summary": "创建角色",
-                "operationId": "createRoleV2",
-                "parameters": [
-                    {
-                        "description": "create role",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.CreateRoleReqV2"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/roles/{role_name}/": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "role"
-                ],
-                "summary": "更新角色信息",
-                "operationId": "updateRoleV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "role name",
-                        "name": "role_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update role request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.UpdateRoleReqV2"
                         }
                     }
                 ],
@@ -6234,10 +6067,10 @@ var doc = `{
         "v1.CreateRoleReqV1": {
             "type": "object",
             "properties": {
-                "instance_name_list": {
+                "operation_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "role_desc": {
@@ -6245,12 +6078,6 @@ var doc = `{
                 },
                 "role_name": {
                     "type": "string"
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -6277,12 +6104,6 @@ var doc = `{
         "v1.CreateUserGroupReqV1": {
             "type": "object",
             "properties": {
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "user_group_desc": {
                     "type": "string",
                     "example": "this is a group"
@@ -6305,12 +6126,6 @@ var doc = `{
                 "email": {
                     "type": "string",
                     "example": "test@email.com"
-                },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "user_group_name_list": {
                     "type": "array",
@@ -8385,6 +8200,17 @@ var doc = `{
                 }
             }
         },
+        "v1.Operation": {
+            "type": "object",
+            "properties": {
+                "op_code": {
+                    "type": "integer"
+                },
+                "op_desc": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.OperationResV1": {
             "type": "object",
             "properties": {
@@ -8412,12 +8238,6 @@ var doc = `{
             "properties": {
                 "is_disabled": {
                     "type": "boolean"
-                },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "user_group_desc": {
                     "type": "string",
@@ -8543,10 +8363,13 @@ var doc = `{
         "v1.RoleResV1": {
             "type": "object",
             "properties": {
-                "instance_name_list": {
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "operation_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.Operation"
                     }
                 },
                 "role_desc": {
@@ -8554,12 +8377,6 @@ var doc = `{
                 },
                 "role_name": {
                     "type": "string"
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -9324,20 +9141,17 @@ var doc = `{
         "v1.UpdateRoleReqV1": {
             "type": "object",
             "properties": {
-                "instance_name_list": {
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "operation_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "role_desc": {
                     "type": "string"
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -9396,12 +9210,6 @@ var doc = `{
                 },
                 "is_disabled": {
                     "type": "boolean"
-                },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "user_group_name_list": {
                     "type": "array",
@@ -9501,12 +9309,6 @@ var doc = `{
                 "login_type": {
                     "type": "string"
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "user_group_name_list": {
                     "type": "array",
                     "items": {
@@ -9526,12 +9328,6 @@ var doc = `{
             "properties": {
                 "is_disabled": {
                     "type": "boolean"
-                },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "user_group_desc": {
                     "type": "string"
@@ -9588,12 +9384,6 @@ var doc = `{
                 },
                 "login_type": {
                     "type": "string"
-                },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "user_group_name_list": {
                     "type": "array",
@@ -9924,147 +9714,6 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
-                }
-            }
-        },
-        "v2.CreateRoleReqV2": {
-            "type": "object",
-            "properties": {
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "operation_code_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "role_desc": {
-                    "type": "string"
-                },
-                "role_name": {
-                    "type": "string"
-                },
-                "user_group_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "v2.GetRolesResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.RoleResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.Operation": {
-            "type": "object",
-            "properties": {
-                "op_code": {
-                    "type": "integer"
-                },
-                "op_desc": {
-                    "type": "string"
-                }
-            }
-        },
-        "v2.RoleResV2": {
-            "type": "object",
-            "properties": {
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "operation_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.Operation"
-                    }
-                },
-                "role_desc": {
-                    "type": "string"
-                },
-                "role_name": {
-                    "type": "string"
-                },
-                "user_group_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "v2.UpdateRoleReqV2": {
-            "type": "object",
-            "properties": {
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "operation_code_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "role_desc": {
-                    "type": "string"
-                },
-                "user_group_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         }
