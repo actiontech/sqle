@@ -503,18 +503,14 @@ definitions:
     type: object
   v1.CreateRoleReqV1:
     properties:
-      instance_name_list:
+      operation_code_list:
         items:
-          type: string
+          type: integer
         type: array
       role_desc:
         type: string
       role_name:
         type: string
-      user_name_list:
-        items:
-          type: string
-        type: array
     type: object
   v1.CreateRuleTemplateReqV1:
     properties:
@@ -531,10 +527,6 @@ definitions:
     type: object
   v1.CreateUserGroupReqV1:
     properties:
-      role_name_list:
-        items:
-          type: string
-        type: array
       user_group_desc:
         example: this is a group
         type: string
@@ -551,10 +543,6 @@ definitions:
       email:
         example: test@email.com
         type: string
-      role_name_list:
-        items:
-          type: string
-        type: array
       user_group_name_list:
         items:
           type: string
@@ -1973,6 +1961,13 @@ definitions:
       user_id_tag:
         type: string
     type: object
+  v1.Operation:
+    properties:
+      op_code:
+        type: integer
+      op_desc:
+        type: string
+    type: object
   v1.OperationResV1:
     properties:
       op_code:
@@ -1991,10 +1986,6 @@ definitions:
     properties:
       is_disabled:
         type: boolean
-      role_name_list:
-        items:
-          type: string
-        type: array
       user_group_desc:
         example: this is a group
         type: string
@@ -2076,18 +2067,16 @@ definitions:
     type: object
   v1.RoleResV1:
     properties:
-      instance_name_list:
+      is_disabled:
+        type: boolean
+      operation_list:
         items:
-          type: string
+          $ref: '#/definitions/v1.Operation'
         type: array
       role_desc:
         type: string
       role_name:
         type: string
-      user_name_list:
-        items:
-          type: string
-        type: array
     type: object
   v1.RoleTipResV1:
     properties:
@@ -2601,16 +2590,14 @@ definitions:
     type: object
   v1.UpdateRoleReqV1:
     properties:
-      instance_name_list:
+      is_disabled:
+        type: boolean
+      operation_code_list:
         items:
-          type: string
+          type: integer
         type: array
       role_desc:
         type: string
-      user_name_list:
-        items:
-          type: string
-        type: array
     type: object
   v1.UpdateRuleTemplateReqV1:
     properties:
@@ -2650,10 +2637,6 @@ definitions:
         type: string
       is_disabled:
         type: boolean
-      role_name_list:
-        items:
-          type: string
-        type: array
       user_group_name_list:
         items:
           type: string
@@ -2719,10 +2702,6 @@ definitions:
         type: boolean
       login_type:
         type: string
-      role_name_list:
-        items:
-          type: string
-        type: array
       user_group_name_list:
         items:
           type: string
@@ -2736,10 +2715,6 @@ definitions:
     properties:
       is_disabled:
         type: boolean
-      role_name_list:
-        items:
-          type: string
-        type: array
       user_group_desc:
         type: string
       user_group_name:
@@ -2777,10 +2752,6 @@ definitions:
         type: boolean
       login_type:
         type: string
-      role_name_list:
-        items:
-          type: string
-        type: array
       user_group_name_list:
         items:
           type: string
@@ -2999,99 +2970,6 @@ definitions:
         type: array
       workflow_template_name:
         type: string
-    type: object
-  v2.CreateRoleReqV2:
-    properties:
-      instance_name_list:
-        items:
-          type: string
-        type: array
-      operation_code_list:
-        items:
-          type: integer
-        type: array
-      role_desc:
-        type: string
-      role_name:
-        type: string
-      user_group_name_list:
-        items:
-          type: string
-        type: array
-      user_name_list:
-        items:
-          type: string
-        type: array
-    type: object
-  v2.GetRolesResV2:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v2.RoleResV2'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v2.Operation:
-    properties:
-      op_code:
-        type: integer
-      op_desc:
-        type: string
-    type: object
-  v2.RoleResV2:
-    properties:
-      instance_name_list:
-        items:
-          type: string
-        type: array
-      is_disabled:
-        type: boolean
-      operation_list:
-        items:
-          $ref: '#/definitions/v2.Operation'
-        type: array
-      role_desc:
-        type: string
-      role_name:
-        type: string
-      user_group_name_list:
-        items:
-          type: string
-        type: array
-      user_name_list:
-        items:
-          type: string
-        type: array
-    type: object
-  v2.UpdateRoleReqV2:
-    properties:
-      instance_name_list:
-        items:
-          type: string
-        type: array
-      is_disabled:
-        type: boolean
-      operation_code_list:
-        items:
-          type: integer
-        type: array
-      role_desc:
-        type: string
-      user_group_name_list:
-        items:
-          type: string
-        type: array
-      user_name_list:
-        items:
-          type: string
-        type: array
     type: object
 info:
   contact: {}
@@ -5171,21 +5049,12 @@ paths:
     get:
       consumes:
       - application/json
-      deprecated: true
       description: get role list
       operationId: getRoleListV1
       parameters:
       - description: filter role name
         in: query
         name: filter_role_name
-        type: string
-      - description: filter user name
-        in: query
-        name: filter_user_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
         type: string
       - description: page index
         in: query
@@ -5210,7 +5079,6 @@ paths:
     post:
       consumes:
       - application/json
-      deprecated: true
       description: create role
       operationId: createRoleV1
       parameters:
@@ -5259,7 +5127,6 @@ paths:
     patch:
       consumes:
       - application/json
-      deprecated: true
       description: update role
       operationId: updateRoleV1
       parameters:
@@ -6359,10 +6226,6 @@ paths:
         in: query
         name: filter_user_name
         type: string
-      - description: filter role name
-        in: query
-        name: filter_role_name
-        type: string
       - description: page index
         in: query
         name: page_index
@@ -6503,99 +6366,6 @@ paths:
       summary: admin修改其他用户密码
       tags:
       - user
-  /v2/roles:
-    get:
-      consumes:
-      - application/json
-      description: get role list
-      operationId: getRoleListV2
-      parameters:
-      - description: filter role name
-        in: query
-        name: filter_role_name
-        type: string
-      - description: filter user name
-        in: query
-        name: filter_user_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.GetRolesResV2'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取角色列表
-      tags:
-      - role
-    post:
-      consumes:
-      - application/json
-      description: create role
-      operationId: createRoleV2
-      parameters:
-      - description: create role
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v2.CreateRoleReqV2'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建角色
-      tags:
-      - role
-  /v2/roles/{role_name}/:
-    patch:
-      consumes:
-      - application/json
-      description: update role
-      operationId: updateRoleV2
-      parameters:
-      - description: role name
-        in: path
-        name: role_name
-        required: true
-        type: string
-      - description: update role request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v2.UpdateRoleReqV2'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新角色信息
-      tags:
-      - role
 securityDefinitions:
   ApiKeyAuth:
     in: header
