@@ -16,7 +16,6 @@ type CreateUserReqV1 struct {
 	Password   string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
 	Email      string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
 	WeChatID   string   `json:"wechat_id" example:"UserID"`
-	Roles      []string `json:"role_name_list" form:"role_name_list"`
 	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
 }
 
@@ -46,14 +45,6 @@ func CreateUser(c echo.Context) error {
 	}
 
 	var roles []*model.Role
-	{
-		if req.Roles != nil || len(req.Roles) > 0 {
-			roles, err = s.GetAndCheckRoleExist(req.Roles)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-		}
-	}
 
 	var userGroups []*model.UserGroup
 	{
@@ -79,7 +70,6 @@ func CreateUser(c echo.Context) error {
 type UpdateUserReqV1 struct {
 	Email      *string   `json:"email" valid:"omitempty,len=0|email" form:"email"`
 	WeChatID   *string   `json:"wechat_id" example:"UserID"`
-	Roles      *[]string `json:"role_name_list" form:"role_name_list"`
 	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
 	UserGroups *[]string `json:"user_group_name_list" form:"user_group_name_list"`
 }
@@ -135,19 +125,7 @@ func UpdateUser(c echo.Context) error {
 
 	// roles
 	var roles []*model.Role
-	{
 
-		if req.Roles != nil {
-			if len(*req.Roles) > 0 {
-				roles, err = s.GetAndCheckRoleExist(*req.Roles)
-				if err != nil {
-					return controller.JSONBaseErrorReq(c, err)
-				}
-			} else {
-				roles = make([]*model.Role, 0)
-			}
-		}
-	}
 
 	// user_groups
 	var userGroups []*model.UserGroup
@@ -271,7 +249,6 @@ type UserDetailResV1 struct {
 	IsAdmin    bool     `json:"is_admin"`
 	WeChatID   string   `json:"wechat_id"`
 	LoginType  string   `json:"login_type"`
-	Roles      []string `json:"role_name_list,omitempty"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
 	UserGroups []string `json:"user_group_name_list,omitempty"`
 }
@@ -288,11 +265,6 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 		IsAdmin:    user.Name == model.DefaultAdminUser,
 		IsDisabled: user.IsDisabled(),
 	}
-	roleNames := make([]string, 0, len(user.Roles))
-	for _, role := range user.Roles {
-		roleNames = append(roleNames, role.Name)
-	}
-	userReq.Roles = roleNames
 
 	userGroupNames := make([]string, len(user.UserGroups))
 	for i := range user.UserGroups {
@@ -432,7 +404,6 @@ func UpdateCurrentUserPassword(c echo.Context) error {
 
 type GetUsersReqV1 struct {
 	FilterUserName string `json:"filter_user_name" query:"filter_user_name"`
-	FilterRoleName string `json:"filter_role_name" query:"filter_role_name"`
 	PageIndex      uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize       uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
@@ -449,7 +420,6 @@ type UserResV1 struct {
 	WeChatID   string   `json:"wechat_id"`
 	LoginType  string   `json:"login_type"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
-	Roles      []string `json:"role_name_list,omitempty"`
 	UserGroups []string `json:"user_group_name_list,omitempty"`
 }
 
@@ -459,7 +429,6 @@ type UserResV1 struct {
 // @Id getUserListV1
 // @Security ApiKeyAuth
 // @Param filter_user_name query string false "filter user name"
-// @Param filter_role_name query string false "filter role name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetUsersResV1
@@ -477,7 +446,6 @@ func GetUsers(c echo.Context) error {
 	}
 	data := map[string]interface{}{
 		"filter_user_name": req.FilterUserName,
-		"filter_role_name": req.FilterRoleName,
 		"limit":            req.PageSize,
 		"offset":           offset,
 	}
@@ -497,7 +465,6 @@ func GetUsers(c echo.Context) error {
 			Email:      user.Email,
 			WeChatID:   user.WeChatID.String,
 			LoginType:  user.LoginType,
-			Roles:      user.RoleNames,
 			IsDisabled: user.IsDisabled(),
 			UserGroups: user.UserGroupNames,
 		}
