@@ -3008,7 +3008,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflow_templates": {
+        "/v1/projects/{project_id}/workflow_template": {
             "get": {
                 "security": [
                     {
