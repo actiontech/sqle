@@ -1134,83 +1134,6 @@
                 }
             }
         },
-        "/v1/projects/workflow_templates/{workflow_template_name}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow template detail",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取审批流程模板详情",
-                "operationId": "getWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow template name",
-                        "name": "workflow_template_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowTemplateResV1"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update the workflow template",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "更新Sql审批流程模板",
-                "operationId": "updateWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow template name",
-                        "name": "workflow_template_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "create workflow template",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateWorkflowTemplateReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/workflows/cancel": {
             "post": {
                 "security": [
@@ -3056,6 +2979,83 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.CreateProjectRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/workflow_templates": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow template detail",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取审批流程模板详情",
+                "operationId": "getWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTemplateResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update the workflow template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "更新Sql审批流程模板",
+                "operationId": "updateWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create workflow template",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowTemplateReqV1"
                         }
                     }
                 ],

@@ -56,9 +56,9 @@ type WorkFlowStepTemplateResV1 struct {
 // @Tags workflow
 // @Id getWorkflowTemplateV1
 // @Security ApiKeyAuth
-// @Param workflow_template_name path string true "workflow template name"
+// @Param project_id path uint true "project id"
 // @Success 200 {object} v1.GetWorkflowTemplateResV1
-// @router /v1/projects/workflow_templates/{workflow_template_name}/ [get]
+// @router /v1/projects/{project_id}/workflow_templates [get]
 func GetWorkflowTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("workflow_template_name")
@@ -166,10 +166,10 @@ type UpdateWorkflowTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param workflow_template_name path string true "workflow template name"
+// @Param project_id path uint true "project id"
 // @Param instance body v1.UpdateWorkflowTemplateReqV1 true "create workflow template"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflow_templates/{workflow_template_name}/ [patch]
+// @router /v1/projects/{project_id}/workflow_templates [patch]
 func UpdateWorkflowTemplate(c echo.Context) error {
 	req := new(UpdateWorkflowTemplateReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
