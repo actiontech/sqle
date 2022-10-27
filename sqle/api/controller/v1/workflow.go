@@ -48,7 +48,7 @@ type WorkFlowStepTemplateResV1 struct {
 // @Security ApiKeyAuth
 // @Param workflow_template_name path string true "workflow template name"
 // @Success 200 {object} v1.GetWorkflowTemplateResV1
-// @router /v1/workflow_templates/{workflow_template_name}/ [get]
+// @router /v1/projects/workflow_templates/{workflow_template_name}/ [get]
 func GetWorkflowTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("workflow_template_name")
@@ -159,7 +159,7 @@ func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
 // @Security ApiKeyAuth
 // @Param instance body v1.CreateWorkflowTemplateReqV1 true "create workflow template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflow_templates [post]
+// @router /v1/projects/workflow_templates [post]
 func CreateWorkflowTemplate(c echo.Context) error {
 	req := new(CreateWorkflowTemplateReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -254,7 +254,7 @@ type UpdateWorkflowTemplateReqV1 struct {
 // @Param workflow_template_name path string true "workflow template name"
 // @Param instance body v1.UpdateWorkflowTemplateReqV1 true "create workflow template"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflow_templates/{workflow_template_name}/ [patch]
+// @router /v1/projects/workflow_templates/{workflow_template_name}/ [patch]
 func UpdateWorkflowTemplate(c echo.Context) error {
 	req := new(UpdateWorkflowTemplateReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -352,7 +352,7 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 // @Produce json
 // @Param workflow_template_name path string true "workflow template name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflow_templates/{workflow_template_name}/ [delete]
+// @router /v1/projects/workflow_templates/{workflow_template_name}/ [delete]
 func DeleteWorkflowTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("workflow_template_name")
@@ -395,7 +395,7 @@ type WorkflowTemplateResV1 struct {
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetWorkflowTemplatesResV1
-// @router /v1/workflow_templates [get]
+// @router /v1/projects/workflow_templates [get]
 func GetWorkflowTemplates(c echo.Context) error {
 	req := new(GetWorkflowTemplatesReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -444,7 +444,7 @@ type WorkflowTemplateTipResV1 struct {
 // @Id getWorkflowTemplateTipsV1
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetWorkflowTemplateTipResV1
-// @router /v1/workflow_template_tips [get]
+// @router /v1/projects/workflow_template_tips [get]
 func GetWorkflowTemplateTips(c echo.Context) error {
 	s := model.GetStorage()
 	templates, err := s.GetWorkflowTemplateTip()
@@ -596,7 +596,7 @@ func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId 
 // @Param workflow_id path string true "workflow id"
 // @Param workflow_step_id path string true "workflow step id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
+// @router /v1/projects/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	id, err := FormatStringToInt(workflowId)
@@ -675,7 +675,7 @@ type RejectWorkflowReqV1 struct {
 // @Param workflow_step_id path string true "workflow step id"
 // @param workflow_approve body v1.RejectWorkflowReqV1 true "workflow approve request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject [post]
+// @router /v1/projects/workflows/{workflow_id}/steps/{workflow_step_id}/reject [post]
 func RejectWorkflow(c echo.Context) error {
 	req := new(RejectWorkflowReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -753,7 +753,7 @@ func RejectWorkflow(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param workflow_id path string true "workflow id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/cancel [post]
+// @router /v1/projects/workflows/{workflow_id}/cancel [post]
 func CancelWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	id, err := FormatStringToInt(workflowId)
@@ -803,7 +803,7 @@ type BatchCancelWorkflowsReqV1 struct {
 // @Security ApiKeyAuth
 // @Param BatchCancelWorkflowsReqV1 body v1.BatchCancelWorkflowsReqV1 true "batch cancel workflows request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/cancel [post]
+// @router /v1/projects/workflows/cancel [post]
 func BatchCancelWorkflows(c echo.Context) error {
 	req := new(BatchCancelWorkflowsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -888,7 +888,7 @@ type UpdateWorkflowScheduleV1 struct {
 // @Param workflow_id path string true "workflow id"
 // @Param task_id path string true "task id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/workflows/{workflow_id}/tasks/{task_id}/execute [post]
+// @router /v1/projects/workflows/{workflow_id}/tasks/{task_id}/execute [post]
 func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 	workflowIdStr := c.Param("workflow_id")
 	workflowId, err := FormatStringToInt(workflowIdStr)
@@ -1043,7 +1043,7 @@ type GetWorkflowTasksItemV1 struct {
 // @Security ApiKeyAuth
 // @Param workflow_id path integer true "workflow id"
 // @Success 200 {object} v1.GetWorkflowTasksResV1
-// @router /v1/workflows/{workflow_id}/tasks [get]
+// @router /v1/projects/workflows/{workflow_id}/tasks [get]
 func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 	workflowIdStr := c.Param("workflow_id")
 	workflowId, err := FormatStringToInt(workflowIdStr)
