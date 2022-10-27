@@ -117,12 +117,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
 
 		// workflow template
-		v1Router.GET("/workflow_templates", v1.GetWorkflowTemplates, AdminUserAllowed())
-		v1Router.POST("/workflow_templates", v1.CreateWorkflowTemplate, AdminUserAllowed())
 		v1Router.GET("/workflow_templates/:workflow_template_name/", v1.GetWorkflowTemplate, AdminUserAllowed())
 		v1Router.PATCH("/workflow_templates/:workflow_template_name/", v1.UpdateWorkflowTemplate, AdminUserAllowed())
-		v1Router.DELETE("/workflow_templates/:workflow_template_name/", v1.DeleteWorkflowTemplate, AdminUserAllowed())
-		v1Router.GET("/workflow_template_tips", v1.GetWorkflowTemplateTips, AdminUserAllowed())
 
 		// workflow
 		v1Router.POST("/workflows/cancel", v1.BatchCancelWorkflows, AdminUserAllowed())
