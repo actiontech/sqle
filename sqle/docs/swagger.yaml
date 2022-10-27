@@ -4612,7 +4612,7 @@ paths:
       summary: 添加项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_id}/workflow_templates:
+  /v1/projects/{project_id}/workflow_template:
     get:
       description: get workflow template detail
       operationId: getWorkflowTemplateV1
