@@ -572,7 +572,7 @@ type UpdateMemberReqV1 struct {
 // @Param user_name path string true "user name"
 // @Param data body v1.UpdateMemberReqV1 true "update member"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/members/{user_name} [patch]
+// @router /v1/projects/{project_id}/members/{user_name}/ [patch]
 func UpdateMember(c echo.Context) error {
 	return nil
 }
@@ -586,7 +586,7 @@ func UpdateMember(c echo.Context) error {
 // @Param project_id path uint true "project id"
 // @Param user_name path string true "user name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/members/{user_name} [delete]
+// @router /v1/projects/{project_id}/members/{user_name}/ [delete]
 func DeleteMember(c echo.Context) error {
 	return nil
 }
@@ -641,7 +641,7 @@ type GetMemberRespV1 struct {
 // @Param project_id path uint true "project id"
 // @Param user_name path string true "user name"
 // @Success 200 {object} v1.GetMemberRespV1
-// @router /v1/projects/{project_id}/members/{user_name} [get]
+// @router /v1/projects/{project_id}/members/{user_name}/ [get]
 func GetMember(c echo.Context) error {
 	return nil
 }
