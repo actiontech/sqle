@@ -26,6 +26,8 @@ const (
 	UserAuthenticationTypeOAUTH2 UserAuthenticationType = "oauth2" //user verify through oauth2
 )
 
+// NOTE: related model:
+// - ProjectMemberRole
 type User struct {
 	Model
 	// has created composite index: [id, login_name] by gorm#AddIndex

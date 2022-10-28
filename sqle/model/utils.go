@@ -155,6 +155,11 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
+	err = s.db.Model(ProjectMemberRole{}).AddUniqueIndex("uniq_project_member_roles_user_id_instance_id_role_id",
+		"user_id", "instance_id", "role_id").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 
 	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
 		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
