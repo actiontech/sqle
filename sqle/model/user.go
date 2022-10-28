@@ -26,6 +26,8 @@ const (
 	UserAuthenticationTypeOAUTH2 UserAuthenticationType = "oauth2" //user verify through oauth2
 )
 
+// NOTE: related model:
+// - ProjectMemberRole, ManagementPermission
 type User struct {
 	Model
 	// has created composite index: [id, login_name] by gorm#AddIndex
@@ -35,6 +37,7 @@ type User struct {
 	Password               string                 `json:"-" gorm:"-"`
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
+	// todo issue960 remove Roles
 	Roles                  []*Role                `gorm:"many2many:user_role;"`
 	UserGroups             []*UserGroup           `gorm:"many2many:user_group_users"`
 	Stat                   uint                   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`

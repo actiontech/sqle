@@ -135,6 +135,9 @@ var autoMigrateList = []interface{}{
 	&WorkflowInstanceRecord{},
 	&CloudBeaverUserCache{},
 	&CloudBeaverInstanceCache{},
+	&Project{},
+	&ProjectMemberRole{},
+	&ManagementPermission{},
 }
 
 func (s *Storage) AutoMigrate() error {
@@ -152,6 +155,11 @@ func (s *Storage) AutoMigrate() error {
 	}
 	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5",
 		"audit_plan_id", "fingerprint_md5").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	err = s.db.Model(ProjectMemberRole{}).AddUniqueIndex("uniq_project_member_roles_user_id_instance_id_role_id",
+		"user_id", "instance_id", "role_id").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
