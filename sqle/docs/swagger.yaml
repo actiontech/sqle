@@ -543,6 +543,11 @@ definitions:
       email:
         example: test@email.com
         type: string
+      management_permission_code_list:
+        description: todo issue960 handle ManagementPermissionCodes in implementation
+        items:
+          type: integer
+        type: array
       user_group_name_list:
         items:
           type: string
@@ -1934,6 +1939,13 @@ definitions:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
     type: object
+  v1.ManagementPermission:
+    properties:
+      code:
+        type: integer
+      desc:
+        type: string
+    type: object
   v1.Oauth2ConfigurationReqV1:
     properties:
       access_token_tag:
@@ -2637,6 +2649,11 @@ definitions:
         type: string
       is_disabled:
         type: boolean
+      management_permission_code_list:
+        description: todo issue960 handle ManagementPermissionCodes in implementation
+        items:
+          type: integer
+        type: array
       user_group_name_list:
         items:
           type: string
@@ -2702,6 +2719,11 @@ definitions:
         type: boolean
       login_type:
         type: string
+      management_permission_list:
+        description: todo issue960 handle ManagementPermissionCodes in implementation
+        items:
+          $ref: '#/definitions/v1.ManagementPermission'
+        type: array
       user_group_name_list:
         items:
           type: string
