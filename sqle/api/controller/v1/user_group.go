@@ -335,7 +335,7 @@ type UpdateMemberGroupReqV1 struct {
 // @Param user_group_name path string true "user group name"
 // @Param data body v1.UpdateMemberGroupReqV1 true "update member_group"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/member_groups/{user_group_name} [patch]
+// @router /v1/projects/{project_id}/member_groups/{user_group_name}/ [patch]
 func UpdateMemberGroup(c echo.Context) error {
 	return nil
 }
@@ -349,7 +349,7 @@ func UpdateMemberGroup(c echo.Context) error {
 // @Param project_id path uint true "project id"
 // @Param user_group_name path string true "user group name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/member_groups/{user_group_name} [delete]
+// @router /v1/projects/{project_id}/member_groups/{user_group_name}/ [delete]
 func DeleteMemberGroup(c echo.Context) error {
 	return nil
 }
@@ -403,7 +403,7 @@ type GetMemberGroupRespV1 struct {
 // @Param project_id path uint true "project id"
 // @Param user_group_name path string true "user group name"
 // @Success 200 {object} v1.GetMemberGroupRespV1
-// @router /v1/projects/{project_id}/member_groups/{user_group_name} [get]
+// @router /v1/projects/{project_id}/member_groups/{user_group_name}/ [get]
 func GetMemberGroup(c echo.Context) error {
 	return nil
 }
