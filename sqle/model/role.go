@@ -13,9 +13,11 @@ import (
 // - RoleOperation, ProjectMemberRole
 type Role struct {
 	Model
-	Name       string `gorm:"index"`
-	Desc       string
-	Stat       uint         `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
+	Name string `gorm:"index"`
+	Desc string
+	Stat uint `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
+
+	// todo issue960 remove Users, Instances, UserGroups
 	Users      []*User      `gorm:"many2many:user_role;"`
 	Instances  []*Instance  `gorm:"many2many:instance_role; comment:'关联实例'"`
 	UserGroups []*UserGroup `gorm:"many2many:user_group_roles; comment:'关联用户组'"`
