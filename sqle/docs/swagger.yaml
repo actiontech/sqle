@@ -343,6 +343,15 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.BindRoleReqV1:
+    properties:
+      instance_name:
+        type: string
+      role_names:
+        items:
+          type: string
+        type: array
+    type: object
   v1.CheckLicenseResV1:
     properties:
       code:
@@ -476,6 +485,26 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
+    type: object
+  v1.CreateMemberGroupReqV1:
+    properties:
+      roles:
+        items:
+          $ref: '#/definitions/v1.BindRoleReqV1'
+        type: array
+      user_group_name:
+        type: string
+    type: object
+  v1.CreateMemberReqV1:
+    properties:
+      is_owner:
+        type: boolean
+      roles:
+        items:
+          $ref: '#/definitions/v1.BindRoleReqV1'
+        type: array
+      user_name:
+        type: string
     type: object
   v1.CreateProjectReqV1:
     properties:
@@ -1003,6 +1032,80 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetMemberGroupRespDataV1:
+    properties:
+      roles:
+        items:
+          $ref: '#/definitions/v1.BindRoleReqV1'
+        type: array
+      user_group_name:
+        type: string
+    type: object
+  v1.GetMemberGroupRespV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetMemberGroupRespDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetMemberGroupsRespV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.GetMemberGroupRespDataV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetMemberRespDataV1:
+    properties:
+      is_owner:
+        type: boolean
+      roles:
+        items:
+          $ref: '#/definitions/v1.BindRoleReqV1'
+        type: array
+      user_name:
+        type: string
+    type: object
+  v1.GetMemberRespV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetMemberRespDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetMembersRespV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.GetMemberRespDataV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetOauth2ConfigurationResDataV1:
     properties:
@@ -2574,6 +2677,22 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
+    type: object
+  v1.UpdateMemberGroupReqV1:
+    properties:
+      roles:
+        items:
+          $ref: '#/definitions/v1.BindRoleReqV1'
+        type: array
+    type: object
+  v1.UpdateMemberReqV1:
+    properties:
+      is_owner:
+        type: boolean
+      roles:
+        items:
+          $ref: '#/definitions/v1.BindRoleReqV1'
+        type: array
     type: object
   v1.UpdateOtherUserPasswordReqV1:
     properties:
@@ -4457,6 +4576,302 @@ paths:
       summary: 批量测试实例连通性（实例提交后）
       tags:
       - instance
+  /v1/projects/{project_id}/member_groups:
+    get:
+      description: get member groups
+      operationId: getMemberGroupsV1
+      parameters:
+      - description: filter user group name
+        in: query
+        name: filter_user_group_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetMemberGroupsRespV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取成员组列表
+      tags:
+      - user_group
+    post:
+      consumes:
+      - application/json
+      description: add member group
+      operationId: addMemberGroupV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: add member group
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateMemberGroupReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加成员组
+      tags:
+      - user_group
+  /v1/projects/{project_id}/member_groups/{user_group_name}:
+    delete:
+      description: delete member group
+      operationId: deleteMemberGroupV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: user group name
+        in: path
+        name: user_group_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除成员组
+      tags:
+      - user_group
+    get:
+      description: get member group
+      operationId: getMemberGroupV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: user group name
+        in: path
+        name: user_group_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetMemberGroupRespV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取成员组信息
+      tags:
+      - user_group
+    patch:
+      consumes:
+      - application/json
+      description: update member group
+      operationId: updateMemberGroupV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: user group name
+        in: path
+        name: user_group_name
+        required: true
+        type: string
+      - description: update member_group
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateMemberGroupReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 修改成员组
+      tags:
+      - user_group
+  /v1/projects/{project_id}/members:
+    get:
+      description: get members
+      operationId: getMembersV1
+      parameters:
+      - description: filter user name
+        in: query
+        name: filter_user_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetMembersRespV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取成员列表
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      description: add member
+      operationId: addMemberV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: add member
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateMemberReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加成员
+      tags:
+      - user
+  /v1/projects/{project_id}/members/{user_name}:
+    delete:
+      description: delete member
+      operationId: deleteMemberV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除成员
+      tags:
+      - user
+    get:
+      description: get member
+      operationId: getMemberV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetMemberRespV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取成员信息
+      tags:
+      - user
+    patch:
+      consumes:
+      - application/json
+      description: update member
+      operationId: updateMemberV1
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: user name
+        in: path
+        name: user_name
+        required: true
+        type: string
+      - description: update member
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateMemberReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 修改成员
+      tags:
+      - user
   /v1/projects/{project_id}/rule_templates:
     get:
       description: get all rule template in a project
