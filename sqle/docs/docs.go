@@ -6127,6 +6127,13 @@ var doc = `{
                     "type": "string",
                     "example": "test@email.com"
                 },
+                "management_permission_code_list": {
+                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "user_group_name_list": {
                     "type": "array",
                     "items": {
@@ -8159,6 +8166,17 @@ var doc = `{
                 }
             }
         },
+        "v1.ManagementPermission": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "desc": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.Oauth2ConfigurationReqV1": {
             "type": "object",
             "properties": {
@@ -9211,6 +9229,13 @@ var doc = `{
                 "is_disabled": {
                     "type": "boolean"
                 },
+                "management_permission_code_list": {
+                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "user_group_name_list": {
                     "type": "array",
                     "items": {
@@ -9308,6 +9333,13 @@ var doc = `{
                 },
                 "login_type": {
                     "type": "string"
+                },
+                "management_permission_list": {
+                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ManagementPermission"
+                    }
                 },
                 "user_group_name_list": {
                     "type": "array",
