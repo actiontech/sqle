@@ -3023,7 +3023,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/member_groups/{user_group_name}": {
+        "/v1/projects/{project_id}/member_groups/{user_group_name}/": {
             "get": {
                 "security": [
                     {
@@ -3252,7 +3252,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/members/{user_name}": {
+        "/v1/projects/{project_id}/members/{user_name}/": {
             "get": {
                 "security": [
                     {

@@ -4619,7 +4619,7 @@ paths:
       summary: 添加成员组
       tags:
       - user_group
-  /v1/projects/{project_id}/member_groups/{user_group_name}:
+  /v1/projects/{project_id}/member_groups/{user_group_name}/:
     delete:
       description: delete member group
       operationId: deleteMemberGroupV1
@@ -4767,7 +4767,7 @@ paths:
       summary: 添加成员
       tags:
       - user
-  /v1/projects/{project_id}/members/{user_name}:
+  /v1/projects/{project_id}/members/{user_name}/:
     delete:
       description: delete member
       operationId: deleteMemberV1
