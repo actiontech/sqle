@@ -12,6 +12,7 @@ import (
 
 type AuditPlan struct {
 	Model
+	ProjectId        uint   `gorm:"index; not null"`
 	Name             string `json:"name" gorm:"not null;index"`
 	CronExpression   string `json:"cron_expression" gorm:"not null"`
 	DBType           string `json:"db_type" gorm:"not null"`

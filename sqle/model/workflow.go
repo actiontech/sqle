@@ -150,6 +150,7 @@ type Workflow struct {
 	Desc             string
 	CreateUserId     uint
 	WorkflowRecordId uint
+	ProjectId        uint `gorm:"index; not null"`
 
 	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
 	Record        *WorkflowRecord   `gorm:"foreignkey:WorkflowRecordId"`

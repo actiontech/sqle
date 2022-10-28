@@ -15,6 +15,7 @@ import (
 // Instance is a table for database info
 type Instance struct {
 	Model
+	ProjectId uint `gorm:"index; not null"`
 	// has created composite index: [id, name] by gorm#AddIndex
 	Name               string         `json:"name" gorm:"not null;index" example:""`
 	DbType             string         `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`

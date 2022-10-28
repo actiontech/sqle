@@ -12,6 +12,8 @@ import (
 
 type RuleTemplate struct {
 	Model
+	// global rule-template has no ProjectId
+	ProjectId uint               `gorm:"index"`
 	Name      string             `json:"name"`
 	Desc      string             `json:"desc"`
 	DBType    string             `json:"db_type"`
