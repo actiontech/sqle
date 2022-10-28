@@ -126,7 +126,6 @@ func UpdateUser(c echo.Context) error {
 	// roles
 	var roles []*model.Role
 
-
 	// user_groups
 	var userGroups []*model.UserGroup
 	{
@@ -516,4 +515,122 @@ func GetUserTips(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    userTipsRes,
 	})
+}
+
+type CreateMemberReqV1 struct {
+	UserName string          `json:"user_name" valid:"required"`
+	IsOwner  bool            `json:"is_owner" valid:"required"`
+	Roles    []BindRoleReqV1 `json:"roles" valid:"required"`
+}
+
+type BindRoleReqV1 struct {
+	InstanceName string   `json:"instance_name" valid:"required"`
+	RoleNames    []string `json:"role_names" valid:"required"`
+}
+
+// AddMember
+// @Summary 添加成员
+// @Description add member
+// @Id addMemberV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param project_id path uint true "project id"
+// @Param data body v1.CreateMemberReqV1 true "add member"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_id}/members [post]
+func AddMember(c echo.Context) error {
+	return nil
+}
+
+type UpdateMemberReqV1 struct {
+	IsOwner *bool            `json:"is_owner"`
+	Roles   *[]BindRoleReqV1 `json:"roles"`
+}
+
+// UpdateMember
+// @Summary 修改成员
+// @Description update member
+// @Id updateMemberV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param project_id path uint true "project id"
+// @Param user_name path string true "user name"
+// @Param data body v1.UpdateMemberReqV1 true "update member"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_id}/members/{user_name} [patch]
+func UpdateMember(c echo.Context) error {
+	return nil
+}
+
+// DeleteMember
+// @Summary 删除成员
+// @Description delete member
+// @Id deleteMemberV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
+// @Param user_name path string true "user name"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_id}/members/{user_name} [delete]
+func DeleteMember(c echo.Context) error {
+	return nil
+}
+
+type GetMemberReqV1 struct {
+	FilterInstanceName string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterUserName     string `json:"filter_user_name" query:"filter_user_name"`
+	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
+type GetMembersRespV1 struct {
+	controller.BaseRes
+	Data      []GetMemberRespDataV1 `json:"data"`
+	TotalNums uint64                `json:"total_nums"`
+}
+
+type GetMemberRespDataV1 struct {
+	UserName string          `json:"user_name"`
+	IsOwner  bool            `json:"is_owner"`
+	Roles    []BindRoleReqV1 `json:"roles"`
+}
+
+// GetMembers
+// @Summary 获取成员列表
+// @Description get members
+// @Id getMembersV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Param filter_user_name query string false "filter user name"
+// @Param filter_instance_name query string false "filter instance name"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Param project_id path uint true "project id"
+// @Success 200 {object} v1.GetMembersRespV1
+// @router /v1/projects/{project_id}/members [get]
+func GetMembers(c echo.Context) error {
+	return nil
+}
+
+type GetMemberRespV1 struct {
+	controller.BaseRes
+	Data GetMemberRespDataV1 `json:"data"`
+}
+
+// GetMember
+// @Summary 获取成员信息
+// @Description get member
+// @Id getMemberV1
+// @Tags user
+// @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
+// @Param user_name path string true "user name"
+// @Success 200 {object} v1.GetMemberRespV1
+// @router /v1/projects/{project_id}/members/{user_name} [get]
+func GetMember(c echo.Context) error {
+	return nil
 }
