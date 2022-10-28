@@ -235,7 +235,6 @@ func UpdateUserGroup(c echo.Context) (err error) {
 	// roles
 	var roles []*model.Role
 
-
 	// users
 	var users []*model.User
 	{
@@ -297,4 +296,114 @@ func GetUserGroupTips(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    userGroupTipsRes,
 	})
+}
+
+type CreateMemberGroupReqV1 struct {
+	UserGroupName string          `json:"user_group_name" valid:"required"`
+	Roles         []BindRoleReqV1 `json:"roles" valid:"required"`
+}
+
+// AddMemberGroup
+// @Summary 添加成员组
+// @Description add member group
+// @Id addMemberGroupV1
+// @Tags user_group
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param project_id path uint true "project id"
+// @Param data body v1.CreateMemberGroupReqV1 true "add member group"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_id}/member_groups [post]
+func AddMemberGroup(c echo.Context) error {
+	return nil
+}
+
+type UpdateMemberGroupReqV1 struct {
+	Roles *[]BindRoleReqV1 `json:"roles"`
+}
+
+// UpdateMemberGroup
+// @Summary 修改成员组
+// @Description update member group
+// @Id updateMemberGroupV1
+// @Tags user_group
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param project_id path uint true "project id"
+// @Param user_group_name path string true "user group name"
+// @Param data body v1.UpdateMemberGroupReqV1 true "update member_group"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_id}/member_groups/{user_group_name} [patch]
+func UpdateMemberGroup(c echo.Context) error {
+	return nil
+}
+
+// DeleteMemberGroup
+// @Summary 删除成员组
+// @Description delete member group
+// @Id deleteMemberGroupV1
+// @Tags user_group
+// @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
+// @Param user_group_name path string true "user group name"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_id}/member_groups/{user_group_name} [delete]
+func DeleteMemberGroup(c echo.Context) error {
+	return nil
+}
+
+type GetMemberGroupReqV1 struct {
+	FilterInstanceName  string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterUserGroupName string `json:"filter_user_group_name" query:"filter_user_group_name"`
+	PageIndex           uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize            uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
+type GetMemberGroupsRespV1 struct {
+	controller.BaseRes
+	Data      []GetMemberGroupRespDataV1 `json:"data"`
+	TotalNums uint64                     `json:"total_nums"`
+}
+
+type GetMemberGroupRespDataV1 struct {
+	UserGroupName string          `json:"user_group_name"`
+	Roles         []BindRoleReqV1 `json:"roles"`
+}
+
+// GetMemberGroups
+// @Summary 获取成员组列表
+// @Description get member groups
+// @Id getMemberGroupsV1
+// @Tags user_group
+// @Security ApiKeyAuth
+// @Param filter_user_group_name query string false "filter user group name"
+// @Param filter_instance_name query string false "filter instance name"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Param project_id path uint true "project id"
+// @Success 200 {object} v1.GetMemberGroupsRespV1
+// @router /v1/projects/{project_id}/member_groups [get]
+func GetMemberGroups(c echo.Context) error {
+	return nil
+}
+
+type GetMemberGroupRespV1 struct {
+	controller.BaseRes
+	Data GetMemberGroupRespDataV1 `json:"data"`
+}
+
+// GetMemberGroup
+// @Summary 获取成员组信息
+// @Description get member group
+// @Id getMemberGroupV1
+// @Tags user_group
+// @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
+// @Param user_group_name path string true "user group name"
+// @Success 200 {object} v1.GetMemberGroupRespV1
+// @router /v1/projects/{project_id}/member_groups/{user_group_name} [get]
+func GetMemberGroup(c echo.Context) error {
+	return nil
 }
