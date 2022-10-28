@@ -17,6 +17,8 @@ type CreateUserReqV1 struct {
 	Email      string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
 	WeChatID   string   `json:"wechat_id" example:"UserID"`
 	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
+	// todo issue960 handle ManagementPermissionCodes in implementation
+	ManagementPermissionCodes []uint `json:"management_permission_code_list" form:"management_permission_code_list"`
 }
 
 // @Summary 创建用户
@@ -72,6 +74,8 @@ type UpdateUserReqV1 struct {
 	WeChatID   *string   `json:"wechat_id" example:"UserID"`
 	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
 	UserGroups *[]string `json:"user_group_name_list" form:"user_group_name_list"`
+	// todo issue960 handle ManagementPermissionCodes in implementation
+	ManagementPermissionCodes *[]uint `json:"management_permission_code_list,omitempty" form:"management_permission_code_list"`
 }
 
 // @Summary 更新用户信息
@@ -125,7 +129,6 @@ func UpdateUser(c echo.Context) error {
 
 	// roles
 	var roles []*model.Role
-
 
 	// user_groups
 	var userGroups []*model.UserGroup
@@ -243,6 +246,11 @@ type GetUserDetailResV1 struct {
 	Data UserDetailResV1 `json:"data"`
 }
 
+type ManagementPermission struct {
+	Code uint   `json:"code"`
+	Desc string `json:"desc"`
+}
+
 type UserDetailResV1 struct {
 	Name       string   `json:"user_name"`
 	Email      string   `json:"email"`
@@ -251,6 +259,8 @@ type UserDetailResV1 struct {
 	LoginType  string   `json:"login_type"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
 	UserGroups []string `json:"user_group_name_list,omitempty"`
+	// todo issue960 handle ManagementPermissionCodes in implementation
+	ManagementPermissionList []*ManagementPermission `json:"management_permission_list,omitempty"`
 }
 
 func convertUserToRes(user *model.User) UserDetailResV1 {
