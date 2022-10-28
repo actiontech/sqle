@@ -27,7 +27,7 @@ const (
 )
 
 // NOTE: related model:
-// - ProjectMemberRole
+// - ProjectMemberRole, ManagementPermission
 type User struct {
 	Model
 	// has created composite index: [id, login_name] by gorm#AddIndex
