@@ -135,6 +135,9 @@ var autoMigrateList = []interface{}{
 	&WorkflowInstanceRecord{},
 	&CloudBeaverUserCache{},
 	&CloudBeaverInstanceCache{},
+	&Project{},
+	&ProjectMemberRole{},
+	&ManagementPermission{},
 }
 
 func (s *Storage) AutoMigrate() error {
