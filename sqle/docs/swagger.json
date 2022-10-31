@@ -876,264 +876,6 @@
                 }
             }
         },
-        "/v1/projects/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get SQL explain and related table metadata for analysis",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取task相关的SQL执行计划和表元数据",
-                "operationId": "getTaskAnalysisData",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql number",
-                        "name": "number",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/audit_whitelist/{audit_whitelist_id}/": {
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "remove sql white",
-                "tags": [
-                    "audit_whitelist"
-                ],
-                "summary": "删除SQL白名单信息",
-                "operationId": "deleteAuditWhitelistByIdV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit whitelist id",
-                        "name": "audit_whitelist_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update sql whitelist by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "audit_whitelist"
-                ],
-                "summary": "更新SQL白名单",
-                "operationId": "UpdateAuditWhitelistByIdV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "sql audit whitelist id",
-                        "name": "audit_whitelist_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update sql whitelist req",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateAuditWhitelistReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/rule_templates/{rule_template_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get rule template detail in project",
-                "tags": [
-                    "rule_template"
-                ],
-                "summary": "获取项目规则模板信息",
-                "operationId": "getProjectRuleTemplateV1",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetProjectRuleTemplateResV1"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "delete rule template in project",
-                "tags": [
-                    "rule_template"
-                ],
-                "summary": "删除项目规则模板",
-                "operationId": "deleteProjectRuleTemplateV1",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update rule template in project",
-                "tags": [
-                    "rule_template"
-                ],
-                "summary": "更新项目规则模板",
-                "operationId": "updateProjectRuleTemplateV1",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update rule template request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateProjectRuleTemplateReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/rule_templates/{rule_template_id}/clone": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "clone a rule template in project",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "rule_template"
-                ],
-                "summary": "克隆项目规则模板",
-                "operationId": "cloneProjectRuleTemplateV1",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "clone rule template request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CloneProjectRuleTemplateReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/workflows/cancel": {
             "post": {
                 "security": [
@@ -1673,6 +1415,52 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
                         }
                     }
                 }
@@ -2338,6 +2126,94 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.CreateAuditWhitelistReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/audit_whitelist/{audit_whitelist_id}/": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "remove sql white",
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "删除SQL白名单信息",
+                "operationId": "deleteAuditWhitelistByIdV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit whitelist id",
+                        "name": "audit_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update sql whitelist by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "更新SQL白名单",
+                "operationId": "UpdateAuditWhitelistByIdV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql audit whitelist id",
+                        "name": "audit_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update sql whitelist req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditWhitelistReqV1"
                         }
                     }
                 ],
@@ -3437,6 +3313,179 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.CreateProjectRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/rule_templates/{rule_template_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule template detail in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取项目规则模板信息",
+                "operationId": "getProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "rule template id",
+                        "name": "rule_template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectRuleTemplateResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete rule template in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "删除项目规则模板",
+                "operationId": "deleteProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "rule template id",
+                        "name": "rule_template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update rule template in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "更新项目规则模板",
+                "operationId": "updateProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "rule template id",
+                        "name": "rule_template_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update rule template request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateProjectRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_id}/rule_templates/{rule_template_id}/clone": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "clone a rule template in project",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "克隆项目规则模板",
+                "operationId": "cloneProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "rule template id",
+                        "name": "rule_template_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "clone rule template request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CloneProjectRuleTemplateReqV1"
                         }
                     }
                 ],
