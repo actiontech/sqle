@@ -754,6 +754,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/management_permissions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get platform management permissions",
+                "tags": [
+                    "management_permission"
+                ],
+                "summary": "获取平台管理权限列表",
+                "operationId": "GetManagementPermissionsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetManagementPermissionsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/oauth2/link": {
             "get": {
                 "description": "oauth2 link",
@@ -7517,6 +7540,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetManagementPermissionsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetMemberGroupRespDataV1": {
             "type": "object",
             "properties": {
@@ -9008,6 +9050,17 @@ var doc = `{
                 }
             }
         },
+        "v1.ManagementPermissionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "desc": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.Oauth2ConfigurationReqV1": {
             "type": "object",
             "properties": {
@@ -10272,6 +10325,13 @@ var doc = `{
                 },
                 "login_type": {
                     "type": "string"
+                },
+                "management_permission_list": {
+                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ManagementPermission"
+                    }
                 },
                 "user_group_name_list": {
                     "type": "array",
