@@ -292,7 +292,7 @@ definitions:
     type: object
   v1.BatchCancelWorkflowsReqV1:
     properties:
-      workflow_ids:
+      workflow_names:
         items:
           type: string
         type: array
@@ -2995,6 +2995,8 @@ definitions:
         type: string
       desc:
         type: string
+      project_id:
+        type: integer
       status:
         enum:
         - wait_for_audit
@@ -3007,7 +3009,7 @@ definitions:
         type: string
       subject:
         type: string
-      workflow_id:
+      workflow_name:
         type: integer
     type: object
   v1.WorkflowPassPercentV1:
@@ -5276,18 +5278,23 @@ paths:
       summary: 创建工单
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/:
+  /v1/projects/{project_id}/workflows/{workflow_name}/:
     patch:
       consumes:
       - application/json
       description: update workflow when it is rejected to creator.
       operationId: updateWorkflowV1
       parameters:
-      - description: workflow id
+      - description: workflow name
         in: path
-        name: workflow_id
+        name: workflow_name
         required: true
         type: string
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: update workflow request
         in: body
         name: instance
@@ -5306,14 +5313,19 @@ paths:
       summary: 更新工单（驳回后才可更新）
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/cancel:
+  /v1/projects/{project_id}/workflows/{workflow_name}/cancel:
     post:
       description: cancel workflow
       operationId: cancelWorkflowV1
       parameters:
-      - description: workflow id
+      - description: project id
         in: path
-        name: workflow_id
+        name: project_id
+        required: true
+        type: integer
+      - description: workflow name
+        in: path
+        name: workflow_name
         required: true
         type: string
       responses:
@@ -5326,14 +5338,14 @@ paths:
       summary: 审批关闭（中止）
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/steps/{workflow_step_id}/approve:
+  /v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/approve:
     post:
       description: approve workflow
       operationId: approveWorkflowV1
       parameters:
-      - description: workflow id
+      - description: workflow name
         in: path
-        name: workflow_id
+        name: workflow_name
         required: true
         type: string
       - description: workflow step id
@@ -5341,6 +5353,11 @@ paths:
         name: workflow_step_id
         required: true
         type: string
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -5351,16 +5368,21 @@ paths:
       summary: 审批通过
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/steps/{workflow_step_id}/reject:
+  /v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/reject:
     post:
       description: reject workflow
       operationId: rejectWorkflowV1
       parameters:
-      - description: workflow id
+      - description: workflow name
         in: path
-        name: workflow_id
+        name: workflow_name
         required: true
         type: string
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: workflow step id
         in: path
         name: workflow_step_id
@@ -5382,14 +5404,19 @@ paths:
       summary: 审批驳回
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/tasks:
+  /v1/projects/{project_id}/workflows/{workflow_name}/tasks:
     get:
       description: get summary of workflow instance tasks
       operationId: getSummaryOfInstanceTasksV1
       parameters:
-      - description: workflow id
+      - description: workflow name
         in: path
-        name: workflow_id
+        name: workflow_name
+        required: true
+        type: integer
+      - description: project id
+        in: path
+        name: project_id
         required: true
         type: integer
       responses:
@@ -5402,16 +5429,21 @@ paths:
       summary: 获取工单数据源任务概览
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/tasks/{task_id}/execute:
+  /v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/execute:
     post:
       description: execute one task on workflow
       operationId: executeOneTaskOnWorkflowV1
       parameters:
-      - description: workflow id
+      - description: workflow name
         in: path
-        name: workflow_id
+        name: workflow_name
         required: true
         type: string
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: task id
         in: path
         name: task_id
@@ -5427,16 +5459,16 @@ paths:
       summary: 工单提交单个数据源上线
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/tasks/{task_id}/schedule:
+  /v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/schedule:
     put:
       consumes:
       - application/json
       description: update workflow schedule.
       operationId: updateWorkflowScheduleV1
       parameters:
-      - description: workflow id
+      - description: workflow name
         in: path
-        name: workflow_id
+        name: workflow_name
         required: true
         type: string
       - description: task id
@@ -5444,6 +5476,11 @@ paths:
         name: task_id
         required: true
         type: string
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: update workflow schedule request
         in: body
         name: instance
@@ -5462,16 +5499,21 @@ paths:
       summary: 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
       tags:
       - workflow
-  /v1/projects/workflows/{workflow_id}/tasks/execute:
+  /v1/projects/{project_id}/workflows/{workflow_name}/tasks/execute:
     post:
       description: execute tasks on workflow
       operationId: executeTasksOnWorkflowV1
       parameters:
-      - description: workflow id
+      - description: workflow name
         in: path
-        name: workflow_id
+        name: workflow_name
         required: true
         type: string
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -5482,11 +5524,16 @@ paths:
       summary: 多数据源批量上线
       tags:
       - workflow
-  /v1/projects/workflows/cancel:
+  /v1/projects/{project_id}/workflows/cancel:
     post:
       description: batch cancel workflows
       operationId: batchCancelWorkflowsV1
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: batch cancel workflows request
         in: body
         name: BatchCancelWorkflowsReqV1
@@ -6838,6 +6885,78 @@ paths:
       summary: admin修改其他用户密码
       tags:
       - user
+  /v1/workflows:
+    get:
+      description: get global workflow list
+      operationId: getGlobalWorkflowsV1
+      parameters:
+      - description: filter subject
+        in: query
+        name: filter_subject
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: filter_task_execute_start_time_from
+        in: query
+        name: filter_task_execute_start_time_from
+        type: string
+      - description: filter_task_execute_start_time_to
+        in: query
+        name: filter_task_execute_start_time_to
+        type: string
+      - description: filter create user name
+        in: query
+        name: filter_create_user_name
+        type: string
+      - description: filter workflow status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        name: filter_status
+        type: string
+      - description: filter current step assignee user name
+        in: query
+        name: filter_current_step_assignee_user_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_task_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局工单列表
+      tags:
+      - workflow
 securityDefinitions:
   ApiKeyAuth:
     in: header
