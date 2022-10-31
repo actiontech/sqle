@@ -4167,6 +4167,11 @@ paths:
       description: get SQL explain and related table metadata for analysis
       operationId: getTaskAnalysisData
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: audit plan report id
         in: path
         name: audit_plan_report_id
@@ -4247,6 +4252,11 @@ paths:
       description: remove sql white
       operationId: deleteAuditWhitelistByIdV1
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: audit whitelist id
         in: path
         name: audit_whitelist_id
@@ -4268,6 +4278,11 @@ paths:
       description: update sql whitelist by id
       operationId: UpdateAuditWhitelistByIdV1
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: sql audit whitelist id
         in: path
         name: audit_whitelist_id
@@ -5004,6 +5019,11 @@ paths:
       description: delete rule template in project
       operationId: deleteProjectRuleTemplateV1
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: rule template id
         in: path
         name: rule_template_id
@@ -5023,6 +5043,11 @@ paths:
       description: get rule template detail in project
       operationId: getProjectRuleTemplateV1
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: rule template id
         in: path
         name: rule_template_id
@@ -5042,6 +5067,11 @@ paths:
       description: update rule template in project
       operationId: updateProjectRuleTemplateV1
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: rule template id
         in: path
         name: rule_template_id
@@ -5070,6 +5100,11 @@ paths:
       description: clone a rule template in project
       operationId: cloneProjectRuleTemplateV1
       parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: integer
       - description: rule template id
         in: path
         name: rule_template_id
