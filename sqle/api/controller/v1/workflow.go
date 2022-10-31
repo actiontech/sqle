@@ -258,22 +258,6 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-type GetWorkflowResV1 struct {
-	controller.BaseRes
-	Data *WorkflowResV1 `json:"data"`
-}
-
-type WorkflowResV1 struct {
-	Id                       uint                    `json:"workflow_id"`
-	Subject                  string                  `json:"subject"`
-	Desc                     string                  `json:"desc,omitempty"`
-	CreateUser               string                  `json:"create_user_name"`
-	CreateTime               *time.Time              `json:"create_time"`
-	InstanceMaintenanceTimes []*MaintenanceTimeResV1 `json:"instance_maintenance_times"`
-	Record                   *WorkflowRecordResV1    `json:"record"`
-	RecordHistory            []*WorkflowRecordResV1  `json:"record_history_list,omitempty"`
-}
-
 type WorkflowRecordResV1 struct {
 	TaskId            uint                 `json:"task_id"`
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
@@ -350,10 +334,11 @@ func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId 
 // @Tags workflow
 // @Id approveWorkflowV1
 // @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
+// @Param workflow_name path string true "workflow name"
 // @Param workflow_step_id path string true "workflow step id"
+// @Param project_id path uint true "project id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	id, err := FormatStringToInt(workflowId)
@@ -428,11 +413,12 @@ type RejectWorkflowReqV1 struct {
 // @Tags workflow
 // @Id rejectWorkflowV1
 // @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
+// @Param workflow_name path string true "workflow name"
+// @Param project_id path uint true "project id"
 // @Param workflow_step_id path string true "workflow step id"
 // @param workflow_approve body v1.RejectWorkflowReqV1 true "workflow approve request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/{workflow_id}/steps/{workflow_step_id}/reject [post]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/reject [post]
 func RejectWorkflow(c echo.Context) error {
 	req := new(RejectWorkflowReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -508,9 +494,10 @@ func RejectWorkflow(c echo.Context) error {
 // @Tags workflow
 // @Id cancelWorkflowV1
 // @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
+// @Param project_id path uint true "project id"
+// @Param workflow_name path string true "workflow name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/{workflow_id}/cancel [post]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/cancel [post]
 func CancelWorkflow(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	id, err := FormatStringToInt(workflowId)
@@ -549,7 +536,7 @@ func CancelWorkflow(c echo.Context) error {
 }
 
 type BatchCancelWorkflowsReqV1 struct {
-	WorkflowIds []string `json:"workflow_ids" form:"workflow_ids"`
+	WorkflowNames []string `json:"workflow_names" form:"workflow_names"`
 }
 
 // BatchCancelWorkflows batch cancel workflows.
@@ -558,17 +545,18 @@ type BatchCancelWorkflowsReqV1 struct {
 // @Tags workflow
 // @Id batchCancelWorkflowsV1
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param BatchCancelWorkflowsReqV1 body v1.BatchCancelWorkflowsReqV1 true "batch cancel workflows request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/cancel [post]
+// @router /v1/projects/{project_id}/workflows/cancel [post]
 func BatchCancelWorkflows(c echo.Context) error {
 	req := new(BatchCancelWorkflowsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 
-	workflows := make([]*model.Workflow, len(req.WorkflowIds))
-	for i, workflowId := range req.WorkflowIds {
+	workflows := make([]*model.Workflow, len(req.WorkflowNames))
+	for i, workflowId := range req.WorkflowNames {
 		workflow, err := checkCancelWorkflow(workflowId)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -634,10 +622,11 @@ func FormatStringToUint64(s string) (ret uint64, err error) {
 // @Tags workflow
 // @Id executeOneTaskOnWorkflowV1
 // @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
+// @Param workflow_name path string true "workflow name"
+// @Param project_id path uint true "project id"
 // @Param task_id path string true "task id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/{workflow_id}/tasks/{task_id}/execute [post]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/execute [post]
 func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 	workflowIdStr := c.Param("workflow_id")
 	workflowId, err := FormatStringToInt(workflowIdStr)
@@ -790,9 +779,10 @@ type GetWorkflowTasksItemV1 struct {
 // @Tags workflow
 // @Id getSummaryOfInstanceTasksV1
 // @Security ApiKeyAuth
-// @Param workflow_id path integer true "workflow id"
+// @Param workflow_name path integer true "workflow name"
+// @Param project_id path uint true "project id"
 // @Success 200 {object} v1.GetWorkflowTasksResV1
-// @router /v1/projects/workflows/{workflow_id}/tasks [get]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/tasks [get]
 func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 	workflowIdStr := c.Param("workflow_id")
 	workflowId, err := FormatStringToInt(workflowIdStr)
@@ -1091,7 +1081,8 @@ type GetWorkflowsResV1 struct {
 }
 
 type WorkflowDetailResV1 struct {
-	Id                      uint       `json:"workflow_id"`
+	Name                    uint       `json:"workflow_name"`
+	ProjectID               uint       `json:"project_id"`
 	Subject                 string     `json:"subject"`
 	Desc                    string     `json:"desc"`
 	CreateUser              string     `json:"create_user_name"`
@@ -1099,6 +1090,30 @@ type WorkflowDetailResV1 struct {
 	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
 	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+}
+
+// GetGlobalWorkflowsV1
+// @Summary 获取全局工单列表
+// @Description get global workflow list
+// @Tags workflow
+// @Id getGlobalWorkflowsV1
+// @Security ApiKeyAuth
+// @Param filter_subject query string false "filter subject"
+// @Param filter_create_time_from query string false "filter create time from"
+// @Param filter_create_time_to query string false "filter create time to"
+// @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
+// @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
+// @Param filter_create_user_name query string false "filter create user name"
+// @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
+// @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
+// @Param filter_task_instance_name query string false "filter instance name"
+// @Param page_index query uint32 false "page index"
+// @Param page_size query uint32 false "size of per page"
+// @Param project_id path uint true "project id"
+// @Success 200 {object} v1.GetWorkflowsResV1
+// @router /v1/workflows [get]
+func GetGlobalWorkflowsV1(c echo.Context) error {
+	return nil
 }
 
 // GetWorkflowsV1
@@ -1162,7 +1177,6 @@ func GetWorkflowsV1(c echo.Context) error {
 	workflowsReq := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
 		workflowReq := &WorkflowDetailResV1{
-			Id:                      workflow.Id,
 			Subject:                 workflow.Subject,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
@@ -1193,10 +1207,11 @@ type UpdateWorkflowReqV1 struct {
 // @Produce json
 // @Id updateWorkflowV1
 // @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
+// @Param workflow_name path string true "workflow name"
+// @Param project_id path uint true "project id"
 // @Param instance body v1.UpdateWorkflowReqV1 true "update workflow request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/{workflow_id}/ [patch]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/ [patch]
 func UpdateWorkflowV1(c echo.Context) error {
 	req := new(UpdateWorkflowReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -1325,11 +1340,12 @@ type UpdateWorkflowScheduleReqV1 struct {
 // @Produce json
 // @Id updateWorkflowScheduleV1
 // @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
+// @Param workflow_name path string true "workflow name"
 // @Param task_id path string true "task id"
+// @Param project_id path uint true "project id"
 // @Param instance body v1.UpdateWorkflowScheduleReqV1 true "update workflow schedule request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/{workflow_id}/tasks/{task_id}/schedule [put]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/schedule [put]
 func UpdateWorkflowScheduleV1(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	workflowIdInt, err := FormatStringToInt(workflowId)
@@ -1423,9 +1439,10 @@ func UpdateWorkflowScheduleV1(c echo.Context) error {
 // @Tags workflow
 // @Id executeTasksOnWorkflowV1
 // @Security ApiKeyAuth
-// @Param workflow_id path string true "workflow id"
+// @Param workflow_name path string true "workflow name"
+// @Param project_id path uint true "project id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/workflows/{workflow_id}/tasks/execute [post]
+// @router /v1/projects/{project_id}/workflows/{workflow_name}/tasks/execute [post]
 func ExecuteTasksOnWorkflowV1(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 	id, err := FormatStringToInt(workflowId)
