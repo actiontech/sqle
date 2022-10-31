@@ -1451,6 +1451,13 @@ var doc = `{
                 "operationId": "getTaskAnalysisData",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "audit plan report id",
                         "name": "audit_plan_report_id",
@@ -2163,6 +2170,13 @@ var doc = `{
                 "operationId": "deleteAuditWhitelistByIdV1",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "audit whitelist id",
                         "name": "audit_whitelist_id",
@@ -2195,6 +2209,13 @@ var doc = `{
                 "summary": "更新SQL白名单",
                 "operationId": "UpdateAuditWhitelistByIdV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "sql audit whitelist id",
@@ -3337,6 +3358,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
                         "description": "rule template id",
                         "name": "rule_template_id",
                         "in": "path",
@@ -3367,6 +3395,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
                         "description": "rule template id",
                         "name": "rule_template_id",
                         "in": "path",
@@ -3395,6 +3430,13 @@ var doc = `{
                 "summary": "更新项目规则模板",
                 "operationId": "updateProjectRuleTemplateV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "rule template id",
@@ -3439,6 +3481,13 @@ var doc = `{
                 "summary": "克隆项目规则模板",
                 "operationId": "cloneProjectRuleTemplateV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "rule template id",

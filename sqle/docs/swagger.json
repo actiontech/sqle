@@ -1435,6 +1435,13 @@
                 "operationId": "getTaskAnalysisData",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "audit plan report id",
                         "name": "audit_plan_report_id",
@@ -2147,6 +2154,13 @@
                 "operationId": "deleteAuditWhitelistByIdV1",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "audit whitelist id",
                         "name": "audit_whitelist_id",
@@ -2179,6 +2193,13 @@
                 "summary": "更新SQL白名单",
                 "operationId": "UpdateAuditWhitelistByIdV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "sql audit whitelist id",
@@ -3321,6 +3342,13 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
                         "description": "rule template id",
                         "name": "rule_template_id",
                         "in": "path",
@@ -3351,6 +3379,13 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
                         "description": "rule template id",
                         "name": "rule_template_id",
                         "in": "path",
@@ -3379,6 +3414,13 @@
                 "summary": "更新项目规则模板",
                 "operationId": "updateProjectRuleTemplateV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "rule template id",
@@ -3423,6 +3465,13 @@
                 "summary": "克隆项目规则模板",
                 "operationId": "cloneProjectRuleTemplateV1",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "rule template id",

@@ -1156,6 +1156,7 @@ type GetAuditPlanAnalysisDataResV1 struct {
 // @Description get SQL explain and related table metadata for analysis
 // @Id getTaskAnalysisData
 // @Tags audit_plan
+// @Param project_id path uint true "project id"
 // @Param audit_plan_report_id path string true "audit plan report id"
 // @Param number path string true "sql number"
 // @Security ApiKeyAuth

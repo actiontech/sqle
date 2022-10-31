@@ -664,6 +664,7 @@ type UpdateProjectRuleTemplateReqV1 struct {
 // @Id updateProjectRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param rule_template_id path uint true "rule template id"
 // @Param instance body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
@@ -696,6 +697,7 @@ type ProjectRuleTemplateInstance struct {
 // @Id getProjectRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param rule_template_id path uint true "rule template id"
 // @Success 200 {object} v1.GetProjectRuleTemplateResV1
 // @router /v1/projects/{project_id}/rule_templates/{rule_template_id}/ [get]
@@ -709,6 +711,7 @@ func GetProjectRuleTemplate(c echo.Context) error {
 // @Id deleteProjectRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
+// @Param project_id path uint true "project id"
 // @Param rule_template_id path uint true "rule template id"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_id}/rule_templates/{rule_template_id}/ [delete]
@@ -758,6 +761,7 @@ type CloneProjectRuleTemplateReqV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Accept json
+// @Param project_id path uint true "project id"
 // @Param rule_template_id path uint true "rule template id"
 // @Param instance body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
