@@ -431,6 +431,8 @@ type UserResV1 struct {
 	LoginType  string   `json:"login_type"`
 	IsDisabled bool     `json:"is_disabled,omitempty"`
 	UserGroups []string `json:"user_group_name_list,omitempty"`
+	// todo issue960 handle ManagementPermissionCodes in implementation
+	ManagementPermissionList []*ManagementPermission `json:"management_permission_list,omitempty"`
 }
 
 // @Summary 获取用户信息列表
