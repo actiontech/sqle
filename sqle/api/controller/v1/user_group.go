@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -274,7 +276,14 @@ type GetUserGroupTipsResV1 struct {
 // @router /v1/user_group_tips [get]
 func GetUserGroupTips(c echo.Context) error {
 	s := model.GetStorage()
-	userGroupNames, err := s.GetAllUserGroupTip()
+
+	projectIDStr := c.Param("filter_project")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("project id should be uint but not"))
+	}
+
+	userGroupNames, err := s.GetUserGroupTipByProject(uint(projectID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
