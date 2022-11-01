@@ -1,5 +1,7 @@
 package model
 
+import "github.com/actiontech/sqle/sqle/errors"
+
 type Project struct {
 	Model
 	Name string
@@ -20,4 +22,12 @@ type Project struct {
 
 	WorkflowTemplateId uint              `gorm:"not null"`
 	WorkflowTemplate   *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
+}
+
+func (s *Storage) IsProjectManager(userID uint, projectID uint) (bool, error) {
+	var count uint
+
+	err := s.db.Table("project_manager").Where("user_id = ?", userID).Where("project_id = ?", projectID).Count(&count).Error
+
+	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
