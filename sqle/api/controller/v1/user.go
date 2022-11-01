@@ -3,12 +3,12 @@ package v1
 import (
 	_errors "errors"
 	"fmt"
-	"net/http"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
+	"net/http"
+	"strconv"
 )
 
 type CreateUserReqV1 struct {
@@ -507,7 +507,14 @@ type GetUserTipsResV1 struct {
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
 	s := model.GetStorage()
-	users, err := s.GetAllUserTip()
+
+	projectIDStr := c.Param("filter_project")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("project id should be uint but not"))
+	}
+
+	users, err := s.GetUserTipByProject(uint(projectID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
