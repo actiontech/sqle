@@ -285,7 +285,6 @@ func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-// NOTE: parameter: roles([]*Users) need to be distinguished as nil or zero length slice.
 func (s *Storage) SaveUserAndAssociations(
 	user *User, userGroups []*UserGroup) (err error) {
 	return s.Tx(func(txDB *gorm.DB) error {
