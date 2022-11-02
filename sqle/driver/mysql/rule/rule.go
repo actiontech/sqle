@@ -341,7 +341,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
