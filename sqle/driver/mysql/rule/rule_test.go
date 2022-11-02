@@ -12,12 +12,12 @@ func TestInspectResults(t *testing.T) {
 	handler := RuleHandlerMap[DDLCheckPKWithoutIfNotExists]
 	results.Add(handler.Rule.Level, handler.Message)
 	assert.Equal(t, driver.RuleLevelError, results.Level())
-	assert.Equal(t, "[error]新建表必须加入if not exists create，保证重复执行不报错", results.Message())
+	assert.Equal(t, "[error]新建表必须加入 if not exists，保证重复执行不报错", results.Message())
 
 	results.Add(driver.RuleLevelError, "表 %s 不存在", "not_exist_tb")
 	assert.Equal(t, driver.RuleLevelError, results.Level())
 	assert.Equal(t,
-		`[error]新建表必须加入if not exists create，保证重复执行不报错
+		`[error]新建表必须加入 if not exists，保证重复执行不报错
 [error]表 not_exist_tb 不存在`, results.Message())
 
 	results2 := driver.NewInspectResults()
@@ -25,7 +25,7 @@ func TestInspectResults(t *testing.T) {
 	results2.Add(driver.RuleLevelNotice, "test")
 	assert.Equal(t, driver.RuleLevelError, results2.Level())
 	assert.Equal(t,
-		`[error]新建表必须加入if not exists create，保证重复执行不报错
+		`[error]新建表必须加入 if not exists，保证重复执行不报错
 [error]表 not_exist_tb 不存在
 [notice]test`, results2.Message())
 
@@ -34,7 +34,7 @@ func TestInspectResults(t *testing.T) {
 	results3.Add(driver.RuleLevelNotice, "[osc]test")
 	assert.Equal(t, driver.RuleLevelError, results3.Level())
 	assert.Equal(t,
-		`[error]新建表必须加入if not exists create，保证重复执行不报错
+		`[error]新建表必须加入 if not exists，保证重复执行不报错
 [error]表 not_exist_tb 不存在
 [notice]test
 [osc]test`, results3.Message())

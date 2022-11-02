@@ -266,7 +266,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
@@ -341,7 +341,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
@@ -393,7 +393,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
@@ -406,11 +406,11 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckPKWithoutIfNotExists,
-			Desc:     "新建表必须加入if not exists create，保证重复执行不报错",
+			Desc:     "新建表必须加入 if not exists，保证重复执行不报错",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeUsageSuggestion,
 		},
-		Message:      "新建表必须加入if not exists create，保证重复执行不报错",
+		Message:      "新建表必须加入 if not exists，保证重复执行不报错",
 		AllowOffline: true,
 		Func:         checkIfNotExist,
 	},
@@ -911,7 +911,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "5000",
+					Value: "100",
 					Desc:  "最大插入行数",
 					Type:  params.ParamTypeInt,
 				},
@@ -930,7 +930,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "1000",
+					Value: "50",
 					Desc:  "in语句参数最大个数",
 					Type:  params.ParamTypeInt,
 				},
@@ -1399,29 +1399,29 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP COLUMN col;
 			Name:     DDLHintDropColumn,
-			Desc:     "删除列为高危操作",
+			Desc:     "禁止进行删除列的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除列为高危操作",
+		Message: "禁止进行删除列的操作",
 		Func:    hintDropColumn,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
 			Name:     DDLHintDropPrimaryKey,
-			Desc:     "删除主键为高危操作",
+			Desc:     "禁止进行删除主键的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除主键为高危操作",
+		Message: "禁止进行删除主键的操作",
 		Func:    hintDropPrimaryKey,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
 			Name:     DDLHintDropForeignKey,
-			Desc:     "删除外键为高危操作",
+			Desc:     "禁止进行删除外键的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除外键为高危操作",
+		Message: "禁止进行删除外键的操作",
 		Func:    hintDropForeignKey,
 	},
 	{
@@ -1436,11 +1436,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
 			Name:     DMLHintInNullOnlyFalse,
-			Desc:     "IN (NULL)/NOT IN (NULL) 永远非真",
+			Desc:     "避免使用 IN (NULL) 或者 NOT IN (NULL)",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDMLConvention,
 		},
-		Message: "IN (NULL)/NOT IN (NULL) 永远非真",
+		Message: "避免使用IN (NULL)/NOT IN (NULL) ，该用法永远非真将导致条件失效",
 		Func:    hintInNullOnlyFalse,
 	}, {
 		Rule: driver.Rule{ //select * from user where id in (a);
@@ -1464,11 +1464,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
 			Name:     DDLCheckFullWidthQuotationMarks,
-			Desc:     "DDL 语句中使用了中文全角引号",
+			Desc:     "检测DDL语句中是否使用了中文全角引号",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "DDL 语句中使用了中文全角引号",
+		Message: "DDL 语句中使用了中文全角引号，这可能是书写错误",
 		Func:    checkFullWidthQuotationMarks,
 	}, {
 		Rule: driver.Rule{ //select name from tbl where id < 1000 order by rand(1)
@@ -1524,7 +1524,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "64",
+					Value: "1024",
 					Desc:  "SQL最大长度",
 					Type:  params.ParamTypeInt,
 				},
@@ -1568,7 +1568,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "5",
+					Value: "40",
 					Desc:  "最大列数",
 					Type:  params.ParamTypeInt,
 				},
@@ -1632,11 +1632,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //SELECT SUM(COL) FROM tbl;
 			Name:     DMLHintSumFuncTips,
-			Desc:     "使用 SUM(COL) 时需注意 NPE 问题",
+			Desc:     "避免使用 SUM(COL)",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
-		Message: "使用 SUM(COL) 时需注意 NPE 问题",
+		Message: "避免使用 SUM(COL) ，该用法存在返回NULL值导致程序空指针的风险",
 		Func:    hintSumFuncTips,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));

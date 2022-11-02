@@ -226,6 +226,7 @@ func TestDDLCheckTableSize(t *testing.T) {
 
 func TestDMLCheckTableSize(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckTableSize].Rule
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "16")
 
 	// TODO 'select from table1 , table2 ;' There is currently no single test, because this sql sqle cannot be supported as of the time of writing the comment
 	runSingleRuleInspectCase(rule, t, "select: table1 oversized", DefaultMysqlInspect(),
@@ -4752,17 +4753,19 @@ func TestDMLNotRecommendGroupByExpression(t *testing.T) {
 }
 
 func TestDMLCheckSQLLength(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "64")
 	for _, sql := range []string{
 		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaaaa'", // len = 65
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSQLLength))
+		runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckSQLLength))
 	}
 
 	for _, sql := range []string{
 		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaaa'", // len = 64
 		"select * from exist_tb_1 where id = 'aaaaaaaaaaaaaaaaaaaaaaaaa'",  // len = 63
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSQLLength].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
+		runSingleRuleInspectCase(rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
 	}
 
 }
@@ -4804,13 +4807,16 @@ func TestDMLNotRecommendUpdatePK(t *testing.T) {
 }
 
 func TestDDLCheckColumnQuantity(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnQuantity].Rule
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "5")
+
 	for _, sql := range []string{
 		"create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);",
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnQuantity].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckColumnQuantity))
+		runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckColumnQuantity))
 	}
 
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnQuantity].Rule, t, "success", DefaultMysqlInspect(),
+	runSingleRuleInspectCase(rule, t, "success", DefaultMysqlInspect(),
 		"create table t(c1 int,c2 int,c3 int,c4 int,c5 int);",
 		newTestResult())
 }
