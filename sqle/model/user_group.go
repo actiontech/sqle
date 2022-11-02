@@ -41,7 +41,6 @@ func (s *Storage) GetUserGroupByName(name string) (
 	return userGroup, true, err
 }
 
-// NOTE: parameter: us([]*Users) need to be distinguished as nil or zero length slice.
 func (s *Storage) SaveUserGroupAndAssociations(
 	ug *UserGroup, us []*User) (err error) {
 
