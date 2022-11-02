@@ -46,8 +46,6 @@ func CreateUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("user is exist")))
 	}
 
-	var roles []*model.Role
-
 	var userGroups []*model.UserGroup
 	{
 		if req.UserGroups != nil || len(req.UserGroups) > 0 {
@@ -66,7 +64,7 @@ func CreateUser(c echo.Context) error {
 	}
 
 	return controller.JSONBaseErrorReq(c,
-		s.SaveUserAndAssociations(user, roles, userGroups))
+		s.SaveUserAndAssociations(user, userGroups))
 }
 
 type UpdateUserReqV1 struct {
@@ -127,9 +125,6 @@ func UpdateUser(c echo.Context) error {
 		}
 	}
 
-	// roles
-	var roles []*model.Role
-
 	// user_groups
 	var userGroups []*model.UserGroup
 	{
@@ -146,7 +141,7 @@ func UpdateUser(c echo.Context) error {
 
 	}
 
-	return controller.JSONBaseErrorReq(c, s.SaveUserAndAssociations(user, roles, userGroups))
+	return controller.JSONBaseErrorReq(c, s.SaveUserAndAssociations(user, userGroups))
 }
 
 // @Summary 删除用户
