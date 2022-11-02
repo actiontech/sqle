@@ -911,7 +911,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "5000",
+					Value: "100",
 					Desc:  "最大插入行数",
 					Type:  params.ParamTypeInt,
 				},
