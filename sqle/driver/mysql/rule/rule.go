@@ -1524,7 +1524,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "64",
+					Value: "1024",
 					Desc:  "SQL最大长度",
 					Type:  params.ParamTypeInt,
 				},
