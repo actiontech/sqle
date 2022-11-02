@@ -73,11 +73,10 @@ func GetRoleTips(c echo.Context) error {
 	})
 }
 
-
 type CreateRoleReqV1 struct {
-	Name           string   `json:"role_name" form:"role_name" valid:"required,name"`
-	Desc           string   `json:"role_desc" form:"role_desc"`
-	OperationCodes []uint   `json:"operation_code_list" form:"operation_code_list"`
+	Name           string `json:"role_name" form:"role_name" valid:"required,name"`
+	Desc           string `json:"role_desc" form:"role_desc"`
+	OperationCodes []uint `json:"operation_code_list" form:"operation_code_list"`
 }
 
 // @Summary 创建角色
@@ -112,10 +111,6 @@ func CreateRole(c echo.Context) (err error) {
 		}
 	}
 
-	// check instances
-	var instances []*model.Instance
-
-
 	// check operation codes
 	{
 		if len(req.OperationCodes) > 0 {
@@ -125,28 +120,20 @@ func CreateRole(c echo.Context) (err error) {
 		}
 	}
 
-	// check users
-	var users []*model.User
-
-
-	// check user groups
-	var userGroups []*model.UserGroup
-
-
 	newRole := &model.Role{
 		Name: req.Name,
 		Desc: req.Desc,
 	}
 
 	return controller.JSONBaseErrorReq(c,
-		s.SaveRoleAndAssociations(newRole, instances, req.OperationCodes, users, userGroups),
+		s.SaveRoleAndAssociations(newRole, req.OperationCodes),
 	)
 }
 
 type GetRolesReqV1 struct {
-	FilterRoleName     string `json:"filter_role_name" query:"filter_role_name"`
-	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FilterRoleName string `json:"filter_role_name" query:"filter_role_name"`
+	PageIndex      uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize       uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetRolesResV1 struct {
@@ -193,9 +180,9 @@ func GetRoles(c echo.Context) error {
 	{
 		limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 		queryCondition = map[string]interface{}{
-			"filter_role_name":     req.FilterRoleName,
-			"limit":                limit,
-			"offset":               offset,
+			"filter_role_name": req.FilterRoleName,
+			"limit":            limit,
+			"offset":           offset,
 		}
 	}
 
@@ -231,9 +218,9 @@ func GetRoles(c echo.Context) error {
 }
 
 type UpdateRoleReqV1 struct {
-	Desc           *string   `json:"role_desc" form:"role_desc"`
-	OperationCodes *[]uint   `json:"operation_code_list,omitempty" form:"operation_code_list"`
-	IsDisabled     *bool     `json:"is_disabled,omitempty"`
+	Desc           *string `json:"role_desc" form:"role_desc"`
+	OperationCodes *[]uint `json:"operation_code_list,omitempty" form:"operation_code_list"`
+	IsDisabled     *bool   `json:"is_disabled,omitempty"`
 }
 
 // @Summary 更新角色信息
@@ -292,10 +279,6 @@ func UpdateRole(c echo.Context) (err error) {
 		role.Desc = *req.Desc
 	}
 
-	// check instances
-	var instances []*model.Instance
-
-
 	// check operation codes
 	var opCodes []uint
 	{
@@ -311,14 +294,8 @@ func UpdateRole(c echo.Context) (err error) {
 		}
 	}
 
-	// check users
-	var users []*model.User
-
-	// check user groups
-	var userGroups []*model.UserGroup
-
 	return controller.JSONBaseErrorReq(c,
-		s.SaveRoleAndAssociations(role, instances, opCodes, users, userGroups),
+		s.SaveRoleAndAssociations(role, opCodes),
 	)
 
 }

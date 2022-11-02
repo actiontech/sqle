@@ -86,39 +86,12 @@ func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err e
 }
 
 func (s *Storage) SaveRoleAndAssociations(role *Role,
-	instances []*Instance, opCodes []uint, us []*User, ugs []*UserGroup) (err error) {
+	opCodes []uint) (err error) {
 	return s.Tx(func(txDB *gorm.DB) (err error) {
 
 		// save role
 		if err = txDB.Save(role).Error; err != nil {
 			return errors.ConnectStorageErrWrapper(err)
-		}
-
-		// save instances
-		{
-			if instances != nil {
-				if err = txDB.Model(role).Association("Instances").Replace(instances).Error; err != nil {
-					return errors.ConnectStorageErrWrapper(err)
-				}
-			}
-		}
-
-		// save users
-		{
-			if us != nil {
-				if err = txDB.Model(role).Association("Users").Replace(us).Error; err != nil {
-					return errors.ConnectStorageErrWrapper(err)
-				}
-			}
-		}
-
-		// save user groups
-		{
-			if ugs != nil {
-				if err = txDB.Model(role).Association("UserGroups").Replace(ugs).Error; err != nil {
-					return errors.ConnectStorageErrWrapper(err)
-				}
-			}
 		}
 
 		// sync operations
