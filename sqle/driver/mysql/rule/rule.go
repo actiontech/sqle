@@ -1408,11 +1408,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
 			Name:     DDLHintDropPrimaryKey,
-			Desc:     "删除主键为高危操作",
+			Desc:     "禁止进行删除主键的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除主键为高危操作",
+		Message: "禁止进行删除主键的操作",
 		Func:    hintDropPrimaryKey,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
