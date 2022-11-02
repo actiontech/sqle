@@ -1609,7 +1609,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message: "VARCHAR 定义长度过长",
+		Message: "VARCHAR 定义长度过长, 超过了%d",
 		Func:    checkVarcharSize,
 	}, {
 		Rule: driver.Rule{ //select id from t where substring(name,1,3)='abc'
@@ -4596,18 +4596,35 @@ func checkColumnTypeInteger(input *RuleHandlerInput) error {
 }
 
 func checkVarcharSize(input *RuleHandlerInput) error {
+	maxVarcharLen := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
-			if col.Tp.Tp == mysql.TypeVarchar && col.Tp.Flen > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
-				addResult(input.Res, input.Rule, input.Rule.Name)
+			if col.Tp == nil {
+				continue
+			}
+			if col.Tp.Tp == mysql.TypeVarchar && col.Tp.Flen > maxVarcharLen {
+				addResult(input.Res, input.Rule, input.Rule.Name, maxVarcharLen)
 				break
 			}
 		}
-		return nil
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, column := range spec.NewColumns {
+				if column.Tp == nil {
+					continue
+				}
+				if column.Tp.Tp == mysql.TypeVarchar && column.Tp.Flen > maxVarcharLen {
+					addResult(input.Res, input.Rule, input.Rule.Name, maxVarcharLen)
+					break
+				}
+			}
+		}
 	default:
 		return nil
 	}
+	return nil
 }
 
 func notRecommendFuncInWhere(input *RuleHandlerInput) error {
