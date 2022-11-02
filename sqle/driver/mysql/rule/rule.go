@@ -1399,11 +1399,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP COLUMN col;
 			Name:     DDLHintDropColumn,
-			Desc:     "删除列为高危操作",
+			Desc:     "禁止进行删除列的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除列为高危操作",
+		Message: "禁止进行删除列的操作",
 		Func:    hintDropColumn,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
