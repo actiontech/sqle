@@ -1464,11 +1464,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
 			Name:     DDLCheckFullWidthQuotationMarks,
-			Desc:     "DDL 语句中使用了中文全角引号",
+			Desc:     "检测DDL语句中是否使用了中文全角引号",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "DDL 语句中使用了中文全角引号",
+		Message: "DDL 语句中使用了中文全角引号，这可能是书写错误",
 		Func:    checkFullWidthQuotationMarks,
 	}, {
 		Rule: driver.Rule{ //select name from tbl where id < 1000 order by rand(1)
