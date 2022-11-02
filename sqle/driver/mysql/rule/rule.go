@@ -1568,7 +1568,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "5",
+					Value: "40",
 					Desc:  "最大列数",
 					Type:  params.ParamTypeInt,
 				},
