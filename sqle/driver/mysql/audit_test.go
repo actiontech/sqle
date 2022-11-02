@@ -4859,14 +4859,21 @@ func TestDDLCheckColumnTypeInteger(t *testing.T) {
 func TestDDLCheckVarcharSize(t *testing.T) {
 	for _, sql := range []string{
 		"CREATE TABLE `t` ( `id` varchar(1025) );",
-		//TODO　"alter TABLE `exist_tb_1` add column `v3` varchar(1025);",
+		"alter TABLE `exist_tb_1` add column `v3` varchar(1025);",
+		"alter table `exist_tb_1` modify column `v3` varchar(1025);",
+		"alter table `exist_tb_1` change column `v2` `v3` varchar(1025);",
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckVarcharSize].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckVarcharSize))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckVarcharSize].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckVarcharSize, 1024))
 	}
 
 	for _, sql := range []string{
 		"CREATE TABLE `t` ( `id` varchar(1024));",
 		"alter TABLE `exist_tb_1` add column `v3` varchar(1024);",
+		"alter table `exist_tb_1` modify column `v3` varchar(1024);",
+		"alter table `exist_tb_1` change column `v2` `v3` varchar(1024);",
+		"alter table `exist_tb_1` drop column `v2`;",
+		"alter table `exist_tb_1` rename column `v2` to `v3`;",
+		"alter table `exist_tb_1` alter column `v2` drop default;",
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckVarcharSize].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
 	}
