@@ -1632,11 +1632,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //SELECT SUM(COL) FROM tbl;
 			Name:     DMLHintSumFuncTips,
-			Desc:     "使用 SUM(COL) 时需注意 NPE 问题",
+			Desc:     "避免使用 SUM(COL)",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
-		Message: "使用 SUM(COL) 时需注意 NPE 问题",
+		Message: "避免使用 SUM(COL) ，该用法存在返回NULL值导致程序空指针的风险",
 		Func:    hintSumFuncTips,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
