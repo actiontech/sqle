@@ -38,10 +38,10 @@ type User struct {
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
 	// todo issue960 remove Roles
-	Roles                  []*Role                `gorm:"many2many:user_role;"`
-	UserGroups             []*UserGroup           `gorm:"many2many:user_group_users"`
-	Stat                   uint                   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
-	ThirdPartyUserID       string                 `json:"third_party_user_id"`
+	Roles            []*Role      `gorm:"many2many:user_role;"`
+	UserGroups       []*UserGroup `gorm:"many2many:user_group_users"`
+	Stat             uint         `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
+	ThirdPartyUserID string       `json:"third_party_user_id"`
 
 	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
 }
@@ -285,25 +285,14 @@ func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-// NOTE: parameter: roles([]*Users) and userGroups([]*Role) need to be distinguished as nil or zero length slice.
 func (s *Storage) SaveUserAndAssociations(
-	user *User, roles []*Role, userGroups []*UserGroup) (err error) {
+	user *User, userGroups []*UserGroup) (err error) {
 	return s.Tx(func(txDB *gorm.DB) error {
 
 		// User
 		if err := txDB.Save(user).Error; err != nil {
 			txDB.Rollback()
 			return errors.ConnectStorageErrWrapper(err)
-		}
-
-		// Roles
-		if roles != nil {
-			if err := txDB.Model(user).
-				Association("Roles").
-				Replace(roles).Error; err != nil {
-				txDB.Rollback()
-				return errors.ConnectStorageErrWrapper(err)
-			}
 		}
 
 		// user groups
