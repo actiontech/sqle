@@ -1436,11 +1436,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
 			Name:     DMLHintInNullOnlyFalse,
-			Desc:     "IN (NULL)/NOT IN (NULL) 永远非真",
+			Desc:     "避免使用 IN (NULL) 或者 NOT IN (NULL)",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDMLConvention,
 		},
-		Message: "IN (NULL)/NOT IN (NULL) 永远非真",
+		Message: "避免使用IN (NULL)/NOT IN (NULL) ，该用法永远非真将导致条件失效",
 		Func:    hintInNullOnlyFalse,
 	}, {
 		Rule: driver.Rule{ //select * from user where id in (a);
