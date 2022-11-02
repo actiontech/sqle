@@ -55,16 +55,13 @@ func CreateUserGroup(c echo.Context) (err error) {
 		}
 	}
 
-	// check roles
-	var roles []*model.Role
-
 	// user group
 	ug := &model.UserGroup{
 		Name: req.Name,
 		Desc: req.Desc,
 	}
 
-	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
+	if err := s.SaveUserGroupAndAssociations(ug, users); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -232,9 +229,6 @@ func UpdateUserGroup(c echo.Context) (err error) {
 		ug.Desc = *req.Desc
 	}
 
-	// roles
-	var roles []*model.Role
-
 	// users
 	var users []*model.User
 	{
@@ -250,7 +244,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 		}
 	}
 
-	if err := s.SaveUserGroupAndAssociations(ug, users, roles); err != nil {
+	if err := s.SaveUserGroupAndAssociations(ug, users); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
