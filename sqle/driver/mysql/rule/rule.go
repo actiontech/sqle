@@ -406,11 +406,11 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckPKWithoutIfNotExists,
-			Desc:     "新建表必须加入if not exists create，保证重复执行不报错",
+			Desc:     "新建表必须加入 if not exists，保证重复执行不报错",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeUsageSuggestion,
 		},
-		Message:      "新建表必须加入if not exists create，保证重复执行不报错",
+		Message:      "新建表必须加入 if not exists，保证重复执行不报错",
 		AllowOffline: true,
 		Func:         checkIfNotExist,
 	},
