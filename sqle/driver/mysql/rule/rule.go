@@ -1417,11 +1417,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
 			Name:     DDLHintDropForeignKey,
-			Desc:     "删除外键为高危操作",
+			Desc:     "禁止进行删除外键的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除外键为高危操作",
+		Message: "禁止进行删除外键的操作",
 		Func:    hintDropForeignKey,
 	},
 	{
