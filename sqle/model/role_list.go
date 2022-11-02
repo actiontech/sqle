@@ -29,17 +29,8 @@ func (rd *RoleDetail) IsDisabled() bool {
 }
 
 var rolesQueryTpl = `SELECT roles.id, roles.name, roles.desc, roles.stat,
-GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
-GROUP_CONCAT(DISTINCT COALESCE(instances.name,'')) AS instance_names,
-GROUP_CONCAT(DISTINCT COALESCE(user_groups.name,'')) AS user_group_names,
 GROUP_CONCAT(DISTINCT COALESCE(role_operations.op_code,'')) AS operations_codes
 FROM roles
-LEFT JOIN user_role ON roles.id = user_role.role_id
-LEFT JOIN users ON user_role.user_id = users.id AND users.deleted_at IS NULL
-LEFT JOIN instance_role ON roles.id = instance_role.role_id
-LEFT JOIN instances ON instance_role.instance_id = instances.id AND instances.deleted_at IS NULL
-LEFT JOIN user_group_roles ON roles.id = user_group_roles.role_id
-LEFT JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
 LEFT JOIN role_operations ON role_operations.role_id = roles.id AND role_operations.deleted_at IS NULL
 WHERE
 roles.id in (SELECT DISTINCT(roles.id)
@@ -59,13 +50,7 @@ var rolesCountTpl = `SELECT COUNT(DISTINCT roles.id)
 
 var rolesQueryBodyTpl = `
 {{ define "body" }}
-FROM roles 
-LEFT JOIN user_role ON roles.id = user_role.role_id
-LEFT JOIN users ON user_role.user_id = users.id AND users.deleted_at IS NULL
-LEFT JOIN instance_role ON roles.id = instance_role.role_id
-LEFT JOIN instances ON instance_role.instance_id = instances.id AND instances.deleted_at IS NULL
-LEFT JOIN user_group_roles ON roles.id = user_group_roles.role_id
-LEFT JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
+FROM roles
 LEFT JOIN role_operations ON role_operations.role_id = roles.id AND role_operations.deleted_at IS NULL
 WHERE
 roles.deleted_at IS NULL
@@ -74,13 +59,6 @@ roles.deleted_at IS NULL
 AND roles.name = :filter_role_name
 {{- end }}
 
-{{- if .filter_user_name }}
-AND users.login_name = :filter_user_name
-{{- end }}
-
-{{- if .filter_instance_name }}
-AND instances.name = :filter_instance_name
-{{- end }}
 {{- end }}
 `
 
