@@ -1,9 +1,12 @@
 package v1
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -76,7 +79,7 @@ type CreateProjectReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects [post]
 func CreateProjectV1(c echo.Context) error {
-	return nil
+	return createProjectV1(c)
 }
 
 type UpdateProjectReqV1 struct {
@@ -96,7 +99,37 @@ type UpdateProjectReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/ [patch]
 func UpdateProjectV1(c echo.Context) error {
-	return nil
+	req := new(UpdateProjectReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectIDStr := c.Param("filter_project")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("project id should be uint but not"))
+	}
+
+	s := model.GetStorage()
+	sure, err := s.CheckUserCanUpdateProject(uint(projectID), user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !sure {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("you can not modify this project"))
+	}
+
+	attr := map[string]interface{}{}
+	if req.Desc != nil {
+		attr["desc"] = *req.Desc
+	}
+
+	return controller.JSONBaseErrorReq(c, s.UpdateProjectInfoByID(uint(projectID), attr))
 }
 
 // DeleteProjectV1
@@ -109,7 +142,7 @@ func UpdateProjectV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/ [delete]
 func DeleteProjectV1(c echo.Context) error {
-	return nil
+	return deleteProjectV1(c)
 }
 
 type GetProjectTipsResV1 struct {
