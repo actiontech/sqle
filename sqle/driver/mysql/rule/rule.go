@@ -2640,7 +2640,7 @@ func disableAddIndexForColumnsTypeBlob(input *RuleHandlerInput) error {
 func checkIsObjectNameUpperAndLowerLetterMixed(input *RuleHandlerInput) error {
 	names := getObjectNames(input.Node)
 
-	var invalidNames []string
+	invalidNames := make([]string, 0)
 	for _, name := range names {
 		if !utils.IsUpperAndLowerLetterMixed(name) {
 			continue
