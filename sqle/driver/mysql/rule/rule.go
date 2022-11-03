@@ -2625,8 +2625,57 @@ func disableAddIndexForColumnsTypeBlob(input *RuleHandlerInput) error {
 }
 
 func checkNewObjectName(input *RuleHandlerInput) error {
+	names := getObjectNames(input.Node)
+
+	// check length
+	if input.Rule.Name == DDLCheckObjectNameLength {
+		length := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+		//length, err := strconv.Atoi(input.Rule.Value)
+		//if err != nil {
+		//	return fmt.Errorf("parsing input.Rule[%v] value error: %v", input.Rule.Name, err)
+		//}
+		for _, name := range names {
+			if len(name) > length {
+				addResult(input.Res, input.Rule, DDLCheckObjectNameLength, length)
+				break
+			}
+		}
+	}
+
+	// check exist non-latin and underscore
+	for _, name := range names {
+		// CASE:
+		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
+		if name == "" {
+			continue
+		}
+		if !unicode.Is(unicode.Latin, rune(name[0])) ||
+			bytes.IndexFunc([]byte(name), func(r rune) bool {
+				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+			}) != -1 {
+
+			addResult(input.Res, input.Rule, DDLCheckObjectNameUseCN)
+			break
+		}
+	}
+
+	// check keyword
+	invalidNames := []string{}
+	for _, name := range names {
+		if keyword.IsMysqlReservedKeyword(name) {
+			invalidNames = append(invalidNames, name)
+		}
+	}
+	if len(invalidNames) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckObjectNameUsingKeyword,
+			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
+	}
+	return nil
+}
+
+func getObjectNames(node ast.Node) []string {
 	names := []string{}
-	switch stmt := input.Node.(type) {
+	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		// schema
 		names = append(names, stmt.Name)
@@ -2675,50 +2724,7 @@ func checkNewObjectName(input *RuleHandlerInput) error {
 		return nil
 	}
 
-	// check length
-	if input.Rule.Name == DDLCheckObjectNameLength {
-		length := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-		//length, err := strconv.Atoi(input.Rule.Value)
-		//if err != nil {
-		//	return fmt.Errorf("parsing input.Rule[%v] value error: %v", input.Rule.Name, err)
-		//}
-		for _, name := range names {
-			if len(name) > length {
-				addResult(input.Res, input.Rule, DDLCheckObjectNameLength, length)
-				break
-			}
-		}
-	}
-
-	// check exist non-latin and underscore
-	for _, name := range names {
-		// CASE:
-		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
-		if name == "" {
-			continue
-		}
-		if !unicode.Is(unicode.Latin, rune(name[0])) ||
-			bytes.IndexFunc([]byte(name), func(r rune) bool {
-				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
-			}) != -1 {
-
-			addResult(input.Res, input.Rule, DDLCheckObjectNameUseCN)
-			break
-		}
-	}
-
-	// check keyword
-	invalidNames := []string{}
-	for _, name := range names {
-		if keyword.IsMysqlReservedKeyword(name) {
-			invalidNames = append(invalidNames, name)
-		}
-	}
-	if len(invalidNames) > 0 {
-		addResult(input.Res, input.Rule, DDLCheckObjectNameUsingKeyword,
-			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
-	}
-	return nil
+	return names
 }
 
 func checkForeignKey(input *RuleHandlerInput) error {
