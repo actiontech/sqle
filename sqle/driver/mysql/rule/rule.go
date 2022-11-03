@@ -10,6 +10,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ungerik/go-dry"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
@@ -24,7 +26,6 @@ import (
 	"github.com/pingcap/parser/types"
 	tidbTypes "github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
-	"github.com/ungerik/go-dry"
 )
 
 // rule type
@@ -102,6 +103,7 @@ const (
 	DDLCheckColumnQuantityInPK                         = "ddl_check_column_quantity_in_pk"
 	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
+	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 )
 
 // inspector DML rules
@@ -433,6 +435,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "表名、列名、索引名的长度不能大于%v字节",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckObjectNameIsUpperAndLowerLetterMixed,
+			Desc:     "数据库对象命名不建议大小写字母混合",
+			Category: RuleTypeNamingConvention,
+			Level:    driver.RuleLevelNotice,
+		},
+		Message:      "数据库对象命名不建议大小写字母混合 %v",
+		Func:         checkIsObjectNameUpperAndLowerLetterMixed,
+		AllowOffline: true,
 	},
 	{
 		Rule: driver.Rule{
@@ -2621,6 +2634,24 @@ func disableAddIndexForColumnsTypeBlob(input *RuleHandlerInput) error {
 	if indexDataTypeIsBlob {
 		addResult(input.Res, input.Rule, DDLCheckIndexedColumnWithBlob)
 	}
+	return nil
+}
+
+func checkIsObjectNameUpperAndLowerLetterMixed(input *RuleHandlerInput) error {
+	names := getObjectNames(input.Node)
+
+	var invalidNames []string
+	for _, name := range names {
+		if !utils.IsUpperAndLowerLetterMixed(name) {
+			continue
+		}
+		invalidNames = append(invalidNames, name)
+	}
+
+	if len(invalidNames) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckObjectNameIsUpperAndLowerLetterMixed, strings.Join(invalidNames, ","))
+	}
+
 	return nil
 }
 
