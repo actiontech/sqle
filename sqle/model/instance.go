@@ -300,15 +300,21 @@ func getDbTypeQueryCond(dbType string) string {
 	return `AND instances.db_type = ?`
 }
 
-func (s *Storage) GetInstancesTipsByUserAndTypeAndTempId(user *User, dbType string, tempID uint32) ([]*Instance, error) {
-	if IsDefaultAdminUser(user.Name) {
-		return s.GetInstanceTipsByTypeAndTempID(dbType, tempID)
+func (s *Storage) GetInstancesTipsByUserAndTypeAndTempId(user *User, dbType string, tempID uint32, projectID uint) ([]*Instance, error) {
+
+	isProjectManager, err := s.IsProjectManager(user.ID, projectID)
+	if err != nil {
+		return nil, err
 	}
 
-	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, tempID)
+	if IsDefaultAdminUser(user.Name) || isProjectManager {
+		return s.GetInstanceTipsByTypeAndTempID(dbType, tempID, projectID)
+	}
+
+	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, tempID, projectID)
 }
 
-func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32) (instances []*Instance, err error) {
+func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32, projectID uint) (instances []*Instance, err error) {
 	query := s.db.Model(&Instance{}).Select("name, db_type, workflow_template_id").Group("id")
 
 	if dbType != "" {
@@ -317,6 +323,10 @@ func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32) (
 
 	if tempID != 0 {
 		query = query.Where("workflow_template_id = ?", tempID)
+	}
+
+	if projectID != 0 {
+		query = query.Where("project_id = ?", projectID)
 	}
 
 	return instances, query.Scan(&instances).Error
@@ -337,7 +347,7 @@ func (s *Storage) GetAllInstanceCount() ([]*TypeCount, error) {
 	return counts, s.db.Table("instances").Select("db_type, count(*) as count").Where("deleted_at is NULL").Group("db_type").Find(&counts).Error
 }
 
-func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType string, tempID uint32) (instances []*Instance, err error) {
+func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType string, tempID uint32, projectID uint) (instances []*Instance, err error) {
 
 	queryByRole := s.db.Model(&Instance{}).Select("instances.name, instances.db_type , instances.workflow_template_id").
 		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
@@ -367,6 +377,11 @@ func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType strin
 		queryByGroup = queryByGroup.Where("workflow_template_id = ?", tempID)
 	}
 
+	if projectID != 0 {
+		queryByRole = queryByRole.Where("instances.project_id = ?", projectID)
+		queryByGroup = queryByGroup.Where("instances.project_id = ?", projectID)
+	}
+
 	var instByRole, instByGroup []*Instance
 	if err := queryByRole.Scan(&instByRole).Error; err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
@@ -382,65 +397,76 @@ func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType strin
 	return instances, nil
 }
 
-func (s *Storage) GetInstanceTipsByUser(user *User, dbType string) (
+func (s *Storage) GetInstanceTipsByUser(user *User, dbType string, projectID uint) (
 	instances []*Instance, err error) {
 
-	if IsDefaultAdminUser(user.Name) {
-		return s.GetInstanceTipsByTypeAndTempID(dbType, 0)
+	isProjectManager, err := s.IsProjectManager(user.ID, projectID)
+	if err != nil {
+		return nil, err
 	}
 
-	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, 0)
+	if IsDefaultAdminUser(user.Name) || isProjectManager {
+		return s.GetInstanceTipsByTypeAndTempID(dbType, 0, projectID)
+	}
+
+	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, 0, projectID)
 }
 
-func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType string, opCode ...int) (
+func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType string, projectID uint, opCode ...int) (
 	instances []*Instance, err error) {
 
-	if IsDefaultAdminUser(user.Name) {
-		return s.GetInstanceTipsByTypeAndTempID(dbType, 0)
+	isProjectManager, err := s.IsProjectManager(user.ID, projectID)
+	if err != nil {
+		return nil, err
 	}
-	return s.getInstanceTipsByUserAndOperation(user, dbType, opCode...)
+
+	if IsDefaultAdminUser(user.Name) || isProjectManager {
+		return s.GetInstanceTipsByTypeAndTempID(dbType, 0, projectID)
+	}
+	return s.getInstanceTipsByUserAndOperation(user, dbType, projectID, opCode...)
 }
 
-func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, opCode ...int) (
+func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, projectID uint, opCode ...int) (
 	instances []*Instance, err error) {
-	query := `
-SELECT instances.name, instances.db_type
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-LEFT JOIN user_role ON user_role.role_id = roles.id
-LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
-WHERE
-instances.deleted_at IS NULL
-%s
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-UNION
-SELECT instances.name, instances.db_type
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
-JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
-JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
-WHERE 
-instances.deleted_at IS NULL
-%s
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-`
-	dbTypeCond := getDbTypeQueryCond(dbType)
-	query = fmt.Sprintf(query, dbTypeCond, dbTypeCond)
-	if dbType == "" {
-		err = s.db.Raw(query, user.ID, opCode, user.ID, opCode).Scan(&instances).Error
-	} else {
-		err = s.db.Raw(query, dbType, user.ID, opCode, dbType, user.ID, opCode).Scan(&instances).Error
+
+	query1 := s.db.Table("instances").
+		Select("instances.name, instances.db_type").
+		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
+		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
+		Joins("LEFT JOIN role_operations ON role_operations.role_id = roles.id").
+		Joins("LEFT JOIN user_role ON user_role.role_id = roles.id").
+		Joins("LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0").
+		Where("instances.deleted_at IS NULL").
+		Where("users.id = ?", user.ID).
+		Where("role_operations.op_code IN (?)", opCode).
+		Group("instances.id")
+
+	query2 := s.db.Table("instances").
+		Select("instances.name, instances.db_type").
+		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
+		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
+		Joins("LEFT JOIN role_operations ON role_operations.role_id = roles.id").
+		Joins("JOIN user_group_roles ON roles.id = user_group_roles.role_id").
+		Joins("JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL").
+		Joins("JOIN user_group_users ON user_groups.id = user_group_users.user_group_id").
+		Joins("JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0").
+		Where("instances.deleted_at IS NULL").
+		Where("users.id = ?", user.ID).
+		Where("role_operations.op_code IN (?)", opCode).
+		Group("instances.id")
+
+	if projectID != 0 {
+		query1.Where("instances.project_id = ?", projectID)
+		query2.Where("instances.project_id = ?", projectID)
 	}
+
+	if dbType != "" {
+		query1.Where("AND instances.db_type = ?", dbType)
+		query2.Where("AND instances.db_type = ?", dbType)
+	}
+
+	err = s.db.Raw("? UNION ?", query1.QueryExpr(), query2.QueryExpr()).Scan(&instances).Error
+
 	return instances, errors.ConnectStorageErrWrapper(err)
 }
 
