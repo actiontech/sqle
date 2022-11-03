@@ -117,11 +117,26 @@ func (s *Storage) UpdateProjectInfoByID(projectID uint, attr map[string]interfac
 
 func (s *Storage) GetProjectByID(projectID uint) (*Project, bool, error) {
 	p := &Project{}
-	err := s.db.Model(Project{}).Preload("Managers").Where("id = ?", projectID).Find(p).Error
+	err := s.db.Model(&Project{}).Preload("Managers").Where("id = ?", projectID).Find(p).Error
 	if err == gorm.ErrRecordNotFound {
 		return p, false, nil
 	}
 	return p, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) ListProject(limit, offset uint32) (p []*Project, totalNum uint64, err error) {
+	query := s.db.Model(&Project{})
+
+	err = query.Preload("CreateUser").Limit(limit).Offset(offset).Scan(&p).Error
+	if err != nil {
+		return nil, 0, errors.New(errors.ConnectStorageError, err)
+	}
+	err = query.Count(&totalNum).Error
+	if err != nil {
+		return nil, 0, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return
 }
 
 func (s *Storage) IsProjectManager(userID uint, projectName string) (bool, error) {
