@@ -102,6 +102,7 @@ const (
 	DDLCheckColumnQuantityInPK                         = "ddl_check_column_quantity_in_pk"
 	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
+	DDLCheckSubQueryNestNum                            = "ddl_check_sub_query_depth"
 )
 
 // inspector DML rules
@@ -155,7 +156,6 @@ const (
 	DMLCheckNotEqualSymbol                = "dml_check_not_equal_symbol"
 	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
-	DDLCheckSubQueryNestNum               = "ddl_check_sub_query_depth"
 )
 
 // inspector config code
