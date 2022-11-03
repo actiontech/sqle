@@ -263,47 +263,27 @@ func (s *Storage) CreateAdminUser() error {
 	return nil
 }
 
-var DefaultWorkflowTemplate = "default"
+const DefaultProject = "default"
 
-func (s *Storage) CreateDefaultWorkflowTemplate() error {
-	user, exist, err := s.GetUserByName(DefaultAdminUser)
+func (s *Storage) CreateDefaultProject() error {
+	exist, err := s.IsProjectExist()
+	if err != nil {
+		return err
+	}
+	if exist {
+		return nil
+	}
+
+	defaultUser, exist, err := s.GetUserByName(DefaultAdminUser)
 	if err != nil {
 		return err
 	}
 	if !exist {
-		return fmt.Errorf("admin user not exist")
+		return fmt.Errorf("admin not exist, unable to create project")
 	}
-	_, exist, err = s.GetWorkflowTemplateByName(DefaultWorkflowTemplate)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		wt := &WorkflowTemplate{
-			Name:                          DefaultWorkflowTemplate,
-			Desc:                          "默认模板",
-			AllowSubmitWhenLessAuditLevel: string(driver.RuleLevelWarn),
-			Steps: []*WorkflowStepTemplate{
-				{
-					Number: 1,
-					Typ:    WorkflowStepTypeSQLReview,
-					ApprovedByAuthorized: sql.NullBool{
-						Bool:  true,
-						Valid: true,
-					},
-				},
-				{
-					Number: 2,
-					Typ:    WorkflowStepTypeSQLExecute,
-					Users:  []*User{user},
-				},
-			},
-		}
-		err = s.SaveWorkflowTemplate(wt)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+
+	err = s.CreateProject(DefaultProject, "", defaultUser.ID)
+	return err
 }
 
 func (s *Storage) Exist(model interface{}) (bool, error) {
