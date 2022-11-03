@@ -2535,7 +2535,7 @@ create table table_10
 }
 
 func Test_DDLCheckSubQueryNestNum(t *testing.T) {
-	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckSubQueryNestNum]
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSubQueryNestNum]
 	param := rule.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
 
 	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
@@ -2553,7 +2553,7 @@ where (select count(*) from exist_db.exist_tb_2) > 1
               from exist_db.exist_tb_1
               where (select count(*) from exist_db.exist_tb_2 where (select count(*) from exist_db.exist_tb_2) = 1) =
                     1) = 1) = 1`,
-		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+		newTestResult().addResult(rulepkg.DMLCheckSubQueryNestNum, param))
 
 	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
 		`select (select count(*)
@@ -2566,7 +2566,7 @@ where (select count(*) from exist_db.exist_tb_2) > 1
                              from exist_db.exist_tb_2
                              where (select count(*) from exist_db.exist_tb_2) = 1) = 1) = 1) = 1) as a
 from exist_db.exist_tb_1`,
-		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+		newTestResult().addResult(rulepkg.DMLCheckSubQueryNestNum, param))
 
 	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
 		`delete
@@ -2588,7 +2588,7 @@ where (select count(*)
               from exist_db.exist_tb_1
               where (select count(*) from exist_db.exist_tb_2 where (select count(*) from exist_db.exist_tb_2) = 1) =
                     1) = 1) = 1`,
-		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+		newTestResult().addResult(rulepkg.DMLCheckSubQueryNestNum, param))
 
 	runSingleRuleInspectCase(rule.Rule, t, "", DefaultMysqlInspect(),
 		`update exist_db.exist_tb_1,exist_db.exist_tb_2
@@ -2608,7 +2608,7 @@ where (select count(*)
               from exist_db.exist_tb_1
               where (select count(*) from exist_db.exist_tb_2 where (select count(*) from exist_db.exist_tb_2) = 1) =
                     1) = 1) = 1;`,
-		newTestResult().addResult(rulepkg.DDLCheckSubQueryNestNum, param))
+		newTestResult().addResult(rulepkg.DMLCheckSubQueryNestNum, param))
 }
 
 func Test_DDLCheckUpdateTimeColumn(t *testing.T) {

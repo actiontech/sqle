@@ -155,7 +155,7 @@ const (
 	DMLCheckNotEqualSymbol                = "dml_check_not_equal_symbol"
 	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
-	DDLCheckSubQueryNestNum               = "ddl_check_sub_query_depth"
+	DMLCheckSubQueryNestNum               = "dml_check_sub_query_depth"
 )
 
 // inspector config code
@@ -1083,7 +1083,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckSubQueryNestNum,
+			Name:     DMLCheckSubQueryNestNum,
 			Desc:     "子查询嵌套层数不能超过阈值",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
@@ -1748,7 +1748,7 @@ func checkSubQueryNestNum(in *RuleHandlerInput) error {
 		in.Node.Accept(&subQueryNestNumExtract)
 		expectNestNum := in.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 		if *subQueryNestNumExtract.MaxNestNum > expectNestNum {
-			addResult(in.Res, in.Rule, DDLCheckSubQueryNestNum, expectNestNum)
+			addResult(in.Res, in.Rule, DMLCheckSubQueryNestNum, expectNestNum)
 		}
 	}
 	return nil
