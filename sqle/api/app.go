@@ -176,7 +176,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
 	v1Router.POST("/instances/connections", v1.BatchCheckInstanceConnections)
 	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)
-	v1Router.GET("/instance_tips", v1.GetInstanceTips)
+	v1Router.GET("/projects/:project_id/instance_tips", v1.GetInstanceTips)
 	v1Router.GET("/instances/:instance_name/rules", v1.GetInstanceRules)
 	v1Router.GET("/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
 	v1Router.GET("/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
