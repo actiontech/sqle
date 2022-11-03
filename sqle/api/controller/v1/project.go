@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -9,6 +10,11 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
+
+type GetProjectReqV1 struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
 
 type GetProjectResV1 struct {
 	controller.BaseRes
@@ -34,7 +40,35 @@ type ProjectListItem struct {
 // @Success 200 {object} v1.GetProjectResV1
 // @router /v1/projects [get]
 func GetProjectListV1(c echo.Context) error {
-	return nil
+	req := new(GetProjectReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+
+	s := model.GetStorage()
+	projects, total, err := s.ListProject(limit, offset)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp := []*ProjectListItem{}
+	for _, project := range projects {
+		resp = append(resp, &ProjectListItem{
+			Id:             project.ID,
+			Name:           project.Name,
+			Desc:           project.Desc,
+			CreateUserName: project.CreateUser.Name,
+			CreateTime:     &project.CreatedAt,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetProjectResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      resp,
+		TotalNums: total,
+	})
 }
 
 type GetProjectDetailResV1 struct {
