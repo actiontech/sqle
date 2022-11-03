@@ -140,45 +140,33 @@ func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	return users, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetUserTipByProject(projectID uint) ([]*User, error) {
+func (s *Storage) GetUserTipsByProject(projectID uint) ([]*User, error) {
 	if projectID == 0 {
 		return s.GetAllUserTip()
 	}
 
 	query := `
-SELECT users.login_name
+SELECT users.login_name 
 FROM users
-WHERE users.stat=0
+JOIN project_user on project_user.user_id = users.id
+WHERE users.stat = 0
 AND users.deleted_at IS NULL
-AND (
-	EXISTS(
-		SELECT 1 
-		FROM project_user 
-		WHERE project_user.project_id = ? 
-		AND project_user.user_id = users.id
-	)
-	OR
-	EXISTS(
-		SELECT 1
-		FROM users as u
-		JOIN user_group_users
-		JOIN project_user_group
-		WHERE u.id = user_group_users.user_id
-		AND project_user_group.user_group_id = user_group_users.user_group_id
-		AND project_user_group.project_user_group.id = ?
-		AND u.stat=0
-		AND u.deleted_at IS NULL
-		AND u.id = users.id
-	)
-);
+AND project_user.project_id = ?
+GROUP BY users.login_name
+UNION
+SELECT users.login_name
+FROM users 
+JOIN user_group_users on users.id = user_group_users.user_id 
+JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
+WHERE users.stat = 0
+AND users.deleted_at IS NULL
+AND project_user_group.project_id = ?
+GROUP BY users.login_name
 `
-	users := []*User{}
+
+	var users []*User
 	err := s.db.Raw(query, projectID, projectID).Scan(&users).Error
-	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return []*User{}, nil
-		}
-	}
+
 	return users, errors.New(errors.ConnectStorageError, err)
 }
 

@@ -515,7 +515,7 @@ func GetUserTips(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("project id should be uint but not"))
 	}
 
-	users, err := s.GetUserTipByProject(uint(projectID))
+	users, err := s.GetUserTipsByProject(uint(projectID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

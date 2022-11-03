@@ -1,6 +1,8 @@
 package model
 
-import "github.com/actiontech/sqle/sqle/errors"
+import (
+	"github.com/actiontech/sqle/sqle/errors"
+)
 
 type Project struct {
 	Model

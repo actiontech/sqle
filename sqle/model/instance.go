@@ -428,51 +428,44 @@ func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType string, p
 
 func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, projectID uint, opCode ...int) (
 	instances []*Instance, err error) {
-	query := `
-SELECT instances.name, instances.db_type
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-LEFT JOIN user_role ON user_role.role_id = roles.id
-LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
-WHERE
-instances.deleted_at IS NULL
-%s
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-UNION
-SELECT instances.name, instances.db_type
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
-JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
-JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
-WHERE 
-instances.deleted_at IS NULL
-%s
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-`
-	projectStr := "%s"
+
+	query1 := s.db.Table("instances").
+		Select("instances.name, instances.db_type").
+		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
+		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
+		Joins("LEFT JOIN role_operations ON role_operations.role_id = roles.id").
+		Joins("LEFT JOIN user_role ON user_role.role_id = roles.id").
+		Joins("LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0").
+		Where("instances.deleted_at IS NULL").
+		Where("AND users.id = ?", user.ID).
+		Where("AND role_operations.op_code IN (?)", opCode).
+		Group("GROUP BY instances.id")
+
+	query2 := s.db.Table("instances").
+		Select("instances.name, instances.db_type").
+		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
+		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
+		Joins("LEFT JOIN role_operations ON role_operations.role_id = roles.id").
+		Joins("JOIN user_group_roles ON roles.id = user_group_roles.role_id").
+		Joins("JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL").
+		Joins("JOIN user_group_users ON user_groups.id = user_group_users.user_group_id").
+		Joins("JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0").
+		Where("instances.deleted_at IS NULL").
+		Where("AND users.id = ?", user.ID).
+		Where("AND role_operations.op_code IN (?)", opCode).
+		Group("GROUP BY instances.id")
+
 	if projectID != 0 {
-		projectStr = fmt.Sprintf("AND instances.project_id = %v\n%v", projectID, "%s")
+		query1.Where("instances.project_id = ?", projectID)
+		query2.Where("instances.project_id = ?", projectID)
 	}
 
-	query = fmt.Sprintf(query, projectStr, projectStr)
-
-	dbTypeCond := getDbTypeQueryCond(dbType)
-	query = fmt.Sprintf(query, dbTypeCond, dbTypeCond)
-	if dbType == "" {
-		err = s.db.Raw(query, user.ID, opCode, user.ID, opCode).Scan(&instances).Error
-	} else {
-		err = s.db.Raw(query, dbType, user.ID, opCode, dbType, user.ID, opCode).Scan(&instances).Error
+	if dbType != "" {
+		query1.Where("AND instances.db_type = ?", dbType)
+		query2.Where("AND instances.db_type = ?", dbType)
 	}
+
+	err = s.db.Raw("? UNION ?", query1, query2).Scan(&instances).Error
 
 	return instances, errors.ConnectStorageErrWrapper(err)
 }
