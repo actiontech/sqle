@@ -437,9 +437,9 @@ func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, p
 		Joins("LEFT JOIN user_role ON user_role.role_id = roles.id").
 		Joins("LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0").
 		Where("instances.deleted_at IS NULL").
-		Where("AND users.id = ?", user.ID).
-		Where("AND role_operations.op_code IN (?)", opCode).
-		Group("GROUP BY instances.id")
+		Where("users.id = ?", user.ID).
+		Where("role_operations.op_code IN (?)", opCode).
+		Group("instances.id")
 
 	query2 := s.db.Table("instances").
 		Select("instances.name, instances.db_type").
@@ -451,9 +451,9 @@ func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, p
 		Joins("JOIN user_group_users ON user_groups.id = user_group_users.user_group_id").
 		Joins("JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0").
 		Where("instances.deleted_at IS NULL").
-		Where("AND users.id = ?", user.ID).
-		Where("AND role_operations.op_code IN (?)", opCode).
-		Group("GROUP BY instances.id")
+		Where("users.id = ?", user.ID).
+		Where("role_operations.op_code IN (?)", opCode).
+		Group("instances.id")
 
 	if projectID != 0 {
 		query1.Where("instances.project_id = ?", projectID)
@@ -465,7 +465,7 @@ func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, p
 		query2.Where("AND instances.db_type = ?", dbType)
 	}
 
-	err = s.db.Raw("? UNION ?", query1, query2).Scan(&instances).Error
+	err = s.db.Raw("? UNION ?", query1.QueryExpr(), query2.QueryExpr()).Scan(&instances).Error
 
 	return instances, errors.ConnectStorageErrWrapper(err)
 }
