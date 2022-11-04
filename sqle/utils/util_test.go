@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHasPrefix(t *testing.T) {
@@ -93,4 +94,33 @@ func TestSupplementalQuotationMarks(t *testing.T) {
 	assert.Equal(t, "``asdf\"`", SupplementalQuotationMarks("`asdf\""))
 	assert.Equal(t, "``asdf'`", SupplementalQuotationMarks("`asdf'"))
 	assert.Equal(t, "`s`", SupplementalQuotationMarks("s"))
+}
+
+func TestIsUpperAndLowerLetterMixed(t *testing.T) {
+	type args struct {
+		s    string
+		want bool
+	}
+	tests := []args{
+		{"aaabbbCCC", true},
+		{"AAAaabbb", true},
+		{"aaaBC", true},
+		{"___aaabbbCCC", true},
+		{"aaabbbCCC__@@", true},
+		{"aaabbb@!$CCC", true},
+		{"aabbcc", false},
+		{"___aabbcc", false},
+		{"aabbcc!@#", false},
+		{"aabb__@@cc", false},
+		{"a", false},
+		{"$", false},
+	}
+
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			if got := IsUpperAndLowerLetterMixed(tt.s); got != tt.want {
+				t.Errorf("IsUpperAndLowerLetterMixed() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

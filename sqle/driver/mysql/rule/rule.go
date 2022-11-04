@@ -10,6 +10,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ungerik/go-dry"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
@@ -24,7 +26,6 @@ import (
 	"github.com/pingcap/parser/types"
 	tidbTypes "github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
-	"github.com/ungerik/go-dry"
 )
 
 // rule type
@@ -102,6 +103,7 @@ const (
 	DDLCheckColumnQuantityInPK                         = "ddl_check_column_quantity_in_pk"
 	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
+	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 )
 
 // inspector DML rules
@@ -433,6 +435,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "表名、列名、索引名的长度不能大于%v字节",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckObjectNameIsUpperAndLowerLetterMixed,
+			Desc:     "数据库对象命名不建议大小写字母混合",
+			Category: RuleTypeNamingConvention,
+			Level:    driver.RuleLevelNotice,
+		},
+		Message:      "数据库对象命名不建议大小写字母混合，以下对象命名不规范：%v",
+		Func:         checkIsObjectNameUpperAndLowerLetterMixed,
+		AllowOffline: true,
 	},
 	{
 		Rule: driver.Rule{
@@ -2624,9 +2637,76 @@ func disableAddIndexForColumnsTypeBlob(input *RuleHandlerInput) error {
 	return nil
 }
 
+func checkIsObjectNameUpperAndLowerLetterMixed(input *RuleHandlerInput) error {
+	names := getObjectNames(input.Node)
+
+	invalidNames := make([]string, 0)
+	for _, name := range names {
+		if !utils.IsUpperAndLowerLetterMixed(name) {
+			continue
+		}
+		invalidNames = append(invalidNames, name)
+	}
+
+	if len(invalidNames) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckObjectNameIsUpperAndLowerLetterMixed, strings.Join(invalidNames, ","))
+	}
+
+	return nil
+}
+
 func checkNewObjectName(input *RuleHandlerInput) error {
+	names := getObjectNames(input.Node)
+
+	// check length
+	if input.Rule.Name == DDLCheckObjectNameLength {
+		length := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+		//length, err := strconv.Atoi(input.Rule.Value)
+		//if err != nil {
+		//	return fmt.Errorf("parsing input.Rule[%v] value error: %v", input.Rule.Name, err)
+		//}
+		for _, name := range names {
+			if len(name) > length {
+				addResult(input.Res, input.Rule, DDLCheckObjectNameLength, length)
+				break
+			}
+		}
+	}
+
+	// check exist non-latin and underscore
+	for _, name := range names {
+		// CASE:
+		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
+		if name == "" {
+			continue
+		}
+		if !unicode.Is(unicode.Latin, rune(name[0])) ||
+			bytes.IndexFunc([]byte(name), func(r rune) bool {
+				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+			}) != -1 {
+
+			addResult(input.Res, input.Rule, DDLCheckObjectNameUseCN)
+			break
+		}
+	}
+
+	// check keyword
+	invalidNames := []string{}
+	for _, name := range names {
+		if keyword.IsMysqlReservedKeyword(name) {
+			invalidNames = append(invalidNames, name)
+		}
+	}
+	if len(invalidNames) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckObjectNameUsingKeyword,
+			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
+	}
+	return nil
+}
+
+func getObjectNames(node ast.Node) []string {
 	names := []string{}
-	switch stmt := input.Node.(type) {
+	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		// schema
 		names = append(names, stmt.Name)
@@ -2675,50 +2755,7 @@ func checkNewObjectName(input *RuleHandlerInput) error {
 		return nil
 	}
 
-	// check length
-	if input.Rule.Name == DDLCheckObjectNameLength {
-		length := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-		//length, err := strconv.Atoi(input.Rule.Value)
-		//if err != nil {
-		//	return fmt.Errorf("parsing input.Rule[%v] value error: %v", input.Rule.Name, err)
-		//}
-		for _, name := range names {
-			if len(name) > length {
-				addResult(input.Res, input.Rule, DDLCheckObjectNameLength, length)
-				break
-			}
-		}
-	}
-
-	// check exist non-latin and underscore
-	for _, name := range names {
-		// CASE:
-		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
-		if name == "" {
-			continue
-		}
-		if !unicode.Is(unicode.Latin, rune(name[0])) ||
-			bytes.IndexFunc([]byte(name), func(r rune) bool {
-				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
-			}) != -1 {
-
-			addResult(input.Res, input.Rule, DDLCheckObjectNameUseCN)
-			break
-		}
-	}
-
-	// check keyword
-	invalidNames := []string{}
-	for _, name := range names {
-		if keyword.IsMysqlReservedKeyword(name) {
-			invalidNames = append(invalidNames, name)
-		}
-	}
-	if len(invalidNames) > 0 {
-		addResult(input.Res, input.Rule, DDLCheckObjectNameUsingKeyword,
-			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
-	}
-	return nil
+	return names
 }
 
 func checkForeignKey(input *RuleHandlerInput) error {

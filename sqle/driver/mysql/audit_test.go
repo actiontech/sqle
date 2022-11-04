@@ -1296,6 +1296,68 @@ ALTER TABLE exist_db.exist_tb_1 RENAME index idx_1 TO idx_%s;`, length65),
 	)
 }
 
+func TestCheckObjectNameIsUpperAndLowerLetterMixed(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckObjectNameIsUpperAndLowerLetterMixed].Rule
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`
+	CREATE TABLE  if not exists exist_db._Ab (
+	Id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	NAME varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	A varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+	PRIMARY KEY (id),
+	INDEX idx_ID_Name (id,name)
+	)`, newTestResult().addResult(rule.Name, strings.Join([]string{"_Ab", "Id", "idx_ID_Name"}, ",")))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 add column name varchar(255) NOT NULL DEFAULT "unit test"`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 add column Name varchar(255) NOT NULL DEFAULT "unit test"`,
+		newTestResult().addResult(rule.Name, "Name"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 rename test`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 rename Test`,
+		newTestResult().addResult(rule.Name, "Test"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 change id id_test int unsigned NOT NULL AUTO_INCREMENT`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 change id id_Test int unsigned NOT NULL AUTO_INCREMENT`,
+		newTestResult().addResult(rule.Name, "id_Test"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 add constraint id_unique unique (v2)`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 add constraint iD_unique unique (v2)`,
+		newTestResult().addResult(rule.Name, "iD_unique"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 rename index idx_1 to idx_test`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 rename index idx_1 to idx_Test`,
+		newTestResult().addResult(rule.Name, "idx_Test"))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`create index i on exist_db.exist_tb_1 (v1)`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`create index Idx_test on exist_db.exist_tb_1 (v1)`,
+		newTestResult().addResult(rule.Name, "Idx_test"))
+}
+
 func TestCheckPrimaryKey(t *testing.T) {
 	runDefaultRulesInspectCase(t, "create_table: primary key exist", DefaultMysqlInspect(),
 		`
