@@ -102,16 +102,16 @@ func TestIsUpperAndLowerLetterMixed(t *testing.T) {
 		want bool
 	}
 	tests := []args{
-		{"aaabbbCCC", true},
-		{"AAAaabbb", true},
-		{"aaaBC", true},
-		{"___aaabbbCCC", true},
-		{"aaabbbCCC__@@", true},
-		{"aaabbb@!$CCC", true},
-		{"aabbcc", false},
-		{"___aabbcc", false},
-		{"aabbcc!@#", false},
-		{"aabb__@@cc", false},
+		{"isUPPER", true},
+		{"ISupper", true},
+		{"isUpper", true},
+		{"___isUPPER", true},
+		{"isUPPER__@@", true},
+		{"isUPPER@!$and", true},
+		{"process", false},
+		{"___process", false},
+		{"process!@#", false},
+		{"process__@@cc", false},
 		{"a", false},
 		{"$", false},
 	}
