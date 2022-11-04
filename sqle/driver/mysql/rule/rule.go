@@ -443,7 +443,7 @@ var RuleHandlers = []RuleHandler{
 			Category: RuleTypeNamingConvention,
 			Level:    driver.RuleLevelNotice,
 		},
-		Message:      "数据库对象命名不建议大小写字母混合 %v",
+		Message:      "数据库对象命名不建议大小写字母混合，以下对象命名不规范：%v",
 		Func:         checkIsObjectNameUpperAndLowerLetterMixed,
 		AllowOffline: true,
 	},
