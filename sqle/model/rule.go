@@ -145,13 +145,15 @@ func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string)
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateDetailByNameAndProjectId(projectId uint, name string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
 	t := &RuleTemplate{Name: name}
 	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("Instances").
-		Where(t).First(t).Error
+		Where(t).
+		Where("project_id = ?", projectId).
+		First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
