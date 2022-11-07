@@ -67,10 +67,10 @@ type UpdateProjectReqV1 struct {
 // @Tags project
 // @Id updateProjectV1
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param project body v1.UpdateProjectReqV1 true "create project request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/ [patch]
+// @router /v1/projects/{project_name}/ [patch]
 func UpdateProjectV1(c echo.Context) error {
 	return nil
 }
@@ -81,9 +81,9 @@ func UpdateProjectV1(c echo.Context) error {
 // @Id deleteProjectV1
 // @Tags project
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/ [delete]
+// @router /v1/projects/{project_name}/ [delete]
 func DeleteProjectV1(c echo.Context) error {
 	return nil
 }
