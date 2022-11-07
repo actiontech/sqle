@@ -9304,9 +9304,6 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 }
@@ -9323,9 +9320,6 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"

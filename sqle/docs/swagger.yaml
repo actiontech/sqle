@@ -2195,8 +2195,6 @@ definitions:
         type: string
       desc:
         type: string
-      id:
-        type: integer
       name:
         type: string
     type: object
@@ -2208,8 +2206,6 @@ definitions:
         type: string
       desc:
         type: string
-      id:
-        type: integer
       name:
         type: string
     type: object
