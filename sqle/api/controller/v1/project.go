@@ -87,3 +87,24 @@ func UpdateProjectV1(c echo.Context) error {
 func DeleteProjectV1(c echo.Context) error {
 	return nil
 }
+
+type GetProjectTipsResV1 struct {
+	controller.BaseRes
+	Data []ProjectTipResV1 `json:"data"`
+}
+
+type ProjectTipResV1 struct {
+	Name string `json:"project_name"`
+}
+
+// GetProjectTipsV1
+// @Summary 获取项目提示列表
+// @Description get project tip list
+// @Tags project
+// @Id getProjectTipsV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetProjectTipsResV1
+// @router /v1/project_tips [get]
+func GetProjectTipsV1(c echo.Context) error {
+	return nil
+}
