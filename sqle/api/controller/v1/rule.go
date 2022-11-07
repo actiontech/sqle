@@ -196,21 +196,22 @@ type RuleTemplateDetailResV1 struct {
 	RuleList  []RuleResV1                   `json:"rule_list,omitempty"`
 }
 
-func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailResV1 {
-	instanceNames := make([]string, 0, len(template.Instances))
+func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectName map[uint]model.ProjectAndInstance) *RuleTemplateDetailResV1 {
+	instanceNames := make([]*GlobalRuleTemplateInstance, 0, len(template.Instances))
 	for _, instance := range template.Instances {
-		instanceNames = append(instanceNames, instance.Name)
+		instanceNames = append(instanceNames, &GlobalRuleTemplateInstance{
+			ProjectName:  instNameToProjectName[instance.ID].ProjectName,
+			InstanceName: instance.Name,
+		})
 	}
 	ruleList := make([]RuleResV1, 0, len(template.RuleList))
 	for _, r := range template.RuleList {
 		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
 	}
 	return &RuleTemplateDetailResV1{
-		Name:   template.Name,
-		Desc:   template.Desc,
-		DBType: template.DBType,
-		// todo issue988 handle instanceNames
-		//Instances: instanceNames,
+		Name:     template.Name,
+		Desc:     template.Desc,
+		DBType:   template.DBType,
 		RuleList: ruleList,
 	}
 }
@@ -226,7 +227,7 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 func GetRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateDetailByName(templateName)
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(projectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -235,9 +236,18 @@ func GetRuleTemplate(c echo.Context) error {
 			fmt.Errorf("rule template is not exist"))))
 	}
 
+	instanceIds := make([]uint, len(template.Instances))
+	for i, inst := range template.Instances {
+		instanceIds[i] = inst.ID
+	}
+	instanceNameToProjectName, err := s.GetProjectNamesByInstanceIds(instanceIds)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+
 	return c.JSON(http.StatusOK, &GetRuleTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertRuleTemplateToRes(template),
+		Data:    convertRuleTemplateToRes(template, instanceNameToProjectName),
 	})
 }
 
