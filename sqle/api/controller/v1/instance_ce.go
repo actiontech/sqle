@@ -5,11 +5,8 @@ package v1
 
 import (
 	e "errors"
-	"fmt"
-	"net/http"
-	"strconv"
-
 	"github.com/actiontech/sqle/sqle/errors"
+	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
@@ -24,11 +21,7 @@ func getInstanceTips(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectIDStr := c.Param("project_id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("project id should be uint but not"))
-	}
+	projectName := c.Param("project_name")
 
 	s := model.GetStorage()
 	user, err := controller.GetCurrentUser(c)
@@ -39,11 +32,11 @@ func getInstanceTips(c echo.Context) error {
 	var instances []*model.Instance
 	switch req.FunctionalModule {
 	case create_audit_plan:
-		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, uint(projectID), model.OP_AUDIT_PLAN_SAVE)
+		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, projectName, model.OP_AUDIT_PLAN_SAVE)
 	case sql_query:
-		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType, uint(projectID))
+		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType, projectName)
 	default: // create_workflow case
-		instances, err = s.GetInstancesTipsByUserAndTypeAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId, uint(projectID))
+		instances, err = s.GetInstancesTipsByUserAndTypeAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId, projectName)
 	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
