@@ -69,41 +69,42 @@ func (s *Storage) GetWorkflowStepsDetailByTemplateId(id uint) ([]*WorkflowStepTe
 
 func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 	return s.TxExec(func(tx *sql.Tx) error {
-		return saveWorkflowTemplate(template, tx)
+		_, err := saveWorkflowTemplate(template, tx)
+		return err
 	})
 }
 
-func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) error {
+func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) (templateID string, err error) {
 	result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`) values (?, ?, ?)",
 		template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel)
 	if err != nil {
-		return err
+		return "", err
 	}
 	templateId, err := result.LastInsertId()
 	if err != nil {
-		return err
+		return "", err
 	}
 	template.ID = uint(templateId)
 	for _, step := range template.Steps {
 		result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized) values (?,?,?,?,?)",
 			step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized)
 		if err != nil {
-			return err
+			return "", err
 		}
 		stepId, err := result.LastInsertId()
 		if err != nil {
-			return err
+			return "", err
 		}
 		step.ID = uint(stepId)
 		for _, user := range step.Users {
 			_, err = tx.Exec("INSERT INTO workflow_step_template_user (workflow_step_template_id, user_id) values (?,?)",
 				stepId, user.ID)
 			if err != nil {
-				return err
+				return "", err
 			}
 		}
 	}
-	return nil
+	return templateID, nil
 }
 
 func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*WorkflowStepTemplate) error {
