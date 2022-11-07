@@ -47,8 +47,16 @@ func GetProjectListV1(c echo.Context) error {
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
+	user := controller.GetUserName(c)
+
+	mp := map[string]interface{}{
+		"limit":            limit,
+		"offset":           offset,
+		"filter_user_name": user,
+	}
+
 	s := model.GetStorage()
-	projects, total, err := s.ListProject(limit, offset)
+	projects, total, err := s.GetProjectsByReq(mp)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -56,11 +64,10 @@ func GetProjectListV1(c echo.Context) error {
 	resp := []*ProjectListItem{}
 	for _, project := range projects {
 		resp = append(resp, &ProjectListItem{
-			Id:             project.ID,
 			Name:           project.Name,
 			Desc:           project.Desc,
-			CreateUserName: project.CreateUser.Name,
-			CreateTime:     &project.CreatedAt,
+			CreateUserName: project.CreateUserName,
+			CreateTime:     &project.CreateTime,
 		})
 	}
 
