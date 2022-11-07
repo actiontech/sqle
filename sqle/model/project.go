@@ -7,6 +7,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/jinzhu/gorm"
 )
@@ -197,4 +198,38 @@ OR
 	}
 	err := s.db.Raw(query, userName, projectName).Find(&exist).Error
 	return exist.Exist, errors.New(errors.ConnectStorageError, err)
+}
+
+type ProjectAndInstance struct {
+	InstanceName string `json:"instance_name"`
+	ProjectName  string `json:"project_name"`
+}
+
+func (s *Storage) GetProjectNamesByInstanceIds(instanceIds []uint) (map[uint] /*instance id*/ ProjectAndInstance, error) {
+	instanceIds = utils.RemoveDuplicateUint(instanceIds)
+	type record struct {
+		InstanceId   uint   `json:"instance_id"`
+		InstanceName string `json:"instance_name"`
+		ProjectName  string `json:"project_name"`
+	}
+	records := []record{}
+	err := s.db.Table("instances").
+		Joins("LEFT JOIN projects ON projects.id = instances.project_id").
+		Select("instances.id AS instance_id, instances.name AS instance_name, projects.name AS project_name").
+		Where("instances.id IN (?)", instanceIds).
+		Find(&records).Error
+
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	res := make(map[uint]ProjectAndInstance, len(records))
+	for _, r := range records {
+		res[r.InstanceId] = ProjectAndInstance{
+			InstanceName: r.InstanceName,
+			ProjectName:  r.ProjectName,
+		}
+	}
+
+	return res, nil
 }
