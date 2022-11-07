@@ -26,10 +26,14 @@ type Project struct {
 	WorkflowTemplate   *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
-func (s *Storage) IsProjectManager(userID uint, projectID uint) (bool, error) {
+func (s *Storage) IsProjectManager(userID uint, projectName string) (bool, error) {
 	var count uint
 
-	err := s.db.Table("project_manager").Where("user_id = ?", userID).Where("project_id = ?", projectID).Count(&count).Error
+	err := s.db.Table("project_manager").
+		Joins("projects ON projects.id = project_manager.project_id").
+		Where("project_manager.user_id = ?", userID).
+		Where("projects.name = ?", projectName).
+		Count(&count).Error
 
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
