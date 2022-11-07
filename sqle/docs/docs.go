@@ -3061,7 +3061,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/rule_templates/{rule_template_id}/": {
+        "/v1/projects/{project_name}/rule_templates/{rule_template_name}/": {
             "get": {
                 "security": [
                     {
@@ -3083,9 +3083,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     }
@@ -3120,9 +3120,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     }
@@ -3157,9 +3157,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     },
@@ -3183,7 +3183,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/rule_templates/{rule_template_id}/clone": {
+        "/v1/projects/{project_name}/rule_templates/{rule_template_name}/clone": {
             "post": {
                 "security": [
                     {
@@ -3208,9 +3208,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     },
@@ -4185,7 +4185,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/rule_templates/{rule_template_id}/": {
+        "/v1/rule_templates/{rule_template_name}/": {
             "get": {
                 "security": [
                     {
@@ -4200,9 +4200,9 @@ var doc = `{
                 "operationId": "getRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     }
@@ -4230,9 +4230,9 @@ var doc = `{
                 "operationId": "deleteRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     }
@@ -4260,9 +4260,9 @@ var doc = `{
                 "operationId": "updateRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     },
@@ -4286,7 +4286,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/rule_templates/{rule_template_id}/clone": {
+        "/v1/rule_templates/{rule_template_name}/clone": {
             "post": {
                 "security": [
                     {
@@ -4304,9 +4304,9 @@ var doc = `{
                 "operationId": "CloneRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "rule template id",
-                        "name": "rule_template_id",
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
                         "in": "path",
                         "required": true
                     },
@@ -9343,9 +9343,6 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "instance_list": {
                     "type": "array",
                     "items": {
@@ -9443,9 +9440,6 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "instance_list": {
                     "type": "array",
                     "items": {
@@ -9526,9 +9520,6 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "instance_list": {
                     "type": "array",
                     "items": {
@@ -9554,9 +9545,6 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "instance_list": {
                     "type": "array",

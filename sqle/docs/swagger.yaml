@@ -2220,8 +2220,6 @@ definitions:
         type: string
       desc:
         type: string
-      id:
-        type: integer
       instance_list:
         items:
           $ref: '#/definitions/v1.ProjectRuleTemplateInstance'
@@ -2285,8 +2283,6 @@ definitions:
         type: string
       desc:
         type: string
-      id:
-        type: integer
       instance_list:
         items:
           $ref: '#/definitions/v1.ProjectRuleTemplateInstance'
@@ -2342,8 +2338,6 @@ definitions:
         type: string
       desc:
         type: string
-      id:
-        type: integer
       instance_list:
         items:
           $ref: '#/definitions/v1.GlobalRuleTemplateInstance'
@@ -2361,8 +2355,6 @@ definitions:
         type: string
       desc:
         type: string
-      id:
-        type: integer
       instance_list:
         items:
           $ref: '#/definitions/v1.GlobalRuleTemplateInstance'
@@ -5127,7 +5119,7 @@ paths:
       summary: 添加项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_name}/rule_templates/{rule_template_id}/:
+  /v1/projects/{project_name}/rule_templates/{rule_template_name}/:
     delete:
       description: delete rule template in project
       operationId: deleteProjectRuleTemplateV1
@@ -5137,11 +5129,11 @@ paths:
         name: project_name
         required: true
         type: string
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5161,11 +5153,11 @@ paths:
         name: project_name
         required: true
         type: string
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5185,11 +5177,11 @@ paths:
         name: project_name
         required: true
         type: string
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       - description: update rule template request
         in: body
         name: instance
@@ -5206,7 +5198,7 @@ paths:
       summary: 更新项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_name}/rule_templates/{rule_template_id}/clone:
+  /v1/projects/{project_name}/rule_templates/{rule_template_name}/clone:
     post:
       consumes:
       - application/json
@@ -5218,11 +5210,11 @@ paths:
         name: project_name
         required: true
         type: string
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       - description: clone rule template request
         in: body
         name: instance
@@ -5851,16 +5843,16 @@ paths:
       summary: 添加全局规则模板
       tags:
       - rule_template
-  /v1/rule_templates/{rule_template_id}/:
+  /v1/rule_templates/{rule_template_name}/:
     delete:
       description: delete global rule template
       operationId: deleteRuleTemplateV1
       parameters:
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5875,11 +5867,11 @@ paths:
       description: get global rule template
       operationId: getRuleTemplateV1
       parameters:
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5894,11 +5886,11 @@ paths:
       description: update global rule template
       operationId: updateRuleTemplateV1
       parameters:
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       - description: update rule template request
         in: body
         name: instance
@@ -5915,18 +5907,18 @@ paths:
       summary: 更新全局规则模板
       tags:
       - rule_template
-  /v1/rule_templates/{rule_template_id}/clone:
+  /v1/rule_templates/{rule_template_name}/clone:
     post:
       consumes:
       - application/json
       description: clone a rule template
       operationId: CloneRuleTemplateV1
       parameters:
-      - description: rule template id
+      - description: rule template name
         in: path
-        name: rule_template_id
+        name: rule_template_name
         required: true
-        type: integer
+        type: string
       - description: clone rule template request
         in: body
         name: instance
