@@ -78,6 +78,8 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 	return templateRules, nil
 }
 
+const projectIdForGlobalRuleTemplate = 0
+
 // @Summary 添加全局规则模板
 // @Description create a global rule template
 // @Id createRuleTemplateV1
@@ -93,7 +95,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByName(req.Name)
+	_, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -114,24 +116,6 @@ func CreateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	err = s.Save(ruleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -141,11 +125,7 @@ func CreateRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 

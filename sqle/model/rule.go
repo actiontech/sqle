@@ -136,9 +136,9 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
 	return s.GetRulesFromRuleTemplateByName(tplName)
 }
 
-func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
-	err := s.db.Where("name = ?", name).First(t).Error
+	err := s.db.Where("name = ?", name).Where("project_id = ?", projectId).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
