@@ -124,7 +124,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHoo
 			if wl.MatchType == model.SQLWhitelistFPMatch {
 				wlNode, err := parse(l, d, wl.Value)
 				if err != nil {
-					return fmt.Errorf("parse whitelist sql error,please check the accuracy of whitelist SQL : %s", wl.Value)
+					l.Errorf("parse whitelist sql error: %v,please check the accuracy of whitelist SQL: %s", err, wl.Value)
 				}
 				if node.Fingerprint == wlNode.Fingerprint {
 					whitelistMatch = true
