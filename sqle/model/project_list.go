@@ -10,67 +10,44 @@ type ProjectDetail struct {
 }
 
 var projectsQueryTpl = `SELECT
-projects.name , projects.` + "`desc`" + `, users.login_name as create_user_name, projects.create_at as create_time
-FROM projects
-JOIN project_user on project_user.project_id = projects.id
-JOIN users on users.id = project_user.user_id
-WHERE users.deleted_at IS NULL
-AND users.stat = 0
+projects.name , projects.` + "`desc`" + `, users.login_name as create_user_name, projects.created_at as create_time
 
-{{ if .filter_user_name }}
-AND users.login_name = :filter_user_name
-{{ end }}
-
-UNION
-SELECT
-projects.name , projects.` + "`desc`" + `, users.login_name as create_user_name, projects.create_at as create_time
-FROM projects
-JOIN project_user_group on project_user_group.project_id = projects.id
-JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id
-JOIN users on users.id = user_group_user.user_id
-WHERE users.deleted_at IS NULL
-AND users.stat = 0
-
-{{ if .filter_user_name }}
-AND users.login_name = :filter_user_name
-{{ end }}
+{{- template "body" . -}}
 
 {{ if .limit }}
 LIMIT :limit OFFSET :offset
 {{ end }}
-{{- template "body" . -}}
 `
 
-var projectsCountTpl = `SELECT COUNT(1) FROM (SELECT DISTINCT projects.id
-FROM projects
-JOIN project_user on project_user.project_id = projects.id
-JOIN users on users.id = project_user.user_id
-WHERE users.deleted_at IS NULL
-AND users.stat = 0
+var projectsCountTpl = `SELECT COUNT(DISTINCT projects.id)
 
-{{ if .filter_user_name }}
-AND users.login_name = :filter_user_name
-{{ end }}
-
-UNION
-SELECT
-DISTINCT projects.id
-FROM projects
-JOIN project_user_group on project_user_group.project_id = projects.id
-JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id
-JOIN users on users.id = user_group_users.user_id
-WHERE users.deleted_at IS NULL
-AND users.stat = 0
-
-{{ if .filter_user_name }}
-AND users.login_name = :filter_user_name
-{{ end }}
-) as a
 {{- template "body" . -}}
 `
 
 var projectsQueryBodyTpl = `
-{{ define "body" . }}
+{{ define "body" }}
+
+FROM projects
+JOIN project_user on project_user.project_id = projects.id
+JOIN users on users.id = project_user.user_id
+JOIN project_user_group on project_user_group.project_id = projects.id
+JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id
+RIGHT JOIN users as u on u.id = user_group_users.user_id
+WHERE users.deleted_at IS NULL
+AND u.deleted_at IS NULL
+AND users.stat = 0
+AND u.stat = 0
+
+{{ if .filter_user_name }}
+AND
+( 
+	users.login_name = :filter_user_name
+OR 
+	u.login_name = :filter_user_name
+)
+{{ end }}
+
+
 {{ end }}
 `
 
@@ -78,7 +55,7 @@ func (s *Storage) GetProjectsByReq(data map[string]interface{}) (
 	result []*ProjectDetail, count uint64, err error) {
 
 	if data["filter_user_name"] == DefaultAdminUser {
-		data["filter_user_name"] = nil
+		delete(data, "filter_user_name")
 	}
 
 	err = s.getListResult(projectsQueryBodyTpl, projectsQueryTpl, data, &result)
