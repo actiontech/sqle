@@ -1231,6 +1231,19 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetProjectTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.ProjectTipResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRoleTipsResV1:
     properties:
       code:
@@ -2195,6 +2208,11 @@ definitions:
       rule_template_name:
         type: string
     type: object
+  v1.ProjectTipResV1:
+    properties:
+      project_name:
+        type: string
+    type: object
   v1.RejectWorkflowReqV1:
     properties:
       reason:
@@ -3020,7 +3038,7 @@ definitions:
         type: string
       desc:
         type: string
-      project_id:
+      project_name:
         type: integer
       status:
         enum:
@@ -3655,6 +3673,20 @@ paths:
       summary: 获取权限动作列表
       tags:
       - operation
+  /v1/project_tips:
+    get:
+      description: get project tip list
+      operationId: getProjectTipsV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetProjectTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目提示列表
+      tags:
+      - project
   /v1/projects:
     get:
       description: get project list
