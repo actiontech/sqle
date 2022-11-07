@@ -262,7 +262,7 @@ func GetRuleTemplate(c echo.Context) error {
 func DeleteRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateByName(templateName)
+	template, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
