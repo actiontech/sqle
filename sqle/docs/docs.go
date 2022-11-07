@@ -839,6 +839,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/project_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get project tip list",
+                "tags": [
+                    "project"
+                ],
+                "summary": "获取项目提示列表",
+                "operationId": "getProjectTipsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects": {
             "get": {
                 "security": [
@@ -7831,6 +7854,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetProjectTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ProjectTipResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRoleTipsResV1": {
             "type": "object",
             "properties": {
@@ -9254,6 +9296,14 @@ var doc = `{
                 }
             }
         },
+        "v1.ProjectTipResV1": {
+            "type": "object",
+            "properties": {
+                "project_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RejectWorkflowReqV1": {
             "type": "object",
             "properties": {
@@ -10489,7 +10539,7 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "project_id": {
+                "project_name": {
                     "type": "integer"
                 },
                 "status": {
