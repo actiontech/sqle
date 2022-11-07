@@ -1,11 +1,20 @@
 package v1
 
 import (
+	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
+
+type GetProjectReqV1 struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
 
 type GetProjectResV1 struct {
 	controller.BaseRes
@@ -31,7 +40,42 @@ type ProjectListItem struct {
 // @Success 200 {object} v1.GetProjectResV1
 // @router /v1/projects [get]
 func GetProjectListV1(c echo.Context) error {
-	return nil
+	req := new(GetProjectReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+
+	user := controller.GetUserName(c)
+
+	mp := map[string]interface{}{
+		"limit":            limit,
+		"offset":           offset,
+		"filter_user_name": user,
+	}
+
+	s := model.GetStorage()
+	projects, total, err := s.GetProjectsByReq(mp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp := []*ProjectListItem{}
+	for _, project := range projects {
+		resp = append(resp, &ProjectListItem{
+			Name:           project.Name,
+			Desc:           project.Desc,
+			CreateUserName: project.CreateUserName,
+			CreateTime:     &project.CreateTime,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetProjectResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      resp,
+		TotalNums: total,
+	})
 }
 
 type GetProjectDetailResV1 struct {
@@ -76,7 +120,7 @@ type CreateProjectReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects [post]
 func CreateProjectV1(c echo.Context) error {
-	return nil
+	return createProjectV1(c)
 }
 
 type UpdateProjectReqV1 struct {
@@ -96,7 +140,37 @@ type UpdateProjectReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/ [patch]
 func UpdateProjectV1(c echo.Context) error {
-	return nil
+	req := new(UpdateProjectReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectIDStr := c.Param("filter_project")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("project id should be uint but not"))
+	}
+
+	s := model.GetStorage()
+	sure, err := s.CheckUserCanUpdateProject(uint(projectID), user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !sure {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("you can not modify this project"))
+	}
+
+	attr := map[string]interface{}{}
+	if req.Desc != nil {
+		attr["desc"] = *req.Desc
+	}
+
+	return controller.JSONBaseErrorReq(c, s.UpdateProjectInfoByID(uint(projectID), attr))
 }
 
 // DeleteProjectV1
@@ -109,7 +183,7 @@ func UpdateProjectV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/ [delete]
 func DeleteProjectV1(c echo.Context) error {
-	return nil
+	return deleteProjectV1(c)
 }
 
 type GetProjectTipsResV1 struct {
