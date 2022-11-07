@@ -1189,6 +1189,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetProjectDetailResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.ProjectDetailItem'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetProjectResV1:
     properties:
       code:
@@ -2173,6 +2185,19 @@ definitions:
         type: object
       message:
         example: ok
+        type: string
+    type: object
+  v1.ProjectDetailItem:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      desc:
+        type: string
+      id:
+        type: integer
+      name:
         type: string
     type: object
   v1.ProjectListItem:
@@ -3753,6 +3778,25 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 删除项目
+      tags:
+      - project
+    get:
+      description: get project detail
+      operationId: getProjectDetailV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetProjectDetailResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目详情
       tags:
       - project
     patch:
