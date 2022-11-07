@@ -14,7 +14,6 @@ type GetProjectResV1 struct {
 }
 
 type ProjectListItem struct {
-	Id             uint       `json:"id"`
 	Name           string     `json:"name"`
 	Desc           string     `json:"desc"`
 	CreateUserName string     `json:"create_user_name"`
@@ -41,7 +40,6 @@ type GetProjectDetailResV1 struct {
 }
 
 type ProjectDetailItem struct {
-	Id             uint       `json:"id"`
 	Name           string     `json:"name"`
 	Desc           string     `json:"desc"`
 	CreateUserName string     `json:"create_user_name"`
