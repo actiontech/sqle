@@ -125,7 +125,7 @@ func CreateRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -150,7 +150,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	template, exist, err := s.GetRuleTemplateByName(templateName)
+	template, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -164,24 +164,6 @@ func UpdateRuleTemplate(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
-	}
-
-	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	err = CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if req.Desc != nil {
@@ -198,12 +180,6 @@ func UpdateRuleTemplate(c echo.Context) error {
 		}
 	}
 
-	if req.Instances != nil {
-		err = s.UpdateRuleTemplateInstances(template, instances...)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
