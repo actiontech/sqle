@@ -939,6 +939,36 @@ var doc = `{
             }
         },
         "/v1/projects/{project_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get project detail",
+                "tags": [
+                    "project"
+                ],
+                "summary": "获取项目详情",
+                "operationId": "getProjectDetailV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectDetailResV1"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -7793,6 +7823,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetProjectDetailResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ProjectDetailItem"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetProjectResV1": {
             "type": "object",
             "properties": {
@@ -9245,7 +9292,7 @@ var doc = `{
                 }
             }
         },
-        "v1.ProjectListItem": {
+        "v1.ProjectDetailItem": {
             "type": "object",
             "properties": {
                 "create_time": {
@@ -9257,8 +9304,22 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ProjectListItem": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"

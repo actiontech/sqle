@@ -14,7 +14,6 @@ type GetProjectResV1 struct {
 }
 
 type ProjectListItem struct {
-	Id             uint       `json:"id"`
 	Name           string     `json:"name"`
 	Desc           string     `json:"desc"`
 	CreateUserName string     `json:"create_user_name"`
@@ -32,6 +31,31 @@ type ProjectListItem struct {
 // @Success 200 {object} v1.GetProjectResV1
 // @router /v1/projects [get]
 func GetProjectListV1(c echo.Context) error {
+	return nil
+}
+
+type GetProjectDetailResV1 struct {
+	controller.BaseRes
+	Data ProjectDetailItem `json:"data"`
+}
+
+type ProjectDetailItem struct {
+	Name           string     `json:"name"`
+	Desc           string     `json:"desc"`
+	CreateUserName string     `json:"create_user_name"`
+	CreateTime     *time.Time `json:"create_time"`
+}
+
+// GetProjectDetailV1
+// @Summary 获取项目详情
+// @Description get project detail
+// @Tags project
+// @Id getProjectDetailV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetProjectDetailResV1
+// @router /v1/projects/{project_name}/ [get]
+func GetProjectDetailV1(c echo.Context) error {
 	return nil
 }
 
