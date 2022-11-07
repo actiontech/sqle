@@ -552,10 +552,10 @@ type BindRoleReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param data body v1.CreateMemberReqV1 true "add member"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/members [post]
+// @router /v1/projects/{project_name}/members [post]
 func AddMember(c echo.Context) error {
 	return nil
 }
@@ -573,11 +573,11 @@ type UpdateMemberReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param user_name path string true "user name"
 // @Param data body v1.UpdateMemberReqV1 true "update member"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/members/{user_name}/ [patch]
+// @router /v1/projects/{project_name}/members/{user_name}/ [patch]
 func UpdateMember(c echo.Context) error {
 	return nil
 }
@@ -588,10 +588,10 @@ func UpdateMember(c echo.Context) error {
 // @Id deleteMemberV1
 // @Tags user
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param user_name path string true "user name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/members/{user_name}/ [delete]
+// @router /v1/projects/{project_name}/members/{user_name}/ [delete]
 func DeleteMember(c echo.Context) error {
 	return nil
 }
@@ -625,9 +625,9 @@ type GetMemberRespDataV1 struct {
 // @Param filter_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetMembersRespV1
-// @router /v1/projects/{project_id}/members [get]
+// @router /v1/projects/{project_name}/members [get]
 func GetMembers(c echo.Context) error {
 	return nil
 }
@@ -643,10 +643,10 @@ type GetMemberRespV1 struct {
 // @Id getMemberV1
 // @Tags user
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param user_name path string true "user name"
 // @Success 200 {object} v1.GetMemberRespV1
-// @router /v1/projects/{project_id}/members/{user_name}/ [get]
+// @router /v1/projects/{project_name}/members/{user_name}/ [get]
 func GetMember(c echo.Context) error {
 	return nil
 }

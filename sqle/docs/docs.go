@@ -915,7 +915,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/": {
+        "/v1/projects/{project_name}/": {
             "delete": {
                 "security": [
                     {
@@ -930,9 +930,9 @@ var doc = `{
                 "operationId": "deleteProjectV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -966,9 +966,9 @@ var doc = `{
                 "operationId": "updateProjectV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -992,7 +992,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans": {
+        "/v1/projects/{project_name}/audit_plans": {
             "get": {
                 "security": [
                     {
@@ -1007,9 +1007,9 @@ var doc = `{
                 "operationId": "getAuditPlansV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1076,9 +1076,9 @@ var doc = `{
                 "operationId": "createAuditPlanV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1102,7 +1102,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
+        "/v1/projects/{project_name}/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
             "get": {
                 "security": [
                     {
@@ -1117,9 +1117,9 @@ var doc = `{
                 "operationId": "getTaskAnalysisData",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1148,7 +1148,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/": {
             "get": {
                 "security": [
                     {
@@ -1163,9 +1163,9 @@ var doc = `{
                 "operationId": "getAuditPlanV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1200,9 +1200,9 @@ var doc = `{
                 "operationId": "deleteAuditPlanV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1237,9 +1237,9 @@ var doc = `{
                 "operationId": "updateAuditPlanV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1270,7 +1270,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config": {
             "get": {
                 "security": [
                     {
@@ -1285,9 +1285,9 @@ var doc = `{
                 "operationId": "getAuditPlanNotifyConfigV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1322,9 +1322,9 @@ var doc = `{
                 "operationId": "updateAuditPlanNotifyConfigV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1355,7 +1355,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config/test": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config/test": {
             "get": {
                 "security": [
                     {
@@ -1370,9 +1370,9 @@ var doc = `{
                 "operationId": "testAuditPlanNotifyConfigV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1394,7 +1394,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports": {
             "get": {
                 "security": [
                     {
@@ -1409,9 +1409,9 @@ var doc = `{
                 "operationId": "getAuditPlanReportsV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1445,7 +1445,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/": {
             "get": {
                 "security": [
                     {
@@ -1460,9 +1460,9 @@ var doc = `{
                 "operationId": "getAuditPlanReportV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1491,7 +1491,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
             "get": {
                 "security": [
                     {
@@ -1506,9 +1506,9 @@ var doc = `{
                 "operationId": "getAuditPlanReportsSQLsV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1549,7 +1549,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls": {
             "get": {
                 "security": [
                     {
@@ -1564,9 +1564,9 @@ var doc = `{
                 "operationId": "getAuditPlanSQLsV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1600,7 +1600,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/full": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full": {
             "post": {
                 "security": [
                     {
@@ -1615,9 +1615,9 @@ var doc = `{
                 "operationId": "fullSyncAuditPlanSQLsV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1648,7 +1648,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/partial": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial": {
             "post": {
                 "security": [
                     {
@@ -1663,9 +1663,9 @@ var doc = `{
                 "operationId": "partialSyncAuditPlanSQLsV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1696,7 +1696,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_plans/{audit_plan_name}/trigger": {
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/trigger": {
             "post": {
                 "security": [
                     {
@@ -1711,9 +1711,9 @@ var doc = `{
                 "operationId": "triggerAuditPlanV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1735,7 +1735,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_whitelist": {
+        "/v1/projects/{project_name}/audit_whitelist": {
             "get": {
                 "security": [
                     {
@@ -1750,9 +1750,9 @@ var doc = `{
                 "operationId": "getAuditWhitelistV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1795,9 +1795,9 @@ var doc = `{
                 "operationId": "createAuditWhitelistV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1821,7 +1821,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/audit_whitelist/{audit_whitelist_id}/": {
+        "/v1/projects/{project_name}/audit_whitelist/{audit_whitelist_id}/": {
             "delete": {
                 "security": [
                     {
@@ -1836,9 +1836,9 @@ var doc = `{
                 "operationId": "deleteAuditWhitelistByIdV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1876,9 +1876,9 @@ var doc = `{
                 "operationId": "UpdateAuditWhitelistByIdV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1909,7 +1909,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instance_tips": {
+        "/v1/projects/{project_name}/instance_tips": {
             "get": {
                 "security": [
                     {
@@ -1924,9 +1924,9 @@ var doc = `{
                 "operationId": "getInstanceTipListV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -1963,7 +1963,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances": {
+        "/v1/projects/{project_name}/instances": {
             "get": {
                 "security": [
                     {
@@ -1978,9 +1978,9 @@ var doc = `{
                 "operationId": "getInstanceListV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2059,9 +2059,9 @@ var doc = `{
                 "operationId": "createInstanceV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2085,7 +2085,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances/connections": {
+        "/v1/projects/{project_name}/instances/connections": {
             "post": {
                 "security": [
                     {
@@ -2100,9 +2100,9 @@ var doc = `{
                 "operationId": "batchCheckInstanceIsConnectableByName",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2126,7 +2126,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances/{instance_name}/": {
+        "/v1/projects/{project_name}/instances/{instance_name}/": {
             "get": {
                 "security": [
                     {
@@ -2141,9 +2141,9 @@ var doc = `{
                 "operationId": "getInstanceV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2178,9 +2178,9 @@ var doc = `{
                 "operationId": "deleteInstanceV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2215,9 +2215,9 @@ var doc = `{
                 "operationId": "updateInstanceV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2248,7 +2248,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances/{instance_name}/connection": {
+        "/v1/projects/{project_name}/instances/{instance_name}/connection": {
             "get": {
                 "security": [
                     {
@@ -2263,9 +2263,9 @@ var doc = `{
                 "operationId": "checkInstanceIsConnectableByNameV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2287,7 +2287,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances/{instance_name}/rules": {
+        "/v1/projects/{project_name}/instances/{instance_name}/rules": {
             "get": {
                 "security": [
                     {
@@ -2302,9 +2302,9 @@ var doc = `{
                 "operationId": "getInstanceRuleListV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2326,7 +2326,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances/{instance_name}/schemas": {
+        "/v1/projects/{project_name}/instances/{instance_name}/schemas": {
             "get": {
                 "security": [
                     {
@@ -2341,9 +2341,9 @@ var doc = `{
                 "operationId": "getInstanceSchemasV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2365,7 +2365,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables": {
+        "/v1/projects/{project_name}/instances/{instance_name}/schemas/{schema_name}/tables": {
             "get": {
                 "security": [
                     {
@@ -2380,9 +2380,9 @@ var doc = `{
                 "operationId": "listTableBySchema",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2411,7 +2411,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata": {
+        "/v1/projects/{project_name}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata": {
             "get": {
                 "security": [
                     {
@@ -2426,9 +2426,9 @@ var doc = `{
                 "operationId": "getTableMetadata",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2464,7 +2464,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/member_groups": {
+        "/v1/projects/{project_name}/member_groups": {
             "get": {
                 "security": [
                     {
@@ -2503,9 +2503,9 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -2539,9 +2539,9 @@ var doc = `{
                 "operationId": "addMemberGroupV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2565,7 +2565,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/member_groups/{user_group_name}/": {
+        "/v1/projects/{project_name}/member_groups/{user_group_name}/": {
             "get": {
                 "security": [
                     {
@@ -2580,9 +2580,9 @@ var doc = `{
                 "operationId": "getMemberGroupV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2617,9 +2617,9 @@ var doc = `{
                 "operationId": "deleteMemberGroupV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2660,9 +2660,9 @@ var doc = `{
                 "operationId": "updateMemberGroupV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2693,7 +2693,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/members": {
+        "/v1/projects/{project_name}/members": {
             "get": {
                 "security": [
                     {
@@ -2732,9 +2732,9 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -2768,9 +2768,9 @@ var doc = `{
                 "operationId": "addMemberV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2794,7 +2794,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/members/{user_name}/": {
+        "/v1/projects/{project_name}/members/{user_name}/": {
             "get": {
                 "security": [
                     {
@@ -2809,9 +2809,9 @@ var doc = `{
                 "operationId": "getMemberV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2846,9 +2846,9 @@ var doc = `{
                 "operationId": "deleteMemberV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2889,9 +2889,9 @@ var doc = `{
                 "operationId": "updateMemberV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2922,7 +2922,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/rule_templates": {
+        "/v1/projects/{project_name}/rule_templates": {
             "get": {
                 "security": [
                     {
@@ -2937,9 +2937,9 @@ var doc = `{
                 "operationId": "getProjectRuleTemplateListV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -2982,9 +2982,9 @@ var doc = `{
                 "operationId": "createProjectRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3008,7 +3008,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/rule_templates/{rule_template_id}/": {
+        "/v1/projects/{project_name}/rule_templates/{rule_template_id}/": {
             "get": {
                 "security": [
                     {
@@ -3023,9 +3023,9 @@ var doc = `{
                 "operationId": "getProjectRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3060,9 +3060,9 @@ var doc = `{
                 "operationId": "deleteProjectRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3097,9 +3097,9 @@ var doc = `{
                 "operationId": "updateProjectRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3130,7 +3130,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/rule_templates/{rule_template_id}/clone": {
+        "/v1/projects/{project_name}/rule_templates/{rule_template_id}/clone": {
             "post": {
                 "security": [
                     {
@@ -3148,9 +3148,9 @@ var doc = `{
                 "operationId": "cloneProjectRuleTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3181,7 +3181,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflow_template": {
+        "/v1/projects/{project_name}/workflow_template": {
             "get": {
                 "security": [
                     {
@@ -3196,9 +3196,9 @@ var doc = `{
                 "operationId": "getWorkflowTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -3232,9 +3232,9 @@ var doc = `{
                 "operationId": "updateWorkflowTemplateV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3258,7 +3258,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows": {
+        "/v1/projects/{project_name}/workflows": {
             "get": {
                 "security": [
                     {
@@ -3348,9 +3348,9 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -3393,9 +3393,9 @@ var doc = `{
                         }
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -3410,7 +3410,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/cancel": {
+        "/v1/projects/{project_name}/workflows/cancel": {
             "post": {
                 "security": [
                     {
@@ -3425,9 +3425,9 @@ var doc = `{
                 "operationId": "batchCancelWorkflowsV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3451,7 +3451,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/": {
             "patch": {
                 "security": [
                     {
@@ -3479,9 +3479,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3505,7 +3505,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/cancel": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/cancel": {
             "post": {
                 "security": [
                     {
@@ -3520,9 +3520,9 @@ var doc = `{
                 "operationId": "cancelWorkflowV1",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3544,7 +3544,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/approve": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/approve": {
             "post": {
                 "security": [
                     {
@@ -3573,9 +3573,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -3590,7 +3590,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/reject": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/reject": {
             "post": {
                 "security": [
                     {
@@ -3612,9 +3612,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3645,7 +3645,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/tasks": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks": {
             "get": {
                 "security": [
                     {
@@ -3667,9 +3667,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -3684,7 +3684,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/tasks/execute": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks/execute": {
             "post": {
                 "security": [
                     {
@@ -3706,9 +3706,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }
@@ -3723,7 +3723,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/execute": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks/{task_id}/execute": {
             "post": {
                 "security": [
                     {
@@ -3745,9 +3745,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3769,7 +3769,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/schedule": {
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks/{task_id}/schedule": {
             "put": {
                 "security": [
                     {
@@ -3804,9 +3804,9 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -6013,9 +6013,9 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "project id",
-                        "name": "project_id",
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     }

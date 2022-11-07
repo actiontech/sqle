@@ -314,10 +314,10 @@ type CreateMemberGroupReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param data body v1.CreateMemberGroupReqV1 true "add member group"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/member_groups [post]
+// @router /v1/projects/{project_name}/member_groups [post]
 func AddMemberGroup(c echo.Context) error {
 	return nil
 }
@@ -334,11 +334,11 @@ type UpdateMemberGroupReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Produce json
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param user_group_name path string true "user group name"
 // @Param data body v1.UpdateMemberGroupReqV1 true "update member_group"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/member_groups/{user_group_name}/ [patch]
+// @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [patch]
 func UpdateMemberGroup(c echo.Context) error {
 	return nil
 }
@@ -349,10 +349,10 @@ func UpdateMemberGroup(c echo.Context) error {
 // @Id deleteMemberGroupV1
 // @Tags user_group
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param user_group_name path string true "user group name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_id}/member_groups/{user_group_name}/ [delete]
+// @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [delete]
 func DeleteMemberGroup(c echo.Context) error {
 	return nil
 }
@@ -385,9 +385,9 @@ type GetMemberGroupRespDataV1 struct {
 // @Param filter_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetMemberGroupsRespV1
-// @router /v1/projects/{project_id}/member_groups [get]
+// @router /v1/projects/{project_name}/member_groups [get]
 func GetMemberGroups(c echo.Context) error {
 	return nil
 }
@@ -403,10 +403,10 @@ type GetMemberGroupRespV1 struct {
 // @Id getMemberGroupV1
 // @Tags user_group
 // @Security ApiKeyAuth
-// @Param project_id path uint true "project id"
+// @Param project_name path string true "project name"
 // @Param user_group_name path string true "user group name"
 // @Success 200 {object} v1.GetMemberGroupRespV1
-// @router /v1/projects/{project_id}/member_groups/{user_group_name}/ [get]
+// @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [get]
 func GetMemberGroup(c echo.Context) error {
 	return nil
 }

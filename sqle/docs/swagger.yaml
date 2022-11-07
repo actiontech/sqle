@@ -3703,16 +3703,16 @@ paths:
       summary: 创建项目
       tags:
       - project
-  /v1/projects/{project_id}/:
+  /v1/projects/{project_name}/:
     delete:
       description: delete project
       operationId: deleteProjectV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -3729,11 +3729,11 @@ paths:
       description: update project
       operationId: updateProjectV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: create project request
         in: body
         name: project
@@ -3752,16 +3752,16 @@ paths:
       summary: 更新项目
       tags:
       - project
-  /v1/projects/{project_id}/audit_plans:
+  /v1/projects/{project_name}/audit_plans:
     get:
       description: get audit plan info list
       operationId: getAuditPlansV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: filter audit plan db type
         in: query
         name: filter_audit_plan_db_type
@@ -3802,11 +3802,11 @@ paths:
       description: create audit plan
       operationId: createAuditPlanV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: create audit plan
         in: body
         name: audit_plan
@@ -3823,16 +3823,16 @@ paths:
       summary: 添加扫描任务
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/:
     delete:
       description: delete audit plan
       operationId: deleteAuditPlanV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -3852,11 +3852,11 @@ paths:
       description: get audit plan
       operationId: getAuditPlanV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -3876,11 +3876,11 @@ paths:
       description: update audit plan
       operationId: updateAuditPlanV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -3902,16 +3902,16 @@ paths:
       summary: 更新扫描任务
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config:
     get:
       description: get audit plan notify config
       operationId: getAuditPlanNotifyConfigV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -3931,11 +3931,11 @@ paths:
       description: update audit plan notify config
       operationId: updateAuditPlanNotifyConfigV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -3957,16 +3957,16 @@ paths:
       summary: 更新扫描任务通知设置
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/notify_config/test:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config/test:
     get:
       description: Test audit task message push
       operationId: testAuditPlanNotifyConfigV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -3982,16 +3982,16 @@ paths:
       summary: 测试扫描任务消息推送
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports:
     get:
       description: get audit plan report list
       operationId: getAuditPlanReportsV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -4015,16 +4015,16 @@ paths:
       summary: 获取指定扫描任务的报告列表
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/:
     get:
       description: get audit plan report
       operationId: getAuditPlanReportV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -4045,16 +4045,16 @@ paths:
       summary: 获取指定扫描任务的SQL扫描记录统计信息
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
     get:
       description: get audit plan report SQLs
       operationId: getAuditPlanReportsSQLsV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -4083,16 +4083,16 @@ paths:
       summary: 获取指定扫描任务的SQL扫描详情
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls:
     get:
       description: get audit plan SQLs
       operationId: getAuditPlanSQLsV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -4116,16 +4116,16 @@ paths:
       summary: 获取指定扫描任务的SQLs信息(不包括扫描结果)
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/full:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full:
     post:
       description: full sync audit plan SQLs
       operationId: fullSyncAuditPlanSQLsV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -4147,16 +4147,16 @@ paths:
       summary: 全量同步SQL到扫描任务
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/sqls/partial:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial:
     post:
       description: partial sync audit plan SQLs
       operationId: partialSyncAuditPlanSQLsV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -4178,16 +4178,16 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/{audit_plan_name}/trigger:
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/trigger:
     post:
       description: trigger audit plan
       operationId: triggerAuditPlanV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan name
         in: path
         name: audit_plan_name
@@ -4203,16 +4203,16 @@ paths:
       summary: 触发扫描任务
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis:
+  /v1/projects/{project_name}/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis:
     get:
       description: get SQL explain and related table metadata for analysis
       operationId: getTaskAnalysisData
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit plan report id
         in: path
         name: audit_plan_report_id
@@ -4233,16 +4233,16 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - audit_plan
-  /v1/projects/{project_id}/audit_whitelist:
+  /v1/projects/{project_name}/audit_whitelist:
     get:
       description: get all whitelist
       operationId: getAuditWhitelistV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: page index
         in: query
         name: page_index
@@ -4267,11 +4267,11 @@ paths:
       description: create a sql whitelist
       operationId: createAuditWhitelistV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: add sql whitelist req
         in: body
         name: instance
@@ -4288,16 +4288,16 @@ paths:
       summary: 添加SQL白名单
       tags:
       - audit_whitelist
-  /v1/projects/{project_id}/audit_whitelist/{audit_whitelist_id}/:
+  /v1/projects/{project_name}/audit_whitelist/{audit_whitelist_id}/:
     delete:
       description: remove sql white
       operationId: deleteAuditWhitelistByIdV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: audit whitelist id
         in: path
         name: audit_whitelist_id
@@ -4319,11 +4319,11 @@ paths:
       description: update sql whitelist by id
       operationId: UpdateAuditWhitelistByIdV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: sql audit whitelist id
         in: path
         name: audit_whitelist_id
@@ -4345,16 +4345,16 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
-  /v1/projects/{project_id}/instance_tips:
+  /v1/projects/{project_name}/instance_tips:
     get:
       description: get instance tip list
       operationId: getInstanceTipListV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: filter db type
         in: query
         name: filter_db_type
@@ -4380,16 +4380,16 @@ paths:
       summary: 获取实例提示列表
       tags:
       - instance
-  /v1/projects/{project_id}/instances:
+  /v1/projects/{project_name}/instances:
     get:
       description: get instance info list
       operationId: getInstanceListV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: filter instance name
         in: query
         name: filter_instance_name
@@ -4438,11 +4438,11 @@ paths:
       description: create a instance
       operationId: createInstanceV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: add instance
         in: body
         name: instance
@@ -4459,16 +4459,16 @@ paths:
       summary: 添加实例
       tags:
       - instance
-  /v1/projects/{project_id}/instances/{instance_name}/:
+  /v1/projects/{project_name}/instances/{instance_name}/:
     delete:
       description: delete instance db
       operationId: deleteInstanceV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4488,11 +4488,11 @@ paths:
       description: get instance db
       operationId: getInstanceV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4512,11 +4512,11 @@ paths:
       description: update instance
       operationId: updateInstanceV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4538,16 +4538,16 @@ paths:
       summary: 更新实例
       tags:
       - instance
-  /v1/projects/{project_id}/instances/{instance_name}/connection:
+  /v1/projects/{project_name}/instances/{instance_name}/connection:
     get:
       description: test instance db connection
       operationId: checkInstanceIsConnectableByNameV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4563,16 +4563,16 @@ paths:
       summary: 实例连通性测试（实例提交后）
       tags:
       - instance
-  /v1/projects/{project_id}/instances/{instance_name}/rules:
+  /v1/projects/{project_name}/instances/{instance_name}/rules:
     get:
       description: get instance all rule
       operationId: getInstanceRuleListV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4588,16 +4588,16 @@ paths:
       summary: 获取实例应用的规则列表
       tags:
       - instance
-  /v1/projects/{project_id}/instances/{instance_name}/schemas:
+  /v1/projects/{project_name}/instances/{instance_name}/schemas:
     get:
       description: instance schema list
       operationId: getInstanceSchemasV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4613,16 +4613,16 @@ paths:
       summary: 实例 Schema 列表
       tags:
       - instance
-  /v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables:
+  /v1/projects/{project_name}/instances/{instance_name}/schemas/{schema_name}/tables:
     get:
       description: list table by schema
       operationId: listTableBySchema
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4643,16 +4643,16 @@ paths:
       summary: 获取数据库下的所有表
       tags:
       - instance
-  /v1/projects/{project_id}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata:
+  /v1/projects/{project_name}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata:
     get:
       description: get table metadata
       operationId: getTableMetadata
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instance name
         in: path
         name: instance_name
@@ -4678,16 +4678,16 @@ paths:
       summary: 获取表元数据
       tags:
       - instance
-  /v1/projects/{project_id}/instances/connections:
+  /v1/projects/{project_name}/instances/connections:
     post:
       description: batch test instance db connections
       operationId: batchCheckInstanceIsConnectableByName
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: instances
         in: body
         name: instances
@@ -4704,7 +4704,7 @@ paths:
       summary: 批量测试实例连通性（实例提交后）
       tags:
       - instance
-  /v1/projects/{project_id}/member_groups:
+  /v1/projects/{project_name}/member_groups:
     get:
       description: get member groups
       operationId: getMemberGroupsV1
@@ -4725,11 +4725,11 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -4746,11 +4746,11 @@ paths:
       description: add member group
       operationId: addMemberGroupV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: add member group
         in: body
         name: data
@@ -4769,16 +4769,16 @@ paths:
       summary: 添加成员组
       tags:
       - user_group
-  /v1/projects/{project_id}/member_groups/{user_group_name}/:
+  /v1/projects/{project_name}/member_groups/{user_group_name}/:
     delete:
       description: delete member group
       operationId: deleteMemberGroupV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: user group name
         in: path
         name: user_group_name
@@ -4798,11 +4798,11 @@ paths:
       description: get member group
       operationId: getMemberGroupV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: user group name
         in: path
         name: user_group_name
@@ -4824,11 +4824,11 @@ paths:
       description: update member group
       operationId: updateMemberGroupV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: user group name
         in: path
         name: user_group_name
@@ -4852,7 +4852,7 @@ paths:
       summary: 修改成员组
       tags:
       - user_group
-  /v1/projects/{project_id}/members:
+  /v1/projects/{project_name}/members:
     get:
       description: get members
       operationId: getMembersV1
@@ -4873,11 +4873,11 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -4894,11 +4894,11 @@ paths:
       description: add member
       operationId: addMemberV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: add member
         in: body
         name: data
@@ -4917,16 +4917,16 @@ paths:
       summary: 添加成员
       tags:
       - user
-  /v1/projects/{project_id}/members/{user_name}/:
+  /v1/projects/{project_name}/members/{user_name}/:
     delete:
       description: delete member
       operationId: deleteMemberV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: user name
         in: path
         name: user_name
@@ -4946,11 +4946,11 @@ paths:
       description: get member
       operationId: getMemberV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: user name
         in: path
         name: user_name
@@ -4972,11 +4972,11 @@ paths:
       description: update member
       operationId: updateMemberV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: user name
         in: path
         name: user_name
@@ -5000,16 +5000,16 @@ paths:
       summary: 修改成员
       tags:
       - user
-  /v1/projects/{project_id}/rule_templates:
+  /v1/projects/{project_name}/rule_templates:
     get:
       description: get all rule template in a project
       operationId: getProjectRuleTemplateListV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: page index
         in: query
         name: page_index
@@ -5034,11 +5034,11 @@ paths:
       description: create a rule template in project
       operationId: createProjectRuleTemplateV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: add rule template request
         in: body
         name: instance
@@ -5055,16 +5055,16 @@ paths:
       summary: 添加项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_id}/rule_templates/{rule_template_id}/:
+  /v1/projects/{project_name}/rule_templates/{rule_template_id}/:
     delete:
       description: delete rule template in project
       operationId: deleteProjectRuleTemplateV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: rule template id
         in: path
         name: rule_template_id
@@ -5084,11 +5084,11 @@ paths:
       description: get rule template detail in project
       operationId: getProjectRuleTemplateV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: rule template id
         in: path
         name: rule_template_id
@@ -5108,11 +5108,11 @@ paths:
       description: update rule template in project
       operationId: updateProjectRuleTemplateV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: rule template id
         in: path
         name: rule_template_id
@@ -5134,18 +5134,18 @@ paths:
       summary: 更新项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_id}/rule_templates/{rule_template_id}/clone:
+  /v1/projects/{project_name}/rule_templates/{rule_template_id}/clone:
     post:
       consumes:
       - application/json
       description: clone a rule template in project
       operationId: cloneProjectRuleTemplateV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: rule template id
         in: path
         name: rule_template_id
@@ -5167,16 +5167,16 @@ paths:
       summary: 克隆项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_id}/workflow_template:
+  /v1/projects/{project_name}/workflow_template:
     get:
       description: get workflow template detail
       operationId: getWorkflowTemplateV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5193,11 +5193,11 @@ paths:
       description: update the workflow template
       operationId: updateWorkflowTemplateV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: create workflow template
         in: body
         name: instance
@@ -5216,7 +5216,7 @@ paths:
       summary: 更新Sql审批流程模板
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows:
+  /v1/projects/{project_name}/workflows:
     get:
       description: get workflow list
       operationId: getWorkflowsV1
@@ -5273,11 +5273,11 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5300,11 +5300,11 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/v1.CreateWorkflowReqV1'
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -5317,7 +5317,7 @@ paths:
       summary: 创建工单
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/:
+  /v1/projects/{project_name}/workflows/{workflow_name}/:
     patch:
       consumes:
       - application/json
@@ -5329,11 +5329,11 @@ paths:
         name: workflow_name
         required: true
         type: string
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: update workflow request
         in: body
         name: instance
@@ -5352,16 +5352,16 @@ paths:
       summary: 更新工单（驳回后才可更新）
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/cancel:
+  /v1/projects/{project_name}/workflows/{workflow_name}/cancel:
     post:
       description: cancel workflow
       operationId: cancelWorkflowV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: workflow name
         in: path
         name: workflow_name
@@ -5377,7 +5377,7 @@ paths:
       summary: 审批关闭（中止）
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/approve:
+  /v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/approve:
     post:
       description: approve workflow
       operationId: approveWorkflowV1
@@ -5392,11 +5392,11 @@ paths:
         name: workflow_step_id
         required: true
         type: string
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5407,7 +5407,7 @@ paths:
       summary: 审批通过
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/steps/{workflow_step_id}/reject:
+  /v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/reject:
     post:
       description: reject workflow
       operationId: rejectWorkflowV1
@@ -5417,11 +5417,11 @@ paths:
         name: workflow_name
         required: true
         type: string
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: workflow step id
         in: path
         name: workflow_step_id
@@ -5443,7 +5443,7 @@ paths:
       summary: 审批驳回
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/tasks:
+  /v1/projects/{project_name}/workflows/{workflow_name}/tasks:
     get:
       description: get summary of workflow instance tasks
       operationId: getSummaryOfInstanceTasksV1
@@ -5453,11 +5453,11 @@ paths:
         name: workflow_name
         required: true
         type: integer
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5468,7 +5468,7 @@ paths:
       summary: 获取工单数据源任务概览
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/execute:
+  /v1/projects/{project_name}/workflows/{workflow_name}/tasks/{task_id}/execute:
     post:
       description: execute one task on workflow
       operationId: executeOneTaskOnWorkflowV1
@@ -5478,11 +5478,11 @@ paths:
         name: workflow_name
         required: true
         type: string
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: task id
         in: path
         name: task_id
@@ -5498,7 +5498,7 @@ paths:
       summary: 工单提交单个数据源上线
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/tasks/{task_id}/schedule:
+  /v1/projects/{project_name}/workflows/{workflow_name}/tasks/{task_id}/schedule:
     put:
       consumes:
       - application/json
@@ -5515,11 +5515,11 @@ paths:
         name: task_id
         required: true
         type: string
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: update workflow schedule request
         in: body
         name: instance
@@ -5538,7 +5538,7 @@ paths:
       summary: 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/{workflow_name}/tasks/execute:
+  /v1/projects/{project_name}/workflows/{workflow_name}/tasks/execute:
     post:
       description: execute tasks on workflow
       operationId: executeTasksOnWorkflowV1
@@ -5548,11 +5548,11 @@ paths:
         name: workflow_name
         required: true
         type: string
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
@@ -5563,16 +5563,16 @@ paths:
       summary: 多数据源批量上线
       tags:
       - workflow
-  /v1/projects/{project_id}/workflows/cancel:
+  /v1/projects/{project_name}/workflows/cancel:
     post:
       description: batch cancel workflows
       operationId: batchCancelWorkflowsV1
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       - description: batch cancel workflows request
         in: body
         name: BatchCancelWorkflowsReqV1
@@ -6981,11 +6981,11 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
